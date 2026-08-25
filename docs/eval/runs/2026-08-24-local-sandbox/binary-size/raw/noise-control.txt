@@ -1,0 +1,12 @@
+=== (1) reproducibility: same build, 3 dispatches
+repro-1	34244965	9875a98ed833f81c
+repro-2	34244965	9875a98ed833f81c
+repro-3	34244965	9875a98ed833f81c
+=== (2) layout control: identical tag SET, reversed ORDER
+reorder	34244965	039b10f370830dc4
+
+NOTE ON THE sha256 VALUES (review finding F3). Size is the measured quantity;
+sha is used only WITHIN one capture, to tell two builds apart. -buildvcs=true
+stamps vcs.revision and vcs.time, so every sha here changes with every commit
+while the sizes do not. Quote these prefixes only against this capture.
+capture HEAD: 9b6956ad84609c4a498f2bad7394f1b6e910480d

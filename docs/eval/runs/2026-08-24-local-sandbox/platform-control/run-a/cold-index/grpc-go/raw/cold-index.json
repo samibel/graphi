@@ -1,0 +1,142 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "series": "cold_index",
+  "repo": "grpc-go",
+  "collected": true,
+  "samples": 3,
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992",
+    "cache_state": "not_dropped",
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+    "candidate_match": false,
+    "worktree_dirty": true,
+    "harness_version": "p0-perf/1",
+    "scorer_version": "p0-aggregate/1"
+  },
+  "cold_runs": [
+    {
+      "run": 1,
+      "status": "completed",
+      "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-24T19:24:08Z",
+      "clone_ms": 2735,
+      "cold": {
+        "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-01/grpc-go.db",
+        "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-01/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11299,
+        "peak_rss_mb": 634,
+        "db_size_bytes": 29556736,
+        "nodes": 14920,
+        "edges": 82942,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 644,
+      "bytes_per_edge": 356.354271659714,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/cold-run-01.json"
+    },
+    {
+      "run": 2,
+      "status": "completed",
+      "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-24T19:24:24Z",
+      "clone_ms": 2504,
+      "cold": {
+        "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-02/grpc-go.db",
+        "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-02/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11363,
+        "peak_rss_mb": 615,
+        "db_size_bytes": 29556736,
+        "nodes": 14920,
+        "edges": 82942,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 626,
+      "bytes_per_edge": 356.354271659714,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/cold-run-02.json"
+    },
+    {
+      "run": 3,
+      "status": "completed",
+      "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+      "runner_class": "local-sandbox",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "started_at": "2026-08-24T19:24:41Z",
+      "clone_ms": 2462,
+      "cold": {
+        "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-03/grpc-go.db",
+        "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/run-03/grpc-go-meta",
+        "store_preexisting": false,
+        "meta_preexisting": false,
+        "page_cache": "not_dropped",
+        "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+        "drop_required": false,
+        "verified": true
+      },
+      "index": {
+        "wallclock_ms": 11293,
+        "peak_rss_mb": 645,
+        "db_size_bytes": 29556736,
+        "nodes": 14920,
+        "edges": 82942,
+        "files": 919
+      },
+      "stable_peak_rss_mb": 656,
+      "bytes_per_edge": 356.354271659714,
+      "cgroup": {
+        "available": false,
+        "oom_kill": 0,
+        "oom_kill_collected": false,
+        "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+      },
+      "run_pass": true,
+      "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold4112082992/cold-run-03.json"
+    }
+  ]
+}

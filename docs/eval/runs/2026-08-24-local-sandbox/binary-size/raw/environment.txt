@@ -1,0 +1,18 @@
+# environment, captured at measurement time
+go            : go version go1.26.6 darwin/arm64
+GOTOOLCHAIN   : auto  (the toolchain control pins it explicitly per leg)
+kernel        : Darwin 25.6.0 arm64
+os            : macOS 26.6.1 (25G76)
+cpu           : Apple M2 Max
+cores         : 12 physical / 12 logical
+memory        : 68719476736 bytes
+power         : Now drawing from 'AC Power'
+thermal       : no thermal warning level recorded
+loadavg       : 7,86 6,34 6,27  (12 logical cores; this machine is NOT quiesced)
+repo HEAD     : bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e
+repo branch   : sw-203-w5q-perf-binary-size-intra-parse
+build target  : linux/amd64 GOAMD64=v1 CGO_ENABLED=0 (the gate's platform), cross-built from darwin/arm64
+host leg      : darwin/arm64 CGO_ENABLED=0 (what internal/bench/harness.go buildBinary actually builds: it passes no GOOS/GOARCH)
+
+# tracked-source dirt at measurement time (docs/ excluded)
+    (no indented line above == no source file was modified or left behind while measuring)

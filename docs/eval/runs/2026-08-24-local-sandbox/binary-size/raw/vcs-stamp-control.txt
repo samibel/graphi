@@ -1,0 +1,32 @@
+=== control for review finding F1: does worktree dirt change the measured size?
+Same recipe as leg A (-buildvcs=true). Every build is run twice: once on the
+clean committed tree, once with a single UNTRACKED file present (a non-empty
+git status --porcelain is what Go reads to set vcs.modified). Nothing else
+differs between the two columns.
+
+build                 CLEAN          DIRTY    delta
+baseline           34244965       34244965        0
+no-css             34216888       34216888        0
+no-hcl             34200607       34200607        0
+no-markdown        34154993       34155025       32
+no-toml            34240375       34240375        0
+no-yaml            34091311       34091311        0
+no-kotlin          33859091       33859091        0
+
+The ONLY build whose size moves is no-markdown. Round 1's leg-a-tag-route.txt
+recorded 34155025 for it, which is the DIRTY value; the clean value is 34154993.
+The only buildinfo difference between the two binaries is vcs.modified:
+    clean  build	vcs.revision=9b6956ad84609c4a498f2bad7394f1b6e910480d
+    clean  build	vcs.time=2026-08-24T20:17:38Z
+    clean  build	vcs.modified=false
+    dirty  build	vcs.revision=9b6956ad84609c4a498f2bad7394f1b6e910480d
+    dirty  build	vcs.time=2026-08-24T20:17:38Z
+    dirty  build	vcs.modified=true
+
+vcs.modified=true is one byte SHORTER than =false, yet the file is 32 B LARGER:
+the buildinfo blob sits before section padding, so a one-byte shift can cross an
+alignment boundary. Whether it does depends on the tag set, which is why six of
+the seven leg-A builds are insensitive to tree dirt and one is not.
+
+restore check:
+    (no DIRTY line above == the probe file was removed)

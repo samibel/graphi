@@ -1,0 +1,6711 @@
+{
+  "header": {
+    "timestamp": "2026-08-24T19:29:17Z",
+    "version": "0.0.0-dev",
+    "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+    "os": "darwin",
+    "arch": "arm64",
+    "corpus_version": 3
+  },
+  "runner_class": "local-sandbox",
+  "runner_role": "comparison",
+  "reference_scenario": false,
+  "scenario_source": "docs/eval/reference-scenario.json",
+  "notes": "in-process session model: engine services over one open SQLite store; cold index timed around IngestAll; index and post-stable-suite peak RSS = getrusage MAXRSS; deterministic degree-stratified symbol sample, published verbatim in query_latency.symbol_sample; all 12 stable operations covered with an explicit operation-to-class mapping; warm p50 AND p95 pooled per op class over the recorded warm_ops/warm_samples, with every individual measurement retained in query_latency.operations[].samples_us; the cold index is watched for silence through the shipped ingest progress hook — see `stalls`, which is present on every run and reads FAIL when the index emitted no progress",
+  "repo": {
+    "name": "grpc-go",
+    "ref": "v1.60.1",
+    "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+    "tier": 3,
+    "clone_ms": 2264,
+    "index": {
+      "wallclock_ms": 11214,
+      "peak_rss_mb": 638,
+      "db_size_bytes": 29556736,
+      "nodes": 14920,
+      "edges": 82942,
+      "files": 919
+    },
+    "cold": {
+      "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-01/grpc-go.db",
+      "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-01/grpc-go-meta",
+      "store_preexisting": false,
+      "meta_preexisting": false,
+      "page_cache": "not_dropped",
+      "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+      "drop_required": false,
+      "verified": true
+    },
+    "warm_p95_us": {
+      "agent_tools": 320637,
+      "search": 2784,
+      "structural": 342
+    },
+    "warm_p95_us_per_op": {
+      "agent_brief": 320926,
+      "callees": 127,
+      "callers": 84,
+      "change_risk": 1669,
+      "definition": 55,
+      "explain_symbol": 1566,
+      "impact": 14002,
+      "neighborhood": 254,
+      "references": 44,
+      "related_files": 1787,
+      "search": 2784
+    },
+    "warm_p50_us": {
+      "agent_tools": 148,
+      "search": 349,
+      "structural": 55
+    },
+    "warm_p50_us_per_op": {
+      "agent_brief": 320637,
+      "callees": 60,
+      "callers": 41,
+      "change_risk": 107,
+      "definition": 54,
+      "explain_symbol": 154,
+      "impact": 78,
+      "neighborhood": 109,
+      "references": 37,
+      "related_files": 132,
+      "search": 349
+    },
+    "warm_samples": {
+      "agent_tools": 33,
+      "search": 40,
+      "structural": 150
+    },
+    "warm_ops": {
+      "agent_tools": [
+        "agent_brief",
+        "change_risk",
+        "explain_symbol",
+        "related_files"
+      ],
+      "search": [
+        "search"
+      ],
+      "structural": [
+        "callees",
+        "callers",
+        "definition",
+        "impact",
+        "neighborhood",
+        "references"
+      ]
+    },
+    "query_latency": {
+      "repo": "grpc-go",
+      "minimum_executions_per_class": 1000,
+      "requested_executions_per_class": 0,
+      "total_executions": 223,
+      "class_of": {
+        "agent_brief": "agent_tools",
+        "callees": "structural",
+        "callers": "structural",
+        "change_risk": "agent_tools",
+        "definition": "structural",
+        "explain_symbol": "agent_tools",
+        "impact": "structural",
+        "index": "lifecycle",
+        "neighborhood": "structural",
+        "references": "structural",
+        "related_files": "agent_tools",
+        "search": "search"
+      },
+      "stable_operations": [
+        "agent_brief",
+        "callees",
+        "callers",
+        "change_risk",
+        "definition",
+        "explain_symbol",
+        "impact",
+        "index",
+        "neighborhood",
+        "references",
+        "related_files",
+        "search"
+      ],
+      "operations": [
+        {
+          "operation": "agent_brief",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 3,
+            "min_us": 319873,
+            "p50_us": 320637,
+            "p95_us": 320926,
+            "max_us": 320926
+          },
+          "samples_us": [
+            320637,
+            319873,
+            320926
+          ]
+        },
+        {
+          "operation": "callees",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 40,
+            "p50_us": 60,
+            "p95_us": 127,
+            "max_us": 129
+          },
+          "samples_us": [
+            44,
+            127,
+            111,
+            129,
+            91,
+            93,
+            108,
+            61,
+            60,
+            73,
+            71,
+            59,
+            56,
+            71,
+            59,
+            40,
+            72,
+            59,
+            72,
+            55,
+            48,
+            50,
+            40,
+            48,
+            51
+          ]
+        },
+        {
+          "operation": "callers",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 38,
+            "p50_us": 41,
+            "p95_us": 84,
+            "max_us": 1567
+          },
+          "samples_us": [
+            1567,
+            45,
+            41,
+            77,
+            41,
+            70,
+            40,
+            39,
+            84,
+            41,
+            39,
+            76,
+            56,
+            54,
+            39,
+            39,
+            39,
+            39,
+            39,
+            38,
+            39,
+            55,
+            39,
+            55,
+            39
+          ]
+        },
+        {
+          "operation": "change_risk",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 77,
+            "p50_us": 107,
+            "p95_us": 1669,
+            "max_us": 1669
+          },
+          "samples_us": [
+            1669,
+            142,
+            121,
+            120,
+            108,
+            107,
+            87,
+            83,
+            103,
+            77
+          ]
+        },
+        {
+          "operation": "definition",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 52,
+            "p50_us": 54,
+            "p95_us": 55,
+            "max_us": 64
+          },
+          "samples_us": [
+            54,
+            53,
+            54,
+            54,
+            52,
+            52,
+            52,
+            53,
+            53,
+            53,
+            54,
+            54,
+            54,
+            54,
+            53,
+            54,
+            55,
+            55,
+            54,
+            55,
+            54,
+            55,
+            55,
+            54,
+            64
+          ]
+        },
+        {
+          "operation": "explain_symbol",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 108,
+            "p50_us": 154,
+            "p95_us": 1566,
+            "max_us": 1566
+          },
+          "samples_us": [
+            1566,
+            154,
+            164,
+            206,
+            148,
+            171,
+            154,
+            108,
+            156,
+            124
+          ]
+        },
+        {
+          "operation": "impact",
+          "class": "structural",
+          "measured": true,
+          "gated_by": [
+            "caller_callee_impact_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 75,
+            "p50_us": 78,
+            "p95_us": 14002,
+            "max_us": 27071
+          },
+          "samples_us": [
+            27071,
+            87,
+            76,
+            224,
+            85,
+            1139,
+            78,
+            75,
+            14002,
+            78,
+            76,
+            342,
+            146,
+            437,
+            75,
+            75,
+            76,
+            75,
+            75,
+            75,
+            75,
+            687,
+            75,
+            215,
+            75
+          ]
+        },
+        {
+          "operation": "index",
+          "class": "lifecycle",
+          "measured": false,
+          "warmup_executions": 0,
+          "note": "lifecycle-only: `index` is the ingest lifecycle operation, not a query. Its cost is the cold-index wallclock measured by SW-124, so it carries no query-latency samples, no 1000-execution floor and no PRD §12.2 query gate. It is listed here so all twelve stable operations are visibly accounted for."
+        },
+        {
+          "operation": "neighborhood",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 81,
+            "p50_us": 109,
+            "p95_us": 254,
+            "max_us": 1779
+          },
+          "samples_us": [
+            1779,
+            254,
+            225,
+            180,
+            165,
+            144,
+            147,
+            153,
+            125,
+            112,
+            108,
+            109,
+            101,
+            117,
+            101,
+            97,
+            109,
+            100,
+            89,
+            96,
+            89,
+            88,
+            83,
+            81,
+            83
+          ]
+        },
+        {
+          "operation": "references",
+          "class": "structural",
+          "measured": true,
+          "warmup_executions": 1,
+          "latency": {
+            "n": 25,
+            "min_us": 36,
+            "p50_us": 37,
+            "p95_us": 44,
+            "max_us": 45
+          },
+          "samples_us": [
+            37,
+            37,
+            37,
+            37,
+            37,
+            37,
+            41,
+            42,
+            36,
+            43,
+            37,
+            39,
+            45,
+            42,
+            38,
+            36,
+            37,
+            37,
+            42,
+            37,
+            37,
+            36,
+            37,
+            36,
+            44
+          ]
+        },
+        {
+          "operation": "related_files",
+          "class": "agent_tools",
+          "measured": true,
+          "gated_by": [
+            "agent_context_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 10,
+            "min_us": 93,
+            "p50_us": 132,
+            "p95_us": 1787,
+            "max_us": 1787
+          },
+          "samples_us": [
+            1787,
+            257,
+            198,
+            174,
+            152,
+            132,
+            123,
+            112,
+            109,
+            93
+          ]
+        },
+        {
+          "operation": "search",
+          "class": "search",
+          "measured": true,
+          "gated_by": [
+            "warm_search_p95"
+          ],
+          "warmup_executions": 1,
+          "latency": {
+            "n": 40,
+            "min_us": 302,
+            "p50_us": 349,
+            "p95_us": 2784,
+            "max_us": 2904
+          },
+          "samples_us": [
+            302,
+            2866,
+            322,
+            2784,
+            333,
+            2740,
+            319,
+            2734,
+            312,
+            2716,
+            315,
+            2708,
+            313,
+            2691,
+            314,
+            2704,
+            310,
+            2724,
+            344,
+            2661,
+            323,
+            2744,
+            319,
+            2709,
+            314,
+            2703,
+            311,
+            2705,
+            318,
+            2715,
+            317,
+            2704,
+            310,
+            2707,
+            310,
+            2711,
+            316,
+            2904,
+            349,
+            2758
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 77,
+          "p50_us": 148,
+          "p95_us": 320637,
+          "max_us": 320926
+        },
+        {
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 302,
+          "p50_us": 349,
+          "p95_us": 2784,
+          "max_us": 2904
+        },
+        {
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "definition",
+            "impact",
+            "neighborhood",
+            "references"
+          ],
+          "executions": 150,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 150,
+          "min_us": 36,
+          "p50_us": 55,
+          "p95_us": 342,
+          "max_us": 27071
+        }
+      ],
+      "pools": [
+        {
+          "gate_id": "agent_context_p95",
+          "class": "agent_tools",
+          "operations": [
+            "agent_brief",
+            "change_risk",
+            "explain_symbol",
+            "related_files"
+          ],
+          "executions": 33,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 33,
+          "min_us": 77,
+          "p50_us": 148,
+          "p95_us": 320637,
+          "max_us": 320926
+        },
+        {
+          "gate_id": "caller_callee_impact_p95",
+          "class": "structural",
+          "operations": [
+            "callees",
+            "callers",
+            "impact"
+          ],
+          "executions": 75,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 75,
+          "min_us": 38,
+          "p50_us": 72,
+          "p95_us": 1139,
+          "max_us": 27071
+        },
+        {
+          "gate_id": "warm_search_p95",
+          "class": "search",
+          "operations": [
+            "search"
+          ],
+          "executions": 40,
+          "minimum": 1000,
+          "sufficient": false,
+          "n": 40,
+          "min_us": 302,
+          "p50_us": 349,
+          "p95_us": 2784,
+          "max_us": 2904
+        }
+      ],
+      "symbol_sample": {
+        "requested": 25,
+        "returned": 25,
+        "method": "core/graphstore DegreeSamplePort.DegreeStratifiedSymbols over the indexed store: candidates are the function and method nodes, ordered by incident degree DESC then node id ASC, one picked per quantile bucket. That is a total order over a fixed graph, so the same graph yields the same ordered sample; the structural operations walk this list in order and the agent-context operations take its first agent_symbols entries.",
+        "digest": "0fc95b88a753f422487801a37653c06455833308467841ee190f972b65943510",
+        "symbol_ids": [
+          "669df777c13a3dea",
+          "d28957c960ee5987",
+          "2c7ed3ea221f9117",
+          "a254b0c5046894e0",
+          "cf8049f447c87bbf",
+          "08ab3fd407d7fe25",
+          "d80646cb592fa843",
+          "2439a5cb4e70900b",
+          "4cb9f17271701618",
+          "3b1f2d101278aab6",
+          "19597d5bdde3cbe2",
+          "b86f6cc3d47ba937",
+          "3de8680619fb41d7",
+          "bcbdcba831160f33",
+          "3f7fd6aae6f560c6",
+          "cecfea69de95b3a3",
+          "267c56c8897bc97c",
+          "5d89e4078d6622fc",
+          "91abb640cc9c9e90",
+          "c48d8d80c3184dc8",
+          "f9e7678ca448446e",
+          "368adf2c6446588c",
+          "73c8833bc9f3744a",
+          "bb91287cfc5dda3a",
+          "f9c28533ac789c9a"
+        ],
+        "agent_symbols": 10
+      },
+      "sufficient": false,
+      "gates": [
+        {
+          "id": "warm_search_p95",
+          "prd_metric": "Warm Search p95 (PRD 12.2)",
+          "threshold": 100,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.warm_search_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "caller_callee_impact_p95",
+          "prd_metric": "Caller/Callee/Impact p95 (PRD 12.2)",
+          "threshold": 200,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.caller_callee_impact_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        },
+        {
+          "id": "agent_context_p95",
+          "prd_metric": "Agent Context p95 (PRD 12.2)",
+          "threshold": 500,
+          "unit": "ms",
+          "comparison": "lte",
+          "aggregate": "query_latency.pools.agent_context_p95.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "warnings": [
+        "class agent_tools ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class search ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "class structural ran 150 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool agent_context_p95 ran 33 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool caller_callee_impact_p95 ran 75 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS",
+        "gate pool warm_search_p95 ran 40 timed executions, below FR-8's floor of 1000: every gate read over it is UNKNOWN, not PASS"
+      ],
+      "status": "UNKNOWN",
+      "timing_method": "The timed region contains the operation invocation and NOTHING else. Clone, index, store open, engine construction and the symbol sample all happen before any measurement; per-execution argument assembly (choosing the symbol or query for execution i, building the argument map) happens in an UNTIMED prepare step; and each operation runs warmup_executions untimed invocations before the first timed one. Warmup measurements are discarded, never pooled. Latency is time.Since around the invocation, recorded in microseconds.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained per-execution samples, ascending — the same implementation the cold series uses, so p50 and p95 cannot disagree about even sample counts. A class statistic pools its operations' samples; a pool statistic pools exactly the operations the SW-123 contract assigns to that gate. Every value here is reproducible from `operations[].samples_us` with evalreport.RecomputeQueryLatency.",
+      "notes": "SW-125 query-latency measurement: warm operations over ONE open store in the session model, driven through a deterministic degree-stratified symbol sample that is published verbatim so two runs are comparable. FR-8's floor is minimum_executions_per_class; a class below it is marked sufficient=false and every gate read over it is UNKNOWN, never PASS (PRD §8.2). No gate is read at all unless the run is the reference scenario on the reference class and from the frozen candidate."
+    },
+    "stalls": {
+      "repo": "grpc-go",
+      "events_observed": 1088,
+      "minimum_events": 2,
+      "observable": true,
+      "index_wallclock_us": 11214176,
+      "lead_in_us": 78,
+      "lead_in_measured": true,
+      "tail_us": 0,
+      "tail_measured": true,
+      "heartbeat_mode": "non-tty",
+      "stalls": {
+        "n": 1087,
+        "min_us": 0,
+        "p50_us": 89,
+        "p95_us": 1316,
+        "max_us": 8333716
+      },
+      "per_phase": [
+        {
+          "phase": "checkpoint",
+          "stats": {
+            "n": 1,
+            "min_us": 966599,
+            "p50_us": 966599,
+            "p95_us": 966599,
+            "max_us": 966599
+          }
+        },
+        {
+          "phase": "done",
+          "stats": {
+            "n": 1,
+            "min_us": 84588,
+            "p50_us": 84588,
+            "p95_us": 84588,
+            "max_us": 84588
+          }
+        },
+        {
+          "phase": "fts",
+          "stats": {
+            "n": 1,
+            "min_us": 19546,
+            "p50_us": 19546,
+            "p95_us": 19546,
+            "max_us": 19546
+          }
+        },
+        {
+          "phase": "link",
+          "stats": {
+            "n": 15,
+            "min_us": 23605,
+            "p50_us": 60389,
+            "p95_us": 464488,
+            "max_us": 464488
+          }
+        },
+        {
+          "phase": "parse",
+          "stats": {
+            "n": 1050,
+            "min_us": 0,
+            "p50_us": 80,
+            "p95_us": 825,
+            "max_us": 8333716
+          }
+        },
+        {
+          "phase": "resolve",
+          "stats": {
+            "n": 2,
+            "min_us": 0,
+            "p50_us": 0,
+            "p95_us": 38212,
+            "max_us": 38212
+          }
+        },
+        {
+          "phase": "walk",
+          "stats": {
+            "n": 16,
+            "min_us": 7277,
+            "p50_us": 13166,
+            "p95_us": 22280,
+            "max_us": 22280
+          }
+        },
+        {
+          "phase": "write",
+          "stats": {
+            "n": 1,
+            "min_us": 717,
+            "p50_us": 717,
+            "p95_us": 717,
+            "max_us": 717
+          }
+        }
+      ],
+      "intervals": [
+        {
+          "seq": 1,
+          "phase": "walk",
+          "us": 7277
+        },
+        {
+          "seq": 2,
+          "phase": "walk",
+          "us": 12733
+        },
+        {
+          "seq": 3,
+          "phase": "walk",
+          "us": 13166
+        },
+        {
+          "seq": 4,
+          "phase": "walk",
+          "us": 15747
+        },
+        {
+          "seq": 5,
+          "phase": "walk",
+          "us": 22280
+        },
+        {
+          "seq": 6,
+          "phase": "walk",
+          "us": 11808
+        },
+        {
+          "seq": 7,
+          "phase": "walk",
+          "us": 10836
+        },
+        {
+          "seq": 8,
+          "phase": "walk",
+          "us": 13264
+        },
+        {
+          "seq": 9,
+          "phase": "walk",
+          "us": 14211
+        },
+        {
+          "seq": 10,
+          "phase": "walk",
+          "us": 10791
+        },
+        {
+          "seq": 11,
+          "phase": "walk",
+          "us": 15927
+        },
+        {
+          "seq": 12,
+          "phase": "walk",
+          "us": 11126
+        },
+        {
+          "seq": 13,
+          "phase": "walk",
+          "us": 7521
+        },
+        {
+          "seq": 14,
+          "phase": "walk",
+          "us": 15103
+        },
+        {
+          "seq": 15,
+          "phase": "walk",
+          "us": 19518
+        },
+        {
+          "seq": 16,
+          "phase": "walk",
+          "us": 18445
+        },
+        {
+          "seq": 17,
+          "phase": "parse",
+          "us": 7166
+        },
+        {
+          "seq": 18,
+          "phase": "parse",
+          "us": 1360
+        },
+        {
+          "seq": 19,
+          "phase": "parse",
+          "us": 339
+        },
+        {
+          "seq": 20,
+          "phase": "parse",
+          "us": 385
+        },
+        {
+          "seq": 21,
+          "phase": "parse",
+          "us": 761
+        },
+        {
+          "seq": 22,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 23,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 24,
+          "phase": "parse",
+          "us": 550
+        },
+        {
+          "seq": 25,
+          "phase": "parse",
+          "us": 837
+        },
+        {
+          "seq": 26,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 27,
+          "phase": "parse",
+          "us": 666
+        },
+        {
+          "seq": 28,
+          "phase": "parse",
+          "us": 944
+        },
+        {
+          "seq": 29,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 30,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 31,
+          "phase": "parse",
+          "us": 2794
+        },
+        {
+          "seq": 32,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 33,
+          "phase": "parse",
+          "us": 1786
+        },
+        {
+          "seq": 34,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 35,
+          "phase": "parse",
+          "us": 975
+        },
+        {
+          "seq": 36,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 37,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 38,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 39,
+          "phase": "parse",
+          "us": 470
+        },
+        {
+          "seq": 40,
+          "phase": "parse",
+          "us": 630
+        },
+        {
+          "seq": 41,
+          "phase": "parse",
+          "us": 311
+        },
+        {
+          "seq": 42,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 43,
+          "phase": "parse",
+          "us": 193
+        },
+        {
+          "seq": 44,
+          "phase": "parse",
+          "us": 620
+        },
+        {
+          "seq": 45,
+          "phase": "parse",
+          "us": 145
+        },
+        {
+          "seq": 46,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 47,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 48,
+          "phase": "parse",
+          "us": 481
+        },
+        {
+          "seq": 49,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 50,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 51,
+          "phase": "parse",
+          "us": 233
+        },
+        {
+          "seq": 52,
+          "phase": "parse",
+          "us": 409
+        },
+        {
+          "seq": 53,
+          "phase": "parse",
+          "us": 1236
+        },
+        {
+          "seq": 54,
+          "phase": "parse",
+          "us": 1122
+        },
+        {
+          "seq": 55,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 56,
+          "phase": "parse",
+          "us": 793
+        },
+        {
+          "seq": 57,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 58,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 59,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 60,
+          "phase": "parse",
+          "us": 1252
+        },
+        {
+          "seq": 61,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 62,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 63,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 64,
+          "phase": "parse",
+          "us": 258
+        },
+        {
+          "seq": 65,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 66,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 67,
+          "phase": "parse",
+          "us": 420
+        },
+        {
+          "seq": 68,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 69,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 70,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 71,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 72,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 73,
+          "phase": "parse",
+          "us": 491
+        },
+        {
+          "seq": 74,
+          "phase": "parse",
+          "us": 214
+        },
+        {
+          "seq": 75,
+          "phase": "parse",
+          "us": 408
+        },
+        {
+          "seq": 76,
+          "phase": "parse",
+          "us": 408
+        },
+        {
+          "seq": 77,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 78,
+          "phase": "parse",
+          "us": 246
+        },
+        {
+          "seq": 79,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 80,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 81,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 82,
+          "phase": "parse",
+          "us": 308
+        },
+        {
+          "seq": 83,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 84,
+          "phase": "parse",
+          "us": 404
+        },
+        {
+          "seq": 85,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 86,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 87,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 88,
+          "phase": "parse",
+          "us": 1643
+        },
+        {
+          "seq": 89,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 90,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 91,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 92,
+          "phase": "parse",
+          "us": 317
+        },
+        {
+          "seq": 93,
+          "phase": "parse",
+          "us": 144
+        },
+        {
+          "seq": 94,
+          "phase": "parse",
+          "us": 933
+        },
+        {
+          "seq": 95,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 96,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 97,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 98,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 99,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 100,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 101,
+          "phase": "parse",
+          "us": 120
+        },
+        {
+          "seq": 102,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 103,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 104,
+          "phase": "parse",
+          "us": 271
+        },
+        {
+          "seq": 105,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 106,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 107,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 108,
+          "phase": "parse",
+          "us": 246
+        },
+        {
+          "seq": 109,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 110,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 111,
+          "phase": "parse",
+          "us": 119
+        },
+        {
+          "seq": 112,
+          "phase": "parse",
+          "us": 855
+        },
+        {
+          "seq": 113,
+          "phase": "parse",
+          "us": 83
+        },
+        {
+          "seq": 114,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 115,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 116,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 117,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 118,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 119,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 120,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 121,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 122,
+          "phase": "parse",
+          "us": 680
+        },
+        {
+          "seq": 123,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 124,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 125,
+          "phase": "parse",
+          "us": 257
+        },
+        {
+          "seq": 126,
+          "phase": "parse",
+          "us": 236
+        },
+        {
+          "seq": 127,
+          "phase": "parse",
+          "us": 169
+        },
+        {
+          "seq": 128,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 129,
+          "phase": "parse",
+          "us": 1034
+        },
+        {
+          "seq": 130,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 131,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 132,
+          "phase": "parse",
+          "us": 368
+        },
+        {
+          "seq": 133,
+          "phase": "parse",
+          "us": 130
+        },
+        {
+          "seq": 134,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 135,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 136,
+          "phase": "parse",
+          "us": 846
+        },
+        {
+          "seq": 137,
+          "phase": "parse",
+          "us": 260
+        },
+        {
+          "seq": 138,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 139,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 140,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 141,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 142,
+          "phase": "parse",
+          "us": 134
+        },
+        {
+          "seq": 143,
+          "phase": "parse",
+          "us": 360
+        },
+        {
+          "seq": 144,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 145,
+          "phase": "parse",
+          "us": 445
+        },
+        {
+          "seq": 146,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 147,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 148,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 149,
+          "phase": "parse",
+          "us": 861
+        },
+        {
+          "seq": 150,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 151,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 152,
+          "phase": "parse",
+          "us": 194
+        },
+        {
+          "seq": 153,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 154,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 155,
+          "phase": "parse",
+          "us": 410
+        },
+        {
+          "seq": 156,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 157,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 158,
+          "phase": "parse",
+          "us": 201
+        },
+        {
+          "seq": 159,
+          "phase": "parse",
+          "us": 161
+        },
+        {
+          "seq": 160,
+          "phase": "parse",
+          "us": 924
+        },
+        {
+          "seq": 161,
+          "phase": "parse",
+          "us": 228
+        },
+        {
+          "seq": 162,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 163,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 164,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 165,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 166,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 167,
+          "phase": "parse",
+          "us": 2314
+        },
+        {
+          "seq": 168,
+          "phase": "parse",
+          "us": 1343
+        },
+        {
+          "seq": 169,
+          "phase": "parse",
+          "us": 738
+        },
+        {
+          "seq": 170,
+          "phase": "parse",
+          "us": 697
+        },
+        {
+          "seq": 171,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 172,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 173,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 174,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 175,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 176,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 177,
+          "phase": "parse",
+          "us": 373
+        },
+        {
+          "seq": 178,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 179,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 180,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 181,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 182,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 183,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 184,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 185,
+          "phase": "parse",
+          "us": 118
+        },
+        {
+          "seq": 186,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 187,
+          "phase": "parse",
+          "us": 572
+        },
+        {
+          "seq": 188,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 189,
+          "phase": "parse",
+          "us": 328
+        },
+        {
+          "seq": 190,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 191,
+          "phase": "parse",
+          "us": 172
+        },
+        {
+          "seq": 192,
+          "phase": "parse",
+          "us": 261
+        },
+        {
+          "seq": 193,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 194,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 195,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 196,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 197,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 198,
+          "phase": "parse",
+          "us": 266
+        },
+        {
+          "seq": 199,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 200,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 201,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 202,
+          "phase": "parse",
+          "us": 212
+        },
+        {
+          "seq": 203,
+          "phase": "parse",
+          "us": 148
+        },
+        {
+          "seq": 204,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 205,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 206,
+          "phase": "parse",
+          "us": 110
+        },
+        {
+          "seq": 207,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 208,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 209,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 210,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 211,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 212,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 213,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 214,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 215,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 216,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 217,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 218,
+          "phase": "parse",
+          "us": 314
+        },
+        {
+          "seq": 219,
+          "phase": "parse",
+          "us": 232
+        },
+        {
+          "seq": 220,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 221,
+          "phase": "parse",
+          "us": 223
+        },
+        {
+          "seq": 222,
+          "phase": "parse",
+          "us": 96
+        },
+        {
+          "seq": 223,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 224,
+          "phase": "parse",
+          "us": 451
+        },
+        {
+          "seq": 225,
+          "phase": "parse",
+          "us": 379
+        },
+        {
+          "seq": 226,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 227,
+          "phase": "parse",
+          "us": 178
+        },
+        {
+          "seq": 228,
+          "phase": "parse",
+          "us": 343
+        },
+        {
+          "seq": 229,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 230,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 231,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 232,
+          "phase": "parse",
+          "us": 483
+        },
+        {
+          "seq": 233,
+          "phase": "parse",
+          "us": 471
+        },
+        {
+          "seq": 234,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 235,
+          "phase": "parse",
+          "us": 189
+        },
+        {
+          "seq": 236,
+          "phase": "parse",
+          "us": 357
+        },
+        {
+          "seq": 237,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 238,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 239,
+          "phase": "parse",
+          "us": 97
+        },
+        {
+          "seq": 240,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 241,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 242,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 243,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 244,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 245,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 246,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 247,
+          "phase": "parse",
+          "us": 673
+        },
+        {
+          "seq": 248,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 249,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 250,
+          "phase": "parse",
+          "us": 113
+        },
+        {
+          "seq": 251,
+          "phase": "parse",
+          "us": 329
+        },
+        {
+          "seq": 252,
+          "phase": "parse",
+          "us": 286
+        },
+        {
+          "seq": 253,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 254,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 255,
+          "phase": "parse",
+          "us": 68
+        },
+        {
+          "seq": 256,
+          "phase": "parse",
+          "us": 147
+        },
+        {
+          "seq": 257,
+          "phase": "parse",
+          "us": 319
+        },
+        {
+          "seq": 258,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 259,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 260,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 261,
+          "phase": "parse",
+          "us": 284
+        },
+        {
+          "seq": 262,
+          "phase": "parse",
+          "us": 333
+        },
+        {
+          "seq": 263,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 264,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 265,
+          "phase": "parse",
+          "us": 585
+        },
+        {
+          "seq": 266,
+          "phase": "parse",
+          "us": 237
+        },
+        {
+          "seq": 267,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 268,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 269,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 270,
+          "phase": "parse",
+          "us": 672
+        },
+        {
+          "seq": 271,
+          "phase": "parse",
+          "us": 44
+        },
+        {
+          "seq": 272,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 273,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 274,
+          "phase": "parse",
+          "us": 591
+        },
+        {
+          "seq": 275,
+          "phase": "parse",
+          "us": 491
+        },
+        {
+          "seq": 276,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 277,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 278,
+          "phase": "parse",
+          "us": 454
+        },
+        {
+          "seq": 279,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 280,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 281,
+          "phase": "parse",
+          "us": 233
+        },
+        {
+          "seq": 282,
+          "phase": "parse",
+          "us": 549
+        },
+        {
+          "seq": 283,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 284,
+          "phase": "parse",
+          "us": 209
+        },
+        {
+          "seq": 285,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 286,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 287,
+          "phase": "parse",
+          "us": 1072
+        },
+        {
+          "seq": 288,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 289,
+          "phase": "parse",
+          "us": 615
+        },
+        {
+          "seq": 290,
+          "phase": "parse",
+          "us": 118
+        },
+        {
+          "seq": 291,
+          "phase": "parse",
+          "us": 816
+        },
+        {
+          "seq": 292,
+          "phase": "parse",
+          "us": 852
+        },
+        {
+          "seq": 293,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 294,
+          "phase": "parse",
+          "us": 919
+        },
+        {
+          "seq": 295,
+          "phase": "parse",
+          "us": 335
+        },
+        {
+          "seq": 296,
+          "phase": "parse",
+          "us": 339
+        },
+        {
+          "seq": 297,
+          "phase": "parse",
+          "us": 164
+        },
+        {
+          "seq": 298,
+          "phase": "parse",
+          "us": 526
+        },
+        {
+          "seq": 299,
+          "phase": "parse",
+          "us": 2084
+        },
+        {
+          "seq": 300,
+          "phase": "parse",
+          "us": 1156
+        },
+        {
+          "seq": 301,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 302,
+          "phase": "parse",
+          "us": 134
+        },
+        {
+          "seq": 303,
+          "phase": "parse",
+          "us": 232
+        },
+        {
+          "seq": 304,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 305,
+          "phase": "parse",
+          "us": 224
+        },
+        {
+          "seq": 306,
+          "phase": "parse",
+          "us": 1453
+        },
+        {
+          "seq": 307,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 308,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 309,
+          "phase": "parse",
+          "us": 814
+        },
+        {
+          "seq": 310,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 311,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 312,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 313,
+          "phase": "parse",
+          "us": 724
+        },
+        {
+          "seq": 314,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 315,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 316,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 317,
+          "phase": "parse",
+          "us": 511
+        },
+        {
+          "seq": 318,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 319,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 320,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 321,
+          "phase": "parse",
+          "us": 475
+        },
+        {
+          "seq": 322,
+          "phase": "parse",
+          "us": 440
+        },
+        {
+          "seq": 323,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 324,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 325,
+          "phase": "parse",
+          "us": 303
+        },
+        {
+          "seq": 326,
+          "phase": "parse",
+          "us": 102
+        },
+        {
+          "seq": 327,
+          "phase": "parse",
+          "us": 309
+        },
+        {
+          "seq": 328,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 329,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 330,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 331,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 332,
+          "phase": "parse",
+          "us": 321
+        },
+        {
+          "seq": 333,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 334,
+          "phase": "parse",
+          "us": 477
+        },
+        {
+          "seq": 335,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 336,
+          "phase": "parse",
+          "us": 401
+        },
+        {
+          "seq": 337,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 338,
+          "phase": "parse",
+          "us": 431
+        },
+        {
+          "seq": 339,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 340,
+          "phase": "parse",
+          "us": 193
+        },
+        {
+          "seq": 341,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 342,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 343,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 344,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 345,
+          "phase": "parse",
+          "us": 606
+        },
+        {
+          "seq": 346,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 347,
+          "phase": "parse",
+          "us": 215
+        },
+        {
+          "seq": 348,
+          "phase": "parse",
+          "us": 269
+        },
+        {
+          "seq": 349,
+          "phase": "parse",
+          "us": 45
+        },
+        {
+          "seq": 350,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 351,
+          "phase": "parse",
+          "us": 292
+        },
+        {
+          "seq": 352,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 353,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 354,
+          "phase": "parse",
+          "us": 92
+        },
+        {
+          "seq": 355,
+          "phase": "parse",
+          "us": 48
+        },
+        {
+          "seq": 356,
+          "phase": "parse",
+          "us": 248
+        },
+        {
+          "seq": 357,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 358,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 359,
+          "phase": "parse",
+          "us": 235
+        },
+        {
+          "seq": 360,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 361,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 362,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 363,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 364,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 365,
+          "phase": "parse",
+          "us": 260
+        },
+        {
+          "seq": 366,
+          "phase": "parse",
+          "us": 326
+        },
+        {
+          "seq": 367,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 368,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 369,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 370,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 371,
+          "phase": "parse",
+          "us": 63
+        },
+        {
+          "seq": 372,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 373,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 374,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 375,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 376,
+          "phase": "parse",
+          "us": 746
+        },
+        {
+          "seq": 377,
+          "phase": "parse",
+          "us": 43
+        },
+        {
+          "seq": 378,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 379,
+          "phase": "parse",
+          "us": 397
+        },
+        {
+          "seq": 380,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 381,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 382,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 383,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 384,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 385,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 386,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 387,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 388,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 389,
+          "phase": "parse",
+          "us": 492
+        },
+        {
+          "seq": 390,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 391,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 392,
+          "phase": "parse",
+          "us": 201
+        },
+        {
+          "seq": 393,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 394,
+          "phase": "parse",
+          "us": 499
+        },
+        {
+          "seq": 395,
+          "phase": "parse",
+          "us": 150
+        },
+        {
+          "seq": 396,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 397,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 398,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 399,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 400,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 401,
+          "phase": "parse",
+          "us": 544
+        },
+        {
+          "seq": 402,
+          "phase": "parse",
+          "us": 239
+        },
+        {
+          "seq": 403,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 404,
+          "phase": "parse",
+          "us": 141
+        },
+        {
+          "seq": 405,
+          "phase": "parse",
+          "us": 485
+        },
+        {
+          "seq": 406,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 407,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 408,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 409,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 410,
+          "phase": "parse",
+          "us": 167
+        },
+        {
+          "seq": 411,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 412,
+          "phase": "parse",
+          "us": 374
+        },
+        {
+          "seq": 413,
+          "phase": "parse",
+          "us": 26
+        },
+        {
+          "seq": 414,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 415,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 416,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 417,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 418,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 419,
+          "phase": "parse",
+          "us": 94
+        },
+        {
+          "seq": 420,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 421,
+          "phase": "parse",
+          "us": 80
+        },
+        {
+          "seq": 422,
+          "phase": "parse",
+          "us": 252
+        },
+        {
+          "seq": 423,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 424,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 425,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 426,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 427,
+          "phase": "parse",
+          "us": 325
+        },
+        {
+          "seq": 428,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 429,
+          "phase": "parse",
+          "us": 111
+        },
+        {
+          "seq": 430,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 431,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 432,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 433,
+          "phase": "parse",
+          "us": 406
+        },
+        {
+          "seq": 434,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 435,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 436,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 437,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 438,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 439,
+          "phase": "parse",
+          "us": 340
+        },
+        {
+          "seq": 440,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 441,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 442,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 443,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 444,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 445,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 446,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 447,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 448,
+          "phase": "parse",
+          "us": 162
+        },
+        {
+          "seq": 449,
+          "phase": "parse",
+          "us": 213
+        },
+        {
+          "seq": 450,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 451,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 452,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 453,
+          "phase": "parse",
+          "us": 119
+        },
+        {
+          "seq": 454,
+          "phase": "parse",
+          "us": 217
+        },
+        {
+          "seq": 455,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 456,
+          "phase": "parse",
+          "us": 116
+        },
+        {
+          "seq": 457,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 458,
+          "phase": "parse",
+          "us": 291
+        },
+        {
+          "seq": 459,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 460,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 461,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 462,
+          "phase": "parse",
+          "us": 209
+        },
+        {
+          "seq": 463,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 464,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 465,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 466,
+          "phase": "parse",
+          "us": 237
+        },
+        {
+          "seq": 467,
+          "phase": "parse",
+          "us": 395
+        },
+        {
+          "seq": 468,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 469,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 470,
+          "phase": "parse",
+          "us": 691
+        },
+        {
+          "seq": 471,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 472,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 473,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 474,
+          "phase": "parse",
+          "us": 47
+        },
+        {
+          "seq": 475,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 476,
+          "phase": "parse",
+          "us": 131
+        },
+        {
+          "seq": 477,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 478,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 479,
+          "phase": "parse",
+          "us": 111
+        },
+        {
+          "seq": 480,
+          "phase": "parse",
+          "us": 131
+        },
+        {
+          "seq": 481,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 482,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 483,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 484,
+          "phase": "parse",
+          "us": 450
+        },
+        {
+          "seq": 485,
+          "phase": "parse",
+          "us": 124
+        },
+        {
+          "seq": 486,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 487,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 488,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 489,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 490,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 491,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 492,
+          "phase": "parse",
+          "us": 82
+        },
+        {
+          "seq": 493,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 494,
+          "phase": "parse",
+          "us": 181
+        },
+        {
+          "seq": 495,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 496,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 497,
+          "phase": "parse",
+          "us": 164
+        },
+        {
+          "seq": 498,
+          "phase": "parse",
+          "us": 85
+        },
+        {
+          "seq": 499,
+          "phase": "parse",
+          "us": 138
+        },
+        {
+          "seq": 500,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 501,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 502,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 503,
+          "phase": "parse",
+          "us": 200
+        },
+        {
+          "seq": 504,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 505,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 506,
+          "phase": "parse",
+          "us": 98
+        },
+        {
+          "seq": 507,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 508,
+          "phase": "parse",
+          "us": 353
+        },
+        {
+          "seq": 509,
+          "phase": "parse",
+          "us": 391
+        },
+        {
+          "seq": 510,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 511,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 512,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 513,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 514,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 515,
+          "phase": "parse",
+          "us": 31
+        },
+        {
+          "seq": 516,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 517,
+          "phase": "parse",
+          "us": 558
+        },
+        {
+          "seq": 518,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 519,
+          "phase": "parse",
+          "us": 104
+        },
+        {
+          "seq": 520,
+          "phase": "parse",
+          "us": 33
+        },
+        {
+          "seq": 521,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 522,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 523,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 524,
+          "phase": "parse",
+          "us": 622
+        },
+        {
+          "seq": 525,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 526,
+          "phase": "parse",
+          "us": 158
+        },
+        {
+          "seq": 527,
+          "phase": "parse",
+          "us": 55
+        },
+        {
+          "seq": 528,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 529,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 530,
+          "phase": "parse",
+          "us": 266
+        },
+        {
+          "seq": 531,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 532,
+          "phase": "parse",
+          "us": 145
+        },
+        {
+          "seq": 533,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 534,
+          "phase": "parse",
+          "us": 346
+        },
+        {
+          "seq": 535,
+          "phase": "parse",
+          "us": 213
+        },
+        {
+          "seq": 536,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 537,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 538,
+          "phase": "parse",
+          "us": 64
+        },
+        {
+          "seq": 539,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 540,
+          "phase": "parse",
+          "us": 386
+        },
+        {
+          "seq": 541,
+          "phase": "parse",
+          "us": 882
+        },
+        {
+          "seq": 542,
+          "phase": "parse",
+          "us": 1206
+        },
+        {
+          "seq": 543,
+          "phase": "parse",
+          "us": 498
+        },
+        {
+          "seq": 544,
+          "phase": "parse",
+          "us": 38
+        },
+        {
+          "seq": 545,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 546,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 547,
+          "phase": "parse",
+          "us": 301
+        },
+        {
+          "seq": 548,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 549,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 550,
+          "phase": "parse",
+          "us": 121
+        },
+        {
+          "seq": 551,
+          "phase": "parse",
+          "us": 140
+        },
+        {
+          "seq": 552,
+          "phase": "parse",
+          "us": 6194
+        },
+        {
+          "seq": 553,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 554,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 555,
+          "phase": "parse",
+          "us": 112
+        },
+        {
+          "seq": 556,
+          "phase": "parse",
+          "us": 114
+        },
+        {
+          "seq": 557,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 558,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 559,
+          "phase": "parse",
+          "us": 361
+        },
+        {
+          "seq": 560,
+          "phase": "parse",
+          "us": 128
+        },
+        {
+          "seq": 561,
+          "phase": "parse",
+          "us": 299
+        },
+        {
+          "seq": 562,
+          "phase": "parse",
+          "us": 375
+        },
+        {
+          "seq": 563,
+          "phase": "parse",
+          "us": 61
+        },
+        {
+          "seq": 564,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 565,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 566,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 567,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 568,
+          "phase": "parse",
+          "us": 111
+        },
+        {
+          "seq": 569,
+          "phase": "parse",
+          "us": 380
+        },
+        {
+          "seq": 570,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 571,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 572,
+          "phase": "parse",
+          "us": 785
+        },
+        {
+          "seq": 573,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 574,
+          "phase": "parse",
+          "us": 152
+        },
+        {
+          "seq": 575,
+          "phase": "parse",
+          "us": 413
+        },
+        {
+          "seq": 576,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 577,
+          "phase": "parse",
+          "us": 519
+        },
+        {
+          "seq": 578,
+          "phase": "parse",
+          "us": 203
+        },
+        {
+          "seq": 579,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 580,
+          "phase": "parse",
+          "us": 568
+        },
+        {
+          "seq": 581,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 582,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 583,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 584,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 585,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 586,
+          "phase": "parse",
+          "us": 828
+        },
+        {
+          "seq": 587,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 588,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 589,
+          "phase": "parse",
+          "us": 40
+        },
+        {
+          "seq": 590,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 591,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 592,
+          "phase": "parse",
+          "us": 241
+        },
+        {
+          "seq": 593,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 594,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 595,
+          "phase": "parse",
+          "us": 153
+        },
+        {
+          "seq": 596,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 597,
+          "phase": "parse",
+          "us": 71
+        },
+        {
+          "seq": 598,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 599,
+          "phase": "parse",
+          "us": 379
+        },
+        {
+          "seq": 600,
+          "phase": "parse",
+          "us": 398
+        },
+        {
+          "seq": 601,
+          "phase": "parse",
+          "us": 207
+        },
+        {
+          "seq": 602,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 603,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 604,
+          "phase": "parse",
+          "us": 228
+        },
+        {
+          "seq": 605,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 606,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 607,
+          "phase": "parse",
+          "us": 225
+        },
+        {
+          "seq": 608,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 609,
+          "phase": "parse",
+          "us": 391
+        },
+        {
+          "seq": 610,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 611,
+          "phase": "parse",
+          "us": 879
+        },
+        {
+          "seq": 612,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 613,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 614,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 615,
+          "phase": "parse",
+          "us": 66
+        },
+        {
+          "seq": 616,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 617,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 618,
+          "phase": "parse",
+          "us": 384
+        },
+        {
+          "seq": 619,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 620,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 621,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 622,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 623,
+          "phase": "parse",
+          "us": 112
+        },
+        {
+          "seq": 624,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 625,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 626,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 627,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 628,
+          "phase": "parse",
+          "us": 298
+        },
+        {
+          "seq": 629,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 630,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 631,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 632,
+          "phase": "parse",
+          "us": 57
+        },
+        {
+          "seq": 633,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 634,
+          "phase": "parse",
+          "us": 118
+        },
+        {
+          "seq": 635,
+          "phase": "parse",
+          "us": 376
+        },
+        {
+          "seq": 636,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 637,
+          "phase": "parse",
+          "us": 194
+        },
+        {
+          "seq": 638,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 639,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 640,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 641,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 642,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 643,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 644,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 645,
+          "phase": "parse",
+          "us": 269
+        },
+        {
+          "seq": 646,
+          "phase": "parse",
+          "us": 53
+        },
+        {
+          "seq": 647,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 648,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 649,
+          "phase": "parse",
+          "us": 86
+        },
+        {
+          "seq": 650,
+          "phase": "parse",
+          "us": 375
+        },
+        {
+          "seq": 651,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 652,
+          "phase": "parse",
+          "us": 217
+        },
+        {
+          "seq": 653,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 654,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 655,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 656,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 657,
+          "phase": "parse",
+          "us": 49
+        },
+        {
+          "seq": 658,
+          "phase": "parse",
+          "us": 186
+        },
+        {
+          "seq": 659,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 660,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 661,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 662,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 663,
+          "phase": "parse",
+          "us": 154
+        },
+        {
+          "seq": 664,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 665,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 666,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 667,
+          "phase": "parse",
+          "us": 233
+        },
+        {
+          "seq": 668,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 669,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 670,
+          "phase": "parse",
+          "us": 546
+        },
+        {
+          "seq": 671,
+          "phase": "parse",
+          "us": 285
+        },
+        {
+          "seq": 672,
+          "phase": "parse",
+          "us": 192
+        },
+        {
+          "seq": 673,
+          "phase": "parse",
+          "us": 72
+        },
+        {
+          "seq": 674,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 675,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 676,
+          "phase": "parse",
+          "us": 247
+        },
+        {
+          "seq": 677,
+          "phase": "parse",
+          "us": 584
+        },
+        {
+          "seq": 678,
+          "phase": "parse",
+          "us": 558
+        },
+        {
+          "seq": 679,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 680,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 681,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 682,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 683,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 684,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 685,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 686,
+          "phase": "parse",
+          "us": 348
+        },
+        {
+          "seq": 687,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 688,
+          "phase": "parse",
+          "us": 183
+        },
+        {
+          "seq": 689,
+          "phase": "parse",
+          "us": 104
+        },
+        {
+          "seq": 690,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 691,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 692,
+          "phase": "parse",
+          "us": 418
+        },
+        {
+          "seq": 693,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 694,
+          "phase": "parse",
+          "us": 424
+        },
+        {
+          "seq": 695,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 696,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 697,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 698,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 699,
+          "phase": "parse",
+          "us": 89
+        },
+        {
+          "seq": 700,
+          "phase": "parse",
+          "us": 439
+        },
+        {
+          "seq": 701,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 702,
+          "phase": "parse",
+          "us": 609
+        },
+        {
+          "seq": 703,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 704,
+          "phase": "parse",
+          "us": 195
+        },
+        {
+          "seq": 705,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 706,
+          "phase": "parse",
+          "us": 176
+        },
+        {
+          "seq": 707,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 708,
+          "phase": "parse",
+          "us": 460
+        },
+        {
+          "seq": 709,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 710,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 711,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 712,
+          "phase": "parse",
+          "us": 377
+        },
+        {
+          "seq": 713,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 714,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 715,
+          "phase": "parse",
+          "us": 159
+        },
+        {
+          "seq": 716,
+          "phase": "parse",
+          "us": 302
+        },
+        {
+          "seq": 717,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 718,
+          "phase": "parse",
+          "us": 154
+        },
+        {
+          "seq": 719,
+          "phase": "parse",
+          "us": 159
+        },
+        {
+          "seq": 720,
+          "phase": "parse",
+          "us": 241
+        },
+        {
+          "seq": 721,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 722,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 723,
+          "phase": "parse",
+          "us": 159
+        },
+        {
+          "seq": 724,
+          "phase": "parse",
+          "us": 291
+        },
+        {
+          "seq": 725,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 726,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 727,
+          "phase": "parse",
+          "us": 59
+        },
+        {
+          "seq": 728,
+          "phase": "parse",
+          "us": 244
+        },
+        {
+          "seq": 729,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 730,
+          "phase": "parse",
+          "us": 146
+        },
+        {
+          "seq": 731,
+          "phase": "parse",
+          "us": 140
+        },
+        {
+          "seq": 732,
+          "phase": "parse",
+          "us": 361
+        },
+        {
+          "seq": 733,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 734,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 735,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 736,
+          "phase": "parse",
+          "us": 395
+        },
+        {
+          "seq": 737,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 738,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 739,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 740,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 741,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 742,
+          "phase": "parse",
+          "us": 283
+        },
+        {
+          "seq": 743,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 744,
+          "phase": "parse",
+          "us": 165
+        },
+        {
+          "seq": 745,
+          "phase": "parse",
+          "us": 256
+        },
+        {
+          "seq": 746,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 747,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 748,
+          "phase": "parse",
+          "us": 208
+        },
+        {
+          "seq": 749,
+          "phase": "parse",
+          "us": 88
+        },
+        {
+          "seq": 750,
+          "phase": "parse",
+          "us": 109
+        },
+        {
+          "seq": 751,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 752,
+          "phase": "parse",
+          "us": 175
+        },
+        {
+          "seq": 753,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 754,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 755,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 756,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 757,
+          "phase": "parse",
+          "us": 1232
+        },
+        {
+          "seq": 758,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 759,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 760,
+          "phase": "parse",
+          "us": 455
+        },
+        {
+          "seq": 761,
+          "phase": "parse",
+          "us": 245
+        },
+        {
+          "seq": 762,
+          "phase": "parse",
+          "us": 287
+        },
+        {
+          "seq": 763,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 764,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 765,
+          "phase": "parse",
+          "us": 610
+        },
+        {
+          "seq": 766,
+          "phase": "parse",
+          "us": 127
+        },
+        {
+          "seq": 767,
+          "phase": "parse",
+          "us": 202
+        },
+        {
+          "seq": 768,
+          "phase": "parse",
+          "us": 2113
+        },
+        {
+          "seq": 769,
+          "phase": "parse",
+          "us": 809
+        },
+        {
+          "seq": 770,
+          "phase": "parse",
+          "us": 347
+        },
+        {
+          "seq": 771,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 772,
+          "phase": "parse",
+          "us": 191
+        },
+        {
+          "seq": 773,
+          "phase": "parse",
+          "us": 491
+        },
+        {
+          "seq": 774,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 775,
+          "phase": "parse",
+          "us": 771
+        },
+        {
+          "seq": 776,
+          "phase": "parse",
+          "us": 1414
+        },
+        {
+          "seq": 777,
+          "phase": "parse",
+          "us": 79
+        },
+        {
+          "seq": 778,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 779,
+          "phase": "parse",
+          "us": 819
+        },
+        {
+          "seq": 780,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 781,
+          "phase": "parse",
+          "us": 532
+        },
+        {
+          "seq": 782,
+          "phase": "parse",
+          "us": 2974
+        },
+        {
+          "seq": 783,
+          "phase": "parse",
+          "us": 1437
+        },
+        {
+          "seq": 784,
+          "phase": "parse",
+          "us": 151
+        },
+        {
+          "seq": 785,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 786,
+          "phase": "parse",
+          "us": 1082
+        },
+        {
+          "seq": 787,
+          "phase": "parse",
+          "us": 564
+        },
+        {
+          "seq": 788,
+          "phase": "parse",
+          "us": 719
+        },
+        {
+          "seq": 789,
+          "phase": "parse",
+          "us": 186
+        },
+        {
+          "seq": 790,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 791,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 792,
+          "phase": "parse",
+          "us": 160
+        },
+        {
+          "seq": 793,
+          "phase": "parse",
+          "us": 986
+        },
+        {
+          "seq": 794,
+          "phase": "parse",
+          "us": 213
+        },
+        {
+          "seq": 795,
+          "phase": "parse",
+          "us": 234
+        },
+        {
+          "seq": 796,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 797,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 798,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 799,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 800,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 801,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 802,
+          "phase": "parse",
+          "us": 5816
+        },
+        {
+          "seq": 803,
+          "phase": "parse",
+          "us": 239
+        },
+        {
+          "seq": 804,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 805,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 806,
+          "phase": "parse",
+          "us": 174
+        },
+        {
+          "seq": 807,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 808,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 809,
+          "phase": "parse",
+          "us": 1032
+        },
+        {
+          "seq": 810,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 811,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 812,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 813,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 814,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 815,
+          "phase": "parse",
+          "us": 123
+        },
+        {
+          "seq": 816,
+          "phase": "parse",
+          "us": 248
+        },
+        {
+          "seq": 817,
+          "phase": "parse",
+          "us": 326
+        },
+        {
+          "seq": 818,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 819,
+          "phase": "parse",
+          "us": 228
+        },
+        {
+          "seq": 820,
+          "phase": "parse",
+          "us": 825
+        },
+        {
+          "seq": 821,
+          "phase": "parse",
+          "us": 91
+        },
+        {
+          "seq": 822,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 823,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 824,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 825,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 826,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 827,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 828,
+          "phase": "parse",
+          "us": 67
+        },
+        {
+          "seq": 829,
+          "phase": "parse",
+          "us": 136
+        },
+        {
+          "seq": 830,
+          "phase": "parse",
+          "us": 76
+        },
+        {
+          "seq": 831,
+          "phase": "parse",
+          "us": 366
+        },
+        {
+          "seq": 832,
+          "phase": "parse",
+          "us": 117
+        },
+        {
+          "seq": 833,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 834,
+          "phase": "parse",
+          "us": 300
+        },
+        {
+          "seq": 835,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 836,
+          "phase": "parse",
+          "us": 486
+        },
+        {
+          "seq": 837,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 838,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 839,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 840,
+          "phase": "parse",
+          "us": 332
+        },
+        {
+          "seq": 841,
+          "phase": "parse",
+          "us": 330
+        },
+        {
+          "seq": 842,
+          "phase": "parse",
+          "us": 216
+        },
+        {
+          "seq": 843,
+          "phase": "parse",
+          "us": 329
+        },
+        {
+          "seq": 844,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 845,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 846,
+          "phase": "parse",
+          "us": 447
+        },
+        {
+          "seq": 847,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 848,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 849,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 850,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 851,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 852,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 853,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 854,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 855,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 856,
+          "phase": "parse",
+          "us": 479
+        },
+        {
+          "seq": 857,
+          "phase": "parse",
+          "us": 101
+        },
+        {
+          "seq": 858,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 859,
+          "phase": "parse",
+          "us": 345
+        },
+        {
+          "seq": 860,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 861,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 862,
+          "phase": "parse",
+          "us": 77
+        },
+        {
+          "seq": 863,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 864,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 865,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 866,
+          "phase": "parse",
+          "us": 190
+        },
+        {
+          "seq": 867,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 868,
+          "phase": "parse",
+          "us": 216
+        },
+        {
+          "seq": 869,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 870,
+          "phase": "parse",
+          "us": 290
+        },
+        {
+          "seq": 871,
+          "phase": "parse",
+          "us": 429
+        },
+        {
+          "seq": 872,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 873,
+          "phase": "parse",
+          "us": 54
+        },
+        {
+          "seq": 874,
+          "phase": "parse",
+          "us": 87
+        },
+        {
+          "seq": 875,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 876,
+          "phase": "parse",
+          "us": 137
+        },
+        {
+          "seq": 877,
+          "phase": "parse",
+          "us": 620
+        },
+        {
+          "seq": 878,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 879,
+          "phase": "parse",
+          "us": 570
+        },
+        {
+          "seq": 880,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 881,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 882,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 883,
+          "phase": "parse",
+          "us": 1028
+        },
+        {
+          "seq": 884,
+          "phase": "parse",
+          "us": 787
+        },
+        {
+          "seq": 885,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 886,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 887,
+          "phase": "parse",
+          "us": 594
+        },
+        {
+          "seq": 888,
+          "phase": "parse",
+          "us": 42
+        },
+        {
+          "seq": 889,
+          "phase": "parse",
+          "us": 188
+        },
+        {
+          "seq": 890,
+          "phase": "parse",
+          "us": 30
+        },
+        {
+          "seq": 891,
+          "phase": "parse",
+          "us": 112
+        },
+        {
+          "seq": 892,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 893,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 894,
+          "phase": "parse",
+          "us": 69
+        },
+        {
+          "seq": 895,
+          "phase": "parse",
+          "us": 1316
+        },
+        {
+          "seq": 896,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 897,
+          "phase": "parse",
+          "us": 35
+        },
+        {
+          "seq": 898,
+          "phase": "parse",
+          "us": 93
+        },
+        {
+          "seq": 899,
+          "phase": "parse",
+          "us": 441
+        },
+        {
+          "seq": 900,
+          "phase": "parse",
+          "us": 9
+        },
+        {
+          "seq": 901,
+          "phase": "parse",
+          "us": 75
+        },
+        {
+          "seq": 902,
+          "phase": "parse",
+          "us": 872
+        },
+        {
+          "seq": 903,
+          "phase": "parse",
+          "us": 27
+        },
+        {
+          "seq": 904,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 905,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 906,
+          "phase": "parse",
+          "us": 376
+        },
+        {
+          "seq": 907,
+          "phase": "parse",
+          "us": 52
+        },
+        {
+          "seq": 908,
+          "phase": "parse",
+          "us": 896
+        },
+        {
+          "seq": 909,
+          "phase": "parse",
+          "us": 557
+        },
+        {
+          "seq": 910,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 911,
+          "phase": "parse",
+          "us": 32
+        },
+        {
+          "seq": 912,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 913,
+          "phase": "parse",
+          "us": 1325
+        },
+        {
+          "seq": 914,
+          "phase": "parse",
+          "us": 11
+        },
+        {
+          "seq": 915,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 916,
+          "phase": "parse",
+          "us": 81
+        },
+        {
+          "seq": 917,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 918,
+          "phase": "parse",
+          "us": 713
+        },
+        {
+          "seq": 919,
+          "phase": "parse",
+          "us": 7
+        },
+        {
+          "seq": 920,
+          "phase": "parse",
+          "us": 41
+        },
+        {
+          "seq": 921,
+          "phase": "parse",
+          "us": 1366
+        },
+        {
+          "seq": 922,
+          "phase": "parse",
+          "us": 629
+        },
+        {
+          "seq": 923,
+          "phase": "parse",
+          "us": 1204
+        },
+        {
+          "seq": 924,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 925,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 926,
+          "phase": "parse",
+          "us": 19
+        },
+        {
+          "seq": 927,
+          "phase": "parse",
+          "us": 95
+        },
+        {
+          "seq": 928,
+          "phase": "parse",
+          "us": 21
+        },
+        {
+          "seq": 929,
+          "phase": "parse",
+          "us": 18
+        },
+        {
+          "seq": 930,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 931,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 932,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 933,
+          "phase": "parse",
+          "us": 1270
+        },
+        {
+          "seq": 934,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 935,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 936,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 937,
+          "phase": "parse",
+          "us": 14
+        },
+        {
+          "seq": 938,
+          "phase": "parse",
+          "us": 122
+        },
+        {
+          "seq": 939,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 940,
+          "phase": "parse",
+          "us": 125
+        },
+        {
+          "seq": 941,
+          "phase": "parse",
+          "us": 103
+        },
+        {
+          "seq": 942,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 943,
+          "phase": "parse",
+          "us": 789
+        },
+        {
+          "seq": 944,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 945,
+          "phase": "parse",
+          "us": 558
+        },
+        {
+          "seq": 946,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 947,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 948,
+          "phase": "parse",
+          "us": 62
+        },
+        {
+          "seq": 949,
+          "phase": "parse",
+          "us": 73
+        },
+        {
+          "seq": 950,
+          "phase": "parse",
+          "us": 4
+        },
+        {
+          "seq": 951,
+          "phase": "parse",
+          "us": 74
+        },
+        {
+          "seq": 952,
+          "phase": "parse",
+          "us": 222
+        },
+        {
+          "seq": 953,
+          "phase": "parse",
+          "us": 105
+        },
+        {
+          "seq": 954,
+          "phase": "parse",
+          "us": 467
+        },
+        {
+          "seq": 955,
+          "phase": "parse",
+          "us": 119
+        },
+        {
+          "seq": 956,
+          "phase": "parse",
+          "us": 278
+        },
+        {
+          "seq": 957,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 958,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 959,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 960,
+          "phase": "parse",
+          "us": 223
+        },
+        {
+          "seq": 961,
+          "phase": "parse",
+          "us": 46
+        },
+        {
+          "seq": 962,
+          "phase": "parse",
+          "us": 65
+        },
+        {
+          "seq": 963,
+          "phase": "parse",
+          "us": 163
+        },
+        {
+          "seq": 964,
+          "phase": "parse",
+          "us": 130
+        },
+        {
+          "seq": 965,
+          "phase": "parse",
+          "us": 170
+        },
+        {
+          "seq": 966,
+          "phase": "parse",
+          "us": 56
+        },
+        {
+          "seq": 967,
+          "phase": "parse",
+          "us": 180
+        },
+        {
+          "seq": 968,
+          "phase": "parse",
+          "us": 370
+        },
+        {
+          "seq": 969,
+          "phase": "parse",
+          "us": 646
+        },
+        {
+          "seq": 970,
+          "phase": "parse",
+          "us": 529
+        },
+        {
+          "seq": 971,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 972,
+          "phase": "parse",
+          "us": 22
+        },
+        {
+          "seq": 973,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 974,
+          "phase": "parse",
+          "us": 288
+        },
+        {
+          "seq": 975,
+          "phase": "parse",
+          "us": 28
+        },
+        {
+          "seq": 976,
+          "phase": "parse",
+          "us": 24
+        },
+        {
+          "seq": 977,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 978,
+          "phase": "parse",
+          "us": 264
+        },
+        {
+          "seq": 979,
+          "phase": "parse",
+          "us": 60
+        },
+        {
+          "seq": 980,
+          "phase": "parse",
+          "us": 356
+        },
+        {
+          "seq": 981,
+          "phase": "parse",
+          "us": 84
+        },
+        {
+          "seq": 982,
+          "phase": "parse",
+          "us": 275
+        },
+        {
+          "seq": 983,
+          "phase": "parse",
+          "us": 12
+        },
+        {
+          "seq": 984,
+          "phase": "parse",
+          "us": 90
+        },
+        {
+          "seq": 985,
+          "phase": "parse",
+          "us": 310
+        },
+        {
+          "seq": 986,
+          "phase": "parse",
+          "us": 257
+        },
+        {
+          "seq": 987,
+          "phase": "parse",
+          "us": 294
+        },
+        {
+          "seq": 988,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 989,
+          "phase": "parse",
+          "us": 1204
+        },
+        {
+          "seq": 990,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 991,
+          "phase": "parse",
+          "us": 25
+        },
+        {
+          "seq": 992,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 993,
+          "phase": "parse",
+          "us": 3
+        },
+        {
+          "seq": 994,
+          "phase": "parse",
+          "us": 218
+        },
+        {
+          "seq": 995,
+          "phase": "parse",
+          "us": 110
+        },
+        {
+          "seq": 996,
+          "phase": "parse",
+          "us": 204
+        },
+        {
+          "seq": 997,
+          "phase": "parse",
+          "us": 39
+        },
+        {
+          "seq": 998,
+          "phase": "parse",
+          "us": 13
+        },
+        {
+          "seq": 999,
+          "phase": "parse",
+          "us": 6
+        },
+        {
+          "seq": 1000,
+          "phase": "parse",
+          "us": 168
+        },
+        {
+          "seq": 1001,
+          "phase": "parse",
+          "us": 239
+        },
+        {
+          "seq": 1002,
+          "phase": "parse",
+          "us": 107
+        },
+        {
+          "seq": 1003,
+          "phase": "parse",
+          "us": 451
+        },
+        {
+          "seq": 1004,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 1005,
+          "phase": "parse",
+          "us": 187
+        },
+        {
+          "seq": 1006,
+          "phase": "parse",
+          "us": 78
+        },
+        {
+          "seq": 1007,
+          "phase": "parse",
+          "us": 108
+        },
+        {
+          "seq": 1008,
+          "phase": "parse",
+          "us": 157
+        },
+        {
+          "seq": 1009,
+          "phase": "parse",
+          "us": 607
+        },
+        {
+          "seq": 1010,
+          "phase": "parse",
+          "us": 115
+        },
+        {
+          "seq": 1011,
+          "phase": "parse",
+          "us": 990
+        },
+        {
+          "seq": 1012,
+          "phase": "parse",
+          "us": 262
+        },
+        {
+          "seq": 1013,
+          "phase": "parse",
+          "us": 294
+        },
+        {
+          "seq": 1014,
+          "phase": "parse",
+          "us": 149
+        },
+        {
+          "seq": 1015,
+          "phase": "parse",
+          "us": 280
+        },
+        {
+          "seq": 1016,
+          "phase": "parse",
+          "us": 707
+        },
+        {
+          "seq": 1017,
+          "phase": "parse",
+          "us": 849
+        },
+        {
+          "seq": 1018,
+          "phase": "parse",
+          "us": 696
+        },
+        {
+          "seq": 1019,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 1020,
+          "phase": "parse",
+          "us": 802
+        },
+        {
+          "seq": 1021,
+          "phase": "parse",
+          "us": 129
+        },
+        {
+          "seq": 1022,
+          "phase": "parse",
+          "us": 166
+        },
+        {
+          "seq": 1023,
+          "phase": "parse",
+          "us": 373
+        },
+        {
+          "seq": 1024,
+          "phase": "parse",
+          "us": 292
+        },
+        {
+          "seq": 1025,
+          "phase": "parse",
+          "us": 70
+        },
+        {
+          "seq": 1026,
+          "phase": "parse",
+          "us": 143
+        },
+        {
+          "seq": 1027,
+          "phase": "parse",
+          "us": 34
+        },
+        {
+          "seq": 1028,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 1029,
+          "phase": "parse",
+          "us": 199
+        },
+        {
+          "seq": 1030,
+          "phase": "parse",
+          "us": 16
+        },
+        {
+          "seq": 1031,
+          "phase": "parse",
+          "us": 459
+        },
+        {
+          "seq": 1032,
+          "phase": "parse",
+          "us": 23
+        },
+        {
+          "seq": 1033,
+          "phase": "parse",
+          "us": 15
+        },
+        {
+          "seq": 1034,
+          "phase": "parse",
+          "us": 5
+        },
+        {
+          "seq": 1035,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 1036,
+          "phase": "parse",
+          "us": 415
+        },
+        {
+          "seq": 1037,
+          "phase": "parse",
+          "us": 36
+        },
+        {
+          "seq": 1038,
+          "phase": "parse",
+          "us": 670
+        },
+        {
+          "seq": 1039,
+          "phase": "parse",
+          "us": 29
+        },
+        {
+          "seq": 1040,
+          "phase": "parse",
+          "us": 37
+        },
+        {
+          "seq": 1041,
+          "phase": "parse",
+          "us": 51
+        },
+        {
+          "seq": 1042,
+          "phase": "parse",
+          "us": 213
+        },
+        {
+          "seq": 1043,
+          "phase": "parse",
+          "us": 8
+        },
+        {
+          "seq": 1044,
+          "phase": "parse",
+          "us": 135
+        },
+        {
+          "seq": 1045,
+          "phase": "parse",
+          "us": 254
+        },
+        {
+          "seq": 1046,
+          "phase": "parse",
+          "us": 313
+        },
+        {
+          "seq": 1047,
+          "phase": "parse",
+          "us": 280
+        },
+        {
+          "seq": 1048,
+          "phase": "parse",
+          "us": 20
+        },
+        {
+          "seq": 1049,
+          "phase": "parse",
+          "us": 1732
+        },
+        {
+          "seq": 1050,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1051,
+          "phase": "parse",
+          "us": 173
+        },
+        {
+          "seq": 1052,
+          "phase": "parse",
+          "us": 1
+        },
+        {
+          "seq": 1053,
+          "phase": "parse",
+          "us": 50
+        },
+        {
+          "seq": 1054,
+          "phase": "parse",
+          "us": 569
+        },
+        {
+          "seq": 1055,
+          "phase": "parse",
+          "us": 182
+        },
+        {
+          "seq": 1056,
+          "phase": "parse",
+          "us": 10
+        },
+        {
+          "seq": 1057,
+          "phase": "parse",
+          "us": 263
+        },
+        {
+          "seq": 1058,
+          "phase": "parse",
+          "us": 238
+        },
+        {
+          "seq": 1059,
+          "phase": "parse",
+          "us": 513
+        },
+        {
+          "seq": 1060,
+          "phase": "parse",
+          "us": 2
+        },
+        {
+          "seq": 1061,
+          "phase": "parse",
+          "us": 735
+        },
+        {
+          "seq": 1062,
+          "phase": "parse",
+          "us": 205
+        },
+        {
+          "seq": 1063,
+          "phase": "parse",
+          "us": 0
+        },
+        {
+          "seq": 1064,
+          "phase": "parse",
+          "us": 17
+        },
+        {
+          "seq": 1065,
+          "phase": "parse",
+          "us": 651
+        },
+        {
+          "seq": 1066,
+          "phase": "parse",
+          "us": 8333716
+        },
+        {
+          "seq": 1067,
+          "phase": "write",
+          "us": 717
+        },
+        {
+          "seq": 1068,
+          "phase": "link",
+          "us": 464488
+        },
+        {
+          "seq": 1069,
+          "phase": "fts",
+          "us": 19546
+        },
+        {
+          "seq": 1070,
+          "phase": "link",
+          "us": 104203
+        },
+        {
+          "seq": 1071,
+          "phase": "link",
+          "us": 60389
+        },
+        {
+          "seq": 1072,
+          "phase": "link",
+          "us": 57362
+        },
+        {
+          "seq": 1073,
+          "phase": "link",
+          "us": 40519
+        },
+        {
+          "seq": 1074,
+          "phase": "link",
+          "us": 47522
+        },
+        {
+          "seq": 1075,
+          "phase": "link",
+          "us": 27842
+        },
+        {
+          "seq": 1076,
+          "phase": "link",
+          "us": 23605
+        },
+        {
+          "seq": 1077,
+          "phase": "link",
+          "us": 56613
+        },
+        {
+          "seq": 1078,
+          "phase": "link",
+          "us": 41636
+        },
+        {
+          "seq": 1079,
+          "phase": "link",
+          "us": 70231
+        },
+        {
+          "seq": 1080,
+          "phase": "link",
+          "us": 138402
+        },
+        {
+          "seq": 1081,
+          "phase": "link",
+          "us": 65128
+        },
+        {
+          "seq": 1082,
+          "phase": "link",
+          "us": 63346
+        },
+        {
+          "seq": 1083,
+          "phase": "link",
+          "us": 62317
+        },
+        {
+          "seq": 1084,
+          "phase": "resolve",
+          "us": 38212
+        },
+        {
+          "seq": 1085,
+          "phase": "resolve",
+          "us": 0
+        },
+        {
+          "seq": 1086,
+          "phase": "checkpoint",
+          "us": 966599
+        },
+        {
+          "seq": 1087,
+          "phase": "done",
+          "us": 84588
+        }
+      ],
+      "gates": [
+        {
+          "id": "progress_stall_p95",
+          "prd_metric": "Longest progress stall p95 (PRD 12.2)",
+          "threshold": 2,
+          "unit": "s",
+          "comparison": "lte",
+          "aggregate": "stalls.stalls.p95_us",
+          "has_measurement": false,
+          "status": "UNKNOWN",
+          "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+        }
+      ],
+      "status": "UNKNOWN",
+      "stall_definition": "A STALL is silence: the wall-clock interval between two CONSECUTIVE ingest.ProgressEvents delivered to the harness's progress handler during the cold full index. One interval per adjacent pair of events, attributed to the phase of the event that ENDED it. It is deliberately the interval a consumer of the event stream experiences — the thing a user reads as a hang — and not the duration of any underlying work: a phase that takes a minute while emitting progress throughout is slow, not stalled, and `context/standards.md` asks for exactly that distinction.",
+      "boundary_handling": "The two BOUNDARY intervals are measured and published but are NOT stalls, and are excluded from the distribution by definition. `lead_in_us` is index start -\u003e first event: there is no preceding event, so counting it would report one enormous stall on every run and swamp the p95 with an artefact of where the clock was started. `tail_us` is last event -\u003e index end: a successful pass ends with a terminal `done` event, so it is normally near zero. Both are published rather than dropped, and a boundary longer than the longest recorded stall raises a warning — the largest silence in the run being outside the distribution is something a reader must be told, not spared.",
+      "timing_method": "One clock, read once per event inside the progress handler, and nothing else in the handler: the handler stores a timestamp difference and returns. Events are delivered SYNCHRONOUSLY from the ingesting goroutine (engine/ingest documents this), so an expensive handler would insert itself into the very silence it is measuring; the derivation — percentiles, per-phase pools, warnings — happens after the index has finished. The window is the same one index.wallclock_ms is measured over, so the parts reconcile against the whole.",
+      "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the retained intervals, ascending — the same implementation the cold, query-latency and freshness series use. `n` is the number of gaps, which is one less than events_observed. Boundary intervals contribute to neither the pooled nor any per-phase distribution. Every value here is reproducible from `intervals` with evalreport.RecomputeStalls. Every interval is TRUNCATED to whole microseconds, so `lead_in_us` + the intervals + `tail_us` reconciles with `index_wallclock_us` to within one microsecond per interval and is never larger than it — a gap of more than that means a part of the window went unaccounted for, not that the arithmetic rounded.",
+      "scope_limitation": "This measures the COLD FULL INDEX only, through the shipped ingest.Ingester.WithProgress hook — the same hook the graphi CLI's renderer consumes. It makes no statement about the incremental path (SW-126 measures that), about filesystem-watch detection, or about a phase that is slow while still emitting progress. Clock-driven heartbeats are part of the shipped event stream and are counted as events, which is correct for this gate: the gate is about the index going SILENT, and a heartbeating phase is not silent.",
+      "notes": "SW-127 progress-stall measurement: the intervals between consecutive ingest.ProgressEvents during the cold full index, reported as p95 AND maximum with every individual interval retained. It is a REGRESSION GUARD as much as a number: a run that emits no progress reads FAIL, never `0 stalls, passed`. No PRD §12.2 gate is read unless the run is the reference scenario on the reference class and from the frozen candidate; otherwise it is UNKNOWN, which is not a PASS (PRD §8.2) — and a silent run is not rescued into a PASS by any of that."
+    },
+    "searches": [
+      {
+        "query": "ClientConn",
+        "matches": 25,
+        "pass": true
+      },
+      {
+        "query": "Server",
+        "matches": 25,
+        "pass": true
+      }
+    ],
+    "stable_peak_rss_mb": 648,
+    "stable_checks": [
+      {
+        "operation": "agent_brief",
+        "requirement": "resolved topic with a valid found/partial project brief",
+        "samples": 3,
+        "outcomes": {
+          "found": 3
+        },
+        "pass": true
+      },
+      {
+        "operation": "callees",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 12,
+          "found": 13
+        },
+        "pass": true
+      },
+      {
+        "operation": "callers",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 16,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "change_risk",
+        "requirement": "resolved target with a valid found or partial envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "definition",
+        "requirement": "resolved symbol with at least one definition",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "explain_symbol",
+        "requirement": "resolved target with a valid found or partial envelope",
+        "samples": 10,
+        "outcomes": {
+          "found": 9,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "impact",
+        "requirement": "resolved symbol; bounded impact outcome",
+        "samples": 25,
+        "outcomes": {
+          "empty": 16,
+          "found": 9
+        },
+        "pass": true
+      },
+      {
+        "operation": "index",
+        "requirement": "successful ingest with non-empty node and file inventory",
+        "samples": 1,
+        "outcomes": {
+          "found": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "neighborhood",
+        "requirement": "resolved symbol; bounded neighborhood outcome",
+        "samples": 25,
+        "outcomes": {
+          "found": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "references",
+        "requirement": "resolved symbol; found or legitimately empty",
+        "samples": 25,
+        "outcomes": {
+          "empty": 25
+        },
+        "pass": true
+      },
+      {
+        "operation": "related_files",
+        "requirement": "resolved target; found, partial, or legitimately empty related-file set",
+        "samples": 10,
+        "outcomes": {
+          "empty": 2,
+          "found": 7,
+          "partial": 1
+        },
+        "pass": true
+      },
+      {
+        "operation": "search",
+        "requirement": "manifest-promised non-empty search",
+        "samples": 40,
+        "outcomes": {
+          "found": 40
+        },
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "repo_run_index": 1,
+  "cold_series": {
+    "repo": "grpc-go",
+    "runs_requested": 3,
+    "runs_completed": 3,
+    "runs_aborted": 0,
+    "minimum_runs": 10,
+    "sufficient": false,
+    "runner_class": "local-sandbox",
+    "runner_role": "comparison",
+    "reference_scenario": false,
+    "candidate_sha": "80d67ed586723ab22704cf7aada316138cb1360e",
+    "candidate_source": "docs/decisions/2026-07-p0-candidate-freeze-v071.md",
+    "measured_sha": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+    "candidate_match": false,
+    "worktree_dirty": true,
+    "runs": [
+      {
+        "run": 1,
+        "status": "completed",
+        "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+        "runner_class": "local-sandbox",
+        "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+        "started_at": "2026-08-24T19:28:30Z",
+        "clone_ms": 2264,
+        "cold": {
+          "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-01/grpc-go.db",
+          "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-01/grpc-go-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "not_dropped",
+          "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+          "drop_required": false,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 11214,
+          "peak_rss_mb": 638,
+          "db_size_bytes": 29556736,
+          "nodes": 14920,
+          "edges": 82942,
+          "files": 919
+        },
+        "stable_peak_rss_mb": 648,
+        "bytes_per_edge": 356.354271659714,
+        "cgroup": {
+          "available": false,
+          "oom_kill": 0,
+          "oom_kill_collected": false,
+          "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+        },
+        "run_pass": true,
+        "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/cold-run-01.json"
+      },
+      {
+        "run": 2,
+        "status": "completed",
+        "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+        "runner_class": "local-sandbox",
+        "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+        "started_at": "2026-08-24T19:28:45Z",
+        "clone_ms": 2238,
+        "cold": {
+          "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-02/grpc-go.db",
+          "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-02/grpc-go-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "not_dropped",
+          "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+          "drop_required": false,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 11222,
+          "peak_rss_mb": 626,
+          "db_size_bytes": 29556736,
+          "nodes": 14920,
+          "edges": 82942,
+          "files": 919
+        },
+        "stable_peak_rss_mb": 636,
+        "bytes_per_edge": 356.354271659714,
+        "cgroup": {
+          "available": false,
+          "oom_kill": 0,
+          "oom_kill_collected": false,
+          "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+        },
+        "run_pass": true,
+        "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/cold-run-02.json"
+      },
+      {
+        "run": 3,
+        "status": "completed",
+        "commit": "bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty",
+        "runner_class": "local-sandbox",
+        "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+        "started_at": "2026-08-24T19:29:01Z",
+        "clone_ms": 2389,
+        "cold": {
+          "store_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-03/grpc-go.db",
+          "meta_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/run-03/grpc-go-meta",
+          "store_preexisting": false,
+          "meta_preexisting": false,
+          "page_cache": "not_dropped",
+          "required_protocol": "Uncontrolled. This is a development machine: page cache, background indexing and competing processes are not quiesced, and no drop-caches protocol is imposed. Cold here means 'a store that did not exist before', nothing stronger.",
+          "drop_required": false,
+          "verified": true
+        },
+        "index": {
+          "wallclock_ms": 11196,
+          "peak_rss_mb": 667,
+          "db_size_bytes": 29556736,
+          "nodes": 14920,
+          "edges": 82942,
+          "files": 919
+        },
+        "stable_peak_rss_mb": 678,
+        "bytes_per_edge": 356.354271659714,
+        "cgroup": {
+          "available": false,
+          "oom_kill": 0,
+          "oom_kill_collected": false,
+          "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+        },
+        "run_pass": true,
+        "report_path": "/var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/graphi-eval-cold1727470899/cold-run-03.json"
+      }
+    ],
+    "aggregates": {
+      "bytes_per_edge": {
+        "metric": "bytes_per_edge",
+        "unit": "bytes/edge",
+        "n": 3,
+        "min": 356.354271659714,
+        "p50": 356.354271659714,
+        "p95": 356.354271659714,
+        "max": 356.354271659714
+      },
+      "db_size_bytes": {
+        "metric": "db_size_bytes",
+        "unit": "bytes",
+        "n": 3,
+        "min": 29556736,
+        "p50": 29556736,
+        "p95": 29556736,
+        "max": 29556736
+      },
+      "edges": {
+        "metric": "edges",
+        "unit": "edges",
+        "n": 3,
+        "min": 82942,
+        "p50": 82942,
+        "p95": 82942,
+        "max": 82942
+      },
+      "index_peak_rss_mb": {
+        "metric": "index_peak_rss_mb",
+        "unit": "MB",
+        "n": 3,
+        "min": 626,
+        "p50": 638,
+        "p95": 667,
+        "max": 667
+      },
+      "index_wallclock_ms": {
+        "metric": "index_wallclock_ms",
+        "unit": "ms",
+        "n": 3,
+        "min": 11196,
+        "p50": 11214,
+        "p95": 11222,
+        "max": 11222
+      },
+      "nodes": {
+        "metric": "nodes",
+        "unit": "nodes",
+        "n": 3,
+        "min": 14920,
+        "p50": 14920,
+        "p95": 14920,
+        "max": 14920
+      },
+      "stable_peak_rss_mb": {
+        "metric": "stable_peak_rss_mb",
+        "unit": "MB",
+        "n": 3,
+        "min": 636,
+        "p50": 648,
+        "p95": 678,
+        "max": 678
+      }
+    },
+    "aggregate_method": "nearest-rank percentile (rank = ceil(p/100 * n), 1-based) over the COMPLETED runs only, ascending; aborted runs contribute to runs_aborted and never to a distribution. A completed run's node and edge COUNTS are sampled even when they are zero (a degenerate repository is a measurement); the metrics a completed run always produces (wallclock, RSS, db size) and the bytes-per-edge RATIO treat a zero as an absent field, so `n` below runs_completed always means a run did not report the metric. Every value here is reproducible from `runs` with evalreport.RecomputeColdAggregates.",
+    "gates": [
+      {
+        "id": "cold_index_p50",
+        "prd_metric": "Cold Index p50 (PRD 12.2)",
+        "threshold": 90,
+        "unit": "s",
+        "comparison": "lte",
+        "aggregate": "index_wallclock_ms.p50",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "cold_index_p95",
+        "prd_metric": "Cold Index p95 (PRD 12.2)",
+        "threshold": 120,
+        "unit": "s",
+        "comparison": "lte",
+        "aggregate": "index_wallclock_ms.p95",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "peak_rss",
+        "prd_metric": "Peak RSS, reference scenario (PRD 12.2; see the 4 GB stop rule in PRD 17)",
+        "threshold": 2,
+        "unit": "GB",
+        "comparison": "lte",
+        "aggregate": "stable_peak_rss_mb.max",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      },
+      {
+        "id": "oom_8gb_host",
+        "prd_metric": "OOM on an 8 GB host (PRD 12.2)",
+        "threshold": 0,
+        "unit": "oom_kills",
+        "comparison": "lte",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "not exercised (-oom-check was not requested); PRD §8.2: an unexercised gate is UNKNOWN, never PASS"
+      },
+      {
+        "id": "db_size",
+        "prd_metric": "DB size, reference scenario (PRD 12.2)",
+        "threshold": 300,
+        "unit": "MB",
+        "comparison": "lte",
+        "aggregate": "db_size_bytes.max",
+        "has_measurement": false,
+        "status": "UNKNOWN",
+        "reason": "this run is grpc-go on runner class local-sandbox (comparison), which is not the reference scenario; PRD §12.2 is scoped to the reference scenario only"
+      }
+    ],
+    "stop_rule": {
+      "id": "peak_rss_stop_rule",
+      "threshold_gb": 4,
+      "observed_peak_gb": 0.662109375,
+      "triggered": false,
+      "status": "PASS",
+      "reason": "observed peak 0.66 GB is within the 4 GB stop rule over 3 runs"
+    },
+    "oom_check": {
+      "gate_id": "oom_8gb_host",
+      "status": "UNKNOWN",
+      "reason": "not exercised (-oom-check was not requested); PRD §8.2: an unexercised gate is UNKNOWN, never PASS",
+      "method": "cgroup v2, the ubuntu-24.04 image's default hierarchy: run the cold-index measurement inside `sudo systemd-run --scope --collect --property=MemoryMax=8G --property=MemorySwapMax=0 -- \u003cmeasurement command\u003e`. MemorySwapMax=0 matters: with swap available the process would be throttled instead of killed, and the check would pass for the wrong reason.",
+      "required_limit_bytes": 8589934592,
+      "limit_verified": false,
+      "run_completed": false,
+      "exit_code": 0
+    },
+    "warnings": [
+      "measured revision bca6cf27cdbb6aef8cddfdf91219134bd9f21a0e+dirty is not the frozen candidate 80d67ed586723ab22704cf7aada316138cb1360e (cited from docs/decisions/2026-07-p0-candidate-freeze-v071.md): these numbers are not evidence about the candidate artifact"
+    ],
+    "status": "UNKNOWN",
+    "notes": "SW-124 cold-index series: N independent cold runs, ONE PROCESS PER RUN (getrusage MAXRSS is a process-lifetime peak, so in-process repetition would publish run 1's peak for every later run). `repo` is one named sample kept for comparability with single-run reports; every distributional claim is in `cold_series`. NO gate — the OOM gate included — is read unless the run is the reference scenario on the reference class and from the frozen candidate; the percentile gates additionally require at least minimum_runs completed runs. Otherwise they are UNKNOWN, which is not a PASS (PRD §8.2)."
+  },
+  "cgroup": {
+    "available": false,
+    "oom_kill": 0,
+    "oom_kill_collected": false,
+    "error": "cgroup v2 memory limits are readable on linux only; this host is darwin"
+  }
+}

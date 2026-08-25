@@ -1,0 +1,12 @@
+--- baseline (all 21 tags)
+rg-baseline                bytes=34244965   sha256=2d0a817dc9a34a3d langs_embedded=20 css_present=1
+--- RED: 'remove' a tag that is not in the set (grammar_subset_cssx) — the removal cannot take effect
+    tag count after the no-op removal:       21 (unchanged == the edit did nothing)
+rg-red                     bytes=34244965   sha256=2d0a817dc9a34a3d langs_embedded=20 css_present=1
+--- GREEN: remove grammar_subset_css for real
+    tag count after the real removal:       20
+rg-green                   bytes=34216888   sha256=d9560271a79c3e49 langs_embedded=19 css_present=0
+
+RED must equal baseline in bytes AND sha AND langs_embedded AND css_present=1.
+GREEN must differ in bytes, drop to langs_embedded=19 and css_present=0.
+If RED and GREEN looked the same, every marginal cost in this campaign would be meaningless.

@@ -1,0 +1,13 @@
+UNREADABLE(2) docs/eval/runs/2026-08-20-Darwin-ARM64/apple-m2-max
+sweep totals: exit0=107 exit1(discrepancy)=0 exit2(unreadable)=1 exit3(incomplete)=0
+
+# --- note added in rebuild round 1 (2026-08-24) -----------------------------
+# Re-run at HEAD 9b6956a: identical totals, exit0=107 exit1=0 exit2=1 exit3=0,
+# same single UNREADABLE(2).
+#
+# METHOD TRAP, recorded so the next reader does not fall into it: this sweep
+# must run a COMPILED cmd/eval binary, not `go run ./cmd/eval`. `go run`
+# collapses every non-zero program exit to its own exit 1 (it prints
+# "exit status 2" to stderr and exits 1), so a `go run` sweep reports the one
+# unreadable directory as a DISCREPANCY(1) — the loudest possible
+# misclassification, since 0 discrepancies is exactly what AC-2 asks for.

@@ -1,0 +1,34 @@
+# REBUILD ROUND 1 RE-CAPTURE ENVIRONMENT (2026-08-24, later the same day).
+# This is NOT the campaign environment — that is environment.txt, which is left
+# exactly as captured. This file records the machine state for the three legs
+# re-captured in rebuild round 1 (leg A, the noise control, and the new
+# vcs-stamp control), at HEAD 9b6956a instead of bca6cf2.
+#
+# The machine is the same but the moment is not: this capture ran on BATTERY
+# power at a 1-minute load average of 12.15 on 12 logical cores, against the
+# campaign's AC power and 4.45-7.86. Binary size is insensitive to both, which
+# is not asserted but shown: every re-captured size is byte-identical to the
+# campaign's, including the additivity, red/green and host legs re-run under
+# these conditions. Only the sha256 values move, and only because
+# -buildvcs=true stamps vcs.revision/vcs.time.
+
+# environment, captured at measurement time
+go            : go version go1.26.6 darwin/arm64
+GOTOOLCHAIN   : go1.26.6 (pinned by this script; the toolchain control pins it per leg too)
+kernel        : Darwin 25.6.0 arm64
+os            : macOS 26.6.1 (25G76)
+cpu           : Apple M2 Max
+cores         : 12 physical / 12 logical
+memory        : 68719476736 bytes
+power         : Now drawing from 'Battery Power'
+thermal       : Note: No thermal warning level has been recorded Note: No performance warning level has been recorded Note: No CPU power status has been recorded 
+loadavg       : 12,15 8,44 6,36
+repo HEAD     : 9b6956ad84609c4a498f2bad7394f1b6e910480d
+repo branch   : sw-203-w5q-perf-binary-size-intra-parse
+build target  : linux/amd64 GOAMD64=v1 CGO_ENABLED=0 (the gate's platform), cross-built from darwin/arm64
+host leg      : darwin/arm64 CGO_ENABLED=0 (what internal/bench/harness.go buildBinary actually builds: it passes no GOOS/GOARCH)
+
+# worktree cleanliness at measurement time — tracked AND untracked.
+# -buildvcs=true stamps vcs.modified into the binary, so a dirty tree is a
+# measurement condition, not a nuisance. See vcs-stamp-control.txt.
+    (no indented line above == git status --porcelain was empty)
