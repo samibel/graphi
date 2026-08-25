@@ -1,0 +1,14 @@
+id: htoml-14-explain-symbol
+description: >
+  Explaining config.name cites its declaration site in config/app.toml. explain_symbol is
+  askable at this language's honest level and is asserted at full strength,
+  including the evidence requirement.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: explain_symbol
+  args:
+    symbol: config.name
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

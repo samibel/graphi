@@ -1,0 +1,37 @@
+id: hhcl-13-related-files-abstention
+description: >
+  related_files(infra.region, dependents) — THE LOAD-BEARING §5.5 SCENARIO OF THIS
+  SUITE, because this is the operation the language's cross-file construct
+  would answer if graphi bound it.
+  ABSTENTION SHAPE (hcl, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does HCL's own specification define a
+  construct that names another file? NO — the HCL Native Syntax and Structure
+  specifications (hashicorp/hcl) define bodies, blocks, attributes and
+  expressions, and no include, no import and no source directive. Terraform's
+  `module { source = "./mod" }` is a SCHEMA a host application layers on top
+  of HCL: HCL hands the host an unevaluated body and the host decides what a
+  block type and its labels mean, so it cannot be cited as HCL's answer —
+  which is why this fixture writes no module block. With no construct in the
+  language there is nothing to resolve; this scenario substitutes the question
+  and asserts the well-formed empty result. The abstention belongs to the
+  LANGUAGE, not to graphi; citing graphi's own parser comment instead would be
+  the LANGHONEST-001 circular-abstention defect.
+  NON-VACUITY, STATED: unlike the structural operations above, this operation
+  reports empty for an unresolved anchor too, so the empty result alone would
+  not prove the anchor resolved. The paired control lives in the harness —
+  TestHeroIntraParse_AbstentionAnchorsResolve re-asks the graph for infra.region through
+  the same fixture engine and fails unless a node whose qualified name is
+  EXACTLY that anchor comes back. Exactness is the point: reference
+  resolution falls back to lexical search when no exact qualified name
+  matches, so a control that only asked whether something resolved would
+  stay green after the anchor had been renamed away. So this scenario
+  cannot pass by the anchor having quietly disappeared.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: related_files
+  args:
+    anchor: infra.region
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,45 @@
+id: hjson-14-related-files-abstention
+description: >
+  related_files(data.name, dependents) — THE LOAD-BEARING §5.5 SCENARIO OF
+  THIS SUITE, because this is the operation JSON Schema's `$ref` would answer
+  if it were json's own construct and graphi bound it. It returns empty.
+  ABSTENTION SHAPE (json, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does JSON's own specification define a
+  construct that names another file? NO — RFC 8259 (and ECMA-404) defines
+  objects, arrays, numbers, strings and the three literals, and nothing else:
+  no declaration, no name binding and no reference of any kind. `$ref`, which
+  this fixture writes in schema/server.schema.json, is a construct of JSON
+  Schema and JSON Reference layered ON json; to json's own grammar
+  `"$ref": "./endpoint.schema.json"` is an ordinary member whose name happens
+  to begin with a dollar sign, so it cannot be cited as json's answer. json is
+  graded parse-only, and this suite states the consequence rather than hiding
+  it: the four checked-in documents parse deterministically and mint no symbol
+  and no file node at all, so the anchor of a symbol-shaped question does not
+  resolve and the ONLY AVAILABLE answer is not_found. THIS SUITE DOES NOT CALL
+  THAT ANSWER AN HONEST ONE, and SW-202's finding F1 is the reason: not_found
+  names the ANCHOR as the thing that was wrong, when the anchor is a real
+  member of a file that is merely unrepresented — which is the LANGHONEST-001
+  defect itself, not a clean abstention. This scenario deliberately pins the
+  KNOWN-WRONG answer as the expected one so that a fix has a red test to turn
+  green, and the cost is stated with it rather than discovered later: when
+  LANGHONEST-001 is fixed for json, most of corpus/hero-json has to be
+  rewritten.
+  The abstention belongs to the LANGUAGE, not to graphi; citing graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+  NON-VACUITY, STATED: this operation reports empty for an unresolved anchor
+  too, so unlike hjson-05..11 the empty result here does NOT by itself prove
+  anything about the relation. What proves the claim is the harness control
+  TestHeroIntraParse_JsonIsParseOnly, which asserts the fixture graph holds
+  ZERO nodes and ZERO edges while all four documents parse successfully; with
+  that established, empty and not_found are the only answers this fixture can
+  produce, and the suite says so rather than implying more.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: related_files
+  args:
+    anchor: data.name
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

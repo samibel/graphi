@@ -1,0 +1,14 @@
+id: htoml-12-agent-brief
+description: >
+  An agent brief on config.name is assembled from the live toml graph and carries
+  cited evidence, so the brief is derived from the fixture rather than from a
+  template.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: agent_brief
+  args:
+    topic: config.name
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

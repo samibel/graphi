@@ -1,0 +1,14 @@
+id: hyaml-01-index
+description: >
+  Indexing the yaml fixture returns a populated inventory: every checked-in
+  yaml source file is walked and every declaration the yaml node set admits
+  is minted, so shared/common.yaml is present in the answer. This is the positive control
+  the abstention scenarios in this suite lean on — if the fixture were not
+  really indexed, this scenario is the one that goes red first.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: index
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: shared/common.yaml

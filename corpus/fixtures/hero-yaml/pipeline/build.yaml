@@ -1,0 +1,15 @@
+# hero-yaml tier-1 fixture: the build pipeline.
+#
+# Two shapes of "name another file" appear below, and only one of them is
+# YAML's own:
+#   * `shared:` carries a node property — the application-defined tag
+#     `!include` — which rides on YAML 1.2's tag mechanism, the language-level
+#     hook this fixture exists to exercise;
+#   * `include:` is an ordinary mapping key with a plain string value, the
+#     Ansible/Compose convention that YAML itself gives no meaning.
+name: build
+shared: !include ../shared/common.yaml
+include: ../shared/common.yaml
+steps:
+  - compile
+  - test

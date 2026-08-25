@@ -1,0 +1,18 @@
+id: hmd-04-definition-found
+description: >
+  The definition of guide.Options resolves to guide/setup.md. The negative anchor keeps guide/intro.md
+  out of the answer: a resolver that returned every markdown file would satisfy
+  the positive half of this scenario and still be wrong.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: definition
+  args:
+    symbol: guide.Options
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: guide/setup.md
+  absent:
+    - kind: file
+      value: guide/intro.md
+      match: contains

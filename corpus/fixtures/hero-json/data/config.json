@@ -1,0 +1,8 @@
+{
+  "name": "graphi-hero-json",
+  "server": {
+    "host": "localhost",
+    "port": 8080
+  },
+  "features": ["search", "definition"]
+}

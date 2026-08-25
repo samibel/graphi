@@ -1,0 +1,43 @@
+id: hyaml-13-related-files-abstention
+description: >
+  related_files(shared.image, dependents) — THE LOAD-BEARING §5.5 SCENARIO OF THIS
+  SUITE, because this is the operation the language's cross-file construct
+  would answer if graphi bound it.
+  ABSTENTION SHAPE (yaml, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5, on the reading docs/rc/parity-classes-yaml.yaml already published).
+  THE LANGUAGE QUESTION FIRST: does YAML's own specification define a
+  construct that names another file? YES — the YAML 1.2 specification defines
+  a TAG mechanism (node properties carrying a tag, plus tag-resolution rules
+  that hand an unrecognised tag to the application), and that mechanism is the
+  language-level hook an `!include ./other.yaml` node rides on. TWO LIMITS ARE
+  STATED RATHER THAN OVERCLAIMED: YAML does NOT standardise `!include` itself,
+  the application resolves it; and YAML's anchors and aliases are explicitly
+  stream-local and are NOT a cross-file reference. This fixture writes both
+  shapes so the distinction is visible in the source —
+  `shared: !include ../shared/common.yaml` uses the tag mechanism, while
+  `include: ../shared/common.yaml` is the ordinary mapping key the
+  Ansible/Compose convention relies on and YAML itself gives no meaning.
+  graphi's YAML extractor mints top-level mapping keys and resolves no tag,
+  so what this scenario asserts is an HONEST EMPTY. It is justified here by
+  the language specification named above; justifying it by graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+  NON-VACUITY, STATED: unlike the structural operations above, this operation
+  reports empty for an unresolved anchor too, so the empty result alone would
+  not prove the anchor resolved. The paired control lives in the harness —
+  TestHeroIntraParse_AbstentionAnchorsResolve re-asks the graph for shared.image through
+  the same fixture engine and fails unless a node whose qualified name is
+  EXACTLY that anchor comes back. Exactness is the point: reference
+  resolution falls back to lexical search when no exact qualified name
+  matches, so a control that only asked whether something resolved would
+  stay green after the anchor had been renamed away. So this scenario
+  cannot pass by the anchor having quietly disappeared.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: related_files
+  args:
+    anchor: shared.image
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,17 @@
+id: hmd-15-agent-brief-partial
+description: >
+  agent_brief(guide.Options, max_items=1) marks the result PARTIAL via the item cap: the
+  brief assembles more rows than the cap admits, the surplus is dropped, and
+  the outcome degrades from found to partial rather than silently returning a
+  short answer. This is the partial failure class for this language. It is a
+  real truncation of a real brief — hmd-12 above asserts the same brief
+  uncapped and finds it non-empty — not a synthetic cap over an empty result.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: agent_brief
+  args:
+    topic: guide.Options
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial

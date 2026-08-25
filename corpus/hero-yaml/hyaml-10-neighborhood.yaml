@@ -1,0 +1,21 @@
+id: hyaml-10-neighborhood
+description: >
+  The depth-1 neighborhood of shared.image carries the structure yaml really has at
+  this level: the declaration and the file node that defines it, joined by the
+  confirmed defines edge. The negative anchor keeps pipeline/deploy.yaml out — a
+  neighborhood that returned the whole fixture would be useless and would
+  still satisfy the positive half.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: neighborhood
+  args:
+    symbol: shared.image
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: shared/common.yaml
+  absent:
+    - kind: file
+      value: pipeline/deploy.yaml
+      match: contains

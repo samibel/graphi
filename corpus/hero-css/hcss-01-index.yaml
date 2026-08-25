@@ -1,0 +1,14 @@
+id: hcss-01-index
+description: >
+  Indexing the css fixture returns a populated inventory: every checked-in
+  css source file is walked and every declaration the css node set admits
+  is minted, so base/tokens.css is present in the answer. This is the positive control
+  the abstention scenarios in this suite lean on — if the fixture were not
+  really indexed, this scenario is the one that goes red first.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: index
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: base/tokens.css

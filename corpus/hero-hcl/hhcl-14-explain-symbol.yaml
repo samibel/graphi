@@ -1,0 +1,14 @@
+id: hhcl-14-explain-symbol
+description: >
+  Explaining infra.region cites its declaration site in infra/main.tf. explain_symbol is
+  askable at this language's honest level and is asserted at full strength,
+  including the evidence requirement.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: explain_symbol
+  args:
+    symbol: infra.region
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

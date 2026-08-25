@@ -1,0 +1,17 @@
+id: htoml-02-search-hit
+description: >
+  Searching for "name" finds config.name, declared in config/app.toml. Lexical search over the
+  minted toml symbols is one of the operations that IS askable at this
+  language's honest level, so it is asserted at full strength.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: search
+  args:
+    query: name
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: config.name
+      match: contains

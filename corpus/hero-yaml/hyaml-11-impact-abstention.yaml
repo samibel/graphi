@@ -1,0 +1,33 @@
+id: hyaml-11-impact-abstention
+description: >
+  impact(shared.image) — the blast radius needs a dependent to traverse, and at this
+  language's honest level there is none to traverse to. NON-VACUITY, STATED:
+  an unresolved anchor would report not_found, not empty, so reading empty
+  here proves the anchor resolved.
+  ABSTENTION SHAPE (yaml, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5, on the reading docs/rc/parity-classes-yaml.yaml already published).
+  THE LANGUAGE QUESTION FIRST: does YAML's own specification define a
+  construct that names another file? YES — the YAML 1.2 specification defines
+  a TAG mechanism (node properties carrying a tag, plus tag-resolution rules
+  that hand an unrecognised tag to the application), and that mechanism is the
+  language-level hook an `!include ./other.yaml` node rides on. TWO LIMITS ARE
+  STATED RATHER THAN OVERCLAIMED: YAML does NOT standardise `!include` itself,
+  the application resolves it; and YAML's anchors and aliases are explicitly
+  stream-local and are NOT a cross-file reference. This fixture writes both
+  shapes so the distinction is visible in the source —
+  `shared: !include ../shared/common.yaml` uses the tag mechanism, while
+  `include: ../shared/common.yaml` is the ordinary mapping key the
+  Ansible/Compose convention relies on and YAML itself gives no meaning.
+  graphi's YAML extractor mints top-level mapping keys and resolves no tag,
+  so what this scenario asserts is an HONEST EMPTY. It is justified here by
+  the language specification named above; justifying it by graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: impact
+  args:
+    symbol: shared.image
+area: agent_mcp
+expect:
+  outcome: empty

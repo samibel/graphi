@@ -1,0 +1,13 @@
+id: hyaml-16-change-risk
+description: >
+  Change risk for shared.image is assessed from the graph the yaml level really has:
+  the declaration and its defining file. change_risk is askable here and is
+  asserted at full strength.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: change_risk
+  args:
+    target: shared.image
+area: agent_mcp
+expect:
+  outcome: found

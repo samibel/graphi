@@ -1,0 +1,13 @@
+id: htoml-16-change-risk
+description: >
+  Change risk for config.name is assessed from the graph the toml level really has:
+  the declaration and its defining file. change_risk is askable here and is
+  asserted at full strength.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: change_risk
+  args:
+    target: config.name
+area: agent_mcp
+expect:
+  outcome: found

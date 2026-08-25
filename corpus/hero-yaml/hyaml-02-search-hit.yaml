@@ -1,0 +1,17 @@
+id: hyaml-02-search-hit
+description: >
+  Searching for "image" finds shared.image, declared in shared/common.yaml. Lexical search over the
+  minted yaml symbols is one of the operations that IS askable at this
+  language's honest level, so it is asserted at full strength.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: search
+  args:
+    query: image
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: shared.image
+      match: contains

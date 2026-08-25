@@ -1,0 +1,17 @@
+id: hhcl-02-search-hit
+description: >
+  Searching for "region" finds infra.region, declared in infra/main.tf. Lexical search over the
+  minted hcl symbols is one of the operations that IS askable at this
+  language's honest level, so it is asserted at full strength.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: search
+  args:
+    query: region
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: infra.region
+      match: contains

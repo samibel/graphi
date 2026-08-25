@@ -1,0 +1,17 @@
+id: hhcl-07-callers-ambiguous
+description: >
+  The block `resource "graphi_service" "core"` is declared TWICE inside
+  infra/ — once in infra/main.tf and once in infra/other.tf — and the symbol
+  namespace keys on the parent directory, so both declarations claim the
+  qualified name infra.resource.graphi_service.core. callers(infra.resource.graphi_service.core) therefore cannot pick a single definition and returns
+  AMBIGUOUS with both candidates, which is the ambiguous failure class for
+  this language. This scenario is the sharpest non-vacuity control in the
+  suite: it can only pass while BOTH declarations are really indexed.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: callers
+  args:
+    symbol: infra.resource.graphi_service.core
+area: agent_mcp
+expect:
+  outcome: ambiguous

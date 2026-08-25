@@ -1,0 +1,6 @@
+# hero-toml tier-1 fixture: a second config file in the SAME directory that
+# declares the same table header, which is what makes the qualified name
+# config.server ambiguous.
+[server]
+host = "127.0.0.1"
+port = 9090

@@ -1,0 +1,14 @@
+id: hhcl-12-agent-brief
+description: >
+  An agent brief on infra.region is assembled from the live hcl graph and carries
+  cited evidence, so the brief is derived from the fixture rather than from a
+  template.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: agent_brief
+  args:
+    topic: infra.region
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

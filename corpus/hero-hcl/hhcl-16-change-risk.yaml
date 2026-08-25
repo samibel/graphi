@@ -1,0 +1,13 @@
+id: hhcl-16-change-risk
+description: >
+  Change risk for infra.region is assessed from the graph the hcl level really has:
+  the declaration and its defining file. change_risk is askable here and is
+  asserted at full strength.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: change_risk
+  args:
+    target: infra.region
+area: agent_mcp
+expect:
+  outcome: found

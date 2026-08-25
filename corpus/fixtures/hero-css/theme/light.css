@@ -1,0 +1,12 @@
+/* hero-css tier-1 fixture: light theme.
+   The @import below is CSS's own cross-file construct (CSS Cascading and
+   Inheritance Level 5, the @import at-rule). */
+@import "../base/tokens.css";
+
+header {
+  background: #ffffff;
+}
+
+nav {
+  display: flex;
+}

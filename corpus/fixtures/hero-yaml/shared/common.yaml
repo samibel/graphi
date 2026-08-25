@@ -1,0 +1,3 @@
+# hero-yaml tier-1 fixture: the shared block the build pipeline points at.
+image: graphi/builder
+registry: registry.example.invalid

@@ -1,0 +1,17 @@
+id: hmd-07-callers-ambiguous
+description: >
+  The heading `Configure` is declared TWICE inside guide/ — as the `#`
+  heading of guide/setup.md and as a `##` heading inside guide/intro.md — and
+  the symbol namespace keys on the parent directory, so both headings claim
+  the qualified name guide.Configure. callers(guide.Configure) therefore cannot pick a single definition and returns
+  AMBIGUOUS with both candidates, which is the ambiguous failure class for
+  this language. This scenario is the sharpest non-vacuity control in the
+  suite: it can only pass while BOTH declarations are really indexed.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: callers
+  args:
+    symbol: guide.Configure
+area: agent_mcp
+expect:
+  outcome: ambiguous

@@ -1,0 +1,21 @@
+id: hcss-10-neighborhood
+description: >
+  The depth-1 neighborhood of base.main carries the structure css really has at
+  this level: the declaration and the file node that defines it, joined by the
+  confirmed defines edge. The negative anchor keeps theme/dark.css out — a
+  neighborhood that returned the whole fixture would be useless and would
+  still satisfy the positive half.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: neighborhood
+  args:
+    symbol: base.main
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: base/tokens.css
+  absent:
+    - kind: file
+      value: theme/dark.css
+      match: contains
