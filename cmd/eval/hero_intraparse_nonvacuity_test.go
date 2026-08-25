@@ -50,6 +50,14 @@ package main
 //	    hcl and toml deliberately carry none. Those claims are asserted here
 //	    against the checked-in bytes, so prose and artifact cannot drift apart.
 //
+//	TestHeroIntraParse_GraphCensusMatchesTheG6Rows
+//	    Added in rebuild round 1 for review finding M-1. The five
+//	    symbol-minting suites carried NO graph census, so a fixture document
+//	    could be blanked to zero bytes with every gate still green and the G6
+//	    rows' published node/edge counts bound by nothing. This asserts each
+//	    row's counts against the built graph, in the same shape
+//	    TestHeroJsonSuite_AmbiguousIsUnreachable already used for json.
+//
 //	TestHeroIntraParse_SuitesProduceRealEvidence
 //	    Every suite must contain at least one scenario that comes back with
 //	    real cited evidence, so a suite of nothing-but-empties cannot pass.
@@ -62,6 +70,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/scenario"
 )
@@ -276,6 +285,148 @@ func TestHeroIntraParse_SuitesProduceRealEvidence(t *testing.T) {
 			}
 			if positive == 0 {
 				t.Errorf("no scenario in %s produced a non-empty answer — the abstention scenarios need a working positive control in the same suite", rule.dir)
+			}
+		})
+	}
+}
+
+// ── M-1 (review of e3975f9): THE GRAPH CENSUS, BOUND TO THE G6 ROWS ─────────
+//
+// The review of this story blanked corpus/fixtures/hero-hcl/modules/net.tf to
+// ZERO BYTES and every gate above stayed green. That file contributes two of
+// hcl's seven symbols, so `GA-LANG-hcl-G6`'s published sentence — "3 files …
+// 7 block and attribute symbols plus 3 file nodes = 10 graph nodes and 7
+// defines edges" — was prose bound by nothing. It could become false without a
+// gate noticing, which is the very failure class ("a witness that cannot
+// fail") this story was written against.
+//
+// TestHeroIntraParse_GraphCensusMatchesTheG6Rows closes it. Each of the five
+// symbol-minting suites now carries the same shape json already had in
+// TestHeroJsonSuite_AmbiguousIsUnreachable — build the fixture engine, read
+// the graph back, count it — except that json asserts 0/0 and these five
+// assert the exact numbers their G6 row PUBLISHES. The numbers below are
+// transcribed from docs/rc/evidence-index.yaml, not measured and then written
+// down: if the fixture and the row ever disagree, one of them is lying and
+// this test says which.
+//
+// Three things are asserted per language, and each binds a different half of
+// the sentence:
+//
+//   - fileNodes / symbolNodes / totalNodes — the row's "N files, M symbols
+//     plus N file nodes = T graph nodes" arithmetic, so deleting, emptying or
+//     adding a fixture file moves a number the row states;
+//   - definesEdges, and that `defines` is the ONLY edge kind — the row's "and
+//     E defines edges". An intra-file-only language that suddenly grew an
+//     `imports` edge would change what the whole §5.5 grading rests on;
+//   - every file node contributes at least one symbol. Counting alone would
+//     still admit a fixture where one document was blanked and another grew
+//     compensating symbols; this makes each of the three documents carry its
+//     own weight, which is what "3 files, 7 symbols" is understood to mean.
+//
+// PROVEN, NOT ASSUMED: blanking modules/net.tf to zero bytes now fails this
+// test with "hero-hcl fixture graph has 8 nodes, want 10" — see the story's
+// Rebuild round 1 record, which carries the captured RED output for hcl, css
+// and yaml.
+type intraParseCensusClaim struct {
+	lang string
+	// fileNodes is the number of `file`-kind nodes: the fixture's documents.
+	fileNodes int
+	// symbolNodes is the number of non-file nodes the row calls "symbols".
+	symbolNodes int
+	// totalNodes is the row's stated total, asserted separately so the row's
+	// own arithmetic is checked and not just re-derived.
+	totalNodes int
+	// definesEdges is the row's stated `defines` edge count.
+	definesEdges int
+	// rowPhrase is the sentence from docs/rc/evidence-index.yaml this claim
+	// binds, quoted back in every failure so the reader knows which published
+	// prose just became false.
+	rowPhrase string
+}
+
+// intraParseCensusClaims transcribes the five G6 rows' census sentences.
+var intraParseCensusClaims = []intraParseCensusClaim{
+	{"css", 3, 7, 10, 7,
+		"GA-LANG-css-G6: \"3 files, 7 selector symbols plus 3 file nodes = 10 graph nodes and 7 defines edges\""},
+	{"hcl", 3, 7, 10, 7,
+		"GA-LANG-hcl-G6: \"3 files across infra/ and modules/, 7 block and attribute symbols plus 3 file nodes = 10 graph nodes and 7 defines edges\""},
+	{"markdown", 3, 7, 10, 7,
+		"GA-LANG-markdown-G6: \"3 documents across guide/ and notes/, 7 heading symbols plus 3 file nodes = 10 graph nodes and 7 defines edges\""},
+	{"toml", 3, 7, 10, 7,
+		"GA-LANG-toml-G6: \"3 documents across config/ and deploy/, 7 table and key symbols plus 3 file nodes = 10 graph nodes and 7 defines edges\""},
+	{"yaml", 3, 8, 11, 8,
+		"GA-LANG-yaml-G6: \"3 documents across pipeline/ and shared/, 8 top-level mapping-key symbols plus 3 file nodes = 11 graph nodes and 8 defines edges\""},
+}
+
+func TestHeroIntraParse_GraphCensusMatchesTheG6Rows(t *testing.T) {
+	root := repoRoot(t)
+	if len(intraParseCensusClaims) != len(symbolMintingIntraParseLangs) {
+		t.Fatalf("%d census claims for %d symbol-minting languages — every suite must carry one", len(intraParseCensusClaims), len(symbolMintingIntraParseLangs))
+	}
+	for _, c := range intraParseCensusClaims {
+		t.Run(c.lang, func(t *testing.T) {
+			eng, err := buildFixtureEngine(filepath.Join(root, "corpus", "fixtures", "hero-"+c.lang))
+			if err != nil {
+				t.Fatalf("build hero-%s fixture engine: %v", c.lang, err)
+			}
+			reader := eng.Deps.Query.Reader()
+			nodes, err := reader.Nodes(context.Background(), graphstore.Query{})
+			if err != nil {
+				t.Fatalf("read hero-%s nodes: %v", c.lang, err)
+			}
+			edges, err := reader.Edges(context.Background(), graphstore.Query{})
+			if err != nil {
+				t.Fatalf("read hero-%s edges: %v", c.lang, err)
+			}
+
+			files := 0
+			symbols := 0
+			symbolsByPath := map[string]int{}
+			filePaths := map[string]bool{}
+			for _, n := range nodes {
+				if n.Kind() == "file" {
+					files++
+					filePaths[n.SourcePath()] = true
+					continue
+				}
+				symbols++
+				symbolsByPath[n.SourcePath()]++
+			}
+			if files != c.fileNodes {
+				t.Errorf("hero-%s fixture graph has %d file nodes, want %d — %s", c.lang, files, c.fileNodes, c.rowPhrase)
+			}
+			if symbols != c.symbolNodes {
+				t.Errorf("hero-%s fixture graph has %d symbol nodes, want %d — %s", c.lang, symbols, c.symbolNodes, c.rowPhrase)
+			}
+			if len(nodes) != c.totalNodes {
+				t.Errorf("hero-%s fixture graph has %d nodes, want %d — %s", c.lang, len(nodes), c.totalNodes, c.rowPhrase)
+			}
+
+			defines := 0
+			otherKinds := map[string]int{}
+			for _, e := range edges {
+				if e.Kind() == "defines" {
+					defines++
+					continue
+				}
+				otherKinds[e.Kind()]++
+			}
+			if defines != c.definesEdges {
+				t.Errorf("hero-%s fixture graph has %d defines edges, want %d — %s", c.lang, defines, c.definesEdges, c.rowPhrase)
+			}
+			if len(otherKinds) != 0 {
+				t.Errorf("hero-%s fixture graph carries non-defines edges %v — the row states defines edges and nothing else, and an intra-file-only language growing a cross-file edge kind would invalidate the §5.5 grading this suite rests on", c.lang, otherKinds)
+			}
+
+			for path := range filePaths {
+				if symbolsByPath[path] == 0 {
+					t.Errorf("hero-%s document %s contributes no symbol at all — the counts above can still be met by one document going empty while another grows, so each of the %d documents must carry its own weight; %s", c.lang, path, c.fileNodes, c.rowPhrase)
+				}
+			}
+			for path := range symbolsByPath {
+				if !filePaths[path] {
+					t.Errorf("hero-%s has symbols from %s but no file node for it", c.lang, path)
+				}
 			}
 		})
 	}
