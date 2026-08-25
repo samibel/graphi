@@ -50,8 +50,12 @@ leave `references`, `imports` and `search` untouched, while PARITY-004 does move
 from the defect text below; the diagram is a table of contents, not a second
 claim.
 
-`graphi doctor` carries the machine-checked half of the same disclosure, under
-its `known-defects` check. It reports **LINK-002, LINK-003 and LINK-004** today.
+`graphi doctor` carries the machine-checked half of this disclosure, under its
+`known-defects` check. It reports **LINK-002, LINK-003 and LINK-004** today. The
+two halves are not yet word-for-word identical: doctor's LINK-002 entry
+(`internal/doctor/checks.go:414-416`) additionally names `search_hybrid` among the
+affected operations, which this page's diagram and prose do not. Reconciling the
+two lists is SW-211's, and until it lands, doctor's list is the wider of the two.
 **PARITY-004's doctor row is not landed** — an open owner decision, not an
 oversight — so for that one defect this page is currently the only disclosure
 surface.

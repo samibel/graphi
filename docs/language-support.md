@@ -96,7 +96,7 @@ these languages' grammar blobs are embedded — never the all-206 default embed.
 > `callers`, `callees`, `impact` and `neighborhood` on Python. **Workaround:** import the
 > package rather than the module — `from pkg import util` then `util.helper()` resolves, and
 > additionally emits the `imports` edge. Not fixed; disclosed per the contract in
-> `readme.md` and the doctor `known-defects` check. Record:
+> `docs/known-defects.md` and the doctor `known-defects` check. Record:
 > [`rc/capability-audit-2026-08-19.md`](rc/capability-audit-2026-08-19.md) §3.
 >
 > ⁶ **TypeScript family — exact-path resolution; immune to LINK-001 by construction.**
