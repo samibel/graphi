@@ -1,0 +1,21 @@
+id: hhcl-10-neighborhood
+description: >
+  The depth-1 neighborhood of infra.region carries the structure hcl really has at
+  this level: the declaration and the file node that defines it, joined by the
+  confirmed defines edge. The negative anchor keeps modules/net.tf out — a
+  neighborhood that returned the whole fixture would be useless and would
+  still satisfy the positive half.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: neighborhood
+  args:
+    symbol: infra.region
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: infra/main.tf
+  absent:
+    - kind: file
+      value: modules/net.tf
+      match: contains

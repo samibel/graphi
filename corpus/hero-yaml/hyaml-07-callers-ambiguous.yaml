@@ -1,0 +1,17 @@
+id: hyaml-07-callers-ambiguous
+description: >
+  The top-level mapping key `name` is declared TWICE inside pipeline/ —
+  once in pipeline/build.yaml and once in pipeline/deploy.yaml — and the
+  symbol namespace keys on the parent directory, so both keys claim the
+  qualified name pipeline.name. callers(pipeline.name) therefore cannot pick a single definition and returns
+  AMBIGUOUS with both candidates, which is the ambiguous failure class for
+  this language. This scenario is the sharpest non-vacuity control in the
+  suite: it can only pass while BOTH declarations are really indexed.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: callers
+  args:
+    symbol: pipeline.name
+area: agent_mcp
+expect:
+  outcome: ambiguous

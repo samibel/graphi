@@ -1,0 +1,12 @@
+/* hero-css tier-1 fixture: dark theme.
+   `header` is declared here AND in light.css, both inside theme/, which is
+   what makes the qualified name theme.header ambiguous. */
+@import "../base/tokens.css";
+
+header {
+  background: #000000;
+}
+
+aside {
+  opacity: 0.8;
+}

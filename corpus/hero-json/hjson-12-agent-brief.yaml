@@ -1,0 +1,28 @@
+id: hjson-12-agent-brief
+description: >
+  An agent brief still assembles for a json-only tree: the brief degrades to
+  its honest graph-unavailable and topic-unresolved rows rather than failing,
+  which is the one stable operation that stays useful at parse-only. The two
+  negative anchors are the load-bearing half. They assert that NO json member
+  name has leaked into the brief as if it were a symbol, and that NO json
+  document has leaked into it as if it were a start-here file. Both are
+  chosen so the brief's own echo of the topic cannot satisfy them: the topic
+  is data.name, while the anchors name data.server and data/config.json. If
+  graphi ever started minting json nodes, the "Relevant Symbols" and "Start
+  Here" sections would name exactly these and this scenario would go red, so
+  it doubles as the regression tripwire for the parse-only claim.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: agent_brief
+  args:
+    topic: data.name
+area: agent_mcp
+expect:
+  outcome: found
+  absent:
+    - kind: symbol
+      value: data.server
+      match: contains
+    - kind: file
+      value: data/config.json
+      match: contains

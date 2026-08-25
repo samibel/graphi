@@ -1,0 +1,29 @@
+id: htoml-06-callers-abstention
+description: >
+  callers(config.name) — the cross-file caller relation. NON-VACUITY, STATED: this
+  operation resolves its anchor first, and an anchor that failed to resolve
+  would report not_found, NOT empty; reading empty here therefore proves the
+  anchor resolved and the relation was genuinely asked for and genuinely had
+  no answer.
+  ABSTENTION SHAPE (toml, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does TOML's own specification define a
+  construct that names another file? NO — the TOML v1.0.0 specification
+  defines exactly one document per file: keys, values, tables, arrays of
+  tables and inline tables, with no include, no import and no reference to
+  another document. An `include = "other.toml"` key would be an ordinary
+  string-valued key to which some host application may attach meaning, and
+  TOML says nothing about it — which is why this fixture does not write one: a
+  fixture that did would be grading the host application, not TOML. With no
+  construct in the language there is nothing to resolve; this scenario
+  substitutes the question and asserts the well-formed empty result. The
+  abstention belongs to the LANGUAGE, not to graphi; citing graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: callers
+  args:
+    symbol: config.name
+area: agent_mcp
+expect:
+  outcome: empty

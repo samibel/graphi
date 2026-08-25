@@ -1,0 +1,14 @@
+id: hyaml-14-explain-symbol
+description: >
+  Explaining shared.image cites its declaration site in shared/common.yaml. explain_symbol is
+  askable at this language's honest level and is asserted at full strength,
+  including the evidence requirement.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: explain_symbol
+  args:
+    symbol: shared.image
+area: agent_mcp
+expect:
+  outcome: found
+  has_evidence: true

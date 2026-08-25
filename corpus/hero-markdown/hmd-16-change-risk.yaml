@@ -1,0 +1,13 @@
+id: hmd-16-change-risk
+description: >
+  Change risk for guide.Options is assessed from the graph the markdown level really has:
+  the declaration and its defining file. change_risk is askable here and is
+  asserted at full strength.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: change_risk
+  args:
+    target: guide.Options
+area: agent_mcp
+expect:
+  outcome: found

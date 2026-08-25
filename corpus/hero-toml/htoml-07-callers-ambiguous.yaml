@@ -1,0 +1,17 @@
+id: htoml-07-callers-ambiguous
+description: >
+  The table header `[server]` is declared TWICE inside config/ — once in
+  config/app.toml and once in config/extra.toml — and the symbol namespace
+  keys on the parent directory, so both tables claim the qualified name
+  config.server. callers(config.server) therefore cannot pick a single definition and returns
+  AMBIGUOUS with both candidates, which is the ambiguous failure class for
+  this language. This scenario is the sharpest non-vacuity control in the
+  suite: it can only pass while BOTH declarations are really indexed.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: callers
+  args:
+    symbol: config.server
+area: agent_mcp
+expect:
+  outcome: ambiguous

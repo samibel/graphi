@@ -560,6 +560,24 @@ func TestCheckedInManifest_PRGateUnchanged(t *testing.T) {
 		"tier1-fixture-hero-ruby":   true,
 		"tier1-fixture-hero-rust":   true,
 		"tier1-fixture-hero-sql":    true,
+		// SW-202 (language-GA program G6): the five symbol-minting members of
+		// the intra/parse residual. Same hermetic shape as every hero fixture
+		// above — no network, no toolchain, the pure-Go gotreesitter grammars
+		// parse them in-process — so they belong on the PR gate for the same
+		// reason. All five carry the §5.5 ABSTENTION shape rather than a
+		// cross-file one: css and markdown because their specifications DO
+		// define a cross-file construct that graphi declines (@import, the
+		// inline link), hcl and toml because their specifications define none
+		// at all, and yaml on the tag-mechanism reading published in
+		// docs/rc/parity-classes-yaml.yaml. The sixth member, json, is
+		// deliberately NOT here: it is graded parse-only and mints no node, so
+		// it cannot satisfy this manifest's expect_nonempty invariant and is
+		// registered locally by cmd/eval/hero_json_test.go instead.
+		"tier1-fixture-hero-css":      true,
+		"tier1-fixture-hero-hcl":      true,
+		"tier1-fixture-hero-markdown": true,
+		"tier1-fixture-hero-toml":     true,
+		"tier1-fixture-hero-yaml":     true,
 	}
 	for _, e := range m.Entries {
 		if e.Tier > 2 {

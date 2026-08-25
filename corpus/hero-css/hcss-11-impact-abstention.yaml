@@ -1,0 +1,27 @@
+id: hcss-11-impact-abstention
+description: >
+  impact(base.main) — the blast radius needs a dependent to traverse, and at this
+  language's honest level there is none to traverse to. NON-VACUITY, STATED:
+  an unresolved anchor would report not_found, not empty, so reading empty
+  here proves the anchor resolved.
+  ABSTENTION SHAPE (css, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does CSS's own specification define a
+  construct that names another file? YES — the CSS Syntax Module Level 3 (and
+  CSS Cascading and Inheritance) specification defines the `@import` at-rule,
+  `@import "base.css";`, which pulls another style sheet into the current one.
+  This fixture uses it: theme/light.css and theme/dark.css both open with
+  `@import "../base/tokens.css"`. graphi's CSS extractor mints selector
+  symbols and records no import at all, so what this scenario asserts is an
+  HONEST EMPTY — the construct is present in the source, and graphi declines
+  to claim the relation rather than fabricating one. The abstention belongs to
+  graphi, NOT to CSS, and it is justified here by the language specification
+  named above; justifying it by graphi's own parser comment instead would be
+  the LANGHONEST-001 circular-abstention defect.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: impact
+  args:
+    symbol: base.main
+area: agent_mcp
+expect:
+  outcome: empty

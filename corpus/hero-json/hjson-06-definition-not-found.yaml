@@ -1,0 +1,15 @@
+id: hjson-06-definition-not-found
+description: >
+  A name that appears nowhere in the fixture also reports a clean not_found.
+  Paired with hjson-05 this scenario pins the honest limit of the answer: at
+  parse-only, graphi cannot distinguish "a member that exists but binds
+  nothing" from "a name that is simply absent", and both read not_found. The
+  suite records that indistinguishability rather than papering over it.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: definition
+  args:
+    symbol: NoSuchSymbolXyz
+area: agent_mcp
+expect:
+  outcome: not_found

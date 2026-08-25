@@ -1,0 +1,14 @@
+id: hjson-03-search-empty
+description: >
+  A search with no hit returns a well-formed empty result rather than a
+  fabricated match. This is the hero-03-search-empty honest-empty shape, and
+  it is a property of the search operation, not of json — it reads identically
+  on every other hero suite in this repository.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: search
+  args:
+    query: zzz_no_such_symbol_zzz
+area: agent_mcp
+expect:
+  outcome: empty

@@ -1,0 +1,17 @@
+id: hcss-07-callers-ambiguous
+description: >
+  The selector `header` is declared TWICE inside theme/ — once in
+  theme/light.css and once in theme/dark.css — and the symbol namespace keys
+  on the parent directory, so both declarations claim the qualified name
+  theme.header. callers(theme.header) therefore cannot pick a single definition and returns
+  AMBIGUOUS with both candidates, which is the ambiguous failure class for
+  this language. This scenario is the sharpest non-vacuity control in the
+  suite: it can only pass while BOTH declarations are really indexed.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: callers
+  args:
+    symbol: theme.header
+area: agent_mcp
+expect:
+  outcome: ambiguous

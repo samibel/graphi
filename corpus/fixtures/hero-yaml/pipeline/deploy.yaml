@@ -1,0 +1,5 @@
+# hero-yaml tier-1 fixture: a second pipeline file in the SAME directory that
+# declares the same top-level key, which is what makes the qualified name
+# pipeline.name ambiguous.
+name: deploy
+stage: production

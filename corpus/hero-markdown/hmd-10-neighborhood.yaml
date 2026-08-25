@@ -1,0 +1,21 @@
+id: hmd-10-neighborhood
+description: >
+  The depth-1 neighborhood of guide.Options carries the structure markdown really has at
+  this level: the declaration and the file node that defines it, joined by the
+  confirmed defines edge. The negative anchor keeps notes/design.md out — a
+  neighborhood that returned the whole fixture would be useless and would
+  still satisfy the positive half.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: neighborhood
+  args:
+    symbol: guide.Options
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: guide/setup.md
+  absent:
+    - kind: file
+      value: notes/design.md
+      match: contains

@@ -1,0 +1,12 @@
+id: hcss-05-definition-not-found
+description: >
+  An unknown css name returns a clean not_found — the anchor genuinely does
+  not exist in this fixture, and the answer says so instead of guessing.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: definition
+  args:
+    symbol: NoSuchSymbolXyz
+area: agent_mcp
+expect:
+  outcome: not_found

@@ -1,0 +1,18 @@
+id: hyaml-04-definition-found
+description: >
+  The definition of shared.image resolves to shared/common.yaml. The negative anchor keeps pipeline/build.yaml
+  out of the answer: a resolver that returned every yaml file would satisfy
+  the positive half of this scenario and still be wrong.
+fixture_ref: tier1-fixture-hero-yaml
+operation:
+  name: definition
+  args:
+    symbol: shared.image
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: shared/common.yaml
+  absent:
+    - kind: file
+      value: pipeline/build.yaml
+      match: contains

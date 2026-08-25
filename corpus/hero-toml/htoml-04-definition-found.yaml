@@ -1,0 +1,18 @@
+id: htoml-04-definition-found
+description: >
+  The definition of config.name resolves to config/app.toml. The negative anchor keeps config/extra.toml
+  out of the answer: a resolver that returned every toml file would satisfy
+  the positive half of this scenario and still be wrong.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: definition
+  args:
+    symbol: config.name
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: config/app.toml
+  absent:
+    - kind: file
+      value: config/extra.toml
+      match: contains

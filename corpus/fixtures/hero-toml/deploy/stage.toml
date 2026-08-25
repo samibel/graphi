@@ -1,0 +1,7 @@
+# hero-toml tier-1 fixture: a deploy config in a sibling directory. TOML's
+# specification defines no include or import key, so nothing here can name a
+# table declared in config/ and nothing in config/ can name this one.
+target = "stage"
+
+[rollout]
+strategy = "canary"

@@ -1,0 +1,18 @@
+id: hhcl-04-definition-found
+description: >
+  The definition of infra.region resolves to infra/main.tf. The negative anchor keeps infra/other.tf
+  out of the answer: a resolver that returned every hcl file would satisfy
+  the positive half of this scenario and still be wrong.
+fixture_ref: tier1-fixture-hero-hcl
+operation:
+  name: definition
+  args:
+    symbol: infra.region
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: infra/main.tf
+  absent:
+    - kind: file
+      value: infra/other.tf
+      match: contains

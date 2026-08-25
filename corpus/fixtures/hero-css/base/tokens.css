@@ -1,0 +1,12 @@
+/* hero-css tier-1 fixture: base tokens. */
+body {
+  color: #111111;
+}
+
+main {
+  padding: 1rem;
+}
+
+footer {
+  margin: 0;
+}

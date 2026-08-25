@@ -1,0 +1,17 @@
+id: hmd-02-search-hit
+description: >
+  Searching for "Options" finds guide.Options, declared in guide/setup.md. Lexical search over the
+  minted markdown symbols is one of the operations that IS askable at this
+  language's honest level, so it is asserted at full strength.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: search
+  args:
+    query: Options
+area: agent_mcp
+expect:
+  outcome: found
+  anchors:
+    - kind: symbol
+      value: guide.Options
+      match: contains

@@ -1,0 +1,32 @@
+id: hmd-13-related-files-abstention
+description: >
+  related_files(guide.Options, dependents) — THE LOAD-BEARING §5.5 SCENARIO OF THIS
+  SUITE, because this is the operation the language's cross-file construct
+  would answer if graphi bound it.
+  ABSTENTION SHAPE (markdown, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does Markdown's own specification define
+  a construct that names another file? YES — the CommonMark specification
+  defines the inline link `[text](./target.md)` and the link reference
+  definition that backs it. This fixture uses it: guide/intro.md carries
+  `[Configure](./setup.md)`. graphi's Markdown extractor mints heading symbols
+  only and resolves no link destination, so what this scenario asserts is an
+  HONEST EMPTY — the construct is present in the source, and graphi declines
+  to claim the relation rather than fabricating one. The abstention belongs to
+  graphi, NOT to Markdown, and it is justified here by the language
+  specification named above; justifying it by graphi's own parser comment
+  instead would be the LANGHONEST-001 circular-abstention defect.
+  NON-VACUITY, STATED: unlike the structural operations above, this operation
+  reports empty for an unresolved anchor too, so the empty result alone would
+  not prove the anchor resolved. The paired control lives in the harness —
+  TestHeroIntraParse_AbstentionAnchorsResolve re-runs definition(guide.Options) against
+  the same fixture engine and fails if it does not resolve — so this scenario
+  cannot pass by the anchor having quietly disappeared.
+fixture_ref: tier1-fixture-hero-markdown
+operation:
+  name: related_files
+  args:
+    anchor: guide.Options
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

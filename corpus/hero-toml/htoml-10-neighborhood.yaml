@@ -1,0 +1,21 @@
+id: htoml-10-neighborhood
+description: >
+  The depth-1 neighborhood of config.name carries the structure toml really has at
+  this level: the declaration and the file node that defines it, joined by the
+  confirmed defines edge. The negative anchor keeps deploy/stage.toml out — a
+  neighborhood that returned the whole fixture would be useless and would
+  still satisfy the positive half.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: neighborhood
+  args:
+    symbol: config.name
+    depth: "1"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: config/app.toml
+  absent:
+    - kind: file
+      value: deploy/stage.toml
+      match: contains

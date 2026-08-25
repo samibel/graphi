@@ -1,0 +1,30 @@
+id: hjson-09-references-abstention
+description: >
+  references(data.name) reports not_found: the operation resolves its anchor before
+  it can answer, and json mints no node for the anchor to resolve to. The
+  relation itself is never reached, and the answer says which step failed
+  instead of returning a confident empty.
+  ABSTENTION SHAPE (json, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does JSON's own specification define a
+  construct that names another file? NO — RFC 8259 (and ECMA-404) defines
+  objects, arrays, numbers, strings and the three literals, and nothing else:
+  no declaration, no name binding and no reference of any kind. `$ref`, which
+  this fixture writes in schema/server.schema.json, is a construct of JSON
+  Schema and JSON Reference layered ON json; to json's own grammar
+  `"$ref": "./endpoint.schema.json"` is an ordinary member whose name happens
+  to begin with a dollar sign, so it cannot be cited as json's answer. json is
+  graded parse-only, and this suite states the consequence rather than hiding
+  it: the four checked-in documents parse deterministically and mint no symbol
+  and no file node at all, so the anchor of a symbol-shaped question does not
+  resolve and the honest answer is not_found — not a guess, and not a silence.
+  The abstention belongs to the LANGUAGE, not to graphi; citing graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: references
+  args:
+    symbol: data.name
+area: agent_mcp
+expect:
+  outcome: not_found

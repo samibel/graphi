@@ -1240,6 +1240,76 @@
     }
    ],
    "notes": "Tier-1 pinned multi-file SQL fixture for the SW-197 hero-sql tasks. SQL has NO import construct (per engine/link/resolve_bash.go's sqlResolver type comment and ADR-W1: ISO/IEC 9075 defines no file-inclusion). The hero-sql gate (cmd/eval/hero_sql_test.go) exercises the JOIN/VIEW cross-file edge shape — a same-directory `references` from a VIEW to its referenced table — under the heuristic tier. The SQL wrinkle (no imports) is documented per AC-6 in the scenarios' description fields. No network, no SQL engine."
+  },
+  {
+   "name": "tier1-fixture-hero-css",
+   "path": "corpus/fixtures/hero-css",
+   "tier": 1,
+   "language": "css",
+   "scenario_ref": "hero-css",
+   "searches": [
+    {
+     "query": "main",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file CSS fixture for the SW-202 hero-css tasks. CSS is graded intra-file-only. Per docs/plan/2026-08-per-language-ga-template-v1.md §5.5 CSS's OWN specification DOES define a cross-file construct — the @import at-rule — and the fixture uses it (theme/light.css and theme/dark.css both open with `@import \"../base/tokens.css\"`), so the abstention this fixture carries is GRAPHI'S declining of a construct CSS defines, recorded as honest-empty in the scenario descriptions, not a claim that CSS has none. The hero-css gate (cmd/eval/hero_css_test.go) asserts the 12 stable ops at the heuristic tier; the default binary IS the language's honest level (there is no GRAPHI_CSS_TYPERESOLVE switch). No network."
+  },
+  {
+   "name": "tier1-fixture-hero-hcl",
+   "path": "corpus/fixtures/hero-hcl",
+   "tier": 1,
+   "language": "hcl",
+   "scenario_ref": "hero-hcl",
+   "searches": [
+    {
+     "query": "region",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file HCL fixture for the SW-202 hero-hcl tasks. HCL is graded intra-file-only. Per docs/plan/2026-08-per-language-ga-template-v1.md §5.5 HCL's OWN specification (the HCL Native Syntax and Structure specifications) defines NO cross-file construct: Terraform's `module { source = ... }` is a schema a host application layers on HCL, so the fixture deliberately writes no module block and the abstention belongs to the LANGUAGE. The hero-hcl gate (cmd/eval/hero_hcl_test.go) asserts the 12 stable ops at the heuristic tier. No network, no Terraform."
+  },
+  {
+   "name": "tier1-fixture-hero-markdown",
+   "path": "corpus/fixtures/hero-markdown",
+   "tier": 1,
+   "language": "markdown",
+   "scenario_ref": "hero-markdown",
+   "searches": [
+    {
+     "query": "Options",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file Markdown fixture for the SW-202 hero-markdown tasks. Markdown is graded intra-file-only. Per docs/plan/2026-08-per-language-ga-template-v1.md §5.5 Markdown's OWN specification (CommonMark) DOES define a cross-file construct — the inline link — and the fixture uses it (guide/intro.md carries `[Configure](./setup.md)`), so the abstention is GRAPHI'S declining of a construct Markdown defines, recorded as honest-empty. The hero-markdown gate (cmd/eval/hero_markdown_test.go) asserts the 12 stable ops at the heuristic tier. No network."
+  },
+  {
+   "name": "tier1-fixture-hero-toml",
+   "path": "corpus/fixtures/hero-toml",
+   "tier": 1,
+   "language": "toml",
+   "scenario_ref": "hero-toml",
+   "searches": [
+    {
+     "query": "name",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file TOML fixture for the SW-202 hero-toml tasks. TOML is graded intra-file-only. Per docs/plan/2026-08-per-language-ga-template-v1.md §5.5 the TOML v1.0.0 specification defines exactly one document per file and NO include, import or cross-document reference, so the fixture deliberately writes no `include = ...` key (writing one would grade the host application, not TOML) and the abstention belongs to the LANGUAGE. The hero-toml gate (cmd/eval/hero_toml_test.go) asserts the 12 stable ops at the heuristic tier. No network."
+  },
+  {
+   "name": "tier1-fixture-hero-yaml",
+   "path": "corpus/fixtures/hero-yaml",
+   "tier": 1,
+   "language": "yaml",
+   "scenario_ref": "hero-yaml",
+   "searches": [
+    {
+     "query": "image",
+     "expect_nonempty": true
+    }
+   ],
+   "notes": "Tier-1 pinned multi-file YAML fixture for the SW-202 hero-yaml tasks. YAML is graded intra-file-only. Per docs/rc/parity-classes-yaml.yaml's §5.5 paragraph the YAML 1.2 specification's TAG mechanism is the language-level hook an `!include ./other.yaml` node rides on, with two limits stated rather than overclaimed (YAML does not standardise !include itself, and anchors/aliases are stream-local). pipeline/build.yaml therefore writes BOTH shapes — `shared: !include ../shared/common.yaml` (the tag mechanism) and `include: ../shared/common.yaml` (the Ansible/Compose convention YAML gives no meaning) — so the two are distinguishable in the source. graphi resolves no tag, and the scenarios record that as honest-empty. The hero-yaml gate (cmd/eval/hero_yaml_test.go) asserts the 12 stable ops at the heuristic tier. No network."
   }
  ]
 }

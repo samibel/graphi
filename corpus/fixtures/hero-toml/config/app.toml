@@ -1,0 +1,10 @@
+# hero-toml tier-1 fixture: the application config.
+name = "graphi-hero-toml"
+edition = "2024"
+
+[server]
+host = "localhost"
+port = 8080
+
+[logging]
+level = "info"

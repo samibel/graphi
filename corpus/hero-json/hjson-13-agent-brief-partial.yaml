@@ -1,0 +1,16 @@
+id: hjson-13-agent-brief-partial
+description: >
+  agent_brief(data.name, max_items=1) marks the result PARTIAL via the item
+  cap: the brief assembles more rows than the cap admits, the surplus is
+  dropped, and the outcome degrades from found to partial rather than silently
+  returning a short answer. This is the partial failure class for json, and it
+  is a real truncation of the real brief hjson-12 asserts uncapped.
+fixture_ref: tier1-fixture-hero-json
+operation:
+  name: agent_brief
+  args:
+    topic: data.name
+    max_items: "1"
+area: agent_mcp
+expect:
+  outcome: partial

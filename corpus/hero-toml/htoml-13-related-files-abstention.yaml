@@ -1,0 +1,34 @@
+id: htoml-13-related-files-abstention
+description: >
+  related_files(config.name, dependents) — THE LOAD-BEARING §5.5 SCENARIO OF THIS
+  SUITE, because this is the operation the language's cross-file construct
+  would answer if graphi bound it.
+  ABSTENTION SHAPE (toml, per docs/plan/2026-08-per-language-ga-template-v1.md
+  §5.5). THE LANGUAGE QUESTION FIRST: does TOML's own specification define a
+  construct that names another file? NO — the TOML v1.0.0 specification
+  defines exactly one document per file: keys, values, tables, arrays of
+  tables and inline tables, with no include, no import and no reference to
+  another document. An `include = "other.toml"` key would be an ordinary
+  string-valued key to which some host application may attach meaning, and
+  TOML says nothing about it — which is why this fixture does not write one: a
+  fixture that did would be grading the host application, not TOML. With no
+  construct in the language there is nothing to resolve; this scenario
+  substitutes the question and asserts the well-formed empty result. The
+  abstention belongs to the LANGUAGE, not to graphi; citing graphi's own
+  parser comment instead would be the LANGHONEST-001 circular-abstention
+  defect.
+  NON-VACUITY, STATED: unlike the structural operations above, this operation
+  reports empty for an unresolved anchor too, so the empty result alone would
+  not prove the anchor resolved. The paired control lives in the harness —
+  TestHeroIntraParse_AbstentionAnchorsResolve re-runs definition(config.name) against
+  the same fixture engine and fails if it does not resolve — so this scenario
+  cannot pass by the anchor having quietly disappeared.
+fixture_ref: tier1-fixture-hero-toml
+operation:
+  name: related_files
+  args:
+    anchor: config.name
+    direction: dependents
+area: agent_mcp
+expect:
+  outcome: empty

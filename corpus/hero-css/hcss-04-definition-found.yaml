@@ -1,0 +1,18 @@
+id: hcss-04-definition-found
+description: >
+  The definition of base.main resolves to base/tokens.css. The negative anchor keeps theme/light.css
+  out of the answer: a resolver that returned every css file would satisfy
+  the positive half of this scenario and still be wrong.
+fixture_ref: tier1-fixture-hero-css
+operation:
+  name: definition
+  args:
+    symbol: base.main
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: base/tokens.css
+  absent:
+    - kind: file
+      value: theme/light.css
+      match: contains
