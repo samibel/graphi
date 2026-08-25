@@ -1345,7 +1345,10 @@ func TestParity004_DanglingIntraModuleImportBreaksTheCascade(t *testing.T) {
 	if bytes.Equal(got, want) {
 		t.Fatalf("PARITY-004 appears FIXED: re-adding a package after a full pass over a dangling intra-module import now converges with a rebuild.\n" +
 			"That is good news, not a test failure to silence. Do this: re-run the CLI reproduction in projects/graphi backlog entry PARITY-004, " +
-			"retract the readme \"Known limits\" disclosure in the SAME change, and delete this pin.")
+			"RETRACT the PARITY-004 disclosure on BOTH D8 surfaces in the SAME change — the canonical defect page docs/known-defects.md " +
+			"(its bullet AND its node and arrows in the mermaid diagram) AND the doctor known-defects check (internal/doctor/checks.go, " +
+			"plus its assertions and its id-set pin in checks_test.go) — and delete this pin. D8 permits retraction ONLY in the change " +
+			"that closes the defect, so leaving either surface up is now the violation.")
 	}
 	// Pin the exact shape of the divergence, so a DIFFERENT divergence also
 	// fails here rather than passing as "still broken".

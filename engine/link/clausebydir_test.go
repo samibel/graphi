@@ -115,10 +115,15 @@ func TestLink002_PinLastWriteWins(t *testing.T) {
 			"which keeps only the LAST package clause written for a directory. If you "+
 			"just fixed LINK-002 (clauseByDir must hold a SET and uniqueMethodInDir must "+
 			"degrade on ambiguity, per engine/typeresolve/pkggraph.go:132-144), this "+
-			"failure is EXPECTED: delete this whole file, remove the LINK-002 entry from "+
-			"internal/doctor/checks.go and its assertion in checks_test.go, remove the "+
-			"readme \"Known limits\" bullet and the docs/language-support.md note, and add "+
-			"a dated closing amendment to docs/rc/link-002-clause-by-dir-recall.md.", got, "shop_test")
+			"failure is EXPECTED: delete this whole file, and RETRACT the LINK-002 "+
+			"disclosure on BOTH D8 surfaces in the SAME change — the doctor "+
+			"known-defects check (internal/doctor/checks.go, plus its assertions and its "+
+			"id-set pin in checks_test.go) AND the canonical defect page "+
+			"docs/known-defects.md (its bullet AND its node and arrows in the mermaid "+
+			"diagram). D8 permits retraction ONLY in the change that closes the defect, "+
+			"so leaving either up is now the violation. Also remove the "+
+			"docs/language-support.md note and add a dated closing amendment to "+
+			"docs/rc/link-002-clause-by-dir-recall.md.", got, "shop_test")
 	}
 
 	// The consequence, stated as the index sees it: the losing clause's methods
@@ -463,9 +468,13 @@ func TestLink003_BareNameShadowing(t *testing.T) {
 	if got := idx.byClause["pkg"]["pkg"]["String"]; got != b {
 		t.Fatalf("LINK-003 PIN BROKEN: byClause[\"pkg\"][\"pkg\"][\"String\"] = %s, want the "+
 			"LAST-WRITTEN node %s (pkg.B.String). If byClause now tracks ambiguity, "+
-			"LINK-003 is fixed: delete this test, remove the LINK-003 entry from "+
-			"internal/doctor/checks.go and its assertion in checks_test.go, remove the "+
-			"readme \"Known limits\" bullet and the docs/language-support.md note, "+
+			"LINK-003 is fixed: delete this test, and RETRACT the LINK-003 disclosure "+
+			"on BOTH D8 surfaces in the SAME change — the doctor known-defects check "+
+			"(internal/doctor/checks.go, plus its assertions and its id-set pin in "+
+			"checks_test.go) AND the canonical defect page docs/known-defects.md (its "+
+			"bullet AND its node and arrows in the mermaid diagram). D8 permits "+
+			"retraction ONLY in the change that closes the defect, so leaving either up "+
+			"is now the violation. Also remove the docs/language-support.md note, "+
 			"close the backlog entry in projects/graphi/backlog.md, and add a dated "+
 			"closing amendment to §10 of "+
 			"docs/rc/link-002-clause-by-dir-recall.md.", got, b)

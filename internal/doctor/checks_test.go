@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -304,6 +307,371 @@ func TestKnownDefectsCheck(t *testing.T) {
 		t.Errorf("known-defects names a profile the CLI rejects; the accepted set is " +
 			"fast|balanced|deep")
 	}
+
+	// PARITY-004 (SW-211): the disclosure that was owed on this surface since
+	// 2026-08-19 while its two peers sat on both. Pinned on the same three
+	// properties as the entries above — the id, an affected operation, and the
+	// workaround — plus the measured reproduction that makes the workaround
+	// checkable rather than a suggestion.
+	for _, want := range []string{"PARITY-004", "graphi rebuild", "7 nodes", "6"} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose PARITY-004 with its CLI reproduction and "+
+				"the rebuild workaround (missing %q). See "+
+				"docs/adr/0004-ingest-recovery-disposition.md; got: %s", want, res.Message)
+		}
+	}
+
+	// PYTHONFANOUT-001 / PYTHONORDER-001 (SW-211). These are SOUNDNESS defects —
+	// they emit WRONG edges, not merely missing ones — and the word is pinned
+	// because that is the whole difference between "your answer is incomplete"
+	// and "your answer contains a fabricated edge". The readme contradiction is
+	// pinned for the same reason the LINK-002 over-claim is: a disclosure that
+	// leaves a published promise standing beside the defect that breaks it has
+	// disclosed the mechanism and hidden the consequence.
+	for _, want := range []string{
+		"PYTHONFANOUT-001", "SOUNDNESS", "70 spurious", "8.0%", "readme.md:26-28",
+		"docs/rc/python-f5-measurement.md",
+	} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose PYTHONFANOUT-001 as a soundness defect "+
+				"with its measured number and the readme sentence it contradicts "+
+				"(missing %q). See section 6 of docs/rc/python-f5-measurement.md; got: %s",
+				want, res.Message)
+		}
+	}
+	for _, want := range []string{
+		"PYTHONORDER-001", "INDEXING ORDER", "24/24/22", "23/24/23", "NO WORKAROUND",
+	} {
+		if !strings.Contains(res.Message, want) {
+			t.Errorf("known-defects must disclose PYTHONORDER-001 with the order-dependent "+
+				"distribution it was filed on, and must state that there is no workaround "+
+				"rather than leaving the reader to infer one (missing %q). See section 12 "+
+				"of docs/rc/python-f5-measurement.md; got: %s", want, res.Message)
+		}
+	}
+
+	// D8 as amended 2026-08-25 is TWO surfaces. The check must point at the other
+	// one, so a reader who lands here can find the human-readable half.
+	if !strings.Contains(res.Message, canonicalDefectPage) {
+		t.Errorf("known-defects must name %s, the human-readable half of D8; got: %s",
+			canonicalDefectPage, res.Message)
+	}
+}
+
+// canonicalDefectPage is the single human-readable D8 surface, per the amendment
+// recorded on 2026-08-25 (projects/graphi/memory/decisions/
+// 2026-08-25-d8-readme-half-amended-to-one-canonical-defect-page.md). Before
+// that amendment the human half lived in a readme section whose name this file
+// deliberately does not spell out (see the scan in
+// TestDefectPinsNameTheCanonicalDefectPage, which would match its own source).
+// That section no longer exists, which is why every retraction instruction has
+// to be checked against this constant rather than against prose.
+const canonicalDefectPage = "docs/known-defects.md"
+
+// wantDisclosedDefects is THE list of open defects, and it is deliberately a
+// literal rather than something derived: an id can only enter or leave it by a
+// human editing this line, which is what makes it a pin.
+//
+// Adding a defect to either D8 surface without adding it here fails
+// TestKnownDefectsDisclosureSetIsPinned; so does adding it to one surface and
+// not the other. That is the gate AC-5 asks for — a future open defect cannot
+// pass silently with a row on only one surface.
+var wantDisclosedDefects = []string{
+	"LINK-002",
+	"LINK-003",
+	"LINK-004",
+	"PARITY-004",
+	"PYTHONFANOUT-001",
+	"PYTHONORDER-001",
+}
+
+// defectPinRetractionSites maps a disclosed defect to the test files whose
+// FAILURE MESSAGE instructs a future fixer where to retract the disclosure.
+//
+// Those messages are the only enforcement the retraction rule has: they are
+// printed exactly once, at the moment the defect is fixed, by which time nobody
+// is re-reading the decision record. Between 2026-08-25 and 2026-08-26 all four
+// of them named a readme bullet that had already been deleted, so following one
+// literally retracted nothing and left the disclosure standing — a retraction
+// breach that no gate could see. TestDefectPinsNameTheCanonicalDefectPage is
+// that gate.
+//
+// A nil entry means "no behaviour pin exists for this defect yet". It is written
+// out rather than omitted so that a new defect cannot be added to
+// wantDisclosedDefects without someone deciding, in this file, whether it has a
+// pin.
+var defectPinRetractionSites = map[string][]string{
+	"LINK-002":         {"engine/link/clausebydir_test.go"},
+	"LINK-003":         {"engine/link/clausebydir_test.go"},
+	"LINK-004":         {"surfaces/client/capabilityaudit_test.go"},
+	"PARITY-004":       {"engine/ingest/purge_ordering_test.go"},
+	"PYTHONFANOUT-001": nil, // filed 2026-08-20; no behaviour pin in-tree yet
+	"PYTHONORDER-001":  nil, // filed 2026-08-24; no behaviour pin in-tree yet
+}
+
+// defectIDPattern matches the project's defect-id shape: an uppercase prefix, a
+// hyphen, three digits. It is deliberately generic rather than an enumeration of
+// the prefixes in use — a defect filed tomorrow under a new prefix must be
+// caught by the set diff, not silently skipped by a regexp that never heard of
+// it.
+var defectIDPattern = regexp.MustCompile(`\b[A-Z][A-Z0-9]+-[0-9]{3}\b`)
+
+// nonDefectIDPrefixes are identifier families that share the defect-id SHAPE but
+// are not defects. Ticket ids are the only one in the disclosure text today.
+var nonDefectIDPrefixes = map[string]bool{"SW": true}
+
+// defectHeadlinePattern matches the canonical page's own bullet convention, so
+// the page is read the way a human reads it (one bullet per defect) as well as
+// by raw scan.
+var defectHeadlinePattern = regexp.MustCompile(`(?m)^- \*\*OPEN defect ([A-Z][A-Z0-9]+-[0-9]{3}) `)
+
+// repoRootForTest resolves the repository root from this package's directory.
+// The doctor package sits two levels down (internal/doctor), and this is a
+// single-module workspace, so the relative hop is fixed.
+func repoRootForTest(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("resolve repo root: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
+		t.Fatalf("repo root %s has no go.mod (%v); this test resolves paths relative to "+
+			"internal/doctor and must be updated if the package moves", root, err)
+	}
+	return root
+}
+
+// extractDefectIDs returns the sorted, de-duplicated defect ids in s, minus the
+// identifier families that merely share the shape.
+func extractDefectIDs(s string) []string {
+	seen := map[string]bool{}
+	for _, m := range defectIDPattern.FindAllString(s, -1) {
+		if prefix, _, ok := strings.Cut(m, "-"); ok && nonDefectIDPrefixes[prefix] {
+			continue
+		}
+		seen[m] = true
+	}
+	out := make([]string, 0, len(seen))
+	for id := range seen {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// openDefectsSection returns the part of the canonical page that lists OPEN
+// defects. Scoping matters: "Limits by design" below it names CLOSED defects
+// (PARITY-002, PARITY-003, LINK-001) as the things each design limit resolved,
+// and a scan that swept those in would report a disclosure the doctor check must
+// never carry.
+func openDefectsSection(t *testing.T, page string) string {
+	t.Helper()
+	_, rest, ok := strings.Cut(page, "\n## Open defects\n")
+	if !ok {
+		t.Fatalf("%s has no \"## Open defects\" heading; the id extraction below is "+
+			"anchored on it", canonicalDefectPage)
+	}
+	section, _, ok := strings.Cut(rest, "\n## ")
+	if !ok {
+		return rest
+	}
+	return section
+}
+
+// mermaidBlock returns the page's first fenced mermaid block — the
+// defect-to-operation map at the top.
+func mermaidBlock(t *testing.T, page string) string {
+	t.Helper()
+	_, rest, ok := strings.Cut(page, "```mermaid\n")
+	if !ok {
+		t.Fatalf("%s has no mermaid block; the diagram is part of the disclosure and its "+
+			"node set is pinned", canonicalDefectPage)
+	}
+	block, _, ok := strings.Cut(rest, "\n```")
+	if !ok {
+		t.Fatalf("%s has an unterminated mermaid block", canonicalDefectPage)
+	}
+	return block
+}
+
+// TestKnownDefectsDisclosureSetIsPinned is the AC-5 gate, extended by AC-13.
+//
+// D8 as amended on 2026-08-25 is a CONJUNCTION: an open defect in a GA operation
+// is disclosed on the canonical defect page AND in the doctor known-defects
+// check. Until this test existed, nothing checked the "and". PARITY-004 spent a
+// week on one surface and not the other, and the two Python defects spent longer
+// on neither while their record read "OPEN, DISCLOSED" — disclosed, that is, in
+// the record.
+//
+// So the sets are DIFFED, not inspected. Three of them:
+//
+//	doctor    — the ids the compiled check actually emits
+//	page      — the ids the canonical page lists under "Open defects"
+//	diagram   — the ids the page's defect-to-operation map draws
+//
+// A defect that reaches two of the three fails here, which is the only shape in
+// which a half-disclosure can now ship.
+func TestKnownDefectsDisclosureSetIsPinned(t *testing.T) {
+	want := append([]string(nil), wantDisclosedDefects...)
+	sort.Strings(want)
+
+	res := KnownDefectsCheck().Run(context.Background(), fakeEnv{})
+	gotDoctor := extractDefectIDs(res.Message)
+	if diff := diffIDs(want, gotDoctor); diff != "" {
+		t.Errorf("the doctor known-defects check discloses a DIFFERENT set of defects than "+
+			"wantDisclosedDefects pins.\n%s\n"+
+			"If you just CLOSED a defect, retract it on both D8 surfaces and remove it from "+
+			"wantDisclosedDefects in the same change. If you just FILED one, it needs a row "+
+			"in KnownDefectsCheck AND a bullet on %s before it can land.",
+			diff, canonicalDefectPage)
+	}
+
+	raw, err := os.ReadFile(filepath.Join(repoRootForTest(t), filepath.FromSlash(canonicalDefectPage)))
+	if err != nil {
+		t.Fatalf("read %s: %v — the canonical page is half of D8 and its absence is a "+
+			"disclosure failure, not a missing fixture", canonicalDefectPage, err)
+	}
+	page := string(raw)
+
+	section := openDefectsSection(t, page)
+	if diff := diffIDs(want, extractDefectIDs(section)); diff != "" {
+		t.Errorf("%s's \"Open defects\" section lists a DIFFERENT set than the doctor check "+
+			"and wantDisclosedDefects.\n%s\nD8 requires BOTH surfaces; a defect on one of "+
+			"them is half-disclosed.", canonicalDefectPage, diff)
+	}
+
+	var headlines []string
+	for _, m := range defectHeadlinePattern.FindAllStringSubmatch(section, -1) {
+		headlines = append(headlines, m[1])
+	}
+	sort.Strings(headlines)
+	if diff := diffIDs(want, headlines); diff != "" {
+		t.Errorf("%s's defect BULLETS do not match the pinned set.\n%s\nEach open defect "+
+			"needs its own bullet opening `- **OPEN defect <ID> —`; mentioning an id inside "+
+			"another defect's prose is not a disclosure.", canonicalDefectPage, diff)
+	}
+
+	if diff := diffIDs(want, extractDefectIDs(mermaidBlock(t, page))); diff != "" {
+		t.Errorf("%s's defect-to-operation diagram does not draw the pinned set.\n%s\n"+
+			"The diagram's legend tells the reader that an operation no arrow reaches is "+
+			"unaffected by every defect on the page. A defect missing from the diagram makes "+
+			"that sentence false for whichever operations it reaches.", canonicalDefectPage, diff)
+	}
+}
+
+// TestDefectPinsNameTheCanonicalDefectPage is the AC-13 gate.
+//
+// Each open defect is pinned by a test that asserts the CURRENT WRONG behaviour
+// and fails, with instructions, the moment the defect is fixed. Those
+// instructions are where the retraction rule actually lives, and they are read
+// exactly once — by the engineer who just fixed the defect, long after the
+// decision record that explains where to retract has scrolled out of anyone's
+// memory. So the instruction has to name the surface itself.
+//
+// The second half of this test is the one that would have caught the SW-210
+// mismatch on the day it was created: no test may still instruct a fixer to
+// delete a readme bullet that the 2026-08-25 amendment removed.
+func TestDefectPinsNameTheCanonicalDefectPage(t *testing.T) {
+	root := repoRootForTest(t)
+
+	for _, id := range wantDisclosedDefects {
+		sites, ok := defectPinRetractionSites[id]
+		if !ok {
+			t.Errorf("defect %s is disclosed but defectPinRetractionSites says nothing about "+
+				"it. Add an entry — {\"path/to/pin_test.go\"} if it has a behaviour pin, nil "+
+				"with a comment if it does not — so the decision is recorded rather than "+
+				"defaulted.", id)
+			continue
+		}
+		for _, rel := range sites {
+			b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+			if err != nil {
+				t.Errorf("read pin %s for %s: %v", rel, id, err)
+				continue
+			}
+			body := string(b)
+			if !strings.Contains(body, id) {
+				t.Errorf("%s is registered as %s's pin but never mentions it", rel, id)
+			}
+			if !strings.Contains(body, canonicalDefectPage) {
+				t.Errorf("%s pins %s but its retraction instruction never names %s. A fixer "+
+					"who follows it retracts only half the D8 disclosure and leaves the other "+
+					"half standing, which the retraction rule makes a violation in itself.",
+					rel, id, canonicalDefectPage)
+			}
+		}
+	}
+
+	// The needle is assembled from two pieces so that this file does not match
+	// its own scan.
+	stale := "Known lim" + "its"
+	var offenders []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case ".git", "node_modules", "testdata", "corpus":
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(d.Name(), "_test.go") {
+			return nil
+		}
+		b, rerr := os.ReadFile(path)
+		if rerr != nil {
+			return rerr
+		}
+		if strings.Contains(string(b), stale) {
+			rel, _ := filepath.Rel(root, path)
+			offenders = append(offenders, filepath.ToSlash(rel))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk repository: %v", err)
+	}
+	if len(offenders) > 0 {
+		sort.Strings(offenders)
+		t.Errorf("these test files still name the readme %q section as a retraction surface: "+
+			"%v.\nThat bullet was deleted by the 2026-08-25 D8 amendment, so an engineer who "+
+			"follows the instruction literally removes nothing and leaves the disclosure "+
+			"standing. Repoint each one at %s alongside the doctor known-defects check.",
+			stale, offenders, canonicalDefectPage)
+	}
+}
+
+// diffIDs renders the two-way difference between a wanted and a got id list, or
+// "" when they are equal. Both inputs must be sorted.
+func diffIDs(want, got []string) string {
+	if strings.Join(want, ",") == strings.Join(got, ",") {
+		return ""
+	}
+	inWant := map[string]bool{}
+	for _, id := range want {
+		inWant[id] = true
+	}
+	inGot := map[string]bool{}
+	for _, id := range got {
+		inGot[id] = true
+	}
+	var missing, extra []string
+	for _, id := range want {
+		if !inGot[id] {
+			missing = append(missing, id)
+		}
+	}
+	for _, id := range got {
+		if !inWant[id] {
+			extra = append(extra, id)
+		}
+	}
+	return "  want: " + strings.Join(want, " ") +
+		"\n  got:  " + strings.Join(got, " ") +
+		"\n  missing (pinned but not disclosed): " + strings.Join(missing, " ") +
+		"\n  extra (disclosed but not pinned):   " + strings.Join(extra, " ")
 }
 
 func TestDBCheckEmptyPath(t *testing.T) {

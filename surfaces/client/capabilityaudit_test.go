@@ -523,8 +523,10 @@ func TestLink004_PythonDottedModuleImportResolvesNothing(t *testing.T) {
 				t.Fatalf("LINK-004 APPEARS FIXED for %q — %d cross-file edge(s) now resolve: %v\n\n"+
 					"THIS IS GOOD NEWS AND THIS TEST IS NOW WRONG. Do all of the following in the SAME change:\n"+
 					"  1. delete this test (its whole purpose was to pin the defect);\n"+
-					"  2. RETRACT the LINK-004 disclosure — readme.md \"Known limits\" AND the doctor\n"+
-					"     known-defects check (internal/doctor/checks.go). D8 permits retraction ONLY in the\n"+
+					"  2. RETRACT the LINK-004 disclosure on BOTH D8 surfaces — the canonical defect page\n"+
+					"     docs/known-defects.md (its bullet AND its node and arrows in the mermaid diagram)\n"+
+					"     AND the doctor known-defects check (internal/doctor/checks.go, plus its assertions\n"+
+					"     and its id-set pin in checks_test.go). D8 permits retraction ONLY in the\n"+
 					"     change that closes the defect, so leaving either up is now the violation;\n"+
 					"  3. move the python row of docs/rc/capability-audit-2026-08-19.md by DATED AMENDMENT\n"+
 					"     (D6 — add, never rewrite);\n"+

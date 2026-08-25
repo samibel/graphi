@@ -402,6 +402,29 @@ func LocalFirstCheck() Check {
 // the string before shipping it. The workaround below was executed against the
 // built binary — including its negative case, which is why the `fast` profile
 // is named as an exception rather than quietly omitted.
+//
+// EXTENDED 2026-08-26 (SW-211) from three disclosures to SIX, closing the D8
+// gap this check had carried since 2026-08-19. What was missing and why it was
+// a gap rather than an omission:
+//
+//   - PARITY-004 was disclosed on the human surface but NOT here, while its two
+//     peers LINK-002/LINK-003 sat on both — the open owner decision recorded at
+//     projects/graphi/backlog.md:80. D8 is ratified with *and*, so it was
+//     half-met, and the abstention's original justification (protecting a
+//     byte-identical product tree) was already void: the product binary had
+//     lapsed from the candidate before this change.
+//   - PYTHONFANOUT-001 and PYTHONORDER-001 were stamped "OPEN, DISCLOSED" in
+//     docs/rc/python-f5-measurement.md and reached NEITHER user surface.
+//     "Disclosed" there meant disclosed in the record, which is precisely the
+//     gap. Both are SOUNDNESS defects — they emit wrong edges, not merely
+//     missing ones — and both contradict readme.md:26-28.
+//
+// Every workaround named below was executed against the built binary, with its
+// negative case, before it was published; the transcripts are in the SW-211
+// verification record. The set of ids disclosed here is pinned by
+// TestKnownDefectsDisclosureSetIsPinned, which also diffs it against
+// docs/known-defects.md, so a future open defect cannot reach one surface
+// without the other.
 func KnownDefectsCheck() Check {
 	return checkFunc{
 		id:       "known-defects",
@@ -465,7 +488,98 @@ func KnownDefectsCheck() Check {
 					"additionally emits the file->file `imports` edge (verified against the "+
 					"built CLI, including its negative case). How much of a real Python "+
 					"repository this loses is NOT measured. Filed 2026-08-19 (SW-183); not "+
-					"fixed. Record: section 3 of docs/rc/capability-audit-2026-08-19.md.",
+					"fixed. Record: section 3 of docs/rc/capability-audit-2026-08-19.md.\n\n"+
+
+					"PARITY-004 (open): after a full index over a tree in which an "+
+					"intra-module Go import points at a package that does NOT exist "+
+					"(mid-refactor, a deleted directory, a partial checkout), restoring that "+
+					"package and running `graphi sync` never re-links the importer. The "+
+					"importer's re-link record was keyed on the unresolvable IMPORT PATH "+
+					"rather than on the directory, and the incremental cascade only ever "+
+					"looks a key up by the changed file's directory or its raw path, so that "+
+					"row is unreachable forever. A stale interned `external` node for the "+
+					"once-missing symbol and its `heuristic` calls edge survive beside the "+
+					"now-correct `confirmed` edge, and the file->file `imports` edge a full "+
+					"pass emits is missing. THE SURVIVING EDGE IS NOT MERELY STALE, IT IS "+
+					"FALSE: its reason still reads \"external calls (unresolved import "+
+					"example.com/m/tax)\" while a `confirmed` edge to the now-resolved "+
+					"`tax.Rate` sits beside it in the same graph. Reproduced through the "+
+					"built CLI: `graphi sync` settles at 7 nodes where `graphi rebuild` over "+
+					"the identical tree gives 6. `neighborhood` on the importer loses the "+
+					"`imports` edge; `related_files` returns the same files in a different "+
+					"RANK ORDER, with a weaker reason and less evidence; `search` returns the "+
+					"same matches in the same order but with different `rank` scores, because "+
+					"`search` excludes external nodes from its RESULTS but not from its FTS5 "+
+					"CORPUS, and BM25 scores every document against corpus-wide statistics. "+
+					"On the two-result fixture the ordering happened to survive; A REORDERING "+
+					"IS NOT EXCLUDED on a larger tree. `callers`, `callees`, `impact` and "+
+					"`definition` were identical on that fixture. Workaround: run "+
+					"`graphi rebuild` ONCE after restoring a package that was missing at index "+
+					"time — verified against the built binary, including its negative case "+
+					"(three further `graphi sync` runs stay at 7 nodes; the rebuild converges "+
+					"to 6). Filed 2026-08-19; not fixed. Record: "+
+					"docs/adr/0004-ingest-recovery-disposition.md section \"ADDED 2026-08-19\", "+
+					"D3.\n\n"+
+
+					"PYTHONFANOUT-001 (open, SOUNDNESS DEFECT — it emits WRONG edges, not "+
+					"merely missing ones): a Python `import <name>` whose <name> collides with "+
+					"the base name of ANY in-repo directory emits a file->file `imports` edge "+
+					"to EVERY file node in EVERY directory declaring that clause — including "+
+					"for stdlib and third-party imports that name nothing in the repository at "+
+					"all. `import typing as t` acquires an edge into in-repo "+
+					"`tests/typing/typing_*.py`. THIS CONTRADICTS readme.md:26-28 (\"stdlib "+
+					"and third-party targets are recorded, but deliberately not navigable\"): "+
+					"a stdlib import that acquires edges into in-repo files is exactly the "+
+					"navigability that sentence denies. Measured on flask 3.0.0: 70 spurious "+
+					"`imports` edges, 8.0% of its 879; `logging`, `json`, `ast`, `os`, `re` "+
+					"and `csv` are equally susceptible. Reproduced on a hermetic fixture "+
+					"through the built CLI: `related_files` on the importer returned 4 of 5 "+
+					"results spurious, and `neighborhood` on it returned 4 spurious "+
+					"`heuristic`-tier (0.6) `imports` edges whose reason reads \"file imports "+
+					"package typing\"; `impact` was measured on that fixture and was NOT "+
+					"affected. Workaround: REMOVE THE COLLISION — rename the in-repo directory "+
+					"so its base name no longer matches an imported module. Verified against "+
+					"the built binary, including its negative case: renaming `tests/typing` to "+
+					"`tests/typehints` took `related_files` from 5 results to 1 and kept the "+
+					"true `imports` edge, while the same tree before the rename returned 4 of "+
+					"5 spurious. `-profile fast` also removes them, but it removes EVERY "+
+					"`imports` edge, true ones included (verified: the surviving true relation "+
+					"drops from `calls x1, imports x1` to `calls x1`), so it switches the "+
+					"feature off rather than working around the defect. Filed 2026-08-20 "+
+					"(SW-192); not fixed — the fix is module-relative directory lookup, the "+
+					"way ADR 0009 gave Go, and carries its own ADR and candidate move. Record: "+
+					"section 6 of docs/rc/python-f5-measurement.md.\n\n"+
+
+					"PYTHONORDER-001 (open, SOUNDNESS DEFECT — it emits WRONG edges, not "+
+					"merely missing ones): WHICH of the colliding targets each "+
+					"PYTHONFANOUT-001 edge lands on is decided by INDEXING ORDER. Measured on "+
+					"flask: the same 70 spurious edges distribute 24/24/22 over the three "+
+					"`tests/typing/typing_*.py` targets at one candidate and 23/24/23 at "+
+					"another. The total, the importer set and the fan-out verdict are stable; "+
+					"the DISTRIBUTION is not, and a commit that touched only JVM paths "+
+					"(SW-188) moved it. Both dispatches AGREE at each candidate, so the "+
+					"two-dispatch discipline cannot see it: the edge set is reproducible by "+
+					"luck rather than by construction, against a project convention that makes "+
+					"determinism first-class and carves out no exception for `heuristic`-tier "+
+					"edges. Same soundness reading and the same contradiction of "+
+					"readme.md:26-28 as PYTHONFANOUT-001, and the same affected operations "+
+					"(`related_files` and `neighborhood` on Python). THERE IS NO WORKAROUND "+
+					"that makes the distribution stable. Removing the collision removes the "+
+					"fan-out, and with it any set of tied candidates to order (verified "+
+					"against the built binary as PYTHONFANOUT-001's workaround) — but that is "+
+					"avoidance of the trigger, not a fix, and this defect must NOT be closed "+
+					"by assuming PYTHONFANOUT-001's fix closes it. NOT MEASURED, deliberately: "+
+					"whether the ordering is stable across a different machine or filesystem, "+
+					"and whether the other `clausePackageFileNodes` consumers (c_sharp, rust) "+
+					"exhibit it. Filed 2026-08-24; not fixed. Record: section 12 of "+
+					"docs/rc/python-f5-measurement.md.\n\n"+
+
+					"All six are written out in full — with a defect-to-operation map, and "+
+					"separated from the design limits they are NOT — on the project's single "+
+					"canonical defect page, docs/known-defects.md. That page and this check "+
+					"are the two halves of D8 as amended on 2026-08-25; a defect disclosed on "+
+					"only one of them is half-disclosed, and a disclosure is retracted only in "+
+					"the change that closes the defect.",
 				StatusInfo)
 		},
 	}
