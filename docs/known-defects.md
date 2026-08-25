@@ -9,6 +9,8 @@ flowchart LR
   end
   subgraph PY["Python"]
     L4["LINK-004<br/>dotted module imports<br/>resolve to nothing"]
+    PF["PYTHONFANOUT-001<br/>an import fans out over<br/>every colliding directory"]
+    PO["PYTHONORDER-001<br/>indexing order picks which<br/>colliding target it hits"]
   end
   subgraph OPS["Operations affected"]
     callers["callers"]
@@ -18,47 +20,59 @@ flowchart LR
     agent_brief["agent_brief"]
     related_files["related_files"]
     search["search"]
+    search_hybrid["search_hybrid"]
   end
   L2 --> callers
   L2 --> callees
   L2 --> impact
   L2 --> neighborhood
   L2 --> agent_brief
+  L2 --> search_hybrid
   L3 --> callers
   L3 --> callees
   L3 --> impact
   L3 --> neighborhood
   L3 --> agent_brief
+  L3 --> search_hybrid
   L4 --> related_files
   L4 --> callers
   L4 --> callees
   L4 --> impact
   L4 --> neighborhood
+  PF --> related_files
+  PF --> neighborhood
+  PO --> related_files
+  PO --> neighborhood
   P4 --> neighborhood
   P4 --> related_files
   P4 --> search
 ```
 
-**How to read the diagram.** Left column: the four open defects, grouped by the
+**How to read the diagram.** Left column: the six open defects, grouped by the
 language they can occur in — a Go defect cannot affect a Python answer and vice
 versa, so the language decides whether a defect applies to you at all. Right
 column: the operations whose answers a defect can degrade. An operation that no
-arrow reaches is unaffected by every defect on this page. `agent_brief` appears
-because LINK-002 and LINK-003 degrade degree-ranked output; the same two defects
-leave `references`, `imports` and `search` untouched, while PARITY-004 does move
-`search` — it changes rank *scores*, not the match set. Every arrow is sourced
-from the defect text below; the diagram is a table of contents, not a second
-claim.
+arrow reaches is unaffected by every defect **as this page maps them today** —
+the arrows are a table of contents drawn from the defect text below, not an
+independent proof of absence, so read the entry before you conclude an operation
+is safe. `agent_brief` and `search_hybrid` appear because LINK-002 and LINK-003
+degrade degree-ranked output; the same two defects leave `references`, `imports`
+and `search` untouched, while PARITY-004 does move `search` — it changes rank
+*scores*, not the match set. The two Python fan-out defects reach only the two
+operations that read file→file `imports` edges; `impact` was measured on the
+reproduction fixture and was **not** affected by them.
 
 `graphi doctor` carries the machine-checked half of this disclosure, under its
-`known-defects` check. It reports **LINK-002, LINK-003 and LINK-004** today. The
-two halves are not yet word-for-word identical: doctor's LINK-002 entry
-(`internal/doctor/checks.go:414-416`) additionally names `search_hybrid` among the
-affected operations, which this page's diagram and prose do not. Reconciling the
-two lists is SW-211's, and until it lands, doctor's list is the wider of the two.
-**PARITY-004's doctor row is not landed** — an open owner decision, not an
-oversight — so for that one defect this page is currently the only disclosure
-surface.
+`known-defects` check. As of 2026-08-26 it reports **all six** defects on this
+page — LINK-002, LINK-003, LINK-004, PARITY-004, PYTHONFANOUT-001 and
+PYTHONORDER-001 — and the two lists are held identical by a test
+(`internal/doctor/checks_test.go::TestKnownDefectsDisclosureSetIsPinned`), which
+extracts the ids from both surfaces and fails on any difference. So a future open
+defect cannot reach one surface without the other, and neither list can be
+retracted alone. D8, as amended on 2026-08-25, is these two surfaces together:
+this page is the human-readable half, the doctor check is the machine-checked
+half, and a disclosure is retracted **only** in the change that closes the
+defect.
 
 ## Open defects
 
@@ -66,14 +80,21 @@ These are unfixed. Each entry states what goes wrong, what it costs where that
 has been measured, whether a workaround exists, and the record that holds the
 evidence.
 
+Two of them — PYTHONFANOUT-001 and PYTHONORDER-001 — are marked **soundness**
+defects. That word is doing work: they emit edges that are *wrong*, not merely
+edges that are missing. A recall defect makes an answer incomplete; a soundness
+defect makes it false, and a reader who trusts the tool has no way to tell which
+of the returned edges is the fabricated one.
+
 - **OPEN defect LINK-002 — a Go directory with two package clauses loses
   `recv.Method` calls.** When a directory declares two package clauses — most
   often a package beside its **external `_test` package** (`package shop` and
   `package shop_test`) — graphi keeps only one of them, and methods under the
   losing clause become invisible to the *heuristic* receiver-method call
   resolver. `callers`, `callees`, `impact`, `neighborhood` and degree-ranked
-  output then return a confident but **incomplete** answer, with no skip and no
-  diagnostic. **It also emits wrong edges.** When the surviving clause happens to
+  output — which is **`agent_brief`** (one of the 12 frozen GA operations) and
+  **`search_hybrid`** — then return a confident but **incomplete** answer, with
+  no skip and no diagnostic. **It also emits wrong edges.** When the surviving clause happens to
   declare a method with the same name, the call is not dropped but **redirected**
   to that unrelated method — so a `c.Reset()` on a `*shop.Cart` can point at
   `shop_test.Fixture.Reset`. The wrong edge is always at the `heuristic` tier
@@ -168,6 +189,62 @@ evidence.
   time** — verified: the rebuild converges to 6 nodes and 0 external nodes.
   Filed 2026-08-19; **not fixed**. Record:
   `docs/adr/0004-ingest-recovery-disposition.md` §"ADDED 2026-08-19", D3.
+- **OPEN defect PYTHONFANOUT-001 — a Python import fans out over every in-repo
+  directory whose name collides with it. This is a SOUNDNESS defect: the extra
+  edges are wrong, not missing.** A Python `import <name>` resolves `<name>` to
+  a *package clause* and then emits a file→file `imports` edge to **every file
+  node in every directory declaring that clause** — including when `<name>` is a
+  stdlib or third-party module that names nothing in the repository at all. So
+  `import typing as t` acquires edges into in-repo `tests/typing/typing_*.py`.
+  **This contradicts [readme.md](../readme.md) lines 26–28**, which promise that
+  "stdlib and third-party targets are recorded, but deliberately not navigable":
+  a stdlib import that acquires edges into in-repo files is exactly the
+  navigability that sentence denies, and a `related_files` caller following one
+  of those edges is navigating from `typing` into the repository. Measured on
+  **flask 3.0.0: 70 spurious `imports` edges, 8.0 % of its 879.** `logging`,
+  `json`, `ast`, `os`, `re` and `csv` are equally susceptible — the trigger is a
+  name collision, not anything about `typing`. Reproduced on a hermetic fixture
+  through the built CLI: `related_files` on the importer returned **4 of its 5
+  results spurious**, and `neighborhood` on the same file returned **4 spurious
+  `heuristic`-tier (0.6) `imports` edges** whose reason reads *"file imports
+  package typing"*. `impact` was measured on that fixture in both directions and
+  was **not** affected. **Workaround: remove the collision** — rename the in-repo
+  directory so its base name no longer matches an imported module. Verified
+  against the built binary including the negative case: renaming `tests/typing`
+  to `tests/typehints` took `related_files` from 5 results to 1 and **kept** the
+  true `imports` edge, while the same tree before the rename returned 4 of 5
+  spurious. `-profile fast` also removes the spurious edges, but it removes
+  **every** `imports` edge, true ones included (verified: the surviving true
+  relation drops from `calls×1, imports×1` to `calls×1`) — that switches the
+  feature off rather than working around the defect. Filed 2026-08-20 (SW-192);
+  **not fixed** — the fix is module-relative directory lookup, the way ADR 0009
+  gave Go, and carries its own ADR and candidate move. Record: §6 of
+  [docs/rc/python-f5-measurement.md](rc/python-f5-measurement.md).
+- **OPEN defect PYTHONORDER-001 — which colliding target each spurious edge
+  lands on is decided by indexing order. Also a SOUNDNESS defect, and disjoint
+  from the one above.** PYTHONFANOUT-001 is that the fan-out exists at all;
+  PYTHONORDER-001 is that **where** each edge lands is not decided by anything in
+  your source. Measured on flask: the same 70 spurious edges distribute
+  **24 / 24 / 22** over the three `tests/typing/typing_*.py` targets at one
+  candidate and **23 / 24 / 23** at another. The total, the importer set and the
+  fan-out verdict are stable; the *distribution* is not, and the commit that
+  moved it (SW-188) touched only JVM paths. Both dispatches agree with each other
+  at each candidate, which is why the project's two-dispatch determinism
+  discipline **cannot see this**: the edge set is reproducible by luck rather
+  than by construction, against a convention that makes determinism first-class
+  and carves out no exception for `heuristic`-tier edges. Same contradiction of
+  [readme.md](../readme.md) lines 26–28 as PYTHONFANOUT-001, and the same
+  affected operations — `related_files` and `neighborhood` on Python.
+  **There is no workaround that makes the distribution stable.** Removing the
+  collision removes the fan-out, and with it any set of tied candidates to order
+  (verified against the built binary as PYTHONFANOUT-001's workaround above) —
+  but that is avoidance of the trigger, not a fix, and this defect must **not**
+  be recorded as closed by assuming PYTHONFANOUT-001's fix closes it. **Not
+  measured, deliberately:** whether the ordering is stable on a different machine
+  or filesystem (every observation is one runner class), and whether the other
+  `clausePackageFileNodes` consumers (`c_sharp`, `rust`) exhibit it. Filed
+  2026-08-24; **not fixed**. Record: §12 of
+  [docs/rc/python-f5-measurement.md](rc/python-f5-measurement.md).
 
 ## Limits by design
 
