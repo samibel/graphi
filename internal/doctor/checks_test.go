@@ -3,12 +3,17 @@ package doctor
 import (
 	"context"
 	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -329,7 +334,7 @@ func TestKnownDefectsCheck(t *testing.T) {
 	// leaves a published promise standing beside the defect that breaks it has
 	// disclosed the mechanism and hidden the consequence.
 	for _, want := range []string{
-		"PYTHONFANOUT-001", "SOUNDNESS", "70 spurious", "8.0%", "readme.md:26-28",
+		"PYTHONFANOUT-001", "SOUNDNESS", "70 spurious", "8.0%",
 		"docs/rc/python-f5-measurement.md",
 	} {
 		if !strings.Contains(res.Message, want) {
@@ -348,6 +353,26 @@ func TestKnownDefectsCheck(t *testing.T) {
 				"rather than leaving the reader to infer one (missing %q). See section 12 "+
 				"of docs/rc/python-f5-measurement.md; got: %s", want, res.Message)
 		}
+	}
+
+	// AC-4 requires both Python entries to state the readme contradiction WITH a
+	// line reference, and they still do. What is NOT pinned here is the line
+	// NUMBER as a literal (SW-211 review round 1, m4): readme.md is renumbered by
+	// every story that edits it, so a literal `readme.md:26-28` would go on
+	// passing while the citation it pins became false — a gate enforcing a wrong
+	// citation. Pinned instead: that a citation of the required SHAPE is present
+	// for each of the two defects, that the sentence is QUOTED (the anchor that
+	// cannot rot), and — in TestReadmeContradictionCitationsResolve — that the
+	// lines named really do carry that sentence.
+	if n := len(doctorReadmeCitation.FindAllString(res.Message, -1)); n < 2 {
+		t.Errorf("AC-4 requires BOTH PYTHONFANOUT-001 and PYTHONORDER-001 to state the readme "+
+			"contradiction with a line reference of the form readme.md:<from>-<to>; found %d "+
+			"such citation(s) in the message. got: %s", n, res.Message)
+	}
+	if !strings.Contains(normaliseSpace(res.Message), readmeNavigabilityPromise) {
+		t.Errorf("known-defects cites the readme promise but no longer QUOTES it (%q). The "+
+			"quotation is what makes the citation checkable when readme.md is renumbered; "+
+			"got: %s", readmeNavigabilityPromise, res.Message)
 	}
 
 	// D8 as amended 2026-08-25 is TWO surfaces. The check must point at the other
@@ -568,14 +593,27 @@ func TestKnownDefectsDisclosureSetIsPinned(t *testing.T) {
 // decision record that explains where to retract has scrolled out of anyone's
 // memory. So the instruction has to name the surface itself.
 //
-// The second half of this test is the one that would have caught the SW-210
-// mismatch on the day it was created: no test may still instruct a fixer to
-// delete a readme bullet that the 2026-08-25 amendment removed.
+// The gate is MESSAGE-granular, not file-granular (SW-211 review round 1, m2).
+// AC-13 asks that each pin's RETRACTION MESSAGE name the canonical page; a file
+// may hold several pins (engine/link/clausebydir_test.go holds LINK-002 and
+// LINK-003), and asserting only that the FILE contains the page name would stay
+// green when one of its two messages lost it — the exact half-file mismatch this
+// gate exists to catch.
+//
+// It is also checked in BOTH directions (m3). The registration table and the
+// retraction messages actually present in the tree must agree exactly: a pin
+// added for a disclosed defect without a table entry is as invisible as a table
+// entry whose message stopped naming the page.
+//
+// The last part is the one that would have caught the SW-210 mismatch on the day
+// it was created: no test may still instruct a fixer to delete a readme bullet
+// that the 2026-08-25 amendment removed.
 func TestDefectPinsNameTheCanonicalDefectPage(t *testing.T) {
 	root := repoRootForTest(t)
+	sites, staleHits := scanTestCorpus(t, root)
 
 	for _, id := range wantDisclosedDefects {
-		sites, ok := defectPinRetractionSites[id]
+		registered, ok := defectPinRetractionSites[id]
 		if !ok {
 			t.Errorf("defect %s is disclosed but defectPinRetractionSites says nothing about "+
 				"it. Add an entry — {\"path/to/pin_test.go\"} if it has a behaviour pin, nil "+
@@ -583,29 +621,75 @@ func TestDefectPinsNameTheCanonicalDefectPage(t *testing.T) {
 				"defaulted.", id)
 			continue
 		}
-		for _, rel := range sites {
-			b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-			if err != nil {
-				t.Errorf("read pin %s for %s: %v", rel, id, err)
-				continue
+		want := append([]string(nil), registered...)
+		sort.Strings(want)
+		got := sites[id]
+
+		for _, rel := range want {
+			if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel))); err != nil {
+				t.Errorf("pin %s is registered for %s but cannot be read: %v", rel, id, err)
 			}
-			body := string(b)
-			if !strings.Contains(body, id) {
-				t.Errorf("%s is registered as %s's pin but never mentions it", rel, id)
+		}
+		for _, rel := range want {
+			if !slices.Contains(got, rel) {
+				t.Errorf("%s is registered as %s's pin, but no failure message in it names "+
+					"BOTH %s and %s. A fixer who follows it retracts only half the D8 "+
+					"disclosure and leaves the other half standing, which the retraction rule "+
+					"makes a violation in itself. (This is per-MESSAGE: another pin in the same "+
+					"file naming the page does not cover this one.)", rel, id, id, canonicalDefectPage)
 			}
-			if !strings.Contains(body, canonicalDefectPage) {
-				t.Errorf("%s pins %s but its retraction instruction never names %s. A fixer "+
-					"who follows it retracts only half the D8 disclosure and leaves the other "+
-					"half standing, which the retraction rule makes a violation in itself.",
-					rel, id, canonicalDefectPage)
+		}
+		for _, rel := range got {
+			if !slices.Contains(want, rel) {
+				t.Errorf("%s carries a retraction message for %s but is not registered for it "+
+					"in defectPinRetractionSites. Register it — an unregistered pin is one the "+
+					"forward half of this gate cannot protect, and a nil entry left in place "+
+					"next to a real pin is a false statement that the defect has none.", rel, id)
 			}
 		}
 	}
 
-	// The needle is assembled from two pieces so that this file does not match
-	// its own scan.
-	stale := "Known lim" + "its"
-	var offenders []string
+	if len(staleHits) > 0 {
+		t.Errorf("these test lines still name the retired readme %q section as a retraction "+
+			"surface:\n  %s\nThat bullet was deleted by the 2026-08-25 D8 amendment, so an "+
+			"engineer who follows the instruction literally removes nothing and leaves the "+
+			"disclosure standing. If the line IS a retraction instruction, repoint it at %s "+
+			"alongside the doctor known-defects check. If it is a legitimate historical "+
+			"quotation — a D6 record quoted verbatim, or a test ABOUT the amendment — do NOT "+
+			"repoint it: add the marker %s in a comment on that line, which exempts it here.",
+			retiredReadmeSection(), strings.Join(staleHits, "\n  "), canonicalDefectPage,
+			staleSectionOptOut)
+	}
+}
+
+// staleSectionOptOut exempts a single line from the retired-readme-section scan.
+//
+// The scan's failure advice is "repoint this at the canonical page", and that
+// advice is WRONG for a line that names the retired section for a legitimate
+// reason (SW-211 review round 1, m6). Rather than leave such a line with no
+// lawful move, it may carry this marker in a comment — line-granular, so an
+// exemption cannot silently widen to a whole file.
+const staleSectionOptOut = "graphi:allow-retired-readme-section"
+
+// retiredReadmeSection returns the name of the readme section the 2026-08-25 D8
+// amendment deleted. It is assembled from two pieces so that this file does not
+// match its own scan.
+func retiredReadmeSection() string { return "Known lim" + "its" }
+
+// scanTestCorpus walks every _test.go in the repository once and returns:
+//
+//   - sites: defect id → sorted list of test files carrying a RETRACTION MESSAGE
+//     for that id, i.e. a t.Fatalf/t.Errorf format string that names both the id
+//     and the canonical defect page. This is the observed truth that
+//     defectPinRetractionSites is checked against, in both directions.
+//   - staleHits: "path:line" for every line naming the retired readme section
+//     without the opt-out marker.
+func scanTestCorpus(t *testing.T, root string) (map[string][]string, []string) {
+	t.Helper()
+	stale := retiredReadmeSection()
+	sites := map[string][]string{}
+	var staleHits []string
+
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -624,23 +708,224 @@ func TestDefectPinsNameTheCanonicalDefectPage(t *testing.T) {
 		if rerr != nil {
 			return rerr
 		}
-		if strings.Contains(string(b), stale) {
-			rel, _ := filepath.Rel(root, path)
-			offenders = append(offenders, filepath.ToSlash(rel))
+		body := string(b)
+		rel, _ := filepath.Rel(root, path)
+		rel = filepath.ToSlash(rel)
+
+		for i, line := range strings.Split(body, "\n") {
+			if strings.Contains(line, stale) && !strings.Contains(line, staleSectionOptOut) {
+				staleHits = append(staleHits, rel+":"+strconv.Itoa(i+1))
+			}
+		}
+
+		// Only files that name the page at all can hold a retraction message, so
+		// the parse — the expensive half — is skipped for the rest of the tree.
+		if !strings.Contains(body, canonicalDefectPage) {
+			return nil
+		}
+		for _, msg := range failureMessages(t, path, body) {
+			if !strings.Contains(msg, canonicalDefectPage) {
+				continue
+			}
+			for _, id := range defectIDPattern.FindAllString(msg, -1) {
+				if nonDefectIDPrefixes[strings.SplitN(id, "-", 2)[0]] {
+					continue
+				}
+				if !slices.Contains(sites[id], rel) {
+					sites[id] = append(sites[id], rel)
+				}
+			}
 		}
 		return nil
 	})
 	if err != nil {
 		t.Fatalf("walk repository: %v", err)
 	}
-	if len(offenders) > 0 {
-		sort.Strings(offenders)
-		t.Errorf("these test files still name the readme %q section as a retraction surface: "+
-			"%v.\nThat bullet was deleted by the 2026-08-25 D8 amendment, so an engineer who "+
-			"follows the instruction literally removes nothing and leaves the disclosure "+
-			"standing. Repoint each one at %s alongside the doctor known-defects check.",
-			stale, offenders, canonicalDefectPage)
+	for id := range sites {
+		sort.Strings(sites[id])
 	}
+	sort.Strings(staleHits)
+	return sites, staleHits
+}
+
+// failureMessages returns the format string of every t.Fatalf/t.Errorf/t.Fatal/
+// t.Error/t.Skipf call in a Go test file, with `"a" + "b"` concatenation
+// flattened into one message. That flattened string is the unit AC-13 talks
+// about: it is exactly what a fixer sees printed when the pin breaks.
+func failureMessages(t *testing.T, path, src string) []string {
+	t.Helper()
+	f, err := parser.ParseFile(token.NewFileSet(), path, src, 0)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	var msgs []string
+	ast.Inspect(f, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok || len(call.Args) == 0 {
+			return true
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		switch sel.Sel.Name {
+		case "Fatalf", "Errorf", "Fatal", "Error", "Skipf", "Logf":
+		default:
+			return true
+		}
+		if msg := flattenStringConcat(call.Args[0]); msg != "" {
+			msgs = append(msgs, msg)
+		}
+		return true
+	})
+	return msgs
+}
+
+// flattenStringConcat renders a chain of string literals joined by `+` as one
+// string. Anything that is not a literal chain (a variable, a call) renders as
+// the empty string for the parts it cannot see, which is the safe direction: an
+// assembled message this gate cannot read is a message it does not credit.
+func flattenStringConcat(e ast.Expr) string {
+	switch v := e.(type) {
+	case *ast.BasicLit:
+		if v.Kind != token.STRING {
+			return ""
+		}
+		s, err := strconv.Unquote(v.Value)
+		if err != nil {
+			return ""
+		}
+		return s
+	case *ast.BinaryExpr:
+		if v.Op != token.ADD {
+			return ""
+		}
+		return flattenStringConcat(v.X) + flattenStringConcat(v.Y)
+	case *ast.ParenExpr:
+		return flattenStringConcat(v.X)
+	}
+	return ""
+}
+
+// readmeNavigabilityPromise is the readme sentence both Python soundness
+// disclosures cite as the promise they contradict. THIS is the load-bearing half
+// of that citation — the line numbers beside it are a convenience for a human
+// reader, and are verified against this sentence rather than trusted.
+const readmeNavigabilityPromise = "stdlib and third-party targets are recorded, but deliberately not navigable"
+
+// The two spellings of the same citation, one per D8 surface: the doctor check
+// writes `readme.md:26-28`, the canonical page writes
+// `[readme.md](../readme.md) lines 26–28` (en dash, as markdown prose).
+var (
+	doctorReadmeCitation = regexp.MustCompile(`readme\.md:(\d+)-(\d+)`)
+	pageReadmeCitation   = regexp.MustCompile(`\[readme\.md\]\([^)]*\) lines (\d+)[–-](\d+)`)
+)
+
+// TestReadmeContradictionCitationsResolve makes AC-4's line reference honest
+// instead of decorative.
+//
+// AC-4 mandates that both Python soundness disclosures state the readme promise
+// they contradict, WITH its line reference. A line reference rots: SW-212…SW-217
+// rewrite readme.md wholesale, and a citation pinned as a literal string would
+// keep passing while pointing at whatever happens to sit at those lines
+// afterwards — a gate enforcing a false citation (SW-211 review round 1, m4).
+//
+// So the citation is resolved rather than pinned: the quoted sentence must still
+// be in readme.md, both surfaces must still quote it, and every
+// `readme.md:<from>-<to>` either surface prints must name lines that actually
+// contain it. When the readme is renumbered this fails LOUDLY, and the failure
+// names the span to move the citation to. The line reference itself stays
+// mandatory — AC-4 requires one, and this test is not a licence to drop it.
+func TestReadmeContradictionCitationsResolve(t *testing.T) {
+	root := repoRootForTest(t)
+	b, err := os.ReadFile(filepath.Join(root, "readme.md"))
+	if err != nil {
+		t.Fatalf("read readme.md: %v", err)
+	}
+	lines := strings.Split(string(b), "\n")
+
+	from, to, ok := promiseSpan(lines)
+	if !ok {
+		t.Fatalf("readme.md no longer contains the promise %q that PYTHONFANOUT-001 and "+
+			"PYTHONORDER-001 are disclosed as contradicting. Either it was reworded — in "+
+			"which case both disclosures quote a sentence that does not exist and must be "+
+			"updated in the SAME change — or it was withdrawn, in which case the "+
+			"contradiction claim itself is stale.", readmeNavigabilityPromise)
+	}
+
+	surfaces := []struct {
+		name string
+		text string
+		re   *regexp.Regexp
+	}{
+		{"the doctor known-defects check (internal/doctor/checks.go)",
+			KnownDefectsCheck().Run(context.Background(), fakeEnv{}).Message, doctorReadmeCitation},
+		{canonicalDefectPage, readCanonicalDefectPage(t, root), pageReadmeCitation},
+	}
+	for _, s := range surfaces {
+		if !strings.Contains(normaliseSpace(s.text), readmeNavigabilityPromise) {
+			t.Errorf("%s cites the readme contradiction without quoting the sentence %q. The "+
+				"quotation is the half of the citation that cannot rot; without it the line "+
+				"numbers are the only anchor and this test cannot check them.",
+				s.name, readmeNavigabilityPromise)
+		}
+		cites := s.re.FindAllStringSubmatch(s.text, -1)
+		if len(cites) == 0 {
+			t.Errorf("%s cites no readme line reference at all; AC-4 requires the readme "+
+				"contradiction to be stated with one", s.name)
+			continue
+		}
+		for _, c := range cites {
+			citedFrom, _ := strconv.Atoi(c[1])
+			citedTo, _ := strconv.Atoi(c[2])
+			if !spanContainsPromise(lines, citedFrom, citedTo) {
+				t.Errorf("%s cites readme.md lines %d-%d for the promise %q, but those lines "+
+					"do not contain it — readme.md has been renumbered. The citation is now "+
+					"FALSE. The sentence is at lines %d-%d today: update the citation on BOTH "+
+					"D8 surfaces in the same change (this is not a licence to drop the line "+
+					"reference; AC-4 requires one).",
+					s.name, citedFrom, citedTo, readmeNavigabilityPromise, from, to)
+			}
+		}
+	}
+}
+
+// readCanonicalDefectPage reads the human-readable D8 surface.
+func readCanonicalDefectPage(t *testing.T, root string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(canonicalDefectPage)))
+	if err != nil {
+		t.Fatalf("read %s: %v", canonicalDefectPage, err)
+	}
+	return string(b)
+}
+
+// promiseSpan returns the 1-based line span of readmeNavigabilityPromise, which
+// wraps across source lines in the readme's prose. The NARROWEST span is
+// returned, so the number a failure tells a fixer to cite is the sentence's own
+// lines rather than an arbitrary superset of them.
+func promiseSpan(lines []string) (int, int, bool) {
+	for width := 0; width < 5; width++ {
+		for i := 0; i+width < len(lines); i++ {
+			if spanContainsPromise(lines, i+1, i+1+width) {
+				return i + 1, i + 1 + width, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+// normaliseSpace collapses every run of whitespace to one space, so a sentence
+// that wraps across source lines still matches as one string.
+func normaliseSpace(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+// spanContainsPromise reports whether the 1-based, inclusive line range holds the
+// promise sentence once line wrapping is normalised away.
+func spanContainsPromise(lines []string, from, to int) bool {
+	if from < 1 || to < from || to > len(lines) {
+		return false
+	}
+	return strings.Contains(normaliseSpace(strings.Join(lines[from-1:to], " ")), readmeNavigabilityPromise)
 }
 
 // diffIDs renders the two-way difference between a wanted and a got id list, or
