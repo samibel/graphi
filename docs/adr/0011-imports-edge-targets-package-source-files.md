@@ -219,7 +219,7 @@ reason.
 - **`related_files` precision improves and its recall narrows** on the same
   operation ADR 0010's review measured regressing.
 - **LINK-001's disclosure is retracted in this same change**, per the disclosure
-  contract: the readme "Known limits" bullet, the doctor `known-defects` check,
+  contract: the `docs/known-defects.md` bullet, the doctor `known-defects` check,
   its test, and the registration in `cmd/graphi/doctor.go`.
 - **An existing index needs `graphi rebuild`, not `graphi sync`.** Verified with
   both binaries on one fixture: after upgrading, `sync` reports "up to date" and

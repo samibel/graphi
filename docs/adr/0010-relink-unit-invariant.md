@@ -165,7 +165,7 @@ a formality.
   LINK-001, disclosed, fix scheduled as its own change — this ADR's invariant
   is satisfied either way, but the claim "edges they should always have had"
   was too broad and is withdrawn.
-- PARITY-003's disclosure (readme Known limits, `graphi sync -h`, the doctor
+- PARITY-003's disclosure (`docs/known-defects.md`, `graphi sync -h`, the doctor
   `known-defects` check) is retired in the same change that closes the defect,
   per the disclosure's own contract.
 - The profile axis roughly doubles the change-class table's subtests. It is

@@ -11,6 +11,7 @@ which, so the difference stays visible.
 | [HOWTO.md](HOWTO.md) | Install, index a repo, use every surface — start here |
 | [FEATURES.md](FEATURES.md) | Complete catalogue of MCP tools, CLI subcommands, HTTP endpoints, analyzers |
 | [stability-tiers.md](stability-tiers.md) | **Canonical** definition of the GA / Preview / Labs / Source-only tiers |
+| [known-defects.md](known-defects.md) | **Canonical** page for open defects and limits by design — the human-readable half of disclosure contract D8, linked from `readme.md` |
 | [language-support.md](language-support.md) | Per-language coverage table and how cross-file resolution works, language by language |
 | [cli-reference.md](cli-reference.md) | Every CLI subcommand with its stability tier |
 | [semantic-search.md](semantic-search.md) | The optional, off-by-default embedding search: how to enable it, what stays guaranteed |

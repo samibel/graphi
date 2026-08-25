@@ -176,7 +176,7 @@ by `TestParseModuleDirective_AgreesWithTyperesolve` (test-only dependency).
   previously measured perf/evidence rows stay STALE until re-measured, and the
   real-repo matrix rows for gin/grpc-go stand as published (with a superseded
   header) until `internal/parity` re-runs.
-- PARITY-002's user-facing disclosure (readme Known limits, `sync -h`, the
+- PARITY-002's user-facing disclosure (`docs/known-defects.md`, `sync -h`, the
   doctor known-defects check) is retired in the same change that closes the
   defect, per the disclosure's own contract.
 - The Wave-0 gate's determinism proof (`internal/parity`, two dispatches with
