@@ -1,0 +1,184 @@
+{
+  "profile": "daemon-stable",
+  "note": "bound daemon profile: DaemonClient's wired-RPC allow-list narrows the Stable catalog. Constructing the client dials nothing.",
+  "tool_count": 7,
+  "tools": [
+    {
+      "name": "callers",
+      "tier": "stable",
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "callees",
+      "tier": "stable",
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "references",
+      "tier": "stable",
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "definition",
+      "tier": "stable",
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "neighborhood",
+      "tier": "stable",
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "search",
+      "tier": "stable",
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "impact",
+      "tier": "stable",
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    }
+  ]
+}

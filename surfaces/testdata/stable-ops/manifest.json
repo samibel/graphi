@@ -1,0 +1,92 @@
+{
+  "note": "AX-00 baseline freeze: canonical result bytes of the eleven read-only Stable operations over the committed corpus/fixtures/go fixture. The .canonical.json artifacts are RAW canonical bytes (not re-indented) — the serialization itself is what is frozen. `index` is a lifecycle operation and is represented here only by the digest of the whole indexed graph.",
+  "fixture": "corpus/fixtures/go",
+  "backend": "core/graphstore SQLite (the shipped source of truth)",
+  "operation_count": 11,
+  "operations": [
+    {
+      "operation": "agent_brief",
+      "request": "Brief(topic=\"Hello\") — JSON half",
+      "artifact": "agent_brief.canonical.json",
+      "bytes": 2675,
+      "sha256": "3120a33b33b6320e77b7f49e989a1735868c3eb33eae437e6fec9195bbf39ccf"
+    },
+    {
+      "operation": "callees",
+      "request": "Query(op=\"callees\", symbol=<ChainA>, depth=0)",
+      "artifact": "callees.canonical.json",
+      "bytes": 439,
+      "sha256": "045c16c4e35e5f05a6888d1abd2f01849f6cc25d47b6f064d861efd8f6fb8272"
+    },
+    {
+      "operation": "callers",
+      "request": "Query(op=\"callers\", symbol=<Hello>, depth=0)",
+      "artifact": "callers.canonical.json",
+      "bytes": 802,
+      "sha256": "980ac9e0c8f88356c41ddee5e10d50efb24793c0d7576ca18008314b7c7b833c"
+    },
+    {
+      "operation": "change_risk",
+      "request": "ChangeRisk(target=<Hello>, diff=\"\", limit=20)",
+      "artifact": "change_risk.canonical.json",
+      "bytes": 1162,
+      "sha256": "75e679d0b474c5ba1d969167e017539f55d5d6ad226a0380e88cbcd5353db299"
+    },
+    {
+      "operation": "definition",
+      "request": "Query(op=\"definition\", symbol=<Hello>, depth=0)",
+      "artifact": "definition.canonical.json",
+      "bytes": 433,
+      "sha256": "feb221b1c2b7092d3cdd62a12963a21e0e52be95104e079f6c2bd3180cd5913d"
+    },
+    {
+      "operation": "explain_symbol",
+      "request": "ExplainSymbol(symbol=<Hello>, limit=20)",
+      "artifact": "explain_symbol.canonical.json",
+      "bytes": 941,
+      "sha256": "fc0a7516f05c7ca15636dc80e53265a1f72f8ac90837e79406d92e9e8b03f498"
+    },
+    {
+      "operation": "impact",
+      "request": "Analyze(name=\"impact\", symbol=<Hello>)",
+      "artifact": "impact.canonical.json",
+      "bytes": 1622,
+      "sha256": "3ad0d139ce0e3640c1e1610b6dc2cbbdd77c7dde7dd5718dc02f7586c06b3b0a"
+    },
+    {
+      "operation": "neighborhood",
+      "request": "Query(op=\"neighborhood\", symbol=<ChainA>, depth=2)",
+      "artifact": "neighborhood.canonical.json",
+      "bytes": 5987,
+      "sha256": "724527f37ca8e77694d40b46ba7ef318bf82703626c0381c3e38eb911d72d3d1"
+    },
+    {
+      "operation": "references",
+      "request": "Query(op=\"references\", symbol=<Hello>, depth=0)",
+      "artifact": "references.canonical.json",
+      "bytes": 94,
+      "sha256": "e8753078a58c32cee73edf6cca90dfc70b1c6e0fffce69681b5ca423018d01a0"
+    },
+    {
+      "operation": "related_files",
+      "request": "RelatedFiles(target=<ChainA>, direction=\"both\", limit=10)",
+      "artifact": "related_files.canonical.json",
+      "bytes": 310,
+      "sha256": "db6ace61772c8811b1cc35827e44813a1deac0b06bf8e161d840730e78768aaf"
+    },
+    {
+      "operation": "search",
+      "request": "Search(query=\"Hello\", limit=20)",
+      "artifact": "search.canonical.json",
+      "bytes": 184,
+      "sha256": "509588e3a408e20e4c902fd141a704cf2e1c9c5006c227ee18bfdff39f006be2"
+    }
+  ],
+  "graph_digest": {
+    "operation": "index",
+    "request": "IngestAll(corpus/fixtures/go) → model.Graph.Marshal()",
+    "artifact": "(not committed: whole-graph bytes)",
+    "bytes": 8481,
+    "sha256": "298553a8724297b0e30cc2ddf69c1381bc450b068fd38679cb4f527926b25ece"
+  }
+}

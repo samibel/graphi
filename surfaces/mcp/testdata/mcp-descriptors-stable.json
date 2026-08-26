@@ -1,0 +1,290 @@
+{
+  "profile": "stable",
+  "note": "profile-static Stable catalog (stableToolDescriptors): what an UNBOUND stdio session answers tools/list with while the first index runs, before any CapabilityReporter narrowing.",
+  "tool_count": 11,
+  "tools": [
+    {
+      "name": "callers",
+      "tier": "stable",
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "callees",
+      "tier": "stable",
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "references",
+      "tier": "stable",
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "definition",
+      "tier": "stable",
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "neighborhood",
+      "tier": "stable",
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "search",
+      "tier": "stable",
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "impact",
+      "tier": "stable",
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "explain_symbol",
+      "tier": "stable",
+      "description": "return a compact, cited symbol identity and immediate neighborhood",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "qualified id, file:line anchor, or bare name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "related_files",
+      "tier": "stable",
+      "description": "return a deterministically ranked read-first file list around an anchor",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "dependencies | dependents | both",
+            "type": "string"
+          },
+          "limit": {
+            "description": "maximum returned files",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id, file path, or diff anchor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "change_risk",
+      "tier": "stable",
+      "description": "return an evidence-based change-risk assessment for a target or diff",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "unified diff or line-oriented refs",
+            "type": "string"
+          },
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "agent_brief",
+      "tier": "stable",
+      "description": "return a bounded, cited task-start context packet",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "optional topic: symbol, path, or subsystem",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    }
+  ]
+}

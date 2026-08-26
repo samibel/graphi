@@ -1,0 +1,77 @@
+# graphi — protection-gate declaration (AX-00 / SW-220 AC-4)
+#
+# The seven invariant gates that must survive the extension-kernel strangler
+# refactor, and the CI job that owns each one. This file is a DECLARATION, not a
+# re-implementation: nothing here executes a gate or re-derives a verdict. The
+# aggregate view (`go run ./cmd/evidence -gate-view`) reads it, checks that each
+# named workflow and job still exists in this checkout, and renders the status
+# from the result records those jobs emit.
+#
+# Why a declaration instead of a `needs:` job: these gates live in SEVEN separate
+# workflow files, and GitHub's `needs:` cannot reference a job in another
+# workflow. An aggregating job would therefore have to re-run or re-implement
+# them — exactly what SW-220 forbids.
+#
+# A gate with no recorded result renders UNKNOWN, never PASS. `parity` is
+# dispatch/nightly by design (it shallow-clones public repositories and is
+# deliberately outside the zero-egress PR posture), so UNKNOWN is its NORMAL
+# reading on a pull request. That is the honest answer, and reading it as
+# anything else is the mistake this view exists to prevent.
+#
+# Fields:
+#   id        stable key; also the basename of the result record (<id>.json)
+#   gate      human name
+#   enforces  the invariant, in one sentence
+#   workflow  file under .github/workflows (existence is checked)
+#   job       job key inside that workflow (existence is checked)
+#   cadence   when it runs
+
+gates:
+  - id: parity
+    gate: "full/incremental parity matrix"
+    enforces: "incremental ingest produces byte-identical graphs to a full pass on real repositories (FR-7 / PRD 12.3)"
+    workflow: parity.yml
+    job: parity-matrix
+    cadence: "dispatch/nightly only — never on PRs, so a green PR cannot be mistaken for this gate"
+
+  - id: cgo
+    gate: "CGo-free default build"
+    enforces: "the shipped default binary builds and tests with CGO_ENABLED=0 and pulls in no cgo-requiring package"
+    workflow: cgoconformance.yml
+    job: cgo-free-conformance
+    cadence: "every PR and every push to main"
+
+  - id: egress
+    gate: "zero-egress canary"
+    enforces: "the default import graph reaches no telemetry or non-loopback network path"
+    workflow: canary.yml
+    job: gate
+    cadence: "every PR and every push to main"
+
+  - id: layer
+    gate: "layer-direction guard"
+    enforces: "imports flow only cmd to surfaces to engine to core; no upward or sideways edge"
+    workflow: release.yml
+    job: layer-direction
+    cadence: "every PR and every push to main"
+
+  - id: coverage
+    gate: "capability coverage matrix"
+    enforces: "docs and code agree on parsers, analyzers, tools and surfaces; the manifest is fresh; exactly twelve rows carry tier stable"
+    workflow: coverage-matrix.yml
+    job: coverage-matrix
+    cadence: "every PR and every push to main"
+
+  - id: repro
+    gate: "reproducible static release build"
+    enforces: "the release binary rebuilds byte-identically from the same commit"
+    workflow: release.yml
+    job: release
+    cadence: "every PR and every push to main"
+
+  - id: binary-size
+    gate: "binary-size budget"
+    enforces: "the static binary stays within the pinned binary_size_bytes budget in bench/bench-budget.yml"
+    workflow: bench.yml
+    job: bench-budget-gate
+    cadence: "every PR and every push to main"

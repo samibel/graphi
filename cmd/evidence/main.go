@@ -13,6 +13,19 @@
 //	                                   # only place the rules run (SW-205 AC-9).
 //	go run ./cmd/evidence -record-citations  # re-record stale blob shas from HEAD
 //	                                   # and print every row touched (AC-12).
+//	go run ./cmd/evidence -gate-view   # AX-00 (SW-220 AC-4): the aggregated
+//	                                   # protection-gate posture for one commit —
+//	                                   # parity, CGo, egress, layer, coverage,
+//	                                   # repro and binary-size in ONE view.
+//	                                   # Optional: -results <dir> (per-gate result
+//	                                   # records) and -sha <commit>. It executes no
+//	                                   # gate: an absent, unreadable or unbacked
+//	                                   # result renders UNKNOWN, never PASS.
+//	                                   # Exit 1 only if the DECLARATION rots (a
+//	                                   # named workflow or job no longer exists) —
+//	                                   # the statuses themselves carry no verdict,
+//	                                   # because parity is legitimately UNKNOWN on
+//	                                   # a PR.
 //
 // Exit codes mirror cmd/coverage and cmd/layerguard: 0 = clean, 1 = violation/
 // stale, 2 = internal error. It builds CGo-free, imports only the standard library
@@ -39,17 +52,20 @@ func main() {
 		recordCite = flag.Bool("record-citations", false, "re-record stale blob shas from HEAD and print every row touched")
 		dryRun     = flag.Bool("dry-run", false, "with -record-citations: compute and print the plan without writing")
 		root       = flag.String("root", "", "module root (default: resolved via `go env GOMOD`)")
+		gateView   = flag.Bool("gate-view", false, "render the aggregated protection-gate posture (parity, CGo, egress, layer, coverage, repro, binary-size); absent results render UNKNOWN, never PASS")
+		results    = flag.String("results", "", "with -gate-view: directory holding per-gate result records (<gate-id>.json). Absent directory = every gate UNKNOWN, which is the honest default")
+		sha        = flag.String("sha", "", "with -gate-view: the commit the posture is reported for")
 	)
 	flag.Parse()
 
 	modes := 0
-	for _, m := range []bool{*check, *generate, *checkCites, *recordCite} {
+	for _, m := range []bool{*check, *generate, *checkCites, *recordCite, *gateView} {
 		if m {
 			modes++
 		}
 	}
 	if modes != 1 {
-		fmt.Fprintln(os.Stderr, "evidence: exactly one of -check, -generate, -check-citations or -record-citations is required")
+		fmt.Fprintln(os.Stderr, "evidence: exactly one of -check, -generate, -check-citations, -record-citations or -gate-view is required")
 		os.Exit(2)
 	}
 
@@ -60,6 +76,24 @@ func main() {
 	}
 	yamlPath := filepath.Join(dir, filepath.FromSlash(evidence.EvidenceYAMLPath))
 	mdPath := filepath.Join(dir, filepath.FromSlash(evidence.EvidenceMDPath))
+
+	if *gateView {
+		gates, err := evidence.LoadProtectionGates(filepath.Join(dir, filepath.FromSlash(evidence.ProtectionGatesPath)))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "evidence: %v\n", err)
+			os.Exit(2)
+		}
+		view := evidence.BuildGateView(dir, *results, *sha, gates)
+		fmt.Print(evidence.RenderGateView(view))
+		// The gate STATUSES are reported, never enforced here (SW-220 puts a new
+		// blocking gate out of scope, and parity is UNKNOWN on a PR by design).
+		// A broken DECLARATION is different: it means the view can no longer see
+		// the gate at all, which is rot in the instrument, so it fails.
+		if !view.Pass() {
+			os.Exit(1)
+		}
+		return
+	}
 
 	if *recordCite {
 		touched, err := evidence.RecordCitations(dir, *dryRun)

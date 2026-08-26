@@ -1,0 +1,553 @@
+# AX-00 baseline freeze — graphi CLI help
+#
+# Frozen rendering of the user-facing CLI verbs: the top-level blurb, the
+# subcommand listing with its Stable/Labs markers, and every verb's own help.
+# Tier markers are DERIVED (cmd/graphi/help.go stabilityMarker →
+# surfaces/mcp.IsStableOperation), so a re-tiering shows up here as a diff.
+# Regenerate deliberately: GRAPHI_UPDATE_GOLDEN=1 go test ./cmd/graphi -run TestAX00
+
+
+===== graphi help =====
+graphi: run with no arguments to index the current repo and open the local UI in your browser.
+
+Stability taxonomy (SCOPE-01): 🟢 Stable — the 12 frozen product operations, on Go, over CLI + MCP stdio (this is the GA scope); 🧪 Labs — kept in-tree, not a stable promise. On a non-Go language a Stable operation is Preview, not GA. Canonical tiers: docs/stability-tiers.md. Full matrix: docs/coverage-matrix.md.
+
+Stable operations:
+  graphi sync                 update the graph to match the checked-out code (run after a branch switch)
+  graphi status               is the graph current? (read-only; --json)
+  graphi rebuild              re-index the repo from scratch
+  graphi search <query>       lexical / symbol search over the graph
+  graphi callers <symbol>     who calls a symbol (also: callees, references, definition, neighborhood)
+  graphi impact <symbol>      blast radius of a change
+  graphi explain-symbol <s>   compact, cited symbol identity summary
+  graphi related-files <t>    ranked, cited read-first file list
+  graphi change-risk <t>      evidence-based local blast-radius estimate
+  graphi agent-brief          bounded, cited task-start context packet
+
+Labs & tooling (not a stable promise):
+  graphi symbol-context <s>   unified single-call symbol view (definition, snippet, tests, risk)
+  graphi task-context <text>  free-text task → ranked, token-budgeted context bundle
+  graphi repo-overview        one-call repository summary (structure, languages, entrypoints)
+  graphi test-impact <t>      which tests must run for a change (must_run/recommended/unaffected)
+  graphi change-impact <t>    Change Risk 2.0: dependents, covering tests, reasons, risk
+  graphi hotspots             churn × centrality file ranking with bus-factor warnings
+  graphi search-hybrid <q>    embedding-free hybrid search (identifier + path + degree)
+  graphi architecture         community/layer view of the graph (Louvain + dependency direction)
+  graphi architecture-violations  cycles, back-edges, high coupling, god modules
+  graphi dead-code            scored dead-code candidates with exclusion reasons
+  graphi framework-map        routes, events, DI components from recorded annotations
+  graphi snapshot [<name>]    list or freeze named graph states of this repo
+  graphi compare <a> <b>      diff two named graph states ('current' = live graph)
+  graphi doctor               run read-only diagnostic checks
+  graphi setup                register graphi's MCP server in local MCP clients
+  graphi upgrade -print       print the upgrade command without running it
+  graphi ui                   index this repo and open the local UI
+  graphi claude               register graphi's MCP server in Claude Code
+  graphi analyze <name> ...   run a Labs analyzer (taint, pdg, contracts, …)
+
+Advanced (long forms):
+  graphi index [-root <repo>] [-db path] [-meta dir] [--full]   (explicit-path form of sync/rebuild)
+  graphi query <op> -symbol <id> [-depth N]
+  graphi analyze <name> -symbol <id> [-direction forward|reverse] [-max-nodes N]
+
+Details on any subcommand:  graphi help <subcommand>   (or: graphi <subcommand> --help)
+registered languages (Go is GA; every other language is Preview — see docs/stability-tiers.md): [bash c c_sharp cpp css go hcl java javascript json kotlin lua markdown php python ruby rust sql toml tsx typescript yaml]
+subcommands: sync, rebuild, status, snapshot, compare, query, search, index, savings, analyze, refactor-preview, refactor, undo, mcp, daemon, http, setup, setup-embedder, doctor, privacy-audit, upgrade, version, help, parse <file>
+
+===== graphi help <unknown> (the verb listing with tier markers) =====
+exit code: 1
+graphi: unknown subcommand "__no_such_subcommand__"
+known subcommands:
+  (🟢 stable operations unmarked · [labs] = kept in-tree, not a stable promise)
+  (GA = the stable operations on Go over CLI + MCP stdio; other languages are Preview. See docs/stability-tiers.md)
+  agent-brief        bounded, cited task-start context packet for agents
+  analyze            [labs] run a registered analyzer over the graph
+  architecture       [labs] automatic architecture view: Louvain communities layered by dependency direction (labs)
+  architecture-violations [labs] cycles, back-edges, high coupling, god modules on the community graph (labs)
+  change-impact      [labs] Change Risk 2.0: changed symbols, public API, dependents, covering tests, reasons, risk (labs)
+  change-risk        evidence-based local blast-radius estimate (low/medium/high/unknown)
+  claude             [labs] register graphi's MCP server in Claude Code (alias for `setup`)
+  compare            [labs] diff two named graph states (snapshot names, or 'current' for the live graph)
+  compare-branches   [labs] graph-level diff of two graphi SQLite snapshots (paths, never git refs)
+  compound           [labs] compound / Cypher-style graph query (SEED/HOP/WHERE/MAXDEPTH)
+  conflicts-prs      [labs] inter-PR conflict detection
+  critique-review    [labs] graph-evidence critique of an existing PR review
+  daemon             [labs] hot-index Unix-socket daemon lifecycle
+  dead-code          [labs] scored dead-code candidates with explicit exclusion reasons (labs)
+  diagnose           [labs] graph-derived diagnostics + suggested code-actions (high-confidence by default)
+  distill            [labs] distill a session into a compact decision record
+  doctor             [labs] read-only diagnostic checkup for binary, PATH, MCP clients, DB, privacy, and local-first invariants
+  explain-symbol     compact, cited symbol identity summary (definition, callers, callees, references)
+  find-clones        [labs] edge-profile clone detection
+  framework-map      [labs] application view from recorded framework annotations: routes, events, DI (labs)
+  help               [labs] print general help, or detailed help for one subcommand
+  hotspots           [labs] churn × dependency-centrality file ranking with bus-factor warnings (labs)
+  http               [labs] read-only loopback HTTP REST + SSE surface
+  index              ingest a repo into a durable store (advanced long form of sync/rebuild; --full forces a cold pass; optional --semantic embedding pass)
+  inline             [labs] inline refactor over the edit saga (single-line initializer targets)
+  list-prs           [labs] read-only forge enumeration of open PRs (GITHUB_TOKEN/GITHUB_REPOSITORY env)
+  mcp                [labs] MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools); -root or the GRAPHI_ROOT env var (flag wins) pins the repository root for clients that launch the server outside the repo and supply no MCP roots; with -db, -meta names the sidecar dir like the CLI verbs
+  memory             [labs] agent memory operations
+  parse              [labs] parse a single file through the registry (the original default)
+  pr-comment         [labs] sticky PR review comment + optional risk-threshold merge gate
+  privacy-audit      [labs] print the local-first proof (CGo scan + canary egress guard); non-zero on violation
+  query              structural query over the graph (callers|callees|references|definition|neighborhood)
+  query-strict       [labs] run a stable query, then exclude result edges below a confidence tier; excluded counts stay visible (filtered emptiness is never bare emptiness), optional fail-closed policy preflight
+  rebuild            re-index the repo from scratch (cold full pass — for a damaged index, after an upgrade, or when doctor recommends it)
+  refactor           [labs] commit a refactor through the atomic edit saga
+  refactor-preview   [labs] impact-set preview of a refactor, no mutation
+  related-files      ranked, cited read-first file list around a symbol, path, or task
+  repo-overview      [labs] one-call repository summary: structure, languages, entrypoints, central symbols, tests, boundaries (labs)
+  safe-delete        [labs] reference-safety-gated delete (removes the declaration line only)
+  savings            [labs] session token-savings readout from a ledger a prior MCP/daemon session wrote
+  search             lexical / symbol search; -semantic runs the optional embedding search
+  search-ast         [labs] structural AST pattern query
+  search-hybrid      [labs] embedding-free hybrid search: identifier segments + path + graph degree (labs)
+  setup              [labs] register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)
+  setup-embedder     [labs] print how to opt in to the optional semantic search (offline)
+  skillgen           [labs] deterministic skill generation from a procedure description
+  snapshot           [labs] list, freeze, or delete named graph states of this repo (for graphi compare)
+  status             report whether the graph matches the checked-out code (read-only; exit 0 current, 1 actionable, 2 error)
+  suggest-reviewers  [labs] ranked candidate-reviewer recommender for a touched set
+  symbol-context     [labs] unified single-call symbol view: definition + snippet, hierarchy, callers/callees/references, covering tests, risk (labs)
+  sync               bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)
+  task-context       [labs] free-text task → ranked, cited, token-budgeted context bundle with read order (labs)
+  test-impact        [labs] which tests must run for a change: must_run / recommended / probably_unaffected / unknown (labs)
+  triage-prs         [labs] graph-derived multi-PR triage ranking
+  trust-report       [labs] report the graph's trust surface: snapshot state, confidence tiers, coverage gaps, boundaries, optional policy verdict (read-only; exit 0 PASS/current, 1 WARN, 2 error, 3 FAIL, 4 UNKNOWN/unavailable)
+  ui                 [labs] index the current repo and open the local graph UI (alias for bare `graphi`)
+  undo               [labs] reverse an applied edit by its undo token
+  upgrade            [labs] user-initiated self-update to the latest release (never automatic)
+  version            [labs] print version / commit / build date stamped into the binary
+
+===== per-verb help =====
+
+--- graphi help agent-brief ---
+graphi agent-brief — bounded, cited task-start context packet for agents
+usage:   graphi agent-brief [-topic <topic>] [-ledger path]
+example: graphi agent-brief -topic "engine/agenttools/brief"
+
+--- graphi help analyze ---
+graphi analyze — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help architecture ---
+graphi architecture — [labs] automatic architecture view: Louvain communities layered by dependency direction (labs)
+usage:   graphi architecture [-max-items n]
+example: graphi architecture
+
+--- graphi help architecture-violations ---
+graphi architecture-violations — [labs] cycles, back-edges, high coupling, god modules on the community graph (labs)
+usage:   graphi architecture-violations [-max-items n]
+example: graphi architecture-violations
+
+--- graphi help batched ---
+graphi batched — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help call-chain ---
+graphi call-chain — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help callees ---
+graphi callees — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help callers ---
+graphi callers — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help change-impact ---
+graphi change-impact — [labs] Change Risk 2.0: changed symbols, public API, dependents, covering tests, reasons, risk (labs)
+usage:   graphi change-impact [-db path] [-depth 1-3] [-max-items n] (<target> | -diff <file|->)
+example: git diff HEAD~1..HEAD | graphi change-impact -diff -
+
+--- graphi help change-risk ---
+graphi change-risk — evidence-based local blast-radius estimate (low/medium/high/unknown)
+usage:   graphi change-risk [-db path] [-max-items n] (<target> | -diff <file|->)
+example: git diff | graphi change-risk -db graph.db -diff -
+
+--- graphi help claude ---
+graphi claude — [labs] register graphi's MCP server in Claude Code (alias for `setup`)
+usage:   graphi claude [--dry-run]
+example: graphi claude
+
+--- graphi help communities ---
+graphi communities — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help compare ---
+graphi compare — [labs] diff two named graph states (snapshot names, or 'current' for the live graph)
+usage:   graphi compare <base> <head> [-root <repo>]
+example: graphi compare main current
+
+--- graphi help compare-branches ---
+graphi compare-branches — [labs] graph-level diff of two graphi SQLite snapshots (paths, never git refs)
+usage:   graphi compare-branches -base <db-path> -head <db-path>
+example: graphi compare-branches -base base-graph.db -head head-graph.db
+
+--- graphi help compound ---
+graphi compound — [labs] compound / Cypher-style graph query (SEED/HOP/WHERE/MAXDEPTH)
+usage:   graphi compound [-db path] [-daemon socket] -q "SEED ..." (or query text on stdin)
+example: graphi compound -db graph.db -q 'SEED kind=function\nHOP calls'
+
+--- graphi help concept ---
+graphi concept — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help conflicts-prs ---
+graphi conflicts-prs — [labs] inter-PR conflict detection
+usage:   graphi conflicts-prs [-db path] [-daemon socket]
+example: GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo graphi conflicts-prs -db graph.db
+
+--- graphi help contracts ---
+graphi contracts — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help critique-review ---
+graphi critique-review — [labs] graph-evidence critique of an existing PR review
+usage:   graphi critique-review [-db path] -diff <d>|-diff-path <f> [-pr N] [-review <json>|-review-path <f>]
+example: graphi critique-review -db graph.db -diff-path change.diff -review-path review.json
+
+--- graphi help daemon ---
+graphi daemon — [labs] hot-index Unix-socket daemon lifecycle
+usage:   graphi daemon start|stop|status [-socket path] [-db path]
+example: graphi daemon start -socket /tmp/graphi.sock -db graph.db
+
+--- graphi help dead-code ---
+graphi dead-code — [labs] scored dead-code candidates with explicit exclusion reasons (labs)
+usage:   graphi dead-code [-max-items n]
+example: graphi dead-code
+
+--- graphi help definition ---
+graphi definition — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help diagnose ---
+graphi diagnose — [labs] graph-derived diagnostics + suggested code-actions (high-confidence by default)
+usage:   graphi diagnose [-db path] [-daemon socket] [-all] [-confidence confirmed|derived|heuristic] [-severity error|warning|info] [-explain-suppressed] [-json] [-root dir] [<kind>...]
+example: graphi diagnose -db graph.db -severity warning dead_symbol
+
+--- graphi help distill ---
+graphi distill — [labs] distill a session into a compact decision record
+usage:   graphi distill -session <id> [-decisions d1,d2] [-risks r1] [-questions q1] [-files a.go,b.go] [-ledger path]
+example: graphi distill -session s1 -decisions "use sqlite" -files core/graphstore/sqlite.go
+
+--- graphi help doctor ---
+graphi doctor — [labs] read-only diagnostic checkup for binary, PATH, MCP clients, DB, privacy, and local-first invariants
+usage:   graphi doctor [-db path] [--json]
+example: graphi doctor --json
+
+--- graphi help explain-symbol ---
+graphi explain-symbol — compact, cited symbol identity summary (definition, callers, callees, references)
+usage:   graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>
+example: graphi explain-symbol -db graph.db util.Format
+
+--- graphi help find-clones ---
+graphi find-clones — [labs] edge-profile clone detection
+usage:   graphi find-clones [<json-config>] [-db path]
+example: graphi find-clones -db graph.db '{"threshold":0.9}'
+
+--- graphi help framework-map ---
+graphi framework-map — [labs] application view from recorded framework annotations: routes, events, DI (labs)
+usage:   graphi framework-map [-max-items n]
+example: graphi framework-map
+
+--- graphi help git-history ---
+graphi git-history — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help help ---
+graphi help — [labs] print general help, or detailed help for one subcommand
+usage:   graphi help [<subcommand>]
+example: graphi help query
+
+--- graphi help hotspots ---
+graphi hotspots — [labs] churn × dependency-centrality file ranking with bus-factor warnings (labs)
+usage:   graphi hotspots [-max-commits n] [-max-items n]
+example: graphi hotspots -max-commits 500
+
+--- graphi help http ---
+graphi http — [labs] read-only loopback HTTP REST + SSE surface
+usage:   graphi http [-addr 127.0.0.1:8080] [-db path] [-root repo] [-meta dir]
+example: graphi http -db graph.db -addr 127.0.0.1:8080
+
+--- graphi help impact ---
+graphi impact — run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help implementers ---
+graphi implementers — [labs] structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help implements ---
+graphi implements — [labs] structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help index ---
+graphi index — ingest a repo into a durable store (advanced long form of sync/rebuild; --full forces a cold pass; optional --semantic embedding pass)
+usage:   graphi index [-root <repo>] [-db path] [-meta dir] [--full] [--semantic]
+example: graphi index -root . -db ~/.graphi/graph.db -meta ~/.graphi/meta
+
+--- graphi help inline ---
+graphi inline — [labs] inline refactor over the edit saga (single-line initializer targets)
+usage:   graphi inline -root <repo> [-db path] [-meta dir] [-dry-run] <target-node-id>
+example: graphi inline -root . -dry-run a1b2c3d4
+
+--- graphi help interproc ---
+graphi interproc — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help list-prs ---
+graphi list-prs — [labs] read-only forge enumeration of open PRs (GITHUB_TOKEN/GITHUB_REPOSITORY env)
+usage:   graphi list-prs [-db path] [-daemon socket]
+example: GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo graphi list-prs
+
+--- graphi help mcp ---
+graphi mcp — [labs] MCP stdio server (Stable tools by default; explicit -labs opt-in for experimental tools); -root or the GRAPHI_ROOT env var (flag wins) pins the repository root for clients that launch the server outside the repo and supply no MCP roots; with -db, -meta names the sidecar dir like the CLI verbs
+usage:   graphi mcp [-root <repo>] [-db path [-meta dir]] [-daemon socket] [-labs]
+example: graphi mcp -root ~/work/mars
+
+--- graphi help memory ---
+graphi memory — [labs] agent memory operations
+usage:   graphi memory store|recall|forget|list|export [-scope s] [-notebook n] [-payload text] [-tags a,b] [-id id] [-kind k] [-source s] [-confidence c] [-evidence e] [-limit N] [-path file] [-ledger path]
+example: graphi memory store -scope repo -notebook decisions -payload "we chose sqlite" -source architect -confidence confirmed
+
+--- graphi help metrics ---
+graphi metrics — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help neighborhood ---
+graphi neighborhood — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help notebook-ingest ---
+graphi notebook-ingest — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help overrides ---
+graphi overrides — [labs] structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help parse ---
+graphi parse — [labs] parse a single file through the registry (the original default)
+usage:   graphi parse <file>
+example: graphi parse main.go
+
+--- graphi help pdg ---
+graphi pdg — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help pr-comment ---
+graphi pr-comment — [labs] sticky PR review comment + optional risk-threshold merge gate
+usage:   graphi pr-comment -diff <unified-diff>|-diff-path <file> [-pr ref] [-provenance summary|full] [-gate] [-gate-threshold N] [-publish]
+example: graphi pr-comment -diff-path change.diff -gate
+
+--- graphi help pr-questions ---
+graphi pr-questions — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help pr-risk ---
+graphi pr-risk — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help pr-signals ---
+graphi pr-signals — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help privacy-audit ---
+graphi privacy-audit — [labs] print the local-first proof (CGo scan + canary egress guard); non-zero on violation
+usage:   graphi privacy-audit [--target ./...]
+example: graphi privacy-audit
+
+--- graphi help query ---
+graphi query — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help query-strict ---
+graphi query-strict — [labs] run a stable query, then exclude result edges below a confidence tier; excluded counts stay visible (filtered emptiness is never bare emptiness), optional fail-closed policy preflight
+usage:   graphi query-strict <operation> -symbol <id> [-depth n] [-min-tier confirmed|derived|heuristic] [-policy exploratory-v1|review-v1|automated-change-v1] [-db path]
+example: graphi query-strict callers -symbol shop.price -min-tier derived
+
+--- graphi help rebuild ---
+graphi rebuild — re-index the repo from scratch (cold full pass — for a damaged index, after an upgrade, or when doctor recommends it)
+usage:   graphi rebuild [-root <repo>] [-db path] [-meta dir] [-profile name]
+example: graphi rebuild
+
+--- graphi help refactor ---
+graphi refactor — [labs] commit a refactor through the atomic edit saga
+usage:   graphi refactor -root <repo> [-db path] [-meta dir] -kind <k> -target <id> -old-name X -new-name Y [-actor who]
+example: graphi refactor -root . -kind rename -target a1b2 -old-name Foo -new-name Bar
+
+--- graphi help refactor-preview ---
+graphi refactor-preview — [labs] impact-set preview of a refactor, no mutation
+usage:   graphi refactor-preview -root <repo> [-db path] [-meta dir] -kind <k> -target <id> -old-name X -new-name Y
+example: graphi refactor-preview -root . -kind rename -target a1b2 -old-name Foo -new-name Bar
+
+--- graphi help references ---
+graphi references — structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help related-files ---
+graphi related-files — ranked, cited read-first file list around a symbol, path, or task
+usage:   graphi related-files [-db path] [-direction dependencies|dependents|both] [-max-files n] <target>
+example: graphi related-files -db graph.db -direction dependents util.Format
+
+--- graphi help repo-overview ---
+graphi repo-overview — [labs] one-call repository summary: structure, languages, entrypoints, central symbols, tests, boundaries (labs)
+usage:   graphi repo-overview [-db path] [-max-items n] [-communities]
+example: graphi repo-overview -communities
+
+--- graphi help safe-delete ---
+graphi safe-delete — [labs] reference-safety-gated delete (removes the declaration line only)
+usage:   graphi safe-delete -root <repo> [-db path] [-meta dir] [-dry-run] <target-node-id>
+example: graphi safe-delete -root . -dry-run a1b2c3d4
+
+--- graphi help savings ---
+graphi savings — [labs] session token-savings readout from a ledger a prior MCP/daemon session wrote
+usage:   graphi savings -ledger <path> [-db path] [-daemon socket]
+example: graphi savings -ledger ~/.graphi/ledger.db
+
+--- graphi help search ---
+graphi search — lexical / symbol search; -semantic runs the optional embedding search
+usage:   graphi search [-limit N] [-semantic] <query> [-db path] [-daemon socket] [-meta dir]
+example: graphi search -db graph.db -limit 10 parseFile
+
+--- graphi help search-ast ---
+graphi search-ast — [labs] structural AST pattern query
+usage:   graphi search-ast [-limit N] <json-pattern> [-db path]
+example: graphi search-ast -db graph.db '{"kind":"function","name":{"regex":"^handle"}}'
+
+--- graphi help search-hybrid ---
+graphi search-hybrid — [labs] embedding-free hybrid search: identifier segments + path + graph degree (labs)
+usage:   graphi search-hybrid [-max-items n] <query text>
+example: graphi search-hybrid "authentication token validation"
+
+--- graphi help setup ---
+graphi setup — [labs] register graphi's MCP stdio server into local MCP clients' configs; --project instead writes the repo's .mcp.json with the session root pinned (mcp -root), or with --attach the auto-managed per-repo store pinned (mcp -db/-meta)
+usage:   graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]
+example: graphi setup --project
+
+--- graphi help setup-embedder ---
+graphi setup-embedder — [labs] print how to opt in to the optional semantic search (offline)
+usage:   graphi setup-embedder [<selector>]
+example: graphi setup-embedder ollama
+
+--- graphi help skillgen ---
+graphi skillgen — [labs] deterministic skill generation from a procedure description
+usage:   graphi skillgen -name <n> -trigger <t> [-description <d>] [-ledger path]
+example: graphi skillgen -name reindex -trigger "after big refactor" -description "run graphi index"
+
+--- graphi help snapshot ---
+graphi snapshot — [labs] list, freeze, or delete named graph states of this repo (for graphi compare)
+usage:   graphi snapshot [<name> | -rm <name>] [-root <repo>]
+example: graphi snapshot main
+
+--- graphi help status ---
+graphi status — report whether the graph matches the checked-out code (read-only; exit 0 current, 1 actionable, 2 error)
+usage:   graphi status [--json] [-root <repo>] [-db path] [-meta dir]
+example: graphi status --json
+
+--- graphi help subtypes ---
+graphi subtypes — [labs] structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help suggest-reviewers ---
+graphi suggest-reviewers — [labs] ranked candidate-reviewer recommender for a touched set
+usage:   graphi suggest-reviewers [-db path] -diff <unified-diff|refs> | -diff-path <file>
+example: graphi suggest-reviewers -db graph.db -diff-path change.diff
+
+--- graphi help supertypes ---
+graphi supertypes — [labs] structural query over the graph (callers|callees|references|definition|neighborhood)
+usage:   graphi query <op> -symbol <node-id> [-depth N] [-db path] [-daemon socket]
+example: graphi query callers -symbol a1b2c3d4 -db ~/.graphi/graph.db
+
+--- graphi help symbol-context ---
+graphi symbol-context — [labs] unified single-call symbol view: definition + snippet, hierarchy, callers/callees/references, covering tests, risk (labs)
+usage:   graphi symbol-context [-db path] [-depth 1-3] [-max-items n] [-token-budget n] <symbol|path|node-id>
+example: graphi symbol-context util.Format
+
+--- graphi help sync ---
+graphi sync — bring the graph up to date with the checked-out code (incremental, flagless; run it after a branch switch)
+usage:   graphi sync [-root <repo>] [-db path] [-meta dir] [-profile name]
+example: git switch feature/login && graphi sync
+
+--- graphi help taint ---
+graphi taint — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help taint-query ---
+graphi taint-query — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
+
+--- graphi help task-context ---
+graphi task-context — [labs] free-text task → ranked, cited, token-budgeted context bundle with read order (labs)
+usage:   graphi task-context [-db path] [-max-items n] [-token-budget n] <task text>
+example: graphi task-context "add validation to createOrder"
+
+--- graphi help test-impact ---
+graphi test-impact — [labs] which tests must run for a change: must_run / recommended / probably_unaffected / unknown (labs)
+usage:   graphi test-impact [-db path] [-depth 1-3] [-max-items n] (<target> | -diff <file|->)
+example: git diff HEAD~1..HEAD | graphi test-impact -diff -
+
+--- graphi help triage-prs ---
+graphi triage-prs — [labs] graph-derived multi-PR triage ranking
+usage:   graphi triage-prs [-db path] [-daemon socket]
+example: GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/repo graphi triage-prs -db graph.db
+
+--- graphi help trust-report ---
+graphi trust-report — [labs] report the graph's trust surface: snapshot state, confidence tiers, coverage gaps, boundaries, optional policy verdict (read-only; exit 0 PASS/current, 1 WARN, 2 error, 3 FAIL, 4 UNKNOWN/unavailable)
+usage:   graphi trust-report [--json] [--details] [--limit n] [--target <symbol|path|package>] [--policy exploratory-v1|review-v1|automated-change-v1] [-root <repo>] [-db path] [-meta dir]
+example: graphi trust-report --policy review --json
+
+--- graphi help ui ---
+graphi ui — [labs] index the current repo and open the local graph UI (alias for bare `graphi`)
+usage:   graphi ui
+example: graphi ui
+
+--- graphi help undo ---
+graphi undo — [labs] reverse an applied edit by its undo token
+usage:   graphi undo -root <repo> [-db path] [-meta dir] -token <undo-token> [-actor who]
+example: graphi undo -root . -token 01HXYZ...
+
+--- graphi help upgrade ---
+graphi upgrade — [labs] user-initiated self-update to the latest release (never automatic)
+usage:   graphi upgrade [-print]
+example: graphi upgrade -print
+
+--- graphi help version ---
+graphi version — [labs] print version / commit / build date stamped into the binary
+usage:   graphi version
+example: graphi version
+
+--- graphi help watcher-status ---
+graphi watcher-status — [labs] run a registered analyzer over the graph
+usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse] [-max-nodes N] [-target id] [-concept term] [-diff d|-diff-path f] [-db path]
+example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db

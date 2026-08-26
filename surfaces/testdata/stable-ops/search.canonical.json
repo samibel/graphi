@@ -1,0 +1,1 @@
+{"query":"Hello","matches":[{"node_id":"853d67f187f74714","kind":"function","qualified_name":"fixture.Hello","source_path":"sample.go","line":4,"column":6,"rank":-2.5615254503350093}]}

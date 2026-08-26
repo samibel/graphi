@@ -1,0 +1,520 @@
+{
+  "profile": "daemon-labs",
+  "note": "bound daemon `-labs` profile: DaemonClient's allow-list narrows the maximal catalog.",
+  "tool_count": 25,
+  "tools": [
+    {
+      "name": "callers",
+      "tier": "stable",
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "callees",
+      "tier": "stable",
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "references",
+      "tier": "stable",
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "definition",
+      "tier": "stable",
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "neighborhood",
+      "tier": "stable",
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "implementers",
+      "tier": "labs",
+      "description": "[labs] structural query: implementers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "implements",
+      "tier": "labs",
+      "description": "[labs] structural query: implements",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "overrides",
+      "tier": "labs",
+      "description": "[labs] structural query: overrides",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "subtypes",
+      "tier": "labs",
+      "description": "[labs] structural query: subtypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "supertypes",
+      "tier": "labs",
+      "description": "[labs] structural query: supertypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search",
+      "tier": "stable",
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_semantic",
+      "tier": "labs",
+      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "semantic search query (free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_ast",
+      "tier": "labs",
+      "description": "[labs] structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "maximum number of matches (applied after the canonical sort)",
+            "type": "integer"
+          },
+          "pattern": {
+            "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "find_clones",
+      "tier": "labs",
+      "description": "[labs] clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+      "inputSchema": {
+        "properties": {
+          "config": {
+            "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "impact",
+      "tier": "stable",
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "analyze",
+      "tier": "labs",
+      "description": "[labs] run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "analyzer": {
+            "description": "analyzer name (e.g. impact)",
+            "type": "string"
+          },
+          "direction": {
+            "description": "traversal direction for directional analyzers: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analyzer",
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_taint",
+      "tier": "labs",
+      "description": "[labs] flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "traversal direction: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pdg",
+      "tier": "labs",
+      "description": "[labs] program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_interproc",
+      "tier": "labs",
+      "description": "[labs] interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_contracts",
+      "tier": "labs",
+      "description": "[labs] contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_githistory",
+      "tier": "labs",
+      "description": "[labs] git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_risk",
+      "tier": "labs",
+      "description": "[labs] risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_signals",
+      "tier": "labs",
+      "description": "[labs] hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_questions",
+      "tier": "labs",
+      "description": "[labs] deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "compound",
+      "tier": "labs",
+      "description": "[labs] compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
+    }
+  ]
+}
