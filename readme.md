@@ -398,7 +398,7 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 flowchart TD
     CMD["cmd/* — 18 binaries; 14 are verification gates:<br/>layerguard, testgate, cgoconformance, coverage,<br/>evidence, parity + 8 more"]
     SURF["surfaces/* — client (the one query seam), cli, mcp,<br/>daemon, http, forge, gitlog, guard"]
-    ENG["engine/* — 32 packages. index path: ingest → link<br/>savings path: meter → price → cap → ledger<br/>query, search, analysis, trust + 22 more"]
+    ENG["engine/* — 31 packages. index path: ingest → link<br/>savings compose path: meter → price → cap → ledger<br/>query, search, analysis, trust + 21 more"]
     CORE["core/* — model, parse, graphstore, community, profile"]
     INT["internal/* — unranked tooling, outside the layer rule<br/>31 packages: doctor, freshness, evidence, coverage,<br/>parity, state, ingestlock + 24 more"]
     CMD --> SURF --> ENG --> CORE
