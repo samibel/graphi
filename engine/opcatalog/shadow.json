@@ -1,0 +1,2212 @@
+{
+  "schema_version": 1,
+  "note": "SW-223 (AX-03) shadow operation catalog. One OperationSpec per MCP operation advertised by surfaces/mcp.ToolNames() at the AX-00 baseline. SHADOW MODE: nothing dispatches from this file — the legacy descriptor builders remain the source of truth, and surfaces/mcp/opcatalog_parity_test.go fails the build if the two ever disagree. Descriptions carry NO [labs] prefix: the tier marker is a projection of `tier`, applied by surfaces/mcp.markLabs. `stable_profile_advertisement` records a LEGACY DIVERGENCE — the Stable profile advertises that operation with a different description/schema/annotations than the maximal registry does. AX-03 mirrors that divergence; resolving it belongs to AX-05.",
+  "operations": [
+    {
+      "id": "agent_brief",
+      "version": "1",
+      "tier": "stable",
+      "description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "optional topic: symbol id, file path, or subsystem name",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "stable_profile_advertisement": {
+        "description": "return a bounded, cited task-start context packet",
+        "input_schema": {
+          "properties": {
+            "symbol": {
+              "description": "optional topic: symbol, path, or subsystem",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query",
+        "graph.search",
+        "memory.read"
+      ],
+      "permissions": [
+        "graph.read",
+        "state.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/agent_brief",
+      "ports_evidence": "surfaces/client/direct.go Direct.Brief: agentDeps() plus Memory: d.memoryStore (read only — Brief never stores)."
+    },
+    {
+      "id": "analyze",
+      "version": "1",
+      "tier": "labs",
+      "description": "run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
+      "input_schema": {
+        "properties": {
+          "analyzer": {
+            "description": "analyzer name (e.g. impact)",
+            "type": "string"
+          },
+          "direction": {
+            "description": "traversal direction for directional analyzers: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analyzer",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "git.history",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"analyze\": requires analysisSvc. The analyzer NAME is caller-chosen, so this tool can reach every registered analyzer including the three git-consuming ones (engine/analysis/dispatch.go WithGitProvider) — its port set is the union, not the minimum."
+    },
+    {
+      "id": "analyze_contracts",
+      "version": "1",
+      "tier": "labs",
+      "description": "contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
+      "input_schema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/contracts",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "analyze_githistory",
+      "version": "1",
+      "tier": "labs",
+      "description": "git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
+      "input_schema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "git.history",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/git-history",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability requires analysisSvc; engine/analysis/dispatch.go WithGitProvider re-arms exactly git-history, suggest-reviewers and pr-signals with the local-history provider."
+    },
+    {
+      "id": "analyze_interproc",
+      "version": "1",
+      "tier": "labs",
+      "description": "interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
+      "input_schema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/interproc",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "analyze_pdg",
+      "version": "1",
+      "tier": "labs",
+      "description": "program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
+      "input_schema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/pdg",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "analyze_pr_questions",
+      "version": "1",
+      "tier": "labs",
+      "description": "deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/pr-questions",
+      "ports_evidence": "surfaces/client/direct.go requires analysisSvc. engine/analysis/prquestions.go:151 builds its OWN pr-signals analyzer via newPrSignalsAnalyzer() (nil git provider), so unlike the registered pr-signals entry it never reaches git.history."
+    },
+    {
+      "id": "analyze_pr_risk",
+      "version": "1",
+      "tier": "labs",
+      "description": "risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/pr-risk",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "analyze_pr_signals",
+      "version": "1",
+      "tier": "labs",
+      "description": "hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "git.history",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/pr-signals",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability requires analysisSvc; engine/analysis/dispatch.go WithGitProvider re-arms exactly git-history, suggest-reviewers and pr-signals with the local-history provider."
+    },
+    {
+      "id": "analyze_taint",
+      "version": "1",
+      "tier": "labs",
+      "description": "flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
+      "input_schema": {
+        "properties": {
+          "direction": {
+            "description": "traversal direction: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/taint",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "architecture",
+      "version": "1",
+      "tier": "labs",
+      "description": "architecture: the automatic architecture view of the code graph — deterministic Louvain communities labeled by their dominant package prefix, layered by dependency DIRECTION (edge majority between communities; foundation = layer 1), each row listing member counts and its strongest depends-on/used-by neighbors with edge counts, plus the top inter-community dependencies. No LLM classification — every line is a graph fact. Purpose: answer 'what are this repository's real modules and which way do they depend?' in one call. When to use: orientation beyond repo_overview, before refactor planning, to see whether intended layering matches reality. When NOT to use: for violations themselves (architecture_violations) or file-tree structure (repo_overview). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read (detection needs the whole graph by definition). Partial results possible: community and dependency rows are capped; cyclic communities get 'layer ?' and a pointer to architecture_violations.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/architecture",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "architecture_violations",
+      "version": "1",
+      "tier": "labs",
+      "description": "architecture_violations: detect architecture violations on the community dependency graph — dependency CYCLES (community A → B → A with edge counts along the loop), UNEXPECTED dependencies (edges against the dominant direction, e.g. 3 edges storage → domain against a 120-edge domain → storage), HIGH-COUPLING pairs (≥3 edges both ways — no clean layering possible), and GOD MODULES (≥50% of all inter-community edges while touching ≥60% of communities). Pinned integer thresholds are quoted in every finding; a violation-free graph returns an explicit cited 'clean' item, never an empty shrug. Purpose: make unusual dependency directions visible before they calcify. When to use: architecture reviews, CI-adjacent hygiene checks, after large refactors. When NOT to use: for the layer view itself (architecture) or single-change risk (change_impact). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read. Partial results possible: per-category rows are capped (8 cycles, 12 back-edges, 8 coupling pairs).",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/architecture_violations",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "callees",
+      "version": "1",
+      "tier": "stable",
+      "description": "structural query: callees",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "structural query: callees",
+        "input_schema": {
+          "properties": {
+            "symbol": {
+              "description": "symbol (node) id to query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/callees",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "callers",
+      "version": "1",
+      "tier": "stable",
+      "description": "structural query: callers",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "structural query: callers",
+        "input_schema": {
+          "properties": {
+            "symbol": {
+              "description": "symbol (node) id to query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/callers",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "change_impact",
+      "version": "1",
+      "tier": "labs",
+      "description": "change_impact: the Change Risk 2.0 assessment for a unified diff or a symbol/file target — changed symbols, their public-API subset, direct dependents with evidence, the bounded transitive closure, the tests covering the change, configuration files riding the diff, explicit machine-checkable reasons ('public interface changed', 'no test directly covers X', dependent counts), and a risk level (change_risk's thresholds, plus a one-step escalation when exported surface changed). The confidence distribution is derived from the consumed edge tiers, never invented. Purpose: one call answers 'how risky is this change and why?'. When to use: before proposing or reviewing a change set; pipe `git diff <range>` in for ranges. When NOT to use: for the stable low/medium/high quick check (change_risk) or test selection alone (test_impact). Input shape: exactly one of target or diff, plus optional depth (1-3) and limit. Read-only: true. Partial results possible: bounded walks make dependent/test counts lower bounds; limits.truncated says when.",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "transitive-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "diff": {
+            "description": "unified diff text (alternative to target)",
+            "type": "string"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path (alternative to diff)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "git.history",
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/change_impact",
+      "ports_evidence": "surfaces/client/direct.go: agentDeps() plus Provider: d.gitProvider (local git history)."
+    },
+    {
+      "id": "change_risk",
+      "version": "1",
+      "tier": "stable",
+      "description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "local-first unified diff or line-oriented refs (alternative to target)",
+            "type": "string"
+          },
+          "target": {
+            "description": "symbol id or file path to evaluate",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "stable_profile_advertisement": {
+        "description": "return an evidence-based change-risk assessment for a target or diff",
+        "input_schema": {
+          "properties": {
+            "diff": {
+              "description": "unified diff or line-oriented refs",
+              "type": "string"
+            },
+            "limit": {
+              "description": "maximum returned items",
+              "type": "integer"
+            },
+            "target": {
+              "description": "symbol id or file path",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/change_risk",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "compare_branches",
+      "version": "1",
+      "tier": "labs",
+      "description": "compare two branches at the GRAPH level: given two branch refs (states materialized above the surface boundary), report the structured diff of entities/symbols/contracts added/removed/changed plus edges added/removed and entities moved across files — keyed by stable canonical graph identity (NodeId), not line ranges. Detects signature/contract changes (a contract node whose dependency surface changed) and correlates moves by path-independent symbol identity. Deterministic per-group order. Zero-egress pure local set-diff; the engine never resolves a git ref.",
+      "input_schema": {
+        "properties": {
+          "base": {
+            "description": "base branch ref",
+            "type": "string"
+          },
+          "head": {
+            "description": "head branch ref",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "branch.materialize",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/compare-branches",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"compare_branches\": requires branchState AND analysisSvc; the materializer resolves the two refs above the surface boundary, the engine never resolves a ref."
+    },
+    {
+      "id": "compound",
+      "version": "1",
+      "tier": "labs",
+      "description": "compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+      "input_schema": {
+        "properties": {
+          "query": {
+            "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"compound\", \"search_ast\", \"find_clones\": requires querySvc only."
+    },
+    {
+      "id": "conflicts_prs",
+      "version": "1",
+      "tier": "labs",
+      "description": "inter-PR conflict detection: enumerate open PRs, then report which PR PAIRS collide over the local graph — textual overlap (overlapping changed line ranges in the same file), shared file/symbol/high-centrality node, and the asymmetric contract-dependency case (one PR mutates a contract that another PR's changed entities depend on via graph edges, flagged even with NO textual overlap). Deterministic pairwise report (pairs by ascending PR number, canonical within-pair entity order). Detection is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "forge.enumerate",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "network.egress"
+      ],
+      "determinism": "external",
+      "http_resource": "analyze/conflicts-prs",
+      "ports_evidence": "surfaces/client/direct.go: requires forge AND analysisSvc; the forge call is the only outbound activity, the ranking is a local zero-egress pass."
+    },
+    {
+      "id": "critique_review",
+      "version": "1",
+      "tier": "labs",
+      "description": "critique an EXISTING PR review against the knowledge graph: replay the single-PR risk/blast-radius/centrality/taint signals as a ground-truth oracle over the PR's touched set, then emit a structured, graph-evidence-grounded critique with three item types — gap (a high-risk touched entity the review never mentioned: blast-radius count + centrality + contributing edge kinds + taint provenance), over_flag (a review-flagged entity the graph shows is a low-centrality leaf below the risk threshold), and unsupported_claim (a review comment asserting impact to an anchorable target with NO connecting graph edge). Comment→entity matching is DETERMINISTIC anchoring (file:line/symbol → NodeId); unanchorable comments/claims are counted in an honest unanchored tally, never guessed. NO LLM prose. Deterministic total order (type → entity NodeId → review-anchor). The review is fetched at the surface boundary (or supplied inline); the critique itself is a zero-egress pass over the local graph.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "the PR's touched set: unified diff or line-oriented refs (path:name | path#Lline | node id)",
+            "type": "string"
+          },
+          "pr_number": {
+            "description": "PR number to fetch the existing review for (when no inline review is supplied)",
+            "type": "integer"
+          },
+          "review": {
+            "description": "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]}); takes precedence over the surface fetch",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "forge.review",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "network.egress"
+      ],
+      "determinism": "external",
+      "http_resource": "analyze/critique-review",
+      "ports_evidence": "surfaces/client/direct.go Direct.CritiqueReview: requires analysisSvc, and fetches the review through reviewFetcher unless an inline review JSON is supplied."
+    },
+    {
+      "id": "dead_code",
+      "version": "1",
+      "tier": "labs",
+      "description": "dead_code: precise dead-code candidates — symbols with ZERO live inbound references (calls/references/implements/inherits/overrides), each scored by a pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted in the reason) — plus the exclusions made VISIBLE with their reasons: framework/language entry points (annotations, main, test paths, overrides, decorators), test fixtures, generated/vendored paths, and exported API without usage evidence. Far better than 'references == 0': every candidate says why it is safe and every exclusion says why it is not dead. Purpose: find safely deletable code with evidence. When to use: cleanup passes, before refactors, dead-weight audits. When NOT to use: for a guarded delete itself (CLI safe-delete) or a single symbol's liveness (symbol_context). Input shape: optional limit (item cap). Read-only: true — one node + one edge catalog read (the analysis needs every edge) plus selective hydration. Partial results possible: candidate and exclusion rows are capped; limits.truncated says when.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 40)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/dead_code",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "definition",
+      "version": "1",
+      "tier": "stable",
+      "description": "structural query: definition",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "structural query: definition",
+        "input_schema": {
+          "properties": {
+            "symbol": {
+              "description": "symbol (node) id to query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/definition",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "distill",
+      "version": "1",
+      "tier": "labs",
+      "description": "deterministic, non-LLM session distillation: compress a session trace into a reusable artifact",
+      "input_schema": {
+        "properties": {
+          "decisions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "file_references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "open_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "description": "session identifier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "distill.engine"
+      ],
+      "permissions": [],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"distill\": requires the distiller; the transform is a pure function of the request."
+    },
+    {
+      "id": "explain_symbol",
+      "version": "1",
+      "tier": "stable",
+      "description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol reference: qualified id, file:line anchor, or bare name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "stable_profile_advertisement": {
+        "description": "return a compact, cited symbol identity and immediate neighborhood",
+        "input_schema": {
+          "properties": {
+            "limit": {
+              "description": "maximum returned items",
+              "type": "integer"
+            },
+            "symbol": {
+              "description": "qualified id, file:line anchor, or bare name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/explain_symbol",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "find_clones",
+      "version": "1",
+      "tier": "labs",
+      "description": "clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+      "input_schema": {
+        "properties": {
+          "config": {
+            "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"compound\", \"search_ast\", \"find_clones\": requires querySvc only."
+    },
+    {
+      "id": "framework_map",
+      "version": "1",
+      "tier": "labs",
+      "description": "framework_map: the application-level view of the repository derived from the framework annotations and decorators already recorded in the graph — HTTP ROUTES (@GetMapping, NestJS @Get, [HttpGet]), EVENT handlers (@EventListener, @KafkaListener, @EventPattern, @Scheduled), INJECTION points (@Autowired, @Inject), DI-managed COMPONENTS (@RestController, @Service, @Injectable, Angular @Component), and CONFIGURATION units (@Configuration, @Bean, @Module). Providers: spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and definition site verbatim — no LLM classification, no new parsing. Purpose: see the application graph (endpoints, listeners, wiring) on top of the code graph in one call. When to use: orienting in an annotated service codebase, enumerating endpoints before a change, finding event consumers. When NOT to use: for call-graph structure (callers/callees) or repositories without annotation metadata — Go and Python sources record none, and the tool says so honestly. Input shape: optional limit (item cap). Read-only: true — one node catalog read, no edges. Partial results possible: per-category rows are capped; limits.truncated says when.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/framework_map",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "graph_health",
+      "version": "1",
+      "tier": "labs",
+      "description": "graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory-v1 | review-v1 | automated-change-v1) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+      "input_schema": {
+        "properties": {
+          "details": {
+            "description": "include bounded supporting evidence",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "maximum detail items",
+            "type": "integer"
+          },
+          "policy": {
+            "description": "optional trust policy",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "target": {
+            "description": "optional symbol id, qualified name, repository-relative path or package",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.store"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go Direct.TrustReport -> composeTrustReport: deliberately independent of the wired query service; it opens the repository's durable auto-managed store READ-ONLY itself and fails closed to the UNAVAILABLE document."
+    },
+    {
+      "id": "hotspots",
+      "version": "1",
+      "tier": "labs",
+      "description": "hotspots: rank the repository's files by churn × dependency centrality — 'this file changed 12 times in the window AND has 43 graph edge endpoints' — with per-file breakdowns, single-author bus-factor warnings for the ranked hotspots, and a concrete next call. A far better where-to-refactor signal than cyclomatic complexity alone. Purpose: answer 'where does this repository hurt?' in one call. When to use: planning refactors, onboarding into maintenance, prioritizing review attention. When NOT to use: for a specific change's risk (change_impact) or test selection (test_impact). Input shape: optional max_commits (history window bound, default 1000) and limit (item cap). Read-only: true — one bounded local `git log` plus compact graph aggregates; no network. Partial results possible: the window is bounded by max-commits/max-age; without git history the tool returns a typed unavailable outcome.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "max_commits": {
+            "description": "history window bound (default 1000)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "git.history",
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/hotspots",
+      "ports_evidence": "surfaces/client/direct.go: agentDeps() plus Provider: d.gitProvider (local git history)."
+    },
+    {
+      "id": "impact",
+      "version": "1",
+      "tier": "stable",
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "input_schema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/impact",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: requires analysisSvc; the analyzer runs as a zero-egress pass over the local graph (engine/analysis)."
+    },
+    {
+      "id": "implementers",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural query: implementers",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/implementers",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "implements",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural query: implements",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/implements",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "list_prs",
+      "version": "1",
+      "tier": "labs",
+      "description": "list open pull requests of the configured repo with read-only forge metadata (number, title, author, base/head refs, head SHA, changed files, additions/deletions, mergeable). Discovery/metadata ONLY — no graph scoring, no comment posting. The forge enumeration is the suite's only outbound path.",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      },
+      "ports": [
+        "forge.enumerate"
+      ],
+      "permissions": [
+        "network.egress"
+      ],
+      "determinism": "external",
+      "ports_evidence": "surfaces/client/direct.go Direct.ListPRs: forge.ListOpenPRs is the ONLY outbound path; it performs no graph traversal."
+    },
+    {
+      "id": "memory",
+      "version": "1",
+      "tier": "labs",
+      "description": "scoped agent memory: store, recall, forget, list, or export notes in scopes and notebooks with provenance",
+      "input_schema": {
+        "properties": {
+          "confidence": {
+            "description": "confirmed | derived | heuristic",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "optional file:line citation",
+            "type": "string"
+          },
+          "export_to_path": {
+            "description": "REJECTED (SAFE-01): the transport never writes server-side files; export returns the payload in the response's `export` field — omit this argument",
+            "type": "string"
+          },
+          "kind": {
+            "description": "entry kind for store: architecture | command | convention | decision | risk | dependency | workflow",
+            "type": "string"
+          },
+          "limit": {
+            "description": "max entries for list",
+            "type": "integer"
+          },
+          "mem_id": {
+            "description": "entry id for forget or overwrite",
+            "type": "string"
+          },
+          "notebook": {
+            "description": "memory notebook",
+            "type": "string"
+          },
+          "op": {
+            "description": "operation: store | recall | forget | list | export",
+            "type": "string"
+          },
+          "payload": {
+            "description": "payload for store",
+            "type": "string"
+          },
+          "scope": {
+            "description": "memory scope",
+            "type": "string"
+          },
+          "source": {
+            "description": "provenance source for store",
+            "type": "string"
+          },
+          "tags": {
+            "description": "tags for store",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "op"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "memory.read",
+        "memory.write"
+      ],
+      "permissions": [
+        "state.read",
+        "state.write"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"memory\": requires memoryStore; the op argument selects store/recall/forget/list/export, so both read and write reach the store."
+    },
+    {
+      "id": "neighborhood",
+      "version": "1",
+      "tier": "stable",
+      "description": "structural query: neighborhood",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "structural query: neighborhood",
+        "input_schema": {
+          "properties": {
+            "depth": {
+              "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+              "type": "integer"
+            },
+            "symbol": {
+              "description": "symbol (node) id to query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/neighborhood",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "overrides",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural query: overrides",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/overrides",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "pr_comment",
+      "version": "1",
+      "tier": "labs",
+      "description": "render the assembled PR-review findings (risk + hub/bridge/surprise signals + reviewer questions) into one sticky Markdown comment and evaluate the optional risk-threshold merge gate; offline dry-run by default",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "local-first unified-diff or simple ref string (required)",
+            "type": "string"
+          },
+          "gate_enabled": {
+            "description": "enable the optional risk-threshold merge gate",
+            "type": "boolean"
+          },
+          "gate_threshold": {
+            "description": "risk threshold in fixed-point units (1/1000) the worst region must EXCEED to BLOCK (default 700)",
+            "type": "integer"
+          },
+          "pr": {
+            "description": "PR reference rendered in the comment header (e.g. owner/repo#42)",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: summary (default; safe for public comments) | full",
+            "type": "string"
+          },
+          "publish": {
+            "description": "upsert the sticky comment through the host (default false: offline dry-run, render+gate only)",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "forge.publish",
+        "git.history",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read",
+        "network.egress"
+      ],
+      "determinism": "external",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"pr_comment\": requires reviewSvc; engine/review/serialize.go Bundle dispatches pr-risk, pr-signals (git-armed) and pr-questions, and the host upsert runs only when req.Publish is true (default: offline dry-run)."
+    },
+    {
+      "id": "refactor",
+      "version": "1",
+      "tier": "labs",
+      "description": "apply a graph-aware refactor through the shared atomic edit saga and return an auditable change record (operation, target, before/after, actor, timestamp, undo token)",
+      "input_schema": {
+        "properties": {
+          "actor": {
+            "description": "request identity recorded on the change record (default \"mcp\")",
+            "type": "string"
+          },
+          "destination_file": {
+            "description": "destination file (move only)",
+            "type": "string"
+          },
+          "kind": {
+            "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)",
+            "type": "string"
+          },
+          "new_name": {
+            "description": "replacement spelling",
+            "type": "string"
+          },
+          "old_name": {
+            "description": "current spelling of the symbol",
+            "type": "string"
+          },
+          "target_symbol": {
+            "description": "resolved node id of the symbol to refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "target_symbol",
+          "old_name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "edit.journal",
+        "graph.query",
+        "source.read",
+        "source.write"
+      ],
+      "permissions": [
+        "graph.read",
+        "source.read",
+        "source.write",
+        "state.read",
+        "state.write"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"refactor\"/\"undo\": requires applier AND recorder; engine/edit writes working-tree source and records an auditable change/undo record."
+    },
+    {
+      "id": "refactor_preview",
+      "version": "1",
+      "tier": "labs",
+      "description": "preview a graph-aware refactor: resolve the target via the query layer and return the EP-004 impact set (blast radius + planned edits) WITHOUT mutating",
+      "input_schema": {
+        "properties": {
+          "destination_file": {
+            "description": "destination file (move only)",
+            "type": "string"
+          },
+          "kind": {
+            "description": "refactor kind: rename|signature_change (extract|move are NOT implemented and fail closed with a typed error before any read or write — SAFE-01)",
+            "type": "string"
+          },
+          "new_name": {
+            "description": "replacement spelling",
+            "type": "string"
+          },
+          "old_name": {
+            "description": "current spelling of the symbol",
+            "type": "string"
+          },
+          "target_symbol": {
+            "description": "resolved node id of the symbol to refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "target_symbol",
+          "old_name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query",
+        "source.read"
+      ],
+      "permissions": [
+        "graph.read",
+        "source.read"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"refactor_preview\": requires applier; engine/edit/planner.go and edit.go read working-tree source bytes; DryRun=true writes nothing."
+    },
+    {
+      "id": "references",
+      "version": "1",
+      "tier": "stable",
+      "description": "structural query: references",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "structural query: references",
+        "input_schema": {
+          "properties": {
+            "symbol": {
+              "description": "symbol (node) id to query",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/references",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "related_files",
+      "version": "1",
+      "tier": "stable",
+      "description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+      "input_schema": {
+        "properties": {
+          "direction": {
+            "description": "dependencies | dependents | both (default)",
+            "type": "string"
+          },
+          "target": {
+            "description": "anchor: symbol id, file path, or diff line-oriented refs",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "stable_profile_advertisement": {
+        "description": "return a deterministically ranked read-first file list around an anchor",
+        "input_schema": {
+          "properties": {
+            "direction": {
+              "description": "dependencies | dependents | both",
+              "type": "string"
+            },
+            "limit": {
+              "description": "maximum returned files",
+              "type": "integer"
+            },
+            "target": {
+              "description": "symbol id, file path, or diff anchor",
+              "type": "string"
+            }
+          },
+          "required": [
+            "target"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/related_files",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "repo_overview",
+      "version": "1",
+      "tier": "labs",
+      "description": "repo_overview: return the one-call 'what is this repository?' summary — node/edge/file totals with edge-confidence tiers, a directory tree ranked by symbol count, the language mix, entry-point candidates (go-main probe, meta flags, cmd/ path heuristic), the highest-centrality symbols, test and generated/vendored areas, external boundaries, optional dependency communities, and concrete suggested next calls. Purpose: orient an agent in an unfamiliar repository in one response, right after indexing. When to use: first call in a new repository, or when scoping where a subsystem lives. When NOT to use: for task-specific context (use task_context) or a known symbol (use symbol_context). Input shape: optional limit (item cap) and communities (opt-in full-graph community detection — the only non-aggregate read). Read-only: true. Partial results possible: every section is row-capped and the item cap truncates lowest-value sections first.",
+      "input_schema": {
+        "properties": {
+          "communities": {
+            "description": "opt into the full-graph community pass (default false)",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/repo_overview",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "savings",
+      "version": "1",
+      "tier": "labs",
+      "description": "token-savings ledger readout: per-call / per-session / cumulative USD with anti-gaming cap flags",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      },
+      "ports": [
+        "ledger.read"
+      ],
+      "permissions": [
+        "state.read"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"savings\": requires the ledger; Direct.Savings is a readout over accumulated durable session state."
+    },
+    {
+      "id": "search",
+      "version": "1",
+      "tier": "stable",
+      "description": "lexical and symbol search over the indexed graph",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "stable_profile_advertisement": {
+        "description": "lexical and symbol search over the indexed graph",
+        "input_schema": {
+          "properties": {
+            "depth": {
+              "description": "maximum number of results (default 100)",
+              "type": "integer"
+            },
+            "symbol": {
+              "description": "search query (symbol token or free-text)",
+              "type": "string"
+            }
+          },
+          "required": [
+            "symbol"
+          ],
+          "type": "object"
+        },
+        "annotations": {
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false,
+          "readOnlyHint": true
+        }
+      },
+      "ports": [
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "search",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"search\": requires searchSvc; Direct.Search dispatches through it."
+    },
+    {
+      "id": "search_ast",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "maximum number of matches (applied after the canonical sort)",
+            "type": "integer"
+          },
+          "pattern": {
+            "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"compound\", \"search_ast\", \"find_clones\": requires querySvc only."
+    },
+    {
+      "id": "search_hybrid",
+      "version": "1",
+      "tier": "labs",
+      "description": "search_hybrid: rank symbols for a multi-token free-text query WITHOUT embeddings — lexical retrieval re-ranked by identifier-segment matching (camelCase/snake_case aware), path relevance, and bounded graph degree, with the per-signal breakdown in every reason ('authentication token validation' ranks TokenValidator ahead of accidental substring hits). Deterministic integer weight model, hash-stamped in the summary; no vector database, no model, no egress. Purpose: better multi-word discovery than plain lexical search, before reaching for the optional semantic search. When to use: exploratory multi-word queries where plain search returns noise. When NOT to use: exact names (search / definition) or task scoping (task_context). Input shape: query text plus optional limit. Read-only: true. Partial results possible: retrieval and degree reads are bounded; the item cap truncates lowest scores first.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "query": {
+            "description": "free-text multi-token query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/search_hybrid",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "search_semantic",
+      "version": "1",
+      "tier": "labs",
+      "description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "semantic search query (free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "embed.vector",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"search_semantic\": requires searchSvc; Direct.SemanticSearch runs the optional embedder-backed path and reports a typed unavailable when no embedder is configured."
+    },
+    {
+      "id": "skillgen",
+      "version": "1",
+      "tier": "labs",
+      "description": "deterministic, non-LLM skill generation: turn a repeatable procedure into a Markdown skill artifact",
+      "input_schema": {
+        "properties": {
+          "description": {
+            "description": "skill description",
+            "type": "string"
+          },
+          "name": {
+            "description": "skill name",
+            "type": "string"
+          },
+          "trigger": {
+            "description": "skill trigger phrase",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "trigger"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "skillgen.engine"
+      ],
+      "permissions": [],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"skillgen\": requires the generator; the transform is a pure function of the request."
+    },
+    {
+      "id": "strict_query",
+      "version": "1",
+      "tier": "labs",
+      "description": "strict_query: run a structural query and WITHHOLD every result edge below a minimum confidence tier, reporting how many were withheld. Purpose: let an agent act only on evidence at or above a chosen strength, without having to filter and re-tally results itself. When to use: before a change or a definitive claim, when heuristic edges would be unsafe to treat as facts — pair it with graph_health for the repository-level verdict. When NOT to use: for exploration or recall (the Stable query tools return everything, which is what you want there). Input shape: operation (callers | callees | references | definition | neighborhood), symbol id, optional depth, optional minimum_tier (confirmed | derived | heuristic; default heuristic), optional policy preflight. Read-only: true — never indexes, never starts a daemon, no network. CRITICAL for interpreting the result: an EMPTY result with excluded_edges > 0 is filtered, NOT proven empty — the envelope says so in `limitations`, and reading it as \"no such relationships\" is a false negative. A blocked policy preflight returns an error and runs no query.",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "neighborhood hop depth (ignored by other operations)",
+            "type": "integer"
+          },
+          "minimum_tier": {
+            "description": "lowest confidence tier admitted into the result (default heuristic)",
+            "enum": [
+              "confirmed",
+              "derived",
+              "heuristic"
+            ],
+            "type": "string"
+          },
+          "operation": {
+            "description": "structural query operation to run",
+            "enum": [
+              "callers",
+              "callees",
+              "references",
+              "definition",
+              "neighborhood"
+            ],
+            "type": "string"
+          },
+          "policy": {
+            "description": "optional fail-closed trust preflight; a non-PASS/WARN verdict blocks the query",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.store"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"strict_query\": requires querySvc; ComposeStrictQuery runs the Stable query unchanged and its optional trust preflight opens the store like trust_report."
+    },
+    {
+      "id": "subtypes",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural query: subtypes",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/subtypes",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "suggest_reviewers",
+      "version": "1",
+      "tier": "labs",
+      "description": "suggest reviewers for a change: resolve the touched symbol/file set from a local-first PR diff (or line-oriented refs), then rank candidate reviewers from graph ownership + recency-decayed churn over the touched files plus affected-subgraph proximity (callers/callees/contract neighbors) of the touched symbols. Each candidate carries a transparent per-signal breakdown (ownership/recency-decayed-churn/subgraph-proximity) with honest file-vs-symbol granularity labels. Deterministic total order (composite DESC, reviewer identity ASC). Zero-egress pass over the local graph + git history.",
+      "input_schema": {
+        "properties": {
+          "diff": {
+            "description": "unified diff or line-oriented refs (path:name | path#Lline | node id) of the change",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "git.history",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "history.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/suggest-reviewers",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability requires analysisSvc; engine/analysis/dispatch.go WithGitProvider re-arms exactly git-history, suggest-reviewers and pr-signals with the local-history provider."
+    },
+    {
+      "id": "supertypes",
+      "version": "1",
+      "tier": "labs",
+      "description": "structural query: supertypes",
+      "input_schema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "graph.query"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "query/supertypes",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability: a query.Operations member requires querySvc; Direct.Query dispatches through it and touches nothing else."
+    },
+    {
+      "id": "symbol_context",
+      "version": "1",
+      "tier": "labs",
+      "description": "symbol_context: return the unified single-call symbol view — definition site with an optional token-budgeted source snippet, type-hierarchy relations (implementers/implements/overrides/subtypes/supertypes), callers, callees, references, the test files that exercise the symbol (bounded reverse walk), and a change_risk-consistent risk level, every claim cited. Purpose: replace the explain_symbol + callers + callees + references + change_risk round-trips with ONE call when an agent is about to work on a symbol. When to use: the agent has a concrete symbol and wants its full working context in one response. When NOT to use: for 'what should I read first?' (use related_files/agent_brief) or free-text task scoping (use task_context when available). Input shape: symbol reference plus optional depth (test-walk hops, 1-3), limit (item cap), token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: item cap and walk bounds truncate; limits.next says how to widen.",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "test-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol reference: qualified id, repo-relative path, or bare name",
+            "type": "string"
+          },
+          "token_budget": {
+            "description": "snippet token budget (default 700; negative disables the snippet)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search",
+        "source.read"
+      ],
+      "permissions": [
+        "graph.read",
+        "source.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/symbol_context",
+      "ports_evidence": "surfaces/client/direct.go: agentDeps() plus snippetReader() = enginecontext.NewRootedReader(repoRoot), a disk-backed, repo-root-resolved, remote-rejecting source reader."
+    },
+    {
+      "id": "task_context",
+      "version": "1",
+      "tier": "labs",
+      "description": "task_context: turn a free-text task description into a ranked, cited, token-budgeted context bundle — primary symbols (seeds), related symbols, callers, callees, nearby tests and configuration files, a related-file roll-up, a change_risk-consistent risk level, and a recommended read order, with source snippets under a hard token budget. Ranking is a deterministic integer weight model (hash stamped in the summary), never an LLM guess. Purpose: answer 'where do I start for this task?' in one call, replacing search + related_files + explain round-trips. When to use: at task start, with the task phrased in a few words. When NOT to use: when you already know the exact symbol (use symbol_context) or need repository orientation (use agent_brief / repo_overview when available). Input shape: task text plus optional limit (item cap) and token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: bounded reads and the item cap truncate; limits.next says how to widen.",
+      "input_schema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 40)",
+            "type": "integer"
+          },
+          "task": {
+            "description": "free-text task description, or an exact symbol/path",
+            "type": "string"
+          },
+          "token_budget": {
+            "description": "snippet token budget (default 1200; negative disables snippets)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search",
+        "source.read"
+      ],
+      "permissions": [
+        "graph.read",
+        "source.read"
+      ],
+      "determinism": "environment-dependent",
+      "http_resource": "analyze/task_context",
+      "ports_evidence": "surfaces/client/direct.go: agentDeps() plus snippetReader() = enginecontext.NewRootedReader(repoRoot), a disk-backed, repo-root-resolved, remote-rejecting source reader."
+    },
+    {
+      "id": "test_impact",
+      "version": "1",
+      "tier": "labs",
+      "description": "test_impact: given a unified diff or a symbol/file target, bucket the repository's tests — must_run (a direct call edge proves the test exercises a changed symbol), recommended (transitive reach, naming conventions, same-directory test files), probably_unaffected (the remaining test-file universe, counted in full), and unknown (diff paths with no graph symbols — never guessed). Purpose: run seven tests instead of the whole suite, with evidence for why. When to use: after editing, before running tests; pipe `git diff <range>` in for range-based selection. When NOT to use: for the risk grade itself (use change_impact) or coverage of a single known symbol (symbol_context lists its tests). Input shape: exactly one of target or diff, plus optional depth (walk hops 1-3) and limit. Read-only: true. Partial results possible: bounded walks make the buckets a superset-safe lower bound; limits.truncated says when.",
+      "input_schema": {
+        "properties": {
+          "depth": {
+            "description": "reverse-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "diff": {
+            "description": "unified diff text (alternative to target)",
+            "type": "string"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path (alternative to diff)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "graph.query",
+        "graph.search"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "http_resource": "analyze/test_impact",
+      "ports_evidence": "surfaces/client/direct.go agentDeps(): resolve.Deps{Query: querySvc, Search: searchSvc}. Missing services degrade to the contract's typed unavailable outcome rather than erroring."
+    },
+    {
+      "id": "triage_prs",
+      "version": "1",
+      "tier": "labs",
+      "description": "single-pass graph-derived PR triage: enumerate open PRs, then rank them by blast radius, touched high-centrality nodes, ownership concentration, churn, and test-coverage-of-touched-code, folded into a fixed-integer composite. Deterministic total order (composite DESC, PR number ASC). Scoring is a zero-egress pass over the local graph; the forge is touched only for enumeration.",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "forge.enumerate",
+        "graph.analysis"
+      ],
+      "permissions": [
+        "graph.read",
+        "network.egress"
+      ],
+      "determinism": "external",
+      "http_resource": "analyze/triage-prs",
+      "ports_evidence": "surfaces/client/direct.go: requires forge AND analysisSvc; the forge call is the only outbound activity, the ranking is a local zero-egress pass."
+    },
+    {
+      "id": "undo",
+      "version": "1",
+      "tier": "labs",
+      "description": "reverse a previously applied edit by its undo token, restoring the prior graph + source and recording the reversal as its own auditable change record",
+      "input_schema": {
+        "properties": {
+          "actor": {
+            "description": "request identity recorded on the reversal record (default \"mcp\")",
+            "type": "string"
+          },
+          "undo_token": {
+            "description": "the undo token returned by a prior refactor",
+            "type": "string"
+          }
+        },
+        "required": [
+          "undo_token"
+        ],
+        "type": "object"
+      },
+      "ports": [
+        "edit.journal",
+        "source.read",
+        "source.write"
+      ],
+      "permissions": [
+        "source.read",
+        "source.write",
+        "state.read",
+        "state.write"
+      ],
+      "determinism": "environment-dependent",
+      "ports_evidence": "surfaces/client/direct.go SupportsCapability case \"refactor\"/\"undo\": requires applier AND recorder; engine/edit writes working-tree source and records an auditable change/undo record."
+    }
+  ]
+}
