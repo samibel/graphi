@@ -12,26 +12,32 @@ import (
 	"testing"
 )
 
-// AC-4 — shadow mode is a mechanical property, not a promise.
+// AX-04 (SW-224) narrows AX-03's shadow-mode gate rather than deleting it.
 //
-// "No dispatch code path reads the catalog yet" is easy to assert in a story
-// and easy to break with one import in a later PR that nobody notices, because
-// nothing about the catalog's presence forces a reviewer to think about it.
-// This test walks every non-test Go file in the module and requires that
-// exactly zero of them — outside this package — import engine/opcatalog.
+// AX-03 required that ZERO non-test files import this package, and said in its
+// own failure message that the story which wires the catalog in should replace
+// the rule instead of exempting a file. This is that story, and this is that
+// replacement: the catalog now has exactly ONE production reader, the AX-04
+// executor, and the property worth keeping is that the list stays explicit.
 //
-// It is NOT a permanent rule. AX-04 wires the executor, AX-05 projects the
-// surface metadata, and both will legitimately import this package. At that
-// point this test is DELETED as part of the story that makes it false, which
-// is the point: the wiring becomes a visible, deliberate act instead of a
-// silent one.
+// The point is unchanged from AX-03 — wiring the catalog into a new place must
+// be a visible, deliberate act rather than a silent import. AX-05 (surface
+// metadata projection) and AX-06 (the first dispatching canary) will each
+// legitimately add a reader, and each of them widens this list on purpose, in
+// the diff, where a reviewer sees it.
 //
-// Test files are exempt: the parity gates in surfaces/mcp and surfaces are
-// exactly the consumers AX-03 is supposed to have.
-func TestAX03_ShadowMode_NoProductionCodeImportsTheCatalog(t *testing.T) {
+// Test files stay exempt: the parity gates in surfaces/mcp and surfaces are
+// exactly the consumers the catalog is supposed to have.
+func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	root := moduleRootForTest(t)
 	const catalogPkg = "github.com/samibel/graphi/engine/opcatalog"
 	selfDir := filepath.Join(root, "engine", "opcatalog")
+
+	// The declared production readers, as relative paths. Adding one is a
+	// deliberate act; the failure below explains what adding it means.
+	allowedImporters := map[string]bool{
+		filepath.Join("surfaces", "client", "executor.go"): true,
+	}
 
 	var importers []string
 	fset := token.NewFileSet()
@@ -77,12 +83,26 @@ func TestAX03_ShadowMode_NoProductionCodeImportsTheCatalog(t *testing.T) {
 		t.Fatalf("walk %s: %v", root, err)
 	}
 	sort.Strings(importers)
-	if len(importers) > 0 {
-		t.Errorf("AX-03 is SHADOW MODE: no production code may read the operation catalog yet, "+
-			"but these non-test files import it:\n  %s\n"+
-			"If this is the story that wires the catalog in (AX-04 / AX-05), delete this test "+
-			"as part of that change rather than exempting the file.",
-			strings.Join(importers, "\n  "))
+	var undeclared []string
+	for _, importer := range importers {
+		if !allowedImporters[importer] {
+			undeclared = append(undeclared, importer)
+		}
+	}
+	if len(undeclared) > 0 {
+		t.Errorf("these non-test files read the operation catalog without being declared "+
+			"readers:\n  %s\n"+
+			"The catalog is the single source of operation identity, so every place that reads "+
+			"it is part of the migration's surface area. If this is the story that adds the "+
+			"reader (AX-05's projection, AX-06's canary), add it to allowedImporters in the "+
+			"same change so the widening is reviewed rather than absorbed.",
+			strings.Join(undeclared, "\n  "))
+	}
+	for declared := range allowedImporters {
+		if !fileExists(filepath.Join(root, declared)) {
+			t.Errorf("declared catalog reader %q does not exist — a stale entry here would let "+
+				"a real one slip in unnoticed", declared)
+		}
 	}
 
 	// Guard against the walk silently covering nothing.
