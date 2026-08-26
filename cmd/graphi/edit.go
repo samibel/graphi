@@ -133,7 +133,7 @@ func makeEditorClient(root, dbPath, metaDir string) (client.Client, func(), erro
 		return nil, func() {}, fmt.Errorf("change recorder: %w", err)
 	}
 	c := client.NewDirect(query.New(store), search.New(store)).
-		WithAnalysis(analysis.NewDefaultService(store)).
+		WithAnalysis(analysis.NewDefaultService(store).Freeze()).
 		WithEditor(applier, recorder)
 	cleanup := func() { _ = ing.Close(); _ = store.Close() }
 	return c, cleanup, nil

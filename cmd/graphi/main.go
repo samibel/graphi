@@ -209,7 +209,7 @@ func makeClient(store graphstore.Graphstore, socket string) client.Client {
 	if socket != "" {
 		return daemon.NewClient(socket, "")
 	}
-	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store).Freeze())
 }
 
 // extractFlags pulls the global -db and -daemon options out of args (any
