@@ -56,23 +56,101 @@ The answer comes back already cited — a `file:line` for every caller, plus a t
 
 ## Measured, not asserted
 
-graphi's headline results come from before/after field tests against a
-known-vulnerable Go app and an 11.7k-file monorepo. Every row of the
-[Real-World Report Card](docs/real-world-report.md) names the command that
-reproduces it:
+Every number on this page names a command that prints it. These two claims from
+the July field test were re-run against this tree on 2026-08-26 and survive it:
 
-| Metric | Before | After |
+| Claim | Command | What it prints |
 |---|---|---|
-| Taint recall (vuln-go; taint is a Labs analyzer) | **0/4**, silent all-clear | **5/5**, 0 false positives |
-| Import edges per node (11.7k-file monorepo) | 15.56 (→ 4.27M edges) | **0.96** |
-| Storage bytes per edge | ~500 (→ 2.3 GB) | **226.7** |
-| False "dead symbol" warnings on entry points | very many | **0** |
+| Taint recall **0/4 → 5/5**, 0 false positives (`vuln-go`; taint is Labs) | `go test ./engine/ingest -run TestTaintE2E_VulnGoRecall -v` | `vuln-go taint: recall=5/5, false_positives=0, findings=5, armed=true` |
+| **0** false "dead symbol" warnings on entry points | `go test ./engine/ingest -run TestDiagnose_EntryPointsNotDead` | `PASS` |
 
-The internal release gate (≥ 90 overall, no area below 80, published with
-`"self_reported": true`) is a self-measured, in-repo quality ratchet — **not**
-an independent rating, and no faster-or-more-accurate-than-competitor claim is
-made anywhere. Checked-in run evidence lives under
-[docs/eval/runs/](docs/eval/runs).
+Two rows that used to sit here are **removed rather than restated**: "import edges
+per node 15.56 → 0.96", retracted as mislabelled by graphi's own report on
+2026-08-16, and "226.7 bytes per edge", which its own gate prints as `292.6
+bytes/edge (budget 360.0)` — inside the budget, 29 % above the old headline.
+
+### Seven of the ten performance gates, each against its budget
+
+grpc-go v1.60.1 on `ubuntu-latest`, harness `p0-perf/1`, candidate **v0.7.0** at
+`5815db5` — graphi's last complete two-run series, and three minor releases behind
+the v0.10.0 this page is for. Every row but the last recomputes from the committed
+raw samples with `go run ./cmd/eval -aggregate
+docs/eval/runs/2026-07-28-ubuntu-latest/run-a/<job>/grpc-go` (and `run-b` likewise)
+→ `PASS - all N published metric(s) reproduced from the raw data`, N being 173, 136
+and 190 for the three jobs. Latencies are wall-clock on a shared CI runner. RSS and
+DB size carry an instrument wrinkle, stated rather than smoothed: their thresholds
+are declared **decimal** — `"threshold": 2, "unit": "GB"` and `"threshold": 300,
+"unit": "MB"` (`docs/eval/reference-scenario.json:68-71,88-91`) — while the harness
+converts the measurement **binary** before comparing, `mb / 1024` and
+`b / (1024 * 1024)` (`cmd/eval/coldgates.go:70-77`). So the Measured column reads
+GiB/MiB against a decimal Budget column, and the gate in effect allows 2 GiB and
+300 MiB — 7.4 % and 4.9 % more than it says. At 33.5 % and 10.9 % of budget neither
+row turns on that difference. Only the release-binary row is decimal end to end.
+
+| Gate | Budget | Measured | |
+|---|---|---|---|
+| Cold index p95 (919 files, 10 cold runs) | ≤ 120 s | 20.368 s | PASS |
+| Peak RSS | ≤ 2 GB | 0.670 GiB (686 MiB) | PASS |
+| Graph DB size | ≤ 300 MB | 32.688 MiB (34 275 328 B) | PASS |
+| Warm `search` p95 | ≤ 100 ms | 3.591 ms | PASS |
+| `callers` / `callees` / `impact` p95 (*structural*) | ≤ 200 ms | 0.999 ms | PASS |
+| Agent context p95 | ≤ 500 ms | 471.250 ms · 601.732 ms | **UNKNOWN** |
+| **Incremental freshness p95** | **≤ 2 s** | **6.315 s** | **FAIL — 3.2× over** |
+| Release binary ¹ | ≤ 36.10 MB | 34.27 MB (34 267 107 B) | PASS |
+
+**The UNKNOWN is a row on purpose.** Agent context pooled 975 of the 1000
+executions its gate requires in both runs, then landed on opposite sides of it, so
+the baseline records it as possibly a withheld FAIL — not a near-pass. Three gates
+are not shown: cold index p50 (PASS), OOM on an 8 GB host (PASS), and progress
+stall p95 (PASS, held back because its p95 does not describe the tail behind it);
+[all ten](docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md) are published with
+their verdicts. And **no verdict here is a statement about v0.10.0**: the series is
+stamped [`STALE`](docs/eval/runs/2026-07-28-ubuntu-latest/STALENESS-NOTICE.md),
+which answers *"are they statements about the current candidate?"* with *"No. Not
+one of the ten verdicts carries across, in either direction."* The current release
+has no series of its own, and a corrected instrument is a different instrument.
+
+```mermaid
+xychart-beta
+  title "Each row with a single reading, % of budget"
+  x-axis ["cold index", "peak RSS", "DB size", "search", "structural", "freshness", "binary"]
+  y-axis "% of budget" 0 --> 330
+  bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 94.9]
+  line [100, 100, 100, 100, 100, 100, 100]
+```
+
+**The FAIL is in the table on purpose.** `freshness_p95` is the wait between an edit
+and the graph answering about it: 6.315 s and 6.486 s against a 2 s budget, over 100
+of 100 converged changes, 2.7 % apart on two different CPUs (both AMD EPYC,
+different generations). The most reproducible number in the series is the one that
+misses — and it is the sync promise below, measured. Open work, not done work.
+
+¹ Not from that series: `bench/bench-budget.yml`, re-pinned 2026-08-24, measured
+by the canonical CGo-free release build (`internal/release.CanonicalBuildArgs`).
+No release scorecard is quoted anywhere on this page — the last one committed is a
+2026-07-29 snapshot of a superseded build, and the release gate no longer commits
+one. Nothing here is an independent rating or a benchmark against another tool.
+
+### What it saves, and how that is counted
+
+graphi never calls an LLM, so it cannot see your bill. It counts the context it
+assembled against the whole-file reads that would have answered the same
+question — metered per call, priced, clamped, then persisted:
+
+```mermaid
+flowchart LR
+  M["meter.Record<br/>bundle tokens vs<br/>whole-file-read-v1 baseline"] --> P["price.Savings<br/>micro-USD, no network"] --> C["cap.Apply<br/>per-op + per-session<br/>anti-gaming clamp"] --> L["ledger.RecordCapped<br/>durable, CapApplied flag"] --> R["graphi savings"]
+```
+
+The cap only ever *reduces* a positive contribution and flags what it clamped, so a
+capped figure can never be read back as a raw one; an honest overrun passes through
+negative and unhidden. **No saving is quoted here, because none is measured** —
+graphi ships no savings benchmark, and with no metered session the readout says so:
+
+```console
+$ graphi savings
+graphi: savings: no ledger to read — pass -ledger <path> (the ledger a prior MCP/daemon session wrote)
+```
 
 ## Everyday use
 
@@ -105,7 +183,9 @@ graphi compare main current  # graph-level diff: snapshot vs live graph
 `graphi` keeps the graph in sync automatically whenever it starts (bare
 `graphi`, an MCP session, `graphi sync`); it stores one graph per repository
 under `~/.graphi/<fingerprint>/`, always tracking whatever is checked out —
-no flags, paths, or branch bookkeeping required.
+no flags, paths, or branch bookkeeping required. **How long that takes is
+measured, and it misses its budget:** catching up after a change was 6.315 s
+against a ≤ 2 s gate on a 919-file repository — see the freshness row above.
 
 Bare `graphi` also opens the interactive code graph in your browser (on a
 headless box, or with `--no-browser` / `GRAPHI_NO_BROWSER`, graphi prints the
@@ -193,7 +273,7 @@ build). Setup and the guarantees that hold either way:
 | **No telemetry** | Nothing is reported anywhere — no usage data, no phone-home. |
 | **No accounts, no external services** | A single static binary; nothing to sign up for. |
 | **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
-| **Single static binary** | One self-contained executable (~32 MB as shipped; the size is budget-gated in CI), easy to drop into any environment. |
+| **Single static binary** | One self-contained executable (**34.27 MB** as shipped, against a CI budget of 36.10 MB — `bench/bench-budget.yml`), easy to drop into any environment. |
 
 The Stable default tier runs with no accounts and no outbound network access.
 Explicitly configured Labs/forge or embedder features may contact their
@@ -254,7 +334,7 @@ Full design: [docs/architecture-plan.md](docs/architecture-plan.md).
 |---|---|
 | [docs/HOWTO.md](docs/HOWTO.md) | Install, build from source, index a repo, use every surface |
 | [docs/stability-tiers.md](docs/stability-tiers.md) | **Canonical** GA / Preview / Labs / Source-only definition |
-| [docs/real-world-report.md](docs/real-world-report.md) | The honest before/after field-test record |
+| [docs/real-world-report.md](docs/real-world-report.md) | The July 2026 before/after field-test record — two of its rows are retracted or stale and are no longer quoted above |
 | [docs/FEATURES.md](docs/FEATURES.md) | Complete catalogue: every MCP tool, subcommand, endpoint, analyzer |
 | [docs/agent-workflows.md](docs/agent-workflows.md) | Recommended agent call order, incl. the one-call Labs bundles |
 | [docs/coverage-matrix.md](docs/coverage-matrix.md) | Machine-checked capability inventory (drift breaks the build) |
