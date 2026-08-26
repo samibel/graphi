@@ -1,0 +1,1041 @@
+{
+  "profile": "stdio-labs",
+  "note": "bound stdio `-labs` profile: fully wired client.Direct, maximal catalog narrowed by Direct.SupportsCapability.",
+  "tool_count": 44,
+  "tools": [
+    {
+      "name": "callers",
+      "tier": "stable",
+      "description": "structural query: callers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "callees",
+      "tier": "stable",
+      "description": "structural query: callees",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "references",
+      "tier": "stable",
+      "description": "structural query: references",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "definition",
+      "tier": "stable",
+      "description": "structural query: definition",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "neighborhood",
+      "tier": "stable",
+      "description": "structural query: neighborhood",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "hop depth (clamped to MaxNeighborhoodDepth=5)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "implementers",
+      "tier": "labs",
+      "description": "[labs] structural query: implementers",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "implements",
+      "tier": "labs",
+      "description": "[labs] structural query: implements",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "overrides",
+      "tier": "labs",
+      "description": "[labs] structural query: overrides",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "subtypes",
+      "tier": "labs",
+      "description": "[labs] structural query: subtypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "supertypes",
+      "tier": "labs",
+      "description": "[labs] structural query: supertypes",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search",
+      "tier": "stable",
+      "description": "lexical and symbol search over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "search query (symbol token or free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_semantic",
+      "tier": "labs",
+      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "maximum number of results (default 100)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "semantic search query (free-text)",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "search_ast",
+      "tier": "labs",
+      "description": "[labs] structural AST pattern search (SW-082): match nodes by kind/name/parent_kind; returns node identity + parent context only, never a file body",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "maximum number of matches (applied after the canonical sort)",
+            "type": "integer"
+          },
+          "pattern": {
+            "description": "JSON AstPattern, e.g. {\"kind\":\"function\",\"name\":{\"regex\":\"^handle_\"}}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "find_clones",
+      "tier": "labs",
+      "description": "[labs] clone-group detection (SW-083): reports exact/renamed/structural clone groups derived from the AST edge sets; deterministic and bounded by max_groups",
+      "inputSchema": {
+        "properties": {
+          "config": {
+            "description": "optional JSON CloneConfig (threshold, max_groups, clone_kinds, min_edges); empty uses engine defaults",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "impact",
+      "tier": "stable",
+      "description": "stable impact analysis: traverse forward dependencies or reverse dependents/blast radius",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "reverse (default blast radius) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "analyze",
+      "tier": "labs",
+      "description": "[labs] run a named graph analyzer (e.g. impact forward/reverse blast-radius reachability) over the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "analyzer": {
+            "description": "analyzer name (e.g. impact)",
+            "type": "string"
+          },
+          "direction": {
+            "description": "traversal direction for directional analyzers: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "analyzer",
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_taint",
+      "tier": "labs",
+      "description": "[labs] flow-sensitive taint analysis: finds source-to-sink data-flow paths through the indexed graph",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "traversal direction: reverse (dependents/blast radius — the default) | forward (dependencies)",
+            "type": "string"
+          },
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pdg",
+      "tier": "labs",
+      "description": "[labs] program dependence graph: computes data-dependence and control-dependence edges via reaching-definitions and post-dominance",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_interproc",
+      "tier": "labs",
+      "description": "[labs] interprocedural analysis: Sharir-Pnueli fixpoint solver that computes procedure summaries over the call graph",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_contracts",
+      "tier": "labs",
+      "description": "[labs] contract drift detection: finds producer/consumer contracts and detects structural drift between linked API surfaces",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_githistory",
+      "tier": "labs",
+      "description": "[labs] git-history signal analysis: computes churn scores, bus-factor risks, and co-change groups from commit history",
+      "inputSchema": {
+        "properties": {
+          "max_nodes": {
+            "description": "output budget on reached nodes (0 = analyzer default)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol (node) id to analyze",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_risk",
+      "tier": "labs",
+      "description": "[labs] risk-scored PR diff (SW-039): maps changed nodes onto the graph and combines EP-004 impact with EP-005 taint signals into a deterministic, versioned per-region risk record. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_signals",
+      "tier": "labs",
+      "description": "[labs] hub/bridge/surprise graph signals on PR-changed code (SW-040): annotates each changed node with hub (high fan-in/out over a configurable threshold), bridge (articulation point / cut-vertex between modules), and surprise (rarely-modified or unexpectedly-coupled region) signals. Consumes EP-004 metrics + EP-005 PDG/git-history; never recomputes centrality. Local-first: diff is a unified-diff string or simple ref form; NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "analyze_pr_questions",
+      "tier": "labs",
+      "description": "[labs] deterministic, no-LLM reviewer questions from graph findings on PR-changed code (SW-041): applies a fixed rule/template set to the consumed SW-039 risk scores and SW-040 hub/bridge/surprise signals to emit targeted reviewer questions. Each question carries a non-empty evidence reference to the triggering node/edge/signal; identical input yields byte-identical output. Consumes the two sibling reports; never recomputes scoring or signals. Local-first: diff is a unified-diff string or simple ref form; NO LLM, NO remote fetch.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first PR diff: a unified-diff string or simple ref form (path:name / path#Lline / bare node id, one per line). No remote fetch.",
+            "type": "string"
+          },
+          "provenance": {
+            "description": "evidence redaction level: full (default) | summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "diff"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "compound",
+      "tier": "labs",
+      "description": "[labs] compound / Cypher-style graph query composing traversals, filters, and projections in one request (SEED/HOP/WHERE/MAXDEPTH text form)",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "compound query text: SEED <id> then HOP <in|out|both> [<kind>] lines, optional WHERE KIND <kind>",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "suggest_reviewers",
+      "tier": "labs",
+      "description": "[labs] suggest reviewers for a change: resolve the touched symbol/file set from a local-first PR diff (or line-oriented refs), then rank candidate reviewers from graph ownership + recency-decayed churn over the touched files plus affected-subgraph proximity (callers/callees/contract neighbors) of the touched symbols. Each candidate carries a transparent per-signal breakdown (ownership/recency-decayed-churn/subgraph-proximity) with honest file-vs-symbol granularity labels. Deterministic total order (composite DESC, reviewer identity ASC). Zero-egress pass over the local graph + git history.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "unified diff or line-oriented refs (path:name | path#Lline | node id) of the change",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "critique_review",
+      "tier": "labs",
+      "description": "[labs] critique an EXISTING PR review against the knowledge graph: replay the single-PR risk/blast-radius/centrality/taint signals as a ground-truth oracle over the PR's touched set, then emit a structured, graph-evidence-grounded critique with three item types — gap (a high-risk touched entity the review never mentioned: blast-radius count + centrality + contributing edge kinds + taint provenance), over_flag (a review-flagged entity the graph shows is a low-centrality leaf below the risk threshold), and unsupported_claim (a review comment asserting impact to an anchorable target with NO connecting graph edge). Comment→entity matching is DETERMINISTIC anchoring (file:line/symbol → NodeId); unanchorable comments/claims are counted in an honest unanchored tally, never guessed. NO LLM prose. Deterministic total order (type → entity NodeId → review-anchor). The review is fetched at the surface boundary (or supplied inline); the critique itself is a zero-egress pass over the local graph.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "the PR's touched set: unified diff or line-oriented refs (path:name | path#Lline | node id)",
+            "type": "string"
+          },
+          "pr_number": {
+            "description": "PR number to fetch the existing review for (when no inline review is supplied)",
+            "type": "integer"
+          },
+          "review": {
+            "description": "inline existing-review JSON ({verdict, comments:[{id,path,line,symbol,claim_targets}]}); takes precedence over the surface fetch",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "explain_symbol",
+      "tier": "stable",
+      "description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "symbol reference: qualified id, file:line anchor, or bare name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "related_files",
+      "tier": "stable",
+      "description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+      "inputSchema": {
+        "properties": {
+          "direction": {
+            "description": "dependencies | dependents | both (default)",
+            "type": "string"
+          },
+          "target": {
+            "description": "anchor: symbol id, file path, or diff line-oriented refs",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "change_risk",
+      "tier": "stable",
+      "description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+      "inputSchema": {
+        "properties": {
+          "diff": {
+            "description": "local-first unified diff or line-oriented refs (alternative to target)",
+            "type": "string"
+          },
+          "target": {
+            "description": "symbol id or file path to evaluate",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "agent_brief",
+      "tier": "stable",
+      "description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+      "inputSchema": {
+        "properties": {
+          "symbol": {
+            "description": "optional topic: symbol id, file path, or subsystem name",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "graph_health",
+      "tier": "labs",
+      "description": "[labs] graph_health: return the canonical trust-report document for the repository or a target scope — snapshot state (CURRENT|STALE|INCOMPLETE|UNAVAILABLE), freshness facts, coverage, edge confidence tiers (confirmed/derived/heuristic), resolution gaps, external boundaries, and an optional policy verdict. Purpose: agent preflight — answer 'how far may I trust graph evidence for the planned action?' before acting on query results. When to use: before a risky task, to decide whether to use, supplement, or reject graph evidence; with a policy (exploratory-v1 | review-v1 | automated-change-v1) for a reproducible fail-closed verdict. When NOT to use: for rebuild/freshness advice alone (use `graphi status`) or to run the query itself. Input shape: optional target (symbol | repository-relative path | package), optional policy, optional bounded details. Read-only: true — never indexes, never starts a daemon, no network; missing evidence reads UNVERIFIED/UNAVAILABLE, never PASS. Partial results possible: details lists are bounded by limit.",
+      "inputSchema": {
+        "properties": {
+          "details": {
+            "description": "include bounded supporting evidence",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "maximum detail items",
+            "type": "integer"
+          },
+          "policy": {
+            "description": "optional trust policy",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "target": {
+            "description": "optional symbol id, qualified name, repository-relative path or package",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "strict_query",
+      "tier": "labs",
+      "description": "[labs] strict_query: run a structural query and WITHHOLD every result edge below a minimum confidence tier, reporting how many were withheld. Purpose: let an agent act only on evidence at or above a chosen strength, without having to filter and re-tally results itself. When to use: before a change or a definitive claim, when heuristic edges would be unsafe to treat as facts — pair it with graph_health for the repository-level verdict. When NOT to use: for exploration or recall (the Stable query tools return everything, which is what you want there). Input shape: operation (callers | callees | references | definition | neighborhood), symbol id, optional depth, optional minimum_tier (confirmed | derived | heuristic; default heuristic), optional policy preflight. Read-only: true — never indexes, never starts a daemon, no network. CRITICAL for interpreting the result: an EMPTY result with excluded_edges > 0 is filtered, NOT proven empty — the envelope says so in `limitations`, and reading it as \"no such relationships\" is a false negative. A blocked policy preflight returns an error and runs no query.",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "neighborhood hop depth (ignored by other operations)",
+            "type": "integer"
+          },
+          "minimum_tier": {
+            "description": "lowest confidence tier admitted into the result (default heuristic)",
+            "enum": [
+              "confirmed",
+              "derived",
+              "heuristic"
+            ],
+            "type": "string"
+          },
+          "operation": {
+            "description": "structural query operation to run",
+            "enum": [
+              "callers",
+              "callees",
+              "references",
+              "definition",
+              "neighborhood"
+            ],
+            "type": "string"
+          },
+          "policy": {
+            "description": "optional fail-closed trust preflight; a non-PASS/WARN verdict blocks the query",
+            "enum": [
+              "exploratory-v1",
+              "review-v1",
+              "automated-change-v1"
+            ],
+            "type": "string"
+          },
+          "symbol": {
+            "description": "symbol (node) id to query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "symbol_context",
+      "tier": "labs",
+      "description": "[labs] symbol_context: return the unified single-call symbol view — definition site with an optional token-budgeted source snippet, type-hierarchy relations (implementers/implements/overrides/subtypes/supertypes), callers, callees, references, the test files that exercise the symbol (bounded reverse walk), and a change_risk-consistent risk level, every claim cited. Purpose: replace the explain_symbol + callers + callees + references + change_risk round-trips with ONE call when an agent is about to work on a symbol. When to use: the agent has a concrete symbol and wants its full working context in one response. When NOT to use: for 'what should I read first?' (use related_files/agent_brief) or free-text task scoping (use task_context when available). Input shape: symbol reference plus optional depth (test-walk hops, 1-3), limit (item cap), token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: item cap and walk bounds truncate; limits.next says how to widen.",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "test-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "symbol": {
+            "description": "symbol reference: qualified id, repo-relative path, or bare name",
+            "type": "string"
+          },
+          "token_budget": {
+            "description": "snippet token budget (default 700; negative disables the snippet)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "symbol"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "task_context",
+      "tier": "labs",
+      "description": "[labs] task_context: turn a free-text task description into a ranked, cited, token-budgeted context bundle — primary symbols (seeds), related symbols, callers, callees, nearby tests and configuration files, a related-file roll-up, a change_risk-consistent risk level, and a recommended read order, with source snippets under a hard token budget. Ranking is a deterministic integer weight model (hash stamped in the summary), never an LLM guess. Purpose: answer 'where do I start for this task?' in one call, replacing search + related_files + explain round-trips. When to use: at task start, with the task phrased in a few words. When NOT to use: when you already know the exact symbol (use symbol_context) or need repository orientation (use agent_brief / repo_overview when available). Input shape: task text plus optional limit (item cap) and token_budget (snippet tokens; negative disables). Read-only: true. Partial results possible: bounded reads and the item cap truncate; limits.next says how to widen.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 40)",
+            "type": "integer"
+          },
+          "task": {
+            "description": "free-text task description, or an exact symbol/path",
+            "type": "string"
+          },
+          "token_budget": {
+            "description": "snippet token budget (default 1200; negative disables snippets)",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "repo_overview",
+      "tier": "labs",
+      "description": "[labs] repo_overview: return the one-call 'what is this repository?' summary — node/edge/file totals with edge-confidence tiers, a directory tree ranked by symbol count, the language mix, entry-point candidates (go-main probe, meta flags, cmd/ path heuristic), the highest-centrality symbols, test and generated/vendored areas, external boundaries, optional dependency communities, and concrete suggested next calls. Purpose: orient an agent in an unfamiliar repository in one response, right after indexing. When to use: first call in a new repository, or when scoping where a subsystem lives. When NOT to use: for task-specific context (use task_context) or a known symbol (use symbol_context). Input shape: optional limit (item cap) and communities (opt-in full-graph community detection — the only non-aggregate read). Read-only: true. Partial results possible: every section is row-capped and the item cap truncates lowest-value sections first.",
+      "inputSchema": {
+        "properties": {
+          "communities": {
+            "description": "opt into the full-graph community pass (default false)",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "test_impact",
+      "tier": "labs",
+      "description": "[labs] test_impact: given a unified diff or a symbol/file target, bucket the repository's tests — must_run (a direct call edge proves the test exercises a changed symbol), recommended (transitive reach, naming conventions, same-directory test files), probably_unaffected (the remaining test-file universe, counted in full), and unknown (diff paths with no graph symbols — never guessed). Purpose: run seven tests instead of the whole suite, with evidence for why. When to use: after editing, before running tests; pipe `git diff <range>` in for range-based selection. When NOT to use: for the risk grade itself (use change_impact) or coverage of a single known symbol (symbol_context lists its tests). Input shape: exactly one of target or diff, plus optional depth (walk hops 1-3) and limit. Read-only: true. Partial results possible: bounded walks make the buckets a superset-safe lower bound; limits.truncated says when.",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "reverse-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "diff": {
+            "description": "unified diff text (alternative to target)",
+            "type": "string"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path (alternative to diff)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "change_impact",
+      "tier": "labs",
+      "description": "[labs] change_impact: the Change Risk 2.0 assessment for a unified diff or a symbol/file target — changed symbols, their public-API subset, direct dependents with evidence, the bounded transitive closure, the tests covering the change, configuration files riding the diff, explicit machine-checkable reasons ('public interface changed', 'no test directly covers X', dependent counts), and a risk level (change_risk's thresholds, plus a one-step escalation when exported surface changed). The confidence distribution is derived from the consumed edge tiers, never invented. Purpose: one call answers 'how risky is this change and why?'. When to use: before proposing or reviewing a change set; pipe `git diff <range>` in for ranges. When NOT to use: for the stable low/medium/high quick check (change_risk) or test selection alone (test_impact). Input shape: exactly one of target or diff, plus optional depth (1-3) and limit. Read-only: true. Partial results possible: bounded walks make dependent/test counts lower bounds; limits.truncated says when.",
+      "inputSchema": {
+        "properties": {
+          "depth": {
+            "description": "transitive-walk hop depth 1-3 (default 2)",
+            "type": "integer"
+          },
+          "diff": {
+            "description": "unified diff text (alternative to target)",
+            "type": "string"
+          },
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "target": {
+            "description": "symbol id or file path (alternative to diff)",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "hotspots",
+      "tier": "labs",
+      "description": "[labs] hotspots: rank the repository's files by churn × dependency centrality — 'this file changed 12 times in the window AND has 43 graph edge endpoints' — with per-file breakdowns, single-author bus-factor warnings for the ranked hotspots, and a concrete next call. A far better where-to-refactor signal than cyclomatic complexity alone. Purpose: answer 'where does this repository hurt?' in one call. When to use: planning refactors, onboarding into maintenance, prioritizing review attention. When NOT to use: for a specific change's risk (change_impact) or test selection (test_impact). Input shape: optional max_commits (history window bound, default 1000) and limit (item cap). Read-only: true — one bounded local `git log` plus compact graph aggregates; no network. Partial results possible: the window is bounded by max-commits/max-age; without git history the tool returns a typed unavailable outcome.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "max_commits": {
+            "description": "history window bound (default 1000)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "search_hybrid",
+      "tier": "labs",
+      "description": "[labs] search_hybrid: rank symbols for a multi-token free-text query WITHOUT embeddings — lexical retrieval re-ranked by identifier-segment matching (camelCase/snake_case aware), path relevance, and bounded graph degree, with the per-signal breakdown in every reason ('authentication token validation' ranks TokenValidator ahead of accidental substring hits). Deterministic integer weight model, hash-stamped in the summary; no vector database, no model, no egress. Purpose: better multi-word discovery than plain lexical search, before reaching for the optional semantic search. When to use: exploratory multi-word queries where plain search returns noise. When NOT to use: exact names (search / definition) or task scoping (task_context). Input shape: query text plus optional limit. Read-only: true. Partial results possible: retrieval and degree reads are bounded; the item cap truncates lowest scores first.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 20)",
+            "type": "integer"
+          },
+          "query": {
+            "description": "free-text multi-token query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "architecture",
+      "tier": "labs",
+      "description": "[labs] architecture: the automatic architecture view of the code graph — deterministic Louvain communities labeled by their dominant package prefix, layered by dependency DIRECTION (edge majority between communities; foundation = layer 1), each row listing member counts and its strongest depends-on/used-by neighbors with edge counts, plus the top inter-community dependencies. No LLM classification — every line is a graph fact. Purpose: answer 'what are this repository's real modules and which way do they depend?' in one call. When to use: orientation beyond repo_overview, before refactor planning, to see whether intended layering matches reality. When NOT to use: for violations themselves (architecture_violations) or file-tree structure (repo_overview). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read (detection needs the whole graph by definition). Partial results possible: community and dependency rows are capped; cyclic communities get 'layer ?' and a pointer to architecture_violations.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "architecture_violations",
+      "tier": "labs",
+      "description": "[labs] architecture_violations: detect architecture violations on the community dependency graph — dependency CYCLES (community A → B → A with edge counts along the loop), UNEXPECTED dependencies (edges against the dominant direction, e.g. 3 edges storage → domain against a 120-edge domain → storage), HIGH-COUPLING pairs (≥3 edges both ways — no clean layering possible), and GOD MODULES (≥50% of all inter-community edges while touching ≥60% of communities). Pinned integer thresholds are quoted in every finding; a violation-free graph returns an explicit cited 'clean' item, never an empty shrug. Purpose: make unusual dependency directions visible before they calcify. When to use: architecture reviews, CI-adjacent hygiene checks, after large refactors. When NOT to use: for the layer view itself (architecture) or single-change risk (change_impact). Input shape: optional limit (item cap). Read-only: true — one node and one edge catalog read. Partial results possible: per-category rows are capped (8 cycles, 12 back-edges, 8 coupling pairs).",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "dead_code",
+      "tier": "labs",
+      "description": "[labs] dead_code: precise dead-code candidates — symbols with ZERO live inbound references (calls/references/implements/inherits/overrides), each scored by a pinned integer signal model (exported API and dynamic-dispatch methods score lower, penalties quoted in the reason) — plus the exclusions made VISIBLE with their reasons: framework/language entry points (annotations, main, test paths, overrides, decorators), test fixtures, generated/vendored paths, and exported API without usage evidence. Far better than 'references == 0': every candidate says why it is safe and every exclusion says why it is not dead. Purpose: find safely deletable code with evidence. When to use: cleanup passes, before refactors, dead-weight audits. When NOT to use: for a guarded delete itself (CLI safe-delete) or a single symbol's liveness (symbol_context). Input shape: optional limit (item cap). Read-only: true — one node + one edge catalog read (the analysis needs every edge) plus selective hydration. Partial results possible: candidate and exclusion rows are capped; limits.truncated says when.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 40)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "framework_map",
+      "tier": "labs",
+      "description": "[labs] framework_map: the application-level view of the repository derived from the framework annotations and decorators already recorded in the graph — HTTP ROUTES (@GetMapping, NestJS @Get, [HttpGet]), EVENT handlers (@EventListener, @KafkaListener, @EventPattern, @Scheduled), INJECTION points (@Autowired, @Inject), DI-managed COMPONENTS (@RestController, @Service, @Injectable, Angular @Component), and CONFIGURATION units (@Configuration, @Bean, @Module). Providers: spring (Java/Kotlin), nest (TypeScript/JavaScript), dotnet (C#). Every fact cites its annotation and definition site verbatim — no LLM classification, no new parsing. Purpose: see the application graph (endpoints, listeners, wiring) on top of the code graph in one call. When to use: orienting in an annotated service codebase, enumerating endpoints before a change, finding event consumers. When NOT to use: for call-graph structure (callers/callees) or repositories without annotation metadata — Go and Python sources record none, and the tool says so honestly. Input shape: optional limit (item cap). Read-only: true — one node catalog read, no edges. Partial results possible: per-category rows are capped; limits.truncated says when.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "description": "item cap (default 60)",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    }
+  ]
+}

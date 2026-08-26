@@ -1,0 +1,65 @@
+# AX-00 (SW-220) — the extension-kernel baseline freeze.
+#
+# Before the strangler refactor toward an operation catalog starts, "no damage"
+# has to be measurable. This workflow runs the three things that make it so, and
+# nothing else:
+#
+#   1. the golden artifacts — every advertised MCP wire name and descriptor per
+#      binding profile, the HTTP operation/capability list, the CLI help of the
+#      user-facing verbs, and the canonical result bytes of the read-only Stable
+#      operations over the committed fixture;
+#   2. the aggregated protection-gate posture (`-gate-view`), which renders the
+#      seven invariant gates in one table and reads an absent result as UNKNOWN,
+#      never as PASS;
+#   3. the surfaces/client import fan-out METRIC — reported, never enforced.
+#
+# These same tests also run inside the ordinary test-gate; this workflow exists
+# so the baseline is legible as its own check rather than as three lines in a
+# 900-package log, and so the gate posture lands in the run summary where a
+# maintainer will actually see it.
+#
+# It is hermetic: no clone of a third-party repository, no network beyond the
+# module download every job already does. The gate view executes no gate.
+name: baseline-freeze
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ax00-baseline:
+    name: AX-00 baseline artifacts + gate posture
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The frozen artifacts. A drift here is a REVIEWED protocol/behaviour
+      # change, never a flake: the failure message names the artifact and the
+      # deliberate regeneration command.
+      - name: golden wire, descriptor, capability and byte artifacts
+        run: go test ./surfaces/... ./cmd/graphi -run 'TestAX00'
+
+      # Anti-vacuity: the goldens must be VERIFIED here, not rewritten. If a test
+      # ever regenerates an artifact without the explicit opt-in, the working
+      # tree changes and this step fails.
+      - name: goldens were verified, not regenerated
+        run: git diff --exit-code
+
+      - name: import fan-out metric (reported, non-blocking)
+        run: go test ./internal/importfanout -v -run 'TestAX00'
+
+      - name: aggregated protection-gate posture
+        run: |
+          go run ./cmd/evidence -gate-view -sha "$GITHUB_SHA" | tee gate-view.md
+          {
+            echo "## AX-00 protection-gate posture"
+            echo
+            cat gate-view.md
+          } >> "$GITHUB_STEP_SUMMARY"

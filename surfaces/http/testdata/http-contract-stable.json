@@ -1,0 +1,26 @@
+{
+  "payload": {
+    "resources": [
+      "analyze/agent_brief",
+      "analyze/change_risk",
+      "analyze/explain_symbol",
+      "analyze/impact",
+      "analyze/related_files",
+      "query/callees",
+      "query/callers",
+      "query/definition",
+      "query/neighborhood",
+      "query/references",
+      "search"
+    ],
+    "schema_version": 1,
+    "streams": [
+      "ingest-completed",
+      "ingest-progress",
+      "ready",
+      "bye",
+      "error"
+    ]
+  },
+  "schema_version": 1
+}

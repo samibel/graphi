@@ -1,0 +1,1 @@
+{"outcome":"empty","summary":"anchor \"78cc3ba8a87539d3\" resolved (node_id) but has no both edges to other files","items":[],"evidence":null,"confidence":{"distribution":{"unknown":1},"top":"unknown","method":"no_edges"},"limits":{"cap_applied":10,"total_available":0,"dropped":0,"truncated":false,"next":""}}
