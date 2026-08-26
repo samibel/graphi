@@ -69,44 +69,56 @@ per node 15.56 → 0.96", retracted as mislabelled by graphi's own report on
 2026-08-16, and "226.7 bytes per edge", which its own gate prints as `292.6
 bytes/edge (budget 360.0)` — inside the budget, 29 % above the old headline.
 
-### Every gate against its own budget
+### Seven of the ten performance gates, each against its budget
 
 grpc-go v1.60.1 on `ubuntu-latest`, harness `p0-perf/1`, candidate **v0.7.0** at
-`5815db5` — the last complete two-run series graphi has published, and stamped
-[`STALE`](docs/eval/runs/2026-07-28-ubuntu-latest/STALENESS-NOTICE.md): true about
-`5815db5`, and the current release has no series of its own. Every row recomputes
-from the committed raw samples with `go run ./cmd/eval -aggregate
-docs/eval/runs/2026-07-28-ubuntu-latest/run-a/<job>/grpc-go` → `PASS - all 173
-published metric(s) reproduced from the raw data`. Latencies are wall-clock on a
-shared CI runner; sizes are byte counts.
+`5815db5` — graphi's last complete two-run series, and three minor releases behind
+the v0.10.0 this page is for. Every row but the last recomputes from the committed
+raw samples with `go run ./cmd/eval -aggregate
+docs/eval/runs/2026-07-28-ubuntu-latest/run-a/<job>/grpc-go` (and `run-b` likewise)
+→ `PASS - all N published metric(s) reproduced from the raw data`, N being 173, 136
+and 190 for the three jobs. Latencies are wall-clock on a shared CI runner; RSS and
+DB size are binary in measurement *and* threshold (`cmd/eval/budgets.go:202-203`),
+so they read GiB/MiB here where the gate's own summary prints GB/MB — only the
+release-binary row is decimal MB.
 
 | Gate | Budget | Measured | |
 |---|---|---|---|
 | Cold index p95 (919 files, 10 cold runs) | ≤ 120 s | 20.368 s | PASS |
-| Peak RSS | ≤ 2 GB | 0.670 GB (686 MiB) | PASS |
-| Graph DB size | ≤ 300 MB | 32.688 MB (34 275 328 B) | PASS |
+| Peak RSS | ≤ 2 GiB | 0.670 GiB (686 MiB) | PASS |
+| Graph DB size | ≤ 300 MiB | 32.688 MiB (34 275 328 B) | PASS |
 | Warm `search` p95 | ≤ 100 ms | 3.591 ms | PASS |
 | `callers` / `callees` / `impact` p95 (*structural*) | ≤ 200 ms | 0.999 ms | PASS |
+| Agent context p95 | ≤ 500 ms | 471.250 ms · 601.732 ms | **UNKNOWN** |
 | **Incremental freshness p95** | **≤ 2 s** | **6.315 s** | **FAIL — 3.2× over** |
 | Release binary ¹ | ≤ 36.10 MB | 34.27 MB (34 267 107 B) | PASS |
 
+**The UNKNOWN is a row on purpose.** Agent context pooled 975 of the 1000
+executions its gate requires in both runs, then landed on opposite sides of it, so
+the baseline records it as possibly a withheld FAIL — not a near-pass. Three gates
+are not shown: cold index p50 (PASS), OOM on an 8 GB host (PASS), and progress
+stall p95 (PASS, held back because its p95 does not describe the tail behind it);
+[all ten](docs/eval/runs/2026-07-28-ubuntu-latest/p0-baseline.md) are published with
+their verdicts. And **no verdict here is a statement about v0.10.0**: the series is
+stamped [`STALE`](docs/eval/runs/2026-07-28-ubuntu-latest/STALENESS-NOTICE.md),
+which answers *"are they statements about the current candidate?"* with *"No. Not
+one of the ten verdicts carries across, in either direction."* The current release
+has no series of its own, and a corrected instrument is a different instrument.
+
 ```mermaid
 xychart-beta
-  title "Every gate as % of its own budget — the flat line is the budget"
+  title "Each gate with a reading, % of budget"
   x-axis ["cold index", "peak RSS", "DB size", "search", "structural", "freshness", "binary"]
   y-axis "% of budget" 0 --> 330
   bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 94.9]
   line [100, 100, 100, 100, 100, 100, 100]
 ```
 
-**The FAIL is in the table on purpose.** `freshness_p95` is the wait between
-editing a file and the graph answering about it: 6.315 s and 6.486 s against a 2 s
-budget over 100 of 100 converged changes, 2.7 % apart on two different CPUs (both
-AMD EPYC, different generations) — the most reproducible number in the series is
-the one that misses. It is the measurement behind the sync promise below: `graphi
-sync` does keep the graph matching your checkout, but on a repository that size it
-costs seconds, not the sub-second the budget asks for. Fixing it is open work, not
-done work.
+**The FAIL is in the table on purpose.** `freshness_p95` is the wait between an edit
+and the graph answering about it: 6.315 s and 6.486 s against a 2 s budget, over 100
+of 100 converged changes, 2.7 % apart on two different CPUs (both AMD EPYC,
+different generations). The most reproducible number in the series is the one that
+misses — and it is the sync promise below, measured. Open work, not done work.
 
 ¹ Not from that series: `bench/bench-budget.yml`, re-pinned 2026-08-24, measured
 by the canonical CGo-free release build (`internal/release.CanonicalBuildArgs`).
@@ -125,11 +137,10 @@ flowchart LR
   M["meter.Record<br/>bundle tokens vs<br/>whole-file-read-v1 baseline"] --> P["price.Savings<br/>micro-USD, no network"] --> C["cap.Apply<br/>per-op + per-session<br/>anti-gaming clamp"] --> L["ledger.RecordCapped<br/>durable, CapApplied flag"] --> R["graphi savings"]
 ```
 
-The cap only ever *reduces* a positive contribution and flags what it clamped, so
-a capped figure can never be read back as a raw one; an honest overrun — graphi
-using *more* context than the baseline — passes through negative and unhidden.
-**No saving is quoted here, because none is measured.** graphi ships no savings
-benchmark, and with no metered session behind it the readout says so:
+The cap only ever *reduces* a positive contribution and flags what it clamped, so a
+capped figure can never be read back as a raw one; an honest overrun passes through
+negative and unhidden. **No saving is quoted here, because none is measured** —
+graphi ships no savings benchmark, and with no metered session the readout says so:
 
 ```console
 $ graphi savings
