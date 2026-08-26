@@ -269,14 +269,11 @@ definition** of the GA / Preview / Labs / Source-only tiers; this is the summary
 - **Go only.** Go is the only GA language.
 - **CLI + MCP stdio only**, in the CGo-free default binary.
 
-**Not GA:** every other language is **Preview** (shipped and usable, unproven);
-HTTP/SSE, the daemon, web UI, VS Code extension, GitHub Action, refactorings,
-taint, agent memory, semantic search, the one-call agent-intelligence bundles
-(`symbol_context`, `task_context`, `repo_overview`), the test/change
-intelligence (`test_impact`, `change_impact`) and the git intelligence
-(`hotspots`, co-change) are **Labs** (opt-in: `graphi mcp -labs`,
-`GRAPHI_HTTP_LABS=1`); the wiki is Source-only. **SaaS does not exist** — nothing
-is hosted, there is no service to sign up for.
+**Not GA:** everything else. Every other language is **Preview** — shipped and
+usable, unproven. Every capability outside the 12 is **Labs**, opt-in behind
+`graphi mcp -labs` / `GRAPHI_HTTP_LABS=1`; the product lines it covers are
+enumerated under *The whole surface* below. The wiki is Source-only, and **SaaS
+does not exist** — nothing is hosted, there is no service to sign up for.
 
 > In the machine-checked [coverage matrix](docs/coverage-matrix.md) the `tier`
 > column answers a different question ("is this one of the 12 frozen
@@ -296,26 +293,40 @@ is hosted, there is no service to sign up for.
 
 **Use something else if:**
 
-- you need deep dataflow/taint analysis **across external libraries** — use
-  CodeQL;
-- you need thousands of ready-made security rules — use Semgrep;
-- you need cross-repository code search over an enterprise monorepo estate —
-  use Sourcegraph.
+| If you need | Use instead |
+|---|---|
+| deep dataflow/taint analysis **across external libraries** | CodeQL |
+| thousands of ready-made security rules | Semgrep |
+| cross-repository code search over an enterprise monorepo estate | Sourcegraph |
 
 graphi's niche is fast, local, structural ground truth for agents and
 developers — it does not try to replace those tools.
 
-## Language support
+## Language support: what each language demonstrably does
 
-**Go is GA; 21 further languages ship as Preview** (TypeScript/JSX, JavaScript,
-Python, Java, Kotlin, C#, C, C++, Rust, Ruby, PHP, Lua, Bash, SQL, JSON, CSS,
-YAML, TOML, Markdown, HCL); HTML is deferred. The full per-language table —
-which node kinds, which edge tiers, and how cross-file resolution works
-language by language — is in
-[docs/language-support.md](docs/language-support.md). An opt-in CGO flavor
-(`graphi-broad`) opens the go-sitter-forest grammar seam for trusted input;
-see [docs/graphi-broad.md](docs/graphi-broad.md) including its security
-warning.
+**22 languages parse; what they do with what they parse differs, and graphi
+grades that itself.** `graphi trust-report` derives these four levels at read
+time from the live parser, resolver and type-checker registries — so they are a
+capability statement, not a support promise:
+
+```mermaid
+flowchart TD
+  R["graphi trust-report<br/>22 shipped languages"]
+  R --> A["<b>typed-confirmed</b> · 1<br/>Go<br/>the type-checker proves the target,<br/>so edges can reach the confirmed tier"]
+  R --> B["<b>cross-file-heuristic</b> · 15<br/>TypeScript · TSX · JavaScript · Python · Java · Kotlin<br/>C# · C · C++ · Rust · Ruby · PHP · Lua · Bash · SQL<br/>symbols, plus calls/references/imports across files at the heuristic tier"]
+  R --> C["<b>intra-file-only</b> · 5<br/>CSS · HCL · Markdown · TOML · YAML<br/>symbols and edges within a single file"]
+  R --> D["<b>parse-only</b> · 1<br/>JSON<br/>parsed and indexed, no symbol relationships"]
+```
+
+The GA / Preview promise vocabulary is defined once in
+[docs/stability-tiers.md](docs/stability-tiers.md), and exactly **one**
+`category: ga-language` row is live in `docs/coverage-matrix.yaml`: the other 21
+were [withdrawn on 2026-08-21](docs/rc/ga-language-withdrawals-2026-08-21.md),
+each with a named re-introducer story. Per-language node kinds, edge tiers and
+cross-file resolution: [docs/language-support.md](docs/language-support.md).
+HTML is not shipped. The opt-in CGO flavor `graphi-broad` opens the
+go-sitter-forest grammar seam for trusted input — see
+[docs/graphi-broad.md](docs/graphi-broad.md) including its security warning.
 
 ## Semantic search (optional, OFF by default)
 
@@ -339,7 +350,28 @@ provider behind the Labs git intelligence executes the local `git` binary
 against the local repository — no network, no writes. The proof is runnable:
 `graphi privacy-audit`.
 
-## Subcommands (the short list)
+## The whole surface: 173 capabilities
+
+The [capability manifest](docs/capability-manifest.json) is generated from the
+CI-enforced coverage matrix and counts **173** capabilities: **59** CLI
+subcommands, **56** MCP tools, **22** analyzers, 23 parsers, 7 surfaces, 5 feature
+units and 1 GA language. Twelve are the frozen GA operations above; the rest are
+**Labs** — shipped, opt-in, outside the promise, and mostly invisible until now:
+
+| Labs product line | What it is |
+|---|---|
+| **Editing, with undo** | `refactor-preview` · `refactor` · `inline` · `safe-delete` · `undo -token` — graph-aware edits with auditable change records |
+| **A query language** | `compound` (SEED / HOP / WHERE / MAXDEPTH) · `search-ast` (closed-field JSON AST patterns, typed errors) · `find-clones` · `search-hybrid` |
+| **Semantic search** | `search -semantic` — optional, OFF by default, no embedder ships; nothing leaves loopback ([docs/semantic-search.md](docs/semantic-search.md)) |
+| **PR review without an LLM** | `list-prs` · `triage-prs` · `conflicts-prs` · `suggest-reviewers` · `critique-review` · `pr-comment -gate` — deterministic, graph evidence only |
+| **Agent memory** | `memory` (store / recall / forget) · `distill` (a session into decisions, risks, questions) · `skillgen` |
+| **Architecture & dead code** | `architecture` · `architecture-violations` · `dead-code` · `framework-map` |
+| **Agent, test, change & git intelligence** | `symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` |
+| **Analysis & trust** | `analyze` over 22 analyzers (taint, pdg, call-chain, communities, …) · `trust-report` · `query-strict` · `diagnose` · `doctor` · `privacy-audit` |
+| **Surfaces past CLI + MCP stdio** | `daemon` · `http` (loopback HTTP/SSE) · `ui` (web) · the [VS Code extension](extensions/vscode) (blast radius, citations, loopback SSE) · the [GitHub Action](extensions/github-action) |
+
+<details>
+<summary><b>The short list of subcommands</b> — all <b>59</b>, with flags and tier tags, are in <a href="docs/cli-reference.md">docs/cli-reference.md</a> or <code>graphi help</code></summary>
 
 | Command | Tier | What it does |
 |---|---|---|
@@ -358,8 +390,7 @@ against the local repository — no network, no writes. The proof is runnable:
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
 | `graphi daemon` · `http` | labs | Hot-index daemon, loopback HTTP/SSE |
 
-Every subcommand with flags and tier tags: [docs/cli-reference.md](docs/cli-reference.md)
-or `graphi help`.
+</details>
 
 ## Architecture
 
