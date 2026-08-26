@@ -238,7 +238,7 @@ func makeForgeClient(dbPath, socket string) (client.Client, func()) {
 		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
 		return nil, func() {}
 	}
-	asvc := analysis.NewDefaultService(store)
+	asvc := analysis.NewDefaultService(store).Freeze()
 	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
 		d = d.WithForge(gh)

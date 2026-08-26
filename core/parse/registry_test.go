@@ -147,7 +147,11 @@ func (*syntheticParser) Parse(ctx context.Context, filename string, src []byte) 
 // AC: open/closed pluggability — a newly registered parser becomes selectable for
 // its extensions without modifying existing parser code.
 func TestOpenClosedPluggability(t *testing.T) {
-	reg := NewDefaultRegistry()
+	// The MUTABLE default composition. NewDefaultRegistry() returns the same
+	// contents already FROZEN (SW-222 / AX-02), which is the runtime's state;
+	// open/closed pluggability is a property of the seam BEFORE freeze, so this
+	// test exercises it there.
+	reg := RegisterDefaults(NewRegistry())
 
 	// Before registration: unknown.
 	if _, err := reg.ParserFor("x.synth"); !errors.Is(err, ErrNoParser) {

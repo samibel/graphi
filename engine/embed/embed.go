@@ -21,7 +21,18 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/samibel/graphi/core/registry"
 )
+
+// CollisionPolicy is this registry's DECLARED collision rule (SW-222 / AX-02):
+// LAST-WINS. A later Register supersedes an existing id AND becomes the active
+// embedder — the opt-in backend takes over from whatever came before.
+//
+// Divergence note: this is core/parse's rule, not engine/analysis's. ADR 0013
+// threat T5 keeps the divergence and closes last-wins seams to third-party
+// registrants.
+const CollisionPolicy = registry.PolicyLastWins
 
 // Embedder is the provider-agnostic text-embedding contract. Implementations
 // must be deterministic: identical input text yields value-identical vectors
@@ -49,7 +60,14 @@ type Embedder interface {
 // semantic search is OFF until an embedder is explicitly opted in.
 //
 // Register and the lookups are safe for concurrent use.
+//
+// Lifecycle (SW-222): Register → Freeze → Execute. The ZERO Registry is
+// unfrozen as well as empty, so the graceful-skip state is untouched by AX-02.
+// The composition roots that opt an embedder in (cmd/internal/runtime's search
+// service, `graphi index --semantic`) call Freeze once the selected embedder is
+// registered.
 type Registry struct {
+	life   registry.Lifecycle
 	mu     sync.RWMutex
 	byID   map[string]Embedder
 	active string // lowercase ID of the active embedder; "" when none
@@ -61,27 +79,47 @@ func NewRegistry() *Registry {
 	return &Registry{}
 }
 
+// Policy reports this registry's declared collision policy (CollisionPolicy).
+func (r *Registry) Policy() registry.Policy { return CollisionPolicy }
+
+// Freeze marks composition complete: a later Register mutates nothing and
+// returns a registry.ErrFrozen-typed error. Idempotent and one-way.
+func (r *Registry) Freeze() { r.life.Freeze() }
+
+// Frozen reports whether Freeze has been called.
+func (r *Registry) Frozen() bool { return r.life.Frozen() }
+
 // Register adds e to the registry indexed by its (lowercased) ID and marks it as
-// the active embedder. A later Register overrides the active selection, allowing
-// an opt-in backend to supersede a prior one. Registering nil, or an embedder
-// with an empty ID, is a no-op.
+// the active embedder. A later Register overrides the active selection
+// (CollisionPolicy is last-wins), allowing an opt-in backend to supersede a
+// prior one. Registering nil, or an embedder with an empty ID, is a no-op and
+// returns nil. After Freeze it mutates nothing and returns a
+// registry.ErrFrozen-typed error.
 //
 // Register never panics and leaves the registry consistent.
-func (r *Registry) Register(e Embedder) {
+func (r *Registry) Register(e Embedder) error {
 	if e == nil {
-		return
+		return nil
 	}
 	id := strings.ToLower(strings.TrimSpace(e.ID()))
 	if id == "" {
-		return
+		return nil
+	}
+	if err := r.life.CheckMutable("embed", "Register", id); err != nil {
+		return err
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	_, dup := r.byID[id]
+	if err := registry.GuardDuplicate(CollisionPolicy, "embed", "embedder", id, dup); err != nil {
+		return err
+	}
 	if r.byID == nil {
 		r.byID = make(map[string]Embedder)
 	}
 	r.byID[id] = e
 	r.active = id
+	return nil
 }
 
 // Configured reports whether an embedder is active. The zero Registry reports

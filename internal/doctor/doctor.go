@@ -112,6 +112,23 @@ type StateReader interface {
 }
 
 // Registry holds registered checks.
+//
+// EXEMPT from the SW-222 (AX-02) registry lifecycle, with a stated reason.
+// Three of them, any one sufficient:
+//
+//  1. It is a TOOLING registry, not a runtime seam. It holds `graphi doctor`
+//     checks assembled inside one CLI verb and discarded when the verb returns;
+//     nothing serves a request out of it and no surface derives a published
+//     claim from its contents, so "post-startup mutation" has no meaning here.
+//  2. It is KEYLESS — an append-only ordered slice, not a name→thing map. There
+//     is no collision to have a policy about: registering the same check twice
+//     runs it twice, which is a caller decision, not a shadowing hazard.
+//  3. It is at `internal/` rank, outside `cmd → surfaces → engine → core`, so it
+//     is not a place an extension could ever reach.
+//
+// Its nil-check contract (panic — a programming fault at the composition root)
+// is likewise left exactly as it was: turning it into a typed error would be a
+// behaviour change for zero benefit, and AX-02 is behaviour-preserving.
 type Registry struct {
 	checks []Check
 }

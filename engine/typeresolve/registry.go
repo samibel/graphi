@@ -18,7 +18,20 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/registry"
 )
+
+// CollisionPolicy is this registry's DECLARED collision rule (SW-222 / AX-02):
+// LAST-WINS, and ORDER-STABLE with it. A later registration for the same
+// language supersedes the earlier resolver but keeps its original dispatch
+// position, because dispatch order is registration order and the ingest pass
+// must stay byte-deterministic.
+//
+// Like core/parse and unlike engine/analysis, this is a last-wins seam — the
+// kind ADR 0013 (threat T5, D5.3) keeps closed to third-party registrants,
+// since a registration here also moves the published `typed-confirmed`
+// capability level the trust surface derives from Languages().
+const CollisionPolicy = registry.PolicyLastWins
 
 // Resolver is one language's semantic (confirmed-tier) resolution pass. The
 // three path predicates carve up the roles a repository path can play for the
@@ -131,28 +144,53 @@ func (goResolver) Resolve(files map[string][]byte, committed map[model.NodeId]st
 // Registry is the ordered, open/closed set of semantic resolvers. Dispatch
 // order is registration order (deterministic); Languages() is the sorted union
 // the trust surface consumes.
+//
+// Lifecycle (SW-222): Register → Freeze → Execute. NewRegistry does NOT freeze:
+// it is the BUILDER, and engine/semantic.NewRegistry decides — from the
+// GRAPHI_JVM_TYPERESOLVE opt-in — whether more resolvers join. The pass that
+// takes ownership (engine/ingest) freezes it.
 type Registry struct {
+	life   registry.Lifecycle
 	order  []string
 	byLang map[string]Resolver
 }
 
-// NewRegistry returns the registry of shipped semantic resolvers. A new
-// language is a new Register call here.
+// NewRegistry returns the registry of shipped semantic resolvers, UNFROZEN. A
+// new language is a new Register call here.
 func NewRegistry() *Registry {
 	r := &Registry{byLang: map[string]Resolver{}}
 	r.Register(goResolver{})
 	return r
 }
 
+// Policy reports this registry's declared collision policy (CollisionPolicy).
+func (r *Registry) Policy() registry.Policy { return CollisionPolicy }
+
+// Freeze marks composition complete: a later Register returns a
+// registry.ErrFrozen-typed error. Idempotent and one-way.
+func (r *Registry) Freeze() { r.life.Freeze() }
+
+// Frozen reports whether Freeze has been called.
+func (r *Registry) Frozen() bool { return r.life.Frozen() }
+
 // Register adds a resolver under its language. Later registrations override an
-// earlier one for the same language (open/closed extension point), keeping the
-// original registration position so dispatch order stays deterministic.
-func (r *Registry) Register(res Resolver) {
+// earlier one for the same language (CollisionPolicy is last-wins), keeping the
+// original registration position so dispatch order stays deterministic. After
+// Freeze it mutates nothing and returns a registry.ErrFrozen-typed error.
+func (r *Registry) Register(res Resolver) error {
 	lang := res.Language()
-	if _, dup := r.byLang[lang]; !dup {
+	if err := r.life.CheckMutable("typeresolve", "Register", lang); err != nil {
+		return err
+	}
+	_, dup := r.byLang[lang]
+	if err := registry.GuardDuplicate(CollisionPolicy, "typeresolve", "resolver", lang, dup); err != nil {
+		return err
+	}
+	if !dup {
 		r.order = append(r.order, lang)
 	}
 	r.byLang[lang] = res
+	return nil
 }
 
 // Resolvers returns the registered resolvers in registration order — the
