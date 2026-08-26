@@ -168,9 +168,21 @@ const (
 // singletonToolNames are the non-structural-query tools in the maximal catalog.
 // They are listed once here and consumed by both ToolNames() and descriptor
 // construction so the canonical set cannot drift from what can be served.
+//
+// SW-225 (AX-05) gave this list a SECOND job: its ORDER is the advertised order
+// of the singleton tools in tools/list. Descriptor bodies are now projected from
+// engine/opcatalog, which is id-sorted by construction and therefore carries no
+// advertisement order — but the order of the tools/list array is wire-observable
+// and frozen by the AX-00 goldens. Rather than hand-maintain a second ordered
+// name list beside this one, the projection reads THIS list (query.Operations
+// first, then these), and the Stable profile's order is this same sequence
+// filtered by IsStableMCPTool. ToolNames() sorts, so it is unaffected by the
+// order here; changing it changes tools/list and moves an AX-00 golden.
 var singletonToolNames = []string{
 	ToolSearch,
 	ToolSearchSemantic,
+	ToolSearchAST,
+	ToolFindClones,
 	ToolSavings,
 	ToolImpact,
 	ToolAnalyze,
@@ -187,8 +199,6 @@ var singletonToolNames = []string{
 	ToolUndo,
 	ToolPrComment,
 	ToolCompound,
-	ToolSearchAST,
-	ToolFindClones,
 	ToolMemory,
 	ToolDistill,
 	ToolSkillGen,

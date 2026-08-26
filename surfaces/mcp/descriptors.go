@@ -192,11 +192,14 @@ func (s *Server) toolAdvertised(name string) bool {
 	return false
 }
 
-// stableToolDescriptors is deliberately static and side-effect free. The
+// legacyStableToolDescriptors is deliberately static and side-effect free. The
 // shipped Runtime wires every stable port, so its default profile is exactly
 // StableOperations minus lifecycle-only index; partially wired bindings are
 // narrowed later through CapabilityReporter.
-func stableToolDescriptors() []map[string]any {
+//
+// SW-225 (AX-05): this is the LEGACY source. stableToolDescriptors() selects
+// between it and the catalog projection; see descriptors_projected.go.
+func legacyStableToolDescriptors() []map[string]any {
 	tools := make([]map[string]any, 0, len(StableOperations)-1)
 	for _, op := range query.Operations {
 		if !IsStableMCPTool(op) {
@@ -305,14 +308,17 @@ func impactToolDescriptor() map[string]any {
 	}
 }
 
-// maximalToolDescriptors builds the complete Stable+Labs descriptor registry
-// without consulting the bound client. It must remain pure: tools/list is
-// discovery, not permission to dial a daemon, auto-start a process, enumerate a
-// forge, or execute an analyzer. toolDescriptors applies the optional, pure
+// legacyMaximalToolDescriptors builds the complete Stable+Labs descriptor
+// registry without consulting the bound client. It must remain pure: tools/list
+// is discovery, not permission to dial a daemon, auto-start a process, enumerate
+// a forge, or execute an analyzer. toolDescriptors applies the optional, pure
 // CapabilityReporter filter after this registry is complete. A third-party
 // Client without that optional reporter retains the full Client-contract Labs
 // catalog for backwards compatibility.
-func maximalToolDescriptors() []map[string]any {
+//
+// SW-225 (AX-05): this is the LEGACY source. maximalToolDescriptors() selects
+// between it and the catalog projection; see descriptors_projected.go.
+func legacyMaximalToolDescriptors() []map[string]any {
 	tools := make([]map[string]any, 0, len(query.Operations)+2)
 	for _, op := range query.Operations {
 		props := map[string]any{

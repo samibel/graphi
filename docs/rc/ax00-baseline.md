@@ -41,12 +41,15 @@ so a future field cannot be dropped by the very test meant to catch drift.
 | bound daemon, Stable | 7 |
 | bound daemon, `-labs` | 25 |
 
-> **Note for whoever reconciles the docs.** `docs/FEATURES.md` says 44 MCP tools and
-> `context/architecture.md` says "up to 45 = 11 stable + 34 labs". The measured numbers are
-> 56 advertised names / 56 profile-static descriptors, narrowing to **44** on a fully wired
-> `client.Direct`. Both prose figures are describing the *narrowed stdio Labs* catalog, and
-> 44 is the one that matches today. AX-00 is measure-only and deliberately changes no prose;
-> the reconciliation belongs with AX-05, which derives these lists from the catalog.
+> **Prose reconciliation — done by SW-225 (AX-05).** AX-00 measured a disagreement it was
+> not allowed to fix: `docs/FEATURES.md` said 44 MCP tools and the delivery portfolio's
+> `context/architecture.md` said "up to 45 = 11 stable + 34 labs", while the live registry
+> advertises **56** names. Both prose figures were describing the *narrowed stdio Labs*
+> catalog rather than the registry, and both were stale. `docs/FEATURES.md` now states 56
+> (11 Stable + 45 Labs) for the registry **and** carries the measured narrowing figures
+> above, so the two numbers can no longer be mistaken for each other; the portfolio context
+> file was corrected in the same change. The table above stays the citation — a prose figure
+> in this project is only as good as the artifact it points at.
 
 ### 1.2 HTTP operation / capability list
 
