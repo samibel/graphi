@@ -54,6 +54,90 @@ derived  internal/doctor/checks_test.go:261
 
 The answer comes back already cited — a `file:line` for every caller, plus a tier saying how far to trust it (`confirmed`: the call target was resolved by the go/types type-checker; `derived`: a same-package name match). That is what your agent gets over MCP stdio, without opening a file — run the same two commands in your own repository and only the ids change.
 
+## What an answer looks like
+
+graphi answers about **symbols**, not text: every symbol a repo defines is a node,
+every call, reference and import between them an edge carrying a confidence tier and
+the `file:line` it was read from. Four real edges around one method of this repo —
+every command output, number and edge in this section was captured at tag **`v0.10.0`**
+(`29d8feb`), the tree the quick start clones; the one screenshot is older, dated below:
+
+```mermaid
+graph TD
+  T["file<br/>cmd/internal/runtime/ingestlock_test.go"] -.->|"imports · heuristic<br/>ingestlock_test.go:1"| F["file<br/>engine/ingest/ingest.go"]
+  F -->|"defines · confirmed<br/>ingest.go:41"| I["method<br/>ingest.Ingester.IngestAll"]
+  I -->|"calls · confirmed<br/>ingest.go:221"| S["method<br/>link.IndexBuilder.SetModuleMap"]
+  I -->|"references · confirmed<br/>ingest.go:137"| B["type<br/>graphstore.Batch"]
+```
+
+*"What breaks if I change `IngestAll`?"* is then a traversal, not a search, and the
+answer names the edge it arrived by. `head -4` alone shortens this list of 155:
+
+```console
+$ graphi impact 7b0dfbf4396dc899 | jq -r '"\(.nodes|length) symbols across \([.nodes[].node.source_path]|unique|length) files:", (.nodes[]|"depth \(.depth)  \(.reached_via.confidence_tier)  \(.node.qualified_name)  <- \(.reached_via.evidence[0])")' | head -4
+155 symbols across 56 files:
+depth 2  confirmed  runtime.WarmOrFullIngest  <- cmd/internal/runtime/runtime.go:458
+depth 3  confirmed  main.main  <- cmd/eval/main.go:139
+depth 4  confirmed  client.Direct.SafeDelete  <- surfaces/client/direct.go:689
+```
+
+```mermaid
+flowchart TD
+  Q(["agent is asked: what breaks if I change IngestAll?"])
+  Q --> N["<b>without a graph</b>"]
+  Q --> Y["<b>with graphi</b>"]
+  N --> N1["grep -rn --include=*.go IngestAll<br/>500 hits in 108 files"]
+  N1 --> N2["open them, guess which hits are calls;<br/>uncited answer, indirect callers never seen"]
+  Y --> Y1["graphi impact 7b0dfbf4396dc899<br/>one call, 0.03 s"]
+  Y1 --> Y2["155 symbols across 56 files, to depth 6,<br/>each carrying the edge that reached it"]
+```
+
+Each figure the diagram adds names a command too:
+`grep -rl --include='*.go' IngestAll . | wc -l` → `108`;
+`graphi impact 7b0dfbf4396dc899 | jq '[.nodes[].depth]|max'` → `6`;
+`/usr/bin/time -p graphi impact 7b0dfbf4396dc899` → `0.03 s`, five runs of five, warm graph
+on an Apple Silicon laptop — a cold first call pays for the index instead.
+
+<p align="center"><img src="docs/assets/graph-ui-selection.png" alt="graphi web UI with release.ReleaseTargets selected: its blast radius highlighted against dimmed out-of-scope nodes, edges labelled defines / calls / references / imports, and the agent-context export filled with the citation internal/release/build.go:101" width="900" /></p>
+
+The same question in the browser UI, on another symbol: `release.ReleaseTargets`'s blast
+radius lit, out-of-scope dimmed, agent-context export citing `internal/release/build.go:101`.
+That capture is from **v0.4.0** (July), not v0.10.0: its citation was exact when taken, and
+the symbol has since moved — `graphi search ReleaseTargets` gives `build.go:106` today.
+
+The graph does not ask to be believed. The same session reports how far it may be trusted
+— and names one check that graphi refuses to claim it verified. One precondition:
+`privacy-audit` re-runs graphi's own static CGo and telemetry gates over a local Go module,
+so it needs the Go toolchain and a graphi checkout, not just the packaged binary; without
+them `go list` cannot run and the posture line reads `VIOLATED` — a missing toolchain, not
+a finding about egress. With both, in a v0.10.0 clone:
+
+```console
+$ graphi trust-report | grep -A3 'edge evidence:'
+edge evidence:
+  confirmed:      30838
+  derived:        8947
+  heuristic:      40550
+
+$ graphi privacy-audit
+graphi privacy-audit
+===================
+✓ CGo-free build [PASS] — internal/cgoconformance.CgoUsingPackages scan of ./...
+? Zero outbound network [UNVERIFIED] — network layer not observable on this runner (no loopback-only isolation); run `graphi privacy-audit` under the CI deny-egress harness (Linux netns) to verify
+✓ No telemetry [PASS] — verified: internal/canary static gate (telemetry-import denylist + type-checked outbound-dial scan) found zero telemetry SDKs and zero unsanctioned dials in the default graph
+✓ No accounts required [PASS] — declared: no login, no cloud account, no API key required to run any surface
+✓ No required external services [PASS] — declared: all surfaces run against the local engine; no required remote backend
+
+local-first posture: UNVERIFIED (a check could not be observed; not a pass — run under the CI deny-egress harness)
+```
+
+**Half the graph is `heuristic`** — 40 550 of 80 335 edges, 50.5 %; `confirmed` (30 838)
+means the go/types type-checker resolved the target, `derived` (8 947) a same-package
+name match, and `graphi query-strict` filters to the tier you trust. Zero egress comes
+back **UNVERIFIED** rather than PASS because a laptop cannot observe its own network
+layer; the [privacy-audit workflow](.github/workflows/privacy-audit.yml) re-runs the same
+command under a Linux netns deny-egress harness, and that badge is the verification.
+
 ## Measured, not asserted
 
 Every number on this page names a command that prints it. These two claims from
@@ -269,7 +353,7 @@ build). Setup and the guarantees that hold either way:
 
 | Guarantee | What it means for you |
 |---|---|
-| **Zero outbound network** | The engine makes no non-loopback network calls. Your code stays on disk. |
+| **Zero outbound network** | The engine makes no non-loopback network calls, and your code stays on disk — but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above — and the audit needs the Go toolchain in a graphi checkout, or its other two static gates cannot run at all. |
 | **No telemetry** | Nothing is reported anywhere — no usage data, no phone-home. |
 | **No accounts, no external services** | A single static binary; nothing to sign up for. |
 | **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
