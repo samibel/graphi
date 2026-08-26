@@ -22,13 +22,7 @@ flowchart LR
   G --> M["③ MCP stdio<br/>graphi claude"] --> A["④ cited answer<br/>file:line + confidence tier"]
 ```
 
-**① Install** — no sudo; a prebuilt, CGo-free binary, checksummed before it is written (Windows: `iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex`):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
-```
-
-**② index · ③ wire · ④ ask** — and what each step actually prints:
+**① install · ② index · ③ wire · ④ ask** — one real session, captured against graphi's own repository at tag `v0.10.0`, so every line below reproduces exactly as printed (Windows install: `iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex`). Terminal output is shown as a terminal shows it (stdout and stderr merged); absolute paths appear as `~`; the one elided run of output is marked `…`.
 
 ```console
 $ curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
@@ -36,23 +30,29 @@ install.sh: downloading graphi-darwin-arm64 (latest)...
 graphi-darwin-arm64: OK
 install.sh: installed graphi to ~/.local/bin/graphi
 
-$ cd your-repo && graphi index
-graphi: indexing 2580 files…
+$ git clone --branch v0.10.0 https://github.com/samibel/graphi && cd graphi && graphi index
+graphi: scanning repo…
+…  (indexing progress, cross-file linking and type resolution — elided)
 graphi: indexed 2580 files in 34.8s
+graphi index: ingested ~/graphi
 
-$ graphi claude                        # register the MCP stdio server with Claude Code
+$ graphi claude
 config: ~/.claude.json
+action: created
 entry: {type:stdio command:~/.local/bin/graphi args:[mcp]}
+Claude Code: graphi MCP server created in ~/.claude.json (command=~/.local/bin/graphi args=[mcp])
+  backup of the original config written to ~/.claude.json.bak-20260826T002022Z
+  restart/reload Claude Code to expose graphi's tools.
 
-$ graphi search -limit 1 KnownDefectsCheck | jq -c '.matches[]|{node_id,qualified_name,source_path,line}'
-{"node_id":"899699a3e56a9476","qualified_name":"doctor.KnownDefectsCheck","source_path":"internal/doctor/checks.go","line":405}
+$ graphi search -limit 1 KnownDefectsCheck | jq -r '.matches[]|"\(.node_id)  \(.source_path):\(.line)"'
+899699a3e56a9476  internal/doctor/checks.go:405
 
-$ graphi callers 899699a3e56a9476 | jq -c '.edges[]|{confidence_tier,reason,evidence}'
-{"confidence_tier":"confirmed","reason":"call target resolved by the go/types type-checker","evidence":["cmd/graphi/doctor.go:64"]}
-{"confidence_tier":"derived","reason":"same-package cross-file calls resolved by name within the directory","evidence":["internal/doctor/checks_test.go:261"]}
+$ graphi callers 899699a3e56a9476 | jq -r '.edges[]|"\(.confidence_tier)  \(.evidence[0])"'
+confirmed  cmd/graphi/doctor.go:64
+derived  internal/doctor/checks_test.go:261
 ```
 
-Two callers, each with the line that proves it and how far you may trust it — that is what your agent gets over MCP stdio, without opening a file.
+The answer comes back already cited — a `file:line` for every caller, plus a tier saying how far to trust it (`confirmed`: the call target was resolved by the go/types type-checker; `derived`: a same-package name match). That is what your agent gets over MCP stdio, without opening a file — run the same two commands in your own repository and only the ids change.
 
 ## Measured, not asserted
 
@@ -113,9 +113,7 @@ local URL instead). Click any node to see its blast radius: impacted symbols
 light up red, the evidence-bearing edges amber — while the agent-context export
 fills with the selection.
 
-<p align="center">
-  <img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" />
-</p>
+<p align="center"><img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" /></p>
 
 ## What is GA (and what is not)
 
@@ -213,8 +211,8 @@ against the local repository — no network, no writes. The proof is runnable:
 | `graphi trust-report` · `query-strict` | labs | How far may you trust a graph answer: snapshot state, confidence tiers, gaps, fail-closed policy verdicts; tier-filtered queries |
 | `graphi snapshot` · `compare` | labs | Freeze named graph states and diff them |
 | `graphi index [-root <repo>]` | **GA** | Build/refresh a graph store with explicit paths (advanced form of `sync`/`rebuild`) |
-| `graphi callers\|callees\|references\|definition\|neighborhood <symbol>` | **GA** | Structural queries |
-| `graphi impact <symbol>` | **GA** | Blast radius of a change (in-repo) |
+| `graphi callers\|callees\|references\|definition\|neighborhood <node-id>` | **GA** | Structural queries |
+| `graphi impact <node-id>` | **GA** | Blast radius of a change (in-repo) |
 | `graphi search <query>` | **GA** | Lexical / symbol search |
 | `graphi agent-brief` · `explain-symbol` · `related-files` · `change-risk` | **GA** | Cited agent-context operations |
 | `graphi symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` | labs | One-call agent, test, change & git intelligence |
