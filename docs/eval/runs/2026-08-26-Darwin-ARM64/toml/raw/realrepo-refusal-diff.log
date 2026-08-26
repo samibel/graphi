@@ -1,0 +1,10 @@
+run a: 733ac0047c6b586756986d86d65dad819a6494a2  publishable=false  refusals=2
+run b: 733ac0047c6b586756986d86d65dad819a6494a2  publishable=false  refusals=2
+
+shared refusal set (2):
+  incomplete run: 0 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=true, harness-error=false (FR-7 requires 15 declared classes)
+  product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)
+
+  compile_coverage refusals in the shared set: 0
+
+parity: the two dispatches refuse for bit-identically the same reasons — the refusal is DETERMINISTIC. This is NOT a publication: both runs are refused, and exit 0 here says only that they are refused identically.

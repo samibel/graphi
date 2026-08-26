@@ -1,0 +1,143 @@
+{
+  "schema_version": 3,
+  "harness_version": "parity-matrix/2",
+  "provenance": {
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "run_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "statement": "product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee",
+    "product_diff_empty": false,
+    "product_diff_detail": "PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)",
+    "product_binary_head": "af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15",
+    "product_binary_candidate": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "worktree_clean": true,
+    "index_profile": "PER-ROW AXIS — every class runs under each cell of store{sqlite} x profile{resolved default, fast}; the cell is in the row id and in axis_note. GRAPHI_INDEX_PROFILE is CLEARED for the child and then set explicitly per cell, so an inherited value cannot silently change what was measured. The hermetic table's mem-store half is NOT here and is not claimed: no dispatch-driven full index can emit a MemStore envelope.",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "go_version": "go version go1.26.6 darwin/arm64",
+    "os_arch": "darwin/arm64",
+    "generated_at": "2026-08-26T09:43:10Z",
+    "harness_version": "parity-matrix/2",
+    "schema_version": 3
+  },
+  "family": "parsedet-hcl",
+  "max_tier": 3,
+  "matrix_source": "docs/rc/parity-classes-hcl.yaml",
+  "repos": null,
+  "classes": [
+    {
+      "id": "hcl_add_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add an HCL file in a new directory",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_modify_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite an HCL file in place",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_delete_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete an HCL file",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_rename_block_label[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Block-Label umbenennen / rename a block label in place",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_reorder_blocks[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Blöcke umordnen / permute the top-level blocks",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_reparse_identical_bytes[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_add_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add an HCL file in a new directory",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_modify_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite an HCL file in place",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_delete_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete an HCL file",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_rename_block_label[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Block-Label umbenennen / rename a block label in place",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_reorder_blocks[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Blöcke umordnen / permute the top-level blocks",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    },
+    {
+      "id": "hcl_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "verdict": "SKIPPED",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "detail": "NO CORPUS ENTRY: corpus/manifest.json declares no hcl entry at tier \u003c= 3 that is a pinned clone (local-path fixtures are refused by default: a matrix row that ran on a fixture is not real-repository evidence). The G4 row therefore stays UNKNOWN with this reason named; it is NOT re-pointed at another language's pin and no fixture is substituted. What lifts it: SW-201's v3 pins for the intra/parse residual landing on main (they exist only on branch sw-201-w5o-corpus-pins-v3-intra-parse, which is not merged), and — for json specifically — a pin existing at all, since SW-201 filed json as an honest no_pin abstention."
+    }
+  ],
+  "store_counts": null,
+  "not_compared": {
+    "items": [
+      "intra-process taint findings",
+      "embeddings / vectors",
+      "index.profile metadata",
+      "the ingest-meta sidecar",
+      "the FTS index (deliberately not stored; re-derived on load)"
+    ],
+    "rationale": "The comparison unit is the portable snapshot envelope (core/graphstore/snapshot.go -\u003e core/model.Graph.Marshal). Anything persisted OUTSIDE model.Graph is invisible to it, and the FTS index is deliberately not stored (core/graphstore/snapshot.go:49-51).",
+    "disposition": "Already dispositioned DOCUMENTED HARMLESS (Labs tier) at kill point K4, docs/adr/0004-ingest-recovery-disposition.md:37. This report cites that disposition and does not reopen it: extending the snapshot envelope would bump SnapshotFormatVersion, which is a product-byte change."
+  },
+  "complete": false,
+  "publishable": false,
+  "not_publishable_because": [
+    "incomplete run: 0 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=true, harness-error=false (FR-7 requires 15 declared classes)",
+    "product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)"
+  ],
+  "outcome": "INCOMPLETE",
+  "gate_note": "W5.n / gate GA-LANG-hcl-G4: the real-repository PARSE-DETERMINISM matrix for hcl, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_hcl_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001)."
+}

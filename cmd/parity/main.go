@@ -48,9 +48,11 @@ func main() { os.Exit(run()) }
 func run() int {
 	manifest := flag.String("manifest", "corpus/manifest.json", "corpus manifest path")
 	family := flag.String("family", "go",
-		"language family to run: \"go\" (the PRD FR-7 matrix over the Go pins) or \"jvm\" "+
+		"language family to run: \"go\" (the PRD FR-7 matrix over the Go pins), \"jvm\" "+
 			"(WP-J7: the JVM change classes over the guava / okio / kotlinx.serialization pins, "+
-			"crossed over binder{off,on} x profile{resolved default, fast})")
+			"crossed over binder{off,on} x profile{resolved default, fast}), or one of "+
+			strings.Join(parity.ParseDetLanguages(), " / ")+" (W5.n: that language's real-repository "+
+			"PARSE-DETERMINISM matrix, crossed over store{sqlite} x profile{resolved default, fast})")
 	classesPath := flag.String("classes-file", "", "declared change-class matrix (default: the family's own table)")
 	binary := flag.String("binary", "", "graphi binary to drive (default: build ./cmd/graphi into the workdir)")
 	workdir := flag.String("workdir", "", "work dir for clones, stores and snapshots (default: a temp dir)")
@@ -86,16 +88,22 @@ func run() int {
 	// -classes-file per family (rather than to the Go table for both) is what
 	// stops a `-family jvm` run from silently measuring the Go row set and
 	// publishing it under a JVM heading.
-	switch *family {
-	case "go", "jvm":
+	switch {
+	case *family == "go" || *family == "jvm":
+	case parity.IsParseDetLanguage(*family):
 	default:
-		fmt.Fprintf(os.Stderr, "parity: -family must be \"go\" or \"jvm\", got %q\n", *family)
+		fmt.Fprintf(os.Stderr, "parity: -family must be \"go\", \"jvm\" or one of %s, got %q\n",
+			strings.Join(parity.ParseDetLanguages(), " / "), *family)
 		return 2
 	}
 	if *classesPath == "" {
-		*classesPath = parity.ClassesPath
-		if *family == "jvm" {
+		switch {
+		case *family == "jvm":
 			*classesPath = parity.ClassesPathJVM
+		case parity.IsParseDetLanguage(*family):
+			*classesPath = parity.ParseDetClassesPath(*family)
+		default:
+			*classesPath = parity.ClassesPath
 		}
 	}
 
@@ -149,8 +157,12 @@ func run() int {
 		},
 	}
 	run := r.Run
-	if *family == "jvm" {
+	switch {
+	case *family == "jvm":
 		run = r.RunJVM
+	case parity.IsParseDetLanguage(*family):
+		r.ParseDetLang = *family
+		run = r.RunParseDeterminism
 	}
 	rep, err := run(ctx, m, rows, prov)
 	if err != nil {
@@ -181,8 +193,11 @@ func printAndScore(rep parityreport.Report) int {
 			where = "-"
 		}
 		width := 24
-		if rep.Family == parityreport.FamilyJVM {
+		switch {
+		case rep.Family == parityreport.FamilyJVM:
 			width = 52 // the axis suffix is part of the id
+		case strings.HasPrefix(rep.Family, "parsedet-"):
+			width = 62 // <lang>_reparse_identical_bytes[store=…,profile=…]
 		}
 		fmt.Printf("  %-*s %-9s %-10s %s\n", width, c.ID, c.Verdict, where, firstLine(c.Detail))
 	}
