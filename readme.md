@@ -239,43 +239,19 @@ graphi: savings: no ledger to read — pass -ledger <path> (the ledger a prior M
 ## Everyday use
 
 ```bash
-# Keep the graph matching your checked-out code
 graphi sync                  # pull in changes (run it after a branch switch)
 graphi status                # is the graph current? (exit 0 yes / 1 run sync)
-graphi rebuild               # re-index from scratch (recovery / after a new release)
-
-# Short verbs over a node id — get one from `graphi search <name>`
-graphi callers <node-id>     # who calls it
-graphi impact  <node-id>     # what a change to it affects
-graphi ui                    # explicitly serve the graph + open the browser
-graphi claude                # wire graphi into Claude Code (MCP)
-graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop)
-
-# One-call agent, test, change & git intelligence (Labs)
-graphi symbol-context <symbol>   # definition + snippet, hierarchy, tests, risk
-graphi task-context "<task>"     # free-text task -> ranked, token-budgeted context
-graphi repo-overview             # structure, languages, entry points, central symbols
-git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
-git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0
-graphi hotspots                  # churn x dependency centrality, bus-factor warnings
-
-# Freeze and diff branch states (Labs)
-graphi snapshot main         # freeze the current checkout under a name
-graphi compare main current  # graph-level diff: snapshot vs live graph
+graphi callers <node-id>     # who calls it — ids come from `graphi search <name>`
 ```
 
-`graphi` keeps the graph in sync automatically whenever it starts (bare
-`graphi`, an MCP session, `graphi sync`); it stores one graph per repository
-under `~/.graphi/<fingerprint>/`, always tracking whatever is checked out —
-no flags, paths, or branch bookkeeping required. **How long that takes is
-measured, and it misses its budget:** catching up after a change was 6.315 s
-against a ≤ 2 s gate on a 919-file repository — see the freshness row above.
-
-Bare `graphi` also opens the interactive code graph in your browser (on a
-headless box, or with `--no-browser` / `GRAPHI_NO_BROWSER`, graphi prints the
-local URL instead). Click any node to see its blast radius: impacted symbols
-light up red, the evidence-bearing edges amber — while the agent-context export
-fills with the selection.
+The rest of the surface — `rebuild`, `ui`, `claude`, `setup`, the one-call Labs
+bundles, `snapshot`/`compare` — is in [docs/HOWTO.md](docs/HOWTO.md), tiered in
+[docs/cli-reference.md](docs/cli-reference.md). `graphi` re-syncs on every start,
+keeping one graph per repo under `~/.graphi/<fingerprint>/` that tracks what is
+checked out — no flags, paths or branch bookkeeping — though **it misses its freshness
+budget** (3.2× over), as the FAIL row above says. Bare `graphi` also opens the code
+graph in your browser (`--no-browser` prints the URL); click a node to light its blast
+radius red, its evidence-bearing edges amber, and fill the agent-context export.
 
 <p align="center"><img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" /></p>
 
@@ -343,11 +319,8 @@ warning.
 
 ## Semantic search (optional, OFF by default)
 
-The default binary ships **no embedder** and makes zero non-loopback network
-calls; `graphi search -semantic` degrades gracefully to a typed "unavailable"
-response until you explicitly opt in (local Ollama endpoint or an opt-in ONNX
-build). Setup and the guarantees that hold either way:
-[docs/semantic-search.md](docs/semantic-search.md).
+No embedder ships and nothing leaves loopback: `graphi search -semantic` degrades to
+a typed "unavailable" until you opt in — [docs/semantic-search.md](docs/semantic-search.md).
 
 ## The local-first contract
 
@@ -414,16 +387,8 @@ Full design: [docs/architecture-plan.md](docs/architecture-plan.md).
 
 ## Documentation
 
-| Doc | What it is |
-|---|---|
-| [docs/HOWTO.md](docs/HOWTO.md) | Install, build from source, index a repo, use every surface |
-| [docs/stability-tiers.md](docs/stability-tiers.md) | **Canonical** GA / Preview / Labs / Source-only definition |
-| [docs/real-world-report.md](docs/real-world-report.md) | The July 2026 before/after field-test record — two of its rows are retracted or stale and are no longer quoted above |
-| [docs/FEATURES.md](docs/FEATURES.md) | Complete catalogue: every MCP tool, subcommand, endpoint, analyzer |
-| [docs/agent-workflows.md](docs/agent-workflows.md) | Recommended agent call order, incl. the one-call Labs bundles |
-| [docs/coverage-matrix.md](docs/coverage-matrix.md) | Machine-checked capability inventory (drift breaks the build) |
-| [docs/known-defects.md](docs/known-defects.md) | Open defects and limits, tracked in the open |
-| [docs/](docs/) | Documentation map and deeper subsystem docs |
+Every page and which kind it is: [docs/README.md](docs/README.md) — user docs,
+architecture docs, machine-written evidence; two field-test rows are superseded.
 
 ## License
 
