@@ -46,7 +46,20 @@ func RegisterDefaults(r *Registry) *Registry {
 	return r
 }
 
-// NewDefaultRegistry returns a Registry pre-loaded with the built-in parsers.
+// NewDefaultRegistry returns a Registry pre-loaded with the built-in parsers,
+// FROZEN (SW-222 / AX-02).
+//
+// The built-in parser set is complete the moment this returns — nothing in the
+// product registers a parser afterwards — so this is where "the runtime finished
+// composing this registry" happens, and freezing here means every runtime path
+// inherits the guarantee without a freeze call of its own. A Register after this
+// point returns a registry.ErrFrozen-typed error.
+//
+// A caller that needs to keep registering (the graphi-broad opt-in seam, a test
+// planting an offender for an anti-vacuity guard) composes the mutable form
+// directly: RegisterDefaults(NewRegistry()).
 func NewDefaultRegistry() *Registry {
-	return RegisterDefaults(NewRegistry())
+	r := RegisterDefaults(NewRegistry())
+	r.Freeze()
+	return r
 }

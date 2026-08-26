@@ -32,8 +32,12 @@ func TestEveryDefaultParserDeclaresSymbolCapability(t *testing.T) {
 // (guard.go): the same code path that accepts the real defaults must reject a
 // parser that skips the declaration.
 func TestUndeclaredSymbolCapability_CatchesAPlantedOffender(t *testing.T) {
-	r := NewDefaultRegistry()
-	r.Register(undeclaredParser{})
+	// Planting an offender needs the MUTABLE default composition:
+	// NewDefaultRegistry() is frozen from SW-222 (AX-02) onwards.
+	r := RegisterDefaults(NewRegistry())
+	if err := r.Register(undeclaredParser{}); err != nil {
+		t.Fatalf("planting the offender must succeed on an unfrozen registry: %v", err)
+	}
 	missing := UndeclaredSymbolCapability(r)
 	if len(missing) != 1 || missing[0] != "planted-undeclared" {
 		t.Fatalf("guard did not catch the planted offender: %v", missing)

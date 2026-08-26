@@ -315,7 +315,11 @@ func runIndexAt(cwd string, args []string) int {
 		return 0 // graceful skip: no embedder, no network
 	}
 	reg := embed.NewRegistry()
-	reg.Register(emb)
+	if err := reg.Register(emb); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: register embedder: %v\n", err)
+		return 1
+	}
+	reg.Freeze() // SW-222 (AX-02): embedder composition is complete here.
 
 	nodes, err := store.Nodes(ctx, graphstore.Query{})
 	if err != nil {

@@ -230,6 +230,7 @@ func New(store graphstore.Graphstore, parser Parser, metaDir string) (*Ingester,
 		return nil, fmt.Errorf("ingest: open meta db: %w", err)
 	}
 	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: semreg.NewRegistry(), metaDir: metaDir, bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now()}
+	i.freezeRegistries()
 	// Apply the fail-closed recursion-depth bound to the shared parse path
 	// (process-wide; core/parse reads it per Extract). Size + timeout are enforced
 	// at this ingest boundary directly.

@@ -44,6 +44,22 @@ func (s *Service) WithGitProvider(p githistory.GitProvider) *Service {
 	return s
 }
 
+// Freeze marks this service's analyzer registry as composed (SW-222 / AX-02):
+// a later Register or Replace returns a registry.ErrFrozen-typed error instead
+// of mutating. It returns the receiver so a composition root can end its chain
+// with it — `analysis.NewDefaultService(store).WithGitProvider(gp).Freeze()`.
+//
+// It is NOT called from a constructor on purpose: WithGitProvider legitimately
+// re-arms already-registered analyzers AFTER construction, so only the caller
+// knows when composition is actually finished.
+func (s *Service) Freeze() *Service {
+	s.reg.Freeze()
+	return s
+}
+
+// Frozen reports whether this service's registry has been frozen.
+func (s *Service) Frozen() bool { return s.reg.Frozen() }
+
 // NewService constructs a Service over the given read-only Reader and Registry.
 func NewService(reader query.Reader, reg *Registry) *Service {
 	if reg == nil {
@@ -190,7 +206,15 @@ func mustRegister(r *Registry, as ...Analyzer) {
 // It is the single entry point both the CLI and MCP surfaces call. An unknown
 // analyzer name is a caller error (returned as an error), distinct from an
 // unresolved symbol (a typed not-found Analysis, never an error).
+//
+// Dispatch also FREEZES the registry (SW-222 / AX-02). The lifecycle is
+// Register → Replace → Freeze → Execute, and executing over a still-mutable
+// registry is exactly the post-startup-mutation state this story removes. A
+// composition root should still call Freeze explicitly when it is done — this is
+// the backstop that makes the guarantee hold for every entry point rather than
+// for the ones somebody remembered.
 func (s *Service) Dispatch(ctx context.Context, name string, p Params) (Analysis, error) {
+	s.reg.Freeze()
 	a, ok := s.reg.Get(name)
 	if !ok {
 		return Analysis{}, fmt.Errorf("analysis: unknown analyzer %q (want one of %v)", name, s.reg.Names())

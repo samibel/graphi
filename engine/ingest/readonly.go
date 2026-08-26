@@ -42,6 +42,7 @@ func NewReadOnly(store graphstore.Graphstore, parser Parser, metaDir string) (*I
 		return nil, fmt.Errorf("ingest: open read-only sidecar: %w", err)
 	}
 	i := &Ingester{store: store, parser: parser, meta: db, linker: link.New(), semantic: semreg.NewRegistry(), bounds: parse.DefaultResourceBounds(), clock: realClock{}, heartbeatMode: HeartbeatNonTTY, heartbeatInterval: heartbeatModeInterval(HeartbeatNonTTY), lastProgressTime: time.Now(), readOnly: true}
+	i.freezeRegistries()
 	// Probe with a harmless query so a corrupt/non-SQLite sidecar fails here,
 	// not on the first caller read.
 	var one int
@@ -50,6 +51,21 @@ func NewReadOnly(store graphstore.Graphstore, parser Parser, metaDir string) (*I
 		return nil, fmt.Errorf("ingest: read-only probe: %w", err)
 	}
 	return i, nil
+}
+
+// freezeRegistries closes the two resolver registries an Ingester owns
+// (SW-222 / AX-02). Both are fully composed by the time a constructor has run —
+// link.New() registers the shipped per-language resolvers, and
+// engine/semantic.NewRegistry() has already read the GRAPHI_JVM_TYPERESOLVE
+// opt-in — so this is where "the runtime finished composing them" happens.
+//
+// After this, a Register on either returns a registry.ErrFrozen-typed error
+// rather than mutating a linker that a pass may already be running over. It is
+// the ingest half of the freeze-after-build guarantee; the parse and embed
+// registries freeze at their own composition roots.
+func (i *Ingester) freezeRegistries() {
+	i.linker.Freeze()
+	i.semantic.Freeze()
 }
 
 // guardReadOnly is the shared top-of-function check for mutating entry points.

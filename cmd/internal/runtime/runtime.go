@@ -169,7 +169,9 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 	rt.DBPath, rt.MetaDir = dbPath, metaDir
 	rt.store = store
 	rt.closers = append(rt.closers, func() { _ = store.Close() })
-	asvc := analysis.NewDefaultService(store)
+	// SW-222 (AX-02): no git provider on the attach path, so analyzer
+	// composition is complete here.
+	asvc := analysis.NewDefaultService(store).Freeze()
 	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, metaDir)).
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc))
@@ -265,7 +267,9 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	// pr-signals) and the labs agent-intelligence tools. The engine itself
 	// stays exec-free; only this composition root hands it the seam.
 	gp := gitlog.New(root)
-	asvc := analysis.NewDefaultService(store).WithGitProvider(gp)
+	// SW-222 (AX-02): Freeze ends the chain — WithGitProvider is the last
+	// composition step, and nothing may re-arm an analyzer after it.
+	asvc := analysis.NewDefaultService(store).WithGitProvider(gp).Freeze()
 	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, p.Meta)).
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc)).
@@ -415,7 +419,14 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 		return svc // graceful skip: nothing configured
 	}
 	reg := embed.NewRegistry()
-	reg.Register(emb)
+	if err := reg.Register(emb); err != nil {
+		// Unreachable on a fresh registry; reported rather than dropped so a
+		// future freeze-ordering mistake surfaces instead of silently turning
+		// semantic search off.
+		fmt.Fprintf(os.Stderr, "graphi: embedder disabled: %v\n", err)
+		return svc
+	}
+	reg.Freeze() // SW-222 (AX-02): embedder composition is complete here.
 	index := embed.NewIndex()
 	if metaDir != "" {
 		table, terr := embed.OpenSQLiteVectorTable(context.Background(), metaDir, emb.ID(), emb.Dim())

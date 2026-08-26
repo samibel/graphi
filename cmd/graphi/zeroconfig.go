@@ -116,7 +116,7 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent), banner io.
 		return nil, nil, "", nil, nil, cleanup, false, err
 	}
 
-	asvc := analysis.NewDefaultService(store)
+	asvc := analysis.NewDefaultService(store).Freeze()
 	c = client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	srv = httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
 	url = "http://" + ln.Addr().String() + "/"

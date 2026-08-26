@@ -29,10 +29,19 @@ func RegisterDefaults(r *Registry) *Registry {
 }
 
 // NewDefaultRegistry returns a Registry pre-loaded with the default embedders,
-// which for the default build is NONE (graceful-skip). It is the constructor
-// cmd/graphi and tests use to obtain the default, semantic-search-OFF registry.
+// which for the default build is NONE (graceful-skip), FROZEN (SW-222 / AX-02).
+// It is the constructor cmd/graphi and tests use to obtain the default,
+// semantic-search-OFF registry.
+//
+// Freezing here states the CGo-free, zero-egress default as an enforced fact
+// rather than a comment: the default build registers no embedder, and after this
+// constructor returns it cannot acquire one. A caller opting an embedder in
+// builds the mutable form (NewRegistry, then Register, then Freeze) — which is
+// what cmd/internal/runtime and `graphi index --semantic` do.
 func NewDefaultRegistry() *Registry {
-	return RegisterDefaults(NewRegistry())
+	r := RegisterDefaults(NewRegistry())
+	r.Freeze()
+	return r
 }
 
 // Constructor resolves a config selector (e.g. the GRAPHI_EMBEDDER value) into an

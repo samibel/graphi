@@ -120,7 +120,7 @@ func runSuggestReviewers(args []string) int {
 		return 1
 	}
 	defer func() { _ = store.Close() }()
-	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store).Freeze())
 	if err := cli.RunSuggestReviewers(context.Background(), c, payload, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: suggest-reviewers: %v\n", err)
 		return 1
@@ -150,7 +150,7 @@ func runCompareBranches(args []string) int {
 	// states), so an empty in-memory store backs the service.
 	store := graphstore.NewMemStore()
 	c := client.NewDirect(query.New(store), search.New(store)).
-		WithAnalysis(analysis.NewDefaultService(store)).
+		WithAnalysis(analysis.NewDefaultService(store).Freeze()).
 		WithBranchStates(m)
 	if err := cli.RunCompareBranches(context.Background(), c, *base, *head, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: compare-branches: %v\n", err)
@@ -177,7 +177,7 @@ func runCritiqueReview(args []string) int {
 		return 1
 	}
 	defer func() { _ = store.Close() }()
-	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store).Freeze())
 	// Wire the net-new read-only review-fetch egress from the environment so a -pr
 	// with no inline review can fetch the existing review. When no token is present
 	// the fetcher stays unwired (local-first default) — an inline review still works.
@@ -238,7 +238,7 @@ func makeForgeClient(dbPath, socket string) (client.Client, func()) {
 		fmt.Fprintf(os.Stderr, "graphi: open store: %v\n", err)
 		return nil, func() {}
 	}
-	asvc := analysis.NewDefaultService(store)
+	asvc := analysis.NewDefaultService(store).Freeze()
 	d := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	if gh, ferr := forge.FromEnv(); ferr == nil && gh != nil {
 		d = d.WithForge(gh)

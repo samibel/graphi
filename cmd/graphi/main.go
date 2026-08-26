@@ -16,6 +16,7 @@ import (
 
 	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/registry"
 	"github.com/samibel/graphi/engine/analysis"
 	_ "github.com/samibel/graphi/engine/embed/ollama" // opt-in loopback embedder: registers the "ollama" scheme; never constructed on the default path
 	"github.com/samibel/graphi/engine/query"
@@ -29,6 +30,14 @@ import (
 
 func main() {
 	_ = version.Version // linked so -ldflags -X can stamp it; see internal/version
+	// SW-222 (AX-02) rollback switch. core/registry NAMES the variable; the
+	// wiring layer resolves it (the core/profile EnvName/ResolveProfile split).
+	// Enforcement is fail-closed: only an explicit off value disarms it, and
+	// nothing on the default path sets it. It is read here rather than in an
+	// init so the resolution is visible at the composition root; enforcement is
+	// consulted lazily on every mutation, so an already-frozen registry still
+	// honours the switch.
+	registry.SetFreezeEnforced(registry.ParseFreezeEnv(os.Getenv(registry.EnvFreeze)))
 	if len(os.Args) < 2 {
 		// Zero-config default (SW-067): bare `graphi` detects the cwd repo,
 		// indexes it, and serves the embedded UI on a loopback port. The old
@@ -200,7 +209,7 @@ func makeClient(store graphstore.Graphstore, socket string) client.Client {
 	if socket != "" {
 		return daemon.NewClient(socket, "")
 	}
-	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store))
+	return client.NewDirect(query.New(store), search.New(store)).WithAnalysis(analysis.NewDefaultService(store).Freeze())
 }
 
 // extractFlags pulls the global -db and -daemon options out of args (any

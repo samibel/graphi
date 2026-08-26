@@ -28,6 +28,7 @@ import (
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/core/registry"
 )
 
 // Edge kinds the linker emits, matching the canonical query vocabulary.
@@ -149,10 +150,27 @@ type intent struct {
 	toExternalQN string
 }
 
+// CollisionPolicy is the resolver registry's DECLARED collision rule
+// (SW-222 / AX-02): LAST-WINS. A later Register for the same language supersedes
+// the earlier resolver.
+//
+// Like core/parse and unlike engine/analysis, this is a last-wins seam. ADR 0013
+// threat T5 keeps the divergence and closes such seams to third-party
+// registrants — a registration here also moves the published
+// `cross-file-heuristic` capability level the trust surface derives from
+// Languages().
+const CollisionPolicy = registry.PolicyLastWins
+
 // Linker resolves pending references into provenanced edges. It holds the
 // registered resolvers; it is safe for concurrent construction but Link itself
 // is single-threaded and deterministic.
+//
+// Lifecycle (SW-222): Register → Freeze → Execute. New() does NOT freeze — it is
+// the BUILDER, and a caller may still register before handing it over. The pass
+// that takes ownership (engine/ingest) freezes it, so no resolver can join a
+// running linker.
 type Linker struct {
+	life      registry.Lifecycle
 	resolvers map[string]Resolver
 }
 
@@ -188,9 +206,32 @@ func New() *Linker {
 	return l
 }
 
+// Policy reports the resolver registry's declared collision policy.
+func (l *Linker) Policy() registry.Policy { return CollisionPolicy }
+
+// Freeze marks resolver composition complete: a later Register mutates nothing
+// and returns a registry.ErrFrozen-typed error. Idempotent and one-way.
+func (l *Linker) Freeze() { l.life.Freeze() }
+
+// Frozen reports whether Freeze has been called.
+func (l *Linker) Frozen() bool { return l.life.Frozen() }
+
 // Register adds a resolver under its language. Later registrations override an
-// earlier one for the same language (open/closed extension point).
-func (l *Linker) Register(r Resolver) { l.resolvers[r.Language()] = r }
+// earlier one for the same language (CollisionPolicy is last-wins — the
+// open/closed extension point). After Freeze it mutates nothing and returns a
+// registry.ErrFrozen-typed error.
+func (l *Linker) Register(r Resolver) error {
+	lang := r.Language()
+	if err := l.life.CheckMutable("link", "Register", lang); err != nil {
+		return err
+	}
+	_, dup := l.resolvers[lang]
+	if err := registry.GuardDuplicate(CollisionPolicy, "link", "resolver", lang, dup); err != nil {
+		return err
+	}
+	l.resolvers[lang] = r
+	return nil
+}
 
 // Languages returns the sorted canonical languages that have a registered
 // resolver — i.e. the languages whose cross-file and cross-package references

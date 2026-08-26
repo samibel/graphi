@@ -265,7 +265,7 @@ func runDaemon(args []string) int {
 		// provider over the watch Manager so the daemon reports live, honest per-root
 		// watcher health — including the SW-101 Reconcile error — rather than masking
 		// it.
-		asvc := analysis.NewDefaultServiceWithWatch(store, watchStatusProvider{mgr: watchMgr})
+		asvc := analysis.NewDefaultServiceWithWatch(store, watchStatusProvider{mgr: watchMgr}).Freeze()
 		handler := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 		srv := daemon.NewServerWithWatch(handler, watchMgr)
 		if err := srv.Start(*socket); err != nil {
@@ -379,7 +379,7 @@ func runHTTP(args []string) int {
 	}
 	defer cleanupIngest()
 
-	asvc := analysis.NewDefaultService(store)
+	asvc := analysis.NewDefaultService(store).Freeze()
 	c := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 	ln, err := httpsrv.ListenLoopback(*addr)
 	if err != nil {
