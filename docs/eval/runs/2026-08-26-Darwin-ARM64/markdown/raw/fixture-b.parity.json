@@ -1,0 +1,461 @@
+{
+  "schema_version": 3,
+  "harness_version": "parity-matrix/2",
+  "provenance": {
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "run_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "statement": "product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee",
+    "product_diff_empty": false,
+    "product_diff_detail": "PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)",
+    "product_binary_head": "af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15",
+    "product_binary_candidate": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "worktree_clean": true,
+    "index_profile": "PER-ROW AXIS — every class runs under each cell of store{sqlite} x profile{resolved default, fast}; the cell is in the row id and in axis_note. GRAPHI_INDEX_PROFILE is CLEARED for the child and then set explicitly per cell, so an inherited value cannot silently change what was measured. The hermetic table's mem-store half is NOT here and is not claimed: no dispatch-driven full index can emit a MemStore envelope.",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "go_version": "go version go1.26.6 darwin/arm64",
+    "os_arch": "darwin/arm64",
+    "generated_at": "2026-08-26T09:44:07Z",
+    "harness_version": "parity-matrix/2",
+    "schema_version": 3
+  },
+  "family": "parsedet-markdown",
+  "max_tier": 1,
+  "matrix_source": "docs/rc/parity-classes-markdown.yaml",
+  "repos": [
+    {
+      "name": "tier1-fixture-hero-markdown",
+      "tier": 1
+    }
+  ],
+  "classes": [
+    {
+      "id": "markdown_add_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a document in a new directory",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "add a new markdown source file at graphi-parity-w5n-added/added.md in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "5a38d584987a4bb8bb2a0c75b87866bef249a271c2031b8fb516ca15de5dce9e",
+      "snapshot_inc_sha256": "5a38d584987a4bb8bb2a0c75b87866bef249a271c2031b8fb516ca15de5dce9e",
+      "full_nodes": 12,
+      "full_edges": 8,
+      "inc_nodes": 12,
+      "inc_edges": 8,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (5a38d584987a), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 876
+    },
+    {
+      "id": "markdown_modify_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a document in place",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite guide/intro.md in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "396cff1d50ceafd13231c95f08239bee2cd2b2cd6bbef06884f09a2eaf478dc6",
+      "snapshot_inc_sha256": "396cff1d50ceafd13231c95f08239bee2cd2b2cd6bbef06884f09a2eaf478dc6",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (396cff1d50ce), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 854
+    },
+    {
+      "id": "markdown_delete_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a document",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "delete guide/setup.md, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "f86d89a742974eb1a3a69b8a486f61cc641beb664906f951083ceeb50d1286b1",
+      "snapshot_inc_sha256": "f86d89a742974eb1a3a69b8a486f61cc641beb664906f951083ceeb50d1286b1",
+      "full_nodes": 7,
+      "full_edges": 5,
+      "inc_nodes": 7,
+      "inc_edges": 5,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (f86d89a74297), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 867
+    },
+    {
+      "id": "markdown_rename_heading[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Überschrift umbenennen / rename a heading in place",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rename the last top-level construct of guide/intro.md in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "83ae8316f2b4ff30f3912292d22585460f565e59ebce3575f77956a097d00b1b",
+      "snapshot_inc_sha256": "83ae8316f2b4ff30f3912292d22585460f565e59ebce3575f77956a097d00b1b",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "A heading's TEXT is rewritten in place. The heading text IS the symbol identity, so the rename is a delete-plus-add inside one file; the heading LEVEL is untouched. Two independent full passes over the identical final tree serialised to the same bytes (83ae8316f2b4), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 872
+    },
+    {
+      "id": "markdown_reorder_sections[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Abschnitte umordnen / swap the two sections",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "permute the top-level constructs of guide/intro.md with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "799935a2f13aadea9167cad8c332554d426edbf765e4685bc5b86542c6db4bb4",
+      "snapshot_inc_sha256": "799935a2f13aadea9167cad8c332554d426edbf765e4685bc5b86542c6db4bb4",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The heading sections of one document are permuted with no textual change to any section body. The symbol SET is unchanged and only source order and line numbers move. Two independent full passes over the identical final tree serialised to the same bytes (799935a2f13a), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 863
+    },
+    {
+      "id": "markdown_reparse_identical_bytes[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite guide/intro.md with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "c83c7f59d3c5f7423fb56e4ff69c99ca61e257b82406bbaecf3d4ca4b36f8f60",
+      "snapshot_inc_sha256": "c83c7f59d3c5f7423fb56e4ff69c99ca61e257b82406bbaecf3d4ca4b36f8f60",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (c83c7f59d3c5), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 851
+    },
+    {
+      "id": "markdown_add_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a document in a new directory",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "add a new markdown source file at graphi-parity-w5n-added/added.md in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "5a38d584987a4bb8bb2a0c75b87866bef249a271c2031b8fb516ca15de5dce9e",
+      "snapshot_inc_sha256": "5a38d584987a4bb8bb2a0c75b87866bef249a271c2031b8fb516ca15de5dce9e",
+      "full_nodes": 12,
+      "full_edges": 8,
+      "inc_nodes": 12,
+      "inc_edges": 8,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (5a38d584987a), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 867
+    },
+    {
+      "id": "markdown_modify_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a document in place",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite guide/intro.md in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "396cff1d50ceafd13231c95f08239bee2cd2b2cd6bbef06884f09a2eaf478dc6",
+      "snapshot_inc_sha256": "396cff1d50ceafd13231c95f08239bee2cd2b2cd6bbef06884f09a2eaf478dc6",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (396cff1d50ce), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 908
+    },
+    {
+      "id": "markdown_delete_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a document",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "delete guide/setup.md, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "f86d89a742974eb1a3a69b8a486f61cc641beb664906f951083ceeb50d1286b1",
+      "snapshot_inc_sha256": "f86d89a742974eb1a3a69b8a486f61cc641beb664906f951083ceeb50d1286b1",
+      "full_nodes": 7,
+      "full_edges": 5,
+      "inc_nodes": 7,
+      "inc_edges": 5,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (f86d89a74297), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 871
+    },
+    {
+      "id": "markdown_rename_heading[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Überschrift umbenennen / rename a heading in place",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rename the last top-level construct of guide/intro.md in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "83ae8316f2b4ff30f3912292d22585460f565e59ebce3575f77956a097d00b1b",
+      "snapshot_inc_sha256": "83ae8316f2b4ff30f3912292d22585460f565e59ebce3575f77956a097d00b1b",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "A heading's TEXT is rewritten in place. The heading text IS the symbol identity, so the rename is a delete-plus-add inside one file; the heading LEVEL is untouched. Two independent full passes over the identical final tree serialised to the same bytes (83ae8316f2b4), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 881
+    },
+    {
+      "id": "markdown_reorder_sections[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Abschnitte umordnen / swap the two sections",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "permute the top-level constructs of guide/intro.md with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "799935a2f13aadea9167cad8c332554d426edbf765e4685bc5b86542c6db4bb4",
+      "snapshot_inc_sha256": "799935a2f13aadea9167cad8c332554d426edbf765e4685bc5b86542c6db4bb4",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The heading sections of one document are permuted with no textual change to any section body. The symbol SET is unchanged and only source order and line numbers move. Two independent full passes over the identical final tree serialised to the same bytes (799935a2f13a), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 878
+    },
+    {
+      "id": "markdown_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-markdown",
+      "selected_because": "smallest in-cap markdown entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite guide/intro.md with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "c83c7f59d3c5f7423fb56e4ff69c99ca61e257b82406bbaecf3d4ca4b36f8f60",
+      "snapshot_inc_sha256": "c83c7f59d3c5f7423fb56e4ff69c99ca61e257b82406bbaecf3d4ca4b36f8f60",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (c83c7f59d3c5), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 871
+    }
+  ],
+  "store_counts": [
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_add_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_add_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_modify_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_modify_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_delete_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_delete_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_rename_heading[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_rename_heading[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reorder_sections[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reorder_sections[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_add_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_add_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_modify_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_modify_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_delete_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_delete_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_rename_heading[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_rename_heading[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reorder_sections[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reorder_sections[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-markdown",
+      "class": "markdown_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    }
+  ],
+  "not_compared": {
+    "items": [
+      "intra-process taint findings",
+      "embeddings / vectors",
+      "index.profile metadata",
+      "the ingest-meta sidecar",
+      "the FTS index (deliberately not stored; re-derived on load)"
+    ],
+    "rationale": "The comparison unit is the portable snapshot envelope (core/graphstore/snapshot.go -\u003e core/model.Graph.Marshal). Anything persisted OUTSIDE model.Graph is invisible to it, and the FTS index is deliberately not stored (core/graphstore/snapshot.go:49-51).",
+    "disposition": "Already dispositioned DOCUMENTED HARMLESS (Labs tier) at kill point K4, docs/adr/0004-ingest-recovery-disposition.md:37. This report cites that disposition and does not reopen it: extending the snapshot envelope would bump SnapshotFormatVersion, which is a product-byte change."
+  },
+  "complete": false,
+  "publishable": false,
+  "not_publishable_because": [
+    "incomplete run: 12 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=false, harness-error=false (FR-7 requires 15 declared classes)",
+    "product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)"
+  ],
+  "outcome": "INCOMPLETE",
+  "gate_note": "W5.n / gate GA-LANG-markdown-G4: the real-repository PARSE-DETERMINISM matrix for markdown, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_markdown_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001)."
+}

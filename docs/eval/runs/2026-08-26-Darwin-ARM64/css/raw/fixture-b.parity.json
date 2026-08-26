@@ -1,0 +1,461 @@
+{
+  "schema_version": 3,
+  "harness_version": "parity-matrix/2",
+  "provenance": {
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "run_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "statement": "product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee",
+    "product_diff_empty": false,
+    "product_diff_detail": "PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)",
+    "product_binary_head": "af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15",
+    "product_binary_candidate": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "worktree_clean": true,
+    "index_profile": "PER-ROW AXIS — every class runs under each cell of store{sqlite} x profile{resolved default, fast}; the cell is in the row id and in axis_note. GRAPHI_INDEX_PROFILE is CLEARED for the child and then set explicitly per cell, so an inherited value cannot silently change what was measured. The hermetic table's mem-store half is NOT here and is not claimed: no dispatch-driven full index can emit a MemStore envelope.",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "go_version": "go version go1.26.6 darwin/arm64",
+    "os_arch": "darwin/arm64",
+    "generated_at": "2026-08-26T09:42:57Z",
+    "harness_version": "parity-matrix/2",
+    "schema_version": 3
+  },
+  "family": "parsedet-css",
+  "max_tier": 1,
+  "matrix_source": "docs/rc/parity-classes-css.yaml",
+  "repos": [
+    {
+      "name": "tier1-fixture-hero-css",
+      "tier": 1
+    }
+  ],
+  "classes": [
+    {
+      "id": "css_add_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a CSS stylesheet in a new directory",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "add a new css source file at graphi-parity-w5n-added/added.css in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "317c2f7e48cb911632efd6164ff04cfb7d37e75ecd6a1e5d356aa61a4a086170",
+      "snapshot_inc_sha256": "317c2f7e48cb911632efd6164ff04cfb7d37e75ecd6a1e5d356aa61a4a086170",
+      "full_nodes": 12,
+      "full_edges": 8,
+      "inc_nodes": 12,
+      "inc_edges": 8,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (317c2f7e48cb), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 875
+    },
+    {
+      "id": "css_modify_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a stylesheet in place",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite theme/dark.css in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "de27b74831739b538b2c34a7b5892e63468b2f7faf7c8735040a4baf6730e962",
+      "snapshot_inc_sha256": "de27b74831739b538b2c34a7b5892e63468b2f7faf7c8735040a4baf6730e962",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (de27b7483173), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 863
+    },
+    {
+      "id": "css_delete_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a stylesheet",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "delete base/tokens.css, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "f0eb42e1e55f339a42dc3f59401545555837330ed24a4c764d925eb631cdac05",
+      "snapshot_inc_sha256": "f0eb42e1e55f339a42dc3f59401545555837330ed24a4c764d925eb631cdac05",
+      "full_nodes": 6,
+      "full_edges": 4,
+      "inc_nodes": 6,
+      "inc_edges": 4,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (f0eb42e1e55f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 853
+    },
+    {
+      "id": "css_rename_selector[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Selektor umbenennen / rename a selector in place",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rename the last top-level construct of base/tokens.css in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "8f468a91451fbc4d63fd90570f91e9c94b387ac0d22676a12183145d4ce49155",
+      "snapshot_inc_sha256": "8f468a91451fbc4d63fd90570f91e9c94b387ac0d22676a12183145d4ce49155",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "A selector is renamed in place. The symbol's qualified name is derived from the selector text, so the rename is a delete-plus-add inside one file. Two independent full passes over the identical final tree serialised to the same bytes (8f468a91451f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 861
+    },
+    {
+      "id": "css_reorder_rules[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Regeln umordnen / permute the top-level rules",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "permute the top-level constructs of base/tokens.css with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "73c624c38e4bc3277733f50adc166017dec9de32f47b4ebb6422a39aa1926b60",
+      "snapshot_inc_sha256": "73c624c38e4bc3277733f50adc166017dec9de32f47b4ebb6422a39aa1926b60",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The top-level rules of one stylesheet are permuted with no textual change to any rule body. The symbol SET is unchanged and only source order and line numbers move, which is the sharpest test of the canonical-ordering discipline. Two independent full passes over the identical final tree serialised to the same bytes (73c624c38e4b), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 858
+    },
+    {
+      "id": "css_reparse_identical_bytes[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite theme/dark.css with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "36e702f40363f88ad22b6f66829d25f26dfbaad4c76f83695af2cd77963a761f",
+      "snapshot_inc_sha256": "36e702f40363f88ad22b6f66829d25f26dfbaad4c76f83695af2cd77963a761f",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (36e702f40363), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 857
+    },
+    {
+      "id": "css_add_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a CSS stylesheet in a new directory",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "add a new css source file at graphi-parity-w5n-added/added.css in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "317c2f7e48cb911632efd6164ff04cfb7d37e75ecd6a1e5d356aa61a4a086170",
+      "snapshot_inc_sha256": "317c2f7e48cb911632efd6164ff04cfb7d37e75ecd6a1e5d356aa61a4a086170",
+      "full_nodes": 12,
+      "full_edges": 8,
+      "inc_nodes": 12,
+      "inc_edges": 8,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (317c2f7e48cb), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 852
+    },
+    {
+      "id": "css_modify_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a stylesheet in place",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite theme/dark.css in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "de27b74831739b538b2c34a7b5892e63468b2f7faf7c8735040a4baf6730e962",
+      "snapshot_inc_sha256": "de27b74831739b538b2c34a7b5892e63468b2f7faf7c8735040a4baf6730e962",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (de27b7483173), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 849
+    },
+    {
+      "id": "css_delete_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a stylesheet",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "delete base/tokens.css, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "f0eb42e1e55f339a42dc3f59401545555837330ed24a4c764d925eb631cdac05",
+      "snapshot_inc_sha256": "f0eb42e1e55f339a42dc3f59401545555837330ed24a4c764d925eb631cdac05",
+      "full_nodes": 6,
+      "full_edges": 4,
+      "inc_nodes": 6,
+      "inc_edges": 4,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (f0eb42e1e55f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 854
+    },
+    {
+      "id": "css_rename_selector[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Selektor umbenennen / rename a selector in place",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rename the last top-level construct of base/tokens.css in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "8f468a91451fbc4d63fd90570f91e9c94b387ac0d22676a12183145d4ce49155",
+      "snapshot_inc_sha256": "8f468a91451fbc4d63fd90570f91e9c94b387ac0d22676a12183145d4ce49155",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "A selector is renamed in place. The symbol's qualified name is derived from the selector text, so the rename is a delete-plus-add inside one file. Two independent full passes over the identical final tree serialised to the same bytes (8f468a91451f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 853
+    },
+    {
+      "id": "css_reorder_rules[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Regeln umordnen / permute the top-level rules",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "permute the top-level constructs of base/tokens.css with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "73c624c38e4bc3277733f50adc166017dec9de32f47b4ebb6422a39aa1926b60",
+      "snapshot_inc_sha256": "73c624c38e4bc3277733f50adc166017dec9de32f47b4ebb6422a39aa1926b60",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The top-level rules of one stylesheet are permuted with no textual change to any rule body. The symbol SET is unchanged and only source order and line numbers move, which is the sharpest test of the canonical-ordering discipline. Two independent full passes over the identical final tree serialised to the same bytes (73c624c38e4b), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 856
+    },
+    {
+      "id": "css_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-css",
+      "selected_because": "smallest in-cap css entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite theme/dark.css with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "36e702f40363f88ad22b6f66829d25f26dfbaad4c76f83695af2cd77963a761f",
+      "snapshot_inc_sha256": "36e702f40363f88ad22b6f66829d25f26dfbaad4c76f83695af2cd77963a761f",
+      "full_nodes": 10,
+      "full_edges": 7,
+      "inc_nodes": 10,
+      "inc_edges": 7,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (36e702f40363), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 852
+    }
+  ],
+  "store_counts": [
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_add_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_add_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_modify_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_modify_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_delete_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_delete_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_rename_selector[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_rename_selector[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reorder_rules[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reorder_rules[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_add_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_add_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_modify_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_modify_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_delete_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_delete_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_rename_selector[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_rename_selector[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reorder_rules[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reorder_rules[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-css",
+      "class": "css_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    }
+  ],
+  "not_compared": {
+    "items": [
+      "intra-process taint findings",
+      "embeddings / vectors",
+      "index.profile metadata",
+      "the ingest-meta sidecar",
+      "the FTS index (deliberately not stored; re-derived on load)"
+    ],
+    "rationale": "The comparison unit is the portable snapshot envelope (core/graphstore/snapshot.go -\u003e core/model.Graph.Marshal). Anything persisted OUTSIDE model.Graph is invisible to it, and the FTS index is deliberately not stored (core/graphstore/snapshot.go:49-51).",
+    "disposition": "Already dispositioned DOCUMENTED HARMLESS (Labs tier) at kill point K4, docs/adr/0004-ingest-recovery-disposition.md:37. This report cites that disposition and does not reopen it: extending the snapshot envelope would bump SnapshotFormatVersion, which is a product-byte change."
+  },
+  "complete": false,
+  "publishable": false,
+  "not_publishable_because": [
+    "incomplete run: 12 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=false, harness-error=false (FR-7 requires 15 declared classes)",
+    "product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)"
+  ],
+  "outcome": "INCOMPLETE",
+  "gate_note": "W5.n / gate GA-LANG-css-G4: the real-repository PARSE-DETERMINISM matrix for css, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_css_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001)."
+}
