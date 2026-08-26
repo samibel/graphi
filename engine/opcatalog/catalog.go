@@ -153,6 +153,28 @@ func (c *Catalog) TierOf(id string) (Tier, bool) {
 	return spec.Tier, true
 }
 
+// VersionOf returns the contract version declared for id and whether the id is
+// known.
+func (c *Catalog) VersionOf(id string) (string, bool) {
+	spec, ok := c.byID[id]
+	if !ok {
+		return "", false
+	}
+	return spec.Version, true
+}
+
+// Supports reports whether the catalog declares operation id AT version. It is
+// the version-aware lookup an executor gates work on, and it is deliberately
+// exact rather than tolerant: an empty version is "no version declared", not a
+// wildcard, so a caller that omits one is rejected instead of being resolved to
+// whatever the catalog happens to hold today. Accepting the omission would make
+// the eventual arrival of a version "2" a silent behaviour change for every
+// caller that never declared one.
+func (c *Catalog) Supports(id, version string) bool {
+	declared, ok := c.VersionOf(id)
+	return ok && version != "" && declared == version
+}
+
 // IDsWithTier returns the canonical-order ids carrying the given tier.
 func (c *Catalog) IDsWithTier(tier Tier) []string {
 	out := make([]string, 0, len(c.order))
