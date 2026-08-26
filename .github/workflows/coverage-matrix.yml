@@ -17,9 +17,13 @@
 #                per-category counts, the census sentence's sum, and category set
 #                completeness. Numbers only — prose is not gated (backlog :16
 #                keeps its prose half open) and the check says so in its output.
-#   tripwire   — proves the readme-claims gate BITES: a mutated readme capability
-#                count must turn `-check` red. A gate nobody has seen fail is not
-#                known to work (precedent: privacy-audit.yml's egress tripwire).
+#   tripwire   — proves the readme-claims gate BITES: TWO mutated readmes must
+#                turn `-check` red — a drifted capability total, and the SW-215
+#                defect shape (a category dropped from the decomposition, every
+#                remaining count still correct, which only the SUM and
+#                SET-COMPLETENESS assertions can catch). A gate nobody has seen
+#                fail is not known to work (precedent: privacy-audit.yml's
+#                egress tripwire).
 #
 # CGo-free, zero network — read-only over the registries.
 name: coverage-matrix
@@ -48,33 +52,51 @@ jobs:
       - name: coverage-matrix (named check — drift + freshness + readme-claims gate)
         run: go run ./cmd/coverage -check
 
-      # SW-216 AC-6: the gate must be SEEN to fail. Mutate the capability total
-      # in readme.md, require `-check` to go RED, then restore and require GREEN
-      # again. It runs on the same checkout the gate above just passed, so this
-      # is evidence about THIS commit rather than about a fixture. The mutation
-      # is derived from the file (no hard-coded count), and failing to mutate is
-      # itself a step failure — a tripwire that silently no-ops proves nothing.
-      - name: readme-claims tripwire (a mutated readme count must fail the gate)
+      # SW-216 AC-6: the gate must be SEEN to fail. Mutate readme.md, require
+      # `-check` to go RED, then restore and require GREEN again. It runs on the
+      # same checkout the gate above just passed, so this is evidence about THIS
+      # commit rather than about a fixture. Both mutations are derived from the
+      # file (no hard-coded count), and failing to mutate is itself a step
+      # failure — a tripwire that silently no-ops proves nothing.
+      #
+      # TWO mutations, because the gate makes three assertions and round 1 only
+      # exercised one of them in CI:
+      #   (1) the TOTAL drifts            -> the per-count and SUM assertions
+      #   (2) the last category is dropped -> the SUM and SET-COMPLETENESS
+      #       assertions, i.e. the exact SW-215 defect this story exists for,
+      #       with every individual count still correct.
+      - name: readme-claims tripwire (mutated readme counts must fail the gate)
         run: |
           set -euo pipefail
           cp readme.md /tmp/readme.orig
           restore() { cp /tmp/readme.orig readme.md; }
-          current="$(grep -oE 'counts \*\*[0-9]+\*\* capabilities' readme.md | grep -oE '[0-9]+' | head -1)"
+          # `|| true`: under `set -e` a no-match grep would abort the step before
+          # the actionable message below could be printed.
+          expect_red() {
+            if git diff --quiet -- readme.md; then
+              restore
+              echo "TRIPWIRE FAILED: could not mutate readme.md ($1) — fix the mutation, do not weaken the gate" >&2
+              exit 1
+            fi
+            if go run ./cmd/coverage -check; then
+              restore
+              echo "TRIPWIRE FAILED: the gate stayed GREEN on a mutated readme ($1)" >&2
+              exit 1
+            fi
+            restore
+          }
+          # The bold markers are optional on purpose: SW-217/SW-218 may unbold
+          # the total, and CI must keep working rather than fail with no message.
+          current="$(grep -oE 'counts \*{0,2}[0-9]+\*{0,2} capabilities' readme.md | grep -oE '[0-9]+' | head -1 || true)"
           if [ -z "${current}" ]; then
-            echo "TRIPWIRE FAILED: no capability census sentence found in readme.md" >&2
+            echo "TRIPWIRE FAILED: no capability census sentence found in readme.md (expected 'counts <N> capabilities:')" >&2
             exit 1
           fi
-          sed -i "s/counts \*\*${current}\*\* capabilities/counts **$((current + 1))** capabilities/" readme.md
-          if git diff --quiet -- readme.md; then
-            restore
-            echo "TRIPWIRE FAILED: could not mutate readme.md — fix the mutation, do not weaken the gate" >&2
-            exit 1
-          fi
-          if go run ./cmd/coverage -check; then
-            restore
-            echo "TRIPWIRE FAILED: the gate stayed GREEN on a mutated readme capability count" >&2
-            exit 1
-          fi
-          restore
+          sed -i -E "s/(counts \*{0,2})${current}(\*{0,2} capabilities)/\1$((current + 1))\2/" readme.md
+          expect_red "capability total incremented"
+          # Drop the enumeration's trailing "and <N> <label>" clause: every count
+          # left behind is still correct, so only SUM + SET COMPLETENESS can catch it.
+          sed -i -E "/counts \*{0,2}[0-9]+\*{0,2} capabilities:/,/^[[:space:]]*$/ s/ and \*{0,2}[0-9]+\*{0,2} [A-Za-z]+( [A-Za-z]+)?\./\./" readme.md
+          expect_red "last category dropped from the decomposition (the SW-215 defect)"
           go run ./cmd/coverage -check
-          echo "tripwire OK: the mutated count turned the gate red; the restored readme is green"
+          echo "tripwire OK: both mutations turned the gate red; the restored readme is green"

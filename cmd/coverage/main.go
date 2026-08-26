@@ -148,7 +148,8 @@ func main() {
 	// unusable manifest or an unreadable readme is an error, never a skip.
 	census, err := coverage.ManifestCensus(currentJSON)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "coverage: %v\n", err)
+		// ManifestCensus already prefixes its errors with "coverage: ".
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(2)
 	}
 	readmeBytes, readmeErr := os.ReadFile(filepath.Join(dir, filepath.FromSlash(coverage.ReadmePath)))
