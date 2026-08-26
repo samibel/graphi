@@ -196,7 +196,7 @@ of the returned edges is the fabricated one.
   node in every directory declaring that clause** — including when `<name>` is a
   stdlib or third-party module that names nothing in the repository at all. So
   `import typing as t` acquires edges into in-repo `tests/typing/typing_*.py`.
-  **This contradicts [readme.md](../readme.md) lines 26–28**, which promise that
+  **This contradicts [readme.md](../readme.md) lines 12–13**, which promise that
   "stdlib and third-party targets are recorded, but deliberately not navigable":
   a stdlib import that acquires edges into in-repo files is exactly the
   navigability that sentence denies, and a `related_files` caller following one
@@ -233,7 +233,7 @@ of the returned edges is the fabricated one.
   discipline **cannot see this**: the edge set is reproducible by luck rather
   than by construction, against a convention that makes determinism first-class
   and carves out no exception for `heuristic`-tier edges. Same contradiction of
-  [readme.md](../readme.md) lines 26–28 as PYTHONFANOUT-001, and the same
+  [readme.md](../readme.md) lines 12–13 as PYTHONFANOUT-001, and the same
   affected operations — `related_files` and `neighborhood` on Python.
   **There is no workaround that makes the distribution stable.** Removing the
   collision removes the fan-out, and with it any set of tied candidates to order

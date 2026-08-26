@@ -1,98 +1,58 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="graphi logo" width="280" />
-</p>
-
+<p align="center"><img src="docs/assets/logo.png" alt="graphi logo" width="280" /></p>
 <h1 align="center">graphi</h1>
+<p align="center">Your agent stops grepping the whole codebase. It asks the graph.</p>
+<p align="center"><a href="https://samibel.github.io/graphi/">Website</a> · <a href="https://samibel.github.io/graphi/tutorial.html">Hands-on tutorial</a> · <a href="./CHANGELOG.md">Changelog</a> · <a href="docs/known-defects.md">Open defects</a></p>
 
-<p align="center">
-  <a href="https://samibel.github.io/graphi/"><strong>Website</strong></a>
-  &nbsp;·&nbsp;
-  <a href="https://samibel.github.io/graphi/tutorial.html"><strong>Hands-on tutorial</strong></a>
-</p>
+[![cgo-conformance](https://img.shields.io/github/actions/workflow/status/samibel/graphi/cgoconformance.yml?branch=main&label=cgo-conformance)](https://github.com/samibel/graphi/actions/workflows/cgoconformance.yml) [![privacy-audit](https://img.shields.io/github/actions/workflow/status/samibel/graphi/privacy-audit.yml?branch=main&label=privacy-audit)](https://github.com/samibel/graphi/actions/workflows/privacy-audit.yml) [![coverage-matrix](https://img.shields.io/github/actions/workflow/status/samibel/graphi/coverage-matrix.yml?branch=main&label=coverage-matrix)](https://github.com/samibel/graphi/actions/workflows/coverage-matrix.yml) [![test-gate](https://img.shields.io/github/actions/workflow/status/samibel/graphi/testgate.yml?branch=main&label=test-gate)](https://github.com/samibel/graphi/actions/workflows/testgate.yml) [![release](https://img.shields.io/github/v/release/samibel/graphi?label=release)](https://github.com/samibel/graphi/releases/latest)
 
-> Local-first, CGo-free code-intelligence engine. Parse a repository into a deterministic, provenance-backed code graph and answer structural and semantic questions — plus one-call agent context, test-impact, change-risk and hotspot bundles (Labs) — over an agent-first **MCP (stdio)** + **CLI** surface, without a single byte leaving your machine.
+graphi indexes your repository once into a code graph — symbols as nodes,
+calls/references/imports as edges — and answers *who calls this*, *what breaks if
+I change it* and *how are these two connected* in one round-trip, entirely on your
+machine, with a `file:line` and a confidence tier on every edge it returns.
+Structural answers cover the symbols your repo defines: stdlib and third-party
+targets are recorded, but deliberately not navigable ([docs/external-nodes.md](docs/external-nodes.md)).
 
-[![CGo-free](https://img.shields.io/badge/build-CGo--free-success)](#the-local-first-contract)
-[![local-first](https://img.shields.io/badge/runtime-zero%20egress-success)](#the-local-first-contract)
-[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](#license)
-
-An AI coding agent that greps and re-reads your whole codebase on every question
-is slow, expensive, and still guessing. graphi indexes the repo once into a
-graph — symbols as nodes, calls/references/imports as edges — and answers
-"who calls this," "what breaks if I change it," and "how are these two
-functions connected" in one round-trip, entirely on your machine. The Labs
-agent-intelligence layer extends that to "give me the context for this task,"
-"which tests must I run for this diff," and "where does this repository hurt." Structural
-answers cover the symbols your repo defines: stdlib and third-party targets
-are recorded, but deliberately not navigable (see
-[docs/external-nodes.md](docs/external-nodes.md)).
+Current release **v0.10.0** · 12 frozen GA operations over CLI + MCP stdio · Apache-2.0 · no account, no telemetry, no cloud.
 
 ## Quick start
 
-**Step 1 — install.** One line, checksum-verified, no sudo (installs the prebuilt
-CGo-free binary to `~/.local/bin`):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
+```mermaid
+flowchart LR
+  I["① install<br/>one line, checksum-verified"] --> X["② index<br/>graphi index"] --> G[("code graph<br/>on your disk")]
+  G --> M["③ MCP stdio<br/>graphi claude"] --> A["④ cited answer<br/>file:line + confidence tier"]
 ```
 
-On Windows, use the PowerShell installer instead:
+**① install · ② index · ③ wire · ④ ask** — one real session, captured against graphi's own repository at tag `v0.10.0`, so every line below reproduces exactly as printed (Windows install: `iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex`). Terminal output is shown as a terminal shows it (stdout and stderr merged); absolute paths appear as `~`; the one elided run of output is marked `…`.
 
-```powershell
-iwr -useb https://raw.githubusercontent.com/samibel/graphi/main/install.ps1 | iex
+```console
+$ curl -fsSL https://raw.githubusercontent.com/samibel/graphi/main/install.sh | sh
+install.sh: downloading graphi-darwin-arm64 (latest)...
+graphi-darwin-arm64: OK
+install.sh: installed graphi to ~/.local/bin/graphi
+
+$ git clone --branch v0.10.0 https://github.com/samibel/graphi && cd graphi && graphi index
+graphi: scanning repo…
+…  (indexing progress, cross-file linking and type resolution — elided)
+graphi: indexed 2580 files in 34.8s
+graphi index: ingested ~/graphi
+
+$ graphi claude
+config: ~/.claude.json
+action: created
+entry: {type:stdio command:~/.local/bin/graphi args:[mcp]}
+Claude Code: graphi MCP server created in ~/.claude.json (command=~/.local/bin/graphi args=[mcp])
+  backup of the original config written to ~/.claude.json.bak-20260826T002022Z
+  restart/reload Claude Code to expose graphi's tools.
+
+$ graphi search -limit 1 KnownDefectsCheck | jq -r '.matches[]|"\(.node_id)  \(.source_path):\(.line)"'
+899699a3e56a9476  internal/doctor/checks.go:405
+
+$ graphi callers 899699a3e56a9476 | jq -r '.edges[]|"\(.confidence_tier)  \(.evidence[0])"'
+confirmed  cmd/graphi/doctor.go:64
+derived  internal/doctor/checks_test.go:261
 ```
 
-**Step 2 — run it in your repo.**
-
-```bash
-cd your-repo && graphi
-```
-
-Your browser opens with the interactive code graph (on a headless box, or with
-`--no-browser` / `GRAPHI_NO_BROWSER`, graphi prints the local URL instead).
-Click any node to see its blast radius: impacted symbols light up red, the
-evidence-bearing edges amber — while the agent-context export fills with the
-selection.
-
-<p align="center">
-  <img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" />
-</p>
-
-### Everyday use
-
-```bash
-# Keep the graph matching your checked-out code
-graphi sync                  # pull in changes (run it after a branch switch)
-graphi status                # is the graph current? (exit 0 yes / 1 run sync)
-graphi rebuild               # re-index from scratch (recovery / after upgrades)
-
-# Short verbs over the symbol under your cursor
-graphi callers <symbol>      # who calls it
-graphi impact  <symbol>      # what a change to it affects
-graphi ui                    # explicitly serve the graph + open the browser
-graphi claude                # wire graphi into Claude Code (MCP)
-graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop)
-
-# One-call agent, test, change & git intelligence (Labs)
-graphi symbol-context <symbol>   # definition + snippet, hierarchy, tests, risk
-graphi task-context "<task>"     # free-text task -> ranked, token-budgeted context
-graphi repo-overview             # structure, languages, entry points, central symbols
-git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
-git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0
-graphi hotspots                  # churn x dependency centrality, bus-factor warnings
-
-# Freeze and diff branch states (Labs)
-graphi snapshot main         # freeze the current checkout under a name
-graphi compare main current  # graph-level diff: snapshot vs live graph
-
-# Update to the latest release (user-initiated; never automatic)
-graphi upgrade
-```
-
-`graphi` keeps the graph in sync automatically whenever it starts (bare
-`graphi`, an MCP session, `graphi sync`); it stores one graph per repository
-under `~/.graphi/<fingerprint>/`, always tracking whatever is checked out —
-no flags, paths, or branch bookkeeping required.
+The answer comes back already cited — a `file:line` for every caller, plus a tier saying how far to trust it (`confirmed`: the call target was resolved by the go/types type-checker; `derived`: a same-package name match). That is what your agent gets over MCP stdio, without opening a file — run the same two commands in your own repository and only the ids change.
 
 ## Measured, not asserted
 
@@ -113,6 +73,47 @@ The internal release gate (≥ 90 overall, no area below 80, published with
 an independent rating, and no faster-or-more-accurate-than-competitor claim is
 made anywhere. Checked-in run evidence lives under
 [docs/eval/runs/](docs/eval/runs).
+
+## Everyday use
+
+```bash
+# Keep the graph matching your checked-out code
+graphi sync                  # pull in changes (run it after a branch switch)
+graphi status                # is the graph current? (exit 0 yes / 1 run sync)
+graphi rebuild               # re-index from scratch (recovery / after a new release)
+
+# Short verbs over a node id — get one from `graphi search <name>`
+graphi callers <node-id>     # who calls it
+graphi impact  <node-id>     # what a change to it affects
+graphi ui                    # explicitly serve the graph + open the browser
+graphi claude                # wire graphi into Claude Code (MCP)
+graphi setup                 # wire every detected local MCP client (Claude Code, Copilot, Cursor, Devin CLI, Windsurf, Claude Desktop)
+
+# One-call agent, test, change & git intelligence (Labs)
+graphi symbol-context <symbol>   # definition + snippet, hierarchy, tests, risk
+graphi task-context "<task>"     # free-text task -> ranked, token-budgeted context
+graphi repo-overview             # structure, languages, entry points, central symbols
+git diff HEAD~1..HEAD | graphi test-impact -diff -    # which tests must run
+git diff HEAD~1..HEAD | graphi change-impact -diff -  # Change Risk 2.0
+graphi hotspots                  # churn x dependency centrality, bus-factor warnings
+
+# Freeze and diff branch states (Labs)
+graphi snapshot main         # freeze the current checkout under a name
+graphi compare main current  # graph-level diff: snapshot vs live graph
+```
+
+`graphi` keeps the graph in sync automatically whenever it starts (bare
+`graphi`, an MCP session, `graphi sync`); it stores one graph per repository
+under `~/.graphi/<fingerprint>/`, always tracking whatever is checked out —
+no flags, paths, or branch bookkeeping required.
+
+Bare `graphi` also opens the interactive code graph in your browser (on a
+headless box, or with `--no-browser` / `GRAPHI_NO_BROWSER`, graphi prints the
+local URL instead). Click any node to see its blast radius: impacted symbols
+light up red, the evidence-bearing edges amber — while the agent-context export
+fills with the selection.
+
+<p align="center"><img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" /></p>
 
 ## What is GA (and what is not)
 
@@ -210,8 +211,8 @@ against the local repository — no network, no writes. The proof is runnable:
 | `graphi trust-report` · `query-strict` | labs | How far may you trust a graph answer: snapshot state, confidence tiers, gaps, fail-closed policy verdicts; tier-filtered queries |
 | `graphi snapshot` · `compare` | labs | Freeze named graph states and diff them |
 | `graphi index [-root <repo>]` | **GA** | Build/refresh a graph store with explicit paths (advanced form of `sync`/`rebuild`) |
-| `graphi callers\|callees\|references\|definition\|neighborhood <symbol>` | **GA** | Structural queries |
-| `graphi impact <symbol>` | **GA** | Blast radius of a change (in-repo) |
+| `graphi callers\|callees\|references\|definition\|neighborhood <node-id>` | **GA** | Structural queries |
+| `graphi impact <node-id>` | **GA** | Blast radius of a change (in-repo) |
 | `graphi search <query>` | **GA** | Lexical / symbol search |
 | `graphi agent-brief` · `explain-symbol` · `related-files` · `change-risk` | **GA** | Cited agent-context operations |
 | `graphi symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` | labs | One-call agent, test, change & git intelligence |
@@ -219,7 +220,6 @@ against the local repository — no network, no writes. The proof is runnable:
 | `graphi setup` | labs | Wire graphi into local MCP clients |
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
 | `graphi daemon` · `http` | labs | Hot-index daemon, loopback HTTP/SSE |
-| `graphi upgrade` | labs | Update to the latest release (never automatic) |
 
 Every subcommand with flags and tier tags: [docs/cli-reference.md](docs/cli-reference.md)
 or `graphi help`.

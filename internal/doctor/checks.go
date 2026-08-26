@@ -417,7 +417,7 @@ func LocalFirstCheck() Check {
 //     docs/rc/python-f5-measurement.md and reached NEITHER user surface.
 //     "Disclosed" there meant disclosed in the record, which is precisely the
 //     gap. Both are SOUNDNESS defects — they emit wrong edges, not merely
-//     missing ones — and both contradict readme.md:26-28.
+//     missing ones — and both contradict readme.md:12-13.
 //
 // Every workaround named below was executed against the built binary, with its
 // negative case, before it was published; the transcripts are in the SW-211
@@ -527,7 +527,7 @@ func KnownDefectsCheck() Check {
 					"to EVERY file node in EVERY directory declaring that clause — including "+
 					"for stdlib and third-party imports that name nothing in the repository at "+
 					"all. `import typing as t` acquires an edge into in-repo "+
-					"`tests/typing/typing_*.py`. THIS CONTRADICTS readme.md:26-28 (\"stdlib "+
+					"`tests/typing/typing_*.py`. THIS CONTRADICTS readme.md:12-13 (\"stdlib "+
 					"and third-party targets are recorded, but deliberately not navigable\"): "+
 					"a stdlib import that acquires edges into in-repo files is exactly the "+
 					"navigability that sentence denies. Measured on flask 3.0.0: 70 spurious "+
@@ -562,7 +562,7 @@ func KnownDefectsCheck() Check {
 					"luck rather than by construction, against a project convention that makes "+
 					"determinism first-class and carves out no exception for `heuristic`-tier "+
 					"edges. Same soundness reading and the same contradiction of "+
-					"readme.md:26-28 as PYTHONFANOUT-001, and the same affected operations "+
+					"readme.md:12-13 as PYTHONFANOUT-001, and the same affected operations "+
 					"(`related_files` and `neighborhood` on Python). THERE IS NO WORKAROUND "+
 					"that makes the distribution stable. Removing the collision removes the "+
 					"fan-out, and with it any set of tied candidates to order (verified "+
