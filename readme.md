@@ -396,11 +396,14 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 
 ```mermaid
 flowchart TD
-    CMD["cmd/*  — entry points, wiring"]
-    SURF["surfaces/*  — CLI, daemon, MCP stdio/HTTP, HTTP/SSE, forge, gitlog, guard"]
-    ENG["engine/*  — query, search, analysis, agenttools, testintel, classify, context, edit, observe, overlay, watch, …"]
-    CORE["core/*  — model, parse, graphstore"]
+    CMD["cmd/* — 18 binaries; 14 are verification gates:<br/>layerguard, testgate, cgoconformance, coverage,<br/>evidence, parity + 8 more"]
+    SURF["surfaces/* — client (the one query seam), cli, mcp,<br/>daemon, http, forge, gitlog, guard"]
+    ENG["engine/* — 32 packages. index path: ingest → link<br/>savings path: meter → price → cap → ledger<br/>query, search, analysis, trust + 22 more"]
+    CORE["core/* — model, parse, graphstore, community, profile"]
+    INT["internal/* — unranked tooling, outside the layer rule<br/>31 packages: doctor, freshness, evidence, coverage,<br/>parity, state, ingestlock + 24 more"]
     CMD --> SURF --> ENG --> CORE
+    CMD -. "layerguard permits any downward edge" .-> ENG
+    CMD & SURF -.-> CORE
 ```
 
 - **One engine, many surfaces.** Every surface (CLI, daemon, MCP stdio, HTTP/SSE)
