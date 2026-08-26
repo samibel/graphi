@@ -354,14 +354,15 @@ against the local repository — no network, no writes. The proof is runnable:
 
 The [capability manifest](docs/capability-manifest.json) is generated from the
 CI-enforced coverage matrix and counts **173** capabilities: **59** CLI
-subcommands, **56** MCP tools, **22** analyzers, 23 parsers, 7 surfaces and 5
-feature units. Twelve of them are the frozen GA operations above; the rest are
+subcommands, **56** MCP tools, **22** analyzers, 23 parsers, 7 surfaces, 5 feature
+units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 **Labs** — shipped, opt-in, outside the promise, and mostly invisible until now:
 
 | Labs product line | What it is |
 |---|---|
 | **Editing, with undo** | `refactor-preview` · `refactor` · `inline` · `safe-delete` · `undo -token` — graph-aware edits with auditable change records |
 | **A query language** | `compound` (SEED / HOP / WHERE / MAXDEPTH) · `search-ast` (closed-field JSON AST patterns, typed errors) · `find-clones` · `search-hybrid` |
+| **Semantic search** | `search -semantic` — optional, OFF by default, no embedder ships; nothing leaves loopback ([docs/semantic-search.md](docs/semantic-search.md)) |
 | **PR review without an LLM** | `list-prs` · `triage-prs` · `conflicts-prs` · `suggest-reviewers` · `critique-review` · `pr-comment -gate` — deterministic, graph evidence only |
 | **Agent memory** | `memory` (store / recall / forget) · `distill` (a session into decisions, risks, questions) · `skillgen` |
 | **Architecture & dead code** | `architecture` · `architecture-violations` · `dead-code` · `framework-map` |
