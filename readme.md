@@ -77,16 +77,21 @@ the v0.10.0 this page is for. Every row but the last recomputes from the committ
 raw samples with `go run ./cmd/eval -aggregate
 docs/eval/runs/2026-07-28-ubuntu-latest/run-a/<job>/grpc-go` (and `run-b` likewise)
 → `PASS - all N published metric(s) reproduced from the raw data`, N being 173, 136
-and 190 for the three jobs. Latencies are wall-clock on a shared CI runner; RSS and
-DB size are binary in measurement *and* threshold (`cmd/eval/budgets.go:202-203`),
-so they read GiB/MiB here where the gate's own summary prints GB/MB — only the
-release-binary row is decimal MB.
+and 190 for the three jobs. Latencies are wall-clock on a shared CI runner. RSS and
+DB size carry an instrument wrinkle, stated rather than smoothed: their thresholds
+are declared **decimal** — `"threshold": 2, "unit": "GB"` and `"threshold": 300,
+"unit": "MB"` (`docs/eval/reference-scenario.json:68-71,88-91`) — while the harness
+converts the measurement **binary** before comparing, `mb / 1024` and
+`b / (1024 * 1024)` (`cmd/eval/coldgates.go:70-77`). So the Measured column reads
+GiB/MiB against a decimal Budget column, and the gate in effect allows 2 GiB and
+300 MiB — 7.4 % and 4.9 % more than it says. At 33.5 % and 10.9 % of budget neither
+row turns on that difference. Only the release-binary row is decimal end to end.
 
 | Gate | Budget | Measured | |
 |---|---|---|---|
 | Cold index p95 (919 files, 10 cold runs) | ≤ 120 s | 20.368 s | PASS |
-| Peak RSS | ≤ 2 GiB | 0.670 GiB (686 MiB) | PASS |
-| Graph DB size | ≤ 300 MiB | 32.688 MiB (34 275 328 B) | PASS |
+| Peak RSS | ≤ 2 GB | 0.670 GiB (686 MiB) | PASS |
+| Graph DB size | ≤ 300 MB | 32.688 MiB (34 275 328 B) | PASS |
 | Warm `search` p95 | ≤ 100 ms | 3.591 ms | PASS |
 | `callers` / `callees` / `impact` p95 (*structural*) | ≤ 200 ms | 0.999 ms | PASS |
 | Agent context p95 | ≤ 500 ms | 471.250 ms · 601.732 ms | **UNKNOWN** |
@@ -107,7 +112,7 @@ has no series of its own, and a corrected instrument is a different instrument.
 
 ```mermaid
 xychart-beta
-  title "Each gate with a reading, % of budget"
+  title "Each row with a single reading, % of budget"
   x-axis ["cold index", "peak RSS", "DB size", "search", "structural", "freshness", "binary"]
   y-axis "% of budget" 0 --> 330
   bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 94.9]
