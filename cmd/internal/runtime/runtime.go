@@ -157,6 +157,9 @@ func newRuntime() *Runtime { return &Runtime{done: make(chan struct{})} }
 // analysis + review + (embedder-aware) search wiring every CLI verb used via
 // makeClientOrOpenMeta. It never discovers and never ingests.
 func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
+	if err := ApplyCanaryMode(); err != nil {
+		return nil, err
+	}
 	rt := newRuntime()
 	if socket != "" {
 		rt.Client = daemon.NewClient(socket, "")
@@ -188,6 +191,9 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	if opts.DBOverride != "" || opts.Socket != "" {
 		return Attach(opts.DBOverride, opts.Socket, "")
+	}
+	if err := ApplyCanaryMode(); err != nil {
+		return nil, err
 	}
 	root, err := resolveRepositoryRoot(opts)
 	if err != nil {
@@ -345,6 +351,43 @@ func pinExplicitRoot(root string) (string, error) {
 // directory as the repository root (e.g. a genuinely home-rooted dotfiles
 // setup someone wants indexed).
 const EnvAllowHomeRoot = "GRAPHI_ALLOW_HOME_ROOT"
+
+// EnvCanaryMode selects the SW-226 (AX-06) kill-switch position for the
+// dead_code canary: "legacy", "shadow" or "active". Unset keeps the compiled-in
+// default (shadow), which is the position of record for a release.
+//
+// It is an environment variable and not only a source constant BECAUSE it is a
+// kill switch. SW-225's descriptorSource is deliberately source-only, and the
+// reason does not transfer: descriptors are advertised wire contract, so two
+// processes on the same version must advertise identically. The canary changes
+// which internal path produces the bytes, and AC-3 requires all three positions
+// to produce the SAME bytes — so an operator flipping it changes nothing a
+// client can observe, and being able to turn it off without waiting for a
+// release is the entire point of the mechanism.
+//
+// It is read HERE, in the composition root, rather than in surfaces/client:
+// reading it at the point of use would mean consulting the environment on every
+// dispatch, and the position would be able to change under an in-flight session.
+const EnvCanaryMode = "GRAPHI_CANARY_DEAD_CODE"
+
+// ApplyCanaryMode installs the kill-switch position from the environment before
+// any client is built.
+//
+// An unrecognised value FAILS the session rather than falling back to the
+// default. Silently ignoring a typo would leave an operator who set
+// GRAPHI_CANARY_DEAD_CODE=lecacy believing they had rolled back when they had
+// not — the fail-closed rule this project applies to every other operator input.
+func ApplyCanaryMode() error {
+	raw, ok := os.LookupEnv(EnvCanaryMode)
+	if !ok {
+		return nil
+	}
+	mode, err := client.ParseCanaryMode(raw)
+	if err != nil {
+		return fmt.Errorf("%s: %w", EnvCanaryMode, err)
+	}
+	return client.SetCanaryMode(mode)
+}
 
 // EnvRoot is the environment fallback for an explicit repository root on
 // `graphi mcp` (the -root flag wins): for MCP clients that launch the server

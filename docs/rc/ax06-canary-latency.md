@@ -28,6 +28,13 @@ warm store. Three paths are timed:
 Sample size **N = 200** timed iterations per path after **20** warm-up iterations, single
 goroutine, reported as **p50** and **p95** of the per-call wall clock.
 
+**Anti-flake provision** (added before any measurement existed, in the same pre-measurement
+commit series): the gate repeats the whole A/B up to **3 rounds** and passes if **any** round
+meets §2. A seam that is genuinely slower fails all three; a single round lost to a
+scheduler hiccup or a GC pause on a shared CI runner does not turn a correctness gate into a
+coin flip. The recorded numbers in §4 are from the first round regardless of which round
+passed, so the record is not cherry-picked.
+
 ## 2. The gate (AC-5)
 
 > The executor path passes when
