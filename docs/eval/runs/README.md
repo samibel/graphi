@@ -125,3 +125,39 @@ convention. They hold aggregates only — no `raw/`, no environment capture and
 no reproduction — which is exactly the gap SW-128 closes; see their own READMEs
 for what they do and do not establish. They are historical evidence and are not
 rewritten.
+
+## 2026-08-26 — one directory here is NOT a performance run (SW-200, W5.n)
+
+`2026-08-26-Darwin-ARM64/` holds a **parity** campaign, not a performance one.
+Added as a dated section rather than by rewriting anything above, because the
+convention this document states is unchanged and still correct.
+
+Its six leaves — one per intra/parse residual language (`css`, `hcl`, `json`,
+`markdown`, `toml`, `yaml`) — carry `environment.json`, a `notes.md`, and a
+`raw/` directory of `parityreport` reports and diff logs from
+`cmd/parity -family <lang>`. **No latency, percentile or RSS figure appears in
+any of them**, which is `internal/parity/doc.go`'s standing rule: parity is a
+reliability property and this harness publishes no performance number.
+
+**`-aggregate` does not read these leaves, and cannot.** It reproduces
+`internal/evalreport` metrics from raw samples, and a parity run publishes none
+of the four series it knows. Measured: exit 2 on each leaf; exit 3 even on a
+well-formed `evalreport` directory whose published report is a parity run. The
+finding, both control arms and the two forbidden ways past it are filed as
+**PARITY-012**; each leaf's `notes.md` repeats the measurement in place, so a
+reader who opens one directly is not left to assume the tool was simply not run.
+
+**A seventh directory, `2026-08-26-Darwin-ARM64/aggregate-control-arm/`, is not
+a language leaf and not a measurement** — it is that exit-3 control arm, checked
+in so the claim can be opened rather than taken on trust: the well-formed
+directory it ran on, the `aggregate.json` `cmd/eval` itself wrote, and
+`aggregate-exit3.log` with the exit code. It publishes no parity result and no
+evidence-index row cites it; see its own `notes.md`. It was added in SW-200's
+review round 1, because until then the exit-3 half of PARITY-012 was the one
+claim in this campaign a reader could not reproduce from what was checked in.
+
+The parity-side reproducers for these leaves are
+`cmd/parity -verdict-diff`, `-counts-diff` and `-refusal-diff` over the checked-in
+report pairs. All three were run for all twelve pairs; the exit codes and what
+each one means are in every leaf's `notes.md` and in
+[`../../rc/intra-parse-residual-parity-abstention.md`](../../rc/intra-parse-residual-parity-abstention.md).

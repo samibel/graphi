@@ -1,0 +1,12 @@
+SW-200 PARITY-012 control arm — captured 2026-08-26, Apple M2 Max / darwin arm64 / go1.26.6.
+
+$ go build -trimpath -buildvcs=false -o eval ./cmd/eval   # CGO_ENABLED=0
+$ ./eval -aggregate docs/eval/runs/2026-08-26-Darwin-ARM64/aggregate-control-arm
+eval: wrote the aggregate reproduction to docs/eval/runs/2026-08-26-Darwin-ARM64/aggregate-control-arm/aggregate.json
+eval: aggregate UNKNOWN (harness p0-perf/1, scorer p0-aggregate/1)
+eval:   cold_index       not published by this run
+eval:   query_latency    not published by this run
+eval:   incremental      not published by this run
+eval:   progress_stalls  not published by this run
+eval: INCOMPLETE - this run is not publishable (0 metric(s) UNKNOWN)
+exit status 3

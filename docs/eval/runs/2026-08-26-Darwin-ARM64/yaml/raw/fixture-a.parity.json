@@ -1,0 +1,461 @@
+{
+  "schema_version": 3,
+  "harness_version": "parity-matrix/2",
+  "provenance": {
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "run_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "statement": "product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee",
+    "product_diff_empty": false,
+    "product_diff_detail": "PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)",
+    "product_binary_head": "af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15",
+    "product_binary_candidate": "0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf",
+    "worktree_clean": true,
+    "index_profile": "PER-ROW AXIS — every class runs under each cell of store{sqlite} x profile{resolved default, fast}; the cell is in the row id and in axis_note. GRAPHI_INDEX_PROFILE is CLEARED for the child and then set explicitly per cell, so an inherited value cannot silently change what was measured. The hermetic table's mem-store half is NOT here and is not claimed: no dispatch-driven full index can emit a MemStore envelope.",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "go_version": "go version go1.26.6 darwin/arm64",
+    "os_arch": "darwin/arm64",
+    "generated_at": "2026-08-26T09:44:55Z",
+    "harness_version": "parity-matrix/2",
+    "schema_version": 3
+  },
+  "family": "parsedet-yaml",
+  "max_tier": 1,
+  "matrix_source": "docs/rc/parity-classes-yaml.yaml",
+  "repos": [
+    {
+      "name": "tier1-fixture-hero-yaml",
+      "tier": 1
+    }
+  ],
+  "classes": [
+    {
+      "id": "yaml_add_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a YAML document in a new directory",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "add a new yaml source file at graphi-parity-w5n-added/added.yaml in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "1531698c3246061d7a9ad5f6290044b704403225bae77df9385dcef221540d15",
+      "snapshot_inc_sha256": "1531698c3246061d7a9ad5f6290044b704403225bae77df9385dcef221540d15",
+      "full_nodes": 13,
+      "full_edges": 9,
+      "inc_nodes": 13,
+      "inc_edges": 9,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (1531698c3246), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 916
+    },
+    {
+      "id": "yaml_modify_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a YAML document in place",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite pipeline/build.yaml in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "1bfa3b8162a75d15bc6b3257c74e592c1d6a714e32a597fdeabd602a77c2b25b",
+      "snapshot_inc_sha256": "1bfa3b8162a75d15bc6b3257c74e592c1d6a714e32a597fdeabd602a77c2b25b",
+      "full_nodes": 12,
+      "full_edges": 9,
+      "inc_nodes": 12,
+      "inc_edges": 9,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (1bfa3b8162a7), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 880
+    },
+    {
+      "id": "yaml_delete_file[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a YAML document",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "delete shared/common.yaml, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "5f4afe7f7a0ec5a8fdb8221e720256c9d7379a0f27d2b61af48692396234cca6",
+      "snapshot_inc_sha256": "5f4afe7f7a0ec5a8fdb8221e720256c9d7379a0f27d2b61af48692396234cca6",
+      "full_nodes": 8,
+      "full_edges": 6,
+      "inc_nodes": 8,
+      "inc_edges": 6,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (5f4afe7f7a0e), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 872
+    },
+    {
+      "id": "yaml_rename_key[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Schlüssel umbenennen / rename a top-level key in place",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rename the last top-level construct of pipeline/build.yaml in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "66067c722695523893f40f6bb55ad6fcc96d78cc7c17a7feb5ee0f73484a38dc",
+      "snapshot_inc_sha256": "66067c722695523893f40f6bb55ad6fcc96d78cc7c17a7feb5ee0f73484a38dc",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "A TOP-LEVEL mapping key is renamed in place. The key IS the symbol identity, so the rename is a delete-plus-add inside one file; nested keys mint nothing and are untouched. Two independent full passes over the identical final tree serialised to the same bytes (66067c722695), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 871
+    },
+    {
+      "id": "yaml_reorder_keys[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Schlüssel umordnen / permute the top-level keys",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "permute the top-level constructs of pipeline/build.yaml with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "f2379b41448f5e4a155beec1e48bd855452c9e6f867fa33e104299c137fce314",
+      "snapshot_inc_sha256": "f2379b41448f5e4a155beec1e48bd855452c9e6f867fa33e104299c137fce314",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "The top-level keys of one document are permuted with no textual change to any value block. YAML mapping order is not semantically significant, which is why a serialisation following parse order rather than a canonical key would diverge here. Two independent full passes over the identical final tree serialised to the same bytes (f2379b41448f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 875
+    },
+    {
+      "id": "yaml_reparse_identical_bytes[store=sqlite,profile=default]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); the product's own resolved default profile",
+      "mutation": "rewrite pipeline/build.yaml with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "2fcc40bbed6bdf06e93106772af2d295e4e3b49c3888d77e6082c2bf52b9a885",
+      "snapshot_inc_sha256": "2fcc40bbed6bdf06e93106772af2d295e4e3b49c3888d77e6082c2bf52b9a885",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (2fcc40bbed6b), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 865
+    },
+    {
+      "id": "yaml_add_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei hinzufügen / add a YAML document in a new directory",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "add a new yaml source file at graphi-parity-w5n-added/added.yaml in a NEW directory (the pure add path)",
+      "snapshot_full_sha256": "1531698c3246061d7a9ad5f6290044b704403225bae77df9385dcef221540d15",
+      "snapshot_inc_sha256": "1531698c3246061d7a9ad5f6290044b704403225bae77df9385dcef221540d15",
+      "full_nodes": 13,
+      "full_edges": 9,
+      "inc_nodes": 13,
+      "inc_edges": 9,
+      "detail": "A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over the identical final tree serialised to the same bytes (1531698c3246), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 883
+    },
+    {
+      "id": "yaml_modify_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei ändern / rewrite a YAML document in place",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite pipeline/build.yaml in place: append one new top-level construct while every existing construct keeps its identity",
+      "snapshot_full_sha256": "1bfa3b8162a75d15bc6b3257c74e592c1d6a714e32a597fdeabd602a77c2b25b",
+      "snapshot_inc_sha256": "1bfa3b8162a75d15bc6b3257c74e592c1d6a714e32a597fdeabd602a77c2b25b",
+      "full_nodes": 12,
+      "full_edges": 9,
+      "inc_nodes": 12,
+      "inc_edges": 9,
+      "detail": "An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the identical final tree serialised to the same bytes (1bfa3b8162a7), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 875
+    },
+    {
+      "id": "yaml_delete_file[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Datei löschen / delete a YAML document",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "delete shared/common.yaml, so the per-file stale-node purge runs over its symbols while every sibling file's symbols must survive",
+      "snapshot_full_sha256": "5f4afe7f7a0ec5a8fdb8221e720256c9d7379a0f27d2b61af48692396234cca6",
+      "snapshot_inc_sha256": "5f4afe7f7a0ec5a8fdb8221e720256c9d7379a0f27d2b61af48692396234cca6",
+      "full_nodes": 8,
+      "full_edges": 6,
+      "inc_nodes": 8,
+      "inc_edges": 6,
+      "detail": "A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in origin, so a stale node surviving a delete is what this row catches. Two independent full passes over the identical final tree serialised to the same bytes (5f4afe7f7a0e), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 861
+    },
+    {
+      "id": "yaml_rename_key[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Schlüssel umbenennen / rename a top-level key in place",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rename the last top-level construct of pipeline/build.yaml in place; the construct's name IS the symbol identity, so this is a delete-plus-add inside one file",
+      "snapshot_full_sha256": "66067c722695523893f40f6bb55ad6fcc96d78cc7c17a7feb5ee0f73484a38dc",
+      "snapshot_inc_sha256": "66067c722695523893f40f6bb55ad6fcc96d78cc7c17a7feb5ee0f73484a38dc",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "A TOP-LEVEL mapping key is renamed in place. The key IS the symbol identity, so the rename is a delete-plus-add inside one file; nested keys mint nothing and are untouched. Two independent full passes over the identical final tree serialised to the same bytes (66067c722695), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 881
+    },
+    {
+      "id": "yaml_reorder_keys[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Schlüssel umordnen / permute the top-level keys",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "permute the top-level constructs of pipeline/build.yaml with NO textual change to any construct body: the symbol SET is unchanged and only source order and line numbers move",
+      "snapshot_full_sha256": "f2379b41448f5e4a155beec1e48bd855452c9e6f867fa33e104299c137fce314",
+      "snapshot_inc_sha256": "f2379b41448f5e4a155beec1e48bd855452c9e6f867fa33e104299c137fce314",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "The top-level keys of one document are permuted with no textual change to any value block. YAML mapping order is not semantically significant, which is why a serialisation following parse order rather than a canonical key would diverge here. Two independent full passes over the identical final tree serialised to the same bytes (f2379b41448f), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 873
+    },
+    {
+      "id": "yaml_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "kind": "change_class",
+      "label": "Identische Bytes neu parsen / rewrite with byte-identical content",
+      "repo": "tier1-fixture-hero-yaml",
+      "selected_because": "smallest in-cap yaml entry whose real source exhibits this class (tier 1, 3 source files)",
+      "verdict": "PASS",
+      "axis_note": "graphstore backend sqlite (the only backend a dispatch-driven full index can emit an envelope from — the hermetic table's mem backend is unreachable through the built binary); -profile fast",
+      "mutation": "rewrite pipeline/build.yaml with BYTE-IDENTICAL content (mtime moves, bytes do not)",
+      "snapshot_full_sha256": "2fcc40bbed6bdf06e93106772af2d295e4e3b49c3888d77e6082c2bf52b9a885",
+      "snapshot_inc_sha256": "2fcc40bbed6bdf06e93106772af2d295e4e3b49c3888d77e6082c2bf52b9a885",
+      "full_nodes": 11,
+      "full_edges": 8,
+      "inc_nodes": 11,
+      "inc_edges": 8,
+      "detail": "The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from the two independent full passes over the identical tree. Two independent full passes over the identical final tree serialised to the same bytes (2fcc40bbed6b), and the incrementally-updated graph is byte-identical to them.",
+      "duration_ms": 876
+    }
+  ],
+  "store_counts": [
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_add_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_add_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_modify_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_modify_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_delete_file[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_delete_file[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_rename_key[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_rename_key[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reorder_keys[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reorder_keys[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reparse_identical_bytes[store=sqlite,profile=default]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_add_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_add_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_modify_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_modify_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_delete_file[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_delete_file[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_rename_key[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_rename_key[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reorder_keys[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reorder_keys[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "inc",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    },
+    {
+      "repo": "tier1-fixture-hero-yaml",
+      "class": "yaml_reparse_identical_bytes[store=sqlite,profile=fast]",
+      "side": "full",
+      "orphaned_external_nodes": 0,
+      "stale_linker_edges": 0,
+      "pass": true
+    }
+  ],
+  "not_compared": {
+    "items": [
+      "intra-process taint findings",
+      "embeddings / vectors",
+      "index.profile metadata",
+      "the ingest-meta sidecar",
+      "the FTS index (deliberately not stored; re-derived on load)"
+    ],
+    "rationale": "The comparison unit is the portable snapshot envelope (core/graphstore/snapshot.go -\u003e core/model.Graph.Marshal). Anything persisted OUTSIDE model.Graph is invisible to it, and the FTS index is deliberately not stored (core/graphstore/snapshot.go:49-51).",
+    "disposition": "Already dispositioned DOCUMENTED HARMLESS (Labs tier) at kill point K4, docs/adr/0004-ingest-recovery-disposition.md:37. This report cites that disposition and does not reopen it: extending the snapshot envelope would bump SnapshotFormatVersion, which is a product-byte change."
+  },
+  "complete": false,
+  "publishable": false,
+  "not_publishable_because": [
+    "incomplete run: 12 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=false, harness-error=false (FR-7 requires 15 declared classes)",
+    "product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)"
+  ],
+  "outcome": "INCOMPLETE",
+  "gate_note": "W5.n / gate GA-LANG-yaml-G4: the real-repository PARSE-DETERMINISM matrix for yaml, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_yaml_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001)."
+}

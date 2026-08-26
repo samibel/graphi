@@ -1,0 +1,68 @@
+parity: hcl_add_file[store=sqlite,profile=default]   PASS    tier1-fixture-hero-hcl
+parity: hcl_modify_file[store=sqlite,profile=default] PASS    tier1-fixture-hero-hcl
+parity: hcl_delete_file[store=sqlite,profile=default] PASS    tier1-fixture-hero-hcl
+parity: hcl_rename_block_label[store=sqlite,profile=default] PASS    tier1-fixture-hero-hcl
+parity: hcl_reorder_blocks[store=sqlite,profile=default] PASS    tier1-fixture-hero-hcl
+parity: hcl_reparse_identical_bytes[store=sqlite,profile=default] PASS    tier1-fixture-hero-hcl
+parity: hcl_add_file[store=sqlite,profile=fast]      PASS    tier1-fixture-hero-hcl
+parity: hcl_modify_file[store=sqlite,profile=fast]   PASS    tier1-fixture-hero-hcl
+parity: hcl_delete_file[store=sqlite,profile=fast]   PASS    tier1-fixture-hero-hcl
+parity: hcl_rename_block_label[store=sqlite,profile=fast] PASS    tier1-fixture-hero-hcl
+parity: hcl_reorder_blocks[store=sqlite,profile=fast] PASS    tier1-fixture-hero-hcl
+parity: hcl_reparse_identical_bytes[store=sqlite,profile=fast] PASS    tier1-fixture-hero-hcl
+
+parity matrix — product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee
+  family        parsedet-hcl (docs/rc/parity-classes-hcl.yaml)
+  run sha       733ac0047c6b586756986d86d65dad819a6494a2
+  runner class  Darwin-ARM64/apple-m2-max
+  max tier      1
+
+  hcl_add_file[store=sqlite,profile=default]                     PASS      tier1-fixture-hero-hcl A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over…
+  hcl_modify_file[store=sqlite,profile=default]                  PASS      tier1-fixture-hero-hcl An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the…
+  hcl_delete_file[store=sqlite,profile=default]                  PASS      tier1-fixture-hero-hcl A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in o…
+  hcl_rename_block_label[store=sqlite,profile=default]           PASS      tier1-fixture-hero-hcl The LAST label of a top-level block is renamed in place. The block's type and labels carry the symbol identity…
+  hcl_reorder_blocks[store=sqlite,profile=default]               PASS      tier1-fixture-hero-hcl The top-level blocks of one file are permuted with no textual change to any block body. Two independent full p…
+  hcl_reparse_identical_bytes[store=sqlite,profile=default]      PASS      tier1-fixture-hero-hcl The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from …
+  hcl_add_file[store=sqlite,profile=fast]                        PASS      tier1-fixture-hero-hcl A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over…
+  hcl_modify_file[store=sqlite,profile=fast]                     PASS      tier1-fixture-hero-hcl An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the…
+  hcl_delete_file[store=sqlite,profile=fast]                     PASS      tier1-fixture-hero-hcl A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in o…
+  hcl_rename_block_label[store=sqlite,profile=fast]              PASS      tier1-fixture-hero-hcl The LAST label of a top-level block is renamed in place. The block's type and labels carry the symbol identity…
+  hcl_reorder_blocks[store=sqlite,profile=fast]                  PASS      tier1-fixture-hero-hcl The top-level blocks of one file are permuted with no textual change to any block body. Two independent full p…
+  hcl_reparse_identical_bytes[store=sqlite,profile=fast]         PASS      tier1-fixture-hero-hcl The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from …
+
+
+  §12.3 counts  tier1-fixture-hero-hcl hcl_add_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_add_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_modify_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_modify_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_delete_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_delete_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_rename_block_label[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_rename_block_label[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reorder_blocks[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reorder_blocks[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reparse_identical_bytes[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reparse_identical_bytes[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_add_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_add_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_modify_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_modify_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_delete_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_delete_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_rename_block_label[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_rename_block_label[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reorder_blocks[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reorder_blocks[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reparse_identical_bytes[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-hcl hcl_reparse_identical_bytes[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+
+  outcome     INCOMPLETE
+  complete    false
+  publishable false
+    refused: incomplete run: 12 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=false, harness-error=false (FR-7 requires 15 declared classes)
+    refused: product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)
+
+  NOT compared (snapshot blind spot, docs/adr/0004-ingest-recovery-disposition.md:37):
+    intra-process taint findings, embeddings / vectors, index.profile metadata, the ingest-meta sidecar, the FTS index (deliberately not stored; re-derived on load)
+
+  W5.n / gate GA-LANG-hcl-G4: the real-repository PARSE-DETERMINISM matrix for hcl, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_hcl_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001).

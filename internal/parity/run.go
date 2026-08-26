@@ -52,6 +52,12 @@ type Runner struct {
 	LifecycleRepeat int
 	// RunnerClass names the machine class. Empty makes the run unpublishable.
 	RunnerClass string
+	// ParseDetLang selects the language the parse-determinism family runs for
+	// (RunParseDeterminism only). It is one of ParseDetLanguages(); anything
+	// else is refused rather than defaulted, because a family that silently
+	// fell back to a language would publish one language's rows under
+	// another's heading.
+	ParseDetLang string
 	// AllowLocal admits manifest entries that point at a LOCAL PATH instead of
 	// a pinned clone.
 	//
@@ -72,8 +78,14 @@ type Runner struct {
 	// see the header of jvmsource.go for why a "generalised" model would be an
 	// almost-empty intersection.
 	jvmModels map[string]*JVMModel
-	dirs      map[string]string
-	pristine  map[string]string
+	// parseDetModels is the W5.n parse-determinism family's cache. A THIRD map
+	// for the same reason jvmModels is a second one: ParseDetModel shares no
+	// type with either RepoModel or JVMModel, and a "generalised" model would
+	// be an almost-empty intersection carrying a union of language-specific
+	// fields.
+	parseDetModels map[string]*ParseDetModel
+	dirs           map[string]string
+	pristine       map[string]string
 }
 
 // MaxSupportedTier is the hard ceiling. Tier 4 (the kubernetes stress target) is

@@ -1,0 +1,68 @@
+parity: markdown_add_file[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_modify_file[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_delete_file[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_rename_heading[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_reorder_sections[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_reparse_identical_bytes[store=sqlite,profile=default] PASS    tier1-fixture-hero-markdown
+parity: markdown_add_file[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+parity: markdown_modify_file[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+parity: markdown_delete_file[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+parity: markdown_rename_heading[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+parity: markdown_reorder_sections[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+parity: markdown_reparse_identical_bytes[store=sqlite,profile=fast] PASS    tier1-fixture-hero-markdown
+
+parity matrix — product source byte-identical to the ADR 0013 candidate at 9f687849cec2b26311401191e90b60e40b5f6cee
+  family        parsedet-markdown (docs/rc/parity-classes-markdown.yaml)
+  run sha       733ac0047c6b586756986d86d65dad819a6494a2
+  runner class  Darwin-ARM64/apple-m2-max
+  max tier      1
+
+  markdown_add_file[store=sqlite,profile=default]                PASS      tier1-fixture-hero-markdown A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over…
+  markdown_modify_file[store=sqlite,profile=default]             PASS      tier1-fixture-hero-markdown An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the…
+  markdown_delete_file[store=sqlite,profile=default]             PASS      tier1-fixture-hero-markdown A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in o…
+  markdown_rename_heading[store=sqlite,profile=default]          PASS      tier1-fixture-hero-markdown A heading's TEXT is rewritten in place. The heading text IS the symbol identity, so the rename is a delete-plu…
+  markdown_reorder_sections[store=sqlite,profile=default]        PASS      tier1-fixture-hero-markdown The heading sections of one document are permuted with no textual change to any section body. The symbol SET i…
+  markdown_reparse_identical_bytes[store=sqlite,profile=default] PASS      tier1-fixture-hero-markdown The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from …
+  markdown_add_file[store=sqlite,profile=fast]                   PASS      tier1-fixture-hero-markdown A source file of this language arrives in a NEW directory: the pure add path. Two independent full passes over…
+  markdown_modify_file[store=sqlite,profile=fast]                PASS      tier1-fixture-hero-markdown An indexed file is rewritten in place; existing constructs keep identity. Two independent full passes over the…
+  markdown_delete_file[store=sqlite,profile=fast]                PASS      tier1-fixture-hero-markdown A delete drives the per-file stale-node purge — the PARITY-001 defect class was a purge-ordering defect in o…
+  markdown_rename_heading[store=sqlite,profile=fast]             PASS      tier1-fixture-hero-markdown A heading's TEXT is rewritten in place. The heading text IS the symbol identity, so the rename is a delete-plu…
+  markdown_reorder_sections[store=sqlite,profile=fast]           PASS      tier1-fixture-hero-markdown The heading sections of one document are permuted with no textual change to any section body. The symbol SET i…
+  markdown_reparse_identical_bytes[store=sqlite,profile=fast]    PASS      tier1-fixture-hero-markdown The direct same-bytes-same-AST row. The edit is deliberately semantics-preserving; the row's force comes from …
+
+
+  §12.3 counts  tier1-fixture-hero-markdown markdown_add_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_add_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_modify_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_modify_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_delete_file[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_delete_file[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_rename_heading[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_rename_heading[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reorder_sections[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reorder_sections[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reparse_identical_bytes[store=sqlite,profile=default] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reparse_identical_bytes[store=sqlite,profile=default] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_add_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_add_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_modify_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_modify_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_delete_file[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_delete_file[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_rename_heading[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_rename_heading[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reorder_sections[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reorder_sections[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reparse_identical_bytes[store=sqlite,profile=fast] inc         orphaned external nodes=0 stale linker edges=0  PASS
+  §12.3 counts  tier1-fixture-hero-markdown markdown_reparse_identical_bytes[store=sqlite,profile=fast] full        orphaned external nodes=0 stale linker edges=0  PASS
+
+  outcome     INCOMPLETE
+  complete    false
+  publishable false
+    refused: incomplete run: 12 of 12 declared change classes decided, 0 deferred; 0 of 0 declared crash conditions decided, 0 deferred; skipped=false, harness-error=false (FR-7 requires 15 declared classes)
+    refused: product tree differs from the candidate: PRODUCT BINARY DIFFERS: HEAD builds to af8b971b2bd3, candidate to 0de6e64d6174. path diff (informational): cmd/eval/budgets.go        | 143 ++++++++++++-;  cmd/eval/changeseq.go      | 110 ++++++----;  cmd/eval/incremental.go    | 140 +++++++------;  cmd/eval/sourcefamily.go   | 485 +++++++++++++++++++++++++++++++++++++++++++++;  core/parse/parser_ruby.go  | 344 +++++++++++++++++++++++++++++++-;  engine/ingest/warmstart.go |  12 +-;  6 files changed, 1126 insertions(+), 108 deletions(-)
+
+  NOT compared (snapshot blind spot, docs/adr/0004-ingest-recovery-disposition.md:37):
+    intra-process taint findings, embeddings / vectors, index.profile metadata, the ingest-meta sidecar, the FTS index (deliberately not stored; re-derived on load)
+
+  W5.n / gate GA-LANG-markdown-G4: the real-repository PARSE-DETERMINISM matrix for markdown, crossed over store{sqlite} x profile{resolved default, fast}. IT IS NOT THE PRD FR-7 GO MATRIX and settles none of its rows. A PASS here is a DETERMINISM AND INTRA-FILE PARITY statement — two independent full passes over identical bytes serialise identically, and the incrementally-updated graph is byte-identical to a fresh full index of the same final tree — and never a CORRECTNESS statement about any symbol or edge, because parity compares two passes of the same rule. Correctness evidence for the extractor lives in core/parse/parser_markdown_test.go. No performance, latency or RSS figure is published here. This family cannot reach a publishable state on a tree whose declared class count crossed over the reachable axes is below 15 (PARITY-011), nor while the product binary differs from the candidate (D7DEBT-001).
