@@ -248,12 +248,13 @@ The rest of the surface — `rebuild`, `ui`, `claude`, `setup`, the one-call Lab
 bundles, `snapshot`/`compare` — is in [docs/HOWTO.md](docs/HOWTO.md), tiered in
 [docs/cli-reference.md](docs/cli-reference.md). `graphi` re-syncs on every start,
 keeping one graph per repo under `~/.graphi/<fingerprint>/` that tracks what is
-checked out — no flags, paths or branch bookkeeping — though **it misses its
-freshness budget**, as the FAIL row above says. Bare `graphi` also opens the code
-graph in your browser (`--no-browser` prints the URL); click a node to light its
-blast radius red, its evidence-bearing edges amber, and fill the agent-context export.
+checked out — no flags, paths or branch bookkeeping — though **it misses its freshness
+budget** (3.2× over), as the FAIL row above says. Bare `graphi` also opens the code
+graph in your browser (`--no-browser` prints the URL); click a node to light its blast
+radius red, its evidence-bearing edges amber, and fill the agent-context export.
 
 <p align="center"><img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" /></p>
+
 ## What is GA (and what is not)
 
 graphi's supported surface is deliberately narrow.
@@ -386,8 +387,8 @@ Full design: [docs/architecture-plan.md](docs/architecture-plan.md).
 
 ## Documentation
 
-Every page and which kind it is: [docs/README.md](docs/README.md) — user docs
-(start at [HOWTO.md](docs/HOWTO.md)), architecture docs, machine-written evidence.
+Every page and which kind it is: [docs/README.md](docs/README.md) — user docs,
+architecture docs, machine-written evidence; two field-test rows are superseded.
 
 ## License
 
