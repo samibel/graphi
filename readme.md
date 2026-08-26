@@ -350,7 +350,8 @@ The Stable default tier runs with no accounts and no outbound network access.
 Explicitly configured Labs/forge or embedder features may contact their
 configured service; they are not part of that default claim. The git-history
 provider behind the Labs git intelligence executes the local `git` binary
-against the local repository — no network, no writes.
+against the local repository — no network, no writes. The proof is runnable:
+`graphi privacy-audit`.
 
 ## Subcommands (the short list)
 
