@@ -59,7 +59,8 @@ The answer comes back already cited — a `file:line` for every caller, plus a t
 graphi answers about **symbols**, not text: every symbol a repo defines is a node,
 every call, reference and import between them an edge carrying a confidence tier and
 the `file:line` it was read from. Four real edges around one method of this repo —
-all of it captured at tag **`v0.10.0`** (`29d8feb`), the tree the quick start clones:
+every command output, number and edge in this section was captured at tag **`v0.10.0`**
+(`29d8feb`), the tree the quick start clones; the one screenshot is older, dated below:
 
 ```mermaid
 graph TD
@@ -91,13 +92,25 @@ flowchart TD
   Y1 --> Y2["155 symbols across 56 files, to depth 6,<br/>each carrying the edge that reached it"]
 ```
 
+Each figure the diagram adds names a command too:
+`grep -rl --include='*.go' IngestAll . | wc -l` → `108`;
+`graphi impact 7b0dfbf4396dc899 | jq '[.nodes[].depth]|max'` → `6`;
+`/usr/bin/time -p graphi impact 7b0dfbf4396dc899` → `0.03 s`, five runs of five, warm graph
+on an Apple Silicon laptop — a cold first call pays for the index instead.
+
 <p align="center"><img src="docs/assets/graph-ui-selection.png" alt="graphi web UI with release.ReleaseTargets selected: its blast radius highlighted against dimmed out-of-scope nodes, edges labelled defines / calls / references / imports, and the agent-context export filled with the citation internal/release/build.go:101" width="900" /></p>
 
 The same question in the browser UI, on another symbol: `release.ReleaseTargets`'s blast
 radius lit, out-of-scope dimmed, agent-context export citing `internal/release/build.go:101`.
+That capture is from **v0.4.0** (July), not v0.10.0: its citation was exact when taken, and
+the symbol has since moved — `graphi search ReleaseTargets` gives `build.go:106` today.
 
 The graph does not ask to be believed. The same session reports how far it may be trusted
-— and names one check that graphi refuses to claim it verified:
+— and names one check that graphi refuses to claim it verified. One precondition:
+`privacy-audit` re-runs graphi's own static CGo and telemetry gates over a local Go module,
+so it needs the Go toolchain and a graphi checkout, not just the packaged binary; without
+them `go list` cannot run and the posture line reads `VIOLATED` — a missing toolchain, not
+a finding about egress. With both, in a v0.10.0 clone:
 
 ```console
 $ graphi trust-report | grep -A3 'edge evidence:'
@@ -340,7 +353,7 @@ build). Setup and the guarantees that hold either way:
 
 | Guarantee | What it means for you |
 |---|---|
-| **Zero outbound network** | The engine makes no non-loopback network calls, and your code stays on disk — but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above. |
+| **Zero outbound network** | The engine makes no non-loopback network calls, and your code stays on disk — but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above — and the audit needs the Go toolchain in a graphi checkout, or its other two static gates cannot run at all. |
 | **No telemetry** | Nothing is reported anywhere — no usage data, no phone-home. |
 | **No accounts, no external services** | A single static binary; nothing to sign up for. |
 | **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
