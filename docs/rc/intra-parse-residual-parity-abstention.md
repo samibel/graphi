@@ -128,6 +128,22 @@ to 18 and the refusal would disappear; the only candidate available
 would have been chosen for its arithmetic rather than for what it measures, and
 because it is not the "both stores" axis the story's witness shape names.
 
+**And the axis that IS here does not discriminate — which has to be said in the
+same breath.** The `profile{default, fast}` crossing is genuine at dispatch
+level: `graphiAxisParseDet` really does clear the profile environment variable
+and pass `-profile fast` to the built binary for the second cell, so the two
+cells are two real executions of the product. But **every exercised row's
+`snapshot_full_sha256` is identical between the two cells, in all five exercised
+languages** (§5). So the crossing **doubles the 6 declared classes to the 12
+that feed `Finalize`'s completeness arithmetic while adding no discriminating
+power on this corpus**: no observed outcome differs between the cells, and no
+row could have been decided differently by the second one. On a family that is
+below the floor at 12 that is only an observation. It would stop being one the
+moment somebody proposed a third axis to reach 15, because the count `Finalize`
+reads would then be made of cells chosen for their arithmetic — which is exactly
+what the paragraph above refuses. Recorded so that refusal is not quietly
+undone by the axis that is already here (SW-200 review round 1, minor m3).
+
 ## 3. What the witness shape could and could not be, at dispatch level
 
 SW-200's witness shape is *"parse twice, byte-stable AST serialisation, **both
@@ -149,6 +165,29 @@ test.
 The two-dispatch byte-stable discipline holds per language (§4); "both stores"
 does not hold at dispatch level and cannot.
 
+### 3.1 And a third limit, in json's witness, measured not assumed
+
+For a `ParseOnly` language the non-vacuity witness is the **parse boundary**
+(the class's edit read back out of the materialized tree) and it never consults
+the graph. json is the only such language of the six. The consequence, stated
+plainly: **a json row could in principle be scored PASS over a completely empty
+graph.** It is deliberate — for json the correct graph over a changed document
+*is* the unchanged one, and two empty graphs are byte-identical, so counting
+node kinds would certify that graphi did nothing — and it is latent, because
+json has zero exercised rows in either posture.
+
+The obvious strengthening was **tried and does not work**, and the attempt is
+recorded rather than the conclusion: require the edited path to appear as a
+`file` node in the decoded envelope. Measured 2026-08-26 on the machine of §1 —
+`graphi rebuild` over a two-file tree (`main.go` + `api/schema.json`) reported
+*"indexed 2 files"*, and the snapshot envelope carried exactly two nodes,
+`file main.go` and `function main.go`. **The .json path minted nothing at all —
+not a symbol node, not even a file node.** So that witness would refuse every
+json row rather than sharpen it. This method could have returned the other
+answer: had a `file` node for `api/schema.json` been in the envelope, the
+strengthening would have landed in this story. Filed as **PARITY-014**, with
+what a workable witness would have to look like.
+
 ## 4. What DID hold: the two-dispatch discipline, per language
 
 Every one of the six languages was dispatched twice per posture, serially, into
@@ -168,16 +207,53 @@ exit-0 results are the strongest true statement available about this tree, and
 they are reported as what they are.
 
 Additionally, the per-row snapshot digests are byte-stable across dispatches in
-every language, including json's all-SKIPPED pair:
+every language, including json's all-SKIPPED pair.
 
-| language | digest of the sorted (row → full/inc sha) set, dispatch a | dispatch b | |
-|---|---|---|---|
-| css | `006482459bfa4866` | `006482459bfa4866` | byte-stable |
-| hcl | `f4278417c8ba9c86` | `f4278417c8ba9c86` | byte-stable |
-| json | `ccdfd36677c7184e` | `ccdfd36677c7184e` | byte-stable |
-| markdown | `debe827fab7cc6a4` | `debe827fab7cc6a4` | byte-stable |
-| toml | `6a93ed72219e76c7` | `6a93ed72219e76c7` | byte-stable |
-| yaml | `feffd02cdde4ec7a` | `feffd02cdde4ec7a` | byte-stable |
+**The derivation, in full, so a reader can recompute every cell below.** This
+paragraph replaces a six-row table published in the first round of this document
+whose derivation was stated nowhere and which the SW-200 reviewer could not
+reproduce from the artifacts; the claim it supported was true and is
+independently established (the reviewer's own `jq -S` structural a-vs-b diff, 0
+residual lines in all 12 pairs), but a figure nobody can re-derive is not
+evidence in this project, so the numbers are replaced with numbers that carry
+their own recipe. For a language `L` and a posture `P` ∈ {`realrepo`,
+`fixture`} and a dispatch `D` ∈ {`a`, `b`}:
+
+```
+$ jq -r '.classes[] | "\(.id)\t\(.snapshot_full_sha256 // "-")\t\(.snapshot_inc_sha256 // "-")"' \
+    docs/eval/runs/2026-08-26-Darwin-ARM64/L/raw/P-D.parity.json \
+  | LC_ALL=C sort | shasum -a 256 | cut -c1-16
+```
+
+One line per row: the row id (axis cell included), the full-pass snapshot
+sha256, the incremental snapshot sha256, tab-separated, `-` where a SKIPPED row
+has none; `LC_ALL=C sort` so the order is the bytes' and not the locale's;
+sha256 of the whole set, first 16 hex published. Run on 2026-08-26 on the
+machine of §1 over the checked-in artifacts.
+
+| language | `realrepo` a | `realrepo` b | `fixture` a | `fixture` b | |
+|---|---|---|---|---|---|
+| css | `457e371af3dce63b` | `457e371af3dce63b` | `d3a3acde9bc89ae6` | `d3a3acde9bc89ae6` | byte-stable |
+| hcl | `32197d19a485334f` | `32197d19a485334f` | `f6b99d1b5de07c31` | `f6b99d1b5de07c31` | byte-stable |
+| json | `234a2157ad04dd1c` | `234a2157ad04dd1c` | `234a2157ad04dd1c` | `234a2157ad04dd1c` | byte-stable |
+| markdown | `6687a2583b86cc0b` | `6687a2583b86cc0b` | `529e401daadefbf1` | `529e401daadefbf1` | byte-stable |
+| toml | `879e39e426c2ab6c` | `879e39e426c2ab6c` | `bcaa24d4db9daf32` | `bcaa24d4db9daf32` | byte-stable |
+| yaml | `12ecc34bfa1899cb` | `12ecc34bfa1899cb` | `bb2f3daddb384e4e` | `bb2f3daddb384e4e` | byte-stable |
+
+**This method could have disagreed, and it was checked that it can.** It folds
+in every row id and both digests of every row, so it changes on any differing
+digest, any missing or extra row and any renamed axis cell. Demonstrated on
+`css/raw/fixture-a.parity.json`: flipping one hex character of one row's
+`snapshot_full_sha256` gives `a12fb7d56bdff9a9`, and deleting one row gives
+`351a7814cedb26c9`, against the `d3a3acde9bc89ae6` above. It is not a
+same-number-twice comparison.
+
+**Read json's row honestly:** its four cells are identical *across postures as
+well as across dispatches*, which is not a strength. It is the signature of a
+language with **zero exercised rows anywhere** — both postures produce twelve
+SKIPPED rows with no digests at all, so the hashed set is the twelve row ids and
+twenty-four `-` placeholders in both. json's byte-stability is a true statement
+about nothing.
 
 ## 5. The fixture posture, and why it is not evidence
 
@@ -213,6 +289,17 @@ passes over languages that have no cross-file resolution to skip, and it is
 reported as an observation, not as a proof — a single fixture shape is not a
 sample.
 
+**Its consequence, stated rather than left for the reader:** on this corpus the
+profile axis is a cross-check that *cannot disagree*. It contributes two cells
+per class to the crossed count `Finalize` reads, and zero discriminating power
+to any verdict. The axis is not fake — it is two real dispatches of the built
+binary under two different resolved profiles, and it is the right second rung
+for the reason §3 gives — but nothing about a row's outcome would change if one
+cell were dropped, and no reader should count 12 rows as 12 independent
+observations. What would make it discriminate is a corpus where Fast has resolve
+passes to skip, which is precisely what the missing real-repository pins would
+supply. See §2.3 for why this matters more than it looks.
+
 ## 6. What would lift each abstention, per language
 
 | language | what is owed | owner |
@@ -234,3 +321,29 @@ And, for **all six** regardless of pins:
 Three independent blockers means landing SW-201's branch alone would **not**
 turn any of these rows PASS. That is stated here so a future reader does not
 budget one merge for a three-part debt.
+
+## 7. Review round 1 — what changed in this document, and what did not
+
+Six `GA-LANG-<lang>-G4` rows cite this file **by sha**, so a reader who finds the
+sha moved is owed a list. On 2026-08-26 an independent review returned
+`changes-needed`; it rebuilt the binary at both trees, reproduced two of the
+checked-in dispatches from scratch and confirmed the abstention, and it found
+the record around it wanting. What changed here:
+
+- **§4's digest table was replaced.** The first round published six 16-hex
+  values whose derivation was stated nowhere and which the reviewer could not
+  reproduce, having tried ten concatenation forms across two hash functions. The
+  claim they supported is true and independently established. The table is now
+  twenty-four values, each carrying the exact `jq | sort | shasum` pipeline that
+  produces it, plus a demonstration that the pipeline changes when the inputs
+  change.
+- **§2.3 and §5 now state the profile axis's consequence**, not only the
+  observation: the axis cannot disagree on this corpus, so it doubles the class
+  count `Finalize` reads without adding discriminating power.
+- **§3.1 is new**: json's parse-only witness never consults the graph, the
+  obvious strengthening was measured and does not work, and the gap is filed.
+
+**What did NOT change: any measurement.** No verdict, count, digest, exit code,
+binary sha or per-language disposition in this document was re-run or revised.
+`parityreport.CandidateSHA` is untouched, all six rows remain UNKNOWN, and the
+three blockers of §2 are as they were.

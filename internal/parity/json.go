@@ -21,8 +21,18 @@ import (
 // So this language is marked ParseOnly, and its non-vacuity witness is the
 // PARSE BOUNDARY rather than the graph: after the class's edit is applied, the
 // document is read BACK OUT OF THE MATERIALIZED TREE and must be exactly what
-// the mutation said it would be — the bytes on disk, and for every class but
-// the delete, the DECODED value too. An apply that did nothing fails there.
+// the mutation said it would be: for a write class, the bytes on disk equal the
+// bytes the planner said it would write; for the delete class, the path is
+// gone. An apply that did nothing fails there.
+//
+// The comparison is BYTE equality and nothing else (parseDetParseBoundary,
+// parsedet.go). An earlier version of this comment also claimed a DECODED
+// comparison "for every class but the delete"; there is none, and there never
+// was — the only json.Unmarshal in this file is in the planner, deciding what
+// to write. The claim was harmless because byte equality is strictly stronger
+// than decoded equality over the same bytes, but a witness described as doing a
+// step it does not do is the defect class this family exists to catch, so it is
+// corrected rather than left standing (SW-200 review round 1, minor m1).
 //
 // What this family therefore proves for JSON, stated so it cannot be
 // over-read: that graphi's whole-tree serialisation is byte-stable across two
@@ -49,6 +59,19 @@ func parseDetJSON() ParseDetLanguage {
 		// is the parse boundary instead. Putting "file" here would be a claim
 		// that graphi mints a file node for a .json path, which the hermetic
 		// twin's rows show it does not rely on.
+		//
+		// MEASURED, 2026-08-26, because the SW-200 review (minor m2) proposed
+		// exactly that stronger witness — "assert the edited path appears as a
+		// `file` node in the decoded envelope". It is NOT AVAILABLE for json on
+		// this tree: `graphi rebuild` over a two-file tree (main.go +
+		// api/schema.json) reported "indexed 2 files", and the snapshot
+		// envelope carried two nodes, `file main.go` and `function main.go`.
+		// The json path minted NOTHING — not a symbol node, not a file node.
+		// So MinSymbolKinds{"file"} would refuse every json row rather than
+		// strengthen it. The residual gap the review names is real and stays
+		// open (a json PASS is issued without consulting the graph at all) and
+		// is filed as PARITY-014; it is latent while json has zero exercised
+		// rows in either posture.
 		MinSymbolKinds: nil,
 		Specs: []ParseDetSpec{
 			{ID: "json_add_file", Plan: planParseDetAddFile(sh),

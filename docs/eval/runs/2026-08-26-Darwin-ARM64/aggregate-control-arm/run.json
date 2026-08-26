@@ -1,0 +1,36 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "date": "2026-08-26",
+  "runner_class": "Darwin-ARM64/apple-m2-max",
+  "repo": "n/a — the published report is a parity run, not a repository measurement",
+  "report": "report.json",
+  "raw": [],
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6 darwin/arm64",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/tmp/sw200-campaign",
+    "cache_state": "not_dropped",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "candidate_source": "internal/parityreport/report.go CandidateSHA (ADR 0013); NOT moved by SW-200 (AC-6)",
+    "measured_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "parsedet-parity/1",
+    "scorer_version": "parsedet-parity-scorer/1",
+    "capture_errors": {
+      "candidate_match": "MEASURED FALSE, not assumed: ./cmd/graphi built with -trimpath -buildvcs=false CGO_ENABLED=0 gives af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15 at 733ac0047c6b586756986d86d65dad819a6494a2 and 0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf at candidate 9f687849cec2b26311401191e90b60e40b5f6cee. internal/parity/provenance.go fails closed on that difference, so every report here carries publishable=false. Owned by D7DEBT-001; AC-6 forbids SW-200 moving the candidate.",
+      "corpus_pin": "NO REAL-REPOSITORY PIN for css: corpus/manifest.json at 733ac0047c6b586756986d86d65dad819a6494a2 declares no css entry above tier 1. SW-201's v3 pins live only on the unmerged branch sw-201-w5o-corpus-pins-v3-intra-parse, and json has no pin even there (an honest no_pin abstention).",
+      "aggregate_exit": "cmd/eval -aggregate does NOT exit 0 on this leaf and cannot: it reproduces internal/evalreport metrics (cold_index, query_latency, incremental, stalls) from raw samples, and a parityreport run publishes none of them. The measured exit code is recorded in notes.md. Bridging the two would extend one measurement instrument to serve another, which internal/parity/classes.go:15-24 and internal/parity/doc.go forbid by name."
+    }
+  },
+  "notes": "SW-200 CONTROL ARM for PARITY-012, produced 2026-08-26. This directory is NOT a measurement. It is a deliberately WELL-FORMED internal/evalreport run directory whose published report is a parityreport run (a byte copy of ../css/raw/realrepo-a.parity.json). It exists so the claim -aggregate exits 3 rather than 2 on a well-formed directory is an ARTIFACT rather than an assertion: exit 2 alone would only prove two files were missing. See aggregate-exit3.log for the captured run and aggregate.json for what the tool wrote."
+}

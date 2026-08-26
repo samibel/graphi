@@ -113,6 +113,15 @@ parity run publishes none of the four series the aggregator reproduces
 (cold_index, query_latency, incremental, progress_stalls — the tool prints
 "not published by this run" for all four).
 
+**That control arm is an artifact, not an assertion.** It is checked in beside
+this leaf at [`../aggregate-control-arm/`](../aggregate-control-arm/): the
+directory it was run on, the `aggregate.json` the tool itself wrote (
+`metrics_checked: 0`, `environment_complete: true`), and the captured run with
+its exit code in `aggregate-exit3.log`. It was produced 2026-08-26 on this same
+machine and it reproduces by re-running the one command its `notes.md` prints.
+Without it, the exit-2 result on this leaf would only have shown that two files
+are missing.
+
 Both ways past it are refused by rules already recorded in this repository:
 
 - Teaching `internal/evalreport` a parity series is forbidden by

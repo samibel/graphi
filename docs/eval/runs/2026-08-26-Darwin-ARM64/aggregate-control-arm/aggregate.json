@@ -1,0 +1,91 @@
+{
+  "format_version": 1,
+  "harness_version": "p0-perf/1",
+  "scorer_version": "p0-aggregate/1",
+  "environment": {
+    "cpu_model": "Apple M2 Max",
+    "cpu_count": 12,
+    "ram_bytes": 68719476736,
+    "os": "darwin",
+    "arch": "arm64",
+    "kernel": "25.6.0",
+    "go_version": "go1.26.6 darwin/arm64",
+    "filesystem": "apfs",
+    "filesystem_path": "/var/tmp/sw200-campaign",
+    "cache_state": "not_dropped",
+    "runner_class": "Darwin-ARM64/apple-m2-max",
+    "candidate_sha": "9f687849cec2b26311401191e90b60e40b5f6cee",
+    "candidate_source": "internal/parityreport/report.go CandidateSHA (ADR 0013); NOT moved by SW-200 (AC-6)",
+    "measured_sha": "733ac0047c6b586756986d86d65dad819a6494a2",
+    "candidate_match": false,
+    "worktree_dirty": false,
+    "harness_version": "parsedet-parity/1",
+    "scorer_version": "parsedet-parity-scorer/1",
+    "capture_errors": {
+      "aggregate_exit": "cmd/eval -aggregate does NOT exit 0 on this leaf and cannot: it reproduces internal/evalreport metrics (cold_index, query_latency, incremental, stalls) from raw samples, and a parityreport run publishes none of them. The measured exit code is recorded in notes.md. Bridging the two would extend one measurement instrument to serve another, which internal/parity/classes.go:15-24 and internal/parity/doc.go forbid by name.",
+      "candidate_match": "MEASURED FALSE, not assumed: ./cmd/graphi built with -trimpath -buildvcs=false CGO_ENABLED=0 gives af8b971b2bd3e1c1c100b85b3754bf0043563b3d294a1066149534e49488ed15 at 733ac0047c6b586756986d86d65dad819a6494a2 and 0de6e64d6174f1793efbe8d3d0b2beb6561c3095a965f7ecdac3e86bfef46ebf at candidate 9f687849cec2b26311401191e90b60e40b5f6cee. internal/parity/provenance.go fails closed on that difference, so every report here carries publishable=false. Owned by D7DEBT-001; AC-6 forbids SW-200 moving the candidate.",
+      "corpus_pin": "NO REAL-REPOSITORY PIN for css: corpus/manifest.json at 733ac0047c6b586756986d86d65dad819a6494a2 declares no css entry above tier 1. SW-201's v3 pins live only on the unmerged branch sw-201-w5o-corpus-pins-v3-intra-parse, and json has no pin even there (an honest no_pin abstention)."
+    }
+  },
+  "environment_complete": true,
+  "series": [
+    {
+      "series": "cold_index",
+      "published": false,
+      "raw_present": false,
+      "raw_collected": false,
+      "raw_samples": 0,
+      "metrics": 0,
+      "reproduced": 0,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "UNKNOWN"
+    },
+    {
+      "series": "query_latency",
+      "published": false,
+      "raw_present": false,
+      "raw_collected": false,
+      "raw_samples": 0,
+      "metrics": 0,
+      "reproduced": 0,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "UNKNOWN"
+    },
+    {
+      "series": "incremental",
+      "published": false,
+      "raw_present": false,
+      "raw_collected": false,
+      "raw_samples": 0,
+      "metrics": 0,
+      "reproduced": 0,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "UNKNOWN"
+    },
+    {
+      "series": "progress_stalls",
+      "published": false,
+      "raw_present": false,
+      "raw_collected": false,
+      "raw_samples": 0,
+      "metrics": 0,
+      "reproduced": 0,
+      "discrepant": 0,
+      "unknown": 0,
+      "status": "UNKNOWN"
+    }
+  ],
+  "metrics": null,
+  "metrics_checked": 0,
+  "metrics_reproduced": 0,
+  "metrics_discrepant": 0,
+  "metrics_unknown": 0,
+  "complete": false,
+  "publishable": false,
+  "status": "UNKNOWN",
+  "method": "Every statistic in `report` is recomputed from `raw/` through the same exported derivations the harnesses used to produce it (RecomputeColdAggregates, RecomputeQueryLatency, RecomputeIncremental, RecomputeStalls) and compared EXACTLY. Exactly, not within a tolerance: every percentile in this tree is a nearest-rank OBSERVED sample rather than an interpolation, so two correct derivations over the same samples agree bit for bit and a tolerance would only be somewhere for drift to hide. A metric whose raw samples are absent reads UNKNOWN and is never counted as reproduced.",
+  "notes": "SW-128 aggregate reproduction: the published report checked against the raw measurements it claims to be derived from. `publishable` is the conjunction a P0 baseline needs — every published metric reproduced from raw data AND the run environment fully captured. A DISCREPANCY (a published number that does not follow from its samples) is a failure; UNKNOWN (a number nobody can check, or a machine nobody documented) is not a failure and is not a pass either, per PRD §8.2. The two are counted separately and never merged."
+}

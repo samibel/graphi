@@ -178,6 +178,43 @@ func names(es []corpus.Entry) []string {
 	return out
 }
 
+// TestParseDet_TheRealManifestStillHasNoPinForAnyOfTheSix is the guard that
+// actually goes red when a pin lands. It reads the REAL corpus/manifest.json —
+// not a literal, not a fixture — and asserts that selection still finds no
+// real-repository candidate for any of the six intra/parse residual languages.
+//
+// WHY IT IS A SEPARATE TEST. SW-200's whole record is an abstention whose first
+// named blocker is "no pin exists". Every other test in this file passes an
+// in-test manifest, so none of them can observe the manifest changing: they
+// would stay green forever after SW-201's v3 pins land, and the abstention
+// could persist silently in six evidence-index rows while the fact underneath
+// it had gone stale. This one cannot. The day a css/hcl/json/markdown/toml/yaml
+// entry above tier 1 appears in corpus/manifest.json, this test fails and the
+// six GA-LANG-<lang>-G4 abstentions have to be re-decided by a person rather
+// than inherited from a green suite.
+//
+// It reads selection through parseDetRepos with allowLocal=false — the
+// PRODUCTION posture — so a tier-1 fixture arriving does not trip it; only a
+// real pin does, which is exactly the event that changes the story's answer.
+func TestParseDet_TheRealManifestStillHasNoPinForAnyOfTheSix(t *testing.T) {
+	path := filepath.Join("..", "..", "corpus", "manifest.json")
+	m, err := corpus.LoadManifest(path)
+	if err != nil {
+		t.Fatalf("LoadManifest(%s): %v", path, err)
+	}
+	for _, lang := range ParseDetLanguages() {
+		got := parseDetRepos(m, lang, 3, false)
+		if len(got) != 0 {
+			t.Errorf("%s: %s now offers %v as a real-repository candidate.\n"+
+				"THIS TEST IS DOING ITS JOB: SW-200 recorded GA-LANG-%s-G4 as UNKNOWN because no such pin "+
+				"existed, and docs/rc/intra-parse-residual-parity-abstention.md §2.1 names that as the first "+
+				"of three blockers. A pin has landed, so re-run the dispatch for this language and re-decide "+
+				"the row deliberately — do not silence this test.",
+				lang, path, names(got), lang)
+		}
+	}
+}
+
 // TestParseDet_NoPinReasonNamesTheMechanism pins AC-3's requirement that the
 // abstention names WHICH check refuses and WHAT would lift it — not "blocked".
 func TestParseDet_NoPinReasonNamesTheMechanism(t *testing.T) {
@@ -522,9 +559,17 @@ func TestParseDet_RefusesAnUnknownLanguage(t *testing.T) {
 // neither complete nor publishable.
 //
 // It drives no binary: nothing reaches the dispatch, because selection abstains
-// first. That is exactly the state the story records, and pinning it here means
-// a future pin landing turns this test red rather than letting the abstention
-// persist silently.
+// first. That is exactly the state the story records.
+//
+// WHAT THIS TEST DOES NOT DO, stated because an earlier version of this comment
+// claimed it (SW-200 review round 1, major M3): it passes corpus.Manifest{}, an
+// EMPTY LITERAL, so it never reads corpus/manifest.json and a landing pin
+// cannot turn it red. It asserts the SHAPE of the abstention — every row
+// SKIPPED, the mechanism named in the detail, an axis note on every row,
+// neither complete nor publishable — which is a property of the runner and is
+// meant to hold whatever the manifest says. The manifest-bound half, the one
+// that really does go red when a pin lands, is
+// TestParseDet_TheRealManifestStillHasNoPinForAnyOfTheSix above.
 func TestParseDet_AbstainsWithoutAPinAndIsNotPublishable(t *testing.T) {
 	for _, name := range ParseDetLanguages() {
 		name := name
@@ -581,6 +626,19 @@ func TestParseDet_AbstainsWithoutAPinAndIsNotPublishable(t *testing.T) {
 // It is the hermetic twin of the -refusal-diff / -verdict-diff / -counts-diff
 // comparison the story runs against the built binary, and it is the half that
 // stays green when the pins are missing.
+//
+// ITS LIMIT, STATED (SW-200 review round 1, major M3, second half): it also
+// passes corpus.Manifest{}, so both dispatches abstain before any row is
+// measured. What it can catch is nondeterminism in the REPORTING layer — map
+// iteration leaking into a row order, a digest that folds in a timestamp, an
+// abstention string built non-deterministically. What it cannot catch is
+// nondeterminism in the MEASUREMENT: two full index passes over a real tree
+// serialising to different bytes. That half of AC-5 is carried by artifacts,
+// not by this test — the twelve checked-in dispatch pairs under
+// docs/eval/runs/2026-08-26-Darwin-ARM64/*/raw/ — and it cannot be asserted
+// here without executing the product binary over a materialized corpus, which
+// is a network clone and a multi-minute full index per row. Filed as
+// PARITY-013 rather than papered over.
 func TestParseDet_RefusalSetsAreIdenticalAcrossTwoDispatches(t *testing.T) {
 	for _, name := range ParseDetLanguages() {
 		rows, err := LoadClasses(filepath.Join("..", "..", ParseDetClassesPath(name)))

@@ -147,6 +147,15 @@ finding, both control arms and the two forbidden ways past it are filed as
 **PARITY-012**; each leaf's `notes.md` repeats the measurement in place, so a
 reader who opens one directly is not left to assume the tool was simply not run.
 
+**A seventh directory, `2026-08-26-Darwin-ARM64/aggregate-control-arm/`, is not
+a language leaf and not a measurement** — it is that exit-3 control arm, checked
+in so the claim can be opened rather than taken on trust: the well-formed
+directory it ran on, the `aggregate.json` `cmd/eval` itself wrote, and
+`aggregate-exit3.log` with the exit code. It publishes no parity result and no
+evidence-index row cites it; see its own `notes.md`. It was added in SW-200's
+review round 1, because until then the exit-3 half of PARITY-012 was the one
+claim in this campaign a reader could not reproduce from what was checked in.
+
 The parity-side reproducers for these leaves are
 `cmd/parity -verdict-diff`, `-counts-diff` and `-refusal-diff` over the checked-in
 report pairs. All three were run for all twelve pairs; the exit codes and what
