@@ -5,6 +5,12 @@
 //	                                   # from the registries, compare against
 //	                                   # docs/coverage-matrix.yaml, and exit 1 on
 //	                                   # any drift (printing a precise diff).
+//	                                   # -check runs SIX named checks:
+//	                                   # coverage-matrix, stable-tier,
+//	                                   # mcp-default-profile, ga-language,
+//	                                   # capability-manifest and (SW-216)
+//	                                   # readme-claims — readme.md's capability
+//	                                   # NUMBERS bound to the manifest.
 //	go run ./cmd/coverage -generate    # regenerate docs/coverage-matrix.md from
 //	                                   # docs/coverage-matrix.yaml (one command).
 //
@@ -134,7 +140,26 @@ func main() {
 	}
 	fmt.Printf("capability-manifest check PASS — %s matches the checked matrix.\n", coverage.MatrixJSONPath)
 
-	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() || !gaRep.Pass() {
+	// SW-216: readme.md's countable capability claims, bound to the manifest
+	// just proven fresh above — per-category counts, the census sentence's SUM,
+	// and category SET COMPLETENESS. It extends this gate rather than shipping a
+	// sixth binary; the seam decision (AC-4) and the numbers-only scope limit
+	// (AC-7) are recorded in internal/coverage/readmeclaims.go. Fails closed: an
+	// unusable manifest or an unreadable readme is an error, never a skip.
+	census, err := coverage.ManifestCensus(currentJSON)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "coverage: %v\n", err)
+		os.Exit(2)
+	}
+	readmeBytes, readmeErr := os.ReadFile(filepath.Join(dir, filepath.FromSlash(coverage.ReadmePath)))
+	if readmeErr != nil {
+		fmt.Fprintf(os.Stderr, "coverage: read %s: %v (readme-claims fails closed — an unreadable readme is an error, not a skip)\n", coverage.ReadmePath, readmeErr)
+		os.Exit(2)
+	}
+	readmeRep := coverage.CheckReadmeClaims(string(readmeBytes), census)
+	fmt.Print(readmeRep.Format())
+
+	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() || !gaRep.Pass() || !readmeRep.Pass() {
 		os.Exit(1)
 	}
 }

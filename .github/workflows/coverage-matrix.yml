@@ -6,11 +6,20 @@
 # docs so they contradict the code — fails this check until the matrix is updated
 # and regenerated.
 #
-# Two named steps make the result legible in the build summary:
+# Three named steps make the result legible in the build summary:
 #   unit-tests — internal/coverage guard logic (enumerator, parser, drift diff,
-#                .md freshness, fake-analyzer FAIL->PASS demonstration)
+#                .md freshness, fake-analyzer FAIL->PASS demonstration, and the
+#                SW-216 readme-claims kill tests)
 #   gate       — the named check "coverage-matrix": derive the LIVE capability set
-#                and fail (exit 1) on any drift or a stale docs/coverage-matrix.md
+#                and fail (exit 1) on any drift or a stale docs/coverage-matrix.md.
+#                Since SW-216 the SAME `-check` run also gates readme.md's
+#                capability NUMBERS against docs/capability-manifest.json:
+#                per-category counts, the census sentence's sum, and category set
+#                completeness. Numbers only — prose is not gated (backlog :16
+#                keeps its prose half open) and the check says so in its output.
+#   tripwire   — proves the readme-claims gate BITES: a mutated readme capability
+#                count must turn `-check` red. A gate nobody has seen fail is not
+#                known to work (precedent: privacy-audit.yml's egress tripwire).
 #
 # CGo-free, zero network — read-only over the registries.
 name: coverage-matrix
@@ -36,5 +45,36 @@ jobs:
       - name: unit-tests (coverage guard logic, CGO_ENABLED=0)
         run: go test ./internal/coverage/...
 
-      - name: coverage-matrix (named check — drift + freshness gate)
+      - name: coverage-matrix (named check — drift + freshness + readme-claims gate)
         run: go run ./cmd/coverage -check
+
+      # SW-216 AC-6: the gate must be SEEN to fail. Mutate the capability total
+      # in readme.md, require `-check` to go RED, then restore and require GREEN
+      # again. It runs on the same checkout the gate above just passed, so this
+      # is evidence about THIS commit rather than about a fixture. The mutation
+      # is derived from the file (no hard-coded count), and failing to mutate is
+      # itself a step failure — a tripwire that silently no-ops proves nothing.
+      - name: readme-claims tripwire (a mutated readme count must fail the gate)
+        run: |
+          set -euo pipefail
+          cp readme.md /tmp/readme.orig
+          restore() { cp /tmp/readme.orig readme.md; }
+          current="$(grep -oE 'counts \*\*[0-9]+\*\* capabilities' readme.md | grep -oE '[0-9]+' | head -1)"
+          if [ -z "${current}" ]; then
+            echo "TRIPWIRE FAILED: no capability census sentence found in readme.md" >&2
+            exit 1
+          fi
+          sed -i "s/counts \*\*${current}\*\* capabilities/counts **$((current + 1))** capabilities/" readme.md
+          if git diff --quiet -- readme.md; then
+            restore
+            echo "TRIPWIRE FAILED: could not mutate readme.md — fix the mutation, do not weaken the gate" >&2
+            exit 1
+          fi
+          if go run ./cmd/coverage -check; then
+            restore
+            echo "TRIPWIRE FAILED: the gate stayed GREEN on a mutated readme capability count" >&2
+            exit 1
+          fi
+          restore
+          go run ./cmd/coverage -check
+          echo "tripwire OK: the mutated count turned the gate red; the restored readme is green"
