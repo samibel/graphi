@@ -240,20 +240,10 @@ graphi: savings: no ledger to read — pass -ledger <path> (the ledger a prior M
 
 ```bash
 graphi sync                  # pull in changes (run it after a branch switch)
-graphi status                # is the graph current? (exit 0 yes / 1 run sync)
 graphi callers <node-id>     # who calls it — ids come from `graphi search <name>`
 ```
 
-The rest of the surface — `rebuild`, `ui`, `claude`, `setup`, the one-call Labs
-bundles, `snapshot`/`compare` — is in [docs/HOWTO.md](docs/HOWTO.md), tiered in
-[docs/cli-reference.md](docs/cli-reference.md). `graphi` re-syncs on every start,
-keeping one graph per repo under `~/.graphi/<fingerprint>/` that tracks what is
-checked out — no flags, paths or branch bookkeeping — though **it misses its freshness
-budget** (3.2× over), as the FAIL row above says. Bare `graphi` also opens the code
-graph in your browser (`--no-browser` prints the URL); click a node to light its blast
-radius red, its evidence-bearing edges amber, and fill the agent-context export.
-
-<p align="center"><img src="docs/assets/graph-ui.png" alt="graphi web UI — interactive code graph loaded from a seed-symbol search, radial layout with per-kind node colors" width="900" /></p>
+The rest of the surface — `status`, `rebuild`, `ui`, `claude`, `setup`, the one-call Labs bundles, `snapshot`/`compare`, the per-repo graph under `~/.graphi/<fingerprint>/` that re-syncs on every start and tracks what is checked out, and the browser UI that bare `graphi` opens — is in [docs/HOWTO.md](docs/HOWTO.md), tiered in [docs/cli-reference.md](docs/cli-reference.md); sync **misses its freshness budget** (3.2× over), as the FAIL row above says.
 
 ## What is GA (and what is not)
 
@@ -282,14 +272,7 @@ does not exist** — nothing is hosted, there is no service to sign up for.
 
 ## When to use graphi — and when not
 
-**Use graphi if:**
-
-- you want an MCP-compatible code-graph backend that runs **on the user's
-  machine** with zero outbound network — no accounts, no telemetry, no cloud
-  indexer;
-- your codebase must not leave the machine (compliance, data-residency,
-  air-gapped CI);
-- you want one CGo-free static binary that drops into any environment.
+**Use graphi if** you want an MCP-compatible code-graph backend that runs on the user's machine — its guarantees are [the local-first contract](#the-local-first-contract) below — or your codebase must not leave that machine at all (compliance, data-residency, air-gapped CI).
 
 **Use something else if:**
 
@@ -328,27 +311,14 @@ HTML is not shipped. The opt-in CGO flavor `graphi-broad` opens the
 go-sitter-forest grammar seam for trusted input — see
 [docs/graphi-broad.md](docs/graphi-broad.md) including its security warning.
 
-## Semantic search (optional, OFF by default)
-
-No embedder ships and nothing leaves loopback: `graphi search -semantic` degrades to
-a typed "unavailable" until you opt in — [docs/semantic-search.md](docs/semantic-search.md).
-
 ## The local-first contract
 
 | Guarantee | What it means for you |
 |---|---|
-| **Zero outbound network** | The engine makes no non-loopback network calls, and your code stays on disk — but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above — and the audit needs the Go toolchain in a graphi checkout, or its other two static gates cannot run at all. |
-| **No telemetry** | Nothing is reported anywhere — no usage data, no phone-home. |
-| **No accounts, no external services** | A single static binary; nothing to sign up for. |
-| **CGo-free default build** | Builds anywhere Go does, with no C toolchain required. |
-| **Single static binary** | One self-contained executable (**34.27 MB** as shipped, against a CI budget of 36.10 MB — `bench/bench-budget.yml`), easy to drop into any environment. |
-
-The Stable default tier runs with no accounts and no outbound network access.
-Explicitly configured Labs/forge or embedder features may contact their
-configured service; they are not part of that default claim. The git-history
-provider behind the Labs git intelligence executes the local `git` binary
-against the local repository — no network, no writes. The proof is runnable:
-`graphi privacy-audit`.
+| **Zero outbound network, no telemetry** | The engine makes no non-loopback network calls, reports nothing anywhere — no usage data, no phone-home — and your code stays on disk; but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above — and the audit needs the Go toolchain in a graphi checkout, or its other two static gates cannot run at all. |
+| **One CGo-free static binary, no accounts** | Builds anywhere Go does, with no C toolchain required: one self-contained executable (**34.27 MB** as shipped, against a CI budget of 36.10 MB — `bench/bench-budget.yml`), easy to drop into any environment, with nothing to sign up for and no external services. |
+| **Semantic search off by default** | No embedder ships and nothing leaves loopback: `graphi search -semantic` degrades to a typed "unavailable" until you opt in — [docs/semantic-search.md](docs/semantic-search.md). |
+| **Labs and forge features are opt-in** | The Stable default tier runs with no accounts and no outbound network access. Explicitly configured Labs/forge or embedder features may contact their configured service; they are not part of that default claim. The git-history provider behind the Labs git intelligence executes the local `git` binary against the local repository — no network, no writes. |
 
 ## The whole surface: 173 capabilities
 
@@ -421,8 +391,7 @@ Full design: [docs/architecture-plan.md](docs/architecture-plan.md).
 
 ## Documentation
 
-Every page and which kind it is: [docs/README.md](docs/README.md) — user docs,
-architecture docs, machine-written evidence; two field-test rows are superseded.
+Every page and which kind it is: [docs/README.md](docs/README.md) — user docs, architecture docs, machine-written evidence, planning; two field-test rows are retracted or stale.
 
 ## License
 

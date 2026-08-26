@@ -5,12 +5,15 @@
 //	                                   # from the registries, compare against
 //	                                   # docs/coverage-matrix.yaml, and exit 1 on
 //	                                   # any drift (printing a precise diff).
-//	                                   # -check runs SIX named checks:
+//	                                   # -check runs SEVEN named checks:
 //	                                   # coverage-matrix, stable-tier,
 //	                                   # mcp-default-profile, ga-language,
-//	                                   # capability-manifest and (SW-216)
+//	                                   # capability-manifest, (SW-216)
 //	                                   # readme-claims — readme.md's capability
-//	                                   # NUMBERS bound to the manifest.
+//	                                   # NUMBERS bound to the manifest — and
+//	                                   # (SW-218) readme-budget: the same
+//	                                   # document's 400-line ceiling and its
+//	                                   # <= 55-line spine.
 //	go run ./cmd/coverage -generate    # regenerate docs/coverage-matrix.md from
 //	                                   # docs/coverage-matrix.yaml (one command).
 //
@@ -160,7 +163,23 @@ func main() {
 	readmeRep := coverage.CheckReadmeClaims(string(readmeBytes), census)
 	fmt.Print(readmeRep.Format())
 
-	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() || !gaRep.Pass() || !readmeRep.Pass() {
+	// SW-218 (AC-5/AC-6): a SECOND ASSERTION on the readme instrument SW-216
+	// stood up — the same file, the same bytes read once above, the same run,
+	// the same exit path. It asserts the 400-source-line ceiling from the
+	// 2026-08-26 composition-contract decision record and SW-212 AC-7's <= 55
+	// spine budget (ungated until now; backlog SW-212 review minor m3). It is a
+	// separately NAMED check so SW-216's deliberately narrow "numbers only"
+	// scope note is not widened by a size assertion. Rationale in
+	// internal/coverage/readmebudget.go. Fails closed like its sibling.
+	budgetRep, budgetErr := coverage.CheckReadmeBudget(string(readmeBytes))
+	if budgetErr != nil {
+		// CheckReadmeBudget already prefixes its errors with "coverage: ".
+		fmt.Fprintf(os.Stderr, "%v\n", budgetErr)
+		os.Exit(2)
+	}
+	fmt.Print(budgetRep.Format())
+
+	if !rep.Pass() || !stableRep.Pass() || !profileRep.Pass() || !gaRep.Pass() || !readmeRep.Pass() || !budgetRep.Pass() {
 		os.Exit(1)
 	}
 }
