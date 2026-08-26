@@ -379,15 +379,27 @@ func ResetCanaryMismatches() {
 	canaryMismatchLast = CanaryMismatch{}
 }
 
-// canaryComparableSentinels are the typed capability sentinels a canary error
-// may legitimately be. Comparing error TEXT alone would let a path that returns
-// a differently-typed error with the same message pass as identical, and it is
-// the type surfaces branch on (errors.Is), so the class is compared too.
+// canaryComparableSentinels are the typed sentinels an error on this path may
+// carry, across every Client implementation the canary can sit behind: Direct's
+// capability sentinels, the daemon client's ErrAgentIntelUnavailable, and the
+// HTTP client's transport classes.
+//
+// Comparing error TEXT alone would let a path that returns a differently-typed
+// error with the same message pass as identical — and the type is what surfaces
+// branch on (errors.Is), so the CLASS is compared too. The list is deliberately
+// wider than the errors dead_code can produce today: a sentinel that never fires
+// costs one pointer comparison, and one that fires unlisted would be a silent
+// class change.
 var canaryComparableSentinels = []error{
 	ErrAgentIntelUnavailable,
+	ErrAgentToolsUnavailable,
 	ErrAnalysisUnavailable,
+	ErrSearchUnavailable,
 	ErrSavingsUnavailable,
 	ErrMemoryUnavailable,
+	ErrUnavailable,
+	ErrUnreachable,
+	ErrSchemaMismatch,
 }
 
 // DispatchCanary runs the canary operation in whichever position the kill switch
