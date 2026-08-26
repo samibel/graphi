@@ -85,6 +85,25 @@ tools. Actual Stable and Labs advertisement is binding-capability-gated, so a
 session can expose fewer tools when its transport or an optional service is not
 wired. An unadvertised call is rejected before client dispatch.
 
+**Registry size and advertised size are different numbers, and both are
+measured, not asserted.** The 56 above is the *registry* — what a `-labs` profile
+would advertise before any binding narrows it. What a real session sees is the
+narrowed catalog, and the AX-00 baseline artifacts
+(`docs/rc/ax00-baseline.md`, regenerated only on demand) pin every profile:
+
+| Profile | Tools advertised |
+|---|---|
+| profile-static Stable (unbound stdio session) | 11 |
+| profile-static Stable+Labs (`maximal` registry) | 56 |
+| bound stdio, Stable — the shipped `graphi mcp` | 11 |
+| bound stdio, `-labs`, fully wired `client.Direct` | 44 |
+| bound daemon, Stable | 7 |
+| bound daemon, `-labs` | 25 |
+
+Quoting the narrowed figure as the registry size (or the reverse) is the drift
+this table exists to stop; earlier revisions of this file and of the delivery
+portfolio's architecture notes each did one of the two.
+
 The wire-visible identifier is canonical; `surfaces/mcp/mcp.go` routes through
 the shared client. Stable `impact` is a dedicated fixed-dispatch tool through
 `StableClient.Impact`; the generic analyzer selector remains Labs.

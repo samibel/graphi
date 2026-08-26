@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -70,33 +69,15 @@ type contractDoc struct {
 // analyzers instead of advertising capabilities that capabilityGuard will
 // reject. Labs opt-in exposes the complete catalog. It is the runtime mirror of
 // the hand-authored contract.schema.json (the Go↔TS single source of truth).
+//
+// SW-225 (AX-05): the resource list is built by s.contractResources(), which
+// projects each served capability's resource path and tier out of the operation
+// catalog (contract_projected.go). This handler holds no second opinion about
+// either, and does not import the catalog — dispatch stays legacy (AC-4).
 func (s *Server) handleContract(w http.ResponseWriter, r *http.Request) {
-	resourceSet := make(map[string]struct{}, len(queryOps)+1+len(agentToolNames)+len(s.analyzers))
-	add := func(operation, resource string) {
-		if s.labsEnabled || !isLabsCapability(operation) {
-			resourceSet[resource] = struct{}{}
-		}
-	}
-	for op := range queryOps {
-		add(op, "query/"+op)
-	}
-	add("search", "search")
-	// EP-020 agent tools are always served (the client seam degrades to the
-	// contract "unavailable" outcome when no graph services are wired).
-	for _, t := range agentToolNames {
-		add(t, "analyze/"+t)
-	}
-	for _, a := range s.analyzers {
-		add(a, "analyze/"+a)
-	}
-	resources := make([]string, 0, len(resourceSet))
-	for resource := range resourceSet {
-		resources = append(resources, resource)
-	}
-	sort.Strings(resources)
 	doc := contractDoc{
 		SchemaVersion: SchemaVersion,
-		Resources:     resources,
+		Resources:     s.contractResources(),
 		Streams:       append([]string(nil), streamDescriptors...),
 	}
 	raw, err := json.Marshal(doc)

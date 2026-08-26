@@ -27,6 +27,16 @@ import (
 // deliberately corrupted inputs and prove the gate is not vacuous — a gate that
 // has never been observed to fail is an assumption, not evidence.
 //
+// SW-225 (AX-05) note — this gate deliberately reads the LEGACY builders.
+// Since AX-05, stableToolDescriptors()/maximalToolDescriptors() are PROJECTED
+// from this very catalog, so comparing the catalog against them would compare
+// the catalog with itself and certify nothing. The comparison is therefore
+// pinned to legacyStableToolDescriptors()/legacyMaximalToolDescriptors(), the
+// hand-written literals AX-05 kept compiled in for rollback (AC-5): the catalog
+// still has to agree with an independently maintained source, which is the only
+// reason the gate has ever been worth anything. Projection-vs-legacy byte
+// equality is a separate gate (descriptors_projected_test.go).
+//
 // It lives INSIDE package mcp for two reasons. The descriptor builders are
 // unexported, and exporting them for a test would widen this package's API in a
 // story whose whole point is changing nothing; and the layer guard permits
@@ -303,16 +313,16 @@ func TestAX03_ShadowCatalog_TiersMatchTheStabilityTaxonomy(t *testing.T) {
 
 // AC-2 — description, input schema and annotations match the maximal registry.
 func TestAX03_ShadowCatalog_MatchesTheMaximalDescriptorRegistry(t *testing.T) {
-	live, problems := descriptorIndex(maximalToolDescriptors())
+	live, problems := descriptorIndex(legacyMaximalToolDescriptors())
 	report(t, problems)
 	report(t, diffMaximalRegistry(shadowCatalog(t).All(), live, labsPrefix))
 }
 
 // AC-2 — the Stable profile's second advertisement, and the divergence record.
 func TestAX03_ShadowCatalog_MatchesTheStableProfileDescriptors(t *testing.T) {
-	stableLive, problems := descriptorIndex(stableToolDescriptors())
+	stableLive, problems := descriptorIndex(legacyStableToolDescriptors())
 	report(t, problems)
-	maximalLive, problems := descriptorIndex(maximalToolDescriptors())
+	maximalLive, problems := descriptorIndex(legacyMaximalToolDescriptors())
 	report(t, problems)
 
 	if len(stableLive) != len(StableMCPToolNames()) {
@@ -356,8 +366,8 @@ func TestAX03_ParityGate_DetectsEveryDriftClass(t *testing.T) {
 		t.Fatalf("need at least two specs to perturb, have %d", len(specs))
 	}
 	names := ToolNames()
-	maximalLive, _ := descriptorIndex(maximalToolDescriptors())
-	stableLive, _ := descriptorIndex(stableToolDescriptors())
+	maximalLive, _ := descriptorIndex(legacyMaximalToolDescriptors())
+	stableLive, _ := descriptorIndex(legacyStableToolDescriptors())
 
 	var stableID, labsID string
 	for _, spec := range specs {
@@ -484,7 +494,7 @@ func TestAX03_ParityGate_DetectsEveryDriftClass(t *testing.T) {
 		}
 	})
 	t.Run("a duplicate live descriptor", func(t *testing.T) {
-		descriptors := maximalToolDescriptors()
+		descriptors := legacyMaximalToolDescriptors()
 		_, problems := descriptorIndex(append(descriptors, descriptors[0]))
 		if len(problems) == 0 {
 			t.Fatal("a duplicated live descriptor was not reported")
