@@ -509,6 +509,12 @@ type ExecutorDivergence struct {
 	// disclosed rather than dropped: a silently skipped segment would make the
 	// totals a lower bound that reads like a total.
 	Unreadable int
+	// Pruned counts segments the writers deleted to stay under the record's
+	// retention cap. Their observations are unrecoverable, and pruning is by
+	// age alone, so a live-but-quiet writer's segment can be among them — which
+	// is a lower bound for the same reason Unreadable is, and is disclosed the
+	// same way rather than left to be inferred from a suspiciously round total.
+	Pruned int
 }
 
 // ExecutorDivergenceCheck reports the PERSISTED divergence record (SW-232 /
@@ -550,6 +556,9 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 			}
 			if d.Unreadable > 0 {
 				fmt.Fprintf(&detail, "%d unreadable segment(s): the totals are a lower bound\n", d.Unreadable)
+			}
+			if d.Pruned > 0 {
+				fmt.Fprintf(&detail, "%d pruned segment(s): the totals are a lower bound\n", d.Pruned)
 			}
 			detail.WriteString("read the full record with `graphi doctor -divergence [--json]`")
 

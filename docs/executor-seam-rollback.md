@@ -136,6 +136,41 @@ position compares nothing. **It is not a statement that the two paths agree.**
 Do not read an all-`UNKNOWN` record as evidence of parity; it is the absence of
 evidence, which is why it has its own word.
 
+### What the totals do and do not promise
+
+The counts are a **lower bound whenever the record says so**, and it says so in
+place rather than leaving you to infer it. The header line reports segments
+three ways — `N recorded, M unreadable, P pruned` — and a non-zero `M` or `P`
+prints an explicit paragraph saying the totals below are incomplete. `graphi
+doctor` repeats both in the `executor-divergence` check's detail.
+
+Two things can make it a lower bound:
+
+* **Unreadable segments.** A file in the directory that does not parse is
+  counted and disclosed, never silently skipped.
+* **Pruned segments.** One process writes one segment file, and the directory
+  retains at most **64** of them; a flush that would exceed that deletes the
+  oldest. Be precise about what that can take: pruning sorts by modification
+  time and has **no writer-liveness check** beyond the pruning process refusing
+  to delete its own segment. A server that is still running but has been quiet
+  since its last flush looks exactly as old as one that exited months ago, so
+  its already-written counts can be deleted while it is live — and it will not
+  rewrite them, because its in-memory total is only re-serialised when it next
+  observes something. Reaching that at all takes 64+ distinct writer segments,
+  which a single-or-few-server install does not produce. Every prune is counted
+  into the pruning process's own segment (and carried forward if the segment it
+  deleted was itself carrying a count), which is what turns this from silent
+  loss into a disclosed lower bound.
+
+A **mismatch is never at risk** from either: divergences are written the moment
+they are observed, before anything can coalesce or be pruned. What a lower bound
+costs you is precision in the observation *count*, not the finding.
+
+Within one running process the counts are not lost by reconfiguration: an MCP
+client announcing a roots-list change makes the server re-bind mid-session, and
+that path reuses the live record rather than replacing it, flushing before it
+ever lets one go.
+
 Rolling an operation back to `legacy` stops the comparison, so the record stops
 growing. It is not deleted — the history of what was observed while the seam was
 open stays readable. To discard it, remove the

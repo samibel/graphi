@@ -73,8 +73,25 @@ const MaxValueLength = 256
 // maxSegments caps how many segment files the directory retains. Older
 // segments are pruned oldest-first by modification time so an operator who
 // leaves shadow on for a month does not accumulate one file per restart
-// forever. The count is generous on purpose: pruning loses history, so it
+// forever. The count is generous on purpose: pruning loses counts, so it
 // happens rarely.
+//
+// The exact bound, stated plainly because the honest version is not the
+// comfortable one: prune has no writer-liveness concept beyond protecting the
+// pruning process's OWN segment. It sorts by modification time, and a segment
+// belonging to another process that is still RUNNING but has simply been quiet
+// (no observation since its last flush) is as old, by mtime, as one belonging
+// to a process that exited months ago. Once the directory holds maxSegments
+// other files, that live-but-quiet writer's segment is eligible for deletion
+// and the counts it already wrote are gone from every future Read — and the
+// live writer will not rewrite them, because its in-memory record is a running
+// total that it re-serialises only when it next observes something.
+//
+// It is not silent. Every prune is counted into the pruning process's own
+// segment (Store.pruned), carried forward from any victim that had a count of
+// its own, and surfaced by the read path as a lower-bound disclosure exactly
+// like an unreadable segment. It also takes 64+ distinct writer segments to
+// reach at all, which a single-or-few-server install does not produce.
 const maxSegments = 64
 
 // defaultFlushInterval bounds how often a store touches the disk while
@@ -104,8 +121,14 @@ type OperationRecord struct {
 
 // segment is the on-disk file one process owns.
 type segment struct {
-	Schema     string            `json:"schema"`
-	PID        int               `json:"pid"`
+	Schema string `json:"schema"`
+	PID    int    `json:"pid"`
+	// Pruned is how many OTHER segments this writer has deleted to hold the
+	// directory under maxSegments, including any count carried forward from a
+	// segment that had pruned some itself. It is what makes retention loss
+	// disclosable rather than invisible: the reader sums it and reports the
+	// totals as a lower bound (see maxSegments).
+	Pruned     int               `json:"pruned_segments,omitempty"`
 	Operations []OperationRecord `json:"operations"`
 }
 
@@ -120,6 +143,7 @@ type Store struct {
 
 	mu        sync.Mutex
 	ops       map[string]*OperationRecord
+	pruned    int
 	dirty     bool
 	flushed   bool
 	lastFlush time.Time
@@ -215,7 +239,17 @@ func (s *Store) Flush() error {
 	if !s.dirty {
 		return nil
 	}
-	seg := segment{Schema: Schema, PID: os.Getpid(), Operations: make([]OperationRecord, 0, len(s.ops))}
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
+		s.lastErr = err
+		return fmt.Errorf("divergence: mkdir %s: %w", s.dir, err)
+	}
+	// Prune BEFORE rendering, so the segment about to be written already
+	// carries the count of what this flush dropped. Pruning after the write
+	// would leave the deletion undisclosed until the next flush — and for a
+	// process whose last act is a flush, undisclosed forever.
+	s.pruned += prune(s.dir, s.path)
+
+	seg := segment{Schema: Schema, PID: os.Getpid(), Pruned: s.pruned, Operations: make([]OperationRecord, 0, len(s.ops))}
 	for _, rec := range s.ops {
 		seg.Operations = append(seg.Operations, *rec)
 	}
@@ -227,10 +261,6 @@ func (s *Store) Flush() error {
 		return fmt.Errorf("divergence: marshal segment: %w", err)
 	}
 	data = append(data, '\n')
-	if err := os.MkdirAll(s.dir, 0o700); err != nil {
-		s.lastErr = err
-		return fmt.Errorf("divergence: mkdir %s: %w", s.dir, err)
-	}
 	if err := writeAtomic(s.path, data); err != nil {
 		s.lastErr = err
 		return err
@@ -238,7 +268,6 @@ func (s *Store) Flush() error {
 	s.dirty = false
 	s.flushed = true
 	s.lastFlush = s.now().UTC()
-	prune(s.dir, s.path)
 	return nil
 }
 
@@ -281,11 +310,18 @@ func writeAtomic(path string, data []byte) error {
 	return nil
 }
 
-// prune caps the retained segment count, oldest first, never removing keep.
-func prune(dir, keep string) {
+// prune caps the retained segment count, oldest first, never removing keep —
+// the caller's own segment, which is the only writer-liveness guarantee this
+// function has (see maxSegments for the exact bound that leaves).
+//
+// It RETURNS how many segments were dropped, counting a victim's own pruned
+// tally rather than only the file, so the disclosure survives being pruned
+// itself. The caller records that number in its segment and the read path
+// reports the totals as a lower bound.
+func prune(dir, keep string) int {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return
+		return 0
 	}
 	type aged struct {
 		path string
@@ -307,12 +343,35 @@ func prune(dir, keep string) {
 		files = append(files, aged{path: path, mod: info.ModTime()})
 	}
 	if len(files) < maxSegments {
-		return
+		return 0
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].mod.Before(files[j].mod) })
+	dropped := 0
 	for i := 0; i <= len(files)-maxSegments; i++ {
-		_ = os.Remove(files[i].path)
+		carried := carriedPruneCount(files[i].path)
+		if err := os.Remove(files[i].path); err != nil {
+			continue
+		}
+		dropped += 1 + carried
 	}
+	return dropped
+}
+
+// carriedPruneCount reads the pruned tally a segment carried, so deleting it
+// does not also delete the disclosure of what IT had pruned. A segment that
+// cannot be read contributes nothing — it was already being counted as
+// unreadable by the read path, and inventing a number for it would be the
+// opposite of the honesty this counter exists for.
+func carriedPruneCount(path string) int {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	var seg segment
+	if err := json.Unmarshal(raw, &seg); err != nil || seg.Schema != Schema {
+		return 0
+	}
+	return seg.Pruned
 }
 
 // bound truncates a repository-influenced value and marks that it truncated.

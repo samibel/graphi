@@ -23,6 +23,12 @@ type Report struct {
 	// are counted rather than skipped: a record that silently drops what it
 	// cannot read under-reports divergence.
 	Unreadable int `json:"unreadable_segments"`
+	// Pruned is how many segments the writers have deleted between them to hold
+	// the directory under the retention cap. Those segments' counts are NOT in
+	// the totals below and cannot be recovered, so a non-zero value makes the
+	// totals a lower bound — the same disclosure Unreadable earns, for the same
+	// reason (see maxSegments for what pruning can and cannot take).
+	Pruned int `json:"pruned_segments"`
 	// Operations is the merged per-operation record, sorted by operation id.
 	Operations []OperationRecord `json:"operations"`
 }
@@ -56,6 +62,7 @@ func Read(stateDir string) (Report, error) {
 			continue
 		}
 		rep.Segments++
+		rep.Pruned += seg.Pruned
 		for _, rec := range seg.Operations {
 			mergeInto(merged, rec)
 		}
@@ -122,6 +129,7 @@ type Document struct {
 	Directory    string          `json:"directory"`
 	Segments     int             `json:"segments"`
 	Unreadable   int             `json:"unreadable_segments"`
+	Pruned       int             `json:"pruned_segments"`
 	Observations int             `json:"observations"`
 	Mismatches   int             `json:"mismatches"`
 	Operations   []OperationView `json:"operations"`
@@ -141,6 +149,7 @@ func Assess(rep Report, migrated []string) Document {
 		Directory:  rep.Directory,
 		Segments:   rep.Segments,
 		Unreadable: rep.Unreadable,
+		Pruned:     rep.Pruned,
 	}
 	byOp := map[string]OperationRecord{}
 	for _, rec := range rep.Operations {
@@ -219,7 +228,7 @@ func RenderHuman(w io.Writer, doc Document) error {
 	}
 	fmt.Fprintf(w, "  state:      %s — %s\n", doc.State, stateProse(doc.State))
 	fmt.Fprintf(w, "  directory:  %s\n", doc.Directory)
-	fmt.Fprintf(w, "  segments:   %d recorded, %d unreadable\n", doc.Segments, doc.Unreadable)
+	fmt.Fprintf(w, "  segments:   %d recorded, %d unreadable, %d pruned\n", doc.Segments, doc.Unreadable, doc.Pruned)
 	fmt.Fprintf(w, "  totals:     %d observation(s), %d mismatch(es)\n\n", doc.Observations, doc.Mismatches)
 
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
@@ -243,6 +252,12 @@ func RenderHuman(w io.Writer, doc Document) error {
 	if doc.Unreadable > 0 {
 		fmt.Fprintf(w, "\n%d segment file(s) in the directory are unreadable and are NOT counted above;\n"+
 			"the totals are therefore a lower bound.\n", doc.Unreadable)
+	}
+	if doc.Pruned > 0 {
+		fmt.Fprintf(w, "\n%d segment file(s) have been pruned to hold the directory under its retention\n"+
+			"cap; their observations are NOT counted above and cannot be recovered, so the totals\n"+
+			"are a lower bound. Pruning is by age alone — a still-running but quiet writer's segment\n"+
+			"can be among them. See docs/executor-seam-rollback.md.\n", doc.Pruned)
 	}
 	fmt.Fprintf(w, "\nUNKNOWN means no dual-run observation was recorded for that operation. It is NOT\n"+
 		"a statement that the two paths agree: the seam only observes in `shadow`, and the\n"+

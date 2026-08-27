@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -506,6 +507,30 @@ func ApplyCanaryMode() error {
 	return nil
 }
 
+// installedDivergence remembers the recorder THIS process installed, together
+// with the configuration it was installed for.
+//
+// It exists because installation is NOT a one-shot event. ApplyCanaryMode runs
+// on every Attach and every OpenSession, and `graphi mcp` calls OpenSession
+// again — mid-session, in the same already-serving process — whenever the
+// client announces a roots-list change (surfaces/mcp/session.go). Rebuilding a
+// divergence.Store on each of those calls would hand the seam a store with an
+// empty buffer and drop whatever the outgoing one had coalesced but not yet
+// written: up to one flush interval of agreement observations. Mismatches flush
+// immediately and were never at risk, but the observation COUNT is half of what
+// AC-1 promises, and a record that quietly loses counts on a supported
+// lifecycle event is exactly the silent loss the read path refuses to commit
+// when it discloses unreadable and pruned segments as a lower bound.
+//
+// So installation is idempotent for an unchanged configuration — the live store
+// keeps its buffer across a rebind — and every replacement flushes the outgoing
+// store before letting go of it.
+var installedDivergence struct {
+	mu    sync.Mutex
+	store *divergence.Store
+	key   string
+}
+
 // installDivergenceRecorder wires the durable divergence record (SW-232 AC-1)
 // into the executor seam, or removes it again.
 //
@@ -526,28 +551,65 @@ func ApplyCanaryMode() error {
 // serve requests because a diagnostic could not be opened would be the wrong
 // trade. The seam keeps its in-process counter in that case.
 func installDivergenceRecorder() {
-	if !anyCanaryPositionIsDual() {
+	key := divergenceRecorderKey()
+	installedDivergence.mu.Lock()
+	defer installedDivergence.mu.Unlock()
+
+	if key == "" {
+		retireDivergenceStoreLocked()
 		client.SetDivergenceRecorder(nil)
+		return
+	}
+	if installedDivergence.store != nil && installedDivergence.key == key {
+		// Same dual set, same state directory: the store already installed is
+		// still the right one. Keeping it is what carries its buffered
+		// observations through a roots-change rebind instead of dropping them.
 		return
 	}
 	store, err := divergence.NewStore(state.StateDir())
 	if err != nil {
+		retireDivergenceStoreLocked()
 		client.SetDivergenceRecorder(nil)
 		return
 	}
+	retireDivergenceStoreLocked()
+	installedDivergence.store, installedDivergence.key = store, key
 	client.SetDivergenceRecorder(store)
 }
 
-// anyCanaryPositionIsDual reports whether any migrated operation is in a
+// retireDivergenceStoreLocked flushes and forgets the installed store. The
+// flush is the whole point: the buffer is the only place a coalesced
+// observation lives, so a store dropped without one takes those counts with it.
+// A flush that fails is not escalated — the store records its own LastError and
+// the seam's job is still to answer the request, not to enforce the record.
+func retireDivergenceStoreLocked() {
+	if installedDivergence.store != nil {
+		_ = installedDivergence.store.Flush()
+	}
+	installedDivergence.store, installedDivergence.key = nil, ""
+}
+
+// divergenceRecorderKey identifies the configuration a recorder is installed
+// for: the state directory it writes into, plus the set of operations in a
 // position that produces a comparison. Only `shadow` runs both paths; `active`
 // runs one, so it has nothing to compare and nothing honest to record.
-func anyCanaryPositionIsDual() bool {
+//
+// An empty key means "no recorder wanted". The state directory is part of the
+// key because it is not a constant — the environment can repoint it between two
+// ApplyCanaryMode calls in one process — and a store reused after that repoint
+// would keep writing into the previous directory.
+func divergenceRecorderKey() string {
+	var dual []string
 	for _, p := range client.CanaryPositions() {
 		if p.Mode == client.CanaryModeShadow {
-			return true
+			dual = append(dual, p.Operation)
 		}
 	}
-	return false
+	if len(dual) == 0 {
+		return ""
+	}
+	sort.Strings(dual)
+	return state.StateDir() + "\x00" + strings.Join(dual, ",")
 }
 
 // EnvRoot is the environment fallback for an explicit repository root on

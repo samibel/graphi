@@ -1303,3 +1303,21 @@ func TestExecutorDivergenceCheckDisclosesUnreadableSegments(t *testing.T) {
 		t.Errorf("detail does not disclose that the totals are incomplete:\n%s", res.Detail)
 	}
 }
+
+// A record that has pruned segments discloses that its totals are a lower bound
+// too. Pruning is by age alone, with no writer-liveness concept, so what it
+// dropped is not necessarily ancient history — and an operator reading the
+// doctor detail must not have to know that to read the number correctly.
+func TestExecutorDivergenceCheckDisclosesPrunedSegments(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 5,
+		Pruned:       3,
+	}, nil).Run(context.Background(), fakeEnv{})
+	if !strings.Contains(res.Detail, "3 pruned segment(s)") {
+		t.Errorf("detail does not report the pruned segments:\n%s", res.Detail)
+	}
+	if !strings.Contains(res.Detail, "lower bound") {
+		t.Errorf("detail does not disclose that the totals are incomplete:\n%s", res.Detail)
+	}
+}

@@ -200,6 +200,7 @@ func executorDivergence() (doctor.ExecutorDivergence, error) {
 		Observations: doc.Observations,
 		Mismatches:   doc.Mismatches,
 		Unreadable:   doc.Unreadable,
+		Pruned:       doc.Pruned,
 	}
 	for _, op := range doc.Operations {
 		switch op.State {
