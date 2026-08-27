@@ -81,6 +81,13 @@ type Extension struct {
 	waitOnce sync.Once
 	waitErr  error
 
+	// callMu serialises Call. The protocol correlates by id and could multiplex,
+	// but the spike deliberately does not: a single-flight host is one where a
+	// timeout kill cannot abort somebody else's in-flight request, and where two
+	// callers' frames cannot interleave on one pipe. mu, separately, guards the
+	// small mutable state below and is never held across a wait.
+	callMu sync.Mutex
+
 	mu         sync.Mutex
 	nextID     uint64
 	closed     bool
@@ -347,7 +354,17 @@ func (e *Extension) PortViolations() []string {
 }
 
 // Descriptor returns the loaded, verified descriptor.
-func (e *Extension) Descriptor() Descriptor { return e.loaded.Descriptor }
+//
+// The slices are copied: a Descriptor handed out with its Ports aliased would let
+// a caller edit the grant this host is enforcing, which is the one field on it
+// that must not be editable from outside.
+func (e *Extension) Descriptor() Descriptor {
+	d := e.loaded.Descriptor
+	d.Ports = append([]opcatalog.Port(nil), d.Ports...)
+	d.Permissions = append([]opcatalog.Permission(nil), d.Permissions...)
+	d.Capabilities.Provides = append([]string(nil), d.Capabilities.Provides...)
+	return d
+}
 
 // Call runs one operation and returns its result with full provenance.
 //
@@ -360,6 +377,9 @@ func (e *Extension) Descriptor() Descriptor { return e.loaded.Descriptor }
 // for an extension that has already failed its contract, because "we asked it to
 // stop" is not a limit.
 func (e *Extension) Call(ctx context.Context, operation string, args json.RawMessage) (Result, error) {
+	e.callMu.Lock()
+	defer e.callMu.Unlock()
+
 	e.mu.Lock()
 	if e.closed {
 		e.mu.Unlock()
