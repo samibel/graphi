@@ -1,12 +1,12 @@
 package extpack
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
-	"text/template"
+	"strconv"
+	"strings"
 )
 
 // SW-230 (AX-10) — `graphi extension init`, the offline pack scaffold.
@@ -130,7 +130,17 @@ func Scaffold(opts ScaffoldOptions) ([]ScaffoldFile, error) {
 	provides := append([]string(nil), spec.provides...)
 	sort.Strings(provides)
 
-	manifest, err := renderTemplate("pack.yaml", scaffoldManifest, map[string]any{
+	// The provides list is pre-rendered into one block so the substituter below
+	// needs exactly one construct ({{.Key}}) and no loop form. Each key is its own
+	// YAML sequence entry, newline-led, matching the block scalar the manifest
+	// template opens with `provides:`.
+	var providesBlock strings.Builder
+	for _, key := range provides {
+		providesBlock.WriteString("\n    - ")
+		providesBlock.WriteString(key)
+	}
+
+	manifest, err := renderScaffold("pack.yaml", scaffoldManifest, map[string]string{
 		"SchemaVersion": SchemaVersion,
 		"ID":            id,
 		"Version":       ScaffoldVersion,
@@ -138,15 +148,15 @@ func Scaffold(opts ScaffoldOptions) ([]ScaffoldFile, error) {
 		"API":           APIVersion,
 		"ArtifactName":  spec.artifactName,
 		"ArtifactHash":  HashBytes(artifact),
-		"Provides":      provides,
+		"ProvidesBlock": providesBlock.String(),
 		"Permission":    string(PermissionGraphRead),
 		"Determinism":   string(DeterminismDeterministic),
-		"Limit":         ScaffoldLimit,
+		"Limit":         strconv.Itoa(ScaffoldLimit),
 	})
 	if err != nil {
 		return nil, err
 	}
-	readme, err := renderTemplate("README.md", scaffoldReadme, map[string]any{
+	readme, err := renderScaffold("README.md", scaffoldReadme, map[string]string{
 		"ID":            id,
 		"Kind":          string(kind),
 		"ArtifactName":  spec.artifactName,
@@ -157,7 +167,7 @@ func Scaffold(opts ScaffoldOptions) ([]ScaffoldFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	test, err := renderTemplate("pack_test.go", scaffoldTest, map[string]any{"ID": id})
+	test, err := renderScaffold("pack_test.go", scaffoldTest, map[string]string{"ID": id})
 	if err != nil {
 		return nil, err
 	}
@@ -202,16 +212,60 @@ func ScaffoldInto(dir string, opts ScaffoldOptions) ([]string, error) {
 	return written, nil
 }
 
-func renderTemplate(name, text string, data any) ([]byte, error) {
-	tpl, err := template.New(name).Parse(text)
-	if err != nil {
-		return nil, fmt.Errorf("extpack: scaffold template %s: %w", name, err)
+// renderScaffold substitutes {{.Key}} placeholders in a compiled-in template.
+//
+// SW-230 round 1 — this replaces text/template, and the reason is size, not
+// taste. text/template reaches values through reflect.Value.MethodByName, which
+// switches OFF the linker's dead-method elimination for the WHOLE program: every
+// exported method of every reachable type is retained. In this binary that cost
+// ~3.3 MB and blew the binary_size_bytes budget (bench/bench-budget.yml) for a
+// developer-only verb. The scaffold uses one construct — a field substitution —
+// so the whole templating engine was being linked in to do a string replace.
+//
+// It is deliberately STRICTER than text/template rather than looser:
+//
+//   - an unknown key is an error, where text/template renders "<no value>";
+//   - an unterminated or non-".Field" action is an error, where a hand-rolled
+//     ReplaceAll would silently leave it in the output;
+//   - a leftover "{{" after substitution is an error, so a template edit that
+//     adds a construct this renderer does not implement fails loudly at the
+//     first render instead of shipping a broken scaffold.
+//
+// Values are pre-formatted strings, so nothing here touches reflect.
+func renderScaffold(name, text string, data map[string]string) ([]byte, error) {
+	var buf strings.Builder
+	buf.Grow(len(text))
+	rest := text
+	for {
+		i := strings.Index(rest, "{{")
+		if i < 0 {
+			buf.WriteString(rest)
+			break
+		}
+		buf.WriteString(rest[:i])
+		rest = rest[i+2:]
+		j := strings.Index(rest, "}}")
+		if j < 0 {
+			return nil, fmt.Errorf("extpack: scaffold template %s: unterminated {{ action", name)
+		}
+		action := strings.TrimSpace(rest[:j])
+		rest = rest[j+2:]
+		key, ok := strings.CutPrefix(action, ".")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("extpack: scaffold template %s: unsupported action {{%s}}: "+
+				"this renderer implements field substitution only", name, action)
+		}
+		value, ok := data[key]
+		if !ok {
+			return nil, fmt.Errorf("extpack: scaffold template %s: no value for {{.%s}}", name, key)
+		}
+		buf.WriteString(value)
 	}
-	var buf bytes.Buffer
-	if err := tpl.Execute(&buf, data); err != nil {
-		return nil, fmt.Errorf("extpack: render %s: %w", name, err)
+	out := buf.String()
+	if strings.Contains(out, "{{") {
+		return nil, fmt.Errorf("extpack: scaffold template %s: rendered output still contains {{", name)
 	}
-	return buf.Bytes(), nil
+	return []byte(out), nil
 }
 
 const scaffoldManifest = `# graphi extension pack manifest — schema {{.SchemaVersion}}
@@ -244,10 +298,7 @@ artifact:
 # this against the artifact in both directions, so the field cannot become
 # decoration.
 capabilities:
-  provides:
-{{- range .Provides}}
-    - {{.}}
-{{- end}}
+  provides:{{.ProvidesBlock}}
 
 # {{.Permission}} is the only permission a declarative pack can hold. There is no
 # network, filesystem or exec permission to ask for (ADR 0013).
