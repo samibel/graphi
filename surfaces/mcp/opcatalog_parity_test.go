@@ -213,51 +213,53 @@ func diffMaximalRegistry(specs []opcatalog.OperationSpec, live map[string]map[st
 	return problems
 }
 
-// diffStableProfile compares the SECOND advertisement — today the Stable
-// profile disagrees with the maximal registry for ten of the eleven Stable MCP
-// tools — and pins the divergence record in both directions, so it cannot rot
-// into a lie: a variant that stopped being needed and a divergence that appeared
-// without one are both reported.
-func diffStableProfile(specs []opcatalog.OperationSpec, stableLive, maximalLive map[string]map[string]any) (problems, withVariant []string) {
+// diffStableProfile compares the LEGACY Stable-profile descriptors against the
+// catalog's single advertisement, and against the legacy maximal registry.
+//
+// It used to compare a SECOND advertisement: until SW-241 the Stable profile
+// disagreed with the maximal registry for ten of the eleven Stable MCP tools,
+// and the catalog mirrored that in OperationSpec.StableProfileAdvertisement.
+// SW-241 (AX-12) collapsed the divergence — the maximal profile adopted the
+// Stable form — so the catalog holds one advertisement per operation and this
+// function now enforces the invariant that REPLACED the divergence record: the
+// two profiles must advertise every shared tool identically, and the catalog's
+// one advertisement must be that shared form. `converged` reports the tools it
+// actually compared across both profiles, so the check cannot go vacuous
+// unnoticed.
+func diffStableProfile(specs []opcatalog.OperationSpec, stableLive, maximalLive map[string]map[string]any) (problems, converged []string) {
 	for _, spec := range specs {
 		descriptor, advertised := stableLive[spec.ID]
 		if !advertised {
-			if spec.StableProfileAdvertisement != nil {
-				problems = append(problems, fmt.Sprintf(
-					"%s: carries a Stable-profile advertisement, but the Stable profile does not advertise it", spec.ID))
-			}
 			continue
 		}
 		if spec.Tier != opcatalog.TierStable {
 			problems = append(problems, fmt.Sprintf(
 				"%s: advertised in the Stable profile but tiered %q", spec.ID, spec.Tier))
 		}
-		advertisement := spec.Advertisement
-		if spec.StableProfileAdvertisement != nil {
-			withVariant = append(withVariant, spec.ID)
-			advertisement = *spec.StableProfileAdvertisement
-		}
 		// No labs marker: the Stable profile advertises only Stable tools, and
 		// markLabs leaves those untouched.
 		problems = append(problems,
-			diffAdvertisement(spec.ID, "Stable-profile", advertisement, spec.Tier, descriptor, "")...)
+			diffAdvertisement(spec.ID, "Stable-profile", spec.Advertisement, spec.Tier, descriptor, "")...)
 
-		maximalDescriptor := maximalLive[spec.ID]
-		diverges := canonicalValue(descriptor["description"]) != canonicalValue(maximalDescriptor["description"]) ||
-			canonicalValue(descriptor["inputSchema"]) != canonicalValue(maximalDescriptor["inputSchema"]) ||
-			canonicalValue(descriptor["annotations"]) != canonicalValue(maximalDescriptor["annotations"])
-		switch {
-		case diverges && spec.StableProfileAdvertisement == nil:
+		maximalDescriptor, inMaximal := maximalLive[spec.ID]
+		if !inMaximal {
 			problems = append(problems, fmt.Sprintf(
-				"%s: the Stable and maximal profiles advertise it differently, but the catalog "+
-					"records no stable_profile_advertisement", spec.ID))
-		case !diverges && spec.StableProfileAdvertisement != nil:
+				"%s: advertised by the Stable profile but absent from the maximal registry", spec.ID))
+			continue
+		}
+		converged = append(converged, spec.ID)
+		for _, field := range []string{"description", "inputSchema", "annotations"} {
+			if canonicalValue(descriptor[field]) == canonicalValue(maximalDescriptor[field]) {
+				continue
+			}
 			problems = append(problems, fmt.Sprintf(
-				"%s: the catalog records a Stable-profile divergence that no longer exists; "+
-					"drop stable_profile_advertisement", spec.ID))
+				"%s: the Stable and maximal profiles advertise a different %s — SW-241 collapsed "+
+					"that divergence, and re-introducing one is a wire change that needs its own "+
+					"ticket, not a second catalog field\n Stable  = %s\n maximal = %s",
+				spec.ID, field, canonicalValue(descriptor[field]), canonicalValue(maximalDescriptor[field])))
 		}
 	}
-	return problems, withVariant
+	return problems, converged
 }
 
 // ---------------------------------------------------------------------------
@@ -318,7 +320,8 @@ func TestAX03_ShadowCatalog_MatchesTheMaximalDescriptorRegistry(t *testing.T) {
 	report(t, diffMaximalRegistry(shadowCatalog(t).All(), live, labsPrefix))
 }
 
-// AC-2 — the Stable profile's second advertisement, and the divergence record.
+// AC-2 — the Stable profile's descriptors, and (since SW-241) its agreement
+// with the maximal registry.
 func TestAX03_ShadowCatalog_MatchesTheStableProfileDescriptors(t *testing.T) {
 	stableLive, problems := descriptorIndex(legacyStableToolDescriptors())
 	report(t, problems)
@@ -329,10 +332,14 @@ func TestAX03_ShadowCatalog_MatchesTheStableProfileDescriptors(t *testing.T) {
 		t.Fatalf("the Stable profile advertises %d tools, StableMCPToolNames() has %d",
 			len(stableLive), len(StableMCPToolNames()))
 	}
-	problems, withVariant := diffStableProfile(shadowCatalog(t).All(), stableLive, maximalLive)
+	problems, converged := diffStableProfile(shadowCatalog(t).All(), stableLive, maximalLive)
 	report(t, problems)
-	t.Logf("legacy divergence between the Stable and maximal profiles, mirrored by the catalog "+
-		"for %d of %d Stable MCP tools: %v", len(withVariant), len(stableLive), withVariant)
+	if len(converged) != len(stableLive) {
+		t.Errorf("only %d of the %d Stable MCP tools were compared across both profiles; "+
+			"the post-SW-241 convergence check is incomplete: %v", len(converged), len(stableLive), converged)
+	}
+	t.Logf("SW-241: the Stable and maximal profiles agree on all %d of %d Stable MCP tools: %v",
+		len(converged), len(stableLive), converged)
 }
 
 // The catalog stores clean descriptions; a stored `[labs] ` marker would make
@@ -341,10 +348,6 @@ func TestAX03_ShadowCatalog_StoresNoTierMarkerInDescriptions(t *testing.T) {
 	for _, spec := range shadowCatalog(t).All() {
 		if strings.HasPrefix(spec.Description, labsPrefix) {
 			t.Errorf("%s: description stores the %q marker", spec.ID, labsPrefix)
-		}
-		if spec.StableProfileAdvertisement != nil &&
-			strings.HasPrefix(spec.StableProfileAdvertisement.Description, labsPrefix) {
-			t.Errorf("%s: Stable-profile description stores the %q marker", spec.ID, labsPrefix)
 		}
 	}
 }
@@ -461,36 +464,54 @@ func TestAX03_ParityGate_DetectsEveryDriftClass(t *testing.T) {
 			t.Fatal("a descriptor key no OperationSpec field mirrors was not reported")
 		}
 	})
-	t.Run("a divergence record that no longer matches", func(t *testing.T) {
-		perturbed := append([]opcatalog.OperationSpec(nil), specs...)
-		for i := range perturbed {
-			if perturbed[i].StableProfileAdvertisement != nil {
-				perturbed[i].StableProfileAdvertisement = nil
-				break
+	// SW-241 replaced the two divergence-record drift classes (a record that no
+	// longer matched the surface, and one invented where the profiles agreed)
+	// with the invariant that outlived them: after the collapse the two profiles
+	// must advertise every shared tool identically. Both directions of THAT are
+	// perturbed here — a profile that re-diverges, and a catalog advertisement
+	// that stops matching the profile it is supposed to describe.
+	t.Run("the maximal profile re-diverges from the Stable one", func(t *testing.T) {
+		tampered := make(map[string]map[string]any, len(maximalLive))
+		for name, descriptor := range maximalLive {
+			copied := make(map[string]any, len(descriptor))
+			for k, v := range descriptor {
+				copied[k] = v
+			}
+			tampered[name] = copied
+		}
+		var target string
+		for name := range stableLive {
+			if _, ok := tampered[name]; ok && (target == "" || name < target) {
+				target = name
 			}
 		}
-		got, _ := diffStableProfile(perturbed, stableLive, maximalLive)
+		if target == "" {
+			t.Fatal("no tool is advertised by both profiles; the convergence check would be vacuous")
+		}
+		delete(tampered[target], "annotations")
+		tampered[target]["description"] = "re-diverged"
+		got, _ := diffStableProfile(specs, stableLive, tampered)
 		if len(got) == 0 {
-			t.Fatal("dropping a still-needed stable_profile_advertisement was not reported")
+			t.Fatalf("re-diverging %q between the two profiles was not reported", target)
 		}
 	})
-	t.Run("a divergence record invented where the profiles agree", func(t *testing.T) {
+	t.Run("the catalog advertisement stops matching the Stable profile", func(t *testing.T) {
 		perturbed := append([]opcatalog.OperationSpec(nil), specs...)
-		invented := false
+		tampered := false
 		for i := range perturbed {
-			if perturbed[i].StableProfileAdvertisement == nil && stableLive[perturbed[i].ID] != nil {
-				advertisement := perturbed[i].Advertisement
-				perturbed[i].StableProfileAdvertisement = &advertisement
-				invented = true
-				break
+			if stableLive[perturbed[i].ID] == nil {
+				continue
 			}
+			perturbed[i].Description += " (tampered)"
+			tampered = true
+			break
 		}
-		if !invented {
-			t.Skip("every Stable-profile tool already carries a divergence record")
+		if !tampered {
+			t.Fatal("the catalog holds no Stable-profile operation to perturb")
 		}
 		got, _ := diffStableProfile(perturbed, stableLive, maximalLive)
 		if len(got) == 0 {
-			t.Fatal("an invented stable_profile_advertisement was not reported")
+			t.Fatal("a catalog advertisement that no longer matches the Stable profile was not reported")
 		}
 	})
 	t.Run("a duplicate live descriptor", func(t *testing.T) {

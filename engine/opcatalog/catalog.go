@@ -186,8 +186,8 @@ func (c *Catalog) IDsWithTier(tier Tier) []string {
 	return out
 }
 
-// copySpec deep-copies the slice fields and the optional Stable-profile
-// advertisement. The decoded JSON values (InputSchema, Annotations) are shared
+// copySpec deep-copies the slice fields. The decoded JSON values
+// (InputSchema, Annotations) are shared
 // by reference — they are treated as immutable by every consumer, and cloning
 // arbitrary decoded JSON on every read would cost more than it protects. The
 // parity tests compare them through CanonicalJSON, which reads and never
@@ -199,10 +199,6 @@ func copySpec(spec OperationSpec) OperationSpec {
 	}
 	if spec.Permissions != nil {
 		out.Permissions = append([]Permission(nil), spec.Permissions...)
-	}
-	if spec.StableProfileAdvertisement != nil {
-		advertisement := *spec.StableProfileAdvertisement
-		out.StableProfileAdvertisement = &advertisement
 	}
 	return out
 }

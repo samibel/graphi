@@ -331,11 +331,24 @@ func legacyMaximalToolDescriptors() []map[string]any {
 				"description": fmt.Sprintf("hop depth (clamped to MaxNeighborhoodDepth=%d)", query.MaxNeighborhoodDepth),
 			}
 		}
-		tools = append(tools, map[string]any{
+		descriptor := map[string]any{
 			"name":        op,
 			"description": "structural query: " + op,
 			"inputSchema": map[string]any{"type": "object", "properties": props, "required": required},
-		})
+		}
+		// SW-241 (AX-12): the read-only annotations used to be a Stable-profile
+		// exclusive, so a `-labs` session lost hints a default one always got.
+		// The maximal profile adopted them — but ONLY for the tools that
+		// actually diverged. query.Operations also carries five Labs-only
+		// structural queries (implementers, implements, overrides, subtypes,
+		// supertypes) that the Stable profile never advertises, so they have no
+		// Stable form to adopt; annotating them here would be an unrequested
+		// wire change riding along with a collapse, which is exactly the class
+		// of silent widening this program exists to prevent.
+		if IsStableMCPTool(op) {
+			descriptor["annotations"] = readOnlyToolAnnotations()
+		}
+		tools = append(tools, descriptor)
 	}
 	tools = append(tools, map[string]any{
 		"name":        ToolSearch,
@@ -348,6 +361,7 @@ func legacyMaximalToolDescriptors() []map[string]any {
 			},
 			"required": []string{"symbol"},
 		},
+		"annotations": readOnlyToolAnnotations(),
 	})
 	// Optional semantic search (SW-059). Advertised whenever the search tool is —
 	// it is always callable through the client and cleanly reports "unavailable"
@@ -556,16 +570,29 @@ func legacyMaximalToolDescriptors() []map[string]any {
 	})
 	// EP-020 agent-first task tools (SW-115 / SW-116 / SW-117) plus EP-024 (SW-134). Advertised
 	// unconditionally: they require only the engine/agenttools packages, not a
-	// separate service. Each descriptor uses the hardened six-facet
-	// template (purpose, when-to-use, when-not-to-use, input shape, read-only,
-	// partial-possible) and carries explicit read-only annotations.
+	// separate service.
+	//
+	// SW-241 (AX-12): these four used to carry a SECOND, longer six-facet
+	// description and a narrower input schema here, while the Stable profile
+	// advertised the terse form above. The maximal profile adopted the
+	// Stable-profile advertisement — one descriptor per tool, and the shipped
+	// default profile did not move a byte.
+	//
+	// Stated plainly, because it is the cost of the direction chosen: `-labs`
+	// sessions GAIN explain_symbol's `limit`, related_files' `limit` and
+	// change_risk's `limit`, and LOSE the longer six-facet prose. The prose was
+	// never advertised to a default session, so no client that has it today
+	// loses it in the shipped profile; the alternative direction would have
+	// stripped a documented argument from that shipped profile instead, which
+	// the story forbids.
 	tools = append(tools, map[string]any{
 		"name":        ToolExplainSymbol,
-		"description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+		"description": "return a compact, cited symbol identity and immediate neighborhood",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"symbol": map[string]any{"type": "string", "description": "symbol reference: qualified id, file:line anchor, or bare name"},
+				"symbol": map[string]any{"type": "string", "description": "qualified id, file:line anchor, or bare name"},
+				"limit":  map[string]any{"type": "integer", "description": "maximum returned items"},
 			},
 			"required": []string{"symbol"},
 		},
@@ -573,12 +600,13 @@ func legacyMaximalToolDescriptors() []map[string]any {
 	})
 	tools = append(tools, map[string]any{
 		"name":        ToolRelatedFiles,
-		"description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+		"description": "return a deterministically ranked read-first file list around an anchor",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"target":    map[string]any{"type": "string", "description": "anchor: symbol id, file path, or diff line-oriented refs"},
-				"direction": map[string]any{"type": "string", "description": "dependencies | dependents | both (default)"},
+				"target":    map[string]any{"type": "string", "description": "symbol id, file path, or diff anchor"},
+				"direction": map[string]any{"type": "string", "description": "dependencies | dependents | both"},
+				"limit":     map[string]any{"type": "integer", "description": "maximum returned files"},
 			},
 			"required": []string{"target"},
 		},
@@ -586,12 +614,13 @@ func legacyMaximalToolDescriptors() []map[string]any {
 	})
 	tools = append(tools, map[string]any{
 		"name":        ToolChangeRisk,
-		"description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+		"description": "return an evidence-based change-risk assessment for a target or diff",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"target": map[string]any{"type": "string", "description": "symbol id or file path to evaluate"},
-				"diff":   map[string]any{"type": "string", "description": "local-first unified diff or line-oriented refs (alternative to target)"},
+				"target": map[string]any{"type": "string", "description": "symbol id or file path"},
+				"diff":   map[string]any{"type": "string", "description": "unified diff or line-oriented refs"},
+				"limit":  map[string]any{"type": "integer", "description": "maximum returned items"},
 			},
 		},
 		"annotations": readOnlyToolAnnotations(),
@@ -599,11 +628,11 @@ func legacyMaximalToolDescriptors() []map[string]any {
 	// EP-024 agent_brief: bounded task-start context packet.
 	tools = append(tools, map[string]any{
 		"name":        ToolAgentBrief,
-		"description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+		"description": "return a bounded, cited task-start context packet",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"symbol": map[string]any{"type": "string", "description": "optional topic: symbol id, file path, or subsystem name"},
+				"symbol": map[string]any{"type": "string", "description": "optional topic: symbol, path, or subsystem"},
 			},
 		},
 		"annotations": readOnlyToolAnnotations(),

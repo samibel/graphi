@@ -298,19 +298,19 @@ type OperationSpec struct {
 	// Tier is the machine stability tier.
 	Tier Tier `json:"tier"`
 
-	// Advertisement is the canonical presentation — the one the maximal
-	// (Stable+Labs) registry uses.
+	// Advertisement is THE presentation, for every binding profile.
+	//
+	// It used to be only half of one. SW-223 recorded that the Stable MCP
+	// profile advertised ten of its eleven tools with a different description,
+	// input schema or annotation set than the maximal (Stable+Labs) registry
+	// did, and carried the second form alongside this one in a
+	// `StableProfileAdvertisement` field. SW-241 (AX-12) collapsed that: the
+	// maximal profile adopted the Stable-profile form, the shipped default
+	// profile did not move a byte, and the second field was removed rather than
+	// left behind as a vestigial always-equal fact. A spec now states what every
+	// profile advertises, and surfaces/mcp's projection has nothing to choose
+	// between.
 	Advertisement
-
-	// StableProfileAdvertisement records a LEGACY DIVERGENCE, and is nil when
-	// there is none: today the Stable profile advertises ten of the eleven
-	// Stable MCP tools with a different description, input schema or annotation
-	// set than the maximal registry does (surfaces/mcp.stableToolDescriptors vs
-	// maximalToolDescriptors). Both forms are frozen by the AX-00 goldens, so
-	// they are facts about the surface, not a bug this story may quietly
-	// normalise. Mirroring them is AX-03's job; deciding which one survives
-	// when descriptors are DERIVED from the catalog is AX-05's.
-	StableProfileAdvertisement *Advertisement `json:"stable_profile_advertisement,omitempty"`
 
 	// Ports are the host seams the operation requires, sorted.
 	Ports []Port `json:"ports"`
@@ -373,15 +373,6 @@ func (s OperationSpec) Validate() error {
 	}
 	if err := s.validateDeterminism(); err != nil {
 		return err
-	}
-	if s.StableProfileAdvertisement != nil {
-		if s.Tier != TierStable {
-			return fmt.Errorf("opcatalog: %q: a Stable-profile advertisement on a %s "+
-				"operation is impossible — the Stable profile never advertises it", s.ID, s.Tier)
-		}
-		if strings.TrimSpace(s.StableProfileAdvertisement.Description) == "" {
-			return fmt.Errorf("opcatalog: %q: empty Stable-profile description", s.ID)
-		}
 	}
 	return nil
 }

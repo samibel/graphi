@@ -220,64 +220,88 @@ func TestAX05_RollbackSwitch_SelectsTheServedSource(t *testing.T) {
 	}
 }
 
-// The divergence decision, asserted as data. SW-223 found that ten of the eleven
-// Stable MCP tools are advertised differently by the two profiles; SW-225
-// PRESERVED that (see descriptors_projected.go's header for why). This test
-// pins the decision so a later story cannot collapse it by accident — the
-// failure text is where the argument lives.
-func TestAX05_StableProfileDivergence_IsPreservedDeliberately(t *testing.T) {
-	catalog, err := opcatalog.Shadow()
-	if err != nil {
-		t.Fatalf("opcatalog.Shadow(): %v", err)
-	}
-	wantDivergent := map[string]string{
-		"agent_brief":    "description + input schema",
-		"callees":        "annotations",
-		"callers":        "annotations",
-		"change_risk":    "description + input schema",
-		"definition":     "annotations",
-		"explain_symbol": "description + input schema (the maximal form has no `limit`)",
-		"neighborhood":   "annotations",
-		"references":     "annotations",
-		"related_files":  "description + input schema",
-		"search":         "annotations",
-	}
-	const wantAgreeing = "impact"
-
-	got := map[string]bool{}
-	for _, spec := range catalog.All() {
-		if spec.StableProfileAdvertisement != nil {
-			got[spec.ID] = true
-		}
-	}
-	for id, kind := range wantDivergent {
-		if !got[id] {
-			t.Errorf("%s no longer records a Stable-profile divergence (%s). If that was deliberate, "+
-				"it is a WIRE CHANGE to a frozen Stable operation: update this list, the AX-00 golden "+
-				"and the reasoning in descriptors_projected.go together.", id, kind)
-		}
-		delete(got, id)
-	}
-	for id := range got {
-		t.Errorf("%s newly diverges between the Stable and maximal profiles; SW-225 recorded exactly "+
-			"ten such operations and %q as the only agreeing one", id, wantAgreeing)
-	}
-	if spec, ok := catalog.Lookup(wantAgreeing); !ok || spec.StableProfileAdvertisement != nil {
-		t.Errorf("%q was the one Stable tool both profiles agreed on; it no longer is", wantAgreeing)
-	}
-
-	// The projection is what CHOOSES between the two forms, so prove it chose:
-	// explain_symbol's Stable descriptor must carry `limit` and the maximal one
-	// must not.
+// SW-241 (AX-12) — the divergence is COLLAPSED, asserted as data.
+//
+// SW-223 found that ten of the eleven Stable MCP tools were advertised
+// differently by the two profiles, and SW-225 deliberately preserved that
+// (TestAX05_StableProfileDivergence_IsPreservedDeliberately, replaced by this
+// test). SW-241 collapsed it in the direction the analysis had already chosen:
+// the MAXIMAL profile adopted the Stable-profile advertisement, so the shipped
+// default profile did not move a byte and only the maximal/stdio-labs/
+// daemon-labs goldens did.
+//
+// This test pins the RESULT, in both directions. A re-divergence — a tool the
+// two profiles describe, schema or annotate differently — fails here with the
+// tool named, and so does the specific regression the collapse was worth doing
+// for: explain_symbol's `limit` argument, which the maximal profile used to
+// omit, must now be advertised by BOTH profiles.
+func TestAX12_ProfileAdvertisements_AgreeAcrossProfiles(t *testing.T) {
 	stable := stableToolDescriptors()
 	maximal := maximalToolDescriptors()
+
+	maximalByName := make(map[string]map[string]any, len(maximal))
+	for _, descriptor := range maximal {
+		name, _ := descriptor["name"].(string)
+		maximalByName[name] = descriptor
+	}
+
+	compared := 0
+	for _, stableDescriptor := range stable {
+		name, _ := stableDescriptor["name"].(string)
+		maximalDescriptor, ok := maximalByName[name]
+		if !ok {
+			t.Errorf("%s: advertised by the Stable profile but not by the maximal one", name)
+			continue
+		}
+		compared++
+		for _, field := range []string{"description", "inputSchema", "annotations"} {
+			want := canonicalField(t, stableDescriptor[field])
+			got := canonicalField(t, maximalDescriptor[field])
+			if want == got {
+				continue
+			}
+			t.Errorf("%s: the two profiles advertise a different %s — SW-241 collapsed that "+
+				"divergence, and re-introducing one is a wire change that needs its own ticket\n"+
+				" Stable  = %s\n maximal = %s", name, field, want, got)
+		}
+	}
+	if compared != len(StableMCPToolNames()) {
+		t.Fatalf("compared %d tools, the Stable profile advertises %d — the comparison is incomplete",
+			compared, len(StableMCPToolNames()))
+	}
+
+	// The concrete argument the collapse restored to `-labs` sessions.
 	if !descriptorHasProperty(stable, "explain_symbol", "limit") {
-		t.Error("the projected Stable profile lost explain_symbol's `limit` argument")
+		t.Error("the Stable profile lost explain_symbol's `limit` argument")
 	}
-	if descriptorHasProperty(maximal, "explain_symbol", "limit") {
-		t.Error("the projected maximal profile grew explain_symbol's `limit` argument — that is the " +
-			"collapse SW-225 deliberately did not perform")
+	if !descriptorHasProperty(maximal, "explain_symbol", "limit") {
+		t.Error("the maximal profile does not advertise explain_symbol's `limit` argument; " +
+			"SW-241 AC-1 required it to adopt the Stable-profile input schema")
 	}
+	// The concrete annotations the collapse restored: the six structural query
+	// tools plus `search` carried read-only annotations in the Stable profile
+	// only.
+	for _, name := range []string{"callers", "callees", "references", "definition", "neighborhood", "search"} {
+		if maximalByName[name]["annotations"] == nil {
+			t.Errorf("%s: the maximal profile still advertises no annotations; SW-241 AC-1 "+
+				"required it to adopt the Stable-profile annotation set", name)
+		}
+	}
+}
+
+// canonicalField renders one descriptor field as stable bytes so a reordered map
+// key cannot read as a difference and a changed `required` list cannot read as
+// equality.
+func canonicalField(t *testing.T, v any) string {
+	t.Helper()
+	if v == nil {
+		return "<absent>"
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal descriptor field: %v", err)
+	}
+	return string(b)
 }
 
 func descriptorHasProperty(descriptors []map[string]any, tool, property string) bool {
