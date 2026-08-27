@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -10,19 +11,81 @@ import (
 // SW-226 (AX-06): the kill switch reaches the composition root.
 //
 // The switch itself is tested in surfaces/client; what is tested here is the
-// plumbing an operator actually touches — the environment variable — and the
+// plumbing an operator actually touches — the environment variables — and the
 // two properties that make it a kill switch rather than a suggestion: every
 // declared position installs, and an undeclared one fails the session instead of
 // being ignored.
+//
+// SW-228 (AX-08) made the switch per operation. Two things follow, and both are
+// checked below: GRAPHI_CANARY_DEAD_CODE keeps its exact spelling and now moves
+// exactly the operation it names, and GRAPHI_CANARY_ALL exists so an operator
+// can still move the whole seam in one action.
 
 func restoreCanaryMode(t *testing.T) {
 	t.Helper()
-	previous := client.CanaryModeSetting()
-	t.Cleanup(func() {
-		if err := client.SetCanaryMode(previous); err != nil {
-			t.Fatalf("restore canary mode %q: %v", previous, err)
+	t.Cleanup(client.ResetCanaryModes)
+	client.ResetCanaryModes()
+}
+
+// TestEnvCanaryMode_MatchesTheDerivedName pins the one constant that is spelled
+// out rather than derived, so the literal and the deriving function cannot
+// drift apart.
+func TestEnvCanaryMode_MatchesTheDerivedName(t *testing.T) {
+	if got := EnvCanaryModeFor(client.CanaryOperation); got != EnvCanaryMode {
+		t.Fatalf("EnvCanaryModeFor(%q) = %q, but EnvCanaryMode = %q",
+			client.CanaryOperation, got, EnvCanaryMode)
+	}
+}
+
+// TestApplyCanaryMode_EveryMigratedOperationHasAVariable is the AX-08 widening:
+// ten operations dispatch through the seam, so ten switches must reach the
+// composition root. A migrated operation with no environment variable is an
+// operation that cannot be rolled back without a release.
+func TestApplyCanaryMode_EveryMigratedOperationHasAVariable(t *testing.T) {
+	restoreCanaryMode(t)
+	operations := client.MigratedOperations()
+	if len(operations) < 2 {
+		t.Fatalf("MigratedOperations() = %v — AX-08 migrates a set", operations)
+	}
+	for _, operation := range operations {
+		name := EnvCanaryModeFor(operation)
+		if !strings.HasPrefix(name, EnvCanaryModePrefix) {
+			t.Errorf("%q derives the variable name %q", operation, name)
 		}
-	})
+		t.Setenv(name, string(client.CanaryModeActive))
+		if err := ApplyCanaryMode(); err != nil {
+			t.Fatalf("%s=active: %v", name, err)
+		}
+		if got := client.CanaryModeFor(operation); got != client.CanaryModeActive {
+			t.Errorf("%s=active installed %q for %q", name, got, operation)
+		}
+		// And only that operation moved.
+		for _, other := range operations {
+			if other == operation {
+				continue
+			}
+			if got := client.CanaryModeFor(other); got != client.CanaryModeLegacy {
+				t.Errorf("%s=active also moved %q to %q", name, other, got)
+			}
+		}
+		// Remove it again before the next iteration: a loop that left every
+		// earlier variable set would make the "only that operation moved"
+		// assertion above pass for the wrong reason. t.Setenv has already
+		// registered the restore, so unsetting here is safe.
+		if err := os.Unsetenv(name); err != nil {
+			t.Fatalf("unset %s: %v", name, err)
+		}
+	}
+}
+
+// unsetAndApply removes one kill-switch variable and re-runs the composition
+// root's application step — the "operator removed the variable and restarted
+// the session" sequence.
+func unsetAndApply(name string) error {
+	if err := os.Unsetenv(name); err != nil {
+		return err
+	}
+	return ApplyCanaryMode()
 }
 
 func TestApplyCanaryMode_InstallsEveryDeclaredPosition(t *testing.T) {
@@ -32,23 +95,67 @@ func TestApplyCanaryMode_InstallsEveryDeclaredPosition(t *testing.T) {
 		if err := ApplyCanaryMode(); err != nil {
 			t.Fatalf("%s=%s: %v", EnvCanaryMode, mode, err)
 		}
-		if got := client.CanaryModeSetting(); got != mode {
+		if got := client.CanaryModeFor(client.CanaryOperation); got != mode {
 			t.Errorf("%s=%s installed %q", EnvCanaryMode, mode, got)
+		}
+	}
+}
+
+// TestApplyCanaryMode_AllMovesEveryOperation covers the whole-seam switch, and
+// the precedence rule: a per-operation variable wins over it.
+func TestApplyCanaryMode_AllMovesEveryOperation(t *testing.T) {
+	restoreCanaryMode(t)
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeShadow))
+	t.Setenv(EnvCanaryMode, string(client.CanaryModeLegacy))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeLegacy {
+		t.Errorf("%s did not win over %s: %q", EnvCanaryMode, EnvCanaryModeAll, got)
+	}
+	for _, operation := range client.MigratedOperations() {
+		if operation == client.CanaryOperation {
+			continue
+		}
+		if got := client.CanaryModeFor(operation); got != client.CanaryModeShadow {
+			t.Errorf("%s=shadow left %q at %q", EnvCanaryModeAll, operation, got)
 		}
 	}
 }
 
 func TestApplyCanaryMode_UnsetLeavesTheCompiledInDefault(t *testing.T) {
 	restoreCanaryMode(t)
-	if err := client.SetCanaryMode(client.CanaryModeShadow); err != nil {
-		t.Fatalf("SetCanaryMode: %v", err)
-	}
-	before := client.CanaryModeSetting()
 	if err := ApplyCanaryMode(); err != nil {
 		t.Fatalf("ApplyCanaryMode with %s unset: %v", EnvCanaryMode, err)
 	}
-	if got := client.CanaryModeSetting(); got != before {
-		t.Errorf("an unset %s changed the position from %q to %q", EnvCanaryMode, before, got)
+	for _, operation := range client.MigratedOperations() {
+		if got := client.CanaryModeFor(operation); got != client.CanaryModeLegacy {
+			t.Errorf("with no variable set, %q reports %q — the compiled-in default is %q",
+				operation, got, client.CanaryModeLegacy)
+		}
+	}
+}
+
+// TestApplyCanaryMode_ClearingAVariableRollsBack is the property the reset at
+// the top of ApplyCanaryMode buys. A process that runs more than one session —
+// the daemon, and every test binary — must not carry a previous session's
+// position past the point where the operator removed it.
+func TestApplyCanaryMode_ClearingAVariableRollsBack(t *testing.T) {
+	restoreCanaryMode(t)
+	t.Setenv(EnvCanaryMode, string(client.CanaryModeActive))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeActive {
+		t.Fatalf("the position did not install: %q", got)
+	}
+	// The operator removes the variable and the session restarts.
+	if err := unsetAndApply(EnvCanaryMode); err != nil {
+		t.Fatalf("ApplyCanaryMode after unset: %v", err)
+	}
+	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeLegacy {
+		t.Errorf("after the variable was removed the position is still %q — a kill switch "+
+			"that cannot be turned off is not a kill switch", got)
 	}
 }
 
@@ -57,21 +164,18 @@ func TestApplyCanaryMode_UnsetLeavesTheCompiledInDefault(t *testing.T) {
 // position they were trying to leave.
 func TestApplyCanaryMode_RejectsATypo(t *testing.T) {
 	restoreCanaryMode(t)
-	if err := client.SetCanaryMode(client.CanaryModeActive); err != nil {
-		t.Fatalf("SetCanaryMode: %v", err)
-	}
-	for _, bad := range []string{"lecacy", "LEGACY", "off", "1", " shadow"} {
-		t.Setenv(EnvCanaryMode, bad)
-		err := ApplyCanaryMode()
-		if err == nil {
-			t.Fatalf("%s=%q was accepted; a mistyped rollback must fail the session, not be "+
-				"ignored", EnvCanaryMode, bad)
+	for _, name := range []string{EnvCanaryMode, EnvCanaryModeAll} {
+		for _, bad := range []string{"lecacy", "LEGACY", "off", "1", " shadow"} {
+			t.Setenv(name, bad)
+			err := ApplyCanaryMode()
+			if err == nil {
+				t.Fatalf("%s=%q was accepted; a mistyped rollback must fail the session, not be "+
+					"ignored", name, bad)
+			}
+			if !strings.Contains(err.Error(), name) {
+				t.Errorf("the failure does not name %s: %v", name, err)
+			}
 		}
-		if !strings.Contains(err.Error(), EnvCanaryMode) {
-			t.Errorf("the failure does not name %s: %v", EnvCanaryMode, err)
-		}
-		if got := client.CanaryModeSetting(); got != client.CanaryModeActive {
-			t.Errorf("a rejected value still moved the switch to %q", got)
-		}
+		t.Setenv(name, string(client.CanaryModeLegacy))
 	}
 }

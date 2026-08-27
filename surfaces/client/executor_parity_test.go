@@ -104,6 +104,52 @@ func executorParityCases(ids map[string]model.NodeId) []executorParityCase {
 				return c.DeadCode(ctx, DeadCodeParams{MaxItems: 3})
 			},
 		},
+		// SW-228 (AX-08): the six agent tools this story migrates. Every one is
+		// a REAL call against the shared fixture, and every one carries a
+		// non-default argument so the case proves the argument reaches the
+		// engine rather than proving two default-shaped calls agree.
+		{
+			operation: "architecture",
+			args:      &ArchitectureArgs{MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.Architecture(ctx, ArchitectureParams{MaxItems: 3})
+			},
+		},
+		{
+			operation: "architecture_violations",
+			args:      &ArchitectureViolationsArgs{MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.ArchitectureViolations(ctx, ArchitectureViolationsParams{MaxItems: 3})
+			},
+		},
+		{
+			operation: "framework_map",
+			args:      &FrameworkMapArgs{MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.FrameworkMap(ctx, FrameworkMapParams{MaxItems: 3})
+			},
+		},
+		{
+			operation: "repo_overview",
+			args:      &RepoOverviewArgs{MaxItems: 3, Communities: true},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.RepoOverview(ctx, RepoOverviewParams{MaxItems: 3, Communities: true})
+			},
+		},
+		{
+			operation: "search_hybrid",
+			args:      &SearchHybridArgs{Query: "p.B", MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.SearchHybrid(ctx, SearchHybridParams{Query: "p.B", MaxItems: 3})
+			},
+		},
+		{
+			operation: "test_impact",
+			args:      &TestImpactArgs{Target: symbol, Depth: 2, MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.TestImpact(ctx, TestImpactParams{Target: symbol, Depth: 2, MaxItems: 3})
+			},
+		},
 		{
 			operation: "search",
 			args:      &SearchArgs{Query: "p.", Limit: 10},

@@ -1121,3 +1121,86 @@ func TestMCPCheckDetailEmptyWhenAllPass(t *testing.T) {
 		t.Fatalf("all clients pass, detail must be empty, got %q", res.Detail)
 	}
 }
+
+// SW-228 (AX-08): the executor-seam readout. It is the operator-visible half of
+// the story's gating precondition — the strangler seam's configuration must be
+// observable through a local, zero-egress diagnostic — so each of its three
+// outcomes is exercised rather than described.
+func TestExecutorSeamCheckReportsThePositions(t *testing.T) {
+	positions := []ExecutorSeamPosition{
+		{Operation: "compound", Mode: "legacy", EnvVar: "GRAPHI_CANARY_COMPOUND"},
+		{Operation: "dead_code", Mode: "legacy", EnvVar: "GRAPHI_CANARY_DEAD_CODE"},
+	}
+	res := ExecutorSeamCheck(positions, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("the shipped configuration is %q, want %q", res.Status, StatusInfo)
+	}
+	if !strings.Contains(res.Message, "2 legacy") {
+		t.Errorf("message does not count the positions: %q", res.Message)
+	}
+	if res.Action != "" {
+		t.Errorf("the shipped configuration needs no action, got %q", res.Action)
+	}
+	// The detail names every operation, its position, and where the position
+	// came from — that is what makes the readout actionable rather than a count.
+	for _, want := range []string{
+		"compound: legacy (compiled-in default)",
+		"dead_code: legacy (compiled-in default)",
+		"not persisted",
+	} {
+		if !strings.Contains(res.Detail, want) {
+			t.Errorf("detail is missing %q:\n%s", want, res.Detail)
+		}
+	}
+}
+
+// TestExecutorSeamCheckWarnsOnShadow pins the one non-shipped position that
+// costs something on every call. An operator who left it on must be told.
+func TestExecutorSeamCheckWarnsOnShadow(t *testing.T) {
+	res := ExecutorSeamCheck([]ExecutorSeamPosition{
+		{Operation: "dead_code", Mode: "shadow", Overridden: true, EnvVar: "GRAPHI_CANARY_DEAD_CODE"},
+		{Operation: "compound", Mode: "legacy", EnvVar: "GRAPHI_CANARY_COMPOUND"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusWarn {
+		t.Fatalf("shadow reports %q, want %q — every call runs twice in that position",
+			res.Status, StatusWarn)
+	}
+	if !strings.Contains(res.Action, "dead_code") {
+		t.Errorf("the action does not name the operation to roll back: %q", res.Action)
+	}
+	if !strings.Contains(res.Detail, "dead_code: shadow (GRAPHI_CANARY_DEAD_CODE)") {
+		t.Errorf("detail does not attribute the position to its variable:\n%s", res.Detail)
+	}
+}
+
+// TestExecutorSeamCheckReportsActive pins the third position: not a warning
+// (nothing is paid twice) but never silent, because the executor is authoritative.
+func TestExecutorSeamCheckReportsActive(t *testing.T) {
+	res := ExecutorSeamCheck([]ExecutorSeamPosition{
+		{Operation: "dead_code", Mode: "active", Overridden: true, EnvVar: "GRAPHI_CANARY_DEAD_CODE"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("active reports %q, want %q", res.Status, StatusInfo)
+	}
+	if !strings.Contains(res.Action, "roll back") {
+		t.Errorf("the action does not offer the rollback: %q", res.Action)
+	}
+}
+
+// TestExecutorSeamCheckFailsOnAnInvalidVariable is the fail-closed half. A
+// mistyped GRAPHI_CANARY_* value stops a real session at startup, so a
+// diagnostic that reported the compiled-in positions and a green line would be
+// telling the operator the opposite of what they are about to hit.
+func TestExecutorSeamCheckFailsOnAnInvalidVariable(t *testing.T) {
+	res := ExecutorSeamCheck(nil, errors.New(`GRAPHI_CANARY_DEAD_CODE: "lecacy" is not a kill-switch position`)).
+		Run(context.Background(), fakeEnv{})
+	if res.Status != StatusFail {
+		t.Fatalf("an invalid kill-switch variable reports %q, want %q", res.Status, StatusFail)
+	}
+	if !strings.Contains(res.Message, "GRAPHI_CANARY_DEAD_CODE") {
+		t.Errorf("the message does not name the variable: %q", res.Message)
+	}
+	if res.Action == "" {
+		t.Error("a fail with no action leaves the operator nowhere to go")
+	}
+}

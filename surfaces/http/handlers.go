@@ -126,7 +126,8 @@ func (s *Server) handleCompound(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read compound body")
 		return
 	}
-	raw, err := s.client.Compound(r.Context(), string(body))
+	// SW-228 (AX-08): migrated — dispatched through the shared executor seam.
+	raw, err := client.DispatchOperation(r.Context(), s.client, &client.CompoundArgs{Query: string(body)})
 	if err != nil {
 		writeErrSanitized(w, err)
 		return
@@ -155,7 +156,11 @@ func (s *Server) handleSearchAST(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = v
 	}
-	raw, err := s.client.SearchAST(r.Context(), string(body), limit)
+	// SW-228 (AX-08): migrated — dispatched through the shared executor seam.
+	raw, err := client.DispatchOperation(r.Context(), s.client, &client.SearchASTArgs{
+		Pattern: string(body),
+		Limit:   limit,
+	})
 	if err != nil {
 		writeErrSanitized(w, err)
 		return
@@ -173,7 +178,8 @@ func (s *Server) handleFindClones(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "bad_request", "cannot read find-clones body")
 		return
 	}
-	raw, err := s.client.FindClones(r.Context(), string(body))
+	// SW-228 (AX-08): migrated — dispatched through the shared executor seam.
+	raw, err := client.DispatchOperation(r.Context(), s.client, &client.FindClonesArgs{Config: string(body)})
 	if err != nil {
 		writeErrSanitized(w, err)
 		return
@@ -299,6 +305,12 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 	var (
 		raw []byte
 		err error
+		// SW-228 (AX-08): when the switch below sets `migrated`, the request is
+		// served by the ONE generic executor branch after the switch instead of
+		// by a client call inside it. The switch keeps the argument mapping —
+		// which query parameter means what is this transport's business and
+		// nobody else's — and gives up the dispatch.
+		migrated client.Arguments
 	)
 	switch name {
 	case "explain_symbol":
@@ -375,10 +387,10 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 		}
 		raw, err = s.client.TaskContext(r.Context(), p)
 	case "repo_overview":
-		raw, err = s.client.RepoOverview(r.Context(), client.RepoOverviewParams{
+		migrated = &client.RepoOverviewArgs{
 			MaxItems:    maxItems,
 			Communities: q.Get("communities") == "1" || q.Get("communities") == "true",
-		})
+		}
 	case "test_impact", "change_impact":
 		// Diff targeting is not offered over the GET-only surface (the
 		// change_risk precedent); target mode only.
@@ -400,7 +412,7 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			depth = v
 		}
 		if name == "test_impact" {
-			raw, err = s.client.TestImpact(r.Context(), client.TestImpactParams{Target: target, Depth: depth, MaxItems: maxItems})
+			migrated = &client.TestImpactArgs{Target: target, Depth: depth, MaxItems: maxItems}
 		} else {
 			raw, err = s.client.ChangeImpact(r.Context(), client.ChangeImpactParams{Target: target, Depth: depth, MaxItems: maxItems})
 		}
@@ -413,21 +425,15 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			writeErr(w, http.StatusBadRequest, "bad_request", "query required")
 			return true
 		}
-		raw, err = s.client.SearchHybrid(r.Context(), client.SearchHybridParams{Query: queryText, MaxItems: maxItems})
+		migrated = &client.SearchHybridArgs{Query: queryText, MaxItems: maxItems}
 	case "architecture":
-		raw, err = s.client.Architecture(r.Context(), client.ArchitectureParams{MaxItems: maxItems})
+		migrated = &client.ArchitectureArgs{MaxItems: maxItems}
 	case "architecture_violations":
-		raw, err = s.client.ArchitectureViolations(r.Context(), client.ArchitectureViolationsParams{MaxItems: maxItems})
+		migrated = &client.ArchitectureViolationsArgs{MaxItems: maxItems}
 	case "dead_code":
-		// SW-226 (AX-06): the canary arm. It reaches the executor through the
-		// one shared surfaces/client composition rather than calling the client
-		// method directly, so MCP and HTTP cannot end up on different sides of
-		// the kill switch. The query-argument mapping, the error handling below
-		// and the SAFE-01 capability guard in routes.go are untouched, and this
-		// file still does not import engine/opcatalog.
-		raw, err = client.DispatchCanary(r.Context(), s.client, &client.DeadCodeArgs{MaxItems: maxItems})
+		migrated = &client.DeadCodeArgs{MaxItems: maxItems}
 	case "framework_map":
-		raw, err = s.client.FrameworkMap(r.Context(), client.FrameworkMapParams{MaxItems: maxItems})
+		migrated = &client.FrameworkMapArgs{MaxItems: maxItems}
 	case "hotspots":
 		p := client.HotspotsParams{MaxItems: maxItems}
 		if mc := q.Get("max-commits"); mc != "" {
@@ -441,6 +447,16 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 		raw, err = s.client.Hotspots(r.Context(), p)
 	default:
 		return false
+	}
+	// SW-228 (AX-08): the ONE generic executor branch on this surface. It
+	// reaches the executor through the shared surfaces/client composition rather
+	// than calling a client method directly, so MCP and HTTP cannot end up on
+	// different sides of a kill switch. Everything observable is untouched: the
+	// query-argument mapping above, the sanitized-error path and the envelope
+	// below, the SAFE-01 capability guard in routes.go, and the projected
+	// /contract entry. This file still does not import engine/opcatalog.
+	if migrated != nil {
+		raw, err = client.DispatchOperation(r.Context(), s.client, migrated)
 	}
 	if err != nil {
 		writeErrSanitized(w, err)

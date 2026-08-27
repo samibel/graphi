@@ -55,15 +55,21 @@ package client
 //	legacy   Only Client.DeadCode runs. Byte-for-byte the AX-00 behaviour, and
 //	         the position to move to if anything at all goes wrong.
 //	shadow   BOTH run. The caller receives the LEGACY result; the executor result
-//	         is compared against it and a divergence is RECORDED. This is the
-//	         shipped default.
+//	         is compared against it and a divergence is RECORDED. This was the
+//	         shipped default until SW-228 — see "Why the shipped default is now
+//	         `legacy`" below.
 //	active   Only the executor runs, and its result is what the caller receives.
 //
 // Rolling back is a value change and nothing else: no schema, no persisted
 // state, no cached artifact and no wire identifier is keyed on the position, so
 // `active` → `legacy` is complete the moment the next call starts (AC-4).
 //
-// # Why shadow is the shipped default
+// # Why shadow was the shipped default (SUPERSEDED by SW-228)
+//
+// The argument below is kept because it is still HALF right, and the half that
+// is right is what makes the SW-228 correction narrow rather than a reversal:
+// `active` is still forbidden as a default for exactly this reason. What it got
+// wrong was assuming the recording it pays for is retrievable.
 //
 // `legacy` would ship a canary that never flies: the new path would be exercised
 // only inside the test binary, and AX-06's whole purpose is to learn whether the
@@ -96,6 +102,47 @@ package client
 // Recording is a counter and a value. No file, no log line, no network: the
 // zero-egress posture is a hard invariant and observability may not be the
 // exception to it.
+//
+// ---------------------------------------------------------------------------
+//
+// # SW-228 (AX-08) — what this story changed, and why the default moved
+//
+// AX-08 widens the seam from one operation to ten (see migratedOperations
+// below). The mechanism is unchanged: same three positions, same dual-run
+// comparison, same recorder. What changed is that the fitness argument above is
+// no longer prose — migrationCriteria checks the five criteria against every
+// migrated operation's SPEC, and surfaces/client/migration_test.go adds the one
+// criterion AX-06 could only assert, that the fixture's answer actually MOVES
+// when the arguments move.
+//
+// The kill switch became PER OPERATION, which is what its environment variable
+// always claimed to be: GRAPHI_CANARY_DEAD_CODE now means the dead_code
+// position and nothing else, and each migrated operation has the same variable
+// under its own name. A single global position across ten operations would have
+// meant that rolling one back rolled back nine that were fine.
+//
+// # Why the shipped default is now `legacy`
+//
+// AX-06 shipped `shadow` as the default and gave a good reason: a canary that
+// never flies teaches nothing. The reason did not survive contact with the
+// recorder's scope. A shadow divergence is recorded in a PROCESS-GLOBAL
+// counter that is never persisted and never read outside the test binary — and
+// the two processes that dispatch through this seam are long-running servers
+// (`graphi mcp`, `graphi serve`), while every local diagnostic that could show
+// an operator the counter (`graphi doctor`, `graphi status`) is a DIFFERENT,
+// short-lived process. A doctor check reading it would print zero for a server
+// that had diverged on every call. So `shadow` was paying 1.88x latency and
+// +70 allocations per call for evidence that, on a live system, nobody could
+// retrieve — and AX-08 would have multiplied that by ten.
+//
+// The evidence that actually gates activation is the fixture parity suite: it
+// runs per operation, in CI, compares bytes AND error class, and can be read.
+// Production shadow was always the secondary signal, so the position that
+// costs nothing is the right default and `shadow` is now something an operator
+// turns ON while investigating — where the in-process counter is exactly the
+// right scope for the question they are asking. `graphi doctor` reports which
+// position each operation is in, so the switch is auditable without being paid
+// for. (Backlog entry "PRECONDITION FOR SW-228", 2026-08-27.)
 
 import (
 	"bytes"
@@ -112,10 +159,87 @@ import (
 // canaryRegistry is the short name the typed lifecycle errors carry.
 const canaryRegistry = "canary"
 
-// CanaryOperation is the one operation AX-06 moves onto the executor path.
-// SW-228 migrates the rest; until then this constant is the whole allow list,
-// and DispatchCanary rejects anything else by name.
+// CanaryOperation is the operation AX-06 moved onto the executor path first.
+// It is no longer the whole allow list — see migratedOperations — but it stays
+// named because the AX-06 evidence, the latency gate and the AX-10 worked
+// example are all written against this one operation.
 const CanaryOperation = "dead_code"
+
+// migratedOperations is the closed set of operation ids whose SURFACE DISPATCH
+// reaches the executor. DispatchOperation rejects anything else by name.
+//
+// It is a list and not a predicate on purpose. "Everything Labs, deterministic
+// and read-only" would have quietly enrolled every future operation that
+// happened to match, including ones with no argument-fidelity evidence on the
+// fixture — the exact failure mode migration_test.go exists to catch. Adding an
+// id here is a deliberate act that has to bring its own parity case and its own
+// fidelity pair, or the build fails.
+//
+// The set is the SIMPLE READ-ONLY class the plan puts first in its risk order:
+// one Client method, a small argument struct, tier labs, determinism
+// "deterministic", permissions {graph.read}. Deliberately absent, each for a
+// reason recorded in TestAX08_ExcludedOperationsAreRejectedByName:
+//
+//   - every STABLE operation (the ten structural queries, search, impact,
+//     explain_symbol, related_files, change_risk, agent_brief) — AX-12 owns
+//     Stable migration, and it is gated on release evidence this story does not
+//     have;
+//   - the five LABS structural queries (implementers, implements, overrides,
+//     subtypes, supertypes) — they are fit on every catalog criterion, but they
+//     share ONE dispatch arm with the five Stable structural queries on both
+//     surfaces (the MCP tools/call fallthrough, HTTP's /query/{op}). Migrating
+//     them means putting a branch inside the Stable dispatch path to sort the
+//     two apart, which is a change to Stable dispatch made for a Labs reason.
+//     They are the natural first batch for AX-12, when that path is being
+//     opened anyway;
+//   - memory and search_semantic — no argument-fidelity evidence on the AX-04
+//     fixture (backlog, SW-226 review);
+//   - agent_brief — Client.Brief returns two byte slices and the executor
+//     transports one; migrating it would silently drop the Markdown the MCP
+//     surface concatenates (BriefArgs in executor_adapters.go);
+//   - analyze, savings, hotspots, symbol_context, task_context, change_impact,
+//     strict_query, graph_health — determinism "environment-dependent". A
+//     dual-run whose two halves may legitimately disagree cannot prove parity;
+//   - distill, skillgen — the catalog declares NO ports for them, so criterion
+//     one (a migrated operation states what it needs) fails;
+//   - everything in the edit/apply and forge families — write paths and
+//     network-adjacent behaviour, both out of scope by ADR 0013 I3.
+var migratedOperations = []string{
+	"architecture",
+	"architecture_violations",
+	"compound",
+	"dead_code",
+	"find_clones",
+	"framework_map",
+	"repo_overview",
+	"search_ast",
+	"search_hybrid",
+	"test_impact",
+}
+
+// migratedSet is migratedOperations as a lookup, built once.
+var migratedSet = func() map[string]bool {
+	set := make(map[string]bool, len(migratedOperations))
+	for _, id := range migratedOperations {
+		set[id] = true
+	}
+	return set
+}()
+
+// MigratedOperations returns the ids that dispatch through the executor, in
+// canonical order. Surfaces, `graphi doctor` and the runtime's kill-switch
+// wiring all enumerate the set from here rather than re-listing it.
+func MigratedOperations() []string {
+	return append([]string(nil), migratedOperations...)
+}
+
+// isMigratedOperation reports whether op dispatches through the executor.
+func isMigratedOperation(op string) bool { return migratedSet[op] }
+
+// IsMigratedOperation is isMigratedOperation for callers outside this package
+// — the surfaces' generic dispatch branch, which must not route an operation
+// this package would refuse.
+func IsMigratedOperation(op string) bool { return isMigratedOperation(op) }
 
 // CanaryMode is the kill switch position for the canary operation.
 type CanaryMode string
@@ -150,32 +274,141 @@ func CanaryModes() []CanaryMode {
 
 // canaryModeDefault is the compiled-in position of record — the one a release
 // ships with, changed in a diff like every other behaviour change.
-const canaryModeDefault = CanaryModeShadow
+//
+// SW-228 moved it from `shadow` to `legacy`. The reasoning is in the package
+// comment above ("Why the shipped default is now `legacy`"); the short form is
+// that shadow's evidence is recorded in a process-local counter no operator can
+// read on a live server, so the dual run was paying 1.88x for nothing
+// retrievable — and this story would have multiplied that by ten.
+const canaryModeDefault = CanaryModeLegacy
 
-// canaryModeSelected holds an override installed by the composition root
-// (cmd/internal/runtime, from GRAPHI_CANARY_DEAD_CODE). It is atomic because the
-// override is installed once at startup while requests may already be in flight
-// on other goroutines; an unsynchronised package var would be a data race the
-// race detector would find on the first MCP session test.
-var canaryModeSelected atomic.Value // CanaryMode
+// canaryModeSelected holds the positions installed by the composition root
+// (cmd/internal/runtime, from the GRAPHI_CANARY_* environment). It stores an
+// IMMUTABLE map, replaced wholesale on each write, so reads stay lock-free on
+// the dispatch path while startup installs overrides that may race with
+// requests already in flight on other goroutines. A plain map behind a mutex
+// would put a lock in front of every call to buy nothing: the map is written
+// only at startup and in tests.
+var canaryModeSelected atomic.Value // map[string]CanaryMode
 
-// CanaryModeSetting returns the position dispatch will use.
-func CanaryModeSetting() CanaryMode {
-	if m, ok := canaryModeSelected.Load().(CanaryMode); ok && m.Valid() {
+// canaryModeDefaultSelected holds an override for the position used by any
+// operation with no per-operation override of its own.
+var canaryModeDefaultSelected atomic.Value // CanaryMode
+
+// canaryModeWriteMu serialises the read-modify-write of the override map. The
+// map itself is never mutated after publication.
+var canaryModeWriteMu sync.Mutex
+
+// CanaryModeDefault returns the position used by any migrated operation that
+// has no override of its own.
+func CanaryModeDefault() CanaryMode {
+	if m, ok := canaryModeDefaultSelected.Load().(CanaryMode); ok && m.Valid() {
 		return m
 	}
 	return canaryModeDefault
 }
 
-// SetCanaryMode installs a kill-switch position. An unrecognised position is
-// REJECTED rather than falling back to a default: a typo in an operator's
-// environment must not quietly select a behaviour they did not ask for.
-func SetCanaryMode(m CanaryMode) error {
+// CanaryModeFor returns the position dispatch will use for one operation.
+//
+// It answers for ANY id, including one that is not migrated: a caller asking
+// "what would happen to this operation" gets `legacy`, which is the truth —
+// a non-migrated operation is served by its legacy method and nothing else.
+func CanaryModeFor(operation string) CanaryMode {
+	if !isMigratedOperation(operation) {
+		return CanaryModeLegacy
+	}
+	if modes, ok := canaryModeSelected.Load().(map[string]CanaryMode); ok {
+		if m, set := modes[operation]; set && m.Valid() {
+			return m
+		}
+	}
+	return CanaryModeDefault()
+}
+
+// SetCanaryModeDefault installs the position for every migrated operation that
+// has no override of its own. An unrecognised position is REJECTED rather than
+// falling back to a default: a typo in an operator's environment must not
+// quietly select a behaviour they did not ask for.
+func SetCanaryModeDefault(m CanaryMode) error {
 	if !m.Valid() {
 		return canaryModeError(string(m))
 	}
-	canaryModeSelected.Store(m)
+	canaryModeDefaultSelected.Store(m)
 	return nil
+}
+
+// SetCanaryModeFor installs the position for ONE operation.
+//
+// An operation that does not dispatch through the executor is rejected rather
+// than accepted-and-ignored. Accepting it would let an operator set a switch
+// that does nothing and believe they had changed something — the same failure
+// as accepting a misspelled position.
+func SetCanaryModeFor(operation string, m CanaryMode) error {
+	if !isMigratedOperation(operation) {
+		return registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "SetMode", operation,
+			"%s: %q does not dispatch through the executor, so it has no kill switch to set "+
+				"(migrated: %v)", canaryRegistry, operation, migratedOperations)
+	}
+	if !m.Valid() {
+		return canaryModeError(string(m))
+	}
+	canaryModeWriteMu.Lock()
+	defer canaryModeWriteMu.Unlock()
+	next := make(map[string]CanaryMode, len(migratedOperations))
+	if current, ok := canaryModeSelected.Load().(map[string]CanaryMode); ok {
+		for id, mode := range current {
+			next[id] = mode
+		}
+	}
+	next[operation] = m
+	canaryModeSelected.Store(next)
+	return nil
+}
+
+// ResetCanaryModes drops every installed override, returning the process to the
+// compiled-in default. It exists for tests, which need a clean starting point,
+// and for the runtime's own re-application path.
+func ResetCanaryModes() {
+	canaryModeWriteMu.Lock()
+	defer canaryModeWriteMu.Unlock()
+	canaryModeSelected.Store(map[string]CanaryMode{})
+	// An INVALID value, not the compiled-in default: atomic.Value cannot store
+	// nil, and storing the default would make a reset indistinguishable from an
+	// operator who explicitly asked for the default. The readout reports the
+	// source of a position, so that distinction has to survive.
+	canaryModeDefaultSelected.Store(CanaryMode(""))
+}
+
+// CanaryPosition is one operation's kill-switch position, for a diagnostic
+// readout. It carries the source so a reader can tell an explicit override from
+// the compiled-in default without re-deriving the precedence rule.
+type CanaryPosition struct {
+	// Operation is the catalog id.
+	Operation string
+	// Mode is the position dispatch will use.
+	Mode CanaryMode
+	// Overridden is true when an explicit per-operation or default override
+	// selected this position, false when it is the compiled-in default.
+	Overridden bool
+}
+
+// CanaryPositions returns every migrated operation's position in canonical
+// order. It is the readout `graphi doctor` renders: the seam's configuration is
+// local, static and free to read, which is the part of the canary an operator
+// can actually act on.
+func CanaryPositions() []CanaryPosition {
+	overrides, _ := canaryModeSelected.Load().(map[string]CanaryMode)
+	installed, ok := canaryModeDefaultSelected.Load().(CanaryMode)
+	defaultOverridden := ok && installed.Valid()
+	out := make([]CanaryPosition, 0, len(migratedOperations))
+	for _, id := range migratedOperations {
+		mode, overridden := overrides[id]
+		if !overridden || !mode.Valid() {
+			mode, overridden = CanaryModeDefault(), defaultOverridden
+		}
+		out = append(out, CanaryPosition{Operation: id, Mode: mode, Overridden: overridden})
+	}
+	return out
 }
 
 // ParseCanaryMode turns an operator-supplied string into a position, failing
@@ -241,29 +474,45 @@ type Contribution struct {
 //  5. the operation is read-only and deterministic — the canary criteria
 //     themselves, checked against the spec instead of remembered from a plan.
 func CanaryContribution(c Client) (Contribution, error) {
+	return OperationContribution(c, CanaryOperation)
+}
+
+// OperationContribution resolves ONE migrated operation's contribution against
+// the frozen shadow catalog and the executor's adapter table (SW-228). It is
+// the generalisation of CanaryContribution: the five conditions below are not
+// facts about dead_code, they are the criteria a migrated operation has to meet,
+// and every one of the ten is checked against them by
+// TestAX08_EveryMigratedOperationMeetsTheCriteria.
+func OperationContribution(c Client, operation string) (Contribution, error) {
 	catalog, err := opcatalog.Shadow()
 	if err != nil {
 		return Contribution{}, fmt.Errorf("client: canary needs the operation catalog: %w", err)
 	}
-	return canaryContribution(c, catalog)
+	return contributionFor(c, catalog, operation)
 }
 
 // canaryContribution is CanaryContribution over an explicit catalog. It exists
 // so canary_test.go can feed it a catalog that violates each of the five
 // conditions in turn — a check that has never been shown to fail is not a check.
 func canaryContribution(c Client, catalog *opcatalog.Catalog) (Contribution, error) {
-	spec, ok := catalog.Lookup(CanaryOperation)
+	return contributionFor(c, catalog, CanaryOperation)
+}
+
+// contributionFor is the contribution resolver over an explicit catalog and an
+// explicit operation.
+func contributionFor(c Client, catalog *opcatalog.Catalog, operation string) (Contribution, error) {
+	spec, ok := catalog.Lookup(operation)
 	if !ok {
-		return Contribution{}, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Contribution", CanaryOperation,
-			"%s: the operation catalog does not declare %q", canaryRegistry, CanaryOperation)
+		return Contribution{}, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Contribution", operation,
+			"%s: the operation catalog does not declare %q", canaryRegistry, operation)
 	}
 	executor, err := NewExecutorWithCatalog(c, catalog)
 	if err != nil {
 		return Contribution{}, err
 	}
-	if _, handled := executor.adapters[CanaryOperation]; !handled {
-		return Contribution{}, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Contribution", CanaryOperation,
-			"%s: %q has a catalog spec but no executor handler", canaryRegistry, CanaryOperation)
+	if _, handled := executor.adapters[operation]; !handled {
+		return Contribution{}, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Contribution", operation,
+			"%s: %q has a catalog spec but no executor handler", canaryRegistry, operation)
 	}
 	if err := canaryCriteria(spec); err != nil {
 		return Contribution{}, err
@@ -402,32 +651,38 @@ var canaryComparableSentinels = []error{
 	ErrSchemaMismatch,
 }
 
-// DispatchCanary runs the canary operation in whichever position the kill switch
-// selects and returns what the CALLER should receive.
+// DispatchOperation runs ONE migrated operation in whichever position that
+// operation's kill switch selects, and returns what the CALLER should receive.
 //
-// It is the single composition for the canary's dispatch, in the surfaces/client
+// It is the single composition for migrated dispatch, in the surfaces/client
 // package where graphi puts a capability that two surfaces share, so MCP and
 // HTTP cannot end up in different kill-switch positions or comparing different
 // things (standards: one composition per capability, not one per surface).
 //
-// args must be the canary's arguments. Anything else is rejected by name rather
-// than silently executed: this is a one-operation seam, and letting a second
-// operation through it would make the bulk migration (SW-228) happen by accident.
-func DispatchCanary(ctx context.Context, c Client, args Arguments) ([]byte, error) {
+// args must belong to a MIGRATED operation. Anything else is rejected by name
+// rather than silently executed: the migrated set is closed (migratedOperations)
+// and letting an unlisted operation through would migrate it without any of the
+// evidence a migration owes — the exact accident AX-06's one-operation guard was
+// written to prevent, now generalised instead of dropped.
+func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, error) {
 	if args == nil {
 		return nil, fmt.Errorf("client: canary: nil arguments")
 	}
-	if args.Operation() != CanaryOperation {
-		return nil, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Dispatch", args.Operation(),
-			"%s: %q is not the AX-06 canary operation (%q); migrating further operations is SW-228",
-			canaryRegistry, args.Operation(), CanaryOperation)
+	operation := args.Operation()
+	if !isMigratedOperation(operation) {
+		return nil, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Dispatch", operation,
+			"%s: %q does not dispatch through the executor (migrated: %v); migrating it needs "+
+				"its own catalog-criteria, byte-parity and argument-fidelity evidence",
+			canaryRegistry, operation, migratedOperations)
 	}
 
-	mode := CanaryModeSetting()
+	mode := CanaryModeFor(operation)
 	if mode == CanaryModeLegacy {
 		// Byte-for-byte the pre-AX-06 call. invoke IS the legacy Client method
 		// with no wrapping, so this position adds nothing at all — not even an
-		// error check — to the path it replaces.
+		// error check — to the path it replaces. It is the shipped default
+		// (SW-228), which is why this early return is the hot path and why the
+		// mode lookup above must stay lock-free.
 		return args.invoke(ctx, c)
 	}
 
@@ -440,7 +695,7 @@ func DispatchCanary(ctx context.Context, c Client, args Arguments) ([]byte, erro
 			return nil, err
 		}
 		recordCanaryMismatch(CanaryMismatch{
-			Operation: CanaryOperation,
+			Operation: operation,
 			Kind:      "executor-unavailable",
 			Legacy:    "(ran)",
 			Executor:  err.Error(),
@@ -456,7 +711,7 @@ func DispatchCanary(ctx context.Context, c Client, args Arguments) ([]byte, erro
 	// the experiment runs and cannot be influenced by it.
 	legacyBytes, legacyErr := args.invoke(ctx, c)
 	executorBytes, executorErr := executeCanary(ctx, executor, args)
-	if mismatch, differs := compareCanaryOutcomes(legacyBytes, legacyErr, executorBytes, executorErr); differs {
+	if mismatch, differs := compareCanaryOutcomes(operation, legacyBytes, legacyErr, executorBytes, executorErr); differs {
 		recordCanaryMismatch(mismatch)
 	}
 	return legacyBytes, legacyErr
@@ -481,9 +736,9 @@ func executeCanary(ctx context.Context, executor *Executor, args Arguments) ([]b
 // then the CLASS, via errors.Is against the declared sentinels, which is what a
 // surface branches on. Two errors with the same text but different types would
 // pass a text-only comparison and still change how a surface behaves.
-func compareCanaryOutcomes(legacyBytes []byte, legacyErr error, executorBytes []byte, executorErr error) (CanaryMismatch, bool) {
+func compareCanaryOutcomes(operation string, legacyBytes []byte, legacyErr error, executorBytes []byte, executorErr error) (CanaryMismatch, bool) {
 	mismatch := func(kind, legacy, executor string) (CanaryMismatch, bool) {
-		return CanaryMismatch{Operation: CanaryOperation, Kind: kind, Legacy: legacy, Executor: executor}, true
+		return CanaryMismatch{Operation: operation, Kind: kind, Legacy: legacy, Executor: executor}, true
 	}
 	switch {
 	case legacyErr == nil && executorErr != nil:

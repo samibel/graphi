@@ -123,6 +123,19 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 		return nil, &rpcError{Code: -32602, Message: message}
 	}
 
+	// SW-228 (AX-08): the ONE generic executor branch. Every operation whose
+	// dispatch has been migrated is served from here — the surface still owns
+	// its argument mapping and its required-argument validation (both are
+	// transport concerns and both stay verbatim what they were), and everything
+	// downstream of that is one call through the shared surfaces/client seam.
+	//
+	// This is the plan's success criterion made literal: a migrated capability
+	// has no arm of its own in this file. Ten operations that had ten
+	// `s.client().X(...)` arms now have none, and the eleventh migration adds a
+	// table row rather than a branch.
+	if tool, migrated := migratedTools[p.Name]; migrated {
+		return s.executorCall(ctx, p, tool)
+	}
 	if p.Name == ToolSearch {
 		return s.searchCall(ctx, p)
 	}
@@ -150,17 +163,6 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	// SW-042 sticky PR-comment writer + optional risk-threshold merge gate.
 	if p.Name == ToolPrComment {
 		return s.prCommentCall(ctx, p)
-	}
-	// EP-011 G1 compound query.
-	if p.Name == ToolCompound {
-		return s.compoundCall(ctx, p)
-	}
-	// SW-085 pattern-query singletons.
-	switch p.Name {
-	case ToolSearchAST:
-		return s.searchASTCall(ctx, p)
-	case ToolFindClones:
-		return s.findClonesCall(ctx, p)
 	}
 	// EP-012 agent memory & skills.
 	switch p.Name {
@@ -235,32 +237,11 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolTaskContext {
 		return s.taskContextCall(ctx, p)
 	}
-	if p.Name == ToolRepoOverview {
-		return s.repoOverviewCall(ctx, p)
-	}
-	if p.Name == ToolTestImpact {
-		return s.testImpactCall(ctx, p)
-	}
 	if p.Name == ToolChangeImpact {
 		return s.changeImpactCall(ctx, p)
 	}
 	if p.Name == ToolHotspots {
 		return s.hotspotsCall(ctx, p)
-	}
-	if p.Name == ToolSearchHybrid {
-		return s.searchHybridCall(ctx, p)
-	}
-	if p.Name == ToolArchitecture {
-		return s.architectureCall(ctx, p)
-	}
-	if p.Name == ToolArchitectureViolations {
-		return s.architectureViolationsCall(ctx, p)
-	}
-	if p.Name == ToolDeadCode {
-		return s.deadCodeCall(ctx, p)
-	}
-	if p.Name == ToolFrameworkMap {
-		return s.frameworkMapCall(ctx, p)
 	}
 
 	if p.Arguments.Symbol == "" {
@@ -282,21 +263,133 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}, nil
 }
 
-// compoundCall runs a compound / Cypher-style graph query (EP-011 G1). The
-// query text is the single `query` argument; the result bytes are the canonical
-// query.Result, byte-identical to every fixed query across surfaces.
-func (s *Server) compoundCall(ctx context.Context, p callParams) (any, *rpcError) {
-	if p.Arguments.Query == "" {
-		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+// migratedTool is one SW-228 (AX-08) migrated operation's SURFACE half: the
+// argument mapping and the required-argument validation this transport owns,
+// plus the JSON-RPC error code its arm used before the migration.
+//
+// Nothing else moved. `args` is the same field-for-field mapping the deleted
+// arm performed, `failure` is the same code the deleted arm returned, and both
+// are per-tool rather than uniform BECAUSE the arms were not uniform: compound
+// reported an engine failure as -32602 (an invalid-params class, because a
+// compound failure is nearly always a malformed query) while every other arm
+// used -32603. Normalising them here would have been a wire-visible behaviour
+// change smuggled into a refactor.
+type migratedTool struct {
+	// args maps the tool-call arguments onto the operation's typed arguments,
+	// or returns the surface's own rejection for a missing required argument.
+	args func(p callParams) (client.Arguments, *rpcError)
+	// failure is the JSON-RPC code for an error returned by the operation.
+	failure int
+}
+
+// migratedTools is the table the generic branch in toolsCall resolves against.
+//
+// Its keys are checked against client.MigratedOperations() by
+// TestAX08_MCPMigratedToolsMatchTheMigratedSet: a tool listed here that the
+// client would refuse to dispatch, or a migrated operation with no entry here,
+// is a half-migration and fails the build rather than a request.
+var migratedTools = map[string]migratedTool{
+	ToolCompound: {
+		failure: -32602,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			if p.Arguments.Query == "" {
+				return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+			}
+			return &client.CompoundArgs{Query: p.Arguments.Query}, nil
+		},
+	},
+	ToolSearchAST: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			if p.Arguments.Pattern == "" {
+				return nil, &rpcError{Code: -32602, Message: "missing required argument: pattern"}
+			}
+			return &client.SearchASTArgs{Pattern: p.Arguments.Pattern, Limit: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolFindClones: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.FindClonesArgs{Config: p.Arguments.Config}, nil
+		},
+	},
+	ToolArchitecture: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.ArchitectureArgs{MaxItems: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolArchitectureViolations: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.ArchitectureViolationsArgs{MaxItems: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolDeadCode: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.DeadCodeArgs{MaxItems: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolFrameworkMap: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.FrameworkMapArgs{MaxItems: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolRepoOverview: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			return &client.RepoOverviewArgs{
+				MaxItems:    derefInt(p.Arguments.Limit),
+				Communities: p.Arguments.Communities,
+			}, nil
+		},
+	},
+	ToolSearchHybrid: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			if p.Arguments.Query == "" {
+				return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
+			}
+			return &client.SearchHybridArgs{Query: p.Arguments.Query, MaxItems: derefInt(p.Arguments.Limit)}, nil
+		},
+	},
+	ToolTestImpact: {
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			if p.Arguments.Target == "" && p.Arguments.Diff == "" {
+				return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
+			}
+			return &client.TestImpactArgs{
+				Target:   p.Arguments.Target,
+				Diff:     p.Arguments.Diff,
+				Depth:    derefInt(p.Arguments.Depth),
+				MaxItems: derefInt(p.Arguments.Limit),
+			}, nil
+		},
+	},
+}
+
+// executorCall is the generic executor branch: validate and map the arguments
+// on the surface, then hand them to the ONE shared dispatch composition. It
+// holds no per-operation knowledge — everything specific to an operation is in
+// the table above, and everything about which path produces the bytes is in
+// surfaces/client (canary.go).
+//
+// It calls s.client(), not s.stableClient(): every migrated operation is Labs,
+// and routing one through the stable port would advertise a Labs capability on
+// the frozen surface.
+func (s *Server) executorCall(ctx context.Context, p callParams, tool migratedTool) (any, *rpcError) {
+	args, rpcErr := tool.args(p)
+	if rpcErr != nil {
+		return nil, rpcErr
 	}
-	b, err := s.client().Compound(ctx, p.Arguments.Query)
+	b, err := client.DispatchOperation(ctx, s.client(), args)
 	if err != nil {
-		return nil, &rpcError{Code: -32602, Message: err.Error()}
+		return nil, &rpcError{Code: tool.failure, Message: err.Error()}
 	}
-	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": string(b)}},
-		"isError": false,
-	}, nil
+	return textResult(b), nil
 }
 
 // memoryCall runs an EP-012 memory operation through the shared client and
@@ -398,44 +491,6 @@ func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rp
 		limit = *p.Arguments.Depth
 	}
 	b, err := s.client().SemanticSearch(ctx, p.Arguments.Symbol, limit)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": string(b)}},
-		"isError": false,
-	}, nil
-}
-
-// searchASTCall dispatches the structural AST pattern query (SW-082 / SW-085)
-// through the shared client. The JSON pattern rides the `pattern` argument and the
-// optional `limit` bounds results; the returned bytes are the canonical
-// query.Marshal output, byte-identical to the CLI and HTTP surfaces. A malformed
-// pattern surfaces the engine's typed error as a JSON-RPC error (no new shape).
-func (s *Server) searchASTCall(ctx context.Context, p callParams) (any, *rpcError) {
-	if p.Arguments.Pattern == "" {
-		return nil, &rpcError{Code: -32602, Message: "missing required argument: pattern"}
-	}
-	limit := 0
-	if p.Arguments.Limit != nil {
-		limit = *p.Arguments.Limit
-	}
-	b, err := s.client().SearchAST(ctx, p.Arguments.Pattern, limit)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": string(b)}},
-		"isError": false,
-	}, nil
-}
-
-// findClonesCall dispatches the clone-detection query (SW-083 / SW-085) through the
-// shared client. The optional JSON config rides the `config` argument (empty ⇒
-// engine defaults); the returned bytes are the canonical query.MarshalCloneResult
-// output for byte-identical parity.
-func (s *Server) findClonesCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().FindClones(ctx, p.Arguments.Config)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -781,40 +836,6 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 	return textResult(b), nil
 }
 
-// repoOverviewCall (P0 agent intelligence, labs) returns the one-call
-// repository summary in the C1 contract shape through the shared
-// client.RepoOverview composition (ONE assembly, ONE encoder — byte parity
-// with `graphi repo-overview`).
-func (s *Server) repoOverviewCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().RepoOverview(ctx, client.RepoOverviewParams{
-		MaxItems:    derefInt(p.Arguments.Limit),
-		Communities: p.Arguments.Communities,
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// testImpactCall (P1 test intelligence, labs) returns the test buckets in the
-// C1 contract shape through the shared client.TestImpact composition (byte
-// parity with `graphi test-impact`).
-func (s *Server) testImpactCall(ctx context.Context, p callParams) (any, *rpcError) {
-	if p.Arguments.Target == "" && p.Arguments.Diff == "" {
-		return nil, &rpcError{Code: -32602, Message: "missing required argument: target or diff"}
-	}
-	b, err := s.client().TestImpact(ctx, client.TestImpactParams{
-		Target:   p.Arguments.Target,
-		Diff:     p.Arguments.Diff,
-		Depth:    derefInt(p.Arguments.Depth),
-		MaxItems: derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
 // changeImpactCall (P1 change intelligence, labs) returns the Change Risk 2.0
 // assessment in the C1 contract shape through the shared client.ChangeImpact
 // composition (byte parity with `graphi change-impact`).
@@ -841,84 +862,6 @@ func (s *Server) hotspotsCall(ctx context.Context, p callParams) (any, *rpcError
 	b, err := s.client().Hotspots(ctx, client.HotspotsParams{
 		MaxCommits: derefInt(p.Arguments.MaxCommits),
 		MaxItems:   derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// searchHybridCall (P3 repository search, labs) returns the embedding-free
-// hybrid ranking in the C1 contract shape through the shared
-// client.SearchHybrid composition (byte parity with `graphi search-hybrid`).
-func (s *Server) searchHybridCall(ctx context.Context, p callParams) (any, *rpcError) {
-	if p.Arguments.Query == "" {
-		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
-	}
-	b, err := s.client().SearchHybrid(ctx, client.SearchHybridParams{
-		Query:    p.Arguments.Query,
-		MaxItems: derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// architectureCall (P2 architecture intelligence, labs) returns the automatic
-// community/layer view in the C1 contract shape through the shared
-// client.Architecture composition (byte parity with `graphi architecture`).
-func (s *Server) architectureCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().Architecture(ctx, client.ArchitectureParams{
-		MaxItems: derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// architectureViolationsCall (P2 architecture intelligence, labs) returns the
-// cycle/back-edge/coupling/god-module findings in the C1 contract shape.
-func (s *Server) architectureViolationsCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().ArchitectureViolations(ctx, client.ArchitectureViolationsParams{
-		MaxItems: derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// frameworkMapCall (P3 framework intelligence, labs) returns the
-// annotation-derived application view in the C1 contract shape (byte parity
-// with `graphi framework-map`).
-func (s *Server) frameworkMapCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().FrameworkMap(ctx, client.FrameworkMapParams{
-		MaxItems: derefInt(p.Arguments.Limit),
-	})
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return textResult(b), nil
-}
-
-// deadCodeCall (P2 dead code, labs) returns the scored dead-code candidates
-// with visible exclusions in the C1 contract shape (byte parity with
-// `graphi dead-code`).
-//
-// SW-226 (AX-06): this is the ONE dispatch arm that goes through the canary
-// seam instead of calling the client method directly. What changed is which
-// path produces the bytes; what did not change is anything observable — the
-// argument mapping, the -32603 error mapping, the textResult envelope and the
-// tool's descriptor are all exactly as they were, and in the shipped `shadow`
-// position the bytes returned here ARE Client.DeadCode's return value. Every
-// other arm in this file still calls its client method directly, and this file
-// still does not import engine/opcatalog: the operation catalog stays behind
-// surfaces/client, which is what keeps the AX-05 dispatch boundary true.
-func (s *Server) deadCodeCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := client.DispatchCanary(ctx, s.client(), &client.DeadCodeArgs{
-		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

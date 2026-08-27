@@ -217,7 +217,7 @@ func TestAX10_WorkedExample_PassesTheConformanceHarness(t *testing.T) {
 					return nil, err
 				}
 			}
-			return client.DispatchCanary(ctx, direct, &client.DeadCodeArgs{MaxItems: decoded.Limit})
+			return client.DispatchOperation(ctx, direct, &client.DeadCodeArgs{MaxItems: decoded.Limit})
 		},
 		Fixtures: []conformance.Fixture{
 			{Name: "default"},

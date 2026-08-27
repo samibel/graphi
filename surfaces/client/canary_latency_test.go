@@ -76,19 +76,19 @@ func canaryLatencyFixture(t testing.TB) *Direct {
 // sorted per-call durations.
 func canaryLatencySample(t *testing.T, direct *Direct, mode CanaryMode) []time.Duration {
 	t.Helper()
-	previous := CanaryModeSetting()
-	if err := SetCanaryMode(mode); err != nil {
-		t.Fatalf("SetCanaryMode(%q): %v", mode, err)
+	previous := CanaryModeDefault()
+	if err := SetCanaryModeDefault(mode); err != nil {
+		t.Fatalf("SetCanaryModeDefault(%q): %v", mode, err)
 	}
 	defer func() {
-		if err := SetCanaryMode(previous); err != nil {
+		if err := SetCanaryModeDefault(previous); err != nil {
 			t.Fatalf("restore canary mode: %v", err)
 		}
 	}()
 
 	ctx := context.Background()
 	call := func() {
-		if _, err := DispatchCanary(ctx, direct, &DeadCodeArgs{}); err != nil {
+		if _, err := DispatchOperation(ctx, direct, &DeadCodeArgs{}); err != nil {
 			t.Fatalf("%q: %v", mode, err)
 		}
 	}
@@ -182,15 +182,15 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 	ctx := context.Background()
 	for _, mode := range CanaryModes() {
 		b.Run(string(mode), func(b *testing.B) {
-			previous := CanaryModeSetting()
-			if err := SetCanaryMode(mode); err != nil {
+			previous := CanaryModeDefault()
+			if err := SetCanaryModeDefault(mode); err != nil {
 				b.Fatalf("SetCanaryMode: %v", err)
 			}
-			b.Cleanup(func() { _ = SetCanaryMode(previous) })
+			b.Cleanup(func() { _ = SetCanaryModeDefault(previous) })
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				if _, err := DispatchCanary(ctx, direct, &DeadCodeArgs{}); err != nil {
+				if _, err := DispatchOperation(ctx, direct, &DeadCodeArgs{}); err != nil {
 					b.Fatal(err)
 				}
 			}
