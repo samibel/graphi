@@ -1,7 +1,7 @@
 # AX-06 — canary latency threshold (fixed **before** measuring)
 
 **Story:** SW-226 (AX-06) · **Spec:** extension-platform-kernel · **Canary:** `dead_code`
-**Amended:** SW-242 (2026-08-28) — §1 and §2 replaced; see "Amendment record" below.
+**Amended:** SW-242 (2026-08-28) — §1, §2 and §3 replaced; see "Amendment record" below.
 
 This page exists so the acceptance bar for SW-226 AC-5 is a **prediction**, not a
 description. It is committed on its own, ahead of the implementation and ahead of any
@@ -42,6 +42,22 @@ own 120-symbol graph with a sparse call chain, in the test file itself. §1 now 
 runs. This is a correction to a description, not a change to what was measured — the numbers in §4
 were always taken against the fixture §1 now describes.
 
+**A second finding, from review of the amendment itself.** The first cut of this
+recalibration gated the **median only**, and §3 listed "p95, and every other tail statistic"
+among the things deliberately not gated. Review demonstrated the price of that: because the
+median does not move until more than half the distribution does, a regression confined to a
+minority of calls became invisible *at any magnitude*. A ~20 ms per-incident cost applied to
+one call in three scored **+97 µs** of median overhead and passed clean. The old p95 gate
+would have caught it. Retiring the tail statistic was therefore not a neutral trade of noise
+for robustness — it was a ~10× widening of the gate's blind spot, from about 5 % incidence to
+about 50 %, over failure shapes (a slow path on cache miss, a lock contended only sometimes,
+an allocation that occasionally trips GC) that are ordinary rather than exotic. Documenting
+that hole was considered and rejected as insufficient: SW-242 AC-3 requires the gate to fail
+on a genuine regression, and a 20 ms hit on a third of calls is a genuine regression. §2 now
+gates the median **and** the tail, by the same arithmetic; §3 states in numbers what each can
+and cannot see. `TestAX06_LatencyGateFailsOnMinorityIncidenceRegression` is the test that
+holds it, and §5.5 the measurement that calibrates it.
+
 **What did not move.** The seam itself is untouched — SW-242 changes how the executor path
 is *measured*, never what it does. The kill-switch default stays `legacy`. And the direction
 of the bar did not soften: the fixed part of the threshold is the same 10 % / 250 µs it
@@ -77,8 +93,11 @@ assumption about the machine:
   after-effects of an expensive neighbour (`shadow` runs both paths) are shared evenly.
 
 This is the correctness argument for the method, and it is deliberately a property of the
-code rather than of a lucky reproduction — `TestAX06_LatencyRotationIsBalanced` asserts the
-balance directly so a future edit to the loop cannot silently lose it.
+code rather than of a lucky reproduction — `TestAX06_LatencyRotationIsBalanced` **runs the
+production sampler** with instrumented arms and asserts the balance of the order it actually
+executed, so a future edit to the loop cannot silently lose it. (It reads back what the
+sampler did rather than re-deriving the rotation formula alongside it; a re-derivation would
+agree with an edit that broke the real loop.)
 
 **The same-run reference.** `legacy-a` and `legacy-b` execute byte-identical code. The
 difference between their medians is therefore, by construction, **pure measurement noise**:
@@ -86,13 +105,22 @@ it is this run's demonstrated inability to tell two identical paths apart. Every
 consequently carries its own null control, taken on the same machine, in the same rotation,
 under the same load, at the same moment. The bar in §2 is expressed against it.
 
-**The statistic is the median.** p95 is a tail statistic and contention is a tail
-phenomenon — preemption and co-tenant interference add a heavy right tail while barely
-moving the centre. A genuine seam regression is the opposite shape: the seam runs on *every*
-call, so it is a location shift that moves the whole distribution, median included. Judging
-at the median therefore reads the seam where its cost lives and reads the runner's noise
-where it is weakest. p95 is still measured and still reported for every arm, because it is
-the number that describes what a caller feels; it is simply not the number the gate reads.
+**Two statistics are gated: the median and the tail.** p95 is a tail statistic and
+contention is a tail phenomenon — preemption and co-tenant interference add a heavy right
+tail while barely moving the centre. A *systemic* seam regression is the opposite shape: the
+seam runs on **every** call, so it is a location shift that moves the whole distribution,
+median included. Judging at the median therefore reads that regression where its cost lives
+and reads the runner's noise where it is weakest, and it is the median that carries the
+gate through a contended runner.
+
+The median alone is not enough, and §3 gives the numbers. It is blind by construction to a
+regression that hits only a **minority** of calls, however severe, because the median does
+not move until more than half the distribution does. So **p95 is gated too**, against a
+same-run A/A control at p95 built by the identical arithmetic — which is to say the original
+AX-06 tail bar survives this amendment, with a reference this run actually measured in place
+of an absolute delta calibrated on one laptop. p95 reads the top 5 % of calls, so it moves by
+close to the full per-incident cost as soon as a regression's incidence clears roughly 5 %.
+The two statistics answer different questions and either can turn the gate red.
 
 **Anti-flake provision** (from the original §1, retained): the gate repeats the whole
 measurement up to **3 rounds** and passes if **any** round meets §2. The recorded numbers
@@ -101,8 +129,9 @@ cherry-picked.
 
 ## 2. The gate (AC-5, recalibrated by SW-242)
 
-Let `base` and `ref` be the medians of the two legacy arms, `exec` the median of the
-executor arm, and
+The rule below is applied **twice**: once at the median (`p = 0.50`) and once at the tail
+(`p = 0.95`). Let `base` and `ref` be the two legacy arms at that percentile, `exec` the
+executor arm at the same percentile, and
 
 ```
 baseline  = (base + ref) / 2
@@ -114,8 +143,37 @@ ceiling   = 4 × fixedBar                            the hard clamp
 budget    = min( max( fixedBar , noiseTerm ) , ceiling )
 ```
 
-> The run is **UNKNOWN** when `noiseTerm > ceiling`, or when an arm produced no samples.
-> Otherwise the executor path **passes** when `overhead ≤ budget`, and **fails** otherwise.
+> A statistic is **UNKNOWN** when an arm produced no samples, or when `noiseTerm > ceiling`
+> *and* the overhead is not itself past both. It **fails** when
+> `overhead > budget` **and** `overhead > noiseTerm`. Otherwise it **passes**
+> (`overhead ≤ budget`).
+
+The evaluation order matters and is checked in that order in the code: the FAIL test is
+applied **before** the degraded test. In the ordinary regime this changes nothing —
+`budget ≥ noiseTerm` there, so `overhead > budget` already implies `overhead > noiseTerm`,
+and the rule reads exactly as it did. It only bites when the control is wider than the
+ceiling, and only ever in the direction of failing: an overhead past both the clamp *and*
+three times the run's own demonstrated resolution is signal at whatever resolution that run
+achieved, and a degraded runner is not a licence to launder it into a pass. Without this
+ordering, enough contention would make any regression invisible, which is AC-2's prohibition
+read in the opposite direction.
+
+**The two statistics compose asymmetrically:**
+
+| median | tail | run |
+|---|---|---|
+| UNKNOWN | anything | **UNKNOWN** — nothing was resolved at the centre, so nothing was resolved |
+| FAIL | anything | **FAIL** (median reason) |
+| PASS | FAIL | **FAIL** — a regression the median cannot see, which is what the tail is for |
+| PASS | UNKNOWN | **PASS**, on the median alone, and the log line says so |
+| PASS | PASS | **PASS** |
+
+The asymmetry is deliberate and it is what preserves this story's win. The tail is the
+noisier measurement and its noise is exactly what made the old gate cry wolf, so a tail whose
+*own* A/A control is too wide to judge degrades to a median-only verdict instead of dragging
+a clean run to UNKNOWN. A contended runner still gets a usable answer from the statistic that
+survives contention. The median gets no such courtesy: if a run cannot tell two identical
+paths apart at the centre of the distribution, it has measured nothing at all.
 
 Each term earns its place:
 
@@ -138,10 +196,14 @@ Each term earns its place:
   proven it needs, and not one microsecond further.
 
 - **`ceiling` is what stops adaptation from becoming abdication.** The budget is clamped, so
-  `budget ≤ 4 × fixedBar` is an invariant of the code and not a property of the inputs
-  (`TestAX06_LatencyDecisionRule` asserts it on every case). A runner cannot talk the gate
-  into tolerating an arbitrary regression by being noisy: past the clamp the available
-  answers are FAIL and UNKNOWN, never PASS.
+  `budget ≤ 4 × fixedBar` is an invariant of the code and not a property of the inputs. Both
+  gated statistics are produced by **one** function, so this is a single property proved once
+  and holding for each of them rather than a rule re-implemented per statistic and at risk of
+  being lost in one; `TestAX06_LatencyDecisionRule` asserts it — along with
+  `budget ≥ fixedBar ≥ 250 µs`, and "a statistic past the ceiling never reads PASS" — for the
+  median *and* the tail on every case in the table. A runner cannot talk the gate into
+  tolerating an arbitrary regression by being noisy: past the clamp the available answers are
+  FAIL and UNKNOWN, never PASS.
 
 - **UNKNOWN is a real verdict, not a quiet pass.** When the null control is wider than the
   ceiling, two byte-identical legacy paths could not be told apart well enough for *any*
@@ -159,13 +221,20 @@ Each term earns its place:
   to distinguish two identical paths, the honest answer to "did the seam regress" is that
   this run does not know, not that it did.
 
-**The gate must still be able to fail, and that is tested, not asserted.**
-`TestAX06_LatencyGateFailsOnInjectedSeamRegression` injects a real slowdown at the real
-seam — the executor seam's own code, run extra times inside the timed window — and requires
-the shipped decision path to return FAIL, specifically FAIL and not UNKNOWN. §5.3 records
-its output. Removing this gate, raising the budget until nothing can fail, or reducing it to
-a warning were all considered and rejected (SW-242 AC-5); the recalibration exists so the
-gate can be *believed*, which is worth nothing if it cannot go red.
+**The gate must still be able to fail, and that is tested, not asserted — in both shapes.**
+`TestAX06_LatencyGateFailsOnInjectedSeamRegression` injects a real *systemic* slowdown at the
+real seam — the executor seam's own code, run extra times inside the timed window, on every
+call — and requires the shipped decision path to return FAIL, specifically FAIL and not
+UNKNOWN. §5.3 records its output. `TestAX06_LatencyGateFailsOnMinorityIncidenceRegression`
+does the same for the *minority-incidence* shape, charging the same real cost to only one
+call in eight and one call in sixteen, and requires FAIL from the same shipped path. §5.5
+records its output and the incidence sweep that calibrates it, and §5.6 what the tail check
+costs under contention. Between them the two tests close the coverage of both failure shapes
+the gate claims to cover.
+
+Removing this gate, raising the budget until nothing can fail, or reducing it to a warning
+were all considered and rejected (SW-242 AC-5); the recalibration exists so the gate can be
+*believed*, which is worth nothing if it cannot go red.
 
 ## 3. What is deliberately NOT gated
 
@@ -175,19 +244,58 @@ weaken the comparison it exists to perform. It is measured and recorded for info
 its cost is the reason the shipped default is documented and revisitable rather than
 assumed.
 
-**p95, and every other tail statistic.** Recorded for all four arms, never gated, for the
-reason in §1: the tail is where the runner lives and the median is where the seam lives.
-Reporting it and gating it are different jobs.
-
 **Cold-start and first-call costs.** `opcatalog.Shadow()` decodes and freezes the embedded
 catalog exactly once per process (`sync.OnceValues`). That one-off is a process-startup cost
 already paid by SW-225's descriptor projection, and attributing it to the canary would
 double-count it.
 
 **Anything measured on a different machine or a different fixture.** The numbers below are a
-same-process, same-run A/B on one machine. They are evidence that the *seam* is cheap; they
+same-process, same-run A/B on one machine (§5.7). They are evidence that the *seam* is cheap; they
 are not a published performance figure, and they do not belong in `docs/eval/`, whose
 harness and provenance rules (`docs/eval/hero-protocol.md`) govern published numbers.
+
+### What the gated statistics can and cannot detect (SW-242, AC-4)
+
+This is the section to read before trusting a green run. Every gate has a blind spot; this
+one's is measurable, and the numbers below are from the sweep in §5.5 on an idle
+darwin/arm64 M2 Max, where a `dead_code` call costs ~385 µs at p50 and ~775 µs at p95.
+
+| Regression shape | Statistic that sees it | Detected from |
+|---|---|---|
+| **Systemic** — every call slower (the shape of all five backlog `:1043` incidents, and of any real seam cost) | median | ~250 µs of added per-call cost, the unchanged AX-06 floor. Measured: a uniform +239 µs passes, +296 µs fails |
+| **Minority incidence** — a large cost on a fraction of calls (slow path on cache miss, an occasionally contended lock, an allocation that sometimes trips GC) | tail (p95) | **incidence above ~5 %**, provided the per-incident cost clears the tail budget. Measured: 5.6 % (1 in 18) incidence fails, 5.0 % (1 in 20) passes — and 5.0 % passes *even at 20 ms per incident*. The review counterexample (20 ms on 1 call in 3) now fails at +24.57 ms |
+
+**What still escapes, stated plainly:**
+
+- **A regression on fewer than ~1 call in 20 is not detected, at any magnitude.** p95 reads
+  the top 5 % of calls; below that incidence the incident calls sit entirely above the
+  statistic and never move it. §5.5 shows 20 ms per incident at 5.0 % incidence passing
+  clean. This is the residual blind spot, and it is narrow rather than absent: it is where
+  the *original* AX-06 gate's blind spot was, before the median-only cut of SW-242 widened
+  it tenfold and this amendment closed it back.
+- **A minority-incidence regression smaller than the per-incident tail budget is not
+  detected** even above 5 % incidence. On an idle machine that budget is the 250 µs floor;
+  measured, one extra seam pass (~420 µs) is caught at 25 % incidence but not at 12.5 %,
+  because at low incidence the injected calls compete with the fixture's own ~385 µs natural
+  spread between p50 and p95 rather than clearing it outright.
+- **Under sustained contention the tail can stop being judgeable at all**, and the run then
+  passes on the median alone — with the tail's UNKNOWN and its numbers printed in the verdict
+  line as `tail not judgeable this run (median-only verdict)`, never silently. Measured under
+  24 spinning processes on 12 cores (~2.2× slowdown), this happened in **4 runs out of 6**
+  (§5.6), the p95 A/A control widening from 6–28 µs idle to 297 µs–1.12 ms. **For those runs,
+  minority-incidence coverage is lost** — roughly two runs in three on a runner that bad. It
+  is not lost quietly, and it does not cost the run its verdict. The median's coverage is not
+  lost at all: it held at +19…+35 µs of overhead against an unmoved 250 µs budget through the
+  same load, and the injected minority regression still turned the gate red in **6 of 6** runs
+  under it. A CI job that reports a median-only verdict routinely is a finding about the
+  runner, not a reason to widen the ceiling.
+- **Everything above is per-run resolution, not a guarantee about production.** These are
+  same-process A/B numbers on one fixture, and §5.7 bounds what they claim.
+
+**Other tail statistics — p99, max, and the shape of the distribution above p95.** Recorded
+for information, never gated. Past p95 the sample count (N = 200) leaves too few
+observations for a same-run A/A control to mean anything, so a gate there would be measuring
+its own resolution. Reporting and gating are different jobs.
 
 ## 4. Measurement under the SUPERSEDED method (SW-226, 2026-08-27)
 
@@ -245,20 +353,23 @@ Measured on darwin/arm64, Apple M2 Max, `CGO_ENABLED=0`, Go test binary. Instrum
 ```
 CGO_ENABLED=0 go test ./surfaces/client/ -run TestAX06_ExecutorSeamLatencyWithinThreshold -v -count=5
 CGO_ENABLED=0 go test ./surfaces/client/ -run TestAX06_LatencyGateFailsOnInjectedSeamRegression -v
+CGO_ENABLED=0 go test ./surfaces/client/ -run TestAX06_LatencyGateFailsOnMinorityIncidenceRegression -v
 CGO_ENABLED=0 go test ./surfaces/client/ -run TestAX06_LatencyGateReportsUnknownOnDegradedReference -v
 ```
 
 ### 5.1 Idle machine, five consecutive runs
 
-| Run | legacy-a p50 | legacy-b p50 | refDelta | executor p50 | overhead | budget | verdict |
-|---|---|---|---|---|---|---|---|
-| 1 | 386.7 µs | 384.6 µs | 2.13 µs | 395.3 µs | +9.60 µs | 250 µs | PASS (round 1) |
-| 2 | 395.3 µs | 393.7 µs | 1.54 µs | 401.0 µs | +6.48 µs | 250 µs | PASS (round 1) |
-| 3 | 382.0 µs | 381.4 µs | 0.63 µs | 390.3 µs | +8.52 µs | 250 µs | PASS (round 1) |
-| 4 | 386.5 µs | 383.5 µs | 3.00 µs | 397.3 µs | +12.25 µs | 250 µs | PASS (round 1) |
-| 5 | 386.8 µs | 383.3 µs | 3.42 µs | 391.6 µs | +6.58 µs | 250 µs | PASS (round 1) |
+Both gated statistics, budget 250 µs for each (the noise term never became binding):
 
-Two findings, and the first is the one that matters most.
+| Run | **p50** legacy-a / legacy-b | refDelta | executor | overhead | **p95** legacy baseline | refDelta | executor | overhead | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 386.5 / 383.2 µs | 3.37 µs | 395.5 µs | **+10.69 µs** | 758.1 µs | 27.96 µs | 802.5 µs | **+44.40 µs** | PASS (round 1) |
+| 2 | 382.2 / 382.0 µs | 0.25 µs | 390.8 µs | **+8.75 µs** | 778.2 µs | 16.75 µs | 785.4 µs | **+7.25 µs** | PASS (round 1) |
+| 3 | 386.6 / 386.4 µs | 0.25 µs | 397.3 µs | **+10.79 µs** | 784.0 µs | 15.04 µs | 795.6 µs | **+11.61 µs** | PASS (round 1) |
+| 4 | 384.0 / 383.6 µs | 0.46 µs | 390.0 µs | **+6.23 µs** | 765.5 µs | 12.71 µs | 784.3 µs | **+18.77 µs** | PASS (round 1) |
+| 5 | 387.0 / 384.9 µs | 2.08 µs | 399.5 µs | **+13.63 µs** | 768.5 µs | 6.38 µs | 811.2 µs | **+42.69 µs** | PASS (round 1) |
+
+Three findings, and the first is the one that matters most.
 
 **The seam's cost is now measurable.** Under the old method the difference changed sign
 between runs (§4.2) and the honest answer was "indistinguishable". Under the new one it is
@@ -267,10 +378,19 @@ the same direction and the same order of magnitude as the +3.7 % allocation figu
 that wall-clock previously could not see. Recalibrating for noise did not blur the picture;
 it brought it into focus.
 
-**The apparatus's resolution is ~0.6–3.4 µs**, i.e. under 1 % of the operation. That is
-`refDelta`, and it is what makes the 250 µs floor an honest bar on this machine rather than
-a coincidence: there are roughly two orders of magnitude between what the instrument can
-resolve and what the gate is asked to detect.
+**The apparatus's resolution is ~0.25–3.4 µs at the median**, i.e. well under 1 % of the
+operation. That is `refDelta`, and it is what makes the 250 µs floor an honest bar on this
+machine rather than a coincidence: there are roughly two orders of magnitude between what
+the instrument can resolve and what the gate is asked to detect.
+
+**The tail is a usable measurement on this machine too, which is why it is gated.** The A/A
+control at p95 is 6.4–28.0 µs — an order of magnitude coarser than the median's, exactly as
+expected, but still an order of magnitude inside the 250 µs budget. That margin is what
+makes the tail check able to *fail* rather than a decoration: the executor's own tail
+overhead sits at −25…+44 µs across runs, and §5.5 shows real regressions clearing 250 µs at
+incidences down to 5.6 %. A tail control this narrow was not assumed; it was measured before
+the check was gated, because a tail check that could never fail would have been worse than
+no tail check at all.
 
 ### 5.2 Under synthetic contention — the failure mode, reproduced
 
@@ -292,7 +412,7 @@ measured was the machine. Two of three runs blew their round-1 budget and surviv
 because a later anti-flake round happened to land low; on a runner where the contention
 lasts the whole job, no round lands low, which is precisely the five recorded CI failures.
 
-**New gate (rotating interleave, median), three runs under the same load:**
+**New gate (rotating interleave), the MEDIAN statistic, three runs under the same load:**
 
 | Run | legacy-a p50 | legacy-b p50 | refDelta | executor p50 | overhead | budget | verdict |
 |---|---|---|---|---|---|---|---|
@@ -306,9 +426,11 @@ still 9× inside the budget. `refDelta` stayed at single-digit microseconds thro
 the noise term never even became the binding one. The 2.2× slowdown that swung the old gate
 by 824 µs moves the new gate by ~20 µs.
 
-Note what this says about the UNKNOWN branch: it is a genuine last resort, not the expected
-answer. Even at 2.2× slowdown the control stayed three orders of magnitude inside the
-ceiling. UNKNOWN is reserved for a machine far worse than this one.
+Note what this says about the UNKNOWN branch **at the median**: it is a genuine last resort,
+not the expected answer. Even at 2.2× slowdown the median control stayed three orders of
+magnitude inside the ceiling. A median UNKNOWN is reserved for a machine far worse than this
+one. The **tail** behaves differently under the same load and §5.6 records it: that is the
+whole reason the composition in §2 is asymmetric.
 
 ### 5.3 The gate still fails — injected regression (AC-3)
 
@@ -320,12 +442,14 @@ a sleep standing in for one. The demonstration drives the **shipped** decision p
 (`runCanaryLatencyGate` → `evaluateCanaryLatency`, all three rounds), so it proves the gate
 and not a parallel copy of it.
 
-| Injection | rounds | executor p50 | baseline | overhead | budget | verdict |
-|---|---|---|---|---|---|---|
-| seam cost **doubled** (1 extra pass) | 3 of 3 FAIL | 807.5 µs | 385.8 µs | **+421.8 µs** | 250 µs | **FAIL** |
-| seam cost **quadrupled** (3 extra passes) | 3 of 3 FAIL | 1.916 ms | 386.1 µs | **+1.530 ms** | 250 µs | **FAIL** |
+| Injection | rounds | p50 overhead (r1 / r2 / r3) | p95 overhead (r1 / r2 / r3) | budget | verdict |
+|---|---|---|---|---|---|
+| seam cost **doubled** (1 extra pass) | 3 of 3 FAIL | **+407.5 / +403.8 / +490.4 µs** | +484.3 / +523.4 / +534.7 µs | 250 µs each | **FAIL** |
+| seam cost **quadrupled** (3 extra passes) | 3 of 3 FAIL | **+1.571 / +1.582 / +1.588 ms** | +1.397 / +1.393 / +1.455 ms | 250 µs each | **FAIL** |
 
-Both cases fail in **all three** rounds, so the result is not a single unlucky round. The
+A systemic regression moves **both** statistics, as the design predicts — the median is the
+one that would catch it alone, and does. Both cases fail in **all three** rounds, so the
+result is not a single unlucky round. The
 verdict is required by the test to be FAIL specifically and not UNKNOWN: a gate that answers
 "I could not tell" to a doubled seam is worth what a gate that answers PASS is worth, and
 that assertion is what keeps the calibration from drifting there.
@@ -350,7 +474,97 @@ the 1ms ceiling (4x the 250µs bar). Two byte-identical legacy paths could not b
 at this resolution, so nothing can be concluded about the executor seam from this run."*
 That is AC-2's requirement discharged in the direction that is easy to get wrong.
 
-### 5.5 Scope of these numbers
+### 5.5 The gate fails on a MINORITY-INCIDENCE regression (AC-3, second shape)
+
+This is the section that answers the review finding recorded in the amendment above. The
+injection is the same real seam work as §5.3 — `canaryLatencyExtraSeamPassesEvery(n, k)` runs
+the executor seam's own code *n* extra times, but only on every *k*-th timed call, so the
+cost lands on a minority of calls and leaves the rest untouched. That is the shape a
+median-only gate cannot see.
+
+`TestAX06_LatencyGateFailsOnMinorityIncidenceRegression`, 20 extra passes (~8 ms) per
+incident, budget 250 µs for each statistic:
+
+| Incidence | rounds | **p50** overhead (r1 / r2 / r3) | **p95** overhead (r1 / r2 / r3) | verdict |
+|---|---|---|---|---|
+| 1 call in 8 (12.5 %) | 3 of 3 FAIL | PASS: +11.2 / +9.8 / +17.3 µs | **FAIL: +8.971 / +8.954 / +9.069 ms** | **FAIL** |
+| 1 call in 16 (6.25 %) | 3 of 3 FAIL | PASS: +9.6 / +17.0 / +7.1 µs | **FAIL: +8.658 / +8.812 / +8.841 ms** | **FAIL** |
+
+Read the two middle columns together: the median reports **single-digit microseconds of
+overhead and passes**, on a run where one call in eight is nine milliseconds slower. That is
+not a defect in the median; it is what a median *is*. The tail sees the same run at +9 ms and
+turns the gate red in every round. This is the coverage the median-only cut had lost and this
+amendment restores.
+
+**The incidence sweep — where the boundary actually sits.** Idle machine, gate run unmodified
+at each point, one line per configuration:
+
+| Per-incident cost | Incidence | p50 overhead | p95 overhead | verdict |
+|---|---|---|---|---|
+| ~20 ms (50 passes) | 33.3 % (1 in 3) | +80.9 µs (PASS) | **+24.570 ms** | **FAIL** |
+| ~420 µs (1 pass) | 33.3 % (1 in 3) | +31.2 µs (PASS) | **+438.1 µs** | **FAIL** |
+| ~420 µs (1 pass) | 25.0 % (1 in 4) | +32.7 µs (PASS) | **+421.8 µs** | **FAIL** |
+| ~420 µs (1 pass) | 12.5 % (1 in 8) | +11.7 µs (PASS) | +208.8 µs (PASS) | PASS |
+| ~2 ms (5 passes) | 12.5 % (1 in 8) | +14.7 µs (PASS) | **+2.094 ms** | **FAIL** |
+| ~2 ms (5 passes) | 6.25 % (1 in 16) | +10.0 µs (PASS) | **+1.933 ms** | **FAIL** |
+| ~2 ms (5 passes) | **5.6 % (1 in 18)** | +11.8 µs (PASS) | **+1.675 ms** | **FAIL** ← smallest incidence still caught |
+| ~2 ms (5 passes) | 5.0 % (1 in 20) | +8.5 µs (PASS) | +69.9 µs (PASS) | PASS |
+| ~2 ms (5 passes) | 3.1 % (1 in 32) | +8.8 µs (PASS) | +67.5 µs (PASS) | PASS |
+| ~20 ms (50 passes) | 6.25 % (1 in 16) | +13.8 µs (PASS) | **+23.140 ms** | **FAIL** |
+| ~20 ms (50 passes) | 5.0 % (1 in 20) | +10.4 µs (PASS) | +178.9 µs (PASS) | PASS |
+| ~20 ms (50 passes) | 3.1 % (1 in 32) | +11.4 µs (PASS) | +65.2 µs (PASS) | PASS |
+
+Three things this measures, all of them recorded in §3 as limits rather than claims:
+
+1. **The smallest incidence still caught is 5.6 % (1 in 18).** The boundary is the statistic,
+   not the magnitude: at 5.0 % incidence even a 20 ms per-incident cost passes, because the
+   incident calls then sit entirely above the 95th percentile and never move it. This is
+   sharp and predictable rather than a fuzzy sensitivity curve, which is what makes it
+   documentable.
+2. **The median is blind throughout.** Its overhead never leaves the +8…+81 µs band across
+   the whole sweep, including at 33 % incidence and 20 ms per incident — the review's exact
+   counterexample, which scored +97 µs under the median-only gate and now fails on the tail
+   at **+24.57 ms**.
+3. **Magnitude still has to clear the budget.** One extra seam pass (~420 µs) is caught at
+   25 % but not at 12.5 %, because at low incidence the injected calls compete with the
+   fixture's own ~385 µs natural spread between p50 and p95 instead of clearing it.
+
+### 5.6 The tail statistic under contention — what it costs, honestly
+
+The tail is the noisier statistic, so the question SW-242 has to answer is whether gating it
+reintroduces the flake this story exists to remove. Measured under the same synthetic load as
+§5.2 (24 spinning processes on 12 cores), gate run unmodified, six consecutive runs:
+
+| Run | p50 overhead | p50 budget | p95 A/A control | p95 noise vs ceiling | p95 verdict | run verdict |
+|---|---|---|---|---|---|---|
+| 1 | +24.5 µs | 250 µs | 380.6 µs | 1.142 ms > 1.000 ms | UNKNOWN | **PASS** (median only) |
+| 2 | +28.7 µs | 250 µs | 619.8 µs | 1.859 ms > 1.175 ms | UNKNOWN | **PASS** (median only) |
+| 3 | +19.3 µs | 250 µs | 297.2 µs | 892 µs ≤ 1.222 ms | PASS (−365 µs) | **PASS** |
+| 4 | +29.3 µs | 250 µs | 379.2 µs | 1.138 ms ≤ 1.165 ms | PASS (−344 µs) | **PASS** |
+| 5 | +21.5 µs | 250 µs | 1.121 ms | 3.363 ms > 1.243 ms | UNKNOWN | **PASS** (median only) |
+| 6 | +34.9 µs | 250 µs | 400.1 µs | 1.200 ms > 1.173 ms | UNKNOWN | **PASS** (median only) |
+
+**Zero spurious failures in six runs — the tail never turned the gate red on a clean seam.**
+The p95 A/A control widened from 6–28 µs (idle, §5.1) to 297 µs–1.12 ms, and in **4 of the 6
+runs** that carried the noise term past the ceiling, so the tail reported UNKNOWN and the run
+was decided on the median alone — printed in the verdict line as `tail not judgeable this
+run (median-only verdict)`, never silently. The median was untouched by the same load:
++19…+35 µs against an unmoved 250 µs budget.
+
+That is the trade recorded in §3, with its price attached: **on a contended runner the tail
+check degrades to nothing about 2 runs in 3, and minority-incidence coverage is lost for
+those runs.** It is not lost quietly, and it does not cost the run its verdict.
+
+**The tail can still fail under that load**, which is what stops the degradation from being a
+loophole. Same load, `TestAX06_LatencyGateFailsOnMinorityIncidenceRegression` run six times:
+**6 of 6 turned the gate red.** With the ~8 ms per-incident injection, the executor's tail
+overhead reached 2.8–6.3 ms against budgets that clamped at 250 µs–1.4 ms, so it cleared both
+the clamp and three times the run's own resolution — the FAIL-before-degraded ordering in §2
+doing exactly the job it was added for. Without that ordering, an earlier build of this
+amendment let a **4.97 ms** overhead pass on a run whose control had widened past the
+ceiling; that is the specific hole the ordering closes.
+
+### 5.7 Scope of these numbers
 
 Same-process, same-run A/B on one machine and one fixture, per §3. They are evidence that
 the seam is cheap and that the instrument measuring it is trustworthy. They are not a
