@@ -370,6 +370,121 @@ func LocalFirstCheck() Check {
 	}
 }
 
+// ExecutorSeamPosition is one migrated operation's kill-switch position, as
+// ExecutorSeamCheck is handed it by the composition root.
+//
+// The doctor package deliberately does NOT import surfaces/client to read this
+// for itself. Its whole design contract is that a check receives a read-only
+// environment and computes nothing it was not given (see the package comment),
+// and a check that reached into a surface package to read a process-global
+// would be the first exception to that. The composition root already imports
+// both, so it does the reading and this package does the rendering.
+type ExecutorSeamPosition struct {
+	// Operation is the catalog id.
+	Operation string
+	// Mode is the position: "legacy", "shadow" or "active".
+	Mode string
+	// Overridden is true when an environment variable selected this position
+	// rather than the compiled-in default.
+	Overridden bool
+	// EnvVar is the variable that would change it.
+	EnvVar string
+}
+
+// ExecutorSeamCheck reports which internal path serves each migrated operation
+// (SW-228 / AX-08), so the strangler seam's configuration is visible to an
+// operator instead of being a compiled-in fact nobody can observe.
+//
+// # Why this reports the POSITION and not the mismatch counter
+//
+// The obvious check here would print the shadow-mode divergence count. It would
+// also be a lie. That counter lives in a process-global inside surfaces/client,
+// is never persisted, and the processes that actually dispatch through the seam
+// are the long-running servers (`graphi mcp`, `graphi serve`). `graphi doctor`
+// is a DIFFERENT, short-lived process: it would read its own untouched counter
+// and print "0 divergences" for a server that had diverged on every call. A
+// green line that cannot be anything but green is worse than no line, because
+// someone will act on it.
+//
+// So the honest readout is the one that IS cross-process: the configuration.
+// The position is what an operator chose, it is the same in every process
+// started from the same environment, and it is the thing they can change. The
+// counter's scope is stated in the detail rather than pretended away, which is
+// the part a reader needs in order to know where to look — and it is the reason
+// `shadow` is not the shipped default (surfaces/client/canary.go).
+//
+// Status is INFO for the shipped configuration and WARN when any operation is
+// running the dual path, because that is a deliberate, costly, temporary state
+// (every call runs twice) and an operator who left it on by accident should be
+// told.
+func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
+	return checkFunc{
+		id:       "executor-seam",
+		category: "internals",
+		fn: func(ctx context.Context, env Env) CheckResult {
+			if envErr != nil {
+				// A mistyped GRAPHI_CANARY_* value FAILS a session at the
+				// composition root. Reporting it here is the whole point of a
+				// diagnostic: an operator finds out from `graphi doctor` rather
+				// than from an MCP client that will not start.
+				return ResultWithAction("executor-seam", "internals",
+					fmt.Sprintf("a kill-switch variable is invalid and would fail a session: %v", envErr),
+					StatusFail,
+					"set the variable to `legacy`, `shadow` or `active`, or unset it")
+			}
+			if len(positions) == 0 {
+				return StringResult("executor-seam", "internals",
+					"no operation dispatches through the executor seam", StatusInfo)
+			}
+			counts := map[string]int{}
+			var shadowed, activated []string
+			var detail strings.Builder
+			for _, p := range positions {
+				counts[p.Mode]++
+				switch p.Mode {
+				case "shadow":
+					shadowed = append(shadowed, p.Operation)
+				case "active":
+					activated = append(activated, p.Operation)
+				}
+				source := "compiled-in default"
+				if p.Overridden {
+					source = p.EnvVar
+				}
+				fmt.Fprintf(&detail, "%s: %s (%s)\n", p.Operation, p.Mode, source)
+			}
+			detail.WriteString("a shadow divergence is recorded in-process and is not persisted, " +
+				"so it is readable only inside the server process that ran the dual path")
+			message := fmt.Sprintf("%d migrated operation(s): %d legacy, %d shadow, %d active",
+				len(positions), counts["legacy"], counts["shadow"], counts["active"])
+			if len(shadowed) > 0 {
+				sort.Strings(shadowed)
+				return CheckResult{
+					ID: "executor-seam", Category: "internals", Status: StatusWarn,
+					Message: message,
+					Action: fmt.Sprintf("shadow runs every call twice for %s; unset its GRAPHI_CANARY_* "+
+						"variable to return to the shipped position", strings.Join(shadowed, ", ")),
+					Detail: detail.String(),
+				}
+			}
+			if len(activated) > 0 {
+				sort.Strings(activated)
+				return CheckResult{
+					ID: "executor-seam", Category: "internals", Status: StatusInfo,
+					Message: message,
+					Action: fmt.Sprintf("%s are served by the executor path; set its GRAPHI_CANARY_* "+
+						"variable to `legacy` to roll back", strings.Join(activated, ", ")),
+					Detail: detail.String(),
+				}
+			}
+			return CheckResult{
+				ID: "executor-seam", Category: "internals", Status: StatusInfo,
+				Message: message, Action: "", Detail: detail.String(),
+			}
+		},
+	}
+}
+
 // KnownDefectsCheck discloses OPEN, published product defects that affect a
 // GA operation. Info severity, never pass: an open defect is not a health
 // failure of THIS install, but it is also never silently green. The list is

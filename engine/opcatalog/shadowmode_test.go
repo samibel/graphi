@@ -61,7 +61,7 @@ import (
 //     below, because the crossing that DID happen needs its own rule. The
 //     executor-dispatch seam is a different boundary from the catalog-import
 //     boundary, and an import-based test cannot see it at all: a file that calls
-//     client.DispatchCanary imports surfaces/client, which two dozen files
+//     the dispatch seam imports surfaces/client, which two dozen files
 //     already do for unrelated reasons.
 //
 // AX-07 (SW-227) widens the allow list by two files — engine/module — and, like
@@ -209,9 +209,10 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 				"catalog through surfaces/client, never by importing it: that is what keeps the "+
 				"operation catalog one seam instead of a dependency every surface grows its own "+
 				"opinion about. AX-06 moved the dead_code canary's DISPATCH onto the executor "+
-				"WITHOUT needing this entry removed — it calls client.DispatchCanary — so a later "+
-				"story that thinks it needs the entry gone should first check whether it is really "+
-				"solving the same problem AX-06 solved.", importer, reason)
+				"WITHOUT needing this entry removed, and AX-08 moved nine more the same way — "+
+				"both call client.DispatchOperation — so a later story that thinks it needs the "+
+				"entry gone should first check whether it is really solving the same problem "+
+				"AX-06 and AX-08 solved.", importer, reason)
 			continue
 		}
 		if !allowedImporters[importer] {
@@ -275,28 +276,64 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 //
 // TestAX04 above watches who IMPORTS the catalog. That rule survived AX-06
 // unchanged, which is exactly why it cannot be the gate for AX-06: the canary
-// crosses into the executor by CALLING client.DispatchCanary, and a file that
-// does so imports surfaces/client — something most of the tree already does.
-// An import-shaped test is blind to it.
+// crosses into the executor by CALLING the dispatch seam, and a file that does
+// so imports surfaces/client — something most of the tree already does. An
+// import-shaped test is blind to it.
 //
-// So the crossing gets its own explicit list. Exactly two request-serving files
-// may reach the executor-dispatch seam, they are named here, and a third one
-// fails this test. The check runs in both directions: an undeclared caller is a
-// failure, and a declared caller that no longer contains the call is also a
-// failure, because a stale entry would quietly license the next one.
+// So the crossing gets its own explicit list. Only the named request-serving
+// files may reach the executor-dispatch seam, and an unnamed one fails this
+// test. The check runs in both directions: an undeclared caller is a failure,
+// and a declared caller that no longer contains the call is also a failure,
+// because a stale entry would quietly license the next one.
 //
 // The seam is named by its identifier rather than by a package import so the
 // rule survives a rename of the file it lives in.
+//
+// # AX-08 (SW-228) is the widening AX-06 predicted, and it widens the rule
+//
+// The seam's identifier changed with its scope — DispatchCanary served one
+// operation, DispatchOperation serves the migrated SET — and the file list is
+// unchanged: the same three files, because AX-08 collapsed ten per-operation
+// dispatch arms into ONE generic branch per surface instead of adding ten
+// call sites. That is the plan's success criterion, and it is why this list did
+// not have to grow to accommodate a ten-fold widening.
+//
+// A file-name list alone would now be weaker than it was, though, because the
+// interesting question moved: it is no longer only "who calls the seam" but
+// "how many places call it". Ten arms collapsing into two generic branches is
+// the whole claim, and a list of file names cannot tell that apart from ten
+// calls in the same two files. So this test gains a SECOND rule the AX-06
+// version had no need for: the number of call sites per file is PINNED below.
+//
+// (The third question — WHAT the seam may carry — is not answerable from this
+// package: engine may not import surfaces, and the migrated set lives in
+// surfaces/client. It is gated there instead, by
+// surfaces/client/migration_test.go, which checks every migrated operation
+// against the catalog criteria and against argument-fidelity evidence.)
 func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 	root := moduleRootForTest(t)
-	const seam = "DispatchCanary"
+	const seam = "DispatchOperation"
 
-	// The declared dispatch sites: the MCP tools/call arm and the HTTP analyze
-	// arm for the ONE canary operation. Adding a third means a second operation
-	// is migrating, which is SW-228's job and needs SW-228's evidence.
+	// How many times each declared file may reach the seam. AX-08's claim is
+	// that a migrated operation costs a table row, not a branch: MCP resolves
+	// every migrated tool through ONE generic branch, and HTTP has four —
+	// its three body-based handlers (compound, search_ast, find_clones, each of
+	// which owns its own route) plus the one generic branch that serves every
+	// agent tool on /analyze/{name}. A number that grows here means a story
+	// went back to per-operation dispatch and should say why.
+	callSites := map[string]int{
+		filepath.Join("surfaces", "mcp", "toolcalls.go"): 1,
+		filepath.Join("surfaces", "http", "handlers.go"): 4,
+	}
+	counted := map[string]int{}
+
+	// The declared dispatch sites: the MCP tools/call generic branch and the
+	// HTTP handlers' generic branch. Adding a fourth means a THIRD surface is
+	// dispatching through the executor, which is a boundary change and owes its
+	// own evidence.
 	declared := map[string]string{
-		filepath.Join("surfaces", "mcp", "toolcalls.go"): "MCP tools/call — the dead_code arm",
-		filepath.Join("surfaces", "http", "handlers.go"): "HTTP /analyze — the dead_code arm",
+		filepath.Join("surfaces", "mcp", "toolcalls.go"): "MCP tools/call — the generic executor branch",
+		filepath.Join("surfaces", "http", "handlers.go"): "HTTP — the generic executor branch",
 		filepath.Join("surfaces", "client", "canary.go"): "the seam's own definition",
 	}
 
@@ -328,6 +365,9 @@ func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 			rel = path
 		}
 		found[rel] = true
+		// Count CALLS, not mentions: a doc comment naming the seam is not a
+		// crossing, and the files below carry several of those.
+		counted[rel] = strings.Count(string(src), seam+"(")
 		return nil
 	})
 	if err != nil {
@@ -343,10 +383,11 @@ func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 	if len(undeclared) > 0 {
 		sort.Strings(undeclared)
 		t.Errorf("these non-test files reach the executor dispatch seam without being declared:\n  %s\n"+
-			"AX-06 migrates exactly ONE operation (dead_code) and says so in its scope: no bulk "+
-			"migration, no second operation. If this is the story that migrates more (SW-228/AX-08), "+
-			"it owes the same dual-run parity evidence per operation that AX-06 owed for one, and it "+
-			"widens this list in the same change.", strings.Join(undeclared, "\n  "))
+			"AX-06 migrated ONE operation and AX-08 migrated a bounded read-only Labs set, both "+
+			"through exactly one generic branch per surface. A new caller is a new surface crossing "+
+			"the seam, and it owes the same per-operation evidence the migrated set owes: catalog "+
+			"criteria, byte parity, and argument fidelity. It widens this list in the same change.",
+			strings.Join(undeclared, "\n  "))
 	}
 	for rel, reason := range declared {
 		if !found[rel] {
@@ -354,6 +395,15 @@ func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 				"entry here licenses an undeclared caller to take its place unnoticed", rel, reason)
 		}
 	}
+	for rel, want := range callSites {
+		if got := counted[rel]; got != want {
+			t.Errorf("%s reaches the executor dispatch seam %d time(s), want %d. AX-08's claim "+
+				"is that a migrated operation costs a table row and not a dispatch arm; a "+
+				"changed count is that claim changing, and it belongs in the diff with a "+
+				"reason rather than in a number nobody looked at.", rel, got, want)
+		}
+	}
+
 	// Non-vacuity: if the scan found nothing at all, it is not proving a
 	// boundary, it is proving that it looked in the wrong tree.
 	if len(found) == 0 {

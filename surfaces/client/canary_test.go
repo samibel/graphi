@@ -50,12 +50,12 @@ func steady(body []byte, err error) func(int, DeadCodeParams) ([]byte, error) {
 // neighbours.
 func withCanaryMode(t *testing.T, mode CanaryMode) {
 	t.Helper()
-	previous := CanaryModeSetting()
-	if err := SetCanaryMode(mode); err != nil {
-		t.Fatalf("SetCanaryMode(%q): %v", mode, err)
+	previous := CanaryModeDefault()
+	if err := SetCanaryModeDefault(mode); err != nil {
+		t.Fatalf("SetCanaryModeDefault(%q): %v", mode, err)
 	}
 	t.Cleanup(func() {
-		if err := SetCanaryMode(previous); err != nil {
+		if err := SetCanaryModeDefault(previous); err != nil {
 			t.Fatalf("restore canary mode %q: %v", previous, err)
 		}
 	})
@@ -309,24 +309,99 @@ func TestCanary_KillSwitchHasExactlyThreePositions(t *testing.T) {
 			t.Errorf("ParseCanaryMode(%q) accepted an unrecognised position — a typo in an "+
 				"operator's environment must not select a behaviour they did not ask for", bad)
 		}
-		if err := SetCanaryMode(CanaryMode(bad)); err == nil {
-			t.Errorf("SetCanaryMode(%q) accepted an unrecognised position", bad)
+		if err := SetCanaryModeDefault(CanaryMode(bad)); err == nil {
+			t.Errorf("SetCanaryModeDefault(%q) accepted an unrecognised position", bad)
 		}
 	}
 	// The rejection did not disturb the installed position.
-	if got := CanaryModeSetting(); !got.Valid() {
+	if got := CanaryModeDefault(); !got.Valid() {
 		t.Fatalf("a rejected position left the switch at %q", got)
 	}
 }
 
-// TestCanary_ShippedDefaultIsShadow pins the compiled-in position of record.
+// TestCanary_ShippedDefaultIsLegacy pins the compiled-in position of record.
 // Changing it is a deliberate behaviour change and has to edit this test, which
 // is the review prompt.
-func TestCanary_ShippedDefaultIsShadow(t *testing.T) {
-	if canaryModeDefault != CanaryModeShadow {
-		t.Fatalf("the compiled-in canary position is %q, want %q — `legacy` would ship a "+
-			"canary that never runs, and `active` would make the executor authoritative "+
-			"before parity is proven", canaryModeDefault, CanaryModeShadow)
+//
+// SW-226 shipped `shadow` and gave a reason that did not survive SW-228's
+// review of it: a shadow divergence is recorded in a process-local, unpersisted
+// counter, the processes that dispatch through this seam are long-running
+// servers, and every local diagnostic that could show an operator that counter
+// runs in a DIFFERENT process. So `shadow` bought a doubled call for evidence
+// nobody on a live system could retrieve, and AX-08 would have multiplied it by
+// ten. The evidence that gates activation is the fixture parity suite, which
+// runs in CI and can be read.
+//
+// Moving it back to `shadow` is legitimate — but only together with a way to
+// READ a divergence outside the test binary. That is the condition this test
+// records, so the next story to consider it starts from the reason rather than
+// from the value.
+func TestCanary_ShippedDefaultIsLegacy(t *testing.T) {
+	if canaryModeDefault != CanaryModeLegacy {
+		t.Fatalf("the compiled-in canary position is %q, want %q — `shadow` runs every "+
+			"migrated operation twice to fill a counter no live-system operator can read, "+
+			"and `active` would make the executor authoritative before parity is proven",
+			canaryModeDefault, CanaryModeLegacy)
+	}
+}
+
+// TestAX08_KillSwitchIsPerOperation is AC-2's kill-switch half at AX-08 scale:
+// rolling ONE operation back must not roll back the other nine.
+func TestAX08_KillSwitchIsPerOperation(t *testing.T) {
+	ResetCanaryModes()
+	t.Cleanup(ResetCanaryModes)
+
+	if err := SetCanaryModeDefault(CanaryModeActive); err != nil {
+		t.Fatalf("SetCanaryModeDefault: %v", err)
+	}
+	if err := SetCanaryModeFor(CanaryOperation, CanaryModeLegacy); err != nil {
+		t.Fatalf("SetCanaryModeFor: %v", err)
+	}
+	if got := CanaryModeFor(CanaryOperation); got != CanaryModeLegacy {
+		t.Errorf("the per-operation override did not take: %q", got)
+	}
+	for _, op := range MigratedOperations() {
+		if op == CanaryOperation {
+			continue
+		}
+		if got := CanaryModeFor(op); got != CanaryModeActive {
+			t.Errorf("rolling back %q also moved %q to %q — the switch is not per operation",
+				CanaryOperation, op, got)
+		}
+	}
+
+	// A non-migrated operation has no switch to set, and reports legacy.
+	if err := SetCanaryModeFor("hotspots", CanaryModeActive); err == nil {
+		t.Error("SetCanaryModeFor accepted an operation that does not dispatch through the " +
+			"executor — a switch that does nothing is worse than no switch")
+	}
+	if got := CanaryModeFor("hotspots"); got != CanaryModeLegacy {
+		t.Errorf("a non-migrated operation reports position %q, want %q", got, CanaryModeLegacy)
+	}
+
+	// And the readout agrees with the switch, since `graphi doctor` renders it.
+	positions := CanaryPositions()
+	if len(positions) != len(MigratedOperations()) {
+		t.Fatalf("CanaryPositions() covers %d operations, migrated set has %d",
+			len(positions), len(MigratedOperations()))
+	}
+	for _, p := range positions {
+		if p.Mode != CanaryModeFor(p.Operation) {
+			t.Errorf("the readout says %q is %q, dispatch says %q", p.Operation, p.Mode,
+				CanaryModeFor(p.Operation))
+		}
+		if !p.Overridden {
+			t.Errorf("%q reports its position as the compiled-in default after an explicit "+
+				"override was installed", p.Operation)
+		}
+	}
+
+	ResetCanaryModes()
+	for _, p := range CanaryPositions() {
+		if p.Mode != canaryModeDefault || p.Overridden {
+			t.Errorf("after a reset %q reports %q (overridden=%t), want the compiled-in %q",
+				p.Operation, p.Mode, p.Overridden, canaryModeDefault)
+		}
 	}
 }
 
@@ -348,9 +423,9 @@ func TestCanary_ModesRunTheExpectedPaths(t *testing.T) {
 		t.Run(string(tc.mode), func(t *testing.T) {
 			withCanaryMode(t, tc.mode)
 			stub := &canaryStub{answer: steady(body, nil)}
-			got, err := DispatchCanary(context.Background(), stub, &DeadCodeArgs{MaxItems: 7})
+			got, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{MaxItems: 7})
 			if err != nil {
-				t.Fatalf("DispatchCanary: %v", err)
+				t.Fatalf("DispatchOperation: %v", err)
 			}
 			if stub.calls != tc.wantCalls {
 				t.Errorf("%q ran the legacy method %d times, want %d", tc.mode, stub.calls, tc.wantCalls)
@@ -379,9 +454,9 @@ func TestCanary_ShadowReturnsTheLegacyResult(t *testing.T) {
 	stub := &canaryStub{answer: func(call int, _ DeadCodeParams) ([]byte, error) {
 		return []byte(fmt.Sprintf(`{"call":%d}`, call)), nil
 	}}
-	got, err := DispatchCanary(context.Background(), stub, &DeadCodeArgs{})
+	got, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{})
 	if err != nil {
-		t.Fatalf("DispatchCanary: %v", err)
+		t.Fatalf("DispatchOperation: %v", err)
 	}
 	if want := []byte(`{"call":1}`); !bytes.Equal(got, want) {
 		t.Fatalf("shadow returned %s, want the LEGACY result %s", got, want)
@@ -435,7 +510,7 @@ func TestCanary_ShadowMismatchIsRecorded(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			withCleanCanaryRecorder(t)
 			stub := &canaryStub{answer: tc.answer}
-			_, _ = DispatchCanary(context.Background(), stub, &DeadCodeArgs{})
+			_, _ = DispatchOperation(context.Background(), stub, &DeadCodeArgs{})
 			count, last := CanaryMismatches()
 			if count != 1 {
 				t.Fatalf("diverging paths recorded %d mismatch(es), want 1 — the dual-run "+
@@ -464,7 +539,7 @@ func TestCanary_ShadowMismatchDoesNotFailTheCaller(t *testing.T) {
 		}
 		return []byte(`{"ok":true}`), nil
 	}}
-	got, err := DispatchCanary(context.Background(), stub, &DeadCodeArgs{})
+	got, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{})
 	if err != nil {
 		t.Fatalf("a shadow-path failure reached the caller: %v", err)
 	}
@@ -485,7 +560,7 @@ func TestCanary_ErrorParityAcrossModes(t *testing.T) {
 		t.Run(string(mode), func(t *testing.T) {
 			withCanaryMode(t, mode)
 			stub := &canaryStub{answer: steady(nil, ErrAgentIntelUnavailable)}
-			got, err := DispatchCanary(context.Background(), stub, &DeadCodeArgs{})
+			got, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{})
 			if !errors.Is(err, ErrAgentIntelUnavailable) {
 				t.Fatalf("%q returned %v, want the legacy sentinel %v", mode, err, ErrAgentIntelUnavailable)
 			}
@@ -502,23 +577,33 @@ func TestCanary_ErrorParityAcrossModes(t *testing.T) {
 	}
 }
 
-// TestCanary_DispatchIsOneOperationWide keeps the seam from becoming the bulk
-// migration by accident: anything that is not the canary is rejected by name.
-func TestCanary_DispatchIsOneOperationWide(t *testing.T) {
+// TestCanary_DispatchIsBoundedToTheMigratedSet keeps the seam from widening by
+// accident: an operation outside migratedOperations is rejected BY NAME and
+// never reaches a client method, so a future story cannot migrate one by
+// forgetting to. SW-226 stated this for one operation; SW-228 states it for a
+// set, which is the same property and a larger set.
+func TestCanary_DispatchIsBoundedToTheMigratedSet(t *testing.T) {
 	withCanaryMode(t, CanaryModeShadow)
 	stub := &canaryStub{answer: steady([]byte(`{}`), nil)}
-	_, err := DispatchCanary(context.Background(), stub, &SearchArgs{Query: "x"})
+	// `search` is Stable, is ADAPTED (it has a parity case), and is deliberately
+	// not migrated — the strongest case for this check, because everything about
+	// it except the migration decision would let it through.
+	_, err := DispatchOperation(context.Background(), stub, &SearchArgs{Query: "x"})
 	if err == nil {
-		t.Fatal("DispatchCanary executed a non-canary operation; AX-06 migrates exactly one")
+		t.Fatal("DispatchOperation executed an operation outside the migrated set")
+	}
+	if !strings.Contains(err.Error(), "search") {
+		t.Errorf("the rejection does not name the operation it refused: %v", err)
 	}
 	if !strings.Contains(err.Error(), CanaryOperation) {
-		t.Errorf("the rejection does not name the canary operation: %v", err)
+		t.Errorf("the rejection does not name the migrated set, so it does not tell a caller "+
+			"what IS accepted: %v", err)
 	}
 	if stub.calls != 0 {
 		t.Errorf("the rejected operation still reached a client method (%d calls)", stub.calls)
 	}
-	if _, err := DispatchCanary(context.Background(), stub, nil); err == nil {
-		t.Error("DispatchCanary accepted nil arguments")
+	if _, err := DispatchOperation(context.Background(), stub, nil); err == nil {
+		t.Error("DispatchOperation accepted nil arguments")
 	}
 }
 
@@ -530,7 +615,7 @@ func TestCanary_ActiveFailsClosedWhenTheExecutorCannotBeBuilt(t *testing.T) {
 	withCanaryMode(t, CanaryModeActive)
 	// A nil Client is the one construction failure reachable without breaking
 	// the embedded catalog: NewExecutor rejects it.
-	_, err := DispatchCanary(context.Background(), nil, &DeadCodeArgs{})
+	_, err := DispatchOperation(context.Background(), nil, &DeadCodeArgs{})
 	if err == nil {
 		t.Fatal("active mode silently degraded to the legacy path")
 	}

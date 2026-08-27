@@ -7,7 +7,7 @@
 // surfaces/client/canary_test.go; what those cannot show is that the operation
 // the SURFACES actually serve is the one that was compared — which is why the
 // active-mode cases below go through mcp.Server.Serve and the HTTP handler
-// rather than through client.DispatchCanary.
+// rather than through client.DispatchOperation.
 //
 // The fixture suite deliberately covers the failure classes as well as the happy
 // path, because a canary proven only on its success case has proven the easy
@@ -44,12 +44,12 @@ import (
 // withCanaryMode installs a kill-switch position for one test.
 func withCanaryMode(t *testing.T, mode client.CanaryMode) {
 	t.Helper()
-	previous := client.CanaryModeSetting()
-	if err := client.SetCanaryMode(mode); err != nil {
-		t.Fatalf("SetCanaryMode(%q): %v", mode, err)
+	previous := client.CanaryModeDefault()
+	if err := client.SetCanaryModeDefault(mode); err != nil {
+		t.Fatalf("SetCanaryModeDefault(%q): %v", mode, err)
 	}
 	t.Cleanup(func() {
-		if err := client.SetCanaryMode(previous); err != nil {
+		if err := client.SetCanaryModeDefault(previous); err != nil {
 			t.Fatalf("restore canary mode %q: %v", previous, err)
 		}
 	})
@@ -137,11 +137,11 @@ func TestAX06_CanaryByteAndErrorParityAcrossKillSwitchPositions(t *testing.T) {
 					// the unwrapped Client.DeadCode call.
 					withCanaryMode(t, client.CanaryModeLegacy)
 					client.ResetCanaryMismatches()
-					wantBytes, wantErr := client.DispatchCanary(ctx, fixture.client, args())
+					wantBytes, wantErr := client.DispatchOperation(ctx, fixture.client, args())
 					covered[assertCanaryOutcomeShape(t, fixture, maxItems, wantBytes, wantErr)] = true
 
 					// And an independent baseline: the method call a surface
-					// made before this story existed. If DispatchCanary's legacy
+					// made before this story existed. If DispatchOperation's legacy
 					// position ever stops being that call, this catches it.
 					directBytes, directErr := fixture.client.DeadCode(ctx, client.DeadCodeParams{MaxItems: maxItems})
 					assertCanarySameOutcome(t, "legacy position vs direct method", wantBytes, wantErr, directBytes, directErr)
@@ -149,7 +149,7 @@ func TestAX06_CanaryByteAndErrorParityAcrossKillSwitchPositions(t *testing.T) {
 					for _, mode := range []client.CanaryMode{client.CanaryModeShadow, client.CanaryModeActive} {
 						withCanaryMode(t, mode)
 						client.ResetCanaryMismatches()
-						gotBytes, gotErr := client.DispatchCanary(ctx, fixture.client, args())
+						gotBytes, gotErr := client.DispatchOperation(ctx, fixture.client, args())
 						assertCanarySameOutcome(t, string(mode), wantBytes, wantErr, gotBytes, gotErr)
 						if count, last := client.CanaryMismatches(); count != 0 {
 							t.Fatalf("%q recorded %d mismatch(es): %s", mode, count, last)
@@ -276,34 +276,155 @@ func TestAX06_CanarySurfaceDispatchIsUnchangedInEveryPosition(t *testing.T) {
 }
 
 // TestAX06_NonCanaryOperationsAreUntouched is AC-6's dispatch half: the kill
-// switch moves ONE operation. Its sibling Labs agent-intelligence tools, which
-// share the same MCP arm shape and the same HTTP route, must answer identically
-// in every position — if any of them had been wired to the seam by accident,
-// `active` would either change their bytes or fail outright.
+// switch moves only the operations that were migrated. Sibling Labs
+// agent-intelligence tools that share the same MCP arm shape and the same HTTP
+// route must answer identically in every position — if any of them had been
+// wired to the seam by accident, `active` would either change their bytes or
+// fail outright.
+//
+// SW-228 (AX-08) SHRANK this list, and that is the point of the change. Four of
+// the five tools it originally named — repo_overview, framework_map,
+// architecture, architecture_violations — are migrated now, so keeping them
+// here would have turned a boundary check into a parity check wearing its name:
+// it would still have passed, for the opposite reason. They moved to
+// TestAX08_MigratedOperationsAgreeInEveryPosition below, where their agreement
+// is the claim rather than an accident. What is left here is what the name says.
 func TestAX06_NonCanaryOperationsAreUntouched(t *testing.T) {
 	store := graphstore.NewMemStore()
 	indexCharFixture(t, store)
 	direct := charClient(store).WithRepoRoot(charFixtureDir(t))
 
-	neighbours := []string{"repo_overview", "framework_map", "architecture", "architecture_violations", "hotspots"}
+	neighbours := []string{"hotspots", "symbol_context", "task_context"}
+	args := map[string]map[string]any{
+		"symbol_context": {"symbol": "char.Reader"},
+		"task_context":   {"task": "read a character"},
+	}
+	for _, tool := range neighbours {
+		if client.IsMigratedOperation(tool) {
+			t.Fatalf("%q is migrated, so it cannot stand for an untouched neighbour — move it "+
+				"to the migrated-agreement test instead of leaving it here to pass for the "+
+				"wrong reason", tool)
+		}
+	}
 
 	withCanaryMode(t, client.CanaryModeLegacy)
 	baseline := map[string][]byte{}
 	for _, tool := range neighbours {
-		baseline[tool] = mcpAgentToolOutput(t, direct, tool)
+		baseline[tool] = ax06MCPToolText(t, direct, tool, args[tool])
 	}
 
 	for _, mode := range []client.CanaryMode{client.CanaryModeShadow, client.CanaryModeActive} {
 		withCanaryMode(t, mode)
 		client.ResetCanaryMismatches()
 		for _, tool := range neighbours {
-			if got := mcpAgentToolOutput(t, direct, tool); !bytes.Equal(got, baseline[tool]) {
-				t.Errorf("%s changed when the canary switch moved to %q — the switch is not "+
-					"one operation wide", tool, mode)
+			if got := ax06MCPToolText(t, direct, tool, args[tool]); !bytes.Equal(got, baseline[tool]) {
+				t.Errorf("%s changed when the kill switch moved to %q — the switch reaches an "+
+					"operation that was never migrated", tool, mode)
 			}
 		}
 		if count, last := client.CanaryMismatches(); count != 0 {
-			t.Errorf("a non-canary operation reached the dual-run comparison in %q: %s", mode, last)
+			t.Errorf("a non-migrated operation reached the dual-run comparison in %q: %s", mode, last)
+		}
+	}
+	client.ResetCanaryMismatches()
+}
+
+// TestAX08_MigratedOperationsAgreeInEveryPosition is SW-228's AC-2 at the
+// SURFACE level, and the evidence that justifies activating each operation.
+//
+// Every migrated tool is driven here through mcp.Server.Serve, against the real
+// indexed corpus fixture, in ALL THREE positions, and the bytes must be
+// identical in each — which is what makes `active` a decision about which code
+// runs rather than a decision about what the caller gets. It is driven by
+// client.MigratedOperations() rather than by a literal list, so a later story
+// that migrates another agent tool inherits the evidence requirement instead of
+// having to remember it.
+//
+// # What this test does NOT prove, and which test does
+//
+// It cannot catch an adapter that calls the wrong Client method, and saying so
+// is worth more than the test would be if it pretended otherwise. In `legacy`
+// position DispatchOperation calls args.invoke — the ADAPTER's method — so a
+// mutated adapter moves both sides of this comparison together and all three
+// positions agree on the wrong answer. Verified by mutation while writing this:
+// pointing ArchitectureArgs.invoke at Client.FrameworkMap left this test green.
+//
+// Two other tests catch exactly that, and both were confirmed to fail under the
+// same mutation:
+//
+//   - surfaces/client/executor_parity_test.go, whose legacy baseline is written
+//     out BY HAND and so does not move with the adapter;
+//   - TestMCP_CLI_AgentIntelParity in this package, whose baseline is the CLI —
+//     which still calls the client method directly and is therefore an
+//     independent surface, not a second reading of the same code.
+//
+// What THIS test adds on top of those is the property neither can see: that the
+// executor machinery around the adapter — catalog lookup, contract-version
+// check, the JSON argument round trip, the decode with unknown fields refused —
+// changes no byte of what the MCP surface returns.
+func TestAX08_MigratedOperationsAgreeInEveryPosition(t *testing.T) {
+	store := graphstore.NewMemStore()
+	indexCharFixture(t, store)
+	direct := charClient(store).WithRepoRoot(charFixtureDir(t))
+
+	// The arguments each migrated tool needs on the MCP wire. A migrated tool
+	// with no entry here fails below rather than being skipped: an operation
+	// nobody exercised is an operation with no surface-level evidence.
+	args := map[string]map[string]any{
+		"architecture":            {},
+		"architecture_violations": {},
+		"compound":                {"query": "SEED char.Reader\nHOP out calls\n"},
+		"dead_code":               {},
+		"find_clones":             {},
+		"framework_map":           {},
+		"repo_overview":           {},
+		"search_ast":              {"pattern": `{"kind":"function"}`},
+		"search_hybrid":           {"query": "reader"},
+		"test_impact":             {"target": "char.Reader"},
+	}
+	migrated := client.MigratedOperations()
+	if len(migrated) == 0 {
+		t.Fatal("client.MigratedOperations() is empty; this test is not checking anything")
+	}
+
+	withCanaryMode(t, client.CanaryModeLegacy)
+	baseline := map[string][]byte{}
+	for _, tool := range migrated {
+		call, ok := args[tool]
+		if !ok {
+			t.Fatalf("%q dispatches through the executor seam but has no surface-level "+
+				"invocation here; a migrated operation owes evidence over the REAL MCP "+
+				"dispatch path, not only over the unit fixture", tool)
+		}
+		baseline[tool] = ax06MCPToolText(t, direct, tool, call)
+		if len(baseline[tool]) == 0 {
+			t.Fatalf("%q produced no bytes on the corpus fixture — this case proves nothing", tool)
+		}
+	}
+
+	for _, mode := range []client.CanaryMode{client.CanaryModeShadow, client.CanaryModeActive} {
+		withCanaryMode(t, mode)
+		client.ResetCanaryMismatches()
+		for _, tool := range migrated {
+			got := ax06MCPToolText(t, direct, tool, args[tool])
+			if !bytes.Equal(got, baseline[tool]) {
+				t.Errorf("%s answers differently in %q than in legacy — the executor path is "+
+					"NOT byte-identical for this operation and it must go back to legacy with "+
+					"a recorded reason\n  legacy   (%d bytes)\n  %s (%d bytes)",
+					tool, mode, len(baseline[tool]), mode, len(got))
+			}
+		}
+		if mode == client.CanaryModeShadow {
+			// Shadow ran BOTH paths, so a divergence would have been recorded.
+			// A clean recorder is a necessary condition, not the proof — an
+			// executor that never ran would also record nothing. The PROOF is the
+			// `active` round of this same loop: in that position DispatchOperation returns
+			// the executor's bytes and nothing else, so identical bytes there mean
+			// the executor produced them.
+			if count, last := client.CanaryMismatches(); count != 0 {
+				t.Errorf("the dual run recorded %d divergence(s) across the migrated set: %s",
+					count, last)
+			}
 		}
 	}
 	client.ResetCanaryMismatches()

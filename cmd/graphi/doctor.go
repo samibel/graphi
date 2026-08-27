@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/internal/doctor"
 	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/releaseinfo"
 	"github.com/samibel/graphi/internal/state"
+	"github.com/samibel/graphi/surfaces/client"
 )
 
 // runDoctor implements the read-only `graphi doctor` subcommand.
@@ -61,6 +63,8 @@ func runDoctor(args []string) int {
 	reg.Register(doctor.IndexCheck(indexRoot, indexMeta))
 	reg.Register(doctor.PrivacyCheck())
 	reg.Register(doctor.LocalFirstCheck())
+	seamPositions, seamErr := executorSeamPositions()
+	reg.Register(doctor.ExecutorSeamCheck(seamPositions, seamErr))
 	reg.Register(doctor.KnownDefectsCheck())
 
 	runner := doctor.NewRunner(reg)
@@ -79,6 +83,47 @@ func runDoctor(args []string) int {
 		}
 	}
 	return doctor.ExitCodeFromReport(report)
+}
+
+// executorSeamPositions reads the SW-228 (AX-08) kill-switch positions out of
+// surfaces/client and translates them into the doctor package's vocabulary.
+//
+// The reading happens HERE rather than inside internal/doctor on purpose: the
+// doctor package's contract is that a check computes only over what it is
+// given, and it holds no surface imports at all. The composition root already
+// imports both sides, so the coupling costs nothing and buys the check its
+// testability.
+//
+// It applies the environment first, exactly as the composition root does for a
+// real session. Without that the readout would report the compiled-in default
+// no matter what the operator had set, which is the failure mode this whole
+// check exists to prevent — a diagnostic that cannot be anything but green.
+// Applying it here is safe because `graphi doctor` dispatches nothing: the
+// positions it installs govern a seam this verb never reaches.
+//
+// A mistyped value is returned rather than swallowed. It would fail a real
+// session at startup, so the honest thing for a diagnostic to do is say so.
+//
+// The positions it reports are THIS process's, derived from THIS environment,
+// which is the honest scope: a server started from the same environment is in
+// the same position. The divergence COUNTER is deliberately not reported — see
+// ExecutorSeamCheck's doc comment for why a cross-process zero would be a false
+// green.
+func executorSeamPositions() ([]doctor.ExecutorSeamPosition, error) {
+	if err := runtime.ApplyCanaryMode(); err != nil {
+		return nil, err
+	}
+	positions := client.CanaryPositions()
+	out := make([]doctor.ExecutorSeamPosition, 0, len(positions))
+	for _, p := range positions {
+		out = append(out, doctor.ExecutorSeamPosition{
+			Operation:  p.Operation,
+			Mode:       string(p.Mode),
+			Overridden: p.Overridden,
+			EnvVar:     runtime.EnvCanaryModeFor(p.Operation),
+		})
+	}
+	return out, nil
 }
 
 // realEnv is the read-only environment exposed to doctor checks.
