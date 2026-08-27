@@ -34,6 +34,7 @@ import (
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
+	"github.com/samibel/graphi/engine/extpack"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/query"
@@ -253,6 +254,28 @@ func (d *Direct) WithRepoRoot(root string) *Direct {
 func (d *Direct) WithGitProvider(p githistory.GitProvider) *Direct {
 	d.gitProvider = p
 	return d
+}
+
+// archRules loads the architecture rules contributed by the repository's
+// enabled declarative rule packs (SW-229).
+//
+// It returns nil, nil when no repository root is bound or no pack is installed,
+// which is every binding that existed before this story — so the pack-free path
+// is unchanged, down to not opening a lockfile that is not there.
+//
+// A pack that fails to load is an ERROR, not a skip. Degrading to "run without
+// the packs" would answer an architecture question under rules the caller
+// believes are in force and that silently were not, which is the shape of
+// false-green this tree fails closed against everywhere else.
+func (d *Direct) archRules() ([]extpack.ArchRule, error) {
+	if d.repoRoot == "" {
+		return nil, nil
+	}
+	set, err := extpack.Load(d.repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	return set.ArchRules(), nil
 }
 
 // snippetReader is the source reader handed to the labs agent-intelligence
@@ -1024,9 +1047,14 @@ func (d *Direct) Architecture(ctx context.Context, p ArchitectureParams) ([]byte
 // engine/agenttools/archintel package, so CLI, MCP, and HTTP emit the same
 // canonical bytes.
 func (d *Direct) ArchitectureViolations(ctx context.Context, p ArchitectureViolationsParams) ([]byte, error) {
+	rules, err := d.archRules()
+	if err != nil {
+		return nil, err
+	}
 	res, err := archintel.Violations(ctx, archintel.ViolationsParams{
 		MaxItems: p.MaxItems,
 		Deps:     d.agentDeps(),
+		Rules:    rules,
 	})
 	if err != nil {
 		return nil, err

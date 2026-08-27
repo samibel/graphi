@@ -158,6 +158,9 @@ func main() {
 		os.Exit(runSetup(os.Args[2:]))
 	case "doctor":
 		os.Exit(runDoctor(os.Args[2:]))
+	case "extension":
+		// SW-229 (AX-09): declarative rule packs — ADR 0013 trust tier A.
+		os.Exit(runExtension(os.Args[2:]))
 	case "setup-embedder":
 		os.Exit(runSetupEmbedder(os.Args[2:]))
 	case "privacy-audit":

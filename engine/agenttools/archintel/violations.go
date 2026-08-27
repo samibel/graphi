@@ -9,6 +9,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	"github.com/samibel/graphi/engine/extpack"
 )
 
 const toolViolations = "architecture_violations"
@@ -18,12 +19,21 @@ const ViolationsMethodVersion = "architecture_violations/1"
 
 // Violation rank bands (rank = band<<20 + score, score < 1<<20).
 const (
-	bandVIdentity  = 10
-	bandCycles     = 9
-	bandBackEdges  = 7
-	bandCoupling   = 5
-	bandGodModules = 3
-	bandVNext      = 1
+	bandVIdentity = 10
+	bandCycles    = 9
+	// bandDeclaredRules ranks pack-declared rule violations just below cycles and
+	// above every heuristic band. A rule is a constraint somebody WROTE DOWN, so
+	// a violation of one is a stronger signal than any threshold this file picked
+	// — but a cycle is still a proof, and a rule is still an opinion.
+	//
+	// The value slots between the existing bands rather than renumbering them: an
+	// AX-00-adjacent characterization golden compares rendered output, and
+	// shifting a band would move findings that have nothing to do with packs.
+	bandDeclaredRules = 8
+	bandBackEdges     = 7
+	bandCoupling      = 5
+	bandGodModules    = 3
+	bandVNext         = 1
 )
 
 // Detection thresholds — pinned constants, quoted in the reasons when they
@@ -45,6 +55,10 @@ const (
 	// backEdgeRows / couplingRows bound those sections.
 	backEdgeRows = 12
 	couplingRows = 8
+	// ruleRows bounds the declared-rule section. Pack-declared rules are
+	// repository-controlled input, so the number of rows they can add to an
+	// artifact is bounded exactly like every other section here.
+	ruleRows = 12
 )
 
 // ViolationsParams carries the architecture_violations inputs.
@@ -53,6 +67,15 @@ type ViolationsParams struct {
 	Deps resolve.Deps
 	// MaxItems caps the item list (0 selects DefaultMaxItems).
 	MaxItems int
+	// Rules are the declared architecture rules contributed by the repository's
+	// enabled rule packs (SW-229, ADR 0013 tier A). They are DATA: each rule says
+	// "a unit labelled From must not depend on a unit labelled To", and this file
+	// evaluates them against the community dependency graph it already builds.
+	// Nothing a pack ships is executed.
+	//
+	// Empty — the default, and the state of every repository with no packs —
+	// leaves every byte of this tool's output exactly as it was.
+	Rules []extpack.ArchRule
 }
 
 func (p ViolationsParams) maxItems() int {
@@ -111,6 +134,25 @@ func Violations(ctx context.Context, p ViolationsParams) (*contract.Result, erro
 			Rank:           bandCycles<<20 + clampScore(total),
 			Reason:         fmt.Sprintf("cycle: %s — dependency direction loops [%s edge(s) along the cycle]", strings.Join(labels, " → "), strings.Join(counts, ", ")),
 			EvidenceRefIDs: sampleRefs(cyc...),
+		})
+	}
+
+	// Band 8: violations of rules a rule pack DECLARED. Evaluated before the
+	// heuristic bands because a declared rule is the repository's own statement
+	// of its architecture, and a finding that quotes one needs no threshold to
+	// justify it — only the pack it came from, which every row names.
+	ruleFindings := evaluateRules(m, p.Rules)
+	for i, rv := range ruleFindings {
+		if i >= ruleRows {
+			break
+		}
+		items = append(items, contract.Item{
+			RefID: fmt.Sprintf("rule:%s:%s:%d-%d", extpack.Bound(rv.rule.Pack.ID), extpack.Bound(rv.rule.ID), rv.from, rv.to),
+			Rank:  bandDeclaredRules<<20 + clampScore(rv.count),
+			Reason: fmt.Sprintf("declared-rule violation: %s → %s — %d edge(s) forbidden by rule %q (%s) [%s]",
+				m.display(rv.from), m.display(rv.to), rv.count,
+				extpack.Bound(rv.rule.ID), extpack.Bound(rv.rule.Description), rv.rule.Pack.String()),
+			EvidenceRefIDs: sampleRefs(rv.from, rv.to),
 		})
 	}
 
@@ -230,22 +272,29 @@ func Violations(ctx context.Context, p ViolationsParams) (*contract.Result, erro
 	// findings counts the DETECTED total per category — the item list may be
 	// shorter (per-category row caps + the shape.Finish item cap), which
 	// Limits already reports.
-	findings := len(cycles) + len(backEdges) + len(coupled) + gods
+	findings := len(cycles) + len(ruleFindings) + len(backEdges) + len(coupled) + gods
+	// ruleClause is EMPTY when no pack contributed a rule, so a repository
+	// without packs gets byte-identical summary and clean-item text. That is the
+	// ADR 0013 §4.1 tier-A rollback contract, paid here rather than asserted.
+	ruleClause := ""
+	if len(p.Rules) > 0 {
+		ruleClause = fmt.Sprintf(", %d declared-rule violation(s) against %d pack rule(s)", len(ruleFindings), len(p.Rules))
+	}
 	if findings == 0 {
 		// Clean is a first-class, cited answer — not an empty shrug.
 		items = append(items, contract.Item{
 			RefID: "clean",
 			Rank:  bandVIdentity << 20,
-			Reason: fmt.Sprintf("clean: no cycles, no edges against a dominant direction, no pair with ≥%d edge(s) both ways, no god module — %d communities, %d inter-community edge(s) checked",
-				highCouplingMin, len(m.commIDs), m.interSum),
+			Reason: fmt.Sprintf("clean: no cycles, no edges against a dominant direction, no pair with ≥%d edge(s) both ways, no god module%s — %d communities, %d inter-community edge(s) checked",
+				highCouplingMin, cleanRuleClause(p.Rules), len(m.commIDs), m.interSum),
 		})
 	}
 
-	summary := fmt.Sprintf("architecture_violations: %d finding(s) — %d cycle(s), %d unexpected dependencies, %d high-coupling pair(s), %d god module(s) across %d communities (%s)",
-		findings, len(cycles), len(backEdges), len(coupled), gods, len(m.commIDs), ViolationsMethodVersion)
+	summary := fmt.Sprintf("architecture_violations: %d finding(s) — %d cycle(s), %d unexpected dependencies, %d high-coupling pair(s), %d god module(s)%s across %d communities (%s)",
+		findings, len(cycles), len(backEdges), len(coupled), gods, ruleClause, len(m.commIDs), ViolationsMethodVersion)
 	if findings == 0 {
-		summary = fmt.Sprintf("architecture_violations: clean — %d communities, %d inter-community edge(s) checked (%s)",
-			len(m.commIDs), m.interSum, ViolationsMethodVersion)
+		summary = fmt.Sprintf("architecture_violations: clean%s — %d communities, %d inter-community edge(s) checked (%s)",
+			cleanRuleClause(p.Rules), len(m.commIDs), m.interSum, ViolationsMethodVersion)
 	}
 
 	// Band 1: suggested next calls.
@@ -363,4 +412,63 @@ func canonicalizeCycle(cyc []int) []int {
 	out = append(out, cyc[best:]...)
 	out = append(out, cyc[:best]...)
 	return out
+}
+
+// ruleViolation is one (rule, ordered community pair) that the graph violates.
+type ruleViolation struct {
+	rule     extpack.ArchRule
+	from, to int
+	count    int
+}
+
+// evaluateRules checks every declared rule against the community dependency
+// graph, in a fully deterministic order.
+//
+// A rule forbids a dependency direction between two architecture units named by
+// LABEL PREFIX — which is what an architecture rule is in practice ("core must
+// not depend on engine"), and what graphi's community labels already are (the
+// dominant path prefix of the community's members). Matching is prefix-based and
+// case-sensitive: a rule is a written constraint, and a constraint that matched
+// loosely would produce findings its author did not ask for.
+//
+// The iteration order is (rules in canonical pack order) × (community ids
+// ascending), and the result is not sorted afterwards — the order is already a
+// function of the inputs, so there is nothing for a sort to stabilise.
+func evaluateRules(m *archModel, rules []extpack.ArchRule) []ruleViolation {
+	if len(rules) == 0 {
+		return nil
+	}
+	var out []ruleViolation
+	for _, rule := range rules {
+		for _, from := range m.commIDs {
+			if !strings.HasPrefix(m.label[from], rule.From) {
+				continue
+			}
+			for _, to := range m.commIDs {
+				if from == to || !strings.HasPrefix(m.label[to], rule.To) {
+					continue
+				}
+				n := m.pairCount[pair{from, to}]
+				if n == 0 {
+					continue
+				}
+				out = append(out, ruleViolation{rule: rule, from: from, to: to, count: n})
+			}
+		}
+	}
+	return out
+}
+
+// cleanRuleClause renders the "and your rules held" half of a clean verdict. It
+// is the empty string when no rule was in effect, which is what keeps a
+// pack-free repository's output byte-identical.
+func cleanRuleClause(rules []extpack.ArchRule) string {
+	if len(rules) == 0 {
+		return ""
+	}
+	packs := map[string]struct{}{}
+	for _, r := range rules {
+		packs[r.Pack.ID] = struct{}{}
+	}
+	return fmt.Sprintf(", no violation of the %d declared rule(s) from %d pack(s)", len(rules), len(packs))
 }

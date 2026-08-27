@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/engine/extpack"
 )
 
 // SourceDef defines a taint source — a pattern that, when matched against a
@@ -19,6 +21,10 @@ type SourceDef struct {
 	NodeKinds []string `json:"node_kinds,omitempty"`
 	// NamePatterns matches against model.Node.QualifiedName() via substring.
 	NamePatterns []string `json:"name_patterns,omitempty"`
+	// Pack, when set, names the rule pack that contributed this definition.
+	// Built-in and project-supplied definitions leave it nil, so a repository
+	// without packs serializes byte-identically to the pre-pack shape.
+	Pack *extpack.Ref `json:"pack,omitempty"`
 }
 
 // SinkDef defines a taint sink — a pattern that, when matched, marks a node as
@@ -32,6 +38,8 @@ type SinkDef struct {
 	NodeKinds []string `json:"node_kinds,omitempty"`
 	// NamePatterns matches against model.Node.QualifiedName() via substring.
 	NamePatterns []string `json:"name_patterns,omitempty"`
+	// Pack, when set, names the rule pack that contributed this definition.
+	Pack *extpack.Ref `json:"pack,omitempty"`
 }
 
 // SanitizerDef defines a sanitizer — a function/operation that removes taint
@@ -43,8 +51,12 @@ type SanitizerDef struct {
 	// NamePatterns matches against model.Node.QualifiedName() via substring.
 	NamePatterns []string `json:"name_patterns"`
 	// RemoveLabels specifies which taint labels this sanitizer removes. Empty
-	// means it removes ALL labels (a universal sanitizer).
+	// means it removes ALL labels (a universal sanitizer). A rule pack may NOT
+	// ship one of those — extpack refuses a pack sanitizer with no remove_labels,
+	// because "suppress everything" is not an additive capability.
 	RemoveLabels []string `json:"remove_labels,omitempty"`
+	// Pack, when set, names the rule pack that contributed this definition.
+	Pack *extpack.Ref `json:"pack,omitempty"`
 }
 
 // Config is the taint analysis configuration. It defines the sources, sinks,
@@ -59,6 +71,15 @@ type Config struct {
 	// every finding's provenance so consumers can verify which config produced
 	// a given result.
 	ContentHash string `json:"content_hash,omitempty"`
+	// Packs names the declarative rule packs (SW-229 / ADR 0013 tier A) whose
+	// definitions were merged into this config, with each pack's id, version and
+	// manifest hash. It is `omitempty` so a repository with no packs — the
+	// default — serializes and hashes byte-identically to the pre-pack config.
+	//
+	// It is filled in by LoadConfig from the verified pack set and is REJECTED
+	// when it appears in a project's own .graphi/taint.json: provenance that a
+	// repository could write for itself is not provenance.
+	Packs []extpack.Ref `json:"packs,omitempty"`
 }
 
 // Validate checks the config for structural correctness: no duplicate IDs,
@@ -166,6 +187,59 @@ func (c Config) MatchSink(kind, qualifiedName string) (sinkID, category string) 
 // matching sanitizer definition and whether it matched.
 func (c Config) MatchSanitizer(kind, qualifiedName string) (SanitizerDef, bool) {
 	return c.matchSanitizer(kind, qualifiedName)
+}
+
+// packIndex maps a definition id to the rule pack that contributed it. It is
+// nil-safe and empty for a config with no packs, which is the default and must
+// cost nothing.
+func (c Config) packIndex() map[string]extpack.Ref {
+	if len(c.Packs) == 0 {
+		return nil
+	}
+	idx := make(map[string]extpack.Ref, len(c.Sources)+len(c.Sinks)+len(c.Sanitizers))
+	for _, d := range c.Sources {
+		if d.Pack != nil {
+			idx[d.ID] = *d.Pack
+		}
+	}
+	for _, d := range c.Sinks {
+		if d.Pack != nil {
+			idx[d.ID] = *d.Pack
+		}
+	}
+	for _, d := range c.Sanitizers {
+		if d.Pack != nil {
+			idx[d.ID] = *d.Pack
+		}
+	}
+	return idx
+}
+
+// packsForDefs returns the deduplicated, canonically ordered provenance of the
+// named definitions — nil when every one of them is a built-in.
+//
+// This is what makes ADR 0013 D5.2 true at the point of consumption rather than
+// only in a log: a finding produced with a pack-contributed source or sink names
+// that pack's id, version and hash on the finding itself.
+func packsForDefs(idx map[string]extpack.Ref, ids ...string) []extpack.Ref {
+	if len(idx) == 0 {
+		return nil
+	}
+	var out []extpack.Ref
+	seen := map[string]struct{}{}
+	for _, id := range ids {
+		ref, ok := idx[id]
+		if !ok {
+			continue
+		}
+		if _, dup := seen[ref.ID]; dup {
+			continue
+		}
+		seen[ref.ID] = struct{}{}
+		out = append(out, ref)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
 }
 
 // matchDef is the shared matching logic: a node matches if its kind is in

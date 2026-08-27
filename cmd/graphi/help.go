@@ -276,6 +276,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi setup [--client claude|copilot|cursor|devin|windsurf|claude-desktop|all] [--dry-run] [--binary path] [--config path] | graphi setup --project [--root <repo>] [--attach]",
 		"graphi setup --project",
 	},
+	"extension": {
+		"declarative rule packs: validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)",
+		"graphi extension validate <file> [--sha256 hex] | install --sha256 <hex> <file> | list [--json] | doctor [--json] | enable|disable|remove <id> [-root <repo>]",
+		"graphi extension install --sha256 3b7c... ./packs/arch-rules.yaml",
+	},
 	"setup-embedder": {
 		"print how to opt in to the optional semantic search (offline)",
 		"graphi setup-embedder [<selector>]",
@@ -435,6 +440,7 @@ func printHelp() {
 	fmt.Print("  graphi framework-map        routes, events, DI components from recorded annotations\n")
 	fmt.Print("  graphi snapshot [<name>]    list or freeze named graph states of this repo\n")
 	fmt.Print("  graphi compare <a> <b>      diff two named graph states ('current' = live graph)\n")
+	fmt.Print("  graphi extension <sub>      declarative rule packs (validate/install/list/doctor) — data, never code\n")
 	fmt.Print("  graphi doctor               run read-only diagnostic checks\n")
 	fmt.Print("  graphi setup                register graphi's MCP server in local MCP clients\n")
 	fmt.Print("  graphi upgrade -print       print the upgrade command without running it\n")

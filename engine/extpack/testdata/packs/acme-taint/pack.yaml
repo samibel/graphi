@@ -1,0 +1,21 @@
+# Example taint-rules PACK MANIFEST (SW-229 / ADR 0013 tier A).
+schema_version: graphi.extension/v1alpha1
+id: acme.taint-rules
+version: 0.2.0
+kind: taint-rules
+api:
+  min: "1.0"
+  max: "1.0"
+artifact:
+  path: taint.yaml
+  sha256: 386b86d65a760c4f660db4acf68967add615ce1c2606cc94d323aa0e4710ded2
+capabilities:
+  provides:
+    - taint-sanitizer:acme_escape
+    - taint-sink:acme_shell
+    - taint-source:acme_ingest_header
+permissions:
+  - graph:read
+determinism: deterministic
+limits:
+  max_output_bytes: 4096

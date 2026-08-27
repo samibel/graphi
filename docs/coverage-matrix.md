@@ -28,7 +28,7 @@ row is tagged stable or one is dropped.
 
 **MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **56-tool** union (45 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **173**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -158,7 +158,7 @@ Total capabilities: **173**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (59)
+## CLI subcommands (60)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -180,6 +180,7 @@ Total capabilities: **173**. See [`architecture-plan.md`](architecture-plan.md) 
 | `distill` | 🧪 labs | ✅ shipped | - | session distillation |
 | `doctor` | 🧪 labs | ✅ shipped | EP-023 | read-only diagnostic checkup (binary, PATH, MCP clients, DB, privacy, local-first) |
 | `explain-symbol` | 🧪 labs | ✅ shipped | EP-020 | compact, cited symbol identity summary; byte-parity with the explain_symbol MCP tool |
+| `extension` | 🧪 labs | ✅ shipped | - | SW-229 (AX-09) declarative rule packs — ADR 0013 trust tier A: `graphi extension validate\|install\|list\|doctor\|enable\|disable\|remove` over versioned, schema-validated, SHA-256-pinned YAML/JSON data packs. Installation is offline from a LOCAL file and `--sha256` is mandatory, verified before any write; a committed lockfile (.graphi/extensions/extensions.lock.json) records id/version/both hashes; merge order is a function of the lockfile content, never of install order. Two kinds implemented — architecture-rules (consumed by engine/agenttools/archintel) and taint-rules (consumed by engine/analysis/taint); framework-detection, query-presets, classification-rules and export-profiles are booked in the backlog. NO pack-supplied code is executed and no pack-supplied path or URL is followed: artifact.path is a bare file name resolved once through internal/rootfile and never a path again. A pack may only ADD capability — claiming a key a built-in or another pack owns is registry.ErrUnsupportedOverride. Disabling a pack restores byte-identical pre-pack behaviour; Stable-12 and the default MCP profile are untouched. |
 | `find-clones` | 🧪 labs | ✅ shipped | - | edge-profile clone detection |
 | `framework-map` | 🧪 labs | ✅ shipped | - | P3 framework intelligence: routes, event handlers, injections, components, configuration from recorded annotations; byte-parity with the framework_map MCP tool |
 | `help` | 🧪 labs | ✅ shipped | - | print the help blurb |
