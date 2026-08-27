@@ -15,35 +15,53 @@ package parse
 // (Corrected per EP-009-REPLAN-001: go-sitter-forest is entirely CGO and has no
 // pure-Go subset; the default tier draws from gotreesitter, not go-sitter-forest.)
 func RegisterDefaults(r *Registry) *Registry {
-	r.Register(NewGoParser())         // go  — reference SymbolExtractor (go/ast, CGo-free)
-	r.Register(NewJSONParser())       // json — stdlib structural parser (CGo-free)
-	r.Register(NewTSParser())         // typescript — pure-Go tree-sitter grammar (CGo-free)
-	r.Register(NewJavaScriptParser()) // javascript — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewTSXParser())        // tsx — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewPythonParser())     // python — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewJavaParser())       // java — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewCParser())          // c — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewRubyParser())       // ruby — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewRustParser())       // rust — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewPHPParser())        // php — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewCSharpParser())     // c_sharp — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewKotlinParser())     // kotlin — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewCppParser())        // cpp — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewBashParser())       // bash — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewSQLParser())        // sql — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewLuaParser())        // lua — pure-Go gotreesitter grammar (CGo-free)
-	// HTML is DEFERRED to graphi-broad (SW-056): its pure-Go gotreesitter grammar is
-	// present, but its shared scanner core is co-located in the upstream
-	// blade_scanner.go (gated grammar_subset_blade), so a subset build with only
-	// grammar_subset_html fails to compile, and enabling grammar_subset_blade would
-	// embed an unregistered blade.bin blob (prohibited by AC#4). Re-evaluate when the
-	// upstream gotreesitter subset packaging splits the html scanner core out.
-	r.Register(NewCSSParser())      // css — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewYAMLParser())     // yaml — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewTOMLParser())     // toml — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewMarkdownParser()) // markdown — pure-Go gotreesitter grammar (CGo-free)
-	r.Register(NewHCLParser())      // hcl — pure-Go gotreesitter grammar (CGo-free)
+	for _, p := range DefaultParsers() {
+		r.Register(p)
+	}
 	return r
+}
+
+// DefaultParsers returns the built-in CGo-free parser set in REGISTRATION
+// ORDER — the order RegisterDefaults applies them in, which under this
+// registry's last-wins CollisionPolicy is the order that decides which parser
+// owns a shared extension.
+//
+// It exists so a caller can enumerate the built-in set instead of only being
+// able to install it (SW-227 / AX-07): the built-in module set contributes these
+// parsers one at a time through the module builder, and it can only do that if
+// the list is a value rather than a side effect. RegisterDefaults is defined in
+// terms of it, so there is exactly one list and the two can never disagree.
+func DefaultParsers() []Parser {
+	return []Parser{
+		NewGoParser(),         // go  — reference SymbolExtractor (go/ast, CGo-free)
+		NewJSONParser(),       // json — stdlib structural parser (CGo-free)
+		NewTSParser(),         // typescript — pure-Go tree-sitter grammar (CGo-free)
+		NewJavaScriptParser(), // javascript — pure-Go gotreesitter grammar (CGo-free)
+		NewTSXParser(),        // tsx — pure-Go gotreesitter grammar (CGo-free)
+		NewPythonParser(),     // python — pure-Go gotreesitter grammar (CGo-free)
+		NewJavaParser(),       // java — pure-Go gotreesitter grammar (CGo-free)
+		NewCParser(),          // c — pure-Go gotreesitter grammar (CGo-free)
+		NewRubyParser(),       // ruby — pure-Go gotreesitter grammar (CGo-free)
+		NewRustParser(),       // rust — pure-Go gotreesitter grammar (CGo-free)
+		NewPHPParser(),        // php — pure-Go gotreesitter grammar (CGo-free)
+		NewCSharpParser(),     // c_sharp — pure-Go gotreesitter grammar (CGo-free)
+		NewKotlinParser(),     // kotlin — pure-Go gotreesitter grammar (CGo-free)
+		NewCppParser(),        // cpp — pure-Go gotreesitter grammar (CGo-free)
+		NewBashParser(),       // bash — pure-Go gotreesitter grammar (CGo-free)
+		NewSQLParser(),        // sql — pure-Go gotreesitter grammar (CGo-free)
+		NewLuaParser(),        // lua — pure-Go gotreesitter grammar (CGo-free)
+		// HTML is DEFERRED to graphi-broad (SW-056): its pure-Go gotreesitter grammar is
+		// present, but its shared scanner core is co-located in the upstream
+		// blade_scanner.go (gated grammar_subset_blade), so a subset build with only
+		// grammar_subset_html fails to compile, and enabling grammar_subset_blade would
+		// embed an unregistered blade.bin blob (prohibited by AC#4). Re-evaluate when the
+		// upstream gotreesitter subset packaging splits the html scanner core out.
+		NewCSSParser(),      // css — pure-Go gotreesitter grammar (CGo-free)
+		NewYAMLParser(),     // yaml — pure-Go gotreesitter grammar (CGo-free)
+		NewTOMLParser(),     // toml — pure-Go gotreesitter grammar (CGo-free)
+		NewMarkdownParser(), // markdown — pure-Go gotreesitter grammar (CGo-free)
+		NewHCLParser(),      // hcl — pure-Go gotreesitter grammar (CGo-free)
+	}
 }
 
 // NewDefaultRegistry returns a Registry pre-loaded with the built-in parsers,

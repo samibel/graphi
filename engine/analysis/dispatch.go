@@ -87,15 +87,37 @@ func NewDefaultServiceWithWatch(reader query.Reader, watchProvider WatchStatusPr
 }
 
 func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *Service {
-	reg := NewRegistry()
+	r := NewRegistry()
 	// The built-in analyzer registration is best-effort at construction; a
 	// duplicate-name error here would indicate a programming fault, so it panics
 	// to surface the bug immediately rather than silently dropping an analyzer.
-	mustRegister(reg, impactAnalyzer{}, callchainAnalyzer{}, metricsAnalyzer{})
+	mustRegister(r, DefaultAnalyzers(reader, watchProvider)...)
+	return NewService(reader, r)
+}
+
+// DefaultAnalyzers returns the built-in analyzer set in REGISTRATION ORDER —
+// the order newDefaultService applies it in.
+//
+// It exists so a caller can ENUMERATE the built-in analyzers rather than only
+// install them (SW-227 / AX-07): the built-in module set contributes these
+// analyzers one at a time through the module builder, and it can only do that if
+// the list is a value. newDefaultService is defined in terms of it, so there is
+// exactly one list and the two can never disagree.
+//
+// Note what stays OUT of here: the git-provider re-arm. Service.WithGitProvider
+// Replaces three already-registered analyzers after construction, and that
+// register-then-replace order is what the composition roots have always used.
+// Folding it in would change which object each name resolves to at registration
+// time, which is a behaviour change dressed as a refactor.
+func DefaultAnalyzers(reader query.Reader, watchProvider WatchStatusProvider) []Analyzer {
+	var out []Analyzer
+	add := func(as ...Analyzer) { out = append(out, as...) }
+
+	add(impactAnalyzer{}, callchainAnalyzer{}, metricsAnalyzer{})
 	if s, ok := reader.(Searcher); ok {
-		mustRegister(reg, conceptAnalyzer{searcher: s})
+		add(conceptAnalyzer{searcher: s})
 	}
-	mustRegister(reg, batchedAnalyzer{
+	add(batchedAnalyzer{
 		impact:    impactAnalyzer{},
 		callChain: callchainAnalyzer{},
 		metrics:   metricsAnalyzer{},
@@ -105,45 +127,45 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// injects the real solved-summary provider (replacing NoOpSummaryProvider) so
 	// cross-procedure source→sink flows resolve from the solved relation. It holds
 	// the config + caps and constructs the inner analyzer per call (stateless).
-	mustRegister(reg, taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()})
+	add(taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()})
 	// SW-029: register PDG (Program Dependence Graph) analyzer with default
 	// config. Like taint, the pdg sub-package cannot import analysis (cycle),
 	// so we wrap it with a thin adapter that satisfies analysis.Analyzer.
-	mustRegister(reg, pdgAdapter{inner: pdg.New(pdg.DefaultConfig())})
+	add(pdgAdapter{inner: pdg.New(pdg.DefaultConfig())})
 	// SW-030: register interprocedural (Sharir-Pnueli) analyzer with default
 	// caps. Like taint, the interproc sub-package cannot import analysis
 	// (cycle), so we wrap it with a thin adapter.
-	mustRegister(reg, interprocAdapter{inner: interproc.New(interproc.DefaultCaps(), 3)})
+	add(interprocAdapter{inner: interproc.New(interproc.DefaultCaps(), 3)})
 	// SW-031: register contract drift detection analyzer with default patterns.
 	// Like taint, the contracts sub-package cannot import analysis (cycle), so
 	// we wrap it with a thin adapter.
-	mustRegister(reg, contractsAdapter{inner: contracts.New(nil)})
+	add(contractsAdapter{inner: contracts.New(nil)})
 	// SW-032: register git-history signal analyzer with a nil provider. The
 	// production provider is injected by the caller (CLI/daemon) after
 	// constructing the service; the nil provider makes Run return empty results
 	// gracefully. The githistory sub-package cannot import analysis (cycle),
 	// so we wrap it with a thin adapter that satisfies analysis.Analyzer.
-	mustRegister(reg, gitHistoryAdapter{inner: githistory.New(nil, githistory.Config{})})
+	add(gitHistoryAdapter{inner: githistory.New(nil, githistory.Config{})})
 	// SW-039 (EP-007 1/5): register the pr-risk scorer. It is a composite,
 	// read-only Analyzer that consumes EP-004 impact/metrics and EP-005 taint
 	// RESULTS through an injectable signalProvider seam (never recomputing them)
 	// and emits a versioned per-region RiskReport. Additive: a single
 	// registration line plus one MCP descriptor entry.
-	mustRegister(reg, newPriskAnalyzer())
+	add(newPriskAnalyzer())
 	// SW-040 (EP-007 2/5): register the pr-signals detector. It is a composite,
 	// read-only Analyzer that consumes EP-004 metrics (hub/bridge), EP-005 PDG
 	// (cross-module coupling), and git-history churn RESULTS through an injectable
 	// signalSource seam (never recomputing them) and emits a versioned per-region
 	// hub/bridge/surprise SignalReport. Additive: a single registration line plus
 	// one MCP descriptor entry.
-	mustRegister(reg, newPrSignalsAnalyzer())
+	add(newPrSignalsAnalyzer())
 	// SW-041 (EP-007 3/5): register the pr-questions generator. It is a composite,
 	// read-only, DETERMINISTIC Analyzer that consumes the SW-039 RiskReport and the
 	// SW-040 SignalReport RESULTS through an injectable questionSource seam (never
 	// recomputing scoring or signal detection, no LLM, no network) and emits a
 	// versioned reviewer-question set. Additive: a single registration line plus
 	// one MCP descriptor entry.
-	mustRegister(reg, newPrQuestionsAnalyzer())
+	add(newPrQuestionsAnalyzer())
 	// SW-104 (EP-017 capstone): register the four canonical EP-017 operations
 	// EXACTLY ONCE behind this single dispatch table — no parallel per-op path, no
 	// per-surface handler. Each routes to its real engine entry point and serializes
@@ -152,17 +174,17 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	//   - communities  -> engine/community.DefaultDetector()/Detector.Detect
 	//   - notebook-ingest -> committed SW-100 notebook_cell provenance edges
 	//   - watcher-status  -> the injected read-only WatchStatusProvider (SW-101)
-	mustRegister(reg, taintQueryAdapter{inner: taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()}})
-	mustRegister(reg, communitiesAnalyzer{detector: community.DefaultDetector()})
-	mustRegister(reg, notebookAnalyzer{})
-	mustRegister(reg, watchStatusAnalyzer{provider: watchProvider})
+	add(taintQueryAdapter{inner: taintAdapter{cfg: taint.DefaultConfig(), caps: taint.DefaultCaps()}})
+	add(communitiesAnalyzer{detector: community.DefaultDetector()})
+	add(notebookAnalyzer{})
+	add(watchStatusAnalyzer{provider: watchProvider})
 	// SW-105 (EP-018 1/4): register the triage-prs ranker. It is a composite,
 	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
 	// open-PR set (handed in via Params.PRs by the surface-boundary forge client —
 	// the engine never touches the network) and reuses the EP-007 pr-risk kernel
 	// (scoreRegion) plus the graph primitives (metrics/impact/churn) in a SINGLE
 	// pass to emit a byte-stable, totally-ordered ranked TriageReport.
-	mustRegister(reg, newTriageAnalyzer())
+	add(newTriageAnalyzer())
 	// SW-106 (EP-018 2/4): register the conflicts-prs detector. It is a composite,
 	// read-only, DETERMINISTIC batch driver that consumes an already-enumerated
 	// open-PR set (handed in via Params.ConflictPRs by the surface-boundary forge
@@ -171,7 +193,7 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// the impact.go reverse-dependency adjacency) and reports the conflicting PR
 	// pairs (textual / graph-semantic / asymmetric contract-dependency) as a
 	// byte-stable, totally-ordered ConflictReport over an entity→PRs inverted index.
-	mustRegister(reg, newConflictsAnalyzer())
+	add(newConflictsAnalyzer())
 	// SW-107 (EP-018 3/4): register the suggest-reviewers recommender and the
 	// compare-branches graph-level comparator. Both are composite, read-only,
 	// DETERMINISTIC, zero-egress analyzers. suggest-reviewers takes the touched set
@@ -180,7 +202,7 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// read-only graph states (Params.CompareBase/CompareHead, materialized above the
 	// surface boundary) and performs a pure local node/edge set-diff keyed by the
 	// canonical NodeId. Neither resolves a git ref or touches the network.
-	mustRegister(reg, newSuggestReviewersAnalyzer(), newCompareBranchesAnalyzer())
+	add(newSuggestReviewersAnalyzer(), newCompareBranchesAnalyzer())
 	// SW-108 (EP-018 4/4, capstone): register the critique-review analyzer. It is a
 	// composite, read-only, DETERMINISTIC, zero-egress analyzer that REPLAYS the
 	// EP-007 single-PR risk/blast/centrality/taint oracle (scoreRegion + the graph
@@ -190,8 +212,8 @@ func newDefaultService(reader query.Reader, watchProvider WatchStatusProvider) *
 	// anchoring is deterministic (resolveRef only); unresolvable refs degrade to an
 	// unanchored tally, never guessed. The engine never resolves a remote ref or
 	// opens a socket.
-	mustRegister(reg, newCritiqueReviewAnalyzer())
-	return NewService(reader, reg)
+	add(newCritiqueReviewAnalyzer())
+	return out
 }
 
 func mustRegister(r *Registry, as ...Analyzer) {
