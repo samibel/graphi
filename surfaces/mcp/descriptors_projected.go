@@ -228,28 +228,9 @@ func projectCatalogDescriptors(catalog *opcatalog.Catalog, order []string, stabl
 		if !ok {
 			return nil, fmt.Errorf("mcp: advertised operation %q has no spec in the operation catalog", id)
 		}
-		advertisement := spec.Advertisement
-		if stableProfile {
-			if spec.Tier != opcatalog.TierStable {
-				return nil, fmt.Errorf("mcp: operation %q is tiered %q but appears in the Stable profile",
-					id, spec.Tier)
-			}
-			if spec.StableProfileAdvertisement != nil {
-				advertisement = *spec.StableProfileAdvertisement
-			}
-		}
-		if advertisement.Description == "" {
-			return nil, fmt.Errorf("mcp: operation %q has an empty description in the operation catalog", id)
-		}
-		descriptor := map[string]any{
-			"name":        spec.ID,
-			"description": advertisement.Description,
-		}
-		if advertisement.InputSchema != nil {
-			descriptor["inputSchema"] = cloneJSONValue(advertisement.InputSchema)
-		}
-		if advertisement.Annotations != nil {
-			descriptor["annotations"] = cloneJSONValue(advertisement.Annotations)
+		descriptor, err := ProjectToolDescriptor(spec, stableProfile)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, descriptor)
 	}
@@ -260,6 +241,56 @@ func projectCatalogDescriptors(catalog *opcatalog.Catalog, order []string, stabl
 		markLabs(out)
 	}
 	return out, nil
+}
+
+// ProjectToolDescriptor renders ONE catalog spec into the MCP descriptor the
+// server advertises for it. It does not apply the `[labs]` marker — that is
+// markLabs's job, applied once per profile over the whole list, because the
+// marker is a function of the profile as well as the tier.
+//
+// It was extracted from projectCatalogDescriptors's loop body by SW-230 and is
+// exported for exactly one reason: the AX-10 conformance harness verifies that a
+// contributed spec renders to valid MCP metadata, and it has to verify THIS
+// projection rather than a copy of it. A harness pointed at a re-implementation
+// certifies the re-implementation.
+func ProjectToolDescriptor(spec opcatalog.OperationSpec, stableProfile bool) (map[string]any, error) {
+	advertisement := spec.Advertisement
+	if stableProfile {
+		if spec.Tier != opcatalog.TierStable {
+			return nil, fmt.Errorf("mcp: operation %q is tiered %q but appears in the Stable profile",
+				spec.ID, spec.Tier)
+		}
+		if spec.StableProfileAdvertisement != nil {
+			advertisement = *spec.StableProfileAdvertisement
+		}
+	}
+	if advertisement.Description == "" {
+		return nil, fmt.Errorf("mcp: operation %q has an empty description in the operation catalog", spec.ID)
+	}
+	descriptor := map[string]any{
+		"name":        spec.ID,
+		"description": advertisement.Description,
+	}
+	if advertisement.InputSchema != nil {
+		descriptor["inputSchema"] = cloneJSONValue(advertisement.InputSchema)
+	}
+	if advertisement.Annotations != nil {
+		descriptor["annotations"] = cloneJSONValue(advertisement.Annotations)
+	}
+	return descriptor, nil
+}
+
+// MarkLabsDescriptor applies the advertisement-time `[labs] ` marker to one
+// projected descriptor, through the same markLabs the profile projection uses.
+//
+// It exists so the conformance harness can compare an ADVERTISED descriptor,
+// which is what a client actually receives. Without it a caller would have to
+// prepend the prefix itself, which would make the harness's tier check a test of
+// the caller's string concatenation.
+func MarkLabsDescriptor(descriptor map[string]any) map[string]any {
+	list := []map[string]any{descriptor}
+	markLabs(list)
+	return list[0]
 }
 
 // cloneDescriptors returns a deep copy of a projected catalog.

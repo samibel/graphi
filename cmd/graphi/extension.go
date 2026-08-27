@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/engine/extpack"
+	"github.com/samibel/graphi/engine/extpack/conformance"
 	"github.com/samibel/graphi/internal/state"
 )
 
@@ -34,6 +35,9 @@ const (
 // subcommand.
 const extensionUsage = `usage: graphi extension <subcommand> [flags]
 
+  init [--kind <kind>] [--id <id>] <dir>      scaffold a valid pack, offline (labs)
+  lint <pack-dir|manifest> [--json]           every schema problem at once, with line numbers (labs)
+  conform <pack-dir|manifest> [--json]        run the contract-test harness over a pack (labs)
   validate <manifest-file> [--sha256 <hex>]   check a pack against the schema; writes nothing
   install --sha256 <hex> <manifest-file>      verify and install a pack from a LOCAL file
   list [--json]                               show installed packs with their hashes
@@ -41,9 +45,11 @@ const extensionUsage = `usage: graphi extension <subcommand> [flags]
   enable <pack-id> | disable <pack-id>        flip a pack on or off (disabled == absent)
   remove <pack-id>                            delete a pack and its lockfile entry
 
-All subcommands accept -root <repo>. Installation is offline: the source is a
-local file and graphi makes no network call for it. A pack is data — graphi
-executes nothing it ships and follows no path or URL it names.`
+Repository-scoped subcommands accept -root <repo>; init, lint, conform and
+validate need no repository. Everything here is offline: init writes compiled-in
+templates, install copies a local file, and graphi makes no network call for
+either. A pack is data — graphi executes nothing it ships and follows no path or
+URL it names. Developer guide: docs/extension-developer-kit.md.`
 
 // runExtension dispatches the `graphi extension` subcommands.
 func runExtension(args []string) int {
@@ -58,7 +64,7 @@ func runExtensionAt(cwd string, args []string, stdout, stderr io.Writer) int {
 	sub := args[0]
 	rest := args[1:]
 
-	var root, sha string
+	var root, sha, kind, id string
 	asJSON := false
 	var positional []string
 	for i := 0; i < len(rest); i++ {
@@ -85,6 +91,14 @@ func runExtensionAt(cwd string, args []string, stdout, stderr io.Writer) int {
 				sha = v
 			} else if v, ok := takeVal("-sha256"); ok {
 				sha = v
+			} else if v, ok := takeVal("--kind"); ok {
+				kind = v
+			} else if v, ok := takeVal("-kind"); ok {
+				kind = v
+			} else if v, ok := takeVal("--id"); ok {
+				id = v
+			} else if v, ok := takeVal("-id"); ok {
+				id = v
 			} else if strings.HasPrefix(a, "-") {
 				fmt.Fprintf(stderr, "graphi: extension %s: unknown flag %q\n\n%s\n", sub, a, extensionUsage)
 				return extExitUsageErr
@@ -94,10 +108,18 @@ func runExtensionAt(cwd string, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// `validate` is the one subcommand that needs no repository: a pack author
-	// checks a file, and the file is wherever they put it.
-	if sub == "validate" {
+	// Four subcommands need no repository: a pack AUTHOR works on files, and the
+	// files are wherever they put them. Requiring a bound repo to lint a manifest
+	// would make the developer kit unusable outside a graphi-indexed tree.
+	switch sub {
+	case "validate":
 		return runExtensionValidate(positional, sha, stdout, stderr)
+	case "init":
+		return runExtensionInit(positional, kind, id, stdout, stderr)
+	case "lint":
+		return runExtensionLint(positional, asJSON, stdout, stderr)
+	case "conform":
+		return runExtensionConform(positional, asJSON, stdout, stderr)
 	}
 
 	if root == "" {
@@ -126,6 +148,98 @@ func runExtensionAt(cwd string, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "graphi: extension: unknown subcommand %q\n\n%s\n", sub, extensionUsage)
 		return extExitUsageErr
 	}
+}
+
+// runExtensionInit scaffolds a pack (SW-230 / AX-10, AC-1).
+//
+// It is offline in the strongest sense available: the templates are compiled
+// into the binary, there is no registry to consult and no cache to warm, so the
+// verb has nothing in it that could reach a network.
+func runExtensionInit(positional []string, kind, id string, stdout, stderr io.Writer) int {
+	if len(positional) != 1 {
+		fmt.Fprintf(stderr, "graphi: extension init: expected exactly one target directory\n\n%s\n", extensionUsage)
+		return extExitUsageErr
+	}
+	dir := positional[0]
+	written, err := extpack.ScaffoldInto(dir, extpack.ScaffoldOptions{
+		Kind: extpack.Kind(kind),
+		ID:   id,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "graphi: extension init: %v\n", err)
+		return extExitProblem
+	}
+	fmt.Fprintf(stdout, "scaffolded %d file(s) in %s\n", len(written), dir)
+	for _, path := range written {
+		fmt.Fprintf(stdout, "  %s\n", path)
+	}
+	fmt.Fprintf(stdout, "next: graphi extension lint %s\n", dir)
+	fmt.Fprintf(stdout, "      graphi extension conform %s\n", dir)
+	return extExitOK
+}
+
+// runExtensionLint reports every schema problem in a pack, positionally.
+func runExtensionLint(positional []string, asJSON bool, stdout, stderr io.Writer) int {
+	if len(positional) != 1 {
+		fmt.Fprintf(stderr, "graphi: extension lint: expected exactly one pack directory or manifest file\n\n%s\n", extensionUsage)
+		return extExitUsageErr
+	}
+	diagnostics := extpack.Lint(positional[0])
+	if asJSON {
+		rows := diagnostics
+		if rows == nil {
+			rows = []extpack.Diagnostic{}
+		}
+		if writeExtensionJSON(stdout, stderr, "lint", map[string]any{
+			"diagnostics": rows, "problems": len(rows),
+		}) != extExitOK {
+			return extExitProblem
+		}
+		if len(diagnostics) > 0 {
+			return extExitProblem
+		}
+		return extExitOK
+	}
+	for _, d := range diagnostics {
+		fmt.Fprintf(stdout, "%s\n", d.String())
+	}
+	if len(diagnostics) > 0 {
+		fmt.Fprintf(stdout, "%d problem(s)\n", len(diagnostics))
+		return extExitProblem
+	}
+	fmt.Fprintf(stdout, "ok  %s: no problems found\n", positional[0])
+	return extExitOK
+}
+
+// runExtensionConform runs the contract-test harness over a pack.
+//
+// It is the fixture-runner half of AC-3: the same checks the importable Go
+// package applies, reachable without writing Go, so a pack author's contract
+// test is a command rather than a project.
+func runExtensionConform(positional []string, asJSON bool, stdout, stderr io.Writer) int {
+	if len(positional) != 1 {
+		fmt.Fprintf(stderr, "graphi: extension conform: expected exactly one pack directory or manifest file\n\n%s\n", extensionUsage)
+		return extExitUsageErr
+	}
+	report := conformance.VerifyPack(positional[0])
+	if asJSON {
+		if writeExtensionJSON(stdout, stderr, "conform", map[string]any{
+			"subject": report.Subject, "results": report.Results, "ok": report.OK(),
+		}) != extExitOK {
+			return extExitProblem
+		}
+		if !report.OK() {
+			return extExitProblem
+		}
+		return extExitOK
+	}
+	fmt.Fprint(stdout, report.String())
+	if !report.OK() {
+		fmt.Fprintf(stdout, "%d check(s) failed\n", len(report.Failures()))
+		return extExitProblem
+	}
+	fmt.Fprintf(stdout, "all %d check(s) passed\n", len(report.Results))
+	return extExitOK
 }
 
 func runExtensionValidate(positional []string, sha string, stdout, stderr io.Writer) int {

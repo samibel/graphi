@@ -38,7 +38,7 @@ Labs & tooling (not a stable promise):
   graphi framework-map        routes, events, DI components from recorded annotations
   graphi snapshot [<name>]    list or freeze named graph states of this repo
   graphi compare <a> <b>      diff two named graph states ('current' = live graph)
-  graphi extension <sub>      declarative rule packs (validate/install/list/doctor) — data, never code
+  graphi extension <sub>      rule packs + developer kit (init/lint/conform/validate/install) — data, never code
   graphi doctor               run read-only diagnostic checks
   graphi setup                register graphi's MCP server in local MCP clients
   graphi upgrade -print       print the upgrade command without running it
@@ -79,7 +79,7 @@ known subcommands:
   distill            [labs] distill a session into a compact decision record
   doctor             [labs] read-only diagnostic checkup for binary, PATH, MCP clients, DB, privacy, and local-first invariants
   explain-symbol     compact, cited symbol identity summary (definition, callers, callees, references)
-  extension          [labs] declarative rule packs: validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)
+  extension          [labs] declarative rule packs + the developer kit: init/lint/conform, validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)
   find-clones        [labs] edge-profile clone detection
   framework-map      [labs] application view from recorded framework annotations: routes, events, DI (labs)
   help               [labs] print general help, or detailed help for one subcommand
@@ -255,9 +255,9 @@ usage:   graphi explain-symbol [-db path] [-max-items n] <symbol|path|node-id>
 example: graphi explain-symbol -db graph.db util.Format
 
 --- graphi help extension ---
-graphi extension — [labs] declarative rule packs: validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)
-usage:   graphi extension validate <file> [--sha256 hex] | install --sha256 <hex> <file> | list [--json] | doctor [--json] | enable|disable|remove <id> [-root <repo>]
-example: graphi extension install --sha256 3b7c... ./packs/arch-rules.yaml
+graphi extension — [labs] declarative rule packs + the developer kit: init/lint/conform, validate, install (offline, sha256-pinned), list, doctor, enable/disable/remove — data only, no pack code is ever executed (labs)
+usage:   graphi extension init [--kind <kind>] [--id <id>] <dir> | lint <pack> [--json] | conform <pack> [--json] | validate <file> [--sha256 hex] | install --sha256 <hex> <file> | list [--json] | doctor [--json] | enable|disable|remove <id> [-root <repo>]
+example: graphi extension init ./packs/my-rules && graphi extension conform ./packs/my-rules
 
 --- graphi help find-clones ---
 graphi find-clones — [labs] edge-profile clone detection
