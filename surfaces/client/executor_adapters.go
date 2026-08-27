@@ -32,6 +32,10 @@ package client
 //     so the capability-unavailable sentinels are exercised through the adapter
 //     path and not just described.
 //
+// SW-226 (AX-06) added one more, and for a different reason: dead_code is the
+// CANARY — the single operation whose MCP and HTTP dispatch now reaches this
+// table in production (canary.go). Every other entry here is still test-only.
+//
 // Operations left unadapted are rejected loudly by Execute. Two are worth naming
 // because their omission is a decision, not an oversight:
 //
@@ -84,6 +88,7 @@ func legacyAdapters() (map[string]argumentsFactory, error) {
 	}
 
 	for id, factory := range map[string]argumentsFactory{
+		"dead_code":       func(string) Arguments { return &DeadCodeArgs{} },
 		"search":          func(string) Arguments { return &SearchArgs{} },
 		"search_semantic": func(string) Arguments { return &SemanticSearchArgs{} },
 		"search_ast":      func(string) Arguments { return &SearchASTArgs{} },
@@ -135,6 +140,27 @@ func (a *QueryArgs) Operation() string { return a.Op }
 
 func (a *QueryArgs) invoke(ctx context.Context, c Client) ([]byte, error) {
 	return c.Query(ctx, a.Op, a.Symbol, a.Depth)
+}
+
+// DeadCodeArgs are the arguments of the Labs dead_code operation — the SW-226
+// (AX-06) canary, and the first operation whose SURFACE DISPATCH reaches the
+// executor rather than only its tests.
+//
+// MaxItems is passed through verbatim. The engine owns the default
+// (deadcode.DefaultMaxItems = 40, applied inside Assemble), and the surfaces
+// already pass a plain zero when the caller supplies no cap — MCP's
+// derefInt(limit), HTTP's maxItems, the CLI's -max-items flag. Defaulting here
+// would be a second defaulting site for a value three surfaces currently agree
+// on by not touching it.
+type DeadCodeArgs struct {
+	MaxItems int `json:"max_items"`
+}
+
+// Operation names the catalog operation.
+func (a *DeadCodeArgs) Operation() string { return CanaryOperation }
+
+func (a *DeadCodeArgs) invoke(ctx context.Context, c Client) ([]byte, error) {
+	return c.DeadCode(ctx, DeadCodeParams{MaxItems: a.MaxItems})
 }
 
 // SearchArgs are the arguments of the Stable lexical search.

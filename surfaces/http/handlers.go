@@ -419,7 +419,13 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 	case "architecture_violations":
 		raw, err = s.client.ArchitectureViolations(r.Context(), client.ArchitectureViolationsParams{MaxItems: maxItems})
 	case "dead_code":
-		raw, err = s.client.DeadCode(r.Context(), client.DeadCodeParams{MaxItems: maxItems})
+		// SW-226 (AX-06): the canary arm. It reaches the executor through the
+		// one shared surfaces/client composition rather than calling the client
+		// method directly, so MCP and HTTP cannot end up on different sides of
+		// the kill switch. The query-argument mapping, the error handling below
+		// and the SAFE-01 capability guard in routes.go are untouched, and this
+		// file still does not import engine/opcatalog.
+		raw, err = client.DispatchCanary(r.Context(), s.client, &client.DeadCodeArgs{MaxItems: maxItems})
 	case "framework_map":
 		raw, err = s.client.FrameworkMap(r.Context(), client.FrameworkMapParams{MaxItems: maxItems})
 	case "hotspots":

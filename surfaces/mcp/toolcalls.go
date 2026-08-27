@@ -906,8 +906,18 @@ func (s *Server) frameworkMapCall(ctx context.Context, p callParams) (any, *rpcE
 // deadCodeCall (P2 dead code, labs) returns the scored dead-code candidates
 // with visible exclusions in the C1 contract shape (byte parity with
 // `graphi dead-code`).
+//
+// SW-226 (AX-06): this is the ONE dispatch arm that goes through the canary
+// seam instead of calling the client method directly. What changed is which
+// path produces the bytes; what did not change is anything observable — the
+// argument mapping, the -32603 error mapping, the textResult envelope and the
+// tool's descriptor are all exactly as they were, and in the shipped `shadow`
+// position the bytes returned here ARE Client.DeadCode's return value. Every
+// other arm in this file still calls its client method directly, and this file
+// still does not import engine/opcatalog: the operation catalog stays behind
+// surfaces/client, which is what keeps the AX-05 dispatch boundary true.
 func (s *Server) deadCodeCall(ctx context.Context, p callParams) (any, *rpcError) {
-	b, err := s.client().DeadCode(ctx, client.DeadCodeParams{
+	b, err := client.DispatchCanary(ctx, s.client(), &client.DeadCodeArgs{
 		MaxItems: derefInt(p.Arguments.Limit),
 	})
 	if err != nil {

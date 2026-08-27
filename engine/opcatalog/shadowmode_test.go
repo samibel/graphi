@@ -41,6 +41,28 @@ import (
 //     it to include a dispatch file and this test would go green. The named
 //     dispatch sites below therefore fail even if someone also adds them above,
 //     which turns "dispatch stays legacy" from a convention into a gate.
+//
+// AX-06 (SW-226) is the other widening AX-04 predicted, and it is worth being
+// precise about what it did and did not move, because the obvious reading is
+// wrong.
+//
+//   - ONE reader is added: surfaces/client/canary.go, the canary's dual-run
+//     composition. It resolves the canary's catalog contribution and drives the
+//     AX-04 executor.
+//   - The DENY list is NOT touched. Every entry in it is still forbidden and
+//     still true. Dispatch for the dead_code canary now reaches the executor,
+//     but it does so by calling one surfaces/client function; toolcalls.go and
+//     handlers.go still do not import this package, so the property AX-05 gated
+//     — the operation catalog stays behind surfaces/client and a request-serving
+//     file never reads it directly — survives the canary intact. Deleting a deny
+//     entry "because AX-06 said dispatch would cross" would have thrown away a
+//     live guarantee to pay for a crossing that did not happen.
+//   - A SECOND gate is added instead, TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor
+//     below, because the crossing that DID happen needs its own rule. The
+//     executor-dispatch seam is a different boundary from the catalog-import
+//     boundary, and an import-based test cannot see it at all: a file that calls
+//     client.DispatchCanary imports surfaces/client, which two dozen files
+//     already do for unrelated reasons.
 func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	root := moduleRootForTest(t)
 	const catalogPkg = "github.com/samibel/graphi/engine/opcatalog"
@@ -50,6 +72,7 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	// deliberate act; the failure below explains what adding it means.
 	allowedImporters := map[string]bool{
 		filepath.Join("surfaces", "client", "executor.go"):           true,
+		filepath.Join("surfaces", "client", "canary.go"):             true,
 		filepath.Join("surfaces", "mcp", "descriptors_projected.go"): true,
 		filepath.Join("surfaces", "http", "contract_projected.go"):   true,
 		filepath.Join("cmd", "graphi", "help_catalog.go"):            true,
@@ -112,11 +135,13 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	var undeclared []string
 	for _, importer := range importers {
 		if reason, forbidden := forbiddenImporters[importer]; forbidden {
-			t.Errorf("%s (%s) reads the operation catalog. AX-05 AC-4 keeps DISPATCH on the legacy "+
-				"path while only advertised metadata is projected; a request-serving file reading "+
-				"the catalog is the boundary this story is defined by. If a later story deliberately "+
-				"moves dispatch onto the catalog (AX-06's canary), remove the entry from "+
-				"forbiddenImporters in that change so the crossing is reviewed.", importer, reason)
+			t.Errorf("%s (%s) reads the operation catalog. A request-serving file must reach the "+
+				"catalog through surfaces/client, never by importing it: that is what keeps the "+
+				"operation catalog one seam instead of a dependency every surface grows its own "+
+				"opinion about. AX-06 moved the dead_code canary's DISPATCH onto the executor "+
+				"WITHOUT needing this entry removed — it calls client.DispatchCanary — so a later "+
+				"story that thinks it needs the entry gone should first check whether it is really "+
+				"solving the same problem AX-06 solved.", importer, reason)
 			continue
 		}
 		if !allowedImporters[importer] {
@@ -148,6 +173,21 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 		t.Error("the AX-04 executor is no longer a declared reader; this test may not be narrowed " +
 			"by dropping the reader it was written for")
 	}
+	// The deny list may grow. It may not shrink by accident: these four are the
+	// request-serving files AX-05 named, and AX-06 kept every one of them.
+	// Removing one is a deliberate act that has to edit this list too.
+	for _, required := range []string{
+		filepath.Join("surfaces", "mcp", "toolcalls.go"),
+		filepath.Join("surfaces", "mcp", "session.go"),
+		filepath.Join("surfaces", "http", "handlers.go"),
+		filepath.Join("surfaces", "http", "routes.go"),
+	} {
+		if _, denied := forbiddenImporters[required]; !denied {
+			t.Errorf("%s is no longer denied. Dispatch reaching the catalog directly is the "+
+				"regression this list exists to catch, and it survived AX-06 — a story that "+
+				"drops it is removing a guarantee, not updating a stale entry.", required)
+		}
+	}
 
 	// Guard against the walk silently covering nothing.
 	if !fileExists(filepath.Join(root, "surfaces", "mcp", "descriptors.go")) {
@@ -156,6 +196,99 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(selfDir, "shadow.json")); err != nil {
 		t.Fatalf("stat shadow.json: %v", err)
+	}
+}
+
+// TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor is the second half of the
+// AX-06 boundary, and the one that watches the crossing this story actually
+// made.
+//
+// TestAX04 above watches who IMPORTS the catalog. That rule survived AX-06
+// unchanged, which is exactly why it cannot be the gate for AX-06: the canary
+// crosses into the executor by CALLING client.DispatchCanary, and a file that
+// does so imports surfaces/client — something most of the tree already does.
+// An import-shaped test is blind to it.
+//
+// So the crossing gets its own explicit list. Exactly two request-serving files
+// may reach the executor-dispatch seam, they are named here, and a third one
+// fails this test. The check runs in both directions: an undeclared caller is a
+// failure, and a declared caller that no longer contains the call is also a
+// failure, because a stale entry would quietly license the next one.
+//
+// The seam is named by its identifier rather than by a package import so the
+// rule survives a rename of the file it lives in.
+func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
+	root := moduleRootForTest(t)
+	const seam = "DispatchCanary"
+
+	// The declared dispatch sites: the MCP tools/call arm and the HTTP analyze
+	// arm for the ONE canary operation. Adding a third means a second operation
+	// is migrating, which is SW-228's job and needs SW-228's evidence.
+	declared := map[string]string{
+		filepath.Join("surfaces", "mcp", "toolcalls.go"): "MCP tools/call — the dead_code arm",
+		filepath.Join("surfaces", "http", "handlers.go"): "HTTP /analyze — the dead_code arm",
+		filepath.Join("surfaces", "client", "canary.go"): "the seam's own definition",
+	}
+
+	found := map[string]bool{}
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case ".git", "node_modules", "vendor", "testdata", "web", "dist":
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		src, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Errorf("read %s: %v", path, readErr)
+			return nil
+		}
+		if !strings.Contains(string(src), seam) {
+			return nil
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			rel = path
+		}
+		found[rel] = true
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk %s: %v", root, err)
+	}
+
+	var undeclared []string
+	for rel := range found {
+		if _, ok := declared[rel]; !ok {
+			undeclared = append(undeclared, rel)
+		}
+	}
+	if len(undeclared) > 0 {
+		sort.Strings(undeclared)
+		t.Errorf("these non-test files reach the executor dispatch seam without being declared:\n  %s\n"+
+			"AX-06 migrates exactly ONE operation (dead_code) and says so in its scope: no bulk "+
+			"migration, no second operation. If this is the story that migrates more (SW-228/AX-08), "+
+			"it owes the same dual-run parity evidence per operation that AX-06 owed for one, and it "+
+			"widens this list in the same change.", strings.Join(undeclared, "\n  "))
+	}
+	for rel, reason := range declared {
+		if !found[rel] {
+			t.Errorf("declared canary dispatch site %q (%s) no longer reaches the seam — a stale "+
+				"entry here licenses an undeclared caller to take its place unnoticed", rel, reason)
+		}
+	}
+	// Non-vacuity: if the scan found nothing at all, it is not proving a
+	// boundary, it is proving that it looked in the wrong tree.
+	if len(found) == 0 {
+		t.Fatalf("the module walk found no reference to %q under %q; the scan is not looking "+
+			"where it thinks it is", seam, root)
 	}
 }
 

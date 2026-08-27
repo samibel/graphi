@@ -93,6 +93,18 @@ func executorParityCases(ids map[string]model.NodeId) []executorParityCase {
 	symbol := string(ids["B"])
 	cases := []executorParityCase{
 		{
+			// SW-226's canary. It is in this table for the same reason as
+			// everything else — an adapter without independent byte-parity
+			// evidence is unproven — and MaxItems is deliberately non-zero so
+			// the case proves the argument reaches the engine rather than
+			// proving that two default-shaped calls agree.
+			operation: "dead_code",
+			args:      &DeadCodeArgs{MaxItems: 3},
+			legacy: func(ctx context.Context, c Client) ([]byte, error) {
+				return c.DeadCode(ctx, DeadCodeParams{MaxItems: 3})
+			},
+		},
+		{
 			operation: "search",
 			args:      &SearchArgs{Query: "p.", Limit: 10},
 			legacy:    func(ctx context.Context, c Client) ([]byte, error) { return c.Search(ctx, "p.", 10) },
