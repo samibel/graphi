@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/samibel/graphi/engine/query"
@@ -100,6 +101,16 @@ func (c *DaemonClient) dialWithRetry(ctx context.Context, attempts int, delay ti
 func (c *DaemonClient) startDaemon(ctx context.Context) error {
 	if c.binaryPath == "" {
 		return fmt.Errorf("no daemon binary configured")
+	}
+	// A Go test binary (always named *.test) must never be a daemon host: its
+	// entry point is the test suite, so spawning it here re-runs every test —
+	// and any test that dials an absent socket then auto-starts another copy,
+	// recursively, until the machine runs out of processes. binaryPath defaults
+	// to os.Args[0], which IS the test binary whenever a test reaches this path
+	// through Attach. Refusing is fail-closed and changes no real behavior: the
+	// shipped graphi binary never carries the .test suffix.
+	if strings.HasSuffix(c.binaryPath, ".test") {
+		return fmt.Errorf("daemon auto-start: refusing to spawn %q — a Go test binary is not a daemon host; dial %q failed and no real graphi binary was configured", c.binaryPath, c.socketPath)
 	}
 	cmd := exec.CommandContext(ctx, c.binaryPath, "daemon", "start", "-socket", c.socketPath)
 	cmd.Stdout = os.Stdout
