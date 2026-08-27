@@ -18,6 +18,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -35,6 +41,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -52,6 +64,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -69,6 +87,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -90,6 +114,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -196,6 +226,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -904,11 +940,15 @@
     {
       "name": "explain_symbol",
       "tier": "stable",
-      "description": "explain_symbol: return a compact, cited symbol-identity summary (qualified name, kind, declaring file:line, direct callers/callees). Purpose: answer 'what is this symbol?' in one call. When to use: the agent has a symbol reference and needs identity + immediate neighborhood without reading source. When NOT to use: for broad 'what should I read first?' questions (use related_files) or risk scoring (use change_risk). Input shape: a single symbol reference (qualified id, file:line, or bare name). Read-only: true. Partial results possible: neighbor lists may truncate.",
+      "description": "return a compact, cited symbol identity and immediate neighborhood",
       "inputSchema": {
         "properties": {
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
           "symbol": {
-            "description": "symbol reference: qualified id, file:line anchor, or bare name",
+            "description": "qualified id, file:line anchor, or bare name",
             "type": "string"
           }
         },
@@ -927,15 +967,19 @@
     {
       "name": "related_files",
       "tier": "stable",
-      "description": "related_files: return a deterministically ranked 'read these first' file list for a symbol, file, or diff anchor. Purpose: answer 'what should I read first?' in one call. When to use: the agent needs a scoped, evidence-backed file list before editing or reviewing. When NOT to use: for a single symbol's identity (use explain_symbol) or for risk scoring (use change_risk). Input shape: a single anchor plus optional direction (dependencies | dependents | both). Read-only: true. Partial results possible: ranked file list may truncate.",
+      "description": "return a deterministically ranked read-first file list around an anchor",
       "inputSchema": {
         "properties": {
           "direction": {
-            "description": "dependencies | dependents | both (default)",
+            "description": "dependencies | dependents | both",
             "type": "string"
           },
+          "limit": {
+            "description": "maximum returned files",
+            "type": "integer"
+          },
           "target": {
-            "description": "anchor: symbol id, file path, or diff line-oriented refs",
+            "description": "symbol id, file path, or diff anchor",
             "type": "string"
           }
         },
@@ -954,15 +998,19 @@
     {
       "name": "change_risk",
       "tier": "stable",
-      "description": "change_risk: return an evidence-based low/medium/high/unknown risk assessment for a symbol, file, or diff target. Purpose: answer 'how risky is it to touch this?' in one call. When to use: before proposing or reviewing a change, to gauge blast radius and coverage. When NOT to use: when you only need a file list (use related_files) or a symbol summary (use explain_symbol). Input shape: a target symbol/file or a local-first diff. Read-only: true. Partial results possible: evidence may be truncated, and the tool returns unknown rather than guessing.",
+      "description": "return an evidence-based change-risk assessment for a target or diff",
       "inputSchema": {
         "properties": {
           "diff": {
-            "description": "local-first unified diff or line-oriented refs (alternative to target)",
+            "description": "unified diff or line-oriented refs",
             "type": "string"
           },
+          "limit": {
+            "description": "maximum returned items",
+            "type": "integer"
+          },
           "target": {
-            "description": "symbol id or file path to evaluate",
+            "description": "symbol id or file path",
             "type": "string"
           }
         },
@@ -978,11 +1026,11 @@
     {
       "name": "agent_brief",
       "tier": "stable",
-      "description": "agent_brief: return a bounded, cited task-start context packet (project identity, start-here files, key symbols, known facts, hotspots, suggested next MCP calls) in Markdown with embedded canonical JSON. Purpose: give an agent a scoped, cited starting context without reading source blindly. When to use: at the beginning of a task or when entering a new subsystem. When NOT to use: when you already have a specific symbol to explain (use explain_symbol) or a file list to read (use related_files). Input shape: optional topic (symbol, path, or subsystem). Read-only: true. Partial results possible: sections may be empty if underlying analyzers are not yet wired.",
+      "description": "return a bounded, cited task-start context packet",
       "inputSchema": {
         "properties": {
           "symbol": {
-            "description": "optional topic: symbol id, file path, or subsystem name",
+            "description": "optional topic: symbol, path, or subsystem",
             "type": "string"
           }
         },

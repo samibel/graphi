@@ -105,13 +105,6 @@ func TestOperationSpec_Validate_RejectsIncoherentEntries(t *testing.T) {
 			},
 			"ports are unaudited",
 		},
-		{
-			"a Stable-profile advertisement on a Labs operation",
-			func(s *OperationSpec) {
-				s.StableProfileAdvertisement = &Advertisement{Description: "terse"}
-			},
-			"impossible",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := base()

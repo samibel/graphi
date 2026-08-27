@@ -25,50 +25,48 @@ package mcp
 // (two entries moved in SW-225; the resulting order is byte-identical to what
 // the legacy builders produced, which the goldens prove).
 //
-// # THE DIVERGENCE DECISION (SW-223's inherited finding)
+// # THE DIVERGENCE, AND ITS COLLAPSE (SW-223 → SW-225 → SW-241)
 //
-// Ten of the eleven Stable MCP tools are advertised with two different
-// descriptors depending on the bound profile: agent_brief, change_risk,
-// explain_symbol and related_files differ in description AND input schema
-// (explain_symbol's maximal schema has no `limit` at all), while callers,
-// callees, references, definition, neighborhood and search differ in
+// SW-223 found that ten of the eleven Stable MCP tools were advertised with two
+// different descriptors depending on the bound profile: agent_brief,
+// change_risk, explain_symbol and related_files differed in description AND
+// input schema (explain_symbol's maximal schema had no `limit` at all), while
+// callers, callees, references, definition, neighborhood and search differed in
 // annotations (present in the Stable profile, absent in the maximal one). Only
-// impact agrees, because both builders call one shared function.
+// impact agreed, because both builders call one shared function.
 //
-// SW-225 PRESERVES the divergence, and the reason is not inertia:
+// SW-225 PRESERVED that divergence rather than papering over it — collapsing it
+// touches a Stable-12 request schema on the wire, this file's own story forbade
+// it, and folding a wire change into the projection commit would have made the
+// AC-5 rollback switch unattributable. What SW-225 did instead was make the
+// divergence ONE validated fact (OperationSpec.StableProfileAdvertisement)
+// instead of two independently-editable Go literals, and record the direction a
+// later ticket should collapse it in.
 //
-//  1. Collapsing it would change a Stable-12 REQUEST SCHEMA on the wire. The
-//     Extension Platform Kernel spec's whole-slice boundary is that "Stable-12
-//     wire names, request schemas and canonical result bytes are byte-untouched
-//     throughout"; ADR 0013 I1 says the twelve frozen operations must produce
-//     their AX-00 bytes unchanged. A projection story is not the place to spend
-//     that budget.
-//  2. This story's own acceptance criteria forbid it: AC-1 requires the
-//     generated set to be byte-identical to the legacy descriptors "for every
-//     binding profile", and AC-6 requires the SW-220 goldens to pass
-//     byte-identically with projection serving. A single descriptor per
-//     operation cannot satisfy either.
-//  3. Rollback would stop meaning anything. AC-5 exists so the projection can be
-//     switched off if it misbehaves in the field. If the same commit ALSO
-//     changed what ten Stable tools advertise, flipping the switch back would
-//     revert both, and a bug report could not be attributed to one of them.
+// SW-241 (AX-12) performed that collapse, in the recorded direction: the
+// MAXIMAL profile ADOPTED the Stable-profile advertisement. Consequences, all
+// four of them worth stating:
 //
-// What did change is that the divergence is now ONE fact instead of two
-// independently-editable Go literals: it lives in the catalog as
-// OperationSpec.StableProfileAdvertisement, it is validated (a divergence record
-// that no longer matches the surface, or one invented where the profiles agree,
-// fails surfaces/mcp/opcatalog_parity_test.go in both directions), and the
-// projection below is the only place that chooses between the two forms.
+//  1. The shipped default profile did not move a byte — the `stable`,
+//     `stdio-stable` and `daemon-stable` AX-00 goldens are untouched by that
+//     change, which is how the claim is proved rather than asserted.
+//  2. `-labs` sessions GAINED the read-only annotations on the six structural
+//     query tools and on `search`, and gained explain_symbol's, related_files'
+//     and change_risk's `limit` argument.
+//  3. `-labs` sessions LOST the longer six-facet prose those four descriptors
+//     used to carry. That is the cost of this direction and it is not hidden:
+//     the opposite direction would have stripped annotations and a documented
+//     argument from the SHIPPED default instead, which is strictly worse.
+//  4. OperationSpec.StableProfileAdvertisement was REMOVED, not left behind as
+//     an always-equal field. A spec now carries exactly one advertisement, and
+//     the projection below has nothing to choose between — its `stableProfile`
+//     parameter survives only as the tier guard that keeps a Labs operation out
+//     of the default profile.
 //
-// The recommended way to actually collapse it, in its own ticket, is recorded
-// here so the analysis is not redone: make the MAXIMAL profile adopt the
-// Stable-profile advertisement for those ten tools. That direction is purely
-// additive for a client (`-labs` sessions GAIN the read-only annotations and
-// explain_symbol's `limit`), it leaves the shipped default stdio profile
-// byte-identical, and it moves only the `maximal`, `stdio-labs` and
-// `daemon-labs` goldens. The opposite direction — Stable adopting the maximal
-// form — would REMOVE annotations and a documented argument from the default
-// profile and should not be taken.
+// The invariant that replaced the divergence record is asserted directly:
+// TestAX12_ProfileAdvertisements_AgreeAcrossProfiles (descriptors_projected_test.go)
+// fails, with the tool and field named, if the two profiles ever advertise
+// differently again.
 //
 // # One thing projection genuinely gives up, stated plainly
 //
@@ -211,10 +209,10 @@ func projectProfiles(catalog *opcatalog.Catalog) (profileDescriptors, error) {
 // projectDescriptors turns catalog specs into MCP descriptor maps, in the given
 // advertisement order.
 //
-// stableProfile selects the Stable-profile advertisement where the catalog
-// records one (see the divergence decision in this file's header) and requires
-// every projected operation to actually be Stable — a Labs operation reaching
-// the default profile would be a silent widening of the frozen surface, so it
+// stableProfile no longer selects between two advertisements — SW-241 collapsed
+// them (see this file's header). It survives as the guard that requires every
+// operation projected into the default profile to actually be Stable: a Labs
+// operation reaching it would be a silent widening of the frozen surface, so it
 // fails construction instead.
 func projectCatalogDescriptors(catalog *opcatalog.Catalog, order []string, stableProfile bool) ([]map[string]any, error) {
 	out := make([]map[string]any, 0, len(order))
@@ -254,16 +252,11 @@ func projectCatalogDescriptors(catalog *opcatalog.Catalog, order []string, stabl
 // projection rather than a copy of it. A harness pointed at a re-implementation
 // certifies the re-implementation.
 func ProjectToolDescriptor(spec opcatalog.OperationSpec, stableProfile bool) (map[string]any, error) {
-	advertisement := spec.Advertisement
-	if stableProfile {
-		if spec.Tier != opcatalog.TierStable {
-			return nil, fmt.Errorf("mcp: operation %q is tiered %q but appears in the Stable profile",
-				spec.ID, spec.Tier)
-		}
-		if spec.StableProfileAdvertisement != nil {
-			advertisement = *spec.StableProfileAdvertisement
-		}
+	if stableProfile && spec.Tier != opcatalog.TierStable {
+		return nil, fmt.Errorf("mcp: operation %q is tiered %q but appears in the Stable profile",
+			spec.ID, spec.Tier)
 	}
+	advertisement := spec.Advertisement
 	if advertisement.Description == "" {
 		return nil, fmt.Errorf("mcp: operation %q has an empty description in the operation catalog", spec.ID)
 	}

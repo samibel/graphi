@@ -26,6 +26,39 @@ file:
 
 ## [Unreleased]
 
+### Changed
+
+- **One MCP tool descriptor per tool, across binding profiles** (SW-241, AX-12).
+  This is a **wire change to the `-labs` profile only**; the shipped default MCP
+  profile is byte-identical.
+
+  **What was wrong.** Ten of the eleven Stable MCP tools advertised two different
+  descriptors depending on which profile a session bound. `callers`, `callees`,
+  `references`, `definition`, `neighborhood` and `search` carried read-only
+  annotations in the default profile and none in `-labs`. `explain_symbol`,
+  `related_files`, `change_risk` and `agent_brief` carried a different description
+  *and* a different input schema in each — `-labs` sessions were never told about
+  `explain_symbol`'s, `related_files`' or `change_risk`'s `limit` argument, though
+  the server accepted it. Only `impact` agreed. SW-223 found this and SW-225
+  deliberately preserved it as a recorded fact rather than papering over it,
+  because collapsing it touches a Stable-12 request schema.
+
+  **What changed, and for whom.** The **maximal (`-labs`) profile adopted the
+  default profile's advertisement**. A `-labs` session now receives the read-only
+  annotations on those six structural tools and on `search`, and the `limit`
+  argument on `explain_symbol`, `related_files` and `change_risk`. It no longer
+  receives the longer six-facet prose those four descriptors carried; the terse
+  form the default profile always served is now the only form. Sessions on the
+  **default profile — the shipped `graphi mcp` binding — see no change at all**,
+  which the untouched `stable`, `stdio-stable` and `daemon-stable` descriptor
+  goldens prove rather than assert.
+
+  **Why this direction.** The other direction (default adopts maximal) would have
+  stripped read-only annotations and a documented, accepted argument from the
+  profile every shipped client actually binds, to give four Labs descriptors
+  longer prose. Losing prose in an opt-in profile is a smaller cost than removing
+  a working argument from the default one.
+
 ## [0.10.0] - 2026-08-23
 
 ### Added

@@ -18,6 +18,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -35,6 +41,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -52,6 +64,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -69,6 +87,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -90,6 +114,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
@@ -196,6 +226,12 @@
           "symbol"
         ],
         "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
       }
     },
     {
