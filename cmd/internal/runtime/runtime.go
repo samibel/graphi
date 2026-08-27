@@ -36,6 +36,7 @@ import (
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/divergence"
 	"github.com/samibel/graphi/internal/ingestlock"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/client"
@@ -501,7 +502,52 @@ func ApplyCanaryMode() error {
 			return fmt.Errorf("%s: %w", name, err)
 		}
 	}
+	installDivergenceRecorder()
 	return nil
+}
+
+// installDivergenceRecorder wires the durable divergence record (SW-232 AC-1)
+// into the executor seam, or removes it again.
+//
+// It is installed HERE, in the composition root, for the reason the doctor
+// readout is read here too: surfaces/client composes capabilities and must not
+// grow a dependency on the state directory, while internal/divergence owns the
+// files and knows nothing about surfaces. This function is the only place that
+// imports both.
+//
+// It installs ONLY when at least one operation is off the shipped `legacy`
+// position. On the shipped configuration the seam never compares anything, so a
+// recorder would be handed nothing to record — and a graphi that touched the
+// state directory on every session for a feature nobody enabled would be paying
+// for observability it cannot produce.
+//
+// A store that cannot be built (no resolvable state directory) is not a session
+// failure: the operator asked for a dual run, not for a file, and refusing to
+// serve requests because a diagnostic could not be opened would be the wrong
+// trade. The seam keeps its in-process counter in that case.
+func installDivergenceRecorder() {
+	if !anyCanaryPositionIsDual() {
+		client.SetDivergenceRecorder(nil)
+		return
+	}
+	store, err := divergence.NewStore(state.StateDir())
+	if err != nil {
+		client.SetDivergenceRecorder(nil)
+		return
+	}
+	client.SetDivergenceRecorder(store)
+}
+
+// anyCanaryPositionIsDual reports whether any migrated operation is in a
+// position that produces a comparison. Only `shadow` runs both paths; `active`
+// runs one, so it has nothing to compare and nothing honest to record.
+func anyCanaryPositionIsDual() bool {
+	for _, p := range client.CanaryPositions() {
+		if p.Mode == client.CanaryModeShadow {
+			return true
+		}
+	}
+	return false
 }
 
 // EnvRoot is the environment fallback for an explicit repository root on

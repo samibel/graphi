@@ -453,8 +453,9 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 				}
 				fmt.Fprintf(&detail, "%s: %s (%s)\n", p.Operation, p.Mode, source)
 			}
-			detail.WriteString("a shadow divergence is recorded in-process and is not persisted, " +
-				"so it is readable only inside the server process that ran the dual path")
+			detail.WriteString("a shadow divergence is counted in-process AND persisted to the " +
+				"graphi state directory (SW-232); read it with `graphi doctor -divergence` " +
+				"or `graphi doctor -divergence --json`")
 			message := fmt.Sprintf("%d migrated operation(s): %d legacy, %d shadow, %d active",
 				len(positions), counts["legacy"], counts["shadow"], counts["active"])
 			if len(shadowed) > 0 {
@@ -480,6 +481,113 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 			return CheckResult{
 				ID: "executor-seam", Category: "internals", Status: StatusInfo,
 				Message: message, Action: "", Detail: detail.String(),
+			}
+		},
+	}
+}
+
+// ExecutorDivergence is the persisted executor-seam divergence record as the
+// composition root reads it (internal/divergence), reduced to the vocabulary
+// this package renders.
+//
+// Like ExecutorSeamPosition, it is a LOCAL type: the doctor package computes
+// only over what it is handed, so the reading, the state-directory resolution
+// and the honesty rules stay in the package that owns the record.
+type ExecutorDivergence struct {
+	// State is the document verdict: UNKNOWN, NO-DIVERGENCE-OBSERVED,
+	// PARTIAL-UNKNOWN or DIVERGED.
+	State string
+	// Directory is where the record lives, so an operator can go and look.
+	Directory string
+	// Observations and Mismatches are the totals across every segment.
+	Observations, Mismatches int
+	// Diverged names the operations with at least one recorded mismatch.
+	Diverged []string
+	// Unobserved names the migrated operations with NO observation at all.
+	Unobserved []string
+	// Unreadable counts segment files that could not be parsed. They are
+	// disclosed rather than dropped: a silently skipped segment would make the
+	// totals a lower bound that reads like a total.
+	Unreadable int
+}
+
+// ExecutorDivergenceCheck reports the PERSISTED divergence record (SW-232 /
+// AX-12a) — the thing ExecutorSeamCheck's doc comment says it deliberately did
+// not report, because before this story the only record was a process-global
+// counter that `graphi doctor` could only ever read as its own untouched zero.
+//
+// It is now cross-process, so the readout is honest, and the honesty rule is
+// the whole design: an operation nothing was observed on reads UNKNOWN and
+// never "no divergence". The shipped position is `legacy`, which compares
+// nothing, so UNKNOWN is the expected answer on a normal install — and saying
+// so plainly is the point. A green "0 divergences" on a seam that never ran is
+// exactly the false evidence the SW-238 precondition assessment refused to
+// accept.
+//
+// Status: WARN when a divergence was recorded (a finding an operator must act
+// on) or when the record could not be read; INFO otherwise, including the
+// UNKNOWN case, because "nothing observed" is not a health failure of this
+// install. PASS is reserved for the one case that has actually been earned:
+// every migrated operation observed, none diverged.
+func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
+	return checkFunc{
+		id:       "executor-divergence",
+		category: "internals",
+		fn: func(ctx context.Context, env Env) CheckResult {
+			if readErr != nil {
+				return ResultWithAction("executor-divergence", "internals",
+					fmt.Sprintf("the persisted divergence record could not be read: %v", readErr),
+					StatusWarn,
+					"check that the graphi state directory is readable; until then the seam's "+
+						"divergence history is UNKNOWN, not clean")
+			}
+			var detail strings.Builder
+			fmt.Fprintf(&detail, "record: %s\n", d.Directory)
+			fmt.Fprintf(&detail, "%d observation(s), %d mismatch(es)\n", d.Observations, d.Mismatches)
+			if len(d.Unobserved) > 0 {
+				sort.Strings(d.Unobserved)
+				fmt.Fprintf(&detail, "never observed (UNKNOWN, not agreed): %s\n", strings.Join(d.Unobserved, ", "))
+			}
+			if d.Unreadable > 0 {
+				fmt.Fprintf(&detail, "%d unreadable segment(s): the totals are a lower bound\n", d.Unreadable)
+			}
+			detail.WriteString("read the full record with `graphi doctor -divergence [--json]`")
+
+			if len(d.Diverged) > 0 {
+				sort.Strings(d.Diverged)
+				return CheckResult{
+					ID: "executor-divergence", Category: "internals", Status: StatusWarn,
+					Message: fmt.Sprintf("%d recorded divergence(s) between the legacy and executor paths: %s",
+						d.Mismatches, strings.Join(d.Diverged, ", ")),
+					Action: "run `graphi doctor -divergence --json` for the recorded renderings, and " +
+						"roll the operation back with GRAPHI_CANARY_<OP>=legacy (docs/executor-seam-rollback.md)",
+					Detail: detail.String(),
+				}
+			}
+			if d.Observations == 0 {
+				return CheckResult{
+					ID: "executor-divergence", Category: "internals", Status: StatusInfo,
+					Message: "UNKNOWN: no dual-run observation has been recorded — this is NOT a " +
+						"statement that the two paths agree",
+					Action: "",
+					Detail: detail.String(),
+				}
+			}
+			if len(d.Unobserved) > 0 {
+				return CheckResult{
+					ID: "executor-divergence", Category: "internals", Status: StatusInfo,
+					Message: fmt.Sprintf("%s: %d observation(s), no divergence, but %d migrated "+
+						"operation(s) have never been observed", d.State, d.Observations, len(d.Unobserved)),
+					Action: "",
+					Detail: detail.String(),
+				}
+			}
+			return CheckResult{
+				ID: "executor-divergence", Category: "internals", Status: StatusPass,
+				Message: fmt.Sprintf("%d observation(s) across every migrated operation, no divergence recorded",
+					d.Observations),
+				Action: "",
+				Detail: detail.String(),
 			}
 		},
 	}

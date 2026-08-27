@@ -31,6 +31,7 @@ which, so the difference stays visible.
 | [graphi-broad.md](graphi-broad.md) | The opt-in CGO grammar flavor |
 | [extension-developer-kit.md](extension-developer-kit.md) | **Labs.** Building a graphi extension: rule packs (`init`/`lint`/`conform`/`validate`/`install`), the conformance harness, and the `dead_code` worked example |
 | [default-tier-security.md](default-tier-security.md) | Security controls behind the CGo-free / zero-egress default tier |
+| [executor-seam-rollback.md](executor-seam-rollback.md) | Operator page for the AX-06/AX-08 executor seam: the `GRAPHI_CANARY_*` kill switch, how to verify it, and the persisted divergence record |
 | [adr/](adr) | Architecture decision records |
 | [decisions/](decisions) | Project decision records (cited by the RC evidence index) |
 | [build/](build) · [ci/](ci) · [context/](context) · [edit/](edit) · [ledger/](ledger) · [meter/](meter) · [price/](price) · [savings/](savings) | Per-subsystem docs |
