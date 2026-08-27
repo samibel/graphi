@@ -13,10 +13,11 @@ graphi has two kinds of extension you can build today, and they are different
 | **A — declarative rule packs** | versioned, schema-validated, SHA-256-pinned YAML/JSON | anyone | **no** |
 | **B — static first-party modules** | Go, compiled into the graphi binary | graphi maintainers | it *is* graphi's code |
 
-There is no third tier you can use. A trusted-subprocess tier (C) is an
-undecided spike (SW-231) and **may never ship**; a WASM tier (D) is a decided
-non-goal for this phase. graphi therefore has, deliberately, **no tier for
-untrusted extension code**.
+There is no third tier you can use. A trusted-subprocess tier (C) was spiked
+(SW-231) and **decided against for this phase** —
+[`docs/decisions/2026-08-process-extension-go-no-go.md`](decisions/2026-08-process-extension-go-no-go.md);
+a WASM tier (D) is a decided non-goal. graphi therefore has, deliberately, **no
+tier for untrusted extension code**.
 
 Everything below is offline. `init` renders templates compiled into the binary,
 `install` copies a local file, and no verb on this page opens a socket.
@@ -229,8 +230,10 @@ delta, and nothing in `surfaces/mcp/toolcalls.go` or
 
 ## 4. Not in scope here
 
-- **No process-extension SDK.** Tier C is undecided (SW-231) and no-go is a
-  planned, valid outcome. If it ever ships, every surface that offers one must
+- **No process-extension SDK.** Tier C was spiked (SW-231) and the decision is
+  **no-go** for this phase — a planned, valid outcome, recorded in
+  [`docs/decisions/2026-08-process-extension-go-no-go.md`](decisions/2026-08-process-extension-go-no-go.md)
+  with the measurements behind it. If it is ever reopened, every surface that offers one must
   say, in these words, that a subprocess extension is **trusted local code — the
   same category as a shell script you chose to run** — not a sandbox. A
   permission manifest bounds host-API access and makes it transparent; it does

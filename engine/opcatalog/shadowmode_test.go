@@ -119,6 +119,33 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 		// catalog exists to remove.
 		filepath.Join("engine", "extpack", "conformance", "contribution.go"): true,
 		filepath.Join("engine", "extpack", "conformance", "ports.go"):        true,
+		// AX-11 (SW-231): the DISPOSABLE tier-C process-extension spike, whose
+		// go/no-go is recorded as NO-GO in
+		// docs/decisions/2026-08-process-extension-go-no-go.md.
+		//
+		// It reads the catalog for one thing only: the Port and Permission
+		// vocabularies. A tier-C descriptor declares the host ports an extension
+		// may reach and re-derives its permissions with opcatalog.PermissionsFor,
+		// so the grant a user makes is expressed in the SAME closed vocabulary
+		// every other reader uses. The alternative was a second port vocabulary
+		// for the process tier, which is precisely the drift the catalog exists
+		// to remove — and a permission list that disagreed with the catalog's
+		// would be a grant nobody could audit.
+		//
+		// It mints nothing and serves no request: it holds no Catalog, registers
+		// no spec, and — unlike every other entry here — is imported by NOTHING
+		// in the tree. `go list -deps ./cmd/graphi` contains neither
+		// engine/exthost nor extensions/example-analyzer, which
+		// engine/exthost/isolation_test.go checks on every run, so the shipped
+		// binary is byte-identical with the spike present.
+		//
+		// THESE TWO LINES ARE PART OF THE SPIKE'S DELETION RECIPE. If the no-go
+		// is acted on — `rm -r engine/exthost extensions/example-analyzer` —
+		// delete them too. Leaving them would be harmless (this check only
+		// examines files that exist) but would be a stale claim about a package
+		// that does not.
+		filepath.Join("engine", "exthost", "descriptor.go"): true,
+		filepath.Join("engine", "exthost", "host.go"):       true,
 	}
 
 	// AX-05 AC-4: dispatch stays legacy. These files serve requests, and none of
