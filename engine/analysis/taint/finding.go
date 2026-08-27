@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/extpack"
 )
 
 // PathStep is one step in a taint propagation path, carrying full provenance.
@@ -39,6 +40,13 @@ type Finding struct {
 	Incomplete   bool         `json:"incomplete,omitempty"`
 	CapHit       *capHit      `json:"cap_hit,omitempty"`
 	ConfigHash   string       `json:"config_hash"`
+	// Packs names the declarative rule packs (SW-229) whose definitions produced
+	// this finding — id, version and manifest hash each. It is `omitempty`, so a
+	// finding from the built-in config serializes byte-identically to the
+	// pre-pack shape; when it is present, a consumer can tell a pack-influenced
+	// finding from a first-party one at the point of consumption rather than by
+	// reading a log (ADR 0013 D5.2).
+	Packs []extpack.Ref `json:"packs,omitempty"`
 }
 
 // TaintResult is the complete output of a taint analysis run.
@@ -47,6 +55,10 @@ type TaintResult struct {
 	Truncated   bool      `json:"truncated,omitempty"`
 	Diagnostics []string  `json:"diagnostics,omitempty"`
 	ConfigHash  string    `json:"config_hash"`
+	// Packs names every rule pack merged into the config this run used, whether
+	// or not one of its definitions matched. Per-finding attribution lives on
+	// Finding.Packs; this is the run-level record of what was in effect.
+	Packs []extpack.Ref `json:"packs,omitempty"`
 	// SinkCandidates / SourceCandidates count the graph nodes the config
 	// classified as a sink / source before propagation ran (WP-04). They let the
 	// dispatch layer tell "checked, no flow found" (candidates exist) apart from

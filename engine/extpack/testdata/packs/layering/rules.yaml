@@ -1,0 +1,15 @@
+# Example architecture-rules artifact (SW-229 / ADR 0013 tier A).
+#
+# This is DATA. graphi reads it, validates it against a schema, and evaluates the
+# rules against the community dependency graph it already builds. Nothing here is
+# executed, and nothing here can name a file or a URL.
+version: "1"
+rules:
+  - id: no-core-to-engine
+    from: core
+    to: engine
+    description: core packages are pure leaves and must not depend on the engine layer
+  - id: no-engine-to-surfaces
+    from: engine
+    to: surfaces
+    description: the engine must not depend on a transport surface

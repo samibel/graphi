@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/samibel/graphi/engine/extpack"
 	"github.com/samibel/graphi/internal/rootfile"
 )
 
@@ -34,6 +35,20 @@ const (
 // deterministic ContentHash so its findings are keyed distinctly from the
 // default's. A malformed or invalid file is a hard error (fail-closed), never a
 // silent fallback to defaults.
+//
+// SW-229: after the project config, the repository's installed and ENABLED
+// declarative rule packs (engine/extpack) are applied. The two layers are
+// deliberately NOT the same kind of thing:
+//
+//   - The project's own .graphi/taint.json may REPLACE a built-in definition.
+//     It is written by whoever owns the repository, and retuning a default is
+//     the point of having it.
+//   - A rule pack may only ADD. A pack that claims an id a built-in or the
+//     project already owns is refused with registry.ErrUnsupportedOverride —
+//     ADR 0013 threat T5, and the sentinel SW-222 reserved for exactly this.
+//
+// With no pack installed this function returns the pre-pack config byte for
+// byte, which is the rollback contract ADR 0013 §4.1 makes tier A owe.
 func LoadConfig(root string) (Config, error) {
 	base := DefaultConfig()
 	path := filepath.Join(root, ConfigDir, ConfigFile)
@@ -41,10 +56,91 @@ func LoadConfig(root string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("taint: read %s: %w", path, err)
 	}
-	if !present {
-		return base, nil
+	cfg := base
+	if present {
+		cfg, err = mergeProjectConfig(base, path, data)
+		if err != nil {
+			return Config{}, err
+		}
 	}
-	return mergeProjectConfig(base, path, data)
+	return applyPacks(root, cfg)
+}
+
+// applyPacks merges the repository's enabled rule packs into cfg.
+//
+// It returns cfg UNCHANGED — same value, same ContentHash, including the empty
+// one — when no pack is enabled. That identity is the whole reason this function
+// takes the early return rather than always recomputing: recomputing would
+// produce the same bytes today and would be one refactor away from not doing so.
+func applyPacks(root string, cfg Config) (Config, error) {
+	set, err := extpack.Load(root)
+	if err != nil {
+		return Config{}, fmt.Errorf("taint: rule packs: %w", err)
+	}
+	if set.Empty() || (len(set.TaintSources())+len(set.TaintSinks())+len(set.TaintSanitizers())) == 0 {
+		return cfg, nil
+	}
+	owned := map[string]struct{}{}
+	for _, d := range cfg.Sources {
+		owned[d.ID] = struct{}{}
+	}
+	for _, d := range cfg.Sinks {
+		owned[d.ID] = struct{}{}
+	}
+	for _, d := range cfg.Sanitizers {
+		owned[d.ID] = struct{}{}
+	}
+	claim := func(id string) error {
+		if _, exists := owned[id]; exists {
+			return extpack.RefuseOverride("taint definition", id, "graphi or this repository's .graphi/taint.json")
+		}
+		owned[id] = struct{}{}
+		return nil
+	}
+
+	out := cfg
+	out.Sources = append([]SourceDef(nil), cfg.Sources...)
+	out.Sinks = append([]SinkDef(nil), cfg.Sinks...)
+	out.Sanitizers = append([]SanitizerDef(nil), cfg.Sanitizers...)
+	for _, d := range set.TaintSources() {
+		if err := claim(d.ID); err != nil {
+			return Config{}, fmt.Errorf("taint: rule packs: %w", err)
+		}
+		ref := d.Pack
+		out.Sources = append(out.Sources, SourceDef{
+			ID: d.ID, Label: d.Label,
+			NodeKinds: append([]string(nil), d.NodeKinds...), NamePatterns: append([]string(nil), d.NamePatterns...),
+			Pack: &ref,
+		})
+	}
+	for _, d := range set.TaintSinks() {
+		if err := claim(d.ID); err != nil {
+			return Config{}, fmt.Errorf("taint: rule packs: %w", err)
+		}
+		ref := d.Pack
+		out.Sinks = append(out.Sinks, SinkDef{
+			ID: d.ID, Category: d.Category,
+			NodeKinds: append([]string(nil), d.NodeKinds...), NamePatterns: append([]string(nil), d.NamePatterns...),
+			Pack: &ref,
+		})
+	}
+	for _, d := range set.TaintSanitizers() {
+		if err := claim(d.ID); err != nil {
+			return Config{}, fmt.Errorf("taint: rule packs: %w", err)
+		}
+		ref := d.Pack
+		out.Sanitizers = append(out.Sanitizers, SanitizerDef{
+			ID: d.ID, NamePatterns: append([]string(nil), d.NamePatterns...),
+			RemoveLabels: append([]string(nil), d.RemoveLabels...),
+			Pack:         &ref,
+		})
+	}
+	out.Packs = set.Refs()
+	if err := out.Validate(); err != nil {
+		return Config{}, fmt.Errorf("taint: invalid config after merging rule packs: %w", err)
+	}
+	out.ContentHash = computeConfigHash(out)
+	return out, nil
 }
 
 // readProjectConfig is the single filesystem boundary shared by LoadConfig and
@@ -76,6 +172,31 @@ func mergeProjectConfig(base Config, path string, data []byte) (Config, error) {
 		}
 		return Config{}, fmt.Errorf("taint: parse %s: %w", path, err)
 	}
+	// Pack provenance is minted by the host, never declared by the thing it
+	// describes. A repository that could write `packs` into its own taint config
+	// could attribute its findings to a pack it never installed — provenance a
+	// repository can write for itself is not provenance (ADR 0013 D5.2, and the
+	// same shape as ADR 0006's "a surface may consume facts but must not mint
+	// them"). Same for the per-definition `pack` stamp.
+	if len(overlay.Packs) > 0 {
+		return Config{}, fmt.Errorf("taint: %s declares `packs`: pack provenance is recorded by graphi from the "+
+			"verified pack lockfile and cannot be set by a project config", path)
+	}
+	for _, d := range overlay.Sources {
+		if d.Pack != nil {
+			return Config{}, fmt.Errorf("taint: %s source %q declares `pack`: pack provenance cannot be set by a project config", path, d.ID)
+		}
+	}
+	for _, d := range overlay.Sinks {
+		if d.Pack != nil {
+			return Config{}, fmt.Errorf("taint: %s sink %q declares `pack`: pack provenance cannot be set by a project config", path, d.ID)
+		}
+	}
+	for _, d := range overlay.Sanitizers {
+		if d.Pack != nil {
+			return Config{}, fmt.Errorf("taint: %s sanitizer %q declares `pack`: pack provenance cannot be set by a project config", path, d.ID)
+		}
+	}
 	merged := mergeConfig(base, overlay)
 	if err := merged.Validate(); err != nil {
 		return Config{}, fmt.Errorf("taint: invalid config after merging %s: %w", path, err)
@@ -96,20 +217,29 @@ func mergeProjectConfig(base Config, path string, data []byte) (Config, error) {
 // "invalid" sentinel; a rejected path/type/size/read returns "unreadable".
 // Either forces a cold pass whose ingest then fails closed with the real error
 // rather than warm-starting stale findings.
+// SW-229 extends it to the pack set for exactly the same reason: an installed,
+// enabled pack is part of what the persisted findings MEAN, so installing,
+// disabling or removing one must re-certify with a cold pass. A repository with
+// neither a project config nor a pack still returns "" — the pre-pack stamp,
+// unchanged, so no existing warm start is invalidated by the upgrade.
 func ConfigFingerprint(root string) string {
 	path := filepath.Join(root, ConfigDir, ConfigFile)
 	data, present, err := readProjectConfig(root)
 	if err != nil {
 		return "unreadable"
 	}
-	if !present {
-		return ""
+	cfg := DefaultConfig()
+	if present {
+		cfg, err = mergeProjectConfig(DefaultConfig(), path, data)
+		if err != nil {
+			return "invalid"
+		}
 	}
-	cfg, err := mergeProjectConfig(DefaultConfig(), path, data)
+	packed, err := applyPacks(root, cfg)
 	if err != nil {
 		return "invalid"
 	}
-	return cfg.ContentHash
+	return packed.ContentHash
 }
 
 // mergeConfig overlays project definitions onto the base by ID (override same

@@ -1,0 +1,22 @@
+# Example taint-rules artifact (SW-229 / ADR 0013 tier A).
+#
+# Every id here is NEW. A pack may only add taint definitions: claiming an id a
+# built-in or the project's own .graphi/taint.json already owns is refused with
+# registry.ErrUnsupportedOverride.
+version: "1"
+sources:
+  - id: acme_ingest_header
+    label: user_input
+    name_patterns:
+      - acme.Ingest.Header
+sinks:
+  - id: acme_shell
+    category: command_injection
+    name_patterns:
+      - acme.Shell.Run
+sanitizers:
+  - id: acme_escape
+    name_patterns:
+      - acme.Escape
+    remove_labels:
+      - user_input

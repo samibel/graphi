@@ -93,6 +93,10 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 	sources := make(map[model.NodeId]sourceInfo)
 	sinks := make(map[model.NodeId]sinkInfo)
 	sanitizers := make(map[model.NodeId]SanitizerDef)
+	// packByDef maps a definition id to the rule pack that contributed it. It is
+	// nil for the default config, so a repository with no packs pays nothing and
+	// every finding serializes exactly as it did before SW-229.
+	packByDef := t.config.packIndex()
 
 	for _, n := range nodes {
 		if label, srcID := t.config.matchSource(n.Kind(), n.QualifiedName()); label != "" {
@@ -114,6 +118,7 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 		return TaintResult{
 			Findings:         []Finding{},
 			ConfigHash:       t.config.ContentHash,
+			Packs:            t.config.Packs,
 			SinkCandidates:   len(sinks),
 			SourceCandidates: len(sources),
 		}, nil
@@ -209,6 +214,7 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 					Path:         path,
 					PathLength:   len(path),
 					ConfigHash:   t.config.ContentHash,
+					Packs:        packsForDefs(packByDef, srcInfo.sourceID, si.sinkID),
 				}
 				allFindings = append(allFindings, finding)
 				// Continue propagation — there may be other sinks downstream.
@@ -270,6 +276,7 @@ func (t *Analyzer) run(ctx context.Context, r query.Reader) (TaintResult, error)
 		Findings:         allFindings,
 		Diagnostics:      diagnostics,
 		ConfigHash:       t.config.ContentHash,
+		Packs:            t.config.Packs,
 		SinkCandidates:   len(sinks),
 		SourceCandidates: len(sources),
 	}, nil

@@ -66,6 +66,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi refactor-preview -kind rename\|signature_change -target-symbol <id> -old-name <n> -new-name <n>` | labs | Preview a graph-aware refactor (blast radius + planned edits) without mutating. |
 | `graphi refactor …` | labs | Apply a refactor through the atomic edit saga (auditable change record + undo token). |
 | `graphi undo -token <undo-token>` | labs | Reverse a previously applied edit by its undo token. |
+| `graphi extension validate\|install\|list\|doctor\|enable\|disable\|remove` | labs | Declarative rule packs (ADR 0013 trust tier A) — see [below](#graphi-extension). Versioned, schema-validated, SHA-256-pinned YAML/JSON data that extends graphi without a rebuild and **without executing anything the pack ships**. |
 | `graphi doctor` | labs | Read-only diagnostic checks: MCP registrations, DB, PATH health. |
 | `graphi ui` | labs | Index the current repo and open the local web UI. |
 | `graphi claude` | labs | Wire graphi into Claude Code (MCP) — the single-client shortcut for `setup`. |
@@ -74,6 +75,118 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi privacy-audit [--target ./...]` | labs | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
 | `graphi savings -ledger <path>` | labs | Print the session token-savings readout from a ledger a prior MCP/daemon session wrote. |
 | `graphi version` | labs | Print the version / commit / build date stamped into the binary. |
+
+## `graphi extension`
+
+Declarative **rule packs** — ADR 0013's trust tier A, and the only extension tier
+graphi ships today. A pack is versioned, schema-validated, checksum-pinned
+**data**: graphi executes nothing a pack contains, follows no path or URL a pack
+names, and makes no network call to install one.
+
+```
+graphi extension validate <manifest-file> [--sha256 <hex>]
+graphi extension install --sha256 <hex> <manifest-file> [-root <repo>]
+graphi extension list [--json] [-root <repo>]
+graphi extension doctor [--json] [-root <repo>]
+graphi extension enable|disable|remove <pack-id> [-root <repo>]
+```
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | The operation succeeded; `doctor` found nothing needing attention. |
+| `1` | An **actionable** failure: the pack did not validate, a hash did not match, the pack is not installed, `doctor` found a problem, or the cwd is not a repository. |
+| `2` | A **usage** error: unknown subcommand, missing argument, or `install` without `--sha256`. |
+
+The split matters for scripting: `2` means you invoked it wrong, `1` means you
+invoked it right and the answer is no. A caller that cannot tell them apart
+retries the wrong one.
+
+### Installing a pack
+
+`--sha256` is **mandatory** and pins the *manifest*; the manifest pins its
+*artifact*. Both are verified before a single byte is written, and both are
+re-verified on every load — editing a pack in the store after approval does not
+take effect, it fails closed. Run `validate` first: it prints the hash and the
+exact `install` line to paste.
+
+```bash
+graphi extension validate ./packs/layering/pack.yaml
+graphi extension install --sha256 <the hash validate printed> ./packs/layering/pack.yaml
+```
+
+Installed packs live under `.graphi/extensions/` with a committed lockfile,
+`.graphi/extensions/extensions.lock.json`, recording each pack's id, version,
+kind and both hashes. Merge order is a function of the **lockfile content**, not
+of install order: two clones that installed the same packs in opposite orders
+produce identical bytes.
+
+### Manifest shape (`graphi.extension/v1alpha1`)
+
+```yaml
+schema_version: graphi.extension/v1alpha1
+id: graphi.layering          # dot-separated [a-z0-9-] segments; it is a directory name
+version: 1.0.0
+kind: architecture-rules     # or taint-rules
+api:
+  min: "1.0"                 # the host API range this pack was written for
+  max: "1.0"
+artifact:
+  path: rules.yaml           # a BARE file name next to the manifest — never a path or URL
+  sha256: <64 hex>
+capabilities:
+  provides:                  # must EXACTLY match what the artifact defines
+    - architecture-rule:no-core-to-engine
+permissions:
+  - graph:read               # the only permission a declarative pack can hold
+determinism: deterministic   # the only accepted value
+limits:
+  max_output_bytes: 4096     # binds the pack: a bigger artifact is refused
+```
+
+Unknown manifest fields are **rejected**, and an older `schema_version` fails
+rather than being read best-effort — a superseded contract spelling does not stay
+silently alive.
+
+### Pack kinds
+
+| Kind | Consumed by | Effect |
+|---|---|---|
+| `architecture-rules` | `graphi architecture-violations` | Declares forbidden dependency directions between architecture units (matched by label prefix). A violation is reported above every threshold heuristic and quotes the rule, its description and its pack's id/version/hash. |
+| `taint-rules` | the `taint` analyzer (`graphi analyze taint`) | Adds taint sources, sinks and sanitizers. Every finding a pack definition produced names that pack. |
+
+Planned tier-A kinds not implemented in this build — `framework-detection`,
+`query-presets`, `classification-rules`, `export-profiles` — are rejected with a
+message saying so, which is a different answer from "unknown kind".
+
+### What a pack can never do
+
+- **Take a capability somebody already has.** A pack may only ADD. Claiming a key
+  a built-in or another pack owns is refused with `registry.ErrUnsupportedOverride`.
+  A `taint-rules` pack cannot redefine a built-in source or sink, and it cannot
+  ship a universal sanitizer (one with no `remove_labels`), because "suppress
+  everything" is not additive capability.
+- **Name a file or a URL.** `artifact.path` is a bare file name resolved once, at
+  install time, next to the manifest the *user* named, through a root-confined
+  reader; the store keeps it under a fixed name afterwards.
+- **Ask for network, filesystem or exec access.** The permission vocabulary has
+  exactly one member.
+- **Raise a claim's confidence.** Packs add findings; they never mint or upgrade a
+  provenance tier (ADR 0013 D5).
+
+### Rolling back
+
+`graphi extension disable <id>` restores the exact pre-pack behaviour — a
+disabled pack is not loaded at all, so "disabled" and "never installed" are the
+same state, byte for byte. `remove` deletes the files and the lockfile entry.
+Neither needs a schema change or a reindex; if pack effects were baked into a
+persisted graph, `graphi rebuild` is the normal recovery.
+
+`graphi extension doctor` diagnoses each installed pack as `ok`, `disabled`,
+`hash-mismatch`, `orphaned` (lockfile entry, files gone), `invalid` or
+`untracked` (a directory no lockfile entry claims). It repairs nothing: a doctor
+that silently fixed a hash mismatch would destroy the only evidence one occurred.
 
 ## `graphi analyze`
 

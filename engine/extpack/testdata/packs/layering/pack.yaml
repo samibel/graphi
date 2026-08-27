@@ -1,0 +1,24 @@
+# Example architecture-rules PACK MANIFEST (SW-229 / ADR 0013 tier A).
+#
+# Install it offline, pinned:
+#   graphi extension validate engine/extpack/testdata/packs/layering/pack.yaml
+#   graphi extension install --sha256 <the hash validate prints> <that path>
+schema_version: graphi.extension/v1alpha1
+id: graphi.layering
+version: 1.0.0
+kind: architecture-rules
+api:
+  min: "1.0"
+  max: "1.0"
+artifact:
+  path: rules.yaml
+  sha256: 456f2f34a9d49c7283234fc91589c5dcceb9ca12441b7e044ea8d9eae873888e
+capabilities:
+  provides:
+    - architecture-rule:no-core-to-engine
+    - architecture-rule:no-engine-to-surfaces
+permissions:
+  - graph:read
+determinism: deterministic
+limits:
+  max_output_bytes: 4096

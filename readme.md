@@ -320,10 +320,10 @@ go-sitter-forest grammar seam for trusted input — see
 | **Semantic search off by default** | No embedder ships and nothing leaves loopback: `graphi search -semantic` degrades to a typed "unavailable" until you opt in — [docs/semantic-search.md](docs/semantic-search.md). |
 | **Labs and forge features are opt-in** | The Stable default tier runs with no accounts and no outbound network access. Explicitly configured Labs/forge or embedder features may contact their configured service; they are not part of that default claim. The git-history provider behind the Labs git intelligence executes the local `git` binary against the local repository — no network, no writes. |
 
-## The whole surface: 173 capabilities
+## The whole surface: 174 capabilities
 
 The [capability manifest](docs/capability-manifest.json) is generated from the
-CI-enforced coverage matrix and counts **173** capabilities: **59** CLI
+CI-enforced coverage matrix and counts **174** capabilities: **60** CLI
 subcommands, **56** MCP tools, **22** analyzers, 23 parsers, 7 surfaces, 5 feature
 units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 **Labs** — shipped, opt-in, outside the promise, and mostly invisible until now:
