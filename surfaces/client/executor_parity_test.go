@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/embed"
+	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 )
@@ -36,6 +39,18 @@ import (
 // memory store, so the capability-unavailable sentinels are live on this fixture
 // instead of hypothetical.
 func executorFixture(t *testing.T) (*Direct, map[string]model.NodeId) {
+	t.Helper()
+	store, ids := executorFixtureGraph(t)
+	direct := NewDirect(query.New(store), search.New(store)).
+		WithAnalysis(analysis.NewDefaultService(store))
+	return direct, ids
+}
+
+// executorFixtureGraph seeds the shared four-node graph both fixtures below run
+// against. It exists so the parity fixture can wire a DIFFERENT set of services
+// over the SAME graph without duplicating the seed — two seeds that drifted
+// apart would make the two fixtures silently incomparable.
+func executorFixtureGraph(t *testing.T) (*graphstore.MemStore, map[string]model.NodeId) {
 	t.Helper()
 	ctx := context.Background()
 	store := graphstore.NewMemStore()
@@ -68,9 +83,155 @@ func executorFixture(t *testing.T) (*Direct, map[string]model.NodeId) {
 	edge("A", "C", query.EdgeKindCalls, model.TierHeuristic, 0.4, "ac", []string{"e3"})
 	edge("D", "B", query.EdgeKindReferences, model.TierDerived, 0.7, "db", []string{"e4"})
 
-	direct := NewDirect(query.New(store), search.New(store)).
-		WithAnalysis(analysis.NewDefaultService(store))
+	return store, ids
+}
+
+// executorParityFixture is executorFixture plus the two OPTIONAL services whose
+// absence made two parity cases prove nothing (SW-239).
+//
+// executorFixture deliberately wires neither, so the capability-unavailable
+// sentinel and the semantic graceful skip stay live on it. But a case invoked
+// against a service that is not wired never reaches the argument at all:
+// Direct.Memory returns ErrMemoryUnavailable before it reads Op or Scope, and
+// Direct.SemanticSearch returns the fixed graceful-skip document regardless of
+// Limit. Both cases therefore passed for the wrong reason — mutating the
+// argument left the parity green (backlog :864).
+//
+// So the byte-parity fixture wires:
+//
+//   - a memory store, seeded with entries that differ in scope, notebook and
+//     tags, so a list/recall/export request can observably depend on all four
+//     of the fields Direct.Memory actually reads;
+//   - the deterministic, dependency-free embed.MockEmbedder over an in-memory
+//     vector index holding every seeded node, so semantic search returns real
+//     ranked hits and Limit observably truncates them. It is pure Go: no CGO,
+//     no model files and no network, so the CGo-free and zero-egress gates are
+//     untouched.
+//
+// Still deliberately absent: the savings ledger. The savings case is the one
+// that must keep proving the capability-unavailable sentinel travels the
+// adapter path unchanged.
+func executorParityFixture(t *testing.T) (*Direct, map[string]model.NodeId) {
+	t.Helper()
+	ctx := context.Background()
+	graph, ids := executorFixtureGraph(t)
+	enrichParityGraph(t, graph, ids)
+
+	store, err := memory.NewMemStore(nil)
+	if err != nil {
+		t.Fatalf("memory.NewMemStore: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	// Seeded so that scope, notebook and limit each select a DIFFERENT subset:
+	// three entries match (project, nb), one matches (project, other) and one
+	// matches (session, nb). A mutation of any one of them changes the answer.
+	for _, seed := range []struct {
+		scope, notebook, payload string
+		tags                     []string
+	}{
+		{"project", "nb", "alpha", []string{"topic/one"}},
+		{"project", "nb", "beta", []string{"topic/two"}},
+		{"project", "nb", "gamma", []string{"topic/three"}},
+		{"project", "other", "delta", []string{"topic/four"}},
+		{"session", "nb", "epsilon", []string{"topic/five"}},
+	} {
+		if _, err := store.StoreMemoryWithProvenance(ctx, memory.ProvenanceInput{
+			Scope:    seed.scope,
+			Notebook: seed.notebook,
+			Tags:     seed.tags,
+			Payload:  seed.payload,
+		}); err != nil {
+			t.Fatalf("seed memory %q: %v", seed.payload, err)
+		}
+	}
+
+	mock := embed.NewMockEmbedder(16)
+	registry := embed.NewRegistry()
+	if err := registry.Register(mock); err != nil {
+		t.Fatalf("register mock embedder: %v", err)
+	}
+	index := embed.NewIndex()
+	nodes, err := graph.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("Nodes: %v", err)
+	}
+	for _, n := range nodes {
+		vecs, eerr := mock.Embed(ctx, []string{n.QualifiedName()})
+		if eerr != nil {
+			t.Fatalf("embed %s: %v", n.QualifiedName(), eerr)
+		}
+		index.Put(n.ID(), vecs[0])
+	}
+	searchSvc := search.New(graph).WithSemantic(registry, index, graph)
+	direct := NewDirect(query.New(graph), searchSvc).
+		WithAnalysis(analysis.NewDefaultService(graph)).
+		WithMemory(store)
+
 	return direct, ids
+}
+
+// enrichParityGraph adds the shapes the four-node base graph cannot express, so
+// that arguments which the base graph could not distinguish become observable
+// (SW-239). Each addition exists for a NAMED argument; nothing here is decoration:
+//
+//   - p.TestA / p.TestB in *_test.go files, calling p.A and p.B: test_impact's
+//     Depth now selects a different set of test targets (p.TestB is one reverse
+//     hop from p.B, p.TestA is two), instead of every depth yielding the same
+//     "no test files known" answer.
+//   - p.C → p.D: forward impact from p.B now reaches TWO nodes, so MaxNodes = 1
+//     truncates instead of being a cap nothing reaches.
+//   - four annotated Java symbols: framework_map's providers are annotation
+//     tables keyed by source language, so a graph of Go nodes yields the empty
+//     document at EVERY MaxItems. With these, MaxItems truncates.
+//
+// The base graph is deliberately left alone: it is shared with the AX-06 canary
+// and migration fixtures, and widening it there would move evidence that has
+// nothing to do with this story.
+func enrichParityGraph(t *testing.T, store *graphstore.MemStore, ids map[string]model.NodeId) {
+	t.Helper()
+	ctx := context.Background()
+
+	put := func(kind, qualified, path string, annotations []string) model.NodeId {
+		t.Helper()
+		n, err := model.NewNode(kind, qualified, path, 1, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(annotations) > 0 {
+			n = n.WithMeta(model.NewNodeMeta(annotations, nil))
+		}
+		if err := store.PutNode(ctx, n); err != nil {
+			t.Fatal(err)
+		}
+		ids[qualified] = n.ID()
+		return n.ID()
+	}
+	link := func(from, to model.NodeId, kind string) {
+		t.Helper()
+		e, err := model.NewEdge(from, to, kind, model.TierConfirmed, 1, "sw239", []string{"e-sw239"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := store.PutEdge(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	testA := put("function", "p.TestA", "p/A_test.go", nil)
+	testB := put("function", "p.TestB", "p/B_test.go", nil)
+	link(testA, ids["A"], query.EdgeKindCalls)
+	link(testB, ids["B"], query.EdgeKindCalls)
+	link(ids["C"], ids["D"], query.EdgeKindCalls)
+
+	for _, java := range []struct{ qualified, annotation string }{
+		{"com.x.Ctl", "RestController"},
+		{"com.x.Svc", "Service"},
+		{"com.x.Repo", "Repository"},
+		{"com.x.Cfg", "Configuration"},
+	} {
+		put("class", java.qualified, "src/main/java/com/x/"+strings.TrimPrefix(java.qualified, "com.x.")+".java",
+			[]string{java.annotation})
+	}
 }
 
 // executorParityCase is one adapted operation invoked two INDEPENDENT ways.
@@ -230,10 +391,20 @@ func executorParityCases(ids map[string]model.NodeId) []executorParityCase {
 			legacy:    func(ctx context.Context, c Client) ([]byte, error) { return c.Savings(ctx) },
 		},
 		{
+			// SW-239: the fixture now wires a memory store, so this case runs
+			// a REAL list against seeded entries. Every field it carries
+			// selects a different subset — scope and notebook each exclude a
+			// seeded entry, and Limit truncates the three that remain to two —
+			// so the case fails when any of them stops reaching the engine
+			// (executor_argument_fidelity_test.go proves each one does).
 			operation: "memory",
-			args:      &MemoryArgs{MemoryRequest{Op: "list", Scope: "project"}},
+			args: &MemoryArgs{MemoryRequest{
+				Op: "list", Scope: "project", Notebook: "nb", Limit: 2,
+			}},
 			legacy: func(ctx context.Context, c Client) ([]byte, error) {
-				return c.Memory(ctx, MemoryRequest{Op: "list", Scope: "project"})
+				return c.Memory(ctx, MemoryRequest{
+					Op: "list", Scope: "project", Notebook: "nb", Limit: 2,
+				})
 			},
 		},
 	}
@@ -260,7 +431,7 @@ func executorParityCases(ids map[string]model.NodeId) []executorParityCase {
 // the adapter path and the legacy path agree byte for byte and error for error,
 // in both directions.
 func TestExecutor_AdapterByteParity(t *testing.T) {
-	direct, ids := executorFixture(t)
+	direct, ids := executorParityFixture(t)
 	executor, err := NewExecutor(direct)
 	if err != nil {
 		t.Fatalf("NewExecutor: %v", err)
@@ -357,7 +528,7 @@ func truncateForDiff(b []byte) string {
 // representative-set story invites: an adapter added later without a parity case
 // would otherwise ship unproven. The build fails instead.
 func TestExecutor_EveryAdaptedOperationHasParityEvidence(t *testing.T) {
-	direct, ids := executorFixture(t)
+	direct, ids := executorParityFixture(t)
 	executor, err := NewExecutor(direct)
 	if err != nil {
 		t.Fatalf("NewExecutor: %v", err)
