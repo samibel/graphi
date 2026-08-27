@@ -16,8 +16,11 @@
 **Status:** decided · **Date:** 2026-08-27 · **Story:** SW-231 (AX-11) ·
 **Spec:** Extension Platform Kernel · **Governing ADR:**
 [0013 — Extension trust tiers](../adr/0013-extension-trust-tiers.md) ·
-**Measured at:** `ec7f693` on `sw-231-process-extension-spike`, branched from
-`main` at `abfa928`
+**Measured at:** `ec7f693` on branch `sw-231-process-extension-spike`, branched
+from `main` at `abfa928`. (The later commit on that branch adds this document,
+one error-message refinement and the catalog-reader allowlist entry of §5.8;
+none of them moves a number here — `engine/exthost` is not in the shipped import
+closure either way, which is exactly the property §2.3 measures.)
 
 ---
 
@@ -294,7 +297,8 @@ the spike, and they remain true whether or not tier C is ever revisited.
   ./cmd/graphi` contains neither package) and
   `TestSW231_AC6_SpikeIsConfinedToItsOwnDirectories` (a `git grep` over the
   repository finds no reference outside `engine/exthost/`,
-  `extensions/example-analyzer/` and `docs/decisions/`).
+  `extensions/example-analyzer/`, `docs/decisions/` and the one
+  individually-named exception of §5.8).
 - **Deleting it is one command plus one sweep**, and the guards delete with it:
 
   ```

@@ -517,13 +517,13 @@ func (e *Extension) diagnoseStreamEnd() error {
 		ErrCrashed, e.loaded.Descriptor.ID, status, e.stderrTail())
 }
 
+// diagnoseWriteFailure explains a failed write to the child's stdin.
+//
+// It is almost always a dead child (EPIPE), so the report names the extension
+// and quotes its last words rather than surfacing a raw pipe error. It does NOT
+// drain the frame channel: a frame already in flight is somebody else's evidence,
+// and discarding it to make this message tidier would destroy it.
 func (e *Extension) diagnoseWriteFailure(err error) error {
-	// A failed write to the child's stdin almost always means the child is gone;
-	// say which, rather than reporting a pipe error at the user.
-	select {
-	case <-e.frames:
-	default:
-	}
 	return fmt.Errorf("%w: could not send the request to %s: %v%s",
 		ErrCrashed, e.loaded.Descriptor.ID, err, e.stderrTail())
 }
