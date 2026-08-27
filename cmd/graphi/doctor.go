@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/samibel/graphi/cmd/internal/runtime"
+	"github.com/samibel/graphi/internal/divergence"
 	"github.com/samibel/graphi/internal/doctor"
 	"github.com/samibel/graphi/internal/mcpconfig"
 	"github.com/samibel/graphi/internal/releaseinfo"
@@ -27,6 +28,16 @@ func runDoctor(args []string) int {
 			jsonOut = true
 			rest = append(rest[:i], rest[i+1:]...)
 			break
+		}
+	}
+	for _, a := range rest {
+		if a == "--divergence" || a == "-divergence" {
+			// SW-232 AC-2: the executor-seam divergence record, read WITHOUT
+			// starting a server. It is a mode of the existing diagnostic verb
+			// rather than a new top-level subcommand on purpose — the verb set
+			// is frozen by the AX-00 baseline and the coverage matrix, and this
+			// story adds observability, not surface.
+			return runDoctorDivergence(os.Stdout, jsonOut)
 		}
 	}
 	if dbPath == "" && socket == "" {
@@ -65,6 +76,8 @@ func runDoctor(args []string) int {
 	reg.Register(doctor.LocalFirstCheck())
 	seamPositions, seamErr := executorSeamPositions()
 	reg.Register(doctor.ExecutorSeamCheck(seamPositions, seamErr))
+	seamDivergence, divergenceErr := executorDivergence()
+	reg.Register(doctor.ExecutorDivergenceCheck(seamDivergence, divergenceErr))
 	reg.Register(doctor.KnownDefectsCheck())
 
 	runner := doctor.NewRunner(reg)
@@ -122,6 +135,80 @@ func executorSeamPositions() ([]doctor.ExecutorSeamPosition, error) {
 			Overridden: p.Overridden,
 			EnvVar:     runtime.EnvCanaryModeFor(p.Operation),
 		})
+	}
+	return out, nil
+}
+
+// runDoctorDivergence renders the persisted executor-seam divergence record
+// (SW-232 AC-2/AC-3) and returns the process exit code.
+//
+// # Why this reads a file and starts nothing
+//
+// The record is written by the long-running servers that dispatch through the
+// seam (`graphi mcp`, `graphi serve`) and read here, in a different, short-lived
+// process. That asymmetry is the entire reason the record had to become durable:
+// before SW-232 the only evidence lived in the writing process's memory, so
+// there was no reader at all. This path therefore opens the state directory and
+// nothing else — no store, no daemon, no bind.
+//
+// # Why it exits 0 on a DIVERGED record
+//
+// It is a readout, not a gate. A divergence is reported in the document, and
+// separately WARNed by the `executor-divergence` doctor check — which does not
+// change `graphi doctor`'s exit code either, since only a FAIL does. Making the
+// reader itself exit non-zero would put a second, quieter policy in a place
+// people pipe into jq. Exit 1 is reserved for "the record could not be read",
+// the one case where the OUTPUT cannot be trusted.
+func runDoctorDivergence(w io.Writer, jsonOut bool) int {
+	report, err := divergence.Read(state.StateDir())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "graphi doctor: read divergence record: %v\n", err)
+		return 1
+	}
+	doc := divergence.Assess(report, client.MigratedOperations())
+	if jsonOut {
+		if err := divergence.RenderJSON(w, doc); err != nil {
+			fmt.Fprintf(os.Stderr, "graphi doctor: render divergence json: %v\n", err)
+			return 1
+		}
+		return 0
+	}
+	if err := divergence.RenderHuman(w, doc); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi doctor: render divergence: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+// executorDivergence reads the persisted record for the doctor check, in the
+// composition root, for the same reason executorSeamPositions does its reading
+// here: internal/doctor computes only over what it is given.
+//
+// A read failure is RETURNED, not swallowed into an empty record. An empty
+// record and an unreadable one are different facts and the check renders them
+// differently — collapsing them would make an unreadable state directory look
+// like a clean one, which is the false green this whole story exists to remove.
+func executorDivergence() (doctor.ExecutorDivergence, error) {
+	report, err := divergence.Read(state.StateDir())
+	if err != nil {
+		return doctor.ExecutorDivergence{}, err
+	}
+	doc := divergence.Assess(report, client.MigratedOperations())
+	out := doctor.ExecutorDivergence{
+		State:        string(doc.State),
+		Directory:    doc.Directory,
+		Observations: doc.Observations,
+		Mismatches:   doc.Mismatches,
+		Unreadable:   doc.Unreadable,
+		Pruned:       doc.Pruned,
+	}
+	for _, op := range doc.Operations {
+		switch op.State {
+		case divergence.StateDiverged:
+			out.Diverged = append(out.Diverged, op.Operation)
+		case divergence.StateUnknown:
+			out.Unobserved = append(out.Unobserved, op.Operation)
+		}
 	}
 	return out, nil
 }

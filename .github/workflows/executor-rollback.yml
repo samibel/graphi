@@ -1,0 +1,130 @@
+# SW-232 (AX-12a) AC-5 — the executor-seam rollback, exercised.
+#
+# docs/executor-seam-rollback.md tells an operator how to force the AX-06/AX-08
+# executor seam back to `legacy`, how to check that it took, and how to return
+# to the shipped configuration. A documented rollback that nobody runs is a
+# claim, not a capability: this workflow runs the page's procedure on every pull
+# request, so a rollback that stopped working fails CI instead of failing an
+# operator mid-incident.
+#
+# The three legs mirror the page:
+#
+#   force     — GRAPHI_CANARY_ALL=legacy, then the parity and characterization
+#               suites in that position. They are the suites that would notice
+#               if the forced position changed an answer.
+#   read      — the divergence record read WITHOUT starting a server, asserted
+#               to report UNKNOWN on a fresh state directory (SW-232 AC-3) —
+#               absence of evidence must not render as evidence of parity.
+#   round-trip — the variable is removed and every operation must return to the
+#               compiled-in default. Half a rollback is the failure mode that
+#               strands an install in a position nobody chose.
+#
+# This workflow deliberately does NOT flip the shipped default to `shadow`. The
+# default stays `legacy`; moving it is a release decision taken elsewhere.
+name: executor-rollback
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  executor-seam-rollback:
+    name: executor-seam-rollback
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build the binary the rollback is exercised against
+        run: go build -o "$RUNNER_TEMP/graphi" ./cmd/graphi/
+
+      # LEG 1 — force the kill switch to legacy and run the suites in that
+      # position. ./surfaces is where the cross-surface parity tests and the
+      # characterization goldens live; ./surfaces/client owns the seam itself;
+      # engine/conformance is the full-vs-incremental determinism matrix; and
+      # ./internal/parity is the hermetic FR-7 harness (the real-repo matrix is
+      # a dispatch-only workflow and deliberately not a PR gate).
+      - name: force legacy — parity + characterization suites
+        env:
+          GRAPHI_CANARY_ALL: "legacy"
+        run: |
+          go test ./surfaces/ ./surfaces/client/ ./engine/conformance/ ./internal/parity/ -count=1
+          go test ./surfaces/ -run 'Parity|Characterization|AX0' -count=1
+
+      # LEG 1b — the same suites with the switch set per operation rather than
+      # by the whole-seam variable, because that is the form the page tells an
+      # operator to reach for when rolling ONE operation back.
+      - name: force legacy per operation — the seam's own suites
+        env:
+          GRAPHI_CANARY_DEAD_CODE: "legacy"
+          GRAPHI_CANARY_COMPOUND: "legacy"
+        run: go test ./surfaces/client/ ./cmd/internal/runtime/ -count=1
+
+      # LEG 2 — the read path, without a server. A fresh state directory has no
+      # observation in it, so the honest answer is UNKNOWN. A run that printed
+      # a zero-divergence verdict here would be the false green this story
+      # exists to remove, so the assertion is on the WORD.
+      - name: divergence record reads UNKNOWN, not zero divergences
+        env:
+          GRAPHI_CANARY_ALL: "legacy"
+        run: |
+          export XDG_STATE_HOME="$RUNNER_TEMP/state-empty"
+          mkdir -p "$XDG_STATE_HOME"
+          "$RUNNER_TEMP/graphi" doctor -divergence --json > "$RUNNER_TEMP/divergence.json"
+          cat "$RUNNER_TEMP/divergence.json"
+          state=$(jq -r '.state' < "$RUNNER_TEMP/divergence.json")
+          if [ "$state" != "UNKNOWN" ]; then
+            echo "::error::an unobserved seam reported state=$state; it must report UNKNOWN"
+            exit 1
+          fi
+          unknown=$(jq '[.operations[] | select(.state != "UNKNOWN")] | length' < "$RUNNER_TEMP/divergence.json")
+          if [ "$unknown" != "0" ]; then
+            echo "::error::an unobserved operation reported a state other than UNKNOWN"
+            exit 1
+          fi
+          "$RUNNER_TEMP/graphi" doctor -divergence | tee "$RUNNER_TEMP/divergence.txt"
+          grep -q 'NOT' "$RUNNER_TEMP/divergence.txt"
+
+      # LEG 3 — the round-trip. With no GRAPHI_CANARY_* variable set, every
+      # operation must read `legacy (compiled-in default)`: the rollback
+      # returned the install to the shipped configuration, not to a pinned one
+      # that merely behaves like it.
+      - name: round-trip — unsetting returns every operation to the default
+        run: |
+          for var in $(env | grep -o '^GRAPHI_CANARY_[A-Z_]*' || true); do unset "$var"; done
+          export XDG_STATE_HOME="$RUNNER_TEMP/state-roundtrip"
+          mkdir -p "$XDG_STATE_HOME"
+          # `graphi doctor` exits non-zero on any unrelated finding (no MCP
+          # client registered on a CI runner, for one), so the verdict is read
+          # from the DOCUMENT, not from the exit status.
+          set +e
+          "$RUNNER_TEMP/graphi" doctor --json > "$RUNNER_TEMP/doctor.json"
+          set -e
+          jq -e -r '.checks[] | select(.id=="executor-seam") | .message' \
+            < "$RUNNER_TEMP/doctor.json" | tee "$RUNNER_TEMP/seam-message.txt"
+          grep -q '10 legacy' "$RUNNER_TEMP/seam-message.txt"
+          jq -e -r '.checks[] | select(.id=="executor-seam") | .detail' \
+            < "$RUNNER_TEMP/doctor.json" > "$RUNNER_TEMP/seam-detail.txt"
+          cat "$RUNNER_TEMP/seam-detail.txt"
+          defaults=$(grep -c 'legacy (compiled-in default)' "$RUNNER_TEMP/seam-detail.txt" || true)
+          pinned=$(grep -c 'legacy (GRAPHI_CANARY_' "$RUNNER_TEMP/seam-detail.txt" || true)
+          if [ "$defaults" != "10" ] || [ "$pinned" != "0" ]; then
+            echo "::error::round-trip failed: $defaults operation(s) on the compiled-in default, $pinned still pinned by a variable"
+            exit 1
+          fi
+          go test ./cmd/internal/runtime/ -run 'Canary|SW232' -count=1
+
+      # The seam's own kill-switch semantics, asserted directly: the three
+      # positions install, the per-operation variable wins over the whole-seam
+      # one, and an invalid value fails closed rather than degrading quietly.
+      - name: kill-switch semantics
+        run: go test ./cmd/internal/runtime/ ./internal/divergence/ ./internal/doctor/ -count=1

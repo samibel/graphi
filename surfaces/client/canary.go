@@ -143,6 +143,24 @@ package client
 // right scope for the question they are asking. `graphi doctor` reports which
 // position each operation is in, so the switch is auditable without being paid
 // for. (Backlog entry "PRECONDITION FOR SW-228", 2026-08-27.)
+//
+// ---------------------------------------------------------------------------
+//
+// # SW-232 (AX-12a) — the record became durable, the default did not move
+//
+// The paragraph above is the diagnosis; this story is half the cure. The
+// process-global counter is still here and still has exactly the scope it
+// always had, but every dual-run outcome — agreement as well as divergence — is
+// now ALSO handed to an installed DivergenceRecorder, which the composition
+// root backs with a per-process segment file under the graphi state directory.
+// A restart no longer erases the evidence, and `graphi doctor -divergence`
+// reads it without starting a server.
+//
+// Two things this story deliberately did NOT do. The kill-switch default stays
+// `legacy`: making shadow the default is a release decision with a latency
+// price, taken separately. And nothing about the legacy dispatch path changed —
+// the recorder is consulted only after a comparison has already happened, which
+// on the shipped position never occurs.
 
 import (
 	"bytes"
@@ -628,6 +646,79 @@ func ResetCanaryMismatches() {
 	canaryMismatchLast = CanaryMismatch{}
 }
 
+// DivergenceRecorder receives every dual-run OBSERVATION the seam makes — the
+// agreements as well as the disagreements — so the record can distinguish "the
+// two paths were compared and matched" from "nothing was ever compared".
+//
+// # Why an interface, and why primitives
+//
+// The durable record lives in internal/divergence, which this package does not
+// import. It cannot: internal/divergence is where the state directory, the
+// segment layout and the file writing live, and surfaces/client is a surface —
+// it composes capabilities, it does not own on-disk state. The composition root
+// (cmd/internal/runtime) imports both and installs one into the other, exactly
+// as it already does for the kill-switch positions and for the doctor readout.
+//
+// The method takes primitives rather than a CanaryMismatch for the same reason:
+// with a struct in the signature, internal/divergence would have to import this
+// package to implement the interface, and the dependency this design avoids
+// would reappear pointing the other way.
+//
+// # Why observations and not only mismatches
+//
+// SW-232 AC-3. A record that only counted mismatches would read zero both when
+// the paths agreed on ten thousand calls and when the seam had never run at
+// all, and a reader cannot tell those apart. Counting observations is what lets
+// the read path say UNKNOWN honestly.
+type DivergenceRecorder interface {
+	// RecordDivergence records one dual-run comparison. mismatch reports
+	// whether the two paths disagreed; kind, legacy and executor describe the
+	// disagreement and are empty when there was none.
+	RecordDivergence(operation string, mismatch bool, kind, legacy, executor string)
+}
+
+// divergenceRecorder holds the installed recorder, or a nil one. It is an
+// atomic.Value read on the shadow path only: `legacy`, the shipped position,
+// returns before it is ever consulted, so the default dispatch cost is
+// unchanged (SW-232 AC-6).
+var divergenceRecorder atomic.Value // holds divergenceRecorderHolder
+
+// divergenceRecorderHolder makes "no recorder installed" storable in an
+// atomic.Value, which rejects a nil interface value.
+type divergenceRecorderHolder struct{ recorder DivergenceRecorder }
+
+// SetDivergenceRecorder installs the durable recorder. Passing nil uninstalls
+// it, which is what tests do to keep their observations out of the real state
+// directory.
+//
+// The default is UNINSTALLED. A library embedding surfaces/client keeps today's
+// behaviour — an in-process counter and no file I/O — and only a graphi process
+// that went through the composition root persists anything.
+func SetDivergenceRecorder(r DivergenceRecorder) {
+	divergenceRecorder.Store(divergenceRecorderHolder{recorder: r})
+}
+
+// installedDivergenceRecorder returns the recorder, or nil.
+func installedDivergenceRecorder() DivergenceRecorder {
+	holder, ok := divergenceRecorder.Load().(divergenceRecorderHolder)
+	if !ok {
+		return nil
+	}
+	return holder.recorder
+}
+
+// observeCanary is the single place a dual-run outcome is recorded. It keeps
+// the in-process counter the AX-06 fixture suite asserts on AND feeds the
+// durable record, so the two can never disagree about what happened.
+func observeCanary(operation string, mismatch CanaryMismatch, differs bool) {
+	if differs {
+		recordCanaryMismatch(mismatch)
+	}
+	if recorder := installedDivergenceRecorder(); recorder != nil {
+		recorder.RecordDivergence(operation, differs, mismatch.Kind, mismatch.Legacy, mismatch.Executor)
+	}
+}
+
 // canaryComparableSentinels are the typed sentinels an error on this path may
 // carry, across every Client implementation the canary can sit behind: Direct's
 // capability sentinels, the daemon client's ErrAgentIntelUnavailable, and the
@@ -694,12 +785,12 @@ func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, e
 			// answers from legacy is a kill switch that lies about its position.
 			return nil, err
 		}
-		recordCanaryMismatch(CanaryMismatch{
+		observeCanary(operation, CanaryMismatch{
 			Operation: operation,
 			Kind:      "executor-unavailable",
 			Legacy:    "(ran)",
 			Executor:  err.Error(),
-		})
+		}, true)
 		return args.invoke(ctx, c)
 	}
 
@@ -711,9 +802,8 @@ func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, e
 	// the experiment runs and cannot be influenced by it.
 	legacyBytes, legacyErr := args.invoke(ctx, c)
 	executorBytes, executorErr := executeCanary(ctx, executor, args)
-	if mismatch, differs := compareCanaryOutcomes(operation, legacyBytes, legacyErr, executorBytes, executorErr); differs {
-		recordCanaryMismatch(mismatch)
-	}
+	mismatch, differs := compareCanaryOutcomes(operation, legacyBytes, legacyErr, executorBytes, executorErr)
+	observeCanary(operation, mismatch, differs)
 	return legacyBytes, legacyErr
 }
 

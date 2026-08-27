@@ -21,8 +21,18 @@ import (
 // exactly the operation it names, and GRAPHI_CANARY_ALL exists so an operator
 // can still move the whole seam in one action.
 
+// restoreCanaryMode gives one test a clean kill switch: no installed position,
+// and no ambient GRAPHI_CANARY_* variable.
+//
+// The environment half was added by SW-232, whose rollback CI leg deliberately
+// runs this package with GRAPHI_CANARY_* set — exercising a rollback is the
+// leg's whole purpose. Without the clearing, a per-operation variable in the
+// runner's environment would win over the GRAPHI_CANARY_ALL these tests set
+// (that precedence is itself a tested property), and the suite would quietly be
+// asserting against the runner instead of against its own inputs.
 func restoreCanaryMode(t *testing.T) {
 	t.Helper()
+	clearCanaryEnv(t)
 	t.Cleanup(client.ResetCanaryModes)
 	client.ResetCanaryModes()
 }

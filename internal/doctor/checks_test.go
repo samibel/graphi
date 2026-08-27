@@ -1146,7 +1146,10 @@ func TestExecutorSeamCheckReportsThePositions(t *testing.T) {
 	for _, want := range []string{
 		"compound: legacy (compiled-in default)",
 		"dead_code: legacy (compiled-in default)",
-		"not persisted",
+		// SW-232 replaced the old "not persisted" disclosure: the record IS
+		// durable now, and the detail has to say where to read it instead of
+		// warning that it cannot be read at all.
+		"graphi doctor -divergence",
 	} {
 		if !strings.Contains(res.Detail, want) {
 			t.Errorf("detail is missing %q:\n%s", want, res.Detail)
@@ -1202,5 +1205,119 @@ func TestExecutorSeamCheckFailsOnAnInvalidVariable(t *testing.T) {
 	}
 	if res.Action == "" {
 		t.Error("a fail with no action leaves the operator nowhere to go")
+	}
+}
+
+// SW-232 (AX-12a): the persisted divergence readout. Its four outcomes are
+// exercised because the honesty rule lives in exactly the distinction between
+// two of them — an unobserved seam and an observed-clean one.
+func TestExecutorDivergenceCheckReportsUnknownNotZeroDivergences(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:      "UNKNOWN",
+		Directory:  "/tmp/state/executor-divergence",
+		Unobserved: []string{"dead_code", "compound"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("an unobserved seam reports %q, want %q — it is not a health failure", res.Status, StatusInfo)
+	}
+	if !strings.Contains(res.Message, "UNKNOWN") {
+		t.Errorf("message does not say UNKNOWN: %q", res.Message)
+	}
+	if !strings.Contains(res.Message, "NOT a statement that the two paths agree") {
+		t.Errorf("message lets UNKNOWN be read as parity: %q", res.Message)
+	}
+	if res.Status == StatusPass {
+		t.Error("an unobserved seam must never read PASS")
+	}
+	if !strings.Contains(res.Detail, "never observed (UNKNOWN, not agreed): compound, dead_code") {
+		t.Errorf("detail does not name the unobserved operations:\n%s", res.Detail)
+	}
+}
+
+func TestExecutorDivergenceCheckWarnsOnARecordedDivergence(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "DIVERGED",
+		Directory:    "/tmp/state/executor-divergence",
+		Observations: 12,
+		Mismatches:   3,
+		Diverged:     []string{"dead_code"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusWarn {
+		t.Fatalf("a recorded divergence reports %q, want %q", res.Status, StatusWarn)
+	}
+	if !strings.Contains(res.Message, "dead_code") {
+		t.Errorf("message does not name the diverging operation: %q", res.Message)
+	}
+	if !strings.Contains(res.Action, "GRAPHI_CANARY_") || !strings.Contains(res.Action, "rollback") {
+		t.Errorf("the action does not point at the documented rollback: %q", res.Action)
+	}
+}
+
+// PASS is earned only when EVERY migrated operation was actually observed. A
+// partial record stays INFO, so a seam that was exercised on one operation
+// cannot be read as a clean bill of health for the other nine.
+func TestExecutorDivergenceCheckDoesNotPassOnAPartialRecord(t *testing.T) {
+	partial := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "PARTIAL-UNKNOWN",
+		Observations: 40,
+		Unobserved:   []string{"compound"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if partial.Status != StatusInfo {
+		t.Fatalf("a partial record reports %q, want %q", partial.Status, StatusInfo)
+	}
+	if !strings.Contains(partial.Message, "never been observed") {
+		t.Errorf("message hides the unobserved operations: %q", partial.Message)
+	}
+
+	complete := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 40,
+	}, nil).Run(context.Background(), fakeEnv{})
+	if complete.Status != StatusPass {
+		t.Fatalf("a complete, clean record reports %q, want %q", complete.Status, StatusPass)
+	}
+}
+
+// An unreadable record is a WARN, not an empty one: "I could not read it" and
+// "there is nothing in it" are different facts, and collapsing them is the
+// false green this check exists to prevent.
+func TestExecutorDivergenceCheckWarnsWhenTheRecordCannotBeRead(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{}, errors.New("permission denied")).
+		Run(context.Background(), fakeEnv{})
+	if res.Status != StatusWarn {
+		t.Fatalf("an unreadable record reports %q, want %q", res.Status, StatusWarn)
+	}
+	if !strings.Contains(res.Action, "UNKNOWN, not clean") {
+		t.Errorf("the action lets an unreadable record pass as clean: %q", res.Action)
+	}
+}
+
+// A partially-unreadable record discloses that its totals are a lower bound.
+func TestExecutorDivergenceCheckDisclosesUnreadableSegments(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 5,
+		Unreadable:   2,
+	}, nil).Run(context.Background(), fakeEnv{})
+	if !strings.Contains(res.Detail, "lower bound") {
+		t.Errorf("detail does not disclose that the totals are incomplete:\n%s", res.Detail)
+	}
+}
+
+// A record that has pruned segments discloses that its totals are a lower bound
+// too. Pruning is by age alone, with no writer-liveness concept, so what it
+// dropped is not necessarily ancient history — and an operator reading the
+// doctor detail must not have to know that to read the number correctly.
+func TestExecutorDivergenceCheckDisclosesPrunedSegments(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 5,
+		Pruned:       3,
+	}, nil).Run(context.Background(), fakeEnv{})
+	if !strings.Contains(res.Detail, "3 pruned segment(s)") {
+		t.Errorf("detail does not report the pruned segments:\n%s", res.Detail)
+	}
+	if !strings.Contains(res.Detail, "lower bound") {
+		t.Errorf("detail does not disclose that the totals are incomplete:\n%s", res.Detail)
 	}
 }
