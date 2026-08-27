@@ -19,6 +19,7 @@ package exthost
 //     same process and getting a correct answer out of it.
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os/exec"
@@ -174,4 +175,46 @@ func TestSW231Journey_ChildEnvironmentIsEmptyByDefaultNotInherited(t *testing.T)
 	if !strings.Contains(string(res.Findings), `"total":4`) {
 		t.Fatalf("unexpected findings: %s", res.Findings)
 	}
+}
+
+// AC-3 — CANCELLATION, as distinct from expiry.
+//
+// The acceptance criterion names timeout AND cancellation, and they are
+// different events: a timeout means the extension failed its contract, a
+// cancellation means the caller changed its mind. Both must kill the process —
+// an abandoned analysis is still a running analysis — and the messages must not
+// blame the extension for the caller's decision.
+func TestSW231Journey_AC3_CallerCancellationKillsTheProcess(t *testing.T) {
+	descriptor := stageExtension(t, descriptorOptions{
+		// A generous descriptor limit, so a pass proves the CALLER's context
+		// ended the call and not the descriptor's deadline.
+		Mutate: func(d *Descriptor) { d.Limits.TimeoutMS = 30_000 },
+	})
+	ext, _ := startExample(t, descriptor, "hang")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(150 * time.Millisecond)
+		cancel()
+	}()
+	start := time.Now()
+	res, err := ext.Call(ctx, exampleOperation, json.RawMessage(`{"symbol":"Hel"}`))
+	elapsed := time.Since(start)
+
+	if !errors.Is(err, ErrTimeout) {
+		t.Fatalf("Call on a cancelled context = %v, want ErrTimeout", err)
+	}
+	if len(res.Findings) != 0 {
+		t.Fatalf("a cancelled call must yield no findings; got %s", res.Findings)
+	}
+	if elapsed > 25*time.Second {
+		t.Fatalf("cancellation took %v — the call waited for the descriptor deadline instead", elapsed)
+	}
+	if !strings.Contains(err.Error(), "the caller cancelled") {
+		t.Errorf("a cancellation must not read as the extension missing a deadline; got: %v", err)
+	}
+	if ext.cmd.ProcessState == nil {
+		t.Fatal("cancellation left the process running: an abandoned analysis is still a running one")
+	}
+	hostStillHealthy(t)
 }

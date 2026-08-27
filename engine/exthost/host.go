@@ -401,6 +401,15 @@ func (e *Extension) Call(ctx context.Context, operation string, args json.RawMes
 		if err != nil {
 			if errors.Is(err, ErrTimeout) {
 				e.kill()
+				// Cancellation and expiry both kill, and both are ErrTimeout —
+				// but they are different events for the person reading the log,
+				// so the message distinguishes them. `ctx` is the CALLER's
+				// context; callCtx below it carries the descriptor's deadline.
+				if ctx.Err() != nil {
+					return Result{}, fmt.Errorf("%w: the caller cancelled %q on %s; the process was "+
+						"killed and this host is unaffected%s",
+						ErrTimeout, extpack.Bound(operation), d.ID, e.stderrTail())
+				}
 				return Result{}, fmt.Errorf("%w: %s did not answer %q within %d ms; the process was "+
 					"killed and this host is unaffected%s",
 					ErrTimeout, d.ID, extpack.Bound(operation), d.Limits.TimeoutMS, e.stderrTail())

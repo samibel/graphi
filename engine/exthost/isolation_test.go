@@ -23,6 +23,7 @@ package exthost
 import (
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -88,12 +89,31 @@ func TestSW231_AC6_SpikeIsConfinedToItsOwnDirectories(t *testing.T) {
 		// mentions what it declined is not a dependency.
 		"docs/decisions/",
 	}
+	// The ONE reference outside those roots, named individually rather than by
+	// prefix so a second one cannot slip in beside it.
+	//
+	// engine/opcatalog's TestAX04_OnlyTheExecutorReadsTheCatalog keeps a
+	// declared list of the files that read the operation catalog, so that
+	// widening the catalog's reader set is a reviewed act rather than an
+	// absorbed one. This spike reads the catalog for its Port and Permission
+	// vocabularies, so it had to be added there — visibly, with the
+	// justification the boundary asks for.
+	//
+	// It is a TEST allowlist entry, not a default-path dependency: AC-6's
+	// prohibition is on the latter, and `go list -deps ./cmd/graphi` (the test
+	// above) is what enforces it. Deleting the spike leaves those two lines
+	// harmlessly dead — the check only examines files that exist — and they are
+	// named in the deletion recipe in the decision document so the sweep is not
+	// left to memory.
+	allowedFiles := map[string]bool{
+		"engine/opcatalog/shadowmode_test.go": true,
+	}
 	for _, file := range strings.Split(strings.TrimSpace(string(out)), "\n") {
 		file = strings.TrimSpace(filepath.ToSlash(file))
 		if file == "" {
 			continue
 		}
-		allowed := false
+		allowed := allowedFiles[file]
 		for _, prefix := range allowedPrefixes {
 			if strings.HasPrefix(file, prefix) {
 				allowed = true
@@ -102,8 +122,19 @@ func TestSW231_AC6_SpikeIsConfinedToItsOwnDirectories(t *testing.T) {
 		}
 		if !allowed {
 			t.Errorf("%s refers to the SW-231 spike. AC-6 requires the spike to be removable without "+
-				"trace: every reference must live under a directory that `rm -r` would take with it. "+
-				"Allowed roots: %v", file, allowedPrefixes)
+				"trace: a reference must live under a directory that `rm -r` would take with it, or be "+
+				"one of the individually justified exceptions. Allowed roots: %v; allowed files: %v",
+				file, allowedPrefixes, keysOf(allowedFiles))
 		}
 	}
+}
+
+// keysOf renders the exception set for the failure message.
+func keysOf(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
