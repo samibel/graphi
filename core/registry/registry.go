@@ -13,9 +13,9 @@
 // # What this package does
 //
 //   - It gives every participating registry ONE lifecycle vocabulary:
-//     Register → Override → Validate → Freeze → Execute, with four typed
-//     errors (ErrDuplicate, ErrUnsupportedOverride, ErrMissingDependency,
-//     ErrFrozen) that callers can match with errors.Is.
+//     Register → Override → Validate → Freeze → Execute, with typed errors
+//     (ErrDuplicate, ErrUnsupportedOverride, ErrMissingDependency, ErrFrozen
+//     and — since SW-227 — ErrCycle) that callers can match with errors.Is.
 //   - It makes each registry's collision policy EXPLICIT and machine-readable
 //     (Policy, reported by a Policy() method on each participating registry).
 //
@@ -107,7 +107,7 @@ func (p Policy) AllowsOverride() bool { return p == PolicyLastWins }
 // point (a Replace of an already-registered key).
 func (p Policy) AllowsReplace() bool { return p == PolicyFirstWinsWithReplace }
 
-// The four typed lifecycle failures. Callers match them with errors.Is; the
+// The typed lifecycle failures. Callers match them with errors.Is; the
 // concrete error carries the registry, operation and key (see Error).
 var (
 	// ErrDuplicate: a key was registered twice on a registry whose policy
@@ -125,6 +125,20 @@ var (
 	// ErrFrozen: the registry finished composition and no longer accepts
 	// mutation.
 	ErrFrozen = errors.New("registry is frozen")
+
+	// ErrCycle: the registrants declare a dependency cycle, so no composition
+	// order exists.
+	//
+	// Added by SW-227 (AX-07) rather than introduced as a parallel error type in
+	// the module package. SW-222 shipped four sentinels because four failures
+	// existed; the module DAG is the first registrant set whose members declare
+	// dependencies ON EACH OTHER, and "A requires B requires A" is genuinely a
+	// fifth failure: it is not a duplicate, not a missing dependency (every named
+	// module exists), not an unsupported override, and nothing is frozen yet.
+	// Expressing it as one of the other four would have made a real, distinct
+	// composition fault unmatchable — so the shared vocabulary grows by one word
+	// instead of a second vocabulary appearing next to it.
+	ErrCycle = errors.New("dependency cycle")
 )
 
 // Error is the concrete lifecycle error. It carries the registry name, the
@@ -144,7 +158,7 @@ type Error struct {
 	// Key is the colliding, missing or rejected key; empty when not applicable.
 	Key string
 	// Kind is one of ErrDuplicate, ErrUnsupportedOverride,
-	// ErrMissingDependency or ErrFrozen.
+	// ErrMissingDependency, ErrFrozen or ErrCycle.
 	Kind error
 
 	msg string

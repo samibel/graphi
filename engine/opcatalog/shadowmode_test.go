@@ -63,6 +63,21 @@ import (
 //     boundary, and an import-based test cannot see it at all: a file that calls
 //     client.DispatchCanary imports surfaces/client, which two dozen files
 //     already do for unrelated reasons.
+//
+// AX-07 (SW-227) widens the allow list by two files — engine/module — and, like
+// AX-05, widens the rule in two directions at once rather than merely growing it:
+//
+//   - the two added readers are the built-in module set and the builder's typed
+//     AddOperation. Neither serves a request; both run once, at startup, inside
+//     the composition root's build; and
+//   - engine/module carries a boundary test of its OWN
+//     (engine/module/boundary_test.go) declaring that exactly one non-test file
+//     in the tree may import it — cmd/internal/runtime/builder.go. So the
+//     catalog's new reader is itself reachable from exactly one place, which is
+//     a stronger statement than "this file may read the catalog": it bounds who
+//     can reach the reader, not only who the reader is.
+//
+// The DENY list is untouched, again. Dispatch still does not read the catalog.
 func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	root := moduleRootForTest(t)
 	const catalogPkg = "github.com/samibel/graphi/engine/opcatalog"
@@ -76,6 +91,15 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 		filepath.Join("surfaces", "mcp", "descriptors_projected.go"): true,
 		filepath.Join("surfaces", "http", "contract_projected.go"):   true,
 		filepath.Join("cmd", "graphi", "help_catalog.go"):            true,
+		// AX-07 (SW-227): the built-in module set contributes the catalog's
+		// specs into the runtime composition, and the builder's typed
+		// AddOperation takes an OperationSpec. Both are composition, not
+		// request serving — engine/module runs once at startup and is itself
+		// importable only by cmd/internal/runtime (enforced by
+		// engine/module/boundary_test.go). It is a reader in the ADR-0013
+		// tier-B sense: first-party Go, statically compiled, no dispatch.
+		filepath.Join("engine", "module", "module.go"):  true,
+		filepath.Join("engine", "module", "builtin.go"): true,
 	}
 
 	// AX-05 AC-4: dispatch stays legacy. These files serve requests, and none of

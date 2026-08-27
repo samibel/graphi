@@ -126,6 +126,12 @@ type Runtime struct {
 	ing    *ingest.Ingester
 	broker *observe.Broker
 
+	// comp is the SW-227 (AX-07) composition this Runtime's capabilities came
+	// from: the frozen module contributions plus the surface client built over
+	// them. It is nil on the daemon-socket attach (no local capabilities were
+	// composed at all) and on the legacy composition path.
+	comp *Composition
+
 	closeOnce sync.Once
 	closers   []func()
 	done      chan struct{}
@@ -136,6 +142,11 @@ func (r *Runtime) Store() graphstore.Graphstore { return r.store }
 
 // Broker exposes the session's observe broker (nil in Attach mode).
 func (r *Runtime) Broker() *observe.Broker { return r.broker }
+
+// Composition exposes the SW-227 composition this Runtime was built from, or
+// nil when none was composed (a daemon-socket attach, or the legacy path). It is
+// read-only: everything reachable through it is frozen or a copy.
+func (r *Runtime) Composition() *Composition { return r.comp }
 
 // Done is closed when the Runtime has been closed.
 func (r *Runtime) Done() <-chan struct{} { return r.done }
@@ -172,13 +183,34 @@ func Attach(dbPath, socket, metaDir string) (*Runtime, error) {
 	rt.DBPath, rt.MetaDir = dbPath, metaDir
 	rt.store = store
 	rt.closers = append(rt.closers, func() { _ = store.Close() })
+
+	// SW-227 (AX-07): one composition. No git provider on the attach path — no
+	// repository root was resolved — so the git-consuming analyzers keep their
+	// graceful empty results, exactly as before.
+	if CompositionModeSetting() == CompositionLegacy {
+		attachLegacy(rt, store, metaDir)
+		return rt, nil
+	}
+	comp, cerr := NewBuilder(store).WithMetaDir(metaDir).Build()
+	if cerr != nil {
+		rt.Close()
+		return nil, cerr
+	}
+	rt.comp = comp
+	rt.Client = comp.Client()
+	return rt, nil
+}
+
+// attachLegacy is the pre-AX-07 attach composition, preserved verbatim so the
+// rollback in compositionmode.go is a real path and not a claim (AC-6). It is
+// exercised by the cross-composition characterization test.
+func attachLegacy(rt *Runtime, store graphstore.Graphstore, metaDir string) {
 	// SW-222 (AX-02): no git provider on the attach path, so analyzer
 	// composition is complete here.
 	asvc := analysis.NewDefaultService(store).Freeze()
 	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, metaDir)).
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc))
-	return rt, nil
 }
 
 // OpenSession opens the ADR 0002 session. Precedence (D4): an explicit
@@ -244,7 +276,23 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	rt.store = store
 	rt.closers = append(rt.closers, func() { _ = store.Close() })
 
-	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), p.Meta)
+	// SW-227 (AX-07): the session's whole capability wiring is composed HERE,
+	// once, before anything consumes it — parsers for the ingester, analyzers
+	// and the operation catalog for the surfaces. Every registry is frozen by
+	// the time this returns; the surface client is composed further down, at the
+	// point the pre-AX-07 code composed it (see Composition.Client).
+	var comp *Composition
+	if CompositionModeSetting() != CompositionLegacy {
+		built, cerr := NewBuilder(store).WithMetaDir(p.Meta).WithRepoRoot(root).Build()
+		if cerr != nil {
+			rt.Close()
+			return nil, cerr
+		}
+		comp = built
+		rt.comp = comp
+	}
+
+	ing, err := ingest.New(store, ingest.NewNotebookParser(sessionParsers(comp)), p.Meta)
 	if err != nil {
 		rt.Close()
 		return nil, fmt.Errorf("open session ingester: %w", err)
@@ -268,6 +316,28 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 		return nil, fmt.Errorf("session ingest: %w", err)
 	}
 
+	if comp != nil {
+		rt.Client = comp.Client()
+		return rt, nil
+	}
+	openSessionLegacy(rt, store, p.Meta, root)
+	return rt, nil
+}
+
+// sessionParsers returns the parser registry the session ingester parses
+// through: the module set's frozen registry on the AX-07 path, and the
+// stand-alone default registry on the legacy one. Both hold the same parsers in
+// the same registration order (core/parse.DefaultParsers is the single list).
+func sessionParsers(comp *Composition) *parse.Registry {
+	if comp == nil {
+		return parse.NewDefaultRegistry()
+	}
+	return comp.Parsers()
+}
+
+// openSessionLegacy is the pre-AX-07 session composition, preserved verbatim so
+// the rollback in compositionmode.go is a real path and not a claim (AC-6).
+func openSessionLegacy(rt *Runtime, store graphstore.Graphstore, metaDir, root string) {
 	// The surface-boundary git-history provider: bounded local `git log`,
 	// injected into both the analysis service (git-history, suggest-reviewers,
 	// pr-signals) and the labs agent-intelligence tools. The engine itself
@@ -276,12 +346,11 @@ func OpenSession(ctx context.Context, opts Options) (*Runtime, error) {
 	// SW-222 (AX-02): Freeze ends the chain — WithGitProvider is the last
 	// composition step, and nothing may re-arm an analyzer after it.
 	asvc := analysis.NewDefaultService(store).WithGitProvider(gp).Freeze()
-	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, p.Meta)).
+	rt.Client = client.NewDirect(query.New(store), NewSearchService(store, metaDir)).
 		WithAnalysis(asvc).
 		WithReview(review.NewService(asvc)).
 		WithRepoRoot(root).
 		WithGitProvider(gp)
-	return rt, nil
 }
 
 // resolveRepositoryRoot enforces session scoping. An explicit Root pin wins
