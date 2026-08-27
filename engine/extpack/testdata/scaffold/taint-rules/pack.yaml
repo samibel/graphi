@@ -1,0 +1,44 @@
+# graphi extension pack manifest — schema graphi.extension/v1alpha1
+#
+# A pack is DATA. graphi compiles, links, evaluates and executes nothing a pack
+# ships, and follows no file path or URL a pack names. Everything below is
+# checked before a byte is installed: run `graphi extension lint .` to see
+# every problem at once, with line numbers.
+schema_version: graphi.extension/v1alpha1
+
+# The pack id doubles as its directory name in the pack store, so the grammar is
+# dot-separated [a-z0-9-] segments starting and ending alphanumeric.
+id: example.taint-rules
+version: "0.1.0"
+kind: taint-rules
+
+# The closed range of host rule-pack API versions this pack was written for.
+# This graphi speaks 1.0; a pack outside the range is refused, not guessed at.
+api:
+  min: "1.0"
+  max: "1.0"
+
+# The data file, pinned. artifact.path is a BARE FILE NAME next to this manifest.
+# Re-hash it after every edit:  shasum -a 256 taint.yaml
+artifact:
+  path: taint.yaml
+  sha256: 7e38b49da53b9573011c0a7304e0889ceea09a03078588401014d184f99ff3ac
+
+# Every capability key the artifact defines — no more, no less. graphi checks
+# this against the artifact in both directions, so the field cannot become
+# decoration.
+capabilities:
+  provides:
+    - taint-sanitizer:example-shell-quote
+    - taint-sink:example-shell-exec
+    - taint-source:example-request-body
+
+# graph:read is the only permission a declarative pack can hold. There is no
+# network, filesystem or exec permission to ask for (ADR 0013).
+permissions:
+  - graph:read
+
+determinism: deterministic
+
+limits:
+  max_output_bytes: 65536

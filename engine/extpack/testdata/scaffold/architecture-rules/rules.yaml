@@ -1,0 +1,11 @@
+# graphi architecture-rules artifact.
+#
+# Each rule forbids ONE dependency direction. `from` and `to` are matched
+# against an architecture unit's label, which in graphi's community view is the
+# unit's dominant path prefix.
+version: "1"
+rules:
+  - id: ui-must-not-reach-storage
+    from: ui
+    to: storage
+    description: The UI layer must reach storage through the service layer, never directly.

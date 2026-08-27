@@ -29,6 +29,7 @@ which, so the difference stays visible.
 | [architecture-plan.md](architecture-plan.md) | The single design entry point: layers, data flow, CI gates |
 | [external-nodes.md](external-nodes.md) | **Canonical** WP-03 contract: what external (stdlib/third-party) nodes are and why structural queries exclude them |
 | [graphi-broad.md](graphi-broad.md) | The opt-in CGO grammar flavor |
+| [extension-developer-kit.md](extension-developer-kit.md) | **Labs.** Building a graphi extension: rule packs (`init`/`lint`/`conform`/`validate`/`install`), the conformance harness, and the `dead_code` worked example |
 | [default-tier-security.md](default-tier-security.md) | Security controls behind the CGo-free / zero-egress default tier |
 | [adr/](adr) | Architecture decision records |
 | [decisions/](decisions) | Project decision records (cited by the RC evidence index) |

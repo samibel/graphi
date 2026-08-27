@@ -117,8 +117,28 @@ func TestAttackCLI_ArtifactPathTraversalIsRefused(t *testing.T) {
 // this story could plausibly have broken it. Installation is a file copy; there
 // is no URL field in the schema, no HTTP client in the verb, and no dialer in
 // engine/extpack. The egress canary covers the process; this covers the source.
+//
+// SW-230 widened the scan — ADDING entries, visibly, which is the only direction
+// a boundary list may move. Three were missing and each is a real gap:
+//
+//   - the two CONSUMER seams. engine/analysis/taint and
+//     engine/agenttools/archintel are where pack data actually reaches an
+//     answer, so they are where a "fetch the rest of the rules" convenience
+//     would most plausibly be added, and SW-229's scan did not look at them.
+//   - the SDK itself. engine/extpack/conformance is new in this story, and
+//     os.ReadDir does not recurse, so the subpackage would have been invisible
+//     to the existing scan even though it sits inside the directory it names.
 func TestAttackCLI_NoVerbTouchesTheNetwork(t *testing.T) {
-	for _, path := range []string{"extension.go", filepath.Join("..", "..", "engine", "extpack")} {
+	engine := func(parts ...string) string {
+		return filepath.Join(append([]string{"..", "..", "engine"}, parts...)...)
+	}
+	for _, path := range []string{
+		"extension.go",
+		engine("extpack"),
+		engine("extpack", "conformance"),
+		engine("analysis", "taint"),
+		engine("agenttools", "archintel"),
+	} {
 		var files []string
 		info, err := os.Stat(path)
 		if err != nil {

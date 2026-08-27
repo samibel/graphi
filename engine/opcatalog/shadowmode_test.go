@@ -77,6 +77,12 @@ import (
 //     a stronger statement than "this file may read the catalog": it bounds who
 //     can reach the reader, not only who the reader is.
 //
+// AX-10 (SW-230) widens it by two more — engine/extpack/conformance — and the
+// direction of that reader is worth naming because it is the opposite of every
+// other entry: the harness is a CONSUMER of specs it is handed, not a producer
+// of specs the tree serves. It holds no catalog, registers nothing, and appears
+// in no request path. See the entry's own comment.
+//
 // The DENY list is untouched, again. Dispatch still does not read the catalog.
 func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 	root := moduleRootForTest(t)
@@ -100,6 +106,19 @@ func TestAX04_OnlyTheExecutorReadsTheCatalog(t *testing.T) {
 		// tier-B sense: first-party Go, statically compiled, no dispatch.
 		filepath.Join("engine", "module", "module.go"):  true,
 		filepath.Join("engine", "module", "builtin.go"): true,
+		// AX-10 (SW-230): the extension conformance harness. It READS a spec it
+		// is handed and never registers one — VerifyContribution takes an
+		// OperationSpec as a parameter and the package holds no catalog at all,
+		// so it cannot mint, mutate or advertise operation identity. It serves
+		// no request either: nothing in the shipped request path imports it
+		// (`graphi extension conform` is a developer verb, and everything else
+		// that calls it is a _test.go file). It is here because a harness that
+		// checks a spec against the catalog VOCABULARY — ports, permissions,
+		// tiers, determinism classes — has to be able to name that vocabulary,
+		// and the alternative is a second copy of it, which is the drift the
+		// catalog exists to remove.
+		filepath.Join("engine", "extpack", "conformance", "contribution.go"): true,
+		filepath.Join("engine", "extpack", "conformance", "ports.go"):        true,
 	}
 
 	// AX-05 AC-4: dispatch stays legacy. These files serve requests, and none of

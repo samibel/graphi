@@ -233,93 +233,116 @@ func decodeStrict(data []byte, into any) error {
 	return nil
 }
 
-func validateArchPayload(p ArchPayload) error {
-	if p.Version == "" {
-		return fmt.Errorf("extpack: architecture-rules artifact declares no version")
-	}
-	if len(p.Rules) == 0 {
-		return fmt.Errorf("extpack: architecture-rules artifact declares no rules")
-	}
-	seen := map[string]struct{}{}
-	for _, r := range p.Rules {
-		if err := validateName(r.ID); err != nil {
-			return err
-		}
-		if _, dup := seen[r.ID]; dup {
-			return fmt.Errorf("extpack: architecture rule %q is declared twice", Bound(r.ID))
-		}
-		seen[r.ID] = struct{}{}
-		if err := validateText(fmt.Sprintf("architecture rule %q from", r.ID), r.From); err != nil {
-			return err
-		}
-		if err := validateText(fmt.Sprintf("architecture rule %q to", r.ID), r.To); err != nil {
-			return err
-		}
-		if err := validateText(fmt.Sprintf("architecture rule %q description", r.ID), r.Description); err != nil {
-			return err
-		}
+// first returns the head of a check list, or nil.
+//
+// The artifact validators are written as COLLECTING checks for the same reason
+// the manifest ones are (SW-230's linter), and the fail-fast entry points are
+// their heads — so a validator and a linter can never disagree about whether an
+// artifact is valid.
+func first(errs []error) error {
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }
 
-func validateTaintPayload(p TaintPayload) error {
+func validateArchPayload(p ArchPayload) error { return first(checkArchPayload(p)) }
+
+func checkArchPayload(p ArchPayload) []error {
 	if p.Version == "" {
-		return fmt.Errorf("extpack: taint-rules artifact declares no version")
+		return []error{artifactErrf("version", "extpack: architecture-rules artifact declares no version")}
 	}
-	if len(p.Sources)+len(p.Sinks)+len(p.Sanitizers) == 0 {
-		return fmt.Errorf("extpack: taint-rules artifact declares no sources, sinks or sanitizers")
+	if len(p.Rules) == 0 {
+		return []error{artifactErrf("rules", "extpack: architecture-rules artifact declares no rules")}
+	}
+	var out []error
+	add := func(err error) {
+		if err != nil {
+			out = append(out, err)
+		}
 	}
 	seen := map[string]struct{}{}
-	claim := func(id string) error {
+	for i, r := range p.Rules {
+		at := func(leaf string) string { return fmt.Sprintf("rules[%d].%s", i, leaf) }
+		if err := validateName(r.ID); err != nil {
+			add(withField(ScopeArtifact, at("id"), err))
+			continue
+		}
+		if _, dup := seen[r.ID]; dup {
+			add(artifactErrf(at("id"), "extpack: architecture rule %q is declared twice", Bound(r.ID)))
+			continue
+		}
+		seen[r.ID] = struct{}{}
+		add(withField(ScopeArtifact, at("from"), validateText(fmt.Sprintf("architecture rule %q from", r.ID), r.From)))
+		add(withField(ScopeArtifact, at("to"), validateText(fmt.Sprintf("architecture rule %q to", r.ID), r.To)))
+		add(withField(ScopeArtifact, at("description"),
+			validateText(fmt.Sprintf("architecture rule %q description", r.ID), r.Description)))
+	}
+	return out
+}
+
+func validateTaintPayload(p TaintPayload) error { return first(checkTaintPayload(p)) }
+
+func checkTaintPayload(p TaintPayload) []error {
+	if p.Version == "" {
+		return []error{artifactErrf("version", "extpack: taint-rules artifact declares no version")}
+	}
+	if len(p.Sources)+len(p.Sinks)+len(p.Sanitizers) == 0 {
+		return []error{artifactErrf("sources", "extpack: taint-rules artifact declares no sources, sinks or sanitizers")}
+	}
+	var out []error
+	add := func(err error) {
+		if err != nil {
+			out = append(out, err)
+		}
+	}
+	seen := map[string]struct{}{}
+	claim := func(field, id string) error {
 		if err := validateName(id); err != nil {
-			return err
+			return withField(ScopeArtifact, field, err)
 		}
 		if _, dup := seen[id]; dup {
-			return fmt.Errorf("extpack: taint definition id %q is declared twice", Bound(id))
+			return artifactErrf(field, "extpack: taint definition id %q is declared twice", Bound(id))
 		}
 		seen[id] = struct{}{}
 		return nil
 	}
-	patterns := func(what string, kinds, names []string) error {
+	patterns := func(field, what string, kinds, names []string) error {
 		if len(kinds)+len(names) == 0 {
-			return fmt.Errorf("extpack: %s matches nothing (no node_kinds, no name_patterns)", what)
+			return artifactErrf(field, "extpack: %s matches nothing (no node_kinds, no name_patterns)", what)
 		}
 		for _, v := range append(append([]string(nil), kinds...), names...) {
 			if err := validateText(what+" pattern", v); err != nil {
-				return err
+				return withField(ScopeArtifact, field, err)
 			}
 		}
 		return nil
 	}
-	for _, s := range p.Sources {
-		if err := claim(s.ID); err != nil {
-			return err
+	for i, s := range p.Sources {
+		at := func(leaf string) string { return fmt.Sprintf("sources[%d].%s", i, leaf) }
+		if err := claim(at("id"), s.ID); err != nil {
+			add(err)
+			continue
 		}
-		if err := validateText(fmt.Sprintf("taint source %q label", s.ID), s.Label); err != nil {
-			return err
-		}
-		if err := patterns(fmt.Sprintf("taint source %q", s.ID), s.NodeKinds, s.NamePatterns); err != nil {
-			return err
-		}
+		add(withField(ScopeArtifact, at("label"), validateText(fmt.Sprintf("taint source %q label", s.ID), s.Label)))
+		add(patterns(fmt.Sprintf("sources[%d]", i), fmt.Sprintf("taint source %q", s.ID), s.NodeKinds, s.NamePatterns))
 	}
-	for _, s := range p.Sinks {
-		if err := claim(s.ID); err != nil {
-			return err
+	for i, s := range p.Sinks {
+		at := func(leaf string) string { return fmt.Sprintf("sinks[%d].%s", i, leaf) }
+		if err := claim(at("id"), s.ID); err != nil {
+			add(err)
+			continue
 		}
-		if err := validateText(fmt.Sprintf("taint sink %q category", s.ID), s.Category); err != nil {
-			return err
-		}
-		if err := patterns(fmt.Sprintf("taint sink %q", s.ID), s.NodeKinds, s.NamePatterns); err != nil {
-			return err
-		}
+		add(withField(ScopeArtifact, at("category"), validateText(fmt.Sprintf("taint sink %q category", s.ID), s.Category)))
+		add(patterns(fmt.Sprintf("sinks[%d]", i), fmt.Sprintf("taint sink %q", s.ID), s.NodeKinds, s.NamePatterns))
 	}
-	for _, s := range p.Sanitizers {
-		if err := claim(s.ID); err != nil {
-			return err
+	for i, s := range p.Sanitizers {
+		at := func(leaf string) string { return fmt.Sprintf("sanitizers[%d].%s", i, leaf) }
+		if err := claim(at("id"), s.ID); err != nil {
+			add(err)
+			continue
 		}
-		if err := patterns(fmt.Sprintf("taint sanitizer %q", s.ID), nil, s.NamePatterns); err != nil {
-			return err
-		}
+		add(patterns(fmt.Sprintf("sanitizers[%d]", i), fmt.Sprintf("taint sanitizer %q", s.ID), nil, s.NamePatterns))
 		// A sanitizer with an empty remove_labels is a UNIVERSAL sanitizer in
 		// engine/analysis/taint — it strips every label. graphi ships several, but
 		// a pack may not: a universal sanitizer with a broad name pattern is a
@@ -327,14 +350,14 @@ func validateTaintPayload(p TaintPayload) error {
 		// "suppress everything" is not an additive capability. A pack must name
 		// the labels it claims to sanitise.
 		if len(s.RemoveLabels) == 0 {
-			return fmt.Errorf("extpack: taint sanitizer %q declares no remove_labels: "+
-				"a pack may not ship a universal sanitizer, it must name the labels it removes", Bound(s.ID))
+			add(artifactErrf(at("remove_labels"), "extpack: taint sanitizer %q declares no remove_labels: "+
+				"a pack may not ship a universal sanitizer, it must name the labels it removes", Bound(s.ID)))
+			continue
 		}
 		for _, l := range s.RemoveLabels {
-			if err := validateText(fmt.Sprintf("taint sanitizer %q remove_labels entry", s.ID), l); err != nil {
-				return err
-			}
+			add(withField(ScopeArtifact, at("remove_labels"),
+				validateText(fmt.Sprintf("taint sanitizer %q remove_labels entry", s.ID), l)))
 		}
 	}
-	return nil
+	return out
 }

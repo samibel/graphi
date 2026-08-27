@@ -173,62 +173,125 @@ func ParseManifest(data []byte) (Manifest, error) {
 // Validate checks a manifest against the schema. Every failure names the field
 // and what would have been acceptable, because the only way a pack author can
 // fix a rejection is to be told what it was.
+//
+// It reports the FIRST violation, which is the behaviour every SW-229 caller
+// depends on. Checks reports all of them; Validate is that list's head, so the
+// two can never disagree about whether a manifest is valid.
 func (m Manifest) Validate() error {
-	if m.SchemaVersion != SchemaVersion {
-		if m.SchemaVersion == "" {
-			return fmt.Errorf("extpack: manifest declares no schema_version; this build accepts %q", SchemaVersion)
+	if errs := m.Checks(); len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
+}
+
+// Checks returns EVERY schema violation in the manifest, in field order, each
+// attributed to its field (see FieldError).
+//
+// SW-230 added it for the linter: a validator that stops at the first problem
+// makes a pack author fix errors one round trip at a time, which for a
+// hand-written manifest is the difference between a usable tool and a guessing
+// game. The order is the same order Validate used to short-circuit in, so
+// Checks()[0] IS the error Validate returns — including its exact message.
+//
+// Two groups are gated rather than collected, because their messages depend on
+// an earlier field being sound: the capability keys are namespaced BY KIND, so a
+// bad kind would report every key as wrong; and the api range is one check over
+// two fields.
+func (m Manifest) Checks() []error {
+	var out []error
+	add := func(err error) {
+		if err != nil {
+			out = append(out, err)
 		}
-		return fmt.Errorf("extpack: unsupported schema_version %q: this build accepts %q only "+
-			"(an older schema is rejected, not read best-effort)", Bound(m.SchemaVersion), SchemaVersion)
 	}
-	if err := ValidateID(m.ID); err != nil {
-		return err
-	}
-	if err := validateVersion(m.Version); err != nil {
-		return err
-	}
-	if err := m.validateKind(); err != nil {
-		return err
-	}
-	if err := m.API.validate(); err != nil {
-		return err
-	}
-	if err := validateArtifactPath(m.Artifact.Path); err != nil {
-		return err
-	}
+
+	add(m.checkSchemaVersion())
+	add(withField(ScopeManifest, "id", ValidateID(m.ID)))
+	add(withField(ScopeManifest, "version", validateVersion(m.Version)))
+	kindErr := m.validateKind()
+	add(kindErr)
+	add(m.API.validate())
+	add(withField(ScopeManifest, "artifact.path", validateArtifactPath(m.Artifact.Path)))
 	if err := ValidateHex(m.Artifact.SHA256); err != nil {
-		return fmt.Errorf("extpack: artifact.sha256: %w", err)
+		add(manifestErrf("artifact.sha256", "extpack: artifact.sha256: %w", err))
 	}
+	for _, err := range m.checkProvides(kindErr == nil) {
+		add(err)
+	}
+	add(m.checkPermissions())
+	add(m.checkDeterminism())
+	add(m.checkLimits())
+	return out
+}
+
+func (m Manifest) checkSchemaVersion() error {
+	if m.SchemaVersion == SchemaVersion {
+		return nil
+	}
+	if m.SchemaVersion == "" {
+		return manifestErrf("schema_version",
+			"extpack: manifest declares no schema_version; this build accepts %q", SchemaVersion)
+	}
+	return manifestErrf("schema_version",
+		"extpack: unsupported schema_version %q: this build accepts %q only "+
+			"(an older schema is rejected, not read best-effort)", Bound(m.SchemaVersion), SchemaVersion)
+}
+
+// checkProvides validates the declared capability keys. keyed reports whether
+// the kind is sound enough for the namespace check to mean anything.
+func (m Manifest) checkProvides(keyed bool) []error {
 	if len(m.Capabilities.Provides) == 0 {
-		return fmt.Errorf("extpack: capabilities.provides is empty: a pack that provides nothing has nothing to install")
+		return []error{manifestErrf("capabilities.provides",
+			"extpack: capabilities.provides is empty: a pack that provides nothing has nothing to install")}
 	}
+	if !keyed {
+		return nil
+	}
+	var out []error
 	seen := map[string]struct{}{}
-	for _, key := range m.Capabilities.Provides {
+	for i, key := range m.Capabilities.Provides {
+		field := fmt.Sprintf("capabilities.provides[%d]", i)
 		if err := validateCapabilityKey(m.Kind, key); err != nil {
-			return err
+			out = append(out, withField(ScopeManifest, field, err))
+			continue
 		}
 		if _, dup := seen[key]; dup {
-			return fmt.Errorf("extpack: capabilities.provides lists %q twice", Bound(key))
+			out = append(out, manifestErrf(field, "extpack: capabilities.provides lists %q twice", Bound(key)))
+			continue
 		}
 		seen[key] = struct{}{}
 	}
-	for _, p := range m.Permissions {
+	return out
+}
+
+func (m Manifest) checkPermissions() error {
+	for i, p := range m.Permissions {
 		if p != PermissionGraphRead {
-			return fmt.Errorf("extpack: permission %q is not available to a declarative pack: "+
-				"the only permission tier A can hold is %q (ADR 0013: no code execution, no network)",
+			return manifestErrf(fmt.Sprintf("permissions[%d]", i),
+				"extpack: permission %q is not available to a declarative pack: "+
+					"the only permission tier A can hold is %q (ADR 0013: no code execution, no network)",
 				Bound(string(p)), PermissionGraphRead)
 		}
 	}
+	return nil
+}
+
+func (m Manifest) checkDeterminism() error {
 	if m.Determinism != DeterminismDeterministic {
-		return fmt.Errorf("extpack: determinism %q is not accepted: a declarative pack is %q",
+		return manifestErrf("determinism", "extpack: determinism %q is not accepted: a declarative pack is %q",
 			Bound(string(m.Determinism)), DeterminismDeterministic)
 	}
+	return nil
+}
+
+func (m Manifest) checkLimits() error {
 	if m.Limits.MaxOutputBytes <= 0 {
-		return fmt.Errorf("extpack: limits.max_output_bytes must be a positive byte count")
+		return manifestErrf("limits.max_output_bytes", "extpack: limits.max_output_bytes must be a positive byte count")
 	}
 	if m.Limits.MaxOutputBytes > MaxArtifactBytes {
-		return fmt.Errorf("extpack: limits.max_output_bytes %d exceeds the host ceiling of %d bytes: "+
-			"a pack cannot raise its own limit", m.Limits.MaxOutputBytes, MaxArtifactBytes)
+		return manifestErrf("limits.max_output_bytes",
+			"extpack: limits.max_output_bytes %d exceeds the host ceiling of %d bytes: "+
+				"a pack cannot raise its own limit", m.Limits.MaxOutputBytes, MaxArtifactBytes)
 	}
 	return nil
 }
@@ -241,11 +304,12 @@ func (m Manifest) validateKind() error {
 	}
 	for _, k := range deferredKinds {
 		if string(m.Kind) == k {
-			return fmt.Errorf("extpack: pack kind %q is a planned tier-A kind that this build does not implement yet "+
-				"(implemented: %s); it is booked in the delivery backlog, not a typo", k, kindList())
+			return manifestErrf("kind",
+				"extpack: pack kind %q is a planned tier-A kind that this build does not implement yet "+
+					"(implemented: %s); it is booked in the delivery backlog, not a typo", k, kindList())
 		}
 	}
-	return fmt.Errorf("extpack: unknown pack kind %q: this build implements %s", Bound(string(m.Kind)), kindList())
+	return manifestErrf("kind", "extpack: unknown pack kind %q: this build implements %s", Bound(string(m.Kind)), kindList())
 }
 
 func kindList() string {
@@ -257,25 +321,34 @@ func kindList() string {
 	return strings.Join(names, ", ")
 }
 
+// Validate checks that the host's APIVersion falls inside the declared range.
+//
+// It is exported so the SW-230 conformance harness can run the API-compatibility
+// check on a contribution that is not a pack. The rule is the same either way: an
+// `api` range that does not contain this host's version is REFUSED rather than
+// resolved to something nearby, because a pack written for a host API it will not
+// meet is a pack whose behaviour nobody has stated.
+func (r APIRange) Validate() error { return r.validate() }
+
 // validate checks that the host's APIVersion falls inside the declared range.
 func (r APIRange) validate() error {
 	lo, err := parseAPIVersion(r.Min)
 	if err != nil {
-		return fmt.Errorf("extpack: api.min: %w", err)
+		return manifestErrf("api.min", "extpack: api.min: %w", err)
 	}
 	hi, err := parseAPIVersion(r.Max)
 	if err != nil {
-		return fmt.Errorf("extpack: api.max: %w", err)
+		return manifestErrf("api.max", "extpack: api.max: %w", err)
 	}
 	if compareAPI(lo, hi) > 0 {
-		return fmt.Errorf("extpack: api range %q..%q is empty (min is above max)", Bound(r.Min), Bound(r.Max))
+		return manifestErrf("api", "extpack: api range %q..%q is empty (min is above max)", Bound(r.Min), Bound(r.Max))
 	}
 	host, err := parseAPIVersion(APIVersion)
 	if err != nil {
-		return fmt.Errorf("extpack: host api version %q is malformed: %w", APIVersion, err)
+		return manifestErrf("api", "extpack: host api version %q is malformed: %w", APIVersion, err)
 	}
 	if compareAPI(host, lo) < 0 || compareAPI(host, hi) > 0 {
-		return fmt.Errorf("extpack: pack requires host api %s..%s, this graphi speaks %s",
+		return manifestErrf("api", "extpack: pack requires host api %s..%s, this graphi speaks %s",
 			Bound(r.Min), Bound(r.Max), APIVersion)
 	}
 	return nil

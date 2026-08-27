@@ -1,0 +1,24 @@
+# graphi taint-rules artifact.
+#
+# Sources introduce a label, sinks are where a labelled value must not arrive,
+# and sanitizers remove the labels they name. A sanitizer must name its labels:
+# a pack may not ship one that strips everything.
+version: "1"
+sources:
+  - id: example-request-body
+    label: user-input
+    node_kinds:
+      - function
+    name_patterns:
+      - ReadRequestBody
+sinks:
+  - id: example-shell-exec
+    category: command-injection
+    name_patterns:
+      - RunShellCommand
+sanitizers:
+  - id: example-shell-quote
+    name_patterns:
+      - ShellQuote
+    remove_labels:
+      - user-input
