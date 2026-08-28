@@ -338,10 +338,10 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 | **Architecture & dead code** | `architecture` · `architecture-violations` · `dead-code` · `framework-map` |
 | **Agent, test, change & git intelligence** | `symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` |
 | **Analysis & trust** | `analyze` over 22 analyzers (taint, pdg, call-chain, communities, …) · `trust-report` · `query-strict` · `diagnose` · `doctor` · `privacy-audit` |
-| **Surfaces past CLI + MCP stdio** | `daemon` · `http` (loopback HTTP/SSE) · `ui` (web) · the [VS Code extension](extensions/vscode) (blast radius, citations, loopback SSE) · the [GitHub Action](extensions/github-action) |
+| **Surfaces past CLI + MCP stdio** | `daemon` · `http` (loopback HTTP/SSE) · `ui` (web) · the [VS Code editor extension](extensions/vscode) (blast radius, citations, loopback SSE — an editor plugin, *not* the `graphi extension` rule packs below) · the [GitHub Action](extensions/github-action) |
 
 <details>
-<summary><b>The short list of subcommands</b> — all <b>59</b>, with flags and tier tags, are in <a href="docs/cli-reference.md">docs/cli-reference.md</a> or <code>graphi help</code></summary>
+<summary><b>The short list of subcommands</b> — all <b>60</b>, with flags and tier tags, are in <a href="docs/cli-reference.md">docs/cli-reference.md</a> or <code>graphi help</code></summary>
 
 | Command | Tier | What it does |
 |---|---|---|
@@ -354,11 +354,11 @@ units and 1 GA language. Twelve are the frozen GA operations above; the rest are
 | `graphi impact <node-id>` | **GA** | Blast radius of a change (in-repo) |
 | `graphi search <query>` | **GA** | Lexical / symbol search |
 | `graphi agent-brief` · `explain-symbol` · `related-files` · `change-risk` | **GA** | Cited agent-context operations |
-| `graphi symbol-context` · `task-context` · `repo-overview` · `test-impact` · `change-impact` · `hotspots` | labs | One-call agent, test, change & git intelligence |
 | `graphi mcp` | **GA** | MCP stdio server (the agent-first surface) |
 | `graphi setup` | labs | Wire graphi into local MCP clients |
 | `graphi analyze <analyzer>` | labs | Deep analyzers (taint, pdg, call-chain, …) |
 | `graphi daemon` · `http` | labs | Hot-index daemon, loopback HTTP/SSE |
+| `graphi extension validate\|install\|list\|doctor\|enable\|disable\|remove` (`init` · `lint` · `conform` for pack authors) | labs | Declarative rule packs: offline, SHA-256-pinned YAML/JSON data that adds architecture or taint rules — graphi executes nothing a pack ships ([docs/cli-reference.md](docs/cli-reference.md#graphi-extension)) |
 
 </details>
 

@@ -18,7 +18,7 @@ which, so the difference stays visible.
 | [query-language.md](query-language.md) | Query language reference |
 | [agent-workflows.md](agent-workflows.md) | Recommended MCP call order for AI agents, per-client examples |
 | [setup-privacy.md](setup-privacy.md) | `graphi setup` + `graphi privacy-audit` |
-| [real-world-report.md](real-world-report.md) | Before/after record of the two external field tests, every row reproducible |
+| [real-world-report.md](real-world-report.md) | Before/after record of the two external field tests; two of its rows are retracted or stale and are no longer quoted in `readme.md` |
 | [tutorial/](tutorial) | Using graphi with the Claude CLI |
 | [surfaces-http.md](surfaces-http.md) · [surfaces-web.md](surfaces-web.md) · [surfaces-vscode.md](surfaces-vscode.md) · [surfaces-wiki.md](surfaces-wiki.md) | Per-surface documentation |
 
