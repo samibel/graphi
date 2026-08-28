@@ -1272,7 +1272,11 @@ func TestExecutorDivergenceCheckReportsUnknownNotZeroDivergences(t *testing.T) {
 	if res.Status == StatusPass {
 		t.Error("an unobserved seam must never read PASS")
 	}
-	if !strings.Contains(res.Detail, "never observed (UNKNOWN, not agreed): compound, dead_code") {
+	// SW-248 qualified this line rather than replacing it: with no profile
+	// picture supplied the check still names the unobserved operations and
+	// still refuses to call them agreed, and it now also declines to imply that
+	// anything is known about whether they can be reached.
+	if !strings.Contains(res.Detail, "never observed (UNKNOWN, not agreed; reachability not evaluated): compound, dead_code") {
 		t.Errorf("detail does not name the unobserved operations:\n%s", res.Detail)
 	}
 }

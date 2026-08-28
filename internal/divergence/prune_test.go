@@ -88,7 +88,7 @@ func TestPrunedSegmentsAreCountedAndDisclosedAsALowerBound(t *testing.T) {
 		t.Fatalf("unreadable = %d, want 0", rep.Unreadable)
 	}
 
-	doc := Assess(rep, []string{"live", "victim"})
+	doc := Assess(rep, []string{"live", "victim"}, nil)
 	if doc.Pruned != 8 {
 		t.Fatalf("document pruned = %d, want 8", doc.Pruned)
 	}
@@ -124,7 +124,7 @@ func TestUnprunedRecordMakesNoLowerBoundClaim(t *testing.T) {
 	if rep.Pruned != 0 {
 		t.Fatalf("pruned = %d, want 0", rep.Pruned)
 	}
-	human := renderString(t, Assess(rep, []string{"live"}))
+	human := renderString(t, Assess(rep, []string{"live"}, nil))
 	if contains(human, "have been pruned") || contains(human, "lower bound") {
 		t.Fatalf("an exact record claims to be a lower bound:\n%s", human)
 	}

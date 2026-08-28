@@ -55,8 +55,21 @@ func TestSW232_DivergenceReadPathReportsUnknownWhenNothingWasObserved(t *testing
 	if err := json.Unmarshal(machine.Bytes(), &doc); err != nil {
 		t.Fatalf("json: %v\n%s", err, machine.String())
 	}
-	if doc.Schema != divergence.Schema || doc.State != string(divergence.StateUnknown) {
-		t.Fatalf("json document = schema %q state %q, want %q / UNKNOWN", doc.Schema, doc.State, divergence.Schema)
+	// SW-248 sharpened this verdict rather than relaxing it. On the shipped
+	// binary the default MCP profile advertises none of the migrated
+	// operations, so the record is not merely empty — it cannot fill for a
+	// client bound to it, and the document now says which of the two it is.
+	// The property SW-232 wrote this test for is unchanged and is asserted
+	// below: never green, never "0 divergences", every operation UNKNOWN.
+	if doc.Schema != divergence.Schema {
+		t.Fatalf("json document schema = %q, want %q", doc.Schema, divergence.Schema)
+	}
+	if doc.State != string(divergence.StateUnobservable) {
+		t.Fatalf("json document state = %q, want %q — the live default profile reaches no "+
+			"migrated operation, so an empty record cannot fill", doc.State, divergence.StateUnobservable)
+	}
+	if !strings.Contains(doc.State, "UNKNOWN") {
+		t.Fatalf("the empty-record verdict %q no longer says UNKNOWN", doc.State)
 	}
 	if len(doc.Operations) == 0 {
 		t.Fatal("json document names no operations; a future precondition check has nothing to cite")
@@ -124,7 +137,21 @@ func TestSW232_ExecutorDivergenceCheckIsHonestOnAnEmptyRecord(t *testing.T) {
 		t.Fatal("every migrated operation is unobserved; the check must be told so, or it " +
 			"cannot say UNKNOWN")
 	}
-	if got.State != string(divergence.StateUnknown) {
-		t.Fatalf("state = %q, want UNKNOWN", got.State)
+	// SW-248: the same sharpening as above. UNKNOWN is still in the verdict —
+	// nothing was observed and the check must never call that agreement — and
+	// the verdict now also carries WHY nothing was observed.
+	if got.State != string(divergence.StateUnobservable) {
+		t.Fatalf("state = %q, want %q", got.State, divergence.StateUnobservable)
+	}
+	if !got.Unfillable {
+		t.Error("the check is not told the record cannot fill, so it can only report it as empty")
+	}
+	if len(got.UnobservedOptIn) != len(got.Unobserved) {
+		t.Errorf("%d of %d unobserved operation(s) are attributed to the bound profile; on the "+
+			"shipped binary every one of them is", len(got.UnobservedOptIn), len(got.Unobserved))
+	}
+	if got.DefaultProfile == "" || got.ReachableInDefault != 0 {
+		t.Errorf("reach summary = (%q, %d), want the default profile named and 0 reachable",
+			got.DefaultProfile, got.ReachableInDefault)
 	}
 }

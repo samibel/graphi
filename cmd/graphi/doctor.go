@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/internal/releaseinfo"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/client"
+	"github.com/samibel/graphi/surfaces/mcp"
 )
 
 // runDoctor implements the read-only `graphi doctor` subcommand.
@@ -127,16 +128,72 @@ func executorSeamPositions() ([]doctor.ExecutorSeamPosition, error) {
 		return nil, err
 	}
 	positions := client.CanaryPositions()
+	reach := seamReachByOperation()
+	defaultProfile := mcp.DefaultProfile().Invocation
 	out := make([]doctor.ExecutorSeamPosition, 0, len(positions))
 	for _, p := range positions {
+		r := reach[p.Operation]
 		out = append(out, doctor.ExecutorSeamPosition{
 			Operation:  p.Operation,
 			Mode:       string(p.Mode),
 			Overridden: p.Overridden,
 			EnvVar:     runtime.EnvCanaryModeFor(p.Operation),
+			// SW-248 AC-1: the position says what is configured; this says
+			// whether any client can reach it. The join happens here for the
+			// same reason the position reading does — internal/doctor renders
+			// what it is handed and holds no surface imports.
+			ReachableVia:     r.Invocations,
+			InDefaultProfile: r.InDefault,
+			ReachEvaluated:   true,
+			DefaultProfile:   defaultProfile,
 		})
 	}
 	return out, nil
+}
+
+// seamReachByOperation is the SW-248 profile-reachability projection for every
+// operation on the executor seam, keyed by operation id.
+//
+// It asks surfaces/mcp rather than deciding anything itself: which tools a
+// profile advertises is that package's fact, derived there from the live
+// descriptor builders, so a profile change moves this readout in the same
+// commit instead of leaving a second list to go stale.
+func seamReachByOperation() map[string]mcp.OperationReach {
+	out := map[string]mcp.OperationReach{}
+	for _, r := range mcp.SeamReachability(client.MigratedOperations()) {
+		out[r.Operation] = r
+	}
+	return out
+}
+
+// seamProfiles is the shipped surface-profile picture in the divergence
+// record's vocabulary: each profile reduced to the SEAM operations it reaches.
+//
+// It is narrowed to the seam deliberately. The full advertised tool set of each
+// profile is public elsewhere and would bloat every `graphi doctor -divergence
+// --json` document with names the record has no opinion about; what a reader of
+// THIS document needs is the answer for the operations in front of them, and
+// echoing the inputs at that scope is what lets them check the conclusion
+// instead of trusting it.
+func seamProfiles() []divergence.Profile {
+	migrated := client.MigratedOperations()
+	profiles := mcp.ShippedProfiles()
+	out := make([]divergence.Profile, 0, len(profiles))
+	for _, p := range profiles {
+		reaches := make([]string, 0, len(migrated))
+		for _, op := range migrated {
+			if p.Reaches(op) {
+				reaches = append(reaches, op)
+			}
+		}
+		out = append(out, divergence.Profile{
+			ID:         p.ID,
+			Invocation: p.Invocation,
+			Default:    p.Default,
+			Reaches:    reaches,
+		})
+	}
+	return out
 }
 
 // runDoctorDivergence renders the persisted executor-seam divergence record
@@ -165,7 +222,7 @@ func runDoctorDivergence(w io.Writer, jsonOut bool) int {
 		fmt.Fprintf(os.Stderr, "graphi doctor: read divergence record: %v\n", err)
 		return 1
 	}
-	doc := divergence.Assess(report, client.MigratedOperations())
+	doc := divergence.Assess(report, client.MigratedOperations(), seamProfiles())
 	if jsonOut {
 		if err := divergence.RenderJSON(w, doc); err != nil {
 			fmt.Fprintf(os.Stderr, "graphi doctor: render divergence json: %v\n", err)
@@ -193,7 +250,7 @@ func executorDivergence() (doctor.ExecutorDivergence, error) {
 	if err != nil {
 		return doctor.ExecutorDivergence{}, err
 	}
-	doc := divergence.Assess(report, client.MigratedOperations())
+	doc := divergence.Assess(report, client.MigratedOperations(), seamProfiles())
 	out := doctor.ExecutorDivergence{
 		State:        string(doc.State),
 		Directory:    doc.Directory,
@@ -203,6 +260,14 @@ func executorDivergence() (doctor.ExecutorDivergence, error) {
 		SkipReasons:  doc.SkipReasons,
 		Unreadable:   doc.Unreadable,
 		Pruned:       doc.Pruned,
+		// SW-248: the document already knows why each UNKNOWN row is UNKNOWN;
+		// the check renders it, so the reason is carried across rather than
+		// recomputed on the other side of the boundary.
+		ReachEvaluated:     doc.ReachEvaluated,
+		DefaultProfile:     doc.DefaultProfile,
+		SeamOperations:     len(doc.Operations),
+		ReachableInDefault: doc.ReachableInDefault,
+		Unfillable:         doc.State == divergence.StateUnobservable,
 	}
 	for _, op := range doc.Operations {
 		switch op.State {
@@ -210,6 +275,18 @@ func executorDivergence() (doctor.ExecutorDivergence, error) {
 			out.Diverged = append(out.Diverged, op.Operation)
 		case divergence.StateUnknown:
 			out.Unobserved = append(out.Unobserved, op.Operation)
+			switch op.Reach {
+			case divergence.ReachDefault:
+				out.UnobservedReachable = append(out.UnobservedReachable, op.Operation)
+			case divergence.ReachOptIn:
+				out.UnobservedOptIn = append(out.UnobservedOptIn, op.Operation)
+			case divergence.ReachNone:
+				// Only the strongest true statement. "No shipped profile
+				// reaches it" already implies "the default profile does not",
+				// and listing it under both would leave a skimming reader with
+				// the weaker of the two sentences.
+				out.UnobservedNowhere = append(out.UnobservedNowhere, op.Operation)
+			}
 		}
 	}
 	return out, nil

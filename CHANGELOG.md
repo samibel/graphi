@@ -26,6 +26,41 @@ file:
 
 ## [Unreleased]
 
+### Changed
+
+- **A shadow-path operation no shipped profile can reach now says so** (SW-248).
+  `v0.11.0` reports `10 migrated operation(s): 0 legacy, 10 shadow, 0 active` and
+  `UNKNOWN: no dual-run observation has been recorded`. Both lines are true and
+  together they mislead: all ten migrated operations are Labs, the default MCP
+  profile advertises the eleven Stable tools, so a client bound to the shipped
+  default cannot reach one of them and the record stays empty however long a
+  release line runs. The output read as *not yet*; the truth was *not possible
+  in this profile*.
+
+  `graphi doctor` and `graphi doctor -divergence` now carry a second axis beside
+  the observation state — whether anything can reach the operation at all — and
+  three conditions that used to render identically now read differently: **not
+  yet observed but reachable**, **not observable through the bound profile**, and
+  a record that **cannot fill** because nothing on the seam is reachable there.
+  The document-level `state` gains `UNKNOWN-AND-UNOBSERVABLE` for the third; see
+  `docs/executor-seam-rollback.md` §5 for the JSON detail.
+
+  This is disclosure, **not** a promotion. No tier moved: Stable wire names,
+  request schemas, canonical result bytes, error codes and the eleven-tool
+  default profile are byte-unchanged, and `cmd/coverage -check` passes 7/7 with
+  no tier-row change.
+
+### Added
+
+- **`cmd/seamreach`, the reachability gate** (SW-248). It fails a build where an
+  operation dual-runs on the executor seam that no shipped surface profile can
+  reach, and checks the live matrix against a reviewable declaration
+  (`internal/seamreach/reachability.txt`) so a change to what the seam runs — or
+  to what a profile advertises — appears in the diff. The `executor-rollback`
+  workflow runs it and then runs it again with a deliberately introduced
+  violation, asserting it exits non-zero: the gap this closes existed because
+  nothing asked the question at merge time.
+
 ## [0.11.0] - 2026-08-28
 
 ### Changed

@@ -145,11 +145,14 @@ overrode it. Run it **in the same environment as the server**:
 ```sh
 $ graphi doctor
 …
-executor-seam  10 migrated operation(s): 0 legacy, 10 shadow, 0 active
+executor-seam  10 migrated operation(s): 0 legacy, 10 shadow, 0 active;
+               NONE of the 10 dual-running operation(s) is reachable through `graphi mcp`
 ```
 
 That line — `10 shadow` — is what an install with **nothing set** reports. After
-a rollback it reads `10 legacy, 0 shadow, 0 active`.
+a rollback it reads `10 legacy, 0 shadow, 0 active`. The clause after the
+semicolon is SW-248: the counts say what is **configured**, and it says what a
+client can **call**. On a stock install the answer is *none of it* — see §5.
 
 ```sh
 $ graphi doctor --json | jq '.checks[] | select(.id=="executor-seam")'
@@ -157,7 +160,11 @@ $ graphi doctor --json | jq '.checks[] | select(.id=="executor-seam")'
 
 The check's detail lists one line per operation, e.g.
 `dead_code: legacy (GRAPHI_CANARY_DEAD_CODE)` when a variable set it, or
-`dead_code: shadow (compiled-in default)` when nothing did.
+`dead_code: shadow (compiled-in default)` when nothing did. Since SW-248 each
+line also states whether any shipped profile can reach the operation, e.g.
+`dead_code: shadow (compiled-in default), NOT in the default profile; reachable
+via graphi mcp -labs` — the counts say what is *configured*, and that clause says
+what a client can *call*. See §5's reachability subsection.
 
 `doctor` reports **this process's** positions, derived from **this**
 environment. That is the honest scope: a server started from the same
@@ -176,20 +183,22 @@ $ graphi doctor -divergence
 $ graphi doctor -divergence --json
 ```
 
-A readout looks like this (three MCP tool calls on a fresh install):
+A readout looks like this (three MCP tool calls through `graphi mcp -labs` on a
+fresh install):
 
 ```
 executor-seam divergence record (executor-divergence-v1)
   state:      PARTIAL-UNKNOWN — some migrated operations have never been observed
   directory:  /home/you/.local/state/graphi/executor-divergence
-  segments:   1 recorded, 0 unreadable, 0 pruned
+  segments:   3 recorded, 0 unreadable, 0 pruned
   totals:     3 observation(s), 0 mismatch(es)
   coverage:   3 of 3 dispatch(es) compared (100%) — no sampling, nothing dropped
+  reachable:  NONE of the 10 operation(s) on the seam is reachable through `graphi mcp` (the profile a stock install binds)
 
-OPERATION      DISPATCHES  OBSERVATIONS  SKIPPED  MISMATCHES  STATE                   …
-dead_code      2           2             0        0           NO-DIVERGENCE-OBSERVED  …
-repo_overview  1           1             0        0           NO-DIVERGENCE-OBSERVED  …
-compound       0           0             0        0           UNKNOWN                 …
+OPERATION      DISPATCHES  OBSERVATIONS  SKIPPED  MISMATCHES  STATE                   REACHABLE VIA     …
+dead_code      1           1             0        0           NO-DIVERGENCE-OBSERVED  graphi mcp -labs  …
+repo_overview  1           1             0        0           NO-DIVERGENCE-OBSERVED  graphi mcp -labs  …
+compound       0           0             0        0           UNKNOWN                 graphi mcp -labs  …
 ```
 
 Each operation reads as one of:
@@ -205,13 +214,50 @@ is **not a statement that the two paths agree**. Do not read an all-`UNKNOWN`
 record as evidence of parity; it is the absence of evidence, which is why it has
 its own word.
 
-Since SW-244 the shipped position *does* compare, so on an install that has been
-used you should expect operations to move off `UNKNOWN` as they are called. An
-operation still reading `UNKNOWN` has simply not been invoked in this install —
-it is a coverage gap in your usage, not a finding. All ten reading `UNKNOWN` on
-a fresh install is correct and expected; all ten still reading `UNKNOWN` after
-weeks of use means either nothing on the seam is being called or something rolled
-the seam back — check `graphi doctor` (§4) before concluding anything.
+### Reachability — why an operation is `UNKNOWN` (SW-248)
+
+Since SW-244 the shipped position *does* compare, so an operation that gets
+called moves off `UNKNOWN`. Whether it *can* be called is a separate question,
+and it is the one this section exists for.
+
+Every operation on the seam is **Labs**. The default MCP profile — what `graphi
+setup` registers and what a stock client binds — advertises the **eleven Stable
+tools** and none of them. So a client on the default profile cannot call one of
+these operations at all, and their rows stay `UNKNOWN` however long the install
+runs. That is not a coverage gap in your usage; it is a property of the profile.
+
+The readout says which of the two you are looking at. Three shapes, three
+different sentences:
+
+| What you see | What it means |
+|---|---|
+| `NOT YET OBSERVED, but reachable: …` | the bound profile advertises these; a call records an observation |
+| `NOT OBSERVABLE through \`graphi mcp\`: …` | the bound profile does not advertise these; no amount of use will record one |
+| `NOT REACHABLE THROUGH ANY SHIPPED PROFILE: …` | nothing can observe these — a build defect, not a setting |
+
+And when *nothing* on the seam is reachable through the default profile — the
+state of a stock install today — the document's overall verdict says so rather
+than reporting a bare `UNKNOWN`:
+
+```
+  state:      UNKNOWN-AND-UNOBSERVABLE — no dual-run observation has been recorded AND
+              none can be: `graphi mcp` reaches nothing on the seam
+```
+
+```
+THIS RECORD CANNOT FILL in `graphi mcp`: not one of the 10 operation(s) on the seam is
+reachable there. Its emptiness is therefore evidence about the PROFILE, not about
+the two paths, and waiting longer will not change it.
+```
+
+To observe these operations, bind a profile that advertises them —
+`graphi mcp -labs`. The `REACHABLE VIA` column names it per operation, and
+`graphi doctor`'s `executor-seam` check names it per operation too.
+
+This is disclosure, not a promotion. No tier moved: the Stable-12 and the
+eleven-tool default profile are unchanged, and `go run ./cmd/seamreach -check`
+is the CI gate that refuses a future migration putting an operation on the seam
+with no shipped profile that reaches it.
 
 ### Coverage — how much of what happened was actually compared
 
@@ -270,6 +316,18 @@ directions: an older reader ignores the new keys, and a newer reader treats a
 record written without them as `skipped: 0` and derives `dispatches` from the
 observations, which is exactly what a pre-SW-245 record meant. `graphi doctor`
 and the CI leg read the new fields; nothing else does.
+
+SW-248 added the reachability axis: `reach_evaluated`, `default_profile`,
+`reachable_in_default`, `unobservable_in_default`, `unreachable_anywhere` and an
+echo of `profiles` on the document, plus `reach` and `reached_by` per operation.
+Those are additive in the same sense. **One change is not, and is stated here
+rather than left to be discovered:** the document-level `state` gained the value
+`UNKNOWN-AND-UNOBSERVABLE`, which replaces a bare `UNKNOWN` when the record is
+empty *and* nothing on the seam is reachable through the default profile. A
+reader comparing `state == "UNKNOWN"` stops matching a fresh install. That is
+the point — the two conditions were being reported under one word, and doing so
+is the defect SW-248 closed. The persisted **segment** format is untouched, so
+nothing on disk needs migrating.
 
 `graphi doctor`'s own `executor-divergence` check refuses to report **PASS** while
 anything is skipped, even when every operation was observed and none diverged:
@@ -383,3 +441,9 @@ honest, and then asserts the round trip — that unsetting the variable returns
 every operation to the compiled-in default, which since SW-244 the workflow
 checks is **`10 shadow`**. A rollback that stopped working would fail CI rather
 than fail an operator.
+
+Since SW-248 it also runs the reachability gate (`go run ./cmd/seamreach -check`)
+and then runs it again with a deliberately introduced violation — an operation in
+`shadow` that no shipped profile advertises — asserting it exits **non-zero**. A
+gate nobody has watched fail is a claim about a gate, and this one exists because
+an absent check let exactly that defect ship.
