@@ -26,6 +26,26 @@ file:
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-08-28
+
+A diagnostics-only patch. No operation behaves differently, no wire name, request
+schema, canonical result byte or error code moves, and the eleven-tool default MCP
+profile is unchanged.
+
+**Cut now, deliberately, and before any evidence accrues.** `0.11.0` reports the
+executor seam's divergence record in wording that reads as *not yet observed* when the
+truth on a stock install is *cannot be observed here* — so assessing SW-238's
+precondition (a) with a `0.11.0` binary reproduces the exact defect this release fixes.
+The observation count is still zero everywhere, which makes this the last moment at
+which every future observation can come from a single, honest binary: the persisted
+record carries `schema` and `pid` but no binary version, so provenance across two
+versions would have to be attested by hand rather than read.
+
+**If you parse the JSON**: the document-level `state` gains `UNKNOWN-AND-UNOBSERVABLE`,
+which *replaces* a bare `UNKNOWN` on a stock install rather than appearing beside it.
+This is a diagnostic surface with no stability contract, hence a patch — but it is not
+an additive change, and a consumer matching on `UNKNOWN` exactly will need updating.
+
 ### Changed
 
 - **A shadow-path operation no shipped profile can reach now says so** (SW-248).
@@ -60,6 +80,25 @@ file:
   workflow runs it and then runs it again with a deliberately introduced
   violation, asserting it exits non-zero: the gap this closes existed because
   nothing asked the question at merge time.
+
+### Documentation
+
+- **The command table lists the shipped `graphi extension` verbs** (SW-246). The
+  rule-pack family — `validate` · `install` · `list` · `doctor` · `enable` · `disable`
+  · `remove`, plus the developer kit's `init` · `lint` · `conform` — shipped in
+  SW-229/SW-230 and was absent from `readme.md`, whose only occurrence of the word
+  "extension" meant the VS Code editor extension. A reader searching for the feature
+  found a different one. The collision is resolved and the row added.
+
+  A contradiction fell out of it: the readme claimed "all **59**" subcommands while
+  its own gated census, eighteen lines earlier, already said **60** — the manifest
+  carries 60 `cli-subcommand` rows and `extension` is the 60th. The wrong number
+  survived because it sat in HTML bold with no census label, where the claims gate
+  could not see it.
+
+  Room for the new row was made inside the 400-line ceiling by deleting a duplicated
+  subcommand row, not by moving the ceiling; four standing refusal conditions are now
+  recorded beside the constant that holds it.
 
 ## [0.11.0] - 2026-08-28
 
