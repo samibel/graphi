@@ -150,6 +150,67 @@ func TestSW232_RollbackWorkflowExercisesTheSwitch(t *testing.T) {
 	}
 }
 
+// TestSW245_RollbackDocStatesTheNewCostProfile is AC-7 of SW-245.
+//
+// The page's §2 used to tell an operator that `shadow` costs "about 2.0× legacy
+// in latency, CPU and allocations". Half of that is now wrong and the wrong half
+// is the one they act on: the caller no longer waits for the second path, while
+// the CPU and the allocations are exactly where they were. A page that kept the
+// old sentence would have an operator reclaiming latency that is not there by
+// rolling back a comparison that costs them nothing at the median — and a page
+// that replaced it with "shadow is free" would have them ignore a real 2× in
+// allocation on a host that has no headroom.
+//
+// So the check is two-sided on purpose: the page must state BOTH that the caller
+// stopped waiting and that the machine did not stop paying.
+func TestSW245_RollbackDocStatesTheNewCostProfile(t *testing.T) {
+	page := readRollbackDoc(t)
+	for _, want := range []struct {
+		what   string
+		phrase string
+	}{
+		{"that the second path is off the request thread", "does **not**\nrun on the thread that serves your request"},
+		{"what the caller now waits for", "0.973× legacy"},
+		{"what it used to be", "**2.05×** at p50 before SW-245"},
+		{"that the CPU and allocation cost did not go away", "unchanged at about 2.0× legacy"},
+		{"the saturated-host figure", "1.89×"},
+		{"that the deferral queue is bounded", "at most 64 comparisons"},
+		{"that a lost comparison is not agreement", "never\nevidence of agreement"},
+	} {
+		if !strings.Contains(page, want.phrase) {
+			t.Errorf("%s does not state %s (looked for %q)", rollbackDocPath, want.what, want.phrase)
+		}
+	}
+	// The superseded claim must be gone, not merely contradicted further down.
+	if strings.Contains(page, "**about 2.0×\nlegacy** in latency, CPU and allocations") {
+		t.Errorf("%s still claims shadow costs 2.0× in LATENCY; SW-245 removed that half of "+
+			"the cost and an operator reading it would roll back to reclaim nothing", rollbackDocPath)
+	}
+}
+
+// AC-4 of SW-245: the page teaches an operator to read the coverage line, names
+// both causes of a skipped comparison, and states that graphi does not sample —
+// because "SKIPPED: 0" only means something if the reader knows nothing was
+// dropped on purpose.
+func TestSW245_RollbackDocExplainsCoverage(t *testing.T) {
+	page := readRollbackDoc(t)
+	for _, want := range []struct {
+		what   string
+		phrase string
+	}{
+		{"the coverage line", "coverage:"},
+		{"the three per-operation numbers", "**SKIPPED**"},
+		{"the load cause", "`queue-full`"},
+		{"the shutdown cause", "`drain-abandoned`"},
+		{"that graphi does not sample", "**There is no sampling.**"},
+		{"that partial coverage is not a doctor PASS", "refuses to report **PASS** while"},
+	} {
+		if !strings.Contains(page, want.phrase) {
+			t.Errorf("%s does not explain %s (looked for %q)", rollbackDocPath, want.what, want.phrase)
+		}
+	}
+}
+
 func readRollbackDoc(t *testing.T) string {
 	t.Helper()
 	raw, err := os.ReadFile(rollbackDocPath)

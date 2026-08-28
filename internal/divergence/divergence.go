@@ -110,13 +110,25 @@ type Mismatch struct {
 
 // OperationRecord is one operation's counters inside a segment, and the same
 // shape after merging segments.
+//
+// Skipped and SkipReasons are SW-245's coverage disclosure. Since the dual run
+// moved off the caller's critical path the seam can reach a bounded queue that
+// is full, or a shutdown that ran out of drain budget, and NOT compare a call it
+// otherwise would have. Those calls are counted here so Observations can never
+// be read as "every dispatch was compared" when it was not — see the
+// DivergenceRecorder.RecordSkipped contract in surfaces/client/canary.go.
 type OperationRecord struct {
-	Operation    string     `json:"operation"`
-	Observations int        `json:"observations"`
-	Mismatches   int        `json:"mismatches"`
-	FirstSeen    *time.Time `json:"first_seen,omitempty"`
-	LastSeen     *time.Time `json:"last_seen,omitempty"`
-	LastMismatch *Mismatch  `json:"last_mismatch,omitempty"`
+	Operation    string `json:"operation"`
+	Observations int    `json:"observations"`
+	Mismatches   int    `json:"mismatches"`
+	// Skipped is how many dispatches reached the seam and were NOT compared.
+	Skipped int `json:"skipped,omitempty"`
+	// SkipReasons breaks Skipped down by cause, because "dropped under load"
+	// and "abandoned at shutdown" are different findings for an operator.
+	SkipReasons  map[string]int `json:"skip_reasons,omitempty"`
+	FirstSeen    *time.Time     `json:"first_seen,omitempty"`
+	LastSeen     *time.Time     `json:"last_seen,omitempty"`
+	LastMismatch *Mismatch      `json:"last_mismatch,omitempty"`
 }
 
 // segment is the on-disk file one process owns.
@@ -226,6 +238,44 @@ func (s *Store) RecordDivergence(operation string, mismatch bool, kind, legacy, 
 	// all) and every mismatch (which is the finding). Everything else
 	// coalesces into the interval.
 	due := mismatch || !s.flushed || at.Sub(s.lastFlush) >= s.flushEvery
+	s.mu.Unlock()
+	if due {
+		_ = s.Flush()
+	}
+}
+
+// RecordSkipped records count dispatches that reached the seam and were NOT
+// compared, for the stated reason (SW-245 AC-4).
+//
+// A skip is a COVERAGE finding, not a divergence, so it does not touch the
+// mismatch counters and cannot make a record read DIVERGED. It does flush
+// eagerly the first time it happens, for the reason a mismatch does: a coverage
+// gap an operator never gets to read is the same as one that was never
+// disclosed. Repeats coalesce into the ordinary interval, because a queue that
+// is dropping is dropping fast and one write per drop would turn a load problem
+// into a disk problem.
+func (s *Store) RecordSkipped(operation string, count int, reason string) {
+	if operation == "" || count <= 0 {
+		return
+	}
+	if reason == "" {
+		reason = "unspecified"
+	}
+	s.mu.Lock()
+	at := s.now().UTC()
+	rec, ok := s.ops[operation]
+	if !ok {
+		rec = &OperationRecord{Operation: operation}
+		s.ops[operation] = rec
+	}
+	first := rec.Skipped == 0
+	rec.Skipped += count
+	if rec.SkipReasons == nil {
+		rec.SkipReasons = map[string]int{}
+	}
+	rec.SkipReasons[bound(reason)] += count
+	s.dirty = true
+	due := first || !s.flushed || at.Sub(s.lastFlush) >= s.flushEvery
 	s.mu.Unlock()
 	if due {
 		_ = s.Flush()

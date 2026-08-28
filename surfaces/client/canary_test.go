@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/samibel/graphi/engine/opcatalog"
@@ -24,15 +25,38 @@ import (
 // canaryStub is a Client that only answers DeadCode. Every other method is left
 // to the embedded nil interface and panics if reached, which is the point: the
 // canary seam must not touch anything else.
+//
+// The call counter is mutex-guarded since SW-245, because the shadow position's
+// second call now arrives on a worker goroutine. Assertions read it through
+// callCount, which drains the deferred comparisons first — "shadow ran the
+// legacy method twice" is a claim about the seam, and reading the counter
+// without the barrier would turn it into a claim about scheduling.
 type canaryStub struct {
 	Client
+	mu     sync.Mutex
 	calls  int
 	answer func(call int, p DeadCodeParams) ([]byte, error)
 }
 
 func (s *canaryStub) DeadCode(_ context.Context, p DeadCodeParams) ([]byte, error) {
+	s.mu.Lock()
 	s.calls++
-	return s.answer(s.calls, p)
+	call := s.calls
+	answer := s.answer
+	s.mu.Unlock()
+	return answer(call, p)
+}
+
+// callCount waits for the deferred dual run and returns how many times the
+// legacy method was reached.
+func (s *canaryStub) callCount(t *testing.T) int {
+	t.Helper()
+	if err := DrainCanaryShadow(context.Background()); err != nil {
+		t.Fatalf("DrainCanaryShadow: %v", err)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.calls
 }
 
 // steady answers identically on every call — the parity case.
@@ -474,8 +498,8 @@ func TestCanary_ModesRunTheExpectedPaths(t *testing.T) {
 			if err != nil {
 				t.Fatalf("DispatchOperation: %v", err)
 			}
-			if stub.calls != tc.wantCalls {
-				t.Errorf("%q ran the legacy method %d times, want %d", tc.mode, stub.calls, tc.wantCalls)
+			if got := stub.callCount(t); got != tc.wantCalls {
+				t.Errorf("%q ran the legacy method %d times, want %d", tc.mode, got, tc.wantCalls)
 			}
 			// The argument survives every position — including the executor's
 			// JSON round trip, which is where a dropped field would show.
@@ -508,8 +532,8 @@ func TestCanary_ShadowReturnsTheLegacyResult(t *testing.T) {
 	if want := []byte(`{"call":1}`); !bytes.Equal(got, want) {
 		t.Fatalf("shadow returned %s, want the LEGACY result %s", got, want)
 	}
-	if stub.calls != 2 {
-		t.Fatalf("shadow ran %d call(s); dual-run means both paths execute", stub.calls)
+	if got := stub.callCount(t); got != 2 {
+		t.Fatalf("shadow ran %d call(s); dual-run means both paths execute", got)
 	}
 }
 
@@ -646,8 +670,8 @@ func TestCanary_DispatchIsBoundedToTheMigratedSet(t *testing.T) {
 		t.Errorf("the rejection does not name the migrated set, so it does not tell a caller "+
 			"what IS accepted: %v", err)
 	}
-	if stub.calls != 0 {
-		t.Errorf("the rejected operation still reached a client method (%d calls)", stub.calls)
+	if got := stub.callCount(t); got != 0 {
+		t.Errorf("the rejected operation still reached a client method (%d calls)", got)
 	}
 	if _, err := DispatchOperation(context.Background(), stub, nil); err == nil {
 		t.Error("DispatchOperation accepted nil arguments")

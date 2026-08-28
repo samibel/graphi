@@ -211,12 +211,39 @@ jobs:
             echo "::error::the two paths DIVERGED on the shipped default ($mismatches mismatch(es))"
             exit 1
           fi
-          "$RUNNER_TEMP/graphi" doctor -divergence
 
-          # And the in-process guard for the same property, so a regression
-          # fails a unit run too rather than only this leg.
+          # SW-245 AC-4: since the comparison is deferred onto a bounded queue,
+          # an observation count alone is no longer a coverage claim. Three
+          # sequential calls on an idle runner must lose NOTHING — and, more to
+          # the point, the record must SAY so rather than leave it inferred. A
+          # non-zero skip here would mean either the queue is far smaller than it
+          # should be or a session is exiting without draining, and both are
+          # findings, not noise.
+          dispatches=$(jq -r '.dispatches' < "$RUNNER_TEMP/divergence-shadow.json")
+          skipped=$(jq -r '.skipped' < "$RUNNER_TEMP/divergence-shadow.json")
+          coverage=$(jq -r '.coverage' < "$RUNNER_TEMP/divergence-shadow.json")
+          if [ "$skipped" != "0" ] || [ "$coverage" != "1" ]; then
+            echo "::error::three sequential calls lost $skipped of $dispatches comparison(s) (coverage $coverage)"
+            jq -r '.skip_reasons' < "$RUNNER_TEMP/divergence-shadow.json"
+            exit 1
+          fi
+          if [ "$dispatches" -lt 3 ]; then
+            echo "::error::the record accounts for only $dispatches dispatch(es); 3 were made"
+            exit 1
+          fi
+
+          "$RUNNER_TEMP/graphi" doctor -divergence | tee "$RUNNER_TEMP/divergence-shadow.txt"
+          # The human readout has to carry the coverage statement too: --json is
+          # what a machine reads, and this is what an operator reads.
+          grep -q 'coverage:' "$RUNNER_TEMP/divergence-shadow.txt"
+          grep -q 'no sampling, nothing dropped' "$RUNNER_TEMP/divergence-shadow.txt"
+
+          # And the in-process guards for the same properties, so a regression
+          # fails a unit run too rather than only this leg. SW-245's cases cover
+          # the half this leg cannot reach on an idle runner: a session that ends
+          # with a comparison still queued.
           cd "$GITHUB_WORKSPACE"
-          go test ./cmd/internal/runtime/ -run 'TestSW244' -count=1 -v
+          go test ./cmd/internal/runtime/ -run 'TestSW244|TestSW245' -count=1 -v
 
       # The seam's own kill-switch semantics, asserted directly: the three
       # positions install, the per-operation variable wins over the whole-seam

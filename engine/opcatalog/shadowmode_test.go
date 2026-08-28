@@ -324,6 +324,10 @@ func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 	callSites := map[string]int{
 		filepath.Join("surfaces", "mcp", "toolcalls.go"): 1,
 		filepath.Join("surfaces", "http", "handlers.go"): 4,
+		// SW-245: pinned at zero. The deferred worker is reached FROM the seam
+		// and must never call back into it — a re-entrant dispatch would run
+		// the comparison's own comparison, and the queue would feed itself.
+		filepath.Join("surfaces", "client", "canary_shadow.go"): 0,
 	}
 	counted := map[string]int{}
 
@@ -335,6 +339,13 @@ func TestAX06_OnlyTheCanaryDispatchesThroughTheExecutor(t *testing.T) {
 		filepath.Join("surfaces", "mcp", "toolcalls.go"): "MCP tools/call — the generic executor branch",
 		filepath.Join("surfaces", "http", "handlers.go"): "HTTP — the generic executor branch",
 		filepath.Join("surfaces", "client", "canary.go"): "the seam's own definition",
+		// SW-245 split the shadow position's deferred half out of canary.go.
+		// It is the seam's own definition continued, not a new crossing: it
+		// contains no call to the seam at all (the callSites pin below says
+		// zero), only the worker the shadow arm hands its comparison to. It is
+		// declared rather than exempted because an undeclared file is how a
+		// real fourth caller would arrive unnoticed.
+		filepath.Join("surfaces", "client", "canary_shadow.go"): "the seam's deferred dual-run worker",
 	}
 
 	found := map[string]bool{}

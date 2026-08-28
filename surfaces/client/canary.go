@@ -692,7 +692,16 @@ func recordCanaryMismatch(m CanaryMismatch) {
 // process and the most recent one. The fixture suite asserts the count is zero
 // after every canary case; canary_test.go asserts it is NOT zero when the paths
 // genuinely differ, so the check is non-vacuous in both directions.
+//
+// It DRAINS the deferred-comparison queue first (SW-245). Since the second path
+// runs off the caller's goroutine, "how many divergences have been recorded" is
+// only a well-defined question once everything queued has been compared —
+// without the barrier every assertion on this counter would be a race against
+// the worker rather than a statement about the seam. The drain is unbounded on
+// purpose: a comparison that never finishes is a bug the test should hang on,
+// not one it should time out and report as a clean count.
 func CanaryMismatches() (int, CanaryMismatch) {
+	_ = DrainCanaryShadow(context.Background())
 	canaryMismatchMu.Lock()
 	defer canaryMismatchMu.Unlock()
 	return canaryMismatchCount, canaryMismatchLast
@@ -701,11 +710,18 @@ func CanaryMismatches() (int, CanaryMismatch) {
 // ResetCanaryMismatches clears the recorder. It exists for tests, which need a
 // per-case zero point, and it is exported because the fixture suite that asserts
 // on it lives in surfaces_test rather than in this package.
+//
+// It drains first, for the reason CanaryMismatches does and one more: a job
+// still queued from the previous case would otherwise land AFTER the reset and
+// be attributed to the next one. It clears the skip counters too, so a test's
+// zero point covers both halves of the coverage picture.
 func ResetCanaryMismatches() {
+	_ = DrainCanaryShadow(context.Background())
 	canaryMismatchMu.Lock()
-	defer canaryMismatchMu.Unlock()
 	canaryMismatchCount = 0
 	canaryMismatchLast = CanaryMismatch{}
+	canaryMismatchMu.Unlock()
+	resetCanarySkips()
 }
 
 // DivergenceRecorder receives every dual-run OBSERVATION the seam makes — the
@@ -737,6 +753,25 @@ type DivergenceRecorder interface {
 	// whether the two paths disagreed; kind, legacy and executor describe the
 	// disagreement and are empty when there was none.
 	RecordDivergence(operation string, mismatch bool, kind, legacy, executor string)
+
+	// RecordSkipped records count dispatches that reached the shadow seam and
+	// were NOT compared, for the stated reason.
+	//
+	// # Why the record needs this at all (SW-245 AC-4)
+	//
+	// Before SW-245 the comparison ran inline, so "observed" and "dispatched"
+	// were the same number and the record could report one and mean both. Now
+	// the comparison runs on a bounded worker queue, and a caller that outruns
+	// it loses comparisons. Without this method the record would keep counting
+	// only what it compared — and an observation count read as coverage, when a
+	// skipped call sits invisibly beside it, is exactly the reading AC-4
+	// forbids: absence of a comparison presented as evidence of agreement.
+	//
+	// The reason string is kept because "we dropped 4 000 comparisons under
+	// load" and "we abandoned 3 at shutdown" are different findings for an
+	// operator, and collapsing them into one total would hide which one
+	// happened.
+	RecordSkipped(operation string, count int, reason string)
 }
 
 // divergenceRecorder holds the installed recorder, or a nil one. It is an
@@ -839,34 +874,32 @@ func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, e
 		return args.invoke(ctx, c)
 	}
 
+	if mode == CanaryModeShadow {
+		// Shadow: legacy first, and the caller returns on it. SW-245 moved the
+		// second path off this goroutine — see canary_shadow.go for why, and
+		// for what the deferral does and does not trade away. What the caller
+		// receives is unchanged in value and now also unchanged in timing: it
+		// no longer waits for an experiment whose result it never sees.
+		//
+		// Building the Executor moved with the comparison. It used to happen
+		// here, before the legacy call, and it is not free (it resolves the
+		// frozen catalog and builds the adapter map); nothing about it has to
+		// happen before the caller is answered.
+		legacyBytes, legacyErr := args.invoke(ctx, c)
+		deferCanaryComparison(ctx, c, args, operation, legacyBytes, legacyErr)
+		return legacyBytes, legacyErr
+	}
+
+	// Active: the executor's own result is what the caller receives, so there
+	// is nothing to defer and this path is byte-for-byte what it was.
 	executor, err := NewExecutor(c)
 	if err != nil {
-		if mode == CanaryModeActive {
-			// The selected path could not be built. Fail closed rather than
-			// quietly serving the other one: an `active` canary that silently
-			// answers from legacy is a kill switch that lies about its position.
-			return nil, err
-		}
-		observeCanary(operation, CanaryMismatch{
-			Operation: operation,
-			Kind:      "executor-unavailable",
-			Legacy:    "(ran)",
-			Executor:  err.Error(),
-		}, true)
-		return args.invoke(ctx, c)
+		// The selected path could not be built. Fail closed rather than
+		// quietly serving the other one: an `active` canary that silently
+		// answers from legacy is a kill switch that lies about its position.
+		return nil, err
 	}
-
-	if mode == CanaryModeActive {
-		return executeCanary(ctx, executor, args)
-	}
-
-	// Shadow: legacy first, so the value the caller receives is decided before
-	// the experiment runs and cannot be influenced by it.
-	legacyBytes, legacyErr := args.invoke(ctx, c)
-	executorBytes, executorErr := executeCanary(ctx, executor, args)
-	mismatch, differs := compareCanaryOutcomes(operation, legacyBytes, legacyErr, executorBytes, executorErr)
-	observeCanary(operation, mismatch, differs)
-	return legacyBytes, legacyErr
+	return executeCanary(ctx, executor, args)
 }
 
 // executeCanary drives one request through the executor: catalog lookup,
