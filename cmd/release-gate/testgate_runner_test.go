@@ -193,6 +193,13 @@ func writeExitCodeProbe(t *testing.T) string {
 		}
 	}
 	write("go.mod", "module exitcodeprobe\n\ngo 1.22\n")
+	// Its own workspace file, so the probe builds the same way wherever
+	// t.TempDir() lands. Without it, a go.work anywhere ABOVE the temp
+	// directory (this repository has one at its root) makes the build fail with
+	// "no modules were found in the current workspace" — verified by putting a
+	// go.work in an ancestor and watching it break, then adding this and
+	// watching it pass.
+	write("go.work", "go 1.22\n\nuse .\n")
 	write("main.go", `package main
 
 import (
