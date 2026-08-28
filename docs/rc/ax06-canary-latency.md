@@ -1023,6 +1023,28 @@ looks like on this instrument — both ratios sit inside the run's own A/A contr
 claim is that the caller's cost in `shadow` is **no longer separable from legacy at this
 resolution**, not that it is negative.
 
+**What this instrument cannot separate — read the two baselines carefully.** The pooled
+legacy baseline moved from **382.979 µs** in §6.2 to **429.271 µs** here, +12 %. It would be
+convenient to write that off as machine state, and the run gives no basis to. The sampler
+does **not** drain between samples: after each `shadow` sample the worker runs a full
+executor pass (plus a `NewExecutor`) *concurrently with the next arms' timed calls*, so every
+arm in the after-run — including both legacy control arms — is measured on a machine carrying
+that load. The same-run A/A control cannot detect it either, because both control arms carry
+it equally. So the honest statement is that the +12 % shift is **unattributed**: this
+instrument cannot say how much of it is the worker and how much is the machine, and neither
+reading is claimed here.
+
+The instrument is deliberately left that way rather than drained between arms. The concurrent
+worker load is not an artefact of the test — it is what the shipped `shadow` default actually
+does to a host — so keeping it in makes the after-run's baseline a *loaded-machine* baseline
+and the 0.973× a caller-perceived ratio measured under the load shadow really imposes. That
+is the conservative direction for AC-1: draining would remove real cost from the comparison
+and flatter the result. It also does not threaten the verdict, which survives the bias in
+either direction — the ≤1.15× bar is met at 0.973×, and §7.3's injected synchronous dual run
+still reads 2.7× on the same instrument. What must not be read off this table is a
+before/after comparison of the *baselines* themselves; the comparison that carries the claim
+is shadow against legacy **within** each run.
+
 The AX-06 gate itself, measured in the same session and unchanged by this story:
 `p50 PASS overhead=4.646 µs budget=250 µs (legacy baseline 426.229 µs, executor 430.875 µs)`,
 `p95 PASS overhead=−20.625 µs budget=250 µs` — one round, no retry. SW-244's accounting check
@@ -1108,6 +1130,15 @@ therefore reports skips: the benchmark as a `skipped/op` metric, the AC-1 test a
 `SW-245-SHADOW-RATIO-COVERAGE` log line. Both read zero in the measurements above except the
 `GOMAXPROCS=1` run noted there. A ratio recorded beside a non-zero skip count is not
 comparable to one recorded beside a zero.
+
+Three causes can raise that count, and only one of them is about load:
+`queue-full` (the bound doing its job), `drain-abandoned` (a shutdown that ran out of budget)
+and `caller-cancelled` — a caller that hung up or timed out *while the legacy method was
+still running*, whose legacy outcome is `context canceled` rather than a result and therefore
+has nothing comparable in it. The last one never appears in a latency run (nothing cancels
+these callers) but it is counted the same way everywhere else, because a comparison that did
+not happen is a coverage gap however it failed to happen. `docs/executor-seam-rollback.md` §5
+is the operator-facing version.
 
 ### 7.6 Scope
 

@@ -236,7 +236,7 @@ observation counts above cover 95.6% of what the seam saw. A call that was not
 compared is NOT evidence that the two paths agree — it is a coverage gap, …
 ```
 
-The two causes you can see:
+The three causes you can see:
 
 * **`queue-full`** — calls arrived faster than the worker could compare them and
   the 64-deep queue was full. Expect this on a busy or CPU-starved host; it is
@@ -246,11 +246,30 @@ The two causes you can see:
   5-second drain budget with comparisons still queued. This should be rare; a
   standing non-zero count here means comparisons are routinely outliving the
   sessions that started them.
+* **`caller-cancelled`** — the caller hung up or timed out *while the legacy
+  method was still running*, so the legacy outcome was `context canceled` /
+  `context deadline exceeded` rather than a result. There is nothing comparable
+  to compare: the deferred pass runs on a context that survives the caller (it
+  has to, or the comparison would be cancelled the instant the request ends), so
+  it would succeed and the pair would be recorded as an `error-presence`
+  divergence manufactured by the shutdown of the request. Expect a low steady
+  count on an HTTP surface with impatient clients; a *large* one means callers
+  are giving up on the legacy path, which is a latency problem, not a parity
+  one.
 
 **There is no sampling.** graphi does not compare a fraction of calls on purpose;
 every dispatch is queued for a full byte-exact comparison, and the only way one
-is missed is one of the two causes above, both of which are counted. So a
+is missed is one of the three causes above, all of which are counted. So a
 `SKIPPED` of zero means what it says.
+
+**Record format.** The `executor-divergence-v1` document gained three additive
+fields with SW-245 — `dispatches` and `skipped` per operation and per document,
+and `coverage` — alongside the existing observation and mismatch counts. The
+schema tag is unchanged because the addition is backward compatible in both
+directions: an older reader ignores the new keys, and a newer reader treats a
+record written without them as `skipped: 0` and derives `dispatches` from the
+observations, which is exactly what a pre-SW-245 record meant. `graphi doctor`
+and the CI leg read the new fields; nothing else does.
 
 `graphi doctor`'s own `executor-divergence` check refuses to report **PASS** while
 anything is skipped, even when every operation was observed and none diverged:
@@ -280,9 +299,19 @@ Three things can make it a lower bound:
   in a queue as well as counts in a buffer, so shutting a session down now drains
   the queue *and* flushes the buffer before releasing anything. A graceful exit —
   including a graceful rollback (§3, `GRAPHI_CANARY_ALL=legacy` + restart) —
-  therefore persists everything it observed. What is left is the case that was
-  always unrecoverable: a `SIGKILL`, a crash, or a power loss, where anything
-  still queued or buffered goes with the process.
+  therefore persists everything **that session** observed. What is left is the
+  case that was always unrecoverable: a `SIGKILL`, a crash, or a power loss,
+  where anything still queued or buffered goes with the process.
+
+  Be precise about which sessions those are. The drain-and-flush belongs to the
+  MCP session lifecycle (`graphi mcp`, and `graphi doctor`, which apply the
+  kill-switch positions and install the recorder); replacing or retiring the
+  recorder mid-process — a state-directory repoint, or a rollback to all-`legacy`
+  applied without a restart — drains first for the same reason. `graphi http`
+  drains its queue at exit too, so no comparison runs against a store that is
+  closing under it, but that surface never installs a recorder and never applies
+  the kill switch, so it has no durable record to flush and no per-operation
+  override to honour in the first place. Its comparisons are in-process only.
 * **Unreadable segments.** A file in the directory that does not parse is
   counted and disclosed, never silently skipped.
 * **Pruned segments.** One process writes one segment file, and the directory

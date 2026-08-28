@@ -202,7 +202,17 @@ const shadowDrainBudget = 5 * time.Second
 // has already been served, the abandoned comparisons are counted and disclosed,
 // and refusing to exit because a diagnostic was slow would be the wrong trade —
 // the same one installDivergenceRecorder makes when a store cannot be built.
+//
+// The empty check in front is not an optimisation for its own sake. The queue
+// is process-global while Runtimes are not: Attach's error path, OpenSession's
+// retries and a roots-change rebind all close a Runtime that never dispatched
+// anything, and each of those would otherwise build a timer, a context and a
+// watcher goroutine to wait on a queue that is empty. With the check, a Close
+// with nothing outstanding costs one mutex acquisition.
 func drainShadowComparisons() {
+	if client.CanaryShadowPending() == 0 {
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), shadowDrainBudget)
 	defer cancel()
 	_ = client.DrainCanaryShadow(ctx)
@@ -615,6 +625,7 @@ func installDivergenceRecorder() {
 	defer installedDivergence.mu.Unlock()
 
 	if key == "" {
+		drainBeforeRecorderChange()
 		retireDivergenceStoreLocked()
 		client.SetDivergenceRecorder(nil)
 		return
@@ -625,6 +636,7 @@ func installDivergenceRecorder() {
 		// observations through a roots-change rebind instead of dropping them.
 		return
 	}
+	drainBeforeRecorderChange()
 	store, err := divergence.NewStore(state.StateDir())
 	if err != nil {
 		retireDivergenceStoreLocked()
@@ -634,6 +646,30 @@ func installDivergenceRecorder() {
 	retireDivergenceStoreLocked()
 	installedDivergence.store, installedDivergence.key = store, key
 	client.SetDivergenceRecorder(store)
+}
+
+// drainBeforeRecorderChange empties the deferred-comparison queue before the
+// installed recorder is replaced or removed.
+//
+// Without it, jobs queued under the OUTGOING recorder run after the swap and
+// record through the incoming one — into a different state directory, or, when
+// the new position set is all-`legacy`, into nothing at all. Neither outcome is
+// observed durably and neither is counted as skipped, which is the one hole
+// AC-4's observed + skipped == dispatched equation forbids. Draining first
+// makes every job that was queued under a recorder record through that
+// recorder.
+//
+// It runs while installedDivergence.mu is held. That is safe because nothing on
+// the worker's path takes that mutex: the worker reaches the recorder through
+// the pointer surfaces/client holds, not through this package.
+//
+// The window it closes is narrow — it needs the recorder key to change inside a
+// live process, which today means the environment moving between two
+// ApplyCanaryMode calls — so it shares Close's budget rather than getting a
+// longer one, and it is a no-op (one mutex acquisition) when nothing is queued,
+// which is every startup.
+func drainBeforeRecorderChange() {
+	drainShadowComparisons()
 }
 
 // retireDivergenceStoreLocked flushes and forgets the installed store. The

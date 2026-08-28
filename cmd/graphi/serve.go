@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	rtime "github.com/samibel/graphi/cmd/internal/runtime"
 	"github.com/samibel/graphi/core/parse"
@@ -343,6 +344,17 @@ func runHTTP(args []string) int {
 		return 1
 	}
 	defer func() { _ = store.Close() }()
+	// SW-245 (review MINOR-2): the HTTP surface dispatches through the same
+	// canary seam as MCP, so on the shipped `shadow` default it queues deferred
+	// comparisons — but it builds no Runtime, so nothing here reaches
+	// Runtime.Close's drain. Registered AFTER the store's defer so it runs
+	// BEFORE it: a comparison that ran against a closing store would not merely
+	// fail, it would manufacture a false "error-presence" divergence out of the
+	// shutdown. The flush is a no-op unless something installed a recorder;
+	// runHTTP does not call ApplyCanaryMode, so this surface still has no
+	// durable record and no env kill switch (see docs/executor-seam-rollback.md
+	// §5).
+	defer drainCanaryShadowForExit()
 
 	broker := observe.New()
 	cleanupIngest := func() {}
@@ -396,4 +408,28 @@ func runHTTP(args []string) int {
 		return 1
 	}
 	return 0
+}
+
+// httpShadowDrainBudget bounds how long `graphi http` waits at exit for the
+// deferred comparisons it queued. It matches Runtime.Close's budget for the
+// same reason: the queue is bounded at 64 jobs and one job costs about one
+// legacy call, and a wedged diagnostic must not become a server that will not
+// stop.
+const httpShadowDrainBudget = 5 * time.Second
+
+// drainCanaryShadowForExit performs, at exit, the half of AC-3 that a surface
+// without a Runtime would otherwise miss.
+//
+// It drains only; it installs nothing. A drain that runs out of budget records
+// what it abandoned as skipped, so the coverage disclosure stays true either
+// way, and a process with nothing queued pays one mutex acquisition.
+func drainCanaryShadowForExit() {
+	if client.CanaryShadowPending() == 0 {
+		rtime.FlushDivergenceRecord()
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), httpShadowDrainBudget)
+	defer cancel()
+	_ = client.DrainCanaryShadow(ctx)
+	rtime.FlushDivergenceRecord()
 }

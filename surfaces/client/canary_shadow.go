@@ -66,6 +66,30 @@ package client
 // is what the client adapters below may read — and drops only the cancellation
 // and the deadline.
 //
+// # Why a cancelled caller is not compared
+//
+// Detaching is right for the worker and wrong for the comparison, because the
+// two halves of a comparison would then run under different cancellation
+// semantics. The legacy path honours the caller's context all the way down —
+// the store's QueryContext, and the analysis engines' own ctx.Err() checks — so
+// a caller that disconnects or times out DURING the legacy call receives
+// `context canceled`. The executor pass, running on the detached context,
+// cannot be cancelled and succeeds. compareCanaryOutcomes reads that pair as an
+// `error-presence` divergence: legacy "context canceled" vs executor "ok".
+//
+// That would be a divergence manufactured by this file, not observed by it. It
+// is a mismatch, so it is flushed immediately and never coalesced away; it is
+// permanent in the segment; it flips `graphi doctor -divergence` to DIVERGED and
+// blocks the migration precondition that reads it. Before SW-245 both passes
+// shared the one cancelled context and agreed.
+//
+// So a dispatch whose caller was cancelled is NOT queued. The alternative —
+// letting the worker inherit the cancellation — trades a false divergence for a
+// different false divergence (both passes cancelled at unrelated moments) and
+// loses the comparison anyway. Nor is it silently dropped: it is counted as a
+// skip under `caller-cancelled`, which is a coverage gap under AC-4 and is
+// reported as one. Absence of a comparison never reads as agreement.
+//
 // # Why exit drains rather than abandons (AC-3)
 //
 // A queued comparison that has not run yet holds a finding nobody has seen. The
@@ -78,6 +102,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -99,6 +124,14 @@ const shadowSkipQueueFull = "queue-full"
 // shadowSkipDrainAbandoned is the reason recorded when a drain ran out of
 // budget and gave up on jobs that were still waiting.
 const shadowSkipDrainAbandoned = "drain-abandoned"
+
+// shadowSkipCallerCancelled is the reason recorded when the caller's context
+// was cancelled or its deadline fired while the LEGACY method was still
+// running, so the legacy outcome the comparison would be judged against is not
+// a result at all — it is the caller walking away.
+//
+// See "Why a cancelled caller is not compared" in the file comment.
+const shadowSkipCallerCancelled = "caller-cancelled"
 
 // shadowJob is one deferred comparison: everything the worker needs to run the
 // executor path and compare it against what the caller already received.
@@ -272,6 +305,10 @@ func resetCanarySkips() {
 // legacy bytes, and offer the job. Everything else the position used to do here
 // now happens on the worker.
 func deferCanaryComparison(ctx context.Context, c Client, args Arguments, operation string, legacyBytes []byte, legacyErr error) {
+	if callerWasCancelled(ctx, legacyErr) {
+		canaryShadow.noteSkip(operation, shadowSkipCallerCancelled, 1)
+		return
+	}
 	job := shadowJob{
 		ctx:         context.WithoutCancel(ctx),
 		client:      c,
@@ -283,6 +320,26 @@ func deferCanaryComparison(ctx context.Context, c Client, args Arguments, operat
 	if !canaryShadow.enqueue(job) {
 		canaryShadow.noteSkip(operation, shadowSkipQueueFull, 1)
 	}
+}
+
+// callerWasCancelled reports whether the legacy outcome about to be handed to
+// the worker is the caller giving up rather than an answer.
+//
+// Both halves matter. ctx.Err() catches the cancellation that has already
+// landed by the time the legacy method returned — the common shape, since the
+// legacy path propagates the same context it was cancelled on. errors.Is
+// catches the outcome that carries a context error the caller's own context
+// does not (yet) show: a per-call deadline inside the legacy path, or a
+// wrapped ctx.Err() returned a moment before the parent was marked done.
+//
+// It deliberately does NOT look at legacyBytes: a legacy call that returned
+// bytes AND a context error is still not a comparable outcome, because the
+// executor pass will not see that error.
+func callerWasCancelled(ctx context.Context, legacyErr error) bool {
+	if ctx != nil && ctx.Err() != nil {
+		return true
+	}
+	return errors.Is(legacyErr, context.Canceled) || errors.Is(legacyErr, context.DeadlineExceeded)
 }
 
 // cloneCanaryBytes copies the caller's result. A nil result stays nil: the
@@ -320,6 +377,26 @@ func runShadowComparison(job shadowJob) {
 	executorBytes, executorErr := executeCanary(job.ctx, executor, job.args)
 	mismatch, differs := compareCanaryOutcomes(job.operation, job.legacyBytes, job.legacyErr, executorBytes, executorErr)
 	observeCanary(job.operation, mismatch, differs)
+}
+
+// CanaryShadowPending reports how many deferred comparisons are waiting or
+// running right now.
+//
+// It exists so a caller on a shutdown path can skip the drain's machinery — a
+// timer, a context and a watcher goroutine — in the overwhelmingly common case
+// where there is nothing to drain (SW-245 MINOR-5: Runtime.Close drains the
+// process-global queue, and short-lived Runtimes close often).
+//
+// It is a snapshot, so a job enqueued immediately after it returns 0 is not
+// covered by a drain that skipped on its answer. That is the same race
+// DrainCanaryShadow's own empty fast path has, and it is bounded the same way:
+// a shutdown that races an in-flight dispatch is a dispatch whose caller is
+// still being served, and the job it queues is counted as skipped by the next
+// drain rather than lost silently.
+func CanaryShadowPending() int {
+	canaryShadow.mu.Lock()
+	defer canaryShadow.mu.Unlock()
+	return len(canaryShadow.jobs) + canaryShadow.inFlight
 }
 
 // DrainCanaryShadow blocks until every deferred comparison this process has

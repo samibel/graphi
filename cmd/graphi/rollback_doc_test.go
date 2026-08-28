@@ -202,12 +202,23 @@ func TestSW245_RollbackDocExplainsCoverage(t *testing.T) {
 		{"the three per-operation numbers", "**SKIPPED**"},
 		{"the load cause", "`queue-full`"},
 		{"the shutdown cause", "`drain-abandoned`"},
+		{"the cancelled-caller cause", "`caller-cancelled`"},
+		{"that the record format grew additively", "**Record format.**"},
+		{"which surfaces the exit guarantee covers", "drains its queue at exit too"},
 		{"that graphi does not sample", "**There is no sampling.**"},
 		{"that partial coverage is not a doctor PASS", "refuses to report **PASS** while"},
 	} {
 		if !strings.Contains(page, want.phrase) {
 			t.Errorf("%s does not explain %s (looked for %q)", rollbackDocPath, want.what, want.phrase)
 		}
+	}
+	// SW-245 review MINOR-2: the exit guarantee is a per-session one. The
+	// unqualified claim would tell an operator that any graceful graphi exit
+	// persists its comparisons, which is not true of a surface that installs no
+	// recorder.
+	if strings.Contains(page, "therefore persists everything it observed") {
+		t.Errorf("%s still claims a graceful exit persists everything OBSERVED without naming "+
+			"the session that owns the record; `graphi http` observes and persists nothing", rollbackDocPath)
 	}
 }
 

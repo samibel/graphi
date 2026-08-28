@@ -58,6 +58,17 @@ import (
 // Schema is the wire identifier of the persisted segment and of the rendered
 // document. A future shape change gets a new version rather than a silent
 // reinterpretation of these bytes.
+//
+// SW-245 added `dispatches`, `skipped`, `skip_reasons` and `coverage` WITHOUT
+// bumping this, which is the deliberate call and the rule for the next addition:
+// the version changes when an existing key changes meaning, not when a key is
+// added. The addition is compatible in both directions — an older reader ignores
+// keys it does not know, and a newer reader reading a record written before
+// SW-245 sees no `skipped`, which is the truth about that record (nothing was
+// deferred, so nothing was skipped) and makes `dispatches` fall out of the
+// observation count. A field whose ABSENCE could not be read as its zero value
+// would have to bump the version instead. The operator-facing note is in
+// docs/executor-seam-rollback.md §5, "Record format".
 const Schema = "executor-divergence-v1"
 
 // dirName is the sub-directory of the graphi state directory that holds the

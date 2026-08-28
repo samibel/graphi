@@ -539,3 +539,180 @@ func TestSW245_CancellingTheCallersContextDoesNotCancelTheComparison(t *testing.
 		t.Fatalf("in-process mismatches = %d after cancellation: %s", count, last)
 	}
 }
+
+// cancelledCallerStub is a legacy client that behaves the way every migrated
+// operation actually behaves under a cancelled caller: it honours the context.
+//
+// The store reaches SQLite through QueryContext and the analysis engines return
+// ctx.Err() from their own loops, so a caller that disconnects DURING the legacy
+// call gets a context error back. The stub reproduces exactly that, and answers
+// the deferred pass normally — because that pass runs on the detached context
+// and therefore cannot be cancelled.
+type cancelledCallerStub struct {
+	Client
+	mu    sync.Mutex
+	calls int
+	// cancel, when set, is invoked on the caller's pass: the client hangs up
+	// while the legacy method is still running.
+	cancel context.CancelFunc
+	// legacyErr overrides ctx.Err() on the caller's pass, so a test can cover
+	// the shape where the error is a WRAPPED context error the caller's own
+	// context does not show (a per-call deadline inside the legacy path).
+	legacyErr error
+}
+
+func (s *cancelledCallerStub) DeadCode(ctx context.Context, _ DeadCodeParams) ([]byte, error) {
+	s.mu.Lock()
+	s.calls++
+	call := s.calls
+	s.mu.Unlock()
+	if call > 1 {
+		// The deferred executor pass. It succeeds, which is the whole hazard:
+		// compared against the caller's `context canceled` it reads as an
+		// error-presence divergence.
+		return []byte(`{"legacy":true}`), nil
+	}
+	if s.cancel != nil {
+		s.cancel()
+	}
+	if s.legacyErr != nil {
+		return nil, s.legacyErr
+	}
+	return nil, ctx.Err()
+}
+
+func (s *cancelledCallerStub) callCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.calls
+}
+
+// TestSW245_ACancelledCallerIsNotComparedAndIsDisclosed is the regression the
+// review found: the deferral must not manufacture a divergence out of a caller
+// that walked away.
+//
+// Detaching the context (TestSW245_CancellingTheCallersContextDoesNotCancelThe
+// Comparison) is right for the WORKER and wrong for the COMPARISON, because the
+// two halves would then run under different cancellation semantics. When the
+// caller's context dies during the legacy call the caller receives
+// `context canceled`; the executor pass, on a context that cannot be cancelled,
+// succeeds; compareCanaryOutcomes reads that pair as `error-presence`. That is
+// a mismatch: flushed immediately, never coalesced away, permanent in the
+// segment, and enough on its own to flip `graphi doctor -divergence` to
+// DIVERGED — on evidence of nothing. Before SW-245 both passes shared the one
+// cancelled context and agreed, so it would be a regression in what the record
+// says.
+//
+// The fix is not to compare, and not to fall silent about it either: the
+// dispatch is counted as a skip under `caller-cancelled`, which AC-4 renders as
+// a coverage gap rather than as agreement.
+//
+// The sibling test above covers the OTHER ordering (legacy succeeded, then the
+// caller cancelled) and cannot see this one.
+func TestSW245_ACancelledCallerIsNotComparedAndIsDisclosed(t *testing.T) {
+	cases := []struct {
+		name string
+		// build returns the dispatch context and the stub for one shape.
+		build func(t *testing.T) (context.Context, *cancelledCallerStub)
+		// wantErr is what DispatchOperation must hand back to the caller,
+		// unchanged by any of this.
+		wantErr error
+	}{
+		{
+			// The common shape: an HTTP client disconnects, or an MCP session
+			// tears down, while the legacy method is still working.
+			name: "cancelled during the legacy call",
+			build: func(t *testing.T) (context.Context, *cancelledCallerStub) {
+				ctx, cancel := context.WithCancel(context.Background())
+				t.Cleanup(cancel)
+				return ctx, &cancelledCallerStub{cancel: cancel}
+			},
+			wantErr: context.Canceled,
+		},
+		{
+			// The caller was already gone when the dispatch started.
+			name: "cancelled before the dispatch",
+			build: func(t *testing.T) (context.Context, *cancelledCallerStub) {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx, &cancelledCallerStub{}
+			},
+			wantErr: context.Canceled,
+		},
+		{
+			// A deadline that fired inside the legacy path, wrapped on the way
+			// out. The caller's own context is still live, so only errors.Is
+			// can see it.
+			name: "a wrapped deadline the caller's context does not show",
+			build: func(t *testing.T) (context.Context, *cancelledCallerStub) {
+				return context.Background(), &cancelledCallerStub{
+					legacyErr: fmt.Errorf("dead_code: %w", context.DeadlineExceeded),
+				}
+			},
+			wantErr: context.DeadlineExceeded,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withCleanCanaryRecorder(t)
+			withCanaryMode(t, CanaryModeShadow)
+			recorder := withDivergenceRecorder(t)
+
+			ctx, stub := tc.build(t)
+			got, err := DispatchOperation(ctx, stub, &DeadCodeArgs{})
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("DispatchOperation err = %v, want %v — the caller's own outcome is untouched by any of this", err, tc.wantErr)
+			}
+			if got != nil {
+				t.Fatalf("DispatchOperation returned %q alongside the error", got)
+			}
+
+			if obs := recorder.observed(t); len(obs) != 0 {
+				t.Fatalf("a cancelled caller produced %d observation(s): %+v — "+
+					"the legacy outcome is the caller giving up, not a result to judge the executor against", len(obs), obs)
+			}
+			if count, last := CanaryMismatches(); count != 0 {
+				t.Fatalf("a cancelled caller manufactured %d in-process mismatch(es): %s", count, last)
+			}
+			if calls := stub.callCount(); calls != 1 {
+				t.Fatalf("legacy client was called %d time(s), want 1 — no executor pass may run for an uncomparable outcome", calls)
+			}
+
+			// AC-4: not compared is not agreement. It is a disclosed gap.
+			total, reasons := CanarySkipped()
+			if total != 1 || reasons[shadowSkipCallerCancelled] != 1 {
+				t.Fatalf("in-process skips = %d %v, want exactly 1 under %q", total, reasons, shadowSkipCallerCancelled)
+			}
+			skips := recorder.skipped(t)
+			if len(skips) != 1 {
+				t.Fatalf("recorder was told about %d skip(s), want 1: %+v", len(skips), skips)
+			}
+			if s := skips[0]; s.operation != CanaryOperation || s.count != 1 || s.reason != shadowSkipCallerCancelled {
+				t.Fatalf("skip = %+v, want {%s 1 %s}", s, CanaryOperation, shadowSkipCallerCancelled)
+			}
+		})
+	}
+}
+
+// TestSW245_ALiveCallerIsStillCompared is the non-vacuity half of the test
+// above: the guard must key on the caller being gone, not on there being an
+// error at all. A legacy error that is NOT a context error is still a
+// comparable outcome and must still be compared — otherwise the fix would
+// quietly stop comparing every failing call.
+func TestSW245_ALiveCallerIsStillCompared(t *testing.T) {
+	withCleanCanaryRecorder(t)
+	withCanaryMode(t, CanaryModeShadow)
+	recorder := withDivergenceRecorder(t)
+
+	stub := &canaryStub{answer: steady(nil, errors.New("dead_code: store is busy"))}
+	if _, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{}); err == nil {
+		t.Fatal("DispatchOperation err = nil, want the stub's error")
+	}
+	if obs := recorder.observed(t); len(obs) != 1 {
+		t.Fatalf("recorded %d observation(s), want 1 — an ordinary legacy failure is still comparable", len(obs))
+	}
+	if total, reasons := CanarySkipped(); total != 0 {
+		t.Fatalf("an ordinary legacy failure was skipped: %d %v", total, reasons)
+	}
+}

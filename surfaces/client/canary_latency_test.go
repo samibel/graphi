@@ -199,6 +199,20 @@ func canaryLatencyGateArms() []canaryLatencyArm {
 //
 // The kill-switch write sits OUTSIDE the timed window; it is one atomic store
 // and is not part of what is being measured.
+//
+// What the rotation deliberately does NOT do, since SW-245, is drain the
+// deferred comparisons between samples. After a `shadow` sample the worker runs
+// a whole executor pass concurrently with the arms that follow, so EVERY arm —
+// both legacy controls included — is timed on a machine carrying that load, and
+// the same-run A/A control cannot see it because both control arms carry it
+// equally. That is intentional: the load is what the shipped default really
+// does to a host, so leaving it in makes the ratio a caller-perceived one under
+// real conditions, and draining would flatter it by removing cost that shadow
+// genuinely imposes. The price is that this instrument cannot attribute a
+// between-RUN shift in the pooled baseline to the worker rather than to machine
+// state, which docs/rc/ax06-canary-latency.md §7.2 states rather than papers
+// over. Do not add a drain here to "clean up" the numbers without moving that
+// paragraph with it.
 func canaryLatencySample(t testing.TB, direct *Direct, arms []canaryLatencyArm) map[string][]time.Duration {
 	t.Helper()
 	if len(arms) == 0 {
