@@ -259,9 +259,17 @@ func RenderHuman(w io.Writer, doc Document) error {
 			"are a lower bound. Pruning is by age alone — a still-running but quiet writer's segment\n"+
 			"can be among them. See docs/executor-seam-rollback.md.\n", doc.Pruned)
 	}
+	// SW-244 moved the shipped position from `legacy` to `shadow`, and this
+	// footer had to move with it: the old wording explained an all-UNKNOWN
+	// record as the expected state of a normal install, which would now
+	// mis-explain a real coverage gap as normality. The honesty rule it exists
+	// to enforce is unchanged — UNKNOWN is the absence of evidence and never a
+	// statement of agreement — so only the second sentence, the one that says
+	// WHY an operation might be unobserved, is different.
 	fmt.Fprintf(w, "\nUNKNOWN means no dual-run observation was recorded for that operation. It is NOT\n"+
-		"a statement that the two paths agree: the seam only observes in `shadow`, and the\n"+
-		"shipped position is `legacy`. See docs/executor-seam-rollback.md.\n")
+		"a statement that the two paths agree. The seam only observes in `shadow`, which is\n"+
+		"the shipped position, so an operation still reading UNKNOWN has not been called on\n"+
+		"this install — or the seam was rolled back. See docs/executor-seam-rollback.md.\n")
 	return nil
 }
 

@@ -70,6 +70,54 @@ func TestSW232_RollbackDocAnswersTheOperatorQuestions(t *testing.T) {
 	}
 }
 
+// TestSW244_RollbackDocStatesTheShippedDefault is AC-7 of SW-244.
+//
+// An operator opens this page mid-incident, and the first thing they need from
+// it is where they are STARTING. A page that names the wrong shipped position
+// is worse than no page: it tells them a rollback is a no-op when it is not, or
+// that unsetting a variable returns them somewhere it does not.
+//
+// The check is written against client's compiled-in default rather than against
+// the literal `shadow`, so the NEXT story to move that constant fails here and
+// has to correct the page in the same commit — which is the failure this test
+// exists to force, and the one SW-244 itself found the page in.
+func TestSW244_RollbackDocStatesTheShippedDefault(t *testing.T) {
+	page := readRollbackDoc(t)
+	client.ResetCanaryModes()
+	t.Cleanup(client.ResetCanaryModes)
+	shipped := string(client.CanaryModeDefault())
+
+	// The positions table has to mark the right row, and only that row.
+	marked := "| `" + shipped + "` **(shipped default)** |"
+	if !strings.Contains(page, marked) {
+		t.Errorf("%s does not mark %q as the shipped default in its positions table "+
+			"(looked for %q)", rollbackDocPath, shipped, marked)
+	}
+	for _, other := range client.CanaryModes() {
+		if string(other) == shipped {
+			continue
+		}
+		if stale := "| `" + string(other) + "` **(shipped default)** |"; strings.Contains(page, stale) {
+			t.Errorf("%s still marks %q as the shipped default", rollbackDocPath, other)
+		}
+	}
+
+	// And §3's scope note, which is the sentence an operator acts on: what they
+	// get when no variable is set.
+	if want := "Unset is `" + shipped + "`"; !strings.Contains(page, want) {
+		t.Errorf("%s does not tell an operator what an unset switch gives them "+
+			"(looked for %q)", rollbackDocPath, want)
+	}
+
+	// The verification section's example readout must show the shipped
+	// configuration, not a rolled-back one — it is what a reader compares their
+	// own `graphi doctor` output against.
+	if want := ": " + shipped + " (compiled-in default)"; !strings.Contains(page, want) {
+		t.Errorf("%s's `graphi doctor` example does not show the shipped position "+
+			"(looked for %q)", rollbackDocPath, want)
+	}
+}
+
 // AC-5: the CI leg the page points at exists, moves the switch, runs the
 // suites in that position, and asserts the round trip. A page promising an
 // exercised rollback beside a workflow that does not exercise it would be worse

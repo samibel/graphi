@@ -147,11 +147,21 @@ func TestSW232_ShadowSessionWritesADurableRecord(t *testing.T) {
 	}
 }
 
-// AC-6: the shipped configuration writes NOTHING. A graphi session on the
-// default position must not create state for a feature nobody enabled — the
-// same reason `graphi doctor` is read-only.
-func TestSW232_LegacySessionWritesNothing(t *testing.T) {
+// SW-232 AC-6: a session in `legacy` writes NOTHING. A rolled-back seam must
+// not create state for a comparison it is not performing — the same reason
+// `graphi doctor` is read-only.
+//
+// SW-244 narrowed this test's claim without weakening it. It used to say "the
+// SHIPPED configuration writes nothing" and reach that position by setting no
+// variable at all; the shipped default is now `shadow`, which writes on
+// purpose. The property that still has to hold — and the one an operator
+// depends on mid-incident — is that the position they roll back TO is silent,
+// so the position is now named explicitly rather than arrived at by default.
+// Its SW-244 counterpart, TestSW244_ShippedDefaultSessionWritesTheRecord,
+// asserts the other half: unset must now write.
+func TestSW232_LegacyPositionWritesNothing(t *testing.T) {
 	stateDir := withStateHome(t)
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeLegacy))
 	if err := ApplyCanaryMode(); err != nil {
 		t.Fatalf("ApplyCanaryMode: %v", err)
 	}
@@ -161,7 +171,7 @@ func TestSW232_LegacySessionWritesNothing(t *testing.T) {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
 	if _, err := os.Stat(divergence.Dir(stateDir)); !os.IsNotExist(err) {
-		t.Fatalf("the shipped legacy position created %s (err=%v)", divergence.Dir(stateDir), err)
+		t.Fatalf("the legacy position created %s (err=%v)", divergence.Dir(stateDir), err)
 	}
 	rep, err := divergence.Read(stateDir)
 	if err != nil {
@@ -170,6 +180,66 @@ func TestSW232_LegacySessionWritesNothing(t *testing.T) {
 	doc := divergence.Assess(rep, client.MigratedOperations())
 	if doc.State != divergence.StateUnknown {
 		t.Fatalf("state = %q, want UNKNOWN — nothing was ever observed", doc.State)
+	}
+}
+
+// TestSW244_ShippedDefaultSessionWritesTheRecord is AC-5 at the composition
+// root: with NO kill-switch variable set — a plain install, the configuration a
+// release actually ships — a dispatch must leave an observation on disk that an
+// independent reader finds.
+//
+// This is the property the whole story turns on. SW-232 proved the record is
+// durable when an operator opts in with GRAPHI_CANARY_ALL=shadow; what SW-238's
+// release precondition needs is that it fills when NOBODY opts in, because
+// nobody will. So the test sets no variable, which is the point, and asserts
+// the read path reports observations rather than UNKNOWN.
+//
+// The end-to-end demonstration through the real binary and `graphi doctor
+// -divergence` is in the story's verification record and in the
+// executor-rollback workflow; this is its in-process guard, so a regression
+// fails a unit run rather than waiting for someone to re-run the demo.
+func TestSW244_ShippedDefaultSessionWritesTheRecord(t *testing.T) {
+	stateDir := withStateHome(t)
+	// Deliberately no t.Setenv: withStateHome has cleared every GRAPHI_CANARY_*
+	// variable, so this is the compiled-in default and nothing else.
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeShadow {
+		t.Fatalf("the shipped default installed %q, want %q", got, client.CanaryModeShadow)
+	}
+
+	direct := divergenceFixture(t)
+	dispatchN(t, direct, 3)
+	// The first observation flushes immediately, the next two coalesce in the
+	// store's buffer. Rolling back retires the store, and retiring flushes —
+	// the same sequence TestSW232_RollbackFlushesTheBufferedObservations pins,
+	// used here to make the count exact rather than a lower bound.
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeLegacy))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode (flush via rollback): %v", err)
+	}
+
+	rep, err := divergence.Read(stateDir)
+	if err != nil {
+		t.Fatalf("divergence.Read: %v", err)
+	}
+	doc := divergence.Assess(rep, client.MigratedOperations())
+	if doc.Observations != 3 {
+		t.Fatalf("observations = %d, want 3 — the shipped default must fill the record "+
+			"without an operator opting in\n%+v", doc.Observations, doc.Operations)
+	}
+	if doc.State == divergence.StateUnknown {
+		t.Fatalf("state = UNKNOWN after 3 dispatches on the shipped default — " +
+			"the release line would accrue no shadow evidence at all")
+	}
+	for _, op := range doc.Operations {
+		if op.Operation != client.CanaryOperation {
+			continue
+		}
+		if op.State != divergence.StateAgreed || op.Mismatches != 0 {
+			t.Fatalf("%s = %+v, want an observed agreement", op.Operation, op)
+		}
 	}
 }
 

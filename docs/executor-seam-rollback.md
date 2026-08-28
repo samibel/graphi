@@ -6,12 +6,22 @@ MCP server or the daemon.
 its `GRAPHI_CANARY_*` kill switch.
 **Status:** Labs internals. Nothing on this page changes a Stable operation, a
 wire name, or a result byte.
+**Shipped default changed:** SW-244 (2026-08-28) moved it from `legacy` to
+`shadow`. If you are reading an older copy of this page, §2 and §4 below are the
+paragraphs it gets wrong.
 
 graphi serves a small set of Labs operations through an internal *executor*
 path that sits beside the original *legacy* path. Which one answers is decided
-per operation by an environment variable, and the shipped position is `legacy`
-— the pre-executor code, unchanged. This page is how you move that switch, how
-you confirm it moved, and how you put it back.
+per operation by an environment variable, and the shipped position is
+**`shadow`** — both paths run, and **the caller still receives the legacy
+result, byte for byte**. This page is how you move that switch, how you confirm
+it moved, and how you put it back.
+
+**Start here if something is wrong.** The rollback is
+`GRAPHI_CANARY_ALL=legacy` plus a restart (§3), and it is complete the moment
+the next call starts. Nothing is keyed on the position — no schema, no persisted
+state, no cached artifact, no wire identifier — so there is nothing to migrate
+back.
 
 ## 1. The operations on the seam
 
@@ -38,14 +48,28 @@ The variable name is always `GRAPHI_CANARY_` + the operation id in upper case.
 
 | Position | What runs | What the caller gets |
 |---|---|---|
-| `legacy` **(shipped default)** | the legacy method only | the legacy result |
-| `shadow` | both paths, compared | the **legacy** result |
+| `legacy` | the legacy method only | the legacy result |
+| `shadow` **(shipped default)** | both paths, compared | the **legacy** result |
 | `active` | the executor path only | the executor result |
 
-`shadow` runs every call twice. It is an investigation position, not a
-production one: it roughly doubles the work for the operations it covers and it
-exists so a divergence can be *recorded* (see §5). `active` makes the executor
-authoritative and is the position a rollback undoes.
+`shadow` runs every call twice, and it is what a normal install runs. What that
+buys is §5: every call compares the two paths and persists what it saw, so a
+divergence is a thing you can read rather than a thing someone has to reproduce.
+What it costs, measured rather than estimated
+(`docs/rc/ax06-canary-latency.md` §6, one fixture, one machine): **about 2.0×
+legacy** in latency, CPU and allocations for the ten operations in §1 — one
+extra legacy-plus-executor call, and **9.5 µs at the median plus zero
+allocations** for everything else the position does. It does **not** double the
+work of a graphi session: the ten operations are Labs, and nothing else on any
+surface is on this seam.
+
+`shadow` cannot change an answer. The bytes the caller receives are the legacy
+method's own return value; the executor's result is compared and recorded and
+never returned. If you need the second path to stop running anyway — during an
+incident, or to reclaim the 2× — §3 is that switch.
+
+`active` makes the executor authoritative. It is **not** a shipped position and
+is the one a rollback most urgently undoes.
 
 An unrecognised value **fails the session at startup** rather than falling back
 to a default — a typo like `GRAPHI_CANARY_DEAD_CODE=lecacy` must not leave you
@@ -84,7 +108,9 @@ GRAPHI_CANARY_ALL=shadow GRAPHI_CANARY_DEAD_CODE=legacy graphi mcp
   `graphi mcp` itself, exporting the variable in your terminal changes nothing —
   put it in the `env` block of that client's MCP server entry (`.mcp.json`,
   `claude_desktop_config.json`, …) and restart the client.
-* **The default needs no variable at all.** Unset is `legacy`.
+* **The default needs no variable at all.** Unset is `shadow` — which means a
+  rollback to `legacy` is something you must set **explicitly**, and unsetting
+  the variable later puts the seam back into `shadow` (§6).
 
 ## 4. Verifying the switch took effect
 
@@ -95,8 +121,11 @@ overrode it. Run it **in the same environment as the server**:
 ```sh
 $ graphi doctor
 …
-executor-seam  10 migrated operation(s): 10 legacy, 0 shadow, 0 active
+executor-seam  10 migrated operation(s): 0 legacy, 10 shadow, 0 active
 ```
+
+That line — `10 shadow` — is what an install with **nothing set** reports. After
+a rollback it reads `10 legacy, 0 shadow, 0 active`.
 
 ```sh
 $ graphi doctor --json | jq '.checks[] | select(.id=="executor-seam")'
@@ -104,7 +133,7 @@ $ graphi doctor --json | jq '.checks[] | select(.id=="executor-seam")'
 
 The check's detail lists one line per operation, e.g.
 `dead_code: legacy (GRAPHI_CANARY_DEAD_CODE)` when a variable set it, or
-`dead_code: legacy (compiled-in default)` when nothing did.
+`dead_code: shadow (compiled-in default)` when nothing did.
 
 `doctor` reports **this process's** positions, derived from **this**
 environment. That is the honest scope: a server started from the same
@@ -131,10 +160,18 @@ Each operation reads as one of:
 | `NO-DIVERGENCE-OBSERVED` | it was observed, and every observation matched |
 | `DIVERGED` | at least one observation found the two paths different |
 
-`UNKNOWN` is the expected state on a normal install, because the shipped
-position compares nothing. **It is not a statement that the two paths agree.**
-Do not read an all-`UNKNOWN` record as evidence of parity; it is the absence of
-evidence, which is why it has its own word.
+`UNKNOWN` means **no** dual-run observation was recorded for that operation. It
+is **not a statement that the two paths agree**. Do not read an all-`UNKNOWN`
+record as evidence of parity; it is the absence of evidence, which is why it has
+its own word.
+
+Since SW-244 the shipped position *does* compare, so on an install that has been
+used you should expect operations to move off `UNKNOWN` as they are called. An
+operation still reading `UNKNOWN` has simply not been invoked in this install —
+it is a coverage gap in your usage, not a finding. All ten reading `UNKNOWN` on
+a fresh install is correct and expected; all ten still reading `UNKNOWN` after
+weeks of use means either nothing on the seam is being called or something rolled
+the seam back — check `graphi doctor` (§4) before concluding anything.
 
 ### What the totals do and do not promise
 
@@ -144,8 +181,18 @@ three ways — `N recorded, M unreadable, P pruned` — and a non-zero `M` or `P
 prints an explicit paragraph saying the totals below are incomplete. `graphi
 doctor` repeats both in the `executor-divergence` check's detail.
 
-Two things can make it a lower bound:
+Three things can make it a lower bound:
 
+* **The last two seconds of a process's life.** A store writes its **first**
+  observation immediately and every **mismatch** immediately; everything in
+  between coalesces and is written at most once every two seconds. A server
+  killed inside that window loses the coalesced counts it was still holding — a
+  short-lived session that made five calls in a tenth of a second persists as
+  **one** observation, not five. This is a *count* imprecision and never a lost
+  finding: mismatches do not coalesce. It matters more since SW-244 made
+  `shadow` the shipped position than it did when the seam only ran on request,
+  so do not read a low observation count as low usage. A graceful rollback
+  (§3, `GRAPHI_CANARY_ALL=legacy` + restart) flushes on the way out.
 * **Unreadable segments.** A file in the directory that does not parse is
   counted and disclosed, never silently skipped.
 * **Pruned segments.** One process writes one segment file, and the directory
@@ -190,10 +237,11 @@ only when it observes something again.
    $ graphi doctor --json | jq -r '.checks[] | select(.id=="executor-seam") | .detail'
    ```
 
-Setting the variable explicitly back to `legacy` gets you the same *behaviour*
-as unsetting it, and `doctor` will tell the two apart: it names the variable as
-the source instead of the compiled-in default. Prefer unsetting, so the next
-person reads the shipped configuration rather than a pinned one.
+**Unsetting returns the seam to `shadow`, not to `legacy`.** That is the point
+of this section — the prior setting is the shipped one — but it is the step
+most likely to surprise someone who rolled back yesterday. If you meant to stay
+on `legacy`, keep the variable set; `doctor` will name it as the source instead
+of the compiled-in default, so the two are always distinguishable.
 
 ## 7. What a rollback does not touch
 
@@ -203,6 +251,9 @@ person reads the shipped configuration rather than a pinned one.
 * The record in §5 is local files only. Writing it makes no network call, and
   reading it starts no server.
 * Rolling back does not re-index, migrate, or invalidate anything on disk.
+* Moving the switch in either direction is a value change and nothing else. No
+  schema, persisted state, cached artifact or wire identifier is keyed on the
+  position, so a rollback is complete the moment the next call starts.
 
 ## 8. Exercised, not just described
 
@@ -210,5 +261,6 @@ person reads the shipped configuration rather than a pinned one.
 pull request: it forces `GRAPHI_CANARY_ALL=legacy`, runs the parity and
 characterization suites in that position, asserts the divergence read path is
 honest, and then asserts the round trip — that unsetting the variable returns
-every operation to the compiled-in default. A rollback that stopped working
-would fail CI rather than fail an operator.
+every operation to the compiled-in default, which since SW-244 the workflow
+checks is **`10 shadow`**. A rollback that stopped working would fail CI rather
+than fail an operator.

@@ -319,29 +319,76 @@ func TestCanary_KillSwitchHasExactlyThreePositions(t *testing.T) {
 	}
 }
 
-// TestCanary_ShippedDefaultIsLegacy pins the compiled-in position of record.
+// TestSW244_ShippedDefaultIsShadow pins the compiled-in position of record.
 // Changing it is a deliberate behaviour change and has to edit this test, which
 // is the review prompt.
 //
-// SW-226 shipped `shadow` and gave a reason that did not survive SW-228's
-// review of it: a shadow divergence is recorded in a process-local, unpersisted
-// counter, the processes that dispatch through this seam are long-running
-// servers, and every local diagnostic that could show an operator that counter
-// runs in a DIFFERENT process. So `shadow` bought a doubled call for evidence
-// nobody on a live system could retrieve, and AX-08 would have multiplied it by
-// ten. The evidence that gates activation is the fixture parity suite, which
-// runs in CI and can be read.
+// The history is the argument, so it is kept whole. SW-226 shipped `shadow`.
+// SW-228 withdrew it for a reason that was correct at the time: a shadow
+// divergence was recorded in a process-local, unpersisted counter, the
+// processes that dispatch through this seam are long-running servers, and every
+// local diagnostic that could show an operator that counter runs in a DIFFERENT
+// process — so `shadow` bought a doubled call for evidence nobody on a live
+// system could retrieve. Its predecessor test wrote down the exact condition
+// for reversing it: moving back to `shadow` is legitimate "only together with a
+// way to READ a divergence outside the test binary."
 //
-// Moving it back to `shadow` is legitimate — but only together with a way to
-// READ a divergence outside the test binary. That is the condition this test
-// records, so the next story to consider it starts from the reason rather than
-// from the value.
-func TestCanary_ShippedDefaultIsLegacy(t *testing.T) {
-	if canaryModeDefault != CanaryModeLegacy {
-		t.Fatalf("the compiled-in canary position is %q, want %q — `shadow` runs every "+
-			"migrated operation twice to fill a counter no live-system operator can read, "+
-			"and `active` would make the executor authoritative before parity is proven",
-			canaryModeDefault, CanaryModeLegacy)
+// SW-232 built that way — a durable record under the state directory and
+// `graphi doctor -divergence`, which reads it without starting a server — and
+// SW-244 takes the reversal. So this test now pins `shadow`, and the two bars
+// that have to stay true for it to keep being the right value are:
+//
+//  1. the record must remain READABLE outside the test binary (SW-232's
+//     `graphi doctor -divergence`, exercised end to end by the
+//     executor-seam-rollback workflow); and
+//  2. the dual-run cost must remain ACCOUNTED — the part of shadow's latency
+//     that is not explained by "both paths ran" is judged by
+//     TestSW244_ShadowDefaultCostIsAccounted against the AX-06 bar exactly as
+//     SW-242 fixed it.
+//
+// If either stops holding, the value to move is this constant, not those bars.
+// `active` remains forbidden as a default for the original reason: it would
+// make the executor authoritative before parity is proven.
+func TestSW244_ShippedDefaultIsShadow(t *testing.T) {
+	if canaryModeDefault != CanaryModeShadow {
+		t.Fatalf("the compiled-in canary position is %q, want %q — `legacy` accrues no "+
+			"shadow evidence at all, which leaves SW-238's release precondition "+
+			"unreachable rather than merely unmet, and `active` would make the executor "+
+			"authoritative before parity is proven",
+			canaryModeDefault, CanaryModeShadow)
+	}
+}
+
+// TestSW244_DefaultAppliesToMigratedOperationsOnly is AC-1's second half: the
+// flip moves the migrated set and NOTHING else.
+//
+// It matters because the default is a single constant with no operation in its
+// name, so "and for those only" is a property of CanaryModeFor's short-circuit
+// rather than of the constant. A future edit that made the default apply by
+// falling through for unknown ids would silently enrol every non-migrated
+// operation in a dual run, which is both a latency cost nobody measured and a
+// dispatch change to operations this story is forbidden to touch.
+func TestSW244_DefaultAppliesToMigratedOperationsOnly(t *testing.T) {
+	ResetCanaryModes()
+	t.Cleanup(ResetCanaryModes)
+
+	for _, op := range MigratedOperations() {
+		if got := CanaryModeFor(op); got != CanaryModeShadow {
+			t.Errorf("migrated operation %q reports %q on a clean process, want %q",
+				op, got, CanaryModeShadow)
+		}
+	}
+	// A representative slice of the exclusions recorded in migratedOperations'
+	// comment: a Stable structural query, a Stable analysis operation, an
+	// environment-dependent one, and one excluded for a fidelity gap.
+	for _, op := range []string{"search", "impact", "agent_brief", "hotspots", "memory", "distill"} {
+		if isMigratedOperation(op) {
+			t.Fatalf("%q joined the migrated set; this test's premise is stale", op)
+		}
+		if got := CanaryModeFor(op); got != CanaryModeLegacy {
+			t.Errorf("non-migrated operation %q reports %q, want %q — the shadow default "+
+				"must not reach an operation that has no executor path", op, got, CanaryModeLegacy)
+		}
 	}
 }
 

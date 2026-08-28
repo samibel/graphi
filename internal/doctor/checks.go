@@ -410,13 +410,28 @@ type ExecutorSeamPosition struct {
 // The position is what an operator chose, it is the same in every process
 // started from the same environment, and it is the thing they can change. The
 // counter's scope is stated in the detail rather than pretended away, which is
-// the part a reader needs in order to know where to look — and it is the reason
-// `shadow` is not the shipped default (surfaces/client/canary.go).
+// the part a reader needs in order to know where to look. SW-232 made the
+// record durable and readable across processes, which is what let SW-244 move
+// the shipped default to `shadow`.
 //
-// Status is INFO for the shipped configuration and WARN when any operation is
-// running the dual path, because that is a deliberate, costly, temporary state
-// (every call runs twice) and an operator who left it on by accident should be
-// told.
+// # Why the shadow WARN is keyed on OVERRIDDEN and not on the position
+//
+// This check used to WARN whenever any operation was in `shadow`, on the
+// reasoning that the dual path is "a deliberate, costly, temporary state" an
+// operator may have left on by accident. SW-244 made `shadow` the compiled-in
+// default, which turns that rule into two separate defects at once: every stock
+// install would WARN about its own shipped configuration — training operators to
+// ignore this check, which is worse than not having it — and its action would
+// tell them to "unset its GRAPHI_CANARY_* variable to return to the shipped
+// position" when no variable is set and unsetting one returns them to `shadow`
+// anyway.
+//
+// The intent behind the WARN survives intact, because the accident it was
+// written for is specifically a VARIABLE somebody set and forgot. So the warning
+// now fires on an OVERRIDDEN shadow — where the advice to unset is both true and
+// useful — and the compiled-in shadow reports INFO with its measured cost and
+// the rollback stated in the action. `active` is unchanged: INFO, never silent,
+// always carrying the rollback, because the executor is authoritative there.
 func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 	return checkFunc{
 		id:       "executor-seam",
@@ -437,13 +452,16 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 					"no operation dispatches through the executor seam", StatusInfo)
 			}
 			counts := map[string]int{}
-			var shadowed, activated []string
+			var shadowed, pinnedShadow, activated []string
 			var detail strings.Builder
 			for _, p := range positions {
 				counts[p.Mode]++
 				switch p.Mode {
 				case "shadow":
 					shadowed = append(shadowed, p.Operation)
+					if p.Overridden {
+						pinnedShadow = append(pinnedShadow, p.Operation)
+					}
 				case "active":
 					activated = append(activated, p.Operation)
 				}
@@ -458,13 +476,24 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 				"or `graphi doctor -divergence --json`")
 			message := fmt.Sprintf("%d migrated operation(s): %d legacy, %d shadow, %d active",
 				len(positions), counts["legacy"], counts["shadow"], counts["active"])
-			if len(shadowed) > 0 {
-				sort.Strings(shadowed)
+			if len(pinnedShadow) > 0 {
+				sort.Strings(pinnedShadow)
 				return CheckResult{
 					ID: "executor-seam", Category: "internals", Status: StatusWarn,
 					Message: message,
 					Action: fmt.Sprintf("shadow runs every call twice for %s; unset its GRAPHI_CANARY_* "+
-						"variable to return to the shipped position", strings.Join(shadowed, ", ")),
+						"variable to return to the shipped position", strings.Join(pinnedShadow, ", ")),
+					Detail: detail.String(),
+				}
+			}
+			if len(shadowed) > 0 {
+				sort.Strings(shadowed)
+				return CheckResult{
+					ID: "executor-seam", Category: "internals", Status: StatusInfo,
+					Message: message,
+					Action: fmt.Sprintf("%s run on the shipped default, which compares both paths "+
+						"on every call (about 2x for those operations) so a divergence is recorded; "+
+						"set GRAPHI_CANARY_ALL=legacy to opt out", strings.Join(shadowed, ", ")),
 					Detail: detail.String(),
 				}
 			}
@@ -524,11 +553,17 @@ type ExecutorDivergence struct {
 //
 // It is now cross-process, so the readout is honest, and the honesty rule is
 // the whole design: an operation nothing was observed on reads UNKNOWN and
-// never "no divergence". The shipped position is `legacy`, which compares
-// nothing, so UNKNOWN is the expected answer on a normal install — and saying
-// so plainly is the point. A green "0 divergences" on a seam that never ran is
+// never "no divergence". A green "0 divergences" on a seam that never ran is
 // exactly the false evidence the SW-238 precondition assessment refused to
 // accept.
+//
+// Until SW-244 the shipped position was `legacy`, which compares nothing, so
+// UNKNOWN was the expected answer on a normal install. It no longer is: the
+// shipped position now observes, so an operation reading UNKNOWN means it has
+// not been called on this install (or the seam was rolled back). The STATUS
+// rules below are unchanged by that — "nothing observed" was never a health
+// failure and still is not — but the sentence a reader takes away from an
+// UNKNOWN row is different, which is why the renderer's own footer moved too.
 //
 // Status: WARN when a divergence was recorded (a finding an operator must act
 // on) or when the record could not be read; INFO otherwise, including the
