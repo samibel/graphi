@@ -128,8 +128,16 @@ assumption about the machine:
 
 - no arm is systematically sampled later in the run than another, so a drift in machine load
   across the run cannot be charged to one arm;
-- no arm is systematically sampled immediately after the same neighbour, so the cache and GC
-  after-effects of an expensive neighbour (`shadow` runs both paths) are shared evenly.
+- every arm is sampled the same number of times, so no arm's percentile is taken over a
+  different population than another's.
+
+What the rotation does **not** balance — this bullet claimed the opposite until §7.2.1 — is
+**adjacency**. A cyclic rotation preserves the order of the cycle, so each arm's predecessor
+is fixed except at the wrap: over four iterations `shadow` is followed by `legacy-a` three
+times and by `legacy-b` once. Anything an expensive neighbour leaves behind therefore lands
+on one control arm three times as often as on the other. Cache and GC after-effects are small
+enough to live with; a deferred comparison still *running* is not, which is why the sampler
+drains outside the timed window after every call (§7.2.1).
 
 This is the correctness argument for the method, and it is deliberately a property of the
 code rather than of a lucky reproduction — `TestAX06_LatencyRotationIsBalanced` **runs the
@@ -968,3 +976,237 @@ control is UNKNOWN and not a pass, and a gross residue fails even on a degraded 
 evidence that the dual run costs one extra legacy-plus-executor call and essentially nothing
 else. They are not a published performance figure, they are not comparable across machines,
 and they do not enter `docs/eval/`.
+
+## 7. The shipped default off the caller's critical path (SW-245, 2026-08-28)
+
+§6 ended with a number the product had to live with: `shadow` is the shipped default, and it
+cost **2.05× legacy at p50**, of which essentially all was the second path running on the
+caller's thread (residue +9.5 µs, zero allocations). SW-245 moves the second path off that
+thread. The caller returns on the legacy result the moment the legacy method answers, and the
+comparison — the same comparison, on the same canonical bytes, with the same error-class
+check — runs afterwards on a bounded worker queue.
+
+§1–§3 are again **not amended**. `canaryLatencyBudget`, the 250 µs floor, the 10 % relative
+term, the 3× same-run noise term and the `budget ≤ 4×fixedBar` clamp are untouched, and the
+AX-06 gate still judges the **executor** arm exactly as it did. What SW-245 adds is a bar on a
+statistic §3 deliberately did not gate: shadow's **total**, as a ratio to legacy.
+
+### 7.1 Why shadow's total becomes gateable now
+
+§3 exempted shadow's total because shadow ran both paths *by construction*, so ~2× was its
+correct behaviour and holding it to a number would have been either vacuous or a standing
+invitation to weaken the comparison. That reasoning rested on a fact SW-245 changes: the
+caller no longer runs the second path. There is now a number the caller's cost can be held to
+without touching what is compared, and `canaryShadowRatioBar` is it — **1.15× legacy at p50**,
+the story's AC-1.
+
+It is a **separate** bar, not a widened one. `evaluateCanaryShadowRatio` is a new function
+judging a new statistic; it does not call, extend, or relax `canaryLatencyBudget`. It does
+borrow SW-242's resolution discipline: a run whose own A/A control differs by as much as the
+bar being tested cannot judge that bar, and answers **UNKNOWN**, never PASS.
+
+### 7.2 Measured — `TestSW245_ShadowIsOffTheCallersCriticalPath`, round 1
+
+Apple M2 Max, darwin/arm64, N = 200 per arm after 20 warm-up, rotation balanced, one round
+(the first round passed, so no second was taken). Same fixture, same sampler, same rotation as
+§5 and §6 — the story requires the number under SW-242's recalibrated method, and the way to
+guarantee that is to call SW-242's own sampler.
+
+| statistic | legacy baseline (pooled) | shadow | ratio | same-run A/A control | verdict |
+|---|---|---|---|---|---|
+| p50 | 429.271 µs | **417.834 µs** | **0.973×** | 10.874 µs (1.025×) | **PASS** |
+| p95 | 924.374 µs | **848.500 µs** | **0.918×** | 43.833 µs (1.047×) | **PASS** |
+
+Against §6.2's recorded before-state, under the same method on the same machine:
+
+| statistic | before (SW-244 §6.2) | after (SW-245) |
+|---|---|---|
+| p50 | 783.542 µs, **2.05×** legacy | 417.834 µs, **0.973×** legacy |
+| p95 | 1.265625 ms, **1.65×** legacy | 848.500 µs, **0.918×** legacy |
+
+Read the "after" ratios honestly: shadow measuring *below* legacy is not evidence that
+dispatching in shadow is faster than dispatching in legacy. It is what "indistinguishable"
+looks like on this instrument — both ratios sit inside the run's own A/A control band
+(1.025× at p50, 1.047× at p95), which is the resolution the run achieved. The defensible
+claim is that the caller's cost in `shadow` is **no longer separable from legacy at this
+resolution**, not that it is negative.
+
+**What this instrument cannot separate — read the two baselines carefully.** The pooled
+legacy baseline moved from **382.979 µs** in §6.2 to **429.271 µs** here, +12 %. It would be
+convenient to write that off as machine state, and the run above gives no basis to: as first
+shipped, the sampler did **not** drain between samples, so after each `shadow` sample the
+worker ran a full executor pass (plus a `NewExecutor`) *concurrently with the next arms'
+timed calls*, and every arm in the after-run — including both legacy control arms — was
+measured on a machine carrying that load. The +12 % shift is therefore **unattributed**: that
+run cannot say how much of it is the worker and how much is the machine, and neither reading
+is claimed here.
+
+#### 7.2.1 Correction (round 3): the sampler now drains between samples
+
+The paragraph that used to stand here argued the instrument should be left undrained, because
+the worker load is what the shipped default really does to a host and removing it would
+flatter AC-1. It rested on one claim that is false: *"the same-run A/A control cannot detect
+it either, because both control arms carry it equally."*
+
+They do not carry it equally. The rotation is **cyclic**, and a cyclic rotation preserves
+adjacency rather than shuffling it. For arms `[legacy-a, legacy-b, executor, shadow]` the
+sample that follows `shadow` is `legacy-a` in three of every four occurrences and `legacy-b`
+in one, so legacy-a is timed against a running comparison in ~75 % of its samples and
+legacy-b in ~25 %. A p50 is decided by which side of that split the middle sample falls on,
+so the two byte-identical control arms end up measuring two different machines. The A/A
+control does not merely fail to detect the leaked load — **it is manufactured by it**.
+
+PR #172's CI is the measurement. All three rounds read legacy-a above legacy-b at both gated
+percentiles:
+
+| round | legacy-a p50 | legacy-b p50 | control | control ÷ baseline | median verdict |
+|---|---|---|---|---|---|
+| 1 | 5.340806 ms | 4.107976 ms | 1.23283 ms | 26 % | UNKNOWN |
+| 2 | 7.017396 ms | 4.775357 ms | 2.242039 ms | 38 % | UNKNOWN |
+| 3 | 6.841147 ms | 4.863873 ms | 1.977274 ms | 34 % | UNKNOWN |
+
+§2's rule can judge a median only while `3 × control ≤ 4 × fixed bar`, i.e. while the control
+stays under **13.3 %** of the baseline. So the gate lost its own resolution for three rounds
+running, against an *injected 2× seam regression*, because of an arm §3 does not even gate.
+For comparison, the same CI on PR #169 — the same four arms, but with `shadow` still running
+both paths synchronously inside its own window — produced a p50 control of ≤ 3.3 % of the
+baseline in two rounds of three.
+
+The mis-attribution also flattered AC-1 itself: that run measured `shadow` at 4.065767 ms
+against a `legacy-a` of 5.340806 ms — the dual-run path reading *faster* than the single-run
+baseline whose timed window it had spilled into. "Draining would flatter the result" had it
+backwards; not draining is what flattered it.
+
+`canaryLatencySample` therefore drains the deferred comparisons **outside** the timed window
+after every call, and `TestSW245_SamplerDrainsBetweenSamples` pins it: with the drain removed,
+101 of 220 timed windows on the arm that follows `shadow` are measured with a comparison still
+in flight. Measured at `GOMAXPROCS=2` on the recorded machine, the legacy-a/legacy-b p50 ratio
+over five samples goes from a mean of **1.085** (worst 1.335) undrained to **1.000** (range
+0.985–1.015) drained — the same band an all-legacy four-arm control produces.
+
+Re-measured on the same machine with the drain in place, round 1 of
+`TestSW245_ShadowIsOffTheCallersCriticalPath` — this is the number AC-1 now stands on, and it
+supersedes the table above:
+
+| statistic | legacy baseline (pooled) | shadow | ratio | same-run A/A control | verdict |
+|---|---|---|---|---|---|
+| p50 | 422.750 µs | **413.833 µs** | **0.979×** | 4.500 µs (1.011×) | **PASS** |
+| p95 | 780.520 µs | **790.208 µs** | **1.012×** | 10.791 µs (1.014×) | **PASS** |
+
+The control tightened from 10.874 µs to 4.500 µs at p50 and from 43.833 µs to 10.791 µs at
+p95, which is the leaked load leaving the control arms. The p95 ratio moved the other way,
+0.918× → 1.012×: the undrained run had been reading the *flattered* figure, exactly as the
+p50/legacy-a arithmetic above predicts. SW-244's accounting on the same session reads
+`p50 PASS shadow=419 µs (1.00× legacy) accounted=845.791 µs unaccounted=−426.791 µs`.
+
+What is given up is the loaded-machine reading. The ratio in the table above is now a
+statement about the **caller's** cost measured against an idle-worker baseline, which is what
+AC-1 claims and all it claims; it is not a statement about shadow's total cost to a host.
+That cost has not gone unmeasured — §6 and `TestSW244_ShadowDefaultCostIsAccounted` are where
+it is accounted for, and B/op and allocs/op in `BenchmarkCanaryDispatch` still count the
+worker's allocations process-wide. What must not be read off this table is a before/after
+comparison of the *baselines* themselves; the comparison that carries the claim is shadow
+against legacy **within** each run.
+
+The AX-06 gate itself, measured in the same session and unchanged by this story:
+`p50 PASS overhead=4.646 µs budget=250 µs (legacy baseline 426.229 µs, executor 430.875 µs)`,
+`p95 PASS overhead=−20.625 µs budget=250 µs` — one round, no retry. SW-244's accounting check
+also still passes and now reads a large negative residue at p50 (`shadow=407.333 µs (0.96×
+legacy) accounted=844.479 µs unaccounted=−437.146 µs`), which is the arithmetically expected
+consequence of subtracting an executor pass the caller no longer makes. That check has not
+become useless — `TestSW244_ShadowAccountingCatchesUnexplainedCost` still requires it to go
+red on cost injected into the shadow window — but its p50 residue is no longer the interesting
+number, and §7.3's ratio is.
+
+### 7.3 The bar can go red — `TestSW245_ShadowRatioCatchesASynchronousDualRun`
+
+A bar that cannot fail is not evidence. The injected regression here is the sharpest one
+available, because it is exactly the behaviour this story removed:
+`canaryLatencyExtraSeamPasses(1)` runs one whole extra executor pass **inside the shadow arm's
+timed window**, which is — to within the enqueue — what `shadow` cost before SW-245.
+
+Measured: `p50 FAIL shadow=1.140166 ms legacy=421.083 µs ratio=2.708× bar=1.15× (same-run A/A
+control 4 µs = 1.009×)`, round 1, no retry needed.
+
+The AX-06 gate's own injected-regression proof (AC-5 of the story) is unchanged and still red
+on both shapes: `seam_cost_doubled` → `p50 FAIL overhead=539.021 µs budget=250 µs`,
+`seam_cost_quadrupled` → `p50 FAIL overhead=1.566437 ms budget=250 µs`, three rounds each.
+
+`TestSW245_ShadowRatioDecisionRule` pins the boundaries without owning a quiet machine: under
+the bar passes, exactly at the bar passes, a synchronous dual run fails, faster-than-legacy
+passes, a control as wide as the bar reads UNKNOWN, an empty arm reads UNKNOWN and never PASS.
+
+### 7.4 What the move did NOT make cheaper — `BenchmarkCanaryDispatch` (AC-6)
+
+The second path still runs. It still costs the machine a whole executor pass in CPU and
+allocations, and the only thing that changed is **who waits for it**. Stating that plainly is
+AC-6 of the story, because a cost that stops showing up as caller latency is exactly the kind
+that gets quietly dropped from a record.
+
+`go test ./surfaces/client/ -run '^$' -bench BenchmarkCanaryDispatch -benchtime 500x -count=5`,
+Apple M2 Max (12 logical CPUs), medians of five runs. Note what each column now measures:
+**ns/op is the caller's cost only** — the timer no longer covers the second path — while
+**B/op and allocs/op are process-wide** deltas and therefore still include everything the
+worker allocated. The benchmark drains before reading its counters (timer stopped), so no
+backlog escapes the accounting, and it reports `skipped/op` so an arm that dropped
+comparisons cannot silently look cheap.
+
+| position | ns/op | B/op | allocs/op | skipped/op |
+|---|---|---|---|---|
+| legacy | 467 005 | 455 952 | 1 905 | 0 |
+| active (executor only) | 476 388 | 463 272 | 1 989 | 0 |
+| **shadow (shipped default)** | **588 868** | **921 514** | **3 867** | 0 |
+| shadow ÷ legacy | **1.26×** | **2.02×** | **2.03×** | — |
+| shadow − (legacy + active) | −54.5 µs | +2 290 B | **−27** | — |
+
+Three things this table says, and one it does not:
+
+* **The allocation cost is undiminished.** 2.03× legacy, against SW-244's 2.04×. Moving work
+  to another goroutine does not stop it allocating. The deferral's own overhead — the job
+  struct, the queue slot, and the copy of the legacy result the worker compares against — is
+  **−27 allocations** relative to `legacy + active`, i.e. zero within this instrument's
+  run-to-run spread (±20 allocs across the five runs). The copy is one allocation per
+  dispatch and is real; it is simply two orders of magnitude below the ~1 935 the executor
+  pass itself makes.
+* **Under a saturating single caller the caller still feels part of it.** 1.26× ns/op is the
+  cost of a tight back-to-back loop on one goroutine while the worker allocates at the same
+  rate on another: allocator and GC back-pressure, not the dual run. This is a *different
+  measurement from AC-1's* — AC-1 names SW-242's rotating method, where the machine has
+  headroom and shadow is one arm of four — and both are reported because both are true. The
+  honest summary is that the deferral removes the *serialisation*, not the *work*.
+* **With no headroom at all it is worse, and the disclosure fires.** Same benchmark at
+  `GOMAXPROCS=1`, `-benchtime 300x -count=3`, medians: legacy 628 775 ns/op, active
+  635 046 ns/op, shadow **1 186 493 ns/op — 1.89× legacy**, and one of the three runs reported
+  `0.01667 skipped/op` (5 comparisons of 300 dropped). That is the design behaving as
+  specified rather than a defect: a single-CPU process cannot both serve and compare, so the
+  bounded queue fills, the drops are counted, and `graphi doctor -divergence` prints them as a
+  coverage gap. **An operator on a one-CPU box should expect partial coverage and see it
+  stated.**
+
+What the table does **not** say is that shadow is free. It says the caller stopped waiting.
+
+### 7.5 Coverage is part of the measurement (AC-4)
+
+Because the queue is bounded, a latency number taken over an arm that dropped comparisons
+would be a number for less work than the position actually does. Every SW-245 instrument
+therefore reports skips: the benchmark as a `skipped/op` metric, the AC-1 test as a
+`SW-245-SHADOW-RATIO-COVERAGE` log line. Both read zero in the measurements above except the
+`GOMAXPROCS=1` run noted there. A ratio recorded beside a non-zero skip count is not
+comparable to one recorded beside a zero.
+
+Three causes can raise that count, and only one of them is about load:
+`queue-full` (the bound doing its job), `drain-abandoned` (a shutdown that ran out of budget)
+and `caller-cancelled` — a caller that hung up or timed out *while the legacy method was
+still running*, whose legacy outcome is `context canceled` rather than a result and therefore
+has nothing comparable in it. The last one never appears in a latency run (nothing cancels
+these callers) but it is counted the same way everywhere else, because a comparison that did
+not happen is a coverage gap however it failed to happen. `docs/executor-seam-rollback.md` §5
+is the operator-facing version.
+
+### 7.6 Scope
+
+§5.7 applies unchanged: same-process, same-run A/B on one machine and one fixture. These are
+evidence that the caller no longer pays for the second path under the method AC-1 names, and
+that the second path still costs the machine what it always did. They are not a published
+performance figure, they are not comparable across machines, and they do not enter
+`docs/eval/`.

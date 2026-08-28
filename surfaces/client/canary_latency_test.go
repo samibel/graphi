@@ -193,12 +193,63 @@ func canaryLatencyGateArms() []canaryLatencyArm {
 //
 //   - No arm is systematically sampled later in the run than another, so a
 //     monotonic drift in machine load cannot be charged to one arm.
-//   - No arm is systematically sampled immediately after the same neighbour, so
-//     cache/GC after-effects of an expensive neighbour (shadow runs both paths)
-//     are shared evenly.
+//
+// What the rotation does NOT balance, and this was stated the other way round
+// until SW-245 round 3, is ADJACENCY. A cyclic rotation preserves the order of
+// the cycle, so each arm's predecessor is fixed except at the wrap: over four
+// iterations `shadow` is followed by `legacy-a` three times and by `legacy-b`
+// once. Any after-effect an expensive neighbour leaves behind therefore lands
+// on one control arm three times as often as on the other. Cache and GC
+// after-effects are small enough to live with; a comparison still RUNNING is
+// not, which is why the drain below exists.
 //
 // The kill-switch write sits OUTSIDE the timed window; it is one atomic store
 // and is not part of what is being measured.
+//
+// # Why the deferred comparisons are drained between samples (SW-245, round 3)
+//
+// SW-245 first shipped this sampler WITHOUT a drain, on the argument that the
+// worker's concurrent executor pass is load the shipped default really imposes
+// on a host, that leaving it in makes the ratio a caller-perceived one under
+// real conditions, and that the same-run A/A control could not be corrupted by
+// it "because both control arms carry it equally".
+//
+// That last clause is false, and PR #172's CI proved it. The rotation above is
+// a CYCLIC one, and a cyclic rotation preserves adjacency: for arms
+// [legacy-a, legacy-b, executor, shadow] the sample that follows `shadow` is
+// `legacy-a` in three of every four occurrences and `legacy-b` in one. So
+// legacy-a is timed against a running comparison in ~75 % of its samples and
+// legacy-b in ~25 % — and since a p50 is decided by which side of that split
+// the middle sample falls on, the two BYTE-IDENTICAL legacy arms end up
+// measuring two different machines. The A/A control does not merely fail to
+// detect the load; it is manufactured by it.
+//
+// On a contended runner that is not a rounding error. All three rounds of
+// PR #172 read legacy-a above legacy-b at BOTH gated percentiles, by 30 %, 47 %
+// and 41 % at p50, driving the control to 26–38 % of the baseline where the
+// gate can only judge a median while it stays under 13.3 % (3x control <=
+// 4x fixed bar). The gate lost its own resolution — reported UNKNOWN three
+// rounds running against an injected 2x seam regression — because of an arm it
+// does not even gate (§3). The same mis-attribution also flattered SW-245's own
+// AC-1 number: that run measured shadow at 4.066 ms against a legacy-a of
+// 5.341 ms, i.e. the dual-run path reading FASTER than the single-run baseline
+// whose window it had spilled into.
+//
+// So the drain is not a cosmetic "clean up the numbers" change; it restores the
+// property every statistic here rests on — that an arm's timed window contains
+// that arm's work and nothing else. Measured at GOMAXPROCS=2 on the recorded
+// machine, the legacy-a/legacy-b p50 ratio over five samples went from a mean
+// of 1.085 (worst 1.335) undrained to 1.000 (range 0.985–1.015) drained, which
+// is exactly the band an all-legacy four-arm control produces.
+//
+// What is given up is the loaded-machine reading of §7.2: the caller-perceived
+// ratio is now measured against an idle-worker baseline, so it is a statement
+// about the CALLER's cost — which is what AC-1 claims — and not about shadow's
+// total cost to a host. §7.2 records that, and TestSW244_ShadowDefaultCostIsAccounted
+// remains the check that shadow's cost is accounted for rather than hidden. Do
+// not remove the drain to put the host load back without first fixing the
+// adjacency bias above, or the load will land on one control arm and not the
+// other again.
 func canaryLatencySample(t testing.TB, direct *Direct, arms []canaryLatencyArm) map[string][]time.Duration {
 	t.Helper()
 	if len(arms) == 0 {
@@ -223,7 +274,13 @@ func canaryLatencySample(t testing.TB, direct *Direct, arms []canaryLatencyArm) 
 		if arm.extra != nil {
 			arm.extra(t, direct)
 		}
-		return time.Since(start)
+		elapsed := time.Since(start)
+		// OUTSIDE the timed window: settle this arm's deferred comparisons
+		// before the next arm is timed.
+		if err := DrainCanaryShadow(ctx); err != nil {
+			t.Fatalf("%s: drain deferred comparisons: %v", arm.name, err)
+		}
+		return elapsed
 	}
 
 	for _, arm := range arms {
@@ -1004,6 +1061,25 @@ func TestAX06_LatencyGateFailsOnInjectedSeamRegression(t *testing.T) {
 			results, _ := runCanaryLatencyGate(t, direct, arms)
 			overall := canaryLatencyOverall(results)
 			if overall.Verdict != canaryLatencyFail {
+				// The same guard the minority-incidence demonstration carries,
+				// and it is here for the same reason: a run in which a whole
+				// gated statistic was unjudgeable in every round measured
+				// nothing about the injection, and "the gate could not tell" is
+				// not the same finding as "the gate missed a doubled seam". It
+				// is a skip WITH the numbers, never silence, and it cannot fire
+				// on a PASS — see canaryLatencyDemonstrationInconclusive.
+				//
+				// PR #172 is why it exists: three rounds, every median
+				// unjudgeable, the run correctly UNKNOWN, and the test reported
+				// it as AC-3 having been violated.
+				if canaryLatencyDemonstrationInconclusive(overall, results) {
+					which := canaryLatencyUnresolvedStatistic(results)
+					t.Skipf("AC-3 systemic demonstration inconclusive: the "+which+
+						" (this runner could not tell two byte-identical legacy paths apart "+
+						"there), so the %d extra executor-seam pass(es) per call could not be "+
+						"measured. NOT evidence that the gate missed the regression: %s",
+						len(results), tc.extra, overall)
+				}
 				t.Fatalf("AC-3: %d extra executor-seam pass(es) per call must turn the gate red, "+
 					"got %s after %d round(s): %s",
 					tc.extra, overall.Verdict, len(results), overall)
@@ -1095,6 +1171,39 @@ func canaryLatencyRunUnresolved(results []canaryLatencyResult) bool {
 	return canaryLatencyTailUnjudgeable(results) || canaryLatencyMedianUnjudgeable(results)
 }
 
+// canaryLatencyUnresolvedStatistic names the statistic a run lost, for the skip
+// message, so a reader is told WHICH half of the gate did not run rather than
+// just that something did not.
+func canaryLatencyUnresolvedStatistic(results []canaryLatencyResult) string {
+	if canaryLatencyMedianUnjudgeable(results) {
+		return "median was unjudgeable in all %d round(s) at p50"
+	}
+	return "tail was unjudgeable in all %d round(s) at p95"
+}
+
+// canaryLatencyDemonstrationInconclusive reports whether a demonstration that
+// did NOT turn the gate red failed because the run could not measure, rather
+// than because the gate missed the injection. It is the one guard shared by
+// every injected-regression demonstration below; there is deliberately not a
+// second idiom for the same question.
+//
+// Both halves are load-bearing:
+//
+//   - canaryLatencyRunUnresolved: a whole gated statistic has to have been
+//     unavailable for the WHOLE run. A single noisy round is not an excuse.
+//   - the verdict has to be UNKNOWN. A PASS is never inconclusive. A gate that
+//     answers "no regression" to an injected one is the exact defect these
+//     demonstrations exist to catch, and a guard that skipped on it would make
+//     them hollow, so a PASS must still fail the test loudly.
+//
+// The PASS case is also unreachable by construction — canaryLatencyCompose takes
+// a round with an unjudgeable median to UNKNOWN, and canaryLatencyMedianOnlyOverall
+// takes a run with an unjudgeable tail there — but this says so out loud instead
+// of resting on that argument surviving a future edit to either function.
+func canaryLatencyDemonstrationInconclusive(overall canaryLatencyResult, results []canaryLatencyResult) bool {
+	return overall.Verdict == canaryLatencyUnknown && canaryLatencyRunUnresolved(results)
+}
+
 func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 	if testing.Short() {
 		t.Skip("latency measurement is not a -short gate")
@@ -1123,11 +1232,8 @@ func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 				// same way, and it is the limit recorded in doc §3: sustained
 				// contention costs the tail statistic, and with it the
 				// minority-incidence coverage, for that run.
-				if canaryLatencyRunUnresolved(results) {
-					which := "tail was unjudgeable in all %d round(s) at p95"
-					if canaryLatencyMedianUnjudgeable(results) {
-						which = "median was unjudgeable in all %d round(s) at p50"
-					}
+				if canaryLatencyDemonstrationInconclusive(overall, results) {
+					which := canaryLatencyUnresolvedStatistic(results)
 					t.Skipf("minority-incidence demonstration inconclusive: the "+which+
 						" (this runner could not tell two byte-identical legacy paths apart "+
 						"there), so the injection could not be measured. Not evidence that the "+
@@ -2657,6 +2763,28 @@ func TestAX06_LatencyRotationIsBalanced(t *testing.T) {
 // BenchmarkCanaryDispatch is the reproducible instrument behind the numbers: it
 // times the same call in each kill-switch position so a future change can be
 // compared against the recorded baseline with `go test -bench`.
+//
+// # What SW-245 changed about how to read it
+//
+// ns/op is now the CALLER's cost and only the caller's cost: in `shadow` the
+// second path runs on the worker, so the timer no longer covers it. B/op and
+// allocs/op are NOT caller-only — Go's allocation counters are process-wide
+// deltas, so the worker's allocations land in them wherever they were made.
+// That asymmetry is exactly what AC-6 asks for: the latency is gone from the
+// caller, the CPU and allocation are not gone from the machine, and this
+// instrument reports each where it actually is instead of letting the second
+// disappear with the first.
+//
+// Two provisions keep the shadow row honest:
+//
+//   - The loop drains before the counters are read (timer stopped, so the
+//     backlog is not charged to ns/op but its allocations are still counted).
+//     Without it, whatever the worker had not finished would be work the
+//     benchmark did and did not measure.
+//   - Skipped comparisons are reported as a metric. A tight benchmark loop can
+//     outrun a single worker; an arm that dropped comparisons did less work than
+//     a full-coverage arm, and a per-op figure taken over dropped work would
+//     understate the cost. Reporting it lets the reader see whether it happened.
 func BenchmarkCanaryDispatch(b *testing.B) {
 	direct := canaryLatencyFixture(b)
 	ctx := context.Background()
@@ -2667,6 +2795,7 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 				b.Fatalf("SetCanaryMode: %v", err)
 			}
 			b.Cleanup(func() { _ = SetCanaryModeDefault(previous) })
+			ResetCanaryMismatches()
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -2674,6 +2803,12 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 					b.Fatal(err)
 				}
 			}
+			b.StopTimer()
+			if err := DrainCanaryShadow(context.Background()); err != nil {
+				b.Fatalf("DrainCanaryShadow: %v", err)
+			}
+			skipped, _ := CanarySkipped()
+			b.ReportMetric(float64(skipped)/float64(b.N), "skipped/op")
 		})
 	}
 }
@@ -2700,6 +2835,24 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 // AC-3 of this story forbids widening a budget to admit a cost the story
 // introduces, and the way that prohibition is honoured here is structural: there
 // is no second budget to widen.
+//
+// # Amendment (SW-245): what this section still measures, and what it no longer
+//
+// SW-245 took the second path off the caller's thread, so `shadow` no longer
+// contains an executor pass in its timed window. `unaccounted = shadow -
+// (baseline + executor)` therefore reads about MINUS one executor pass on a
+// healthy run — it went from +9.5 µs to roughly -437 µs — and the p50 residue
+// stopped being a number worth reading as "the comparison's own cost".
+//
+// The section is kept, unchanged, for two reasons rather than out of
+// sentimentality. It is still the load-bearing check for cost added INSIDE the
+// shadow window (TestSW244_ShadowAccountingCatchesUnexplainedCost injects
+// exactly that and still requires FAIL), and it is the standing detector for the
+// deferral being undone: if a future change puts the comparison back on the
+// caller's thread, this residue climbs back to zero from below long before
+// anything else notices. What replaced it as the primary reading of shadow's
+// cost is SW-245's ratio bar in §7 of the document, which judges shadow's TOTAL
+// against legacy rather than its residue.
 
 // canaryLatencyAccounting is the shadow residue at one percentile.
 //
@@ -2904,17 +3057,35 @@ func TestSW244_ShadowAccountingCatchesUnexplainedCost(t *testing.T) {
 	// past the 250 µs floor and well past 3x any plausible A/A control.
 	arms := canaryLatencyArmsWith(canaryArmShadow, canaryLatencyExtraSeamPasses(2))
 
-	var got canaryLatencyVerdict
+	var (
+		got      canaryLatencyVerdict
+		unknowns int
+		last     canaryLatencyAccounting
+	)
 	for round := 1; round <= canaryLatencyRounds; round++ {
 		samples := canaryLatencySample(t, direct, arms)
 		a := evaluateCanaryAccounting("p50", 0.50,
 			samples[canaryArmBaseline], samples[canaryArmReference],
 			samples[canaryArmExecutor], samples[canaryArmShadow])
 		t.Logf("injected round %d/%d: %s", round, canaryLatencyRounds, a)
-		got = a.Verdict
+		got, last = a.Verdict, a
 		if got == canaryLatencyFail {
 			return
 		}
+		if got == canaryLatencyUnknown {
+			unknowns++
+		}
+	}
+	// The same guard the gate's own demonstrations carry, for the same reason: a
+	// runner that could not resolve the residue in ANY round measured nothing
+	// about the injection. It is deliberately "every round UNKNOWN" and not
+	// "not FAIL" — a PASS on an injected two-pass residue is the defect this
+	// test exists to catch and must still be loud.
+	if unknowns == canaryLatencyRounds {
+		t.Skipf("injected-residue demonstration inconclusive: the residue was unjudgeable in "+
+			"all %d round(s) (this runner could not tell two byte-identical legacy paths "+
+			"apart), so the two injected executor passes could not be measured. NOT evidence "+
+			"that the accounting missed them: %s", canaryLatencyRounds, last)
 	}
 	t.Errorf("the shadow accounting answered %q to a shadow arm carrying two whole extra "+
 		"executor passes. A residue that large is cost the dual run does not explain, and a "+
@@ -3055,4 +3226,321 @@ func TestSW244_ShadowAccountingSharesTheGateBudget(t *testing.T) {
 			}
 		}
 	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-245 — the shipped default's latency, once the dual run is off the caller's
+// critical path.
+
+// canaryShadowRatioBar is AC-1: shadow's p50 may cost at most this multiple of
+// the legacy baseline.
+//
+// SW-244 measured 2.05×, and §3 of the AX-06 document exempted shadow's TOTAL
+// from the gate for a reason that was correct while shadow ran both paths
+// synchronously — gating it would have been either vacuous or an invitation to
+// weaken the comparison. SW-245 changes the fact that exemption rested on: the
+// caller no longer runs the second path, so shadow's total is no longer "two
+// paths by construction" and there IS a number to hold it to.
+//
+// This is a NEW bar on a statistic §3 did not gate. It does not touch
+// canaryLatencyBudget, the noise term, the floor or the 4×fixedBar clamp — the
+// AX-06 gate below judges exactly what it judged before, and AC-5 requires that
+// to stay true.
+const canaryShadowRatioBar = 1.15
+
+// canaryShadowRatio is one round's judgement of AC-1.
+type canaryShadowRatio struct {
+	Name     string
+	Pct      float64
+	Baseline time.Duration
+	ShadowV  time.Duration
+	RefDelta time.Duration
+	Ratio    float64
+	RefRatio float64
+	Verdict  canaryLatencyVerdict
+	Reason   string
+}
+
+func (r canaryShadowRatio) String() string {
+	return fmt.Sprintf("%s %s shadow=%v legacy=%v ratio=%.3fx bar=%.2fx "+
+		"(same-run A/A control %v = %.3fx)",
+		r.Name, r.Verdict, r.ShadowV, r.Baseline, r.Ratio, canaryShadowRatioBar, r.RefDelta, r.RefRatio)
+}
+
+// evaluateCanaryShadowRatio applies AC-1's rule at one percentile.
+//
+// The three-valued verdict and the resolution discipline are SW-242's, reused
+// rather than reinvented: a run whose own A/A control cannot resolve a 15 %
+// difference cannot judge a 15 % bar either, and the honest answer there is
+// UNKNOWN. Answering PASS on a runner that could not tell is the failure mode
+// SW-242 was written to remove, and it would be no less wrong here.
+func evaluateCanaryShadowRatio(name string, pct float64, base, ref, shadow []time.Duration) canaryShadowRatio {
+	r := canaryShadowRatio{Name: name, Pct: pct}
+	if len(base) == 0 || len(ref) == 0 || len(shadow) == 0 {
+		r.Verdict = canaryLatencyUnknown
+		r.Reason = fmt.Sprintf("%s: no usable measurement: an arm produced no samples", name)
+		return r
+	}
+	baseVal, refVal := percentile(base, pct), percentile(ref, pct)
+	r.Baseline = (baseVal + refVal) / 2
+	r.ShadowV = percentile(shadow, pct)
+	r.RefDelta = baseVal - refVal
+	if r.RefDelta < 0 {
+		r.RefDelta = -r.RefDelta
+	}
+	if r.Baseline <= 0 {
+		r.Verdict = canaryLatencyUnknown
+		r.Reason = fmt.Sprintf("%s: zero legacy baseline", name)
+		return r
+	}
+	r.Ratio = float64(r.ShadowV) / float64(r.Baseline)
+	r.RefRatio = 1 + float64(r.RefDelta)/float64(r.Baseline)
+
+	switch {
+	case r.Ratio <= canaryShadowRatioBar:
+		// A pass needs no resolution argument: the measurement came in UNDER
+		// the bar, and a noisy runner can only have pushed it up.
+		r.Verdict = canaryLatencyPass
+	case r.RefRatio >= canaryShadowRatioBar:
+		// The two byte-identical legacy arms differ by as much as the bar
+		// itself. Nothing this run says about a 1.15x threshold is information.
+		r.Verdict = canaryLatencyUnknown
+		r.Reason = fmt.Sprintf(
+			"%s: runner cannot resolve the bar: the same-run A/A control differs by %v (%.3fx), "+
+				"which is at or past the %.2fx being tested",
+			name, r.RefDelta, r.RefRatio, canaryShadowRatioBar)
+	default:
+		r.Verdict = canaryLatencyFail
+		r.Reason = fmt.Sprintf(
+			"%s: shadow %v is %.3fx the legacy baseline %v, past the %.2fx bar, and this run's "+
+				"own A/A control (%v, %.3fx) is small enough that the difference is signal",
+			name, r.ShadowV, r.Ratio, r.Baseline, canaryShadowRatioBar, r.RefDelta, r.RefRatio)
+	}
+	return r
+}
+
+// TestSW245_ShadowIsOffTheCallersCriticalPath is AC-1.
+//
+// Same harness, same four arms, same rotation, same N and warm-up as SW-242 and
+// SW-244 — the story requires the number to be taken under the recalibrated
+// method, and the way to guarantee that is to call the recalibrated method's own
+// sampler rather than to write a second one.
+//
+// Reporting is round 1's regardless of which round passed, for the reason
+// SW-244 gave: a record that quotes whichever round looked best is a
+// cherry-picked record. Both percentiles are reported; AC-1 is judged at p50,
+// and p95 is reported beside it because the story asks for both.
+func TestSW245_ShadowIsOffTheCallersCriticalPath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("latency measurement is not a -short gate")
+	}
+	direct := canaryLatencyFixture(t)
+
+	var (
+		first  []canaryShadowRatio
+		last   []canaryShadowRatio
+		passed bool
+	)
+	for round := 1; round <= canaryLatencyRounds && !passed; round++ {
+		samples := canaryLatencySample(t, direct, canaryLatencyGateArms())
+		stats := []canaryShadowRatio{
+			evaluateCanaryShadowRatio("p50", 0.50,
+				samples[canaryArmBaseline], samples[canaryArmReference], samples[canaryArmShadow]),
+			evaluateCanaryShadowRatio("p95", 0.95,
+				samples[canaryArmBaseline], samples[canaryArmReference], samples[canaryArmShadow]),
+		}
+		if round == 1 {
+			first = stats
+		}
+		last = stats
+		// AC-1 names p50. p95 is measured and reported, and is not the bar.
+		passed = stats[0].Verdict == canaryLatencyPass
+		t.Logf("SW-245-SHADOW-RATIO round %d/%d: %s | %s%s",
+			round, canaryLatencyRounds, stats[0], stats[1], canaryLatencyReport(samples))
+	}
+	for _, r := range first {
+		t.Logf("SW-245-SHADOW-RATIO-RECORD %s", r)
+	}
+	if skipped, reasons := CanarySkipped(); skipped > 0 {
+		// AC-4 again, in the one place the number could quietly flatter the
+		// measurement: a shadow arm that dropped comparisons is cheaper than one
+		// that made them, and a ratio taken over dropped work is not the ratio
+		// the story asked for.
+		t.Logf("SW-245-SHADOW-RATIO-COVERAGE: %d comparison(s) were skipped during the "+
+			"measurement (%v) — the arm did less work than a full-coverage arm would", skipped, reasons)
+	}
+	if passed {
+		t.Logf("SW-245-SHADOW-RATIO-VERDICT: PASS — the shipped default's p50 is %.3fx legacy, "+
+			"within the %.2fx bar", first[0].Ratio, canaryShadowRatioBar)
+		return
+	}
+	switch last[0].Verdict {
+	case canaryLatencyFail:
+		t.Errorf("SW-245-SHADOW-RATIO-VERDICT: FAIL — %s\n  %s\n  AC-1 is not met on this "+
+			"evidence.", last[0].Reason, last[0])
+	default:
+		t.Skipf("SW-245-SHADOW-RATIO-VERDICT: UNKNOWN after %d round(s) — %s. NOT evidence "+
+			"that the deferral works; re-run on a quieter machine.", canaryLatencyRounds, last[0].Reason)
+	}
+}
+
+// TestSW245_ShadowRatioCatchesASynchronousDualRun is the non-vacuity proof, and
+// it is the sharpest one available: the regression it injects is exactly the
+// behaviour this story removed.
+//
+// canaryLatencyExtraSeamPasses(1) runs one whole extra executor pass inside the
+// shadow arm's timed window — which is, to within the enqueue, what `shadow`
+// cost before SW-245. If the bar cannot turn red on that, it cannot be evidence
+// that SW-245 achieved anything, and a future change that quietly put the
+// comparison back on the caller's thread would pass it.
+func TestSW245_ShadowRatioCatchesASynchronousDualRun(t *testing.T) {
+	if testing.Short() {
+		t.Skip("latency measurement is not a -short gate")
+	}
+	direct := canaryLatencyFixture(t)
+	arms := canaryLatencyArmsWith(canaryArmShadow, canaryLatencyExtraSeamPasses(1))
+
+	var (
+		got      canaryLatencyVerdict
+		unknowns int
+		last     canaryShadowRatio
+	)
+	for round := 1; round <= canaryLatencyRounds; round++ {
+		samples := canaryLatencySample(t, direct, arms)
+		r := evaluateCanaryShadowRatio("p50", 0.50,
+			samples[canaryArmBaseline], samples[canaryArmReference], samples[canaryArmShadow])
+		t.Logf("injected synchronous dual run, round %d/%d: %s", round, canaryLatencyRounds, r)
+		got, last = r.Verdict, r
+		if got == canaryLatencyFail {
+			return
+		}
+		if got == canaryLatencyUnknown {
+			unknowns++
+		}
+	}
+	// See the guard in TestSW244_ShadowAccountingCatchesUnexplainedCost: only a
+	// run that could not resolve the bar in ANY round is inconclusive, and a
+	// PASS on an injected synchronous dual run is still a failure.
+	if unknowns == canaryLatencyRounds {
+		t.Skipf("synchronous-dual-run demonstration inconclusive: the %.2fx bar was unjudgeable "+
+			"in all %d round(s) (this runner's own A/A control is as wide as the bar being "+
+			"tested), so the injected executor pass could not be measured. NOT evidence that "+
+			"the bar missed it: %s", canaryShadowRatioBar, canaryLatencyRounds, last)
+	}
+	t.Errorf("the AC-1 bar answered %q to a shadow arm carrying a whole extra executor pass in "+
+		"its timed window — that is the pre-SW-245 cost, and a bar that cannot see it is not "+
+		"evidence that the cost was removed", got)
+}
+
+// TestSW245_ShadowRatioDecisionRule pins AC-1's rule without owning a quiet
+// machine, the way TestAX06_LatencyDecisionRule and
+// TestSW244_ShadowAccountingDecisionRule pin theirs.
+func TestSW245_ShadowRatioDecisionRule(t *testing.T) {
+	rep := func(d time.Duration) []time.Duration {
+		out := make([]time.Duration, 20)
+		for i := range out {
+			out[i] = d
+		}
+		return out
+	}
+	for _, tc := range []struct {
+		name              string
+		base, ref, shadow time.Duration
+		want              canaryLatencyVerdict
+	}{
+		{
+			name: "deferred dual run is within the bar",
+			base: 400 * time.Microsecond, ref: 400 * time.Microsecond, shadow: 420 * time.Microsecond,
+			want: canaryLatencyPass,
+		},
+		{
+			name: "exactly at the bar passes",
+			base: 400 * time.Microsecond, ref: 400 * time.Microsecond, shadow: 460 * time.Microsecond,
+			want: canaryLatencyPass,
+		},
+		{
+			name: "a synchronous dual run fails",
+			base: 400 * time.Microsecond, ref: 400 * time.Microsecond, shadow: 800 * time.Microsecond,
+			want: canaryLatencyFail,
+		},
+		{
+			name: "faster than legacy passes",
+			base: 400 * time.Microsecond, ref: 400 * time.Microsecond, shadow: 390 * time.Microsecond,
+			want: canaryLatencyPass,
+		},
+		{
+			name: "a control as wide as the bar cannot judge it",
+			base: 460 * time.Microsecond, ref: 340 * time.Microsecond, shadow: 700 * time.Microsecond,
+			want: canaryLatencyUnknown,
+		},
+		{
+			name: "a wide control still passes a measurement under the bar",
+			base: 460 * time.Microsecond, ref: 340 * time.Microsecond, shadow: 405 * time.Microsecond,
+			want: canaryLatencyPass,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := evaluateCanaryShadowRatio("p50", 0.50, rep(tc.base), rep(tc.ref), rep(tc.shadow))
+			if got.Verdict != tc.want {
+				t.Fatalf("verdict = %q, want %q: %s", got.Verdict, tc.want, got)
+			}
+		})
+	}
+	// An empty arm is UNKNOWN, never a pass — the same fail-closed shape the
+	// gate and the accounting both have.
+	if got := evaluateCanaryShadowRatio("p50", 0.50, nil, rep(time.Millisecond), rep(time.Millisecond)); got.Verdict != canaryLatencyUnknown {
+		t.Fatalf("an empty baseline arm read %q, want UNKNOWN", got.Verdict)
+	}
+}
+
+// TestSW245_SamplerDrainsBetweenSamples pins the property every statistic in
+// this file rests on: an arm's timed window contains that arm's work and
+// nothing else.
+//
+// It is written as a property of the SHIPPED sampler rather than as a comment,
+// because the version of this sampler that did not hold it looked correct and
+// cost a merge cycle. Before SW-245 round 3, canaryLatencySample left each
+// `shadow` sample's deferred comparison running into the arms that followed.
+// The rotation is cyclic, so adjacency is fixed rather than shuffled: `shadow`
+// is followed by legacy-a three times in four and by legacy-b once, which timed
+// the two byte-identical control arms on two different machines and
+// manufactured the very A/A control the gate uses to decide whether it can
+// judge anything at all. On PR #172's runner that control reached 26–38 % of
+// the baseline and took the AX-06 gate to UNKNOWN for three rounds against an
+// injected 2x seam regression.
+//
+// The arm order here puts the legacy probe immediately after `shadow` on every
+// iteration, which is the worst case, and the probe runs inside its own timed
+// window — exactly where a leaked comparison would land.
+func TestSW245_SamplerDrainsBetweenSamples(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the drain check drives the real sampler")
+	}
+	direct := canaryLatencyFixture(t)
+	var checks, dirty, worst int
+	arms := []canaryLatencyArm{
+		{name: canaryArmShadow, mode: CanaryModeShadow},
+		{name: canaryArmBaseline, mode: CanaryModeLegacy, extra: func(testing.TB, *Direct) {
+			checks++
+			if n := CanaryShadowPending(); n > 0 {
+				dirty++
+				if n > worst {
+					worst = n
+				}
+			}
+		}},
+	}
+	_ = canaryLatencySample(t, direct, arms)
+	if checks == 0 {
+		t.Fatal("premise: the probe arm never ran, so nothing was checked")
+	}
+	if dirty != 0 {
+		t.Fatalf("%d of %d timed windows on the arm that follows `shadow` were measured with a "+
+			"deferred comparison still outstanding (worst: %d in flight). The sampler must "+
+			"drain OUTSIDE the timed window after every call, or one control arm is timed on a "+
+			"loaded machine and the other is not — see canaryLatencySample",
+			dirty, checks, worst)
+	}
+	t.Logf("SW-245 drain: %d timed windows on the arm following `shadow`, 0 carried an "+
+		"outstanding comparison", checks)
 }

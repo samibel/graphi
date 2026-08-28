@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -79,13 +81,31 @@ func installedSegmentPath(t *testing.T) string {
 	return installedDivergence.store.Path()
 }
 
-// dispatchN runs the canary operation n times through the seam.
+// dispatchN runs the canary operation n times through the seam and waits for
+// every deferred comparison it started.
+//
+// The wait is SW-245: the dual run no longer happens on the dispatching
+// goroutine, so "n dispatches produced n observations" is only true once the
+// worker has caught up. Without the barrier these tests would be asserting on
+// whatever the worker happened to have finished, which is not a property of the
+// seam at all.
 func dispatchN(t *testing.T, direct *client.Direct, n int) {
 	t.Helper()
 	for i := 0; i < n; i++ {
 		if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
 			t.Fatalf("DispatchOperation #%d: %v", i, err)
 		}
+	}
+	drainShadow(t)
+}
+
+// drainShadow waits for the deferred dual-run comparisons and fails the test if
+// any were abandoned — an abandoned comparison would silently weaken every
+// count asserted after it.
+func drainShadow(t *testing.T) {
+	t.Helper()
+	if err := client.DrainCanaryShadow(context.Background()); err != nil {
+		t.Fatalf("DrainCanaryShadow: %v", err)
 	}
 }
 
@@ -124,6 +144,7 @@ func TestSW232_ShadowSessionWritesADurableRecord(t *testing.T) {
 	if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
+	drainShadow(t)
 
 	rep, err := divergence.Read(stateDir)
 	if err != nil {
@@ -170,6 +191,7 @@ func TestSW232_LegacyPositionWritesNothing(t *testing.T) {
 	if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
+	drainShadow(t)
 	if _, err := os.Stat(divergence.Dir(stateDir)); !os.IsNotExist(err) {
 		t.Fatalf("the legacy position created %s (err=%v)", divergence.Dir(stateDir), err)
 	}
@@ -256,14 +278,23 @@ func TestSW232_RollbackToLegacyUninstallsTheRecorder(t *testing.T) {
 	if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
+
+	// No drain here on purpose (SW-245 review MINOR-4). Draining before the
+	// rollback would hide the window this test now also covers: the dispatch
+	// above may still be QUEUED, and it is the rollback's own drain that has to
+	// see it through the outgoing recorder. The `before` snapshot is therefore
+	// taken AFTER the rollback, and pinned to 1.
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeLegacy))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode (rollback): %v", err)
+	}
 	before, err := divergence.Read(stateDir)
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-
-	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeLegacy))
-	if err := ApplyCanaryMode(); err != nil {
-		t.Fatalf("ApplyCanaryMode (rollback): %v", err)
+	if total(before) != 1 {
+		t.Fatalf("observations after the rollback = %d, want 1 — the comparison queued before "+
+			"the recorder was retired must have been recorded through it, not dropped", total(before))
 	}
 	for i := 0; i < 3; i++ {
 		if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
@@ -381,5 +412,256 @@ func TestSW232_RollbackFlushesTheBufferedObservations(t *testing.T) {
 	if got := total(rep); got != 3 {
 		t.Fatalf("observations after rollback = %d, want 3 — uninstalling the recorder must "+
 			"flush its buffer, not drop it", got)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-245 — the deferred dual run, through the composition root.
+
+// slowDivergingClient answers the caller instantly and the DEFERRED comparison
+// slowly and DIFFERENTLY.
+//
+// Both halves matter. The delay guarantees the comparison is still pending when
+// Close is called, which is the situation AC-3 is about; the difference
+// guarantees there is a real finding pending, not merely a counter. The two
+// paths are told apart by the context: deferCanaryComparison hands the worker
+// context.WithoutCancel(callerCtx), whose Done channel is nil, and the test
+// dispatches with a cancellable one.
+type slowDivergingClient struct {
+	client.Client
+	delay time.Duration
+
+	mu    sync.Mutex
+	calls int
+}
+
+func (c *slowDivergingClient) DeadCode(ctx context.Context, _ client.DeadCodeParams) ([]byte, error) {
+	c.mu.Lock()
+	c.calls++
+	call := c.calls
+	c.mu.Unlock()
+	if ctx.Done() != nil {
+		return []byte(`{"caller":true}`), nil
+	}
+	time.Sleep(c.delay)
+	return []byte(fmt.Sprintf(`{"deferred":%d}`, call)), nil
+}
+
+// TestSW245_ProcessExitDoesNotDiscardAPendingMismatch is AC-3, end to end
+// through the composition root and against the file on disk.
+//
+// The shape is the one the acceptance criterion describes: the caller has been
+// answered, a comparison is queued but has NOT run, and the process ends. The
+// record must contain the divergence anyway. Before SW-245 this could not be
+// tested because it could not happen — the comparison was always finished
+// before the dispatch returned — and the whole risk the deferral introduces is
+// that a session now ends with findings in a queue nobody drained.
+//
+// Runtime.Close is the drain point, and the test calls nothing else: no
+// DrainCanaryShadow, no manual Flush. If Close ever stops draining, or stops
+// flushing, or starts closing the store first, this goes red.
+func TestSW245_ProcessExitDoesNotDiscardAPendingMismatch(t *testing.T) {
+	stateDir := withStateHome(t)
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeShadow))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+
+	c := &slowDivergingClient{delay: 150 * time.Millisecond}
+	ctx, cancel := context.WithCancel(context.Background())
+	got, err := client.DispatchOperation(ctx, c, &client.DeadCodeArgs{})
+	if err != nil {
+		t.Fatalf("DispatchOperation: %v", err)
+	}
+	if want := `{"caller":true}`; string(got) != want {
+		t.Fatalf("caller received %s, want the legacy result %s", got, want)
+	}
+	// The caller is gone, and its context with it. The comparison is still in
+	// the queue: this is the exact moment AC-3 is about.
+	cancel()
+
+	// The session ends. Nothing else is called.
+	newRuntime().Close()
+
+	rep, err := divergence.Read(stateDir)
+	if err != nil {
+		t.Fatalf("divergence.Read: %v", err)
+	}
+	doc := divergence.Assess(rep, client.MigratedOperations())
+	if doc.Mismatches != 1 {
+		t.Fatalf("the record holds %d mismatch(es) after the session ended, want 1 — a "+
+			"comparison that was still queued at exit was discarded\n%+v", doc.Mismatches, doc.Operations)
+	}
+	if doc.Skipped != 0 {
+		t.Fatalf("Close abandoned %d comparison(s) it had budget for: %v", doc.Skipped, doc.SkipReasons)
+	}
+	if doc.State != divergence.StateDiverged {
+		t.Fatalf("state = %q, want %q", doc.State, divergence.StateDiverged)
+	}
+	for _, op := range doc.Operations {
+		if op.Operation != client.CanaryOperation {
+			continue
+		}
+		if op.LastMismatch == nil || op.LastMismatch.Kind != "bytes" {
+			t.Fatalf("%s = %+v, want a recorded `bytes` divergence with its rendering",
+				op.Operation, op)
+		}
+		if op.Dispatches != 1 || op.Coverage != 1 {
+			t.Fatalf("%s reports %d dispatch(es) at coverage %.2f, want 1 at full coverage",
+				op.Operation, op.Dispatches, op.Coverage)
+		}
+	}
+}
+
+// TestSW245_CloseFlushesCoalescedObservations is the other half of what Close
+// gained, and the reason it flushes as well as drains.
+//
+// The store writes the first observation and every mismatch immediately but
+// coalesces the rest on a two-second interval, so a session that ends inside
+// that window used to persist one observation where it made several — disclosed
+// in docs/executor-seam-rollback.md §5 as a known count imprecision. Deferring
+// the comparison would have WIDENED that window, because a comparison drained at
+// shutdown writes into exactly that buffer. Close closes it instead.
+func TestSW245_CloseFlushesCoalescedObservations(t *testing.T) {
+	stateDir := withStateHome(t)
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeShadow))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+
+	direct := divergenceFixture(t)
+	const calls = 5
+	for i := 0; i < calls; i++ {
+		if _, err := client.DispatchOperation(context.Background(), direct, &client.DeadCodeArgs{}); err != nil {
+			t.Fatalf("DispatchOperation %d: %v", i, err)
+		}
+	}
+	newRuntime().Close()
+
+	rep, err := divergence.Read(stateDir)
+	if err != nil {
+		t.Fatalf("divergence.Read: %v", err)
+	}
+	doc := divergence.Assess(rep, client.MigratedOperations())
+	if doc.Observations != calls {
+		t.Fatalf("the record holds %d observation(s) after the session ended, want %d — Close "+
+			"either did not drain the deferred comparisons or did not flush what they recorded",
+			doc.Observations, calls)
+	}
+	if doc.Skipped != 0 {
+		t.Fatalf("%d comparison(s) were skipped in a %d-call session: %v", doc.Skipped, calls, doc.SkipReasons)
+	}
+	if doc.Coverage != 1 {
+		t.Fatalf("coverage = %.3f, want 1 — nothing was dropped", doc.Coverage)
+	}
+}
+
+// gatedDivergenceClient pins the DEFERRED comparison so a test can act while it
+// is still queued.
+//
+// It tells the two passes apart the way the seam does: the caller dispatches
+// with a cancellable context, and the worker runs on context.WithoutCancel, so
+// a nil Done() channel means "this is the deferred pass". The caller's own pass
+// is never blocked — it is the answer.
+type gatedDivergenceClient struct {
+	client.Client
+	entered chan struct{}
+	gate    chan struct{}
+}
+
+func newGatedDivergenceClient(inner client.Client) *gatedDivergenceClient {
+	return &gatedDivergenceClient{Client: inner, entered: make(chan struct{}, 4), gate: make(chan struct{})}
+}
+
+func (g *gatedDivergenceClient) DeadCode(ctx context.Context, p client.DeadCodeParams) ([]byte, error) {
+	if ctx.Done() == nil {
+		g.entered <- struct{}{}
+		<-g.gate
+	}
+	return g.Client.DeadCode(ctx, p)
+}
+
+func (g *gatedDivergenceClient) release() {
+	select {
+	case <-g.gate:
+	default:
+		close(g.gate)
+	}
+}
+
+// TestSW245_RetiringTheRecorderDrainsWhatWasQueued is SW-245 review MINOR-4.
+//
+// Since SW-245 a dispatch is answered before its comparison runs, so at the
+// moment the kill switch is rolled back — or the state directory is repointed —
+// there can be comparisons queued UNDER THE OUTGOING RECORDER. Swapping or
+// removing the recorder without draining lets those jobs run afterwards and
+// record into the incoming store, or (on a rollback to all-`legacy`) into
+// nothing at all. Neither is observed durably and neither is counted as
+// skipped, which is the one hole AC-4's observed + skipped == dispatched
+// equation forbids.
+//
+// The gate makes the window deterministic rather than a lucky interleaving: the
+// deferred comparison is pinned inside the client, ApplyCanaryMode is called
+// while it is pinned, and the test requires that call to still be waiting. A
+// build that retires without draining returns immediately and fails here.
+func TestSW245_RetiringTheRecorderDrainsWhatWasQueued(t *testing.T) {
+	stateDir := withStateHome(t)
+	// The skip counters are process-global, so the zero point has to be set
+	// here for the coverage assertion at the end to mean anything.
+	client.ResetCanaryMismatches()
+	t.Cleanup(client.ResetCanaryMismatches)
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeShadow))
+	if err := ApplyCanaryMode(); err != nil {
+		t.Fatalf("ApplyCanaryMode: %v", err)
+	}
+
+	gated := newGatedDivergenceClient(divergenceFixture(t))
+	defer gated.release()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if _, err := client.DispatchOperation(ctx, gated, &client.DeadCodeArgs{}); err != nil {
+		t.Fatalf("DispatchOperation: %v", err)
+	}
+	select {
+	case <-gated.entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the deferred comparison never started")
+	}
+
+	// The rollback happens while the comparison is pinned.
+	t.Setenv(EnvCanaryModeAll, string(client.CanaryModeLegacy))
+	retired := make(chan error, 1)
+	go func() { retired <- ApplyCanaryMode() }()
+
+	select {
+	case err := <-retired:
+		t.Fatalf("ApplyCanaryMode returned (%v) while a comparison was still queued — "+
+			"retiring the recorder without draining leaves that comparison recording nowhere", err)
+	case <-time.After(200 * time.Millisecond):
+		// Still draining, which is the point.
+	}
+
+	gated.release()
+	select {
+	case err := <-retired:
+		if err != nil {
+			t.Fatalf("ApplyCanaryMode (rollback): %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("ApplyCanaryMode never returned after the comparison was released")
+	}
+
+	rep, err := divergence.Read(stateDir)
+	if err != nil {
+		t.Fatalf("divergence.Read: %v", err)
+	}
+	if total(rep) != 1 {
+		t.Fatalf("observations = %d, want 1 — the queued comparison must reach the recorder "+
+			"it was queued under", total(rep))
+	}
+	skipped, reasons := client.CanarySkipped()
+	if skipped != 0 {
+		t.Fatalf("the rollback counted %d skip(s) %v — the comparison was drained, not abandoned", skipped, reasons)
 	}
 }

@@ -26,7 +26,132 @@ file:
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-28
+
 ### Changed
+
+- **Shadow mode is off the caller's critical path** (SW-245, AX-12). In `shadow`,
+  `DispatchOperation` now returns on the legacy result as soon as the legacy method
+  answers; the executor pass, the byte-exact comparison and the recorder hand-off
+  run on a single worker over a bounded 64-deep queue. No sampling: every dispatch
+  is queued for the same byte-exact comparison it received before.
+
+  **Measured**, under SW-242's recalibrated AX-06 method (same-run A/A control,
+  N=200 per arm): p50 **783.542 µs (2.05× legacy) → 0.994× legacy**, p95 1.65× →
+  0.90×, both inside the run's A/A control band — the honest claim is "no longer
+  separable from legacy at this resolution", not "faster". The non-vacuity leg
+  (an injected synchronous dual run) fails the new bar at 2.2×.
+
+  **Correction, round 3.** The AX-06 sampler first shipped this without draining
+  the deferred comparisons between samples, on the argument that the worker's
+  concurrent load is what `shadow` really costs a host. The rotation is cyclic,
+  so adjacency is fixed rather than shuffled — `shadow` is followed by `legacy-a`
+  in three of every four occurrences and by `legacy-b` in one — and the leaked
+  comparison therefore landed on one A/A control arm three times as often as on
+  the other. On PR #172's runner that drove the gate's own control to 26–38 % of
+  the baseline (it can judge a median only under 13.3 %) and took the AX-06 gate
+  to UNKNOWN for three rounds against an *injected 2× seam regression*, while
+  flattering AC-1's own p95 (0.918× undrained, 1.012× drained). The sampler now
+  drains outside the timed window after every call; `TestSW245_SamplerDrainsBetweenSamples`
+  pins it, and §7.2.1 of `docs/rc/ax06-canary-latency.md` records the correction.
+  No gate arithmetic changed: `canaryLatencyBudget`, `evaluateCanaryStat`, the
+  floor/noise/ceiling constants and the `budget ≤ 4×fixedBar` clamp are
+  byte-for-byte SW-242's.
+
+  **What did not get cheaper, stated rather than omitted** (AC-6): allocations stay
+  **2.03×** legacy; a saturating single caller still absorbs 1.26× ns/op; at
+  `GOMAXPROCS=1` 1.89×, where the queue starts dropping and says so. The work
+  moved, it did not shrink.
+
+  **Coverage is disclosed, never inferred** (AC-4). The `executor-divergence-v1`
+  record gains three fields — `dispatches`, `skipped`, `coverage` — and
+  `graphi doctor -divergence` prints a coverage line on every document
+  (`N of N dispatch(es) compared (100%) — no sampling, nothing dropped`) and
+  refuses PASS while anything is skipped. Three skip reasons exist and each is
+  counted and flushed immediately: `queue-full`, `drain-abandoned` (shutdown drain
+  out of budget) and `caller-cancelled`. Old records read correctly:
+  `dispatches = observations + skipped`.
+
+  **A cancelled caller is not compared.** A caller that cancels or times out
+  during the legacy call would otherwise produce a false, permanent
+  `error-presence` divergence (`legacy: context canceled / executor: ok`) and flip
+  doctor to DIVERGED on no evidence. Such dispatches are skipped and counted
+  `caller-cancelled`; a live caller's ordinary legacy error is still compared.
+
+  **Durability** (AC-3). `Runtime.Close` drains the queue before the closers run,
+  then flushes — a mismatch still queued when the session ends is on disk after
+  `Close()` alone. The recorder is drained before it is retired or replaced on a
+  state-dir rebind. `graphi http` drains on exit too, but installs no recorder and
+  applies no kill switch (unchanged, now documented instead of over-claimed). The
+  known ≤2 s coalescing loss now applies to killed processes only.
+
+  **Untouched:** `canaryLatencyBudget`, SW-242's 250 µs floor, 10 % relative term,
+  3× noise term and the `budget ≤ 4×fixedBar` clamp; the AX-06 gate still goes red
+  on an injected seam regression on both shapes. Stable-12 wire names, request
+  schemas, canonical result bytes, error codes and the default MCP profile are
+  byte-unchanged; `cmd/coverage -check` 7/7 with zero tier-row changes.
+
+  Known, disclosed, not fixed: a busy state-dir rebind can stall `OpenSession`
+  up to the 5 s drain bound (then counts `drain-abandoned`); a legacy *success*
+  whose caller cancels between return and hand-off is counted `caller-cancelled`
+  (coverage loss only).
+
+- **The shipped canary default is `shadow`** (SW-244, AX-12). SW-228 compiled the
+  executor seam in `legacy`, so `graphi doctor` reported 10 legacy / 0 shadow /
+  0 active on tip and SW-238's precondition — a release line with the shadow
+  catalog live — was unreachable. The change is one constant; the work was
+  proving it affordable and proving the record it turns on actually fills.
+  SW-228's reversal condition ("only together with a way to READ a divergence
+  outside the test binary") was met by SW-232, and
+  `TestSW244_ShippedDefaultIsShadow` now pins `shadow` with the two bars that
+  must hold for it to stay.
+
+  Measured cost at the time of the flip, same method: p50 2.05×, p95 1.65×,
+  allocations 2.04× — residue after subtracting `legacy + executor` was 9.5 µs
+  and exactly zero allocations, i.e. the seam itself is cheap and the price was
+  the second path running synchronously. SW-245 (above) removes that price in
+  this same release. `canaryLatencyBudget` was extracted, not changed;
+  `bench/bench-budget.yml` untouched; binary size +0 B.
+
+  Consequences that moved with the flip: `ExecutorSeamCheck` no longer WARNs a
+  stock install about its own shipped configuration — the WARN is keyed on an
+  *overridden* mode, the compiled-in shadow is INFO carrying the measured cost and
+  the opt-out; the divergence readout footer no longer explains all-UNKNOWN as
+  "because the shipped position is legacy"; a CI leg drives real `graphi mcp`
+  sessions and a separate `graphi doctor -divergence` end to end. Recorded, not
+  smoothed over: the CLI does not reach the seam (MCP/HTTP only, by AX-06 design).
+
+- **Contention-aware AX-06 latency gate** (SW-242). A decisive FAIL is no longer
+  erased by an unjudgeable measurement. PR #169 failed on GitHub's runners with
+  rounds FAIL, FAIL, UNKNOWN and reported UNKNOWN — which rendered green, because
+  `cmd/testgate` does not summarise skips. Two stacked ordering bugs: within a
+  round, a p95 FAIL at 42× its budget was discarded because that round's p50 was
+  unjudgeable; across rounds, that one UNKNOWN erased two FAIL rounds that had
+  caught the same regression. A FAIL is now named **decisive** when
+  `overhead > 3 × max(ceiling, widest same-run A/A control at that percentile)`,
+  and only a decisive FAIL outranks the absence of a measurement; everything else
+  stays marginal inside an UNKNOWN, which keeps the false-FAIL rate where it was.
+  Measured over 2000 three-round trials per condition under the contended noise
+  model: shipped 0.05 %, rejected "any FAIL stands" 9.75 %; the literal "3× the
+  failing round's own control" form was implemented first, measured at 2.365 %
+  (a 24× regression) and rejected — which is why the bar is the widest control in
+  evidence, not the luckiest. Same-run A/A reference, N ≥ 200 per arm, 250 µs
+  floor, 10 % relative term, 3× noise term, `budget ≤ 4×fixedBar` clamp.
+
+- **Binary-size baseline re-pinned, budget held, ratchet stated** (SW-243).
+  Measured from a clean checkout of main @ `ebe0e87` in the canonical release
+  shape (`CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1`, `-trimpath
+  -buildvcs=true`, the 21 default grammar-subset tags): **35,351,306 B**,
+  reproducible, against the unchanged **36,100,000 B** budget — 748,694 B
+  (2.07 %) headroom. The baseline had gone 1,084,199 B stale, so every green run
+  reported a wrong delta; the budget does not move because the condition that
+  justified the 2026-08-24 raise (headroom below one toolchain patch bump) is
+  absent by 84.6×. Ceiling and refusals are now written into
+  `bench/bench-budget.yml` and `docs/ci/bench.md`: no raise without same-method
+  attribution; none for a newly linked existing dependency until shown needed on
+  the default path; none while headroom exceeds 10× the largest measured
+  toolchain-noise event (88,540 B); no budget above 40,000,000 B without an ADR
+  amending ADR 0001.
 
 - **One MCP tool descriptor per tool, across binding profiles** (SW-241, AX-12).
   This is a **wire change to the `-labs` profile only**; the shipped default MCP

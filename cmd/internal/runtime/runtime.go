@@ -155,13 +155,82 @@ func (r *Runtime) Composition() *Composition { return r.comp }
 func (r *Runtime) Done() <-chan struct{} { return r.done }
 
 // Close releases every owned resource exactly once, reverse of construction.
+//
+// SW-245 put two things in front of that loop, in this order and for one
+// reason each:
+//
+//  1. The deferred dual-run comparisons are drained. Since SW-245 the `shadow`
+//     position answers the caller and compares afterwards, so at the moment a
+//     session ends there can be comparisons that have not run — each of which
+//     may be holding a divergence nobody has seen yet. AC-3 says process exit
+//     must not discard a pending mismatch, and this is where it does not.
+//     It has to happen BEFORE the closers, because the comparison reads through
+//     the very store the closers close; a comparison that ran against a closed
+//     store would not merely fail, it would manufacture a false
+//     "error-presence" divergence out of the shutdown.
+//  2. The divergence record is flushed. The store writes the first observation
+//     and every mismatch immediately but coalesces the rest on a two-second
+//     interval, so a process that exits without this loses the counts it was
+//     still holding. That loss predates SW-245 (it is disclosed in
+//     docs/executor-seam-rollback.md §5), and deferring the comparison would
+//     have widened it — a comparison that completes during the drain writes
+//     into exactly that buffer. Flushing here closes the widened window and, as
+//     a side effect, the original one for any session that closes its Runtime.
 func (r *Runtime) Close() {
 	r.closeOnce.Do(func() {
+		drainShadowComparisons()
+		FlushDivergenceRecord()
 		for i := len(r.closers) - 1; i >= 0; i-- {
 			r.closers[i]()
 		}
 		close(r.done)
 	})
+}
+
+// shadowDrainBudget bounds how long Close waits for outstanding comparisons.
+//
+// It is generous relative to the work — the queue holds at most 64 jobs and one
+// job costs about one legacy call — and finite because a wedged comparison must
+// not become a CLI that will not exit. A drain that runs out of budget records
+// what it abandoned as skipped, so the coverage disclosure stays true rather
+// than the shutdown going quiet (SW-245 AC-4).
+const shadowDrainBudget = 5 * time.Second
+
+// drainShadowComparisons waits for the deferred dual runs, then lets go.
+//
+// A drain that times out is not escalated into a session failure: the caller
+// has already been served, the abandoned comparisons are counted and disclosed,
+// and refusing to exit because a diagnostic was slow would be the wrong trade —
+// the same one installDivergenceRecorder makes when a store cannot be built.
+//
+// The empty check in front is not an optimisation for its own sake. The queue
+// is process-global while Runtimes are not: Attach's error path, OpenSession's
+// retries and a roots-change rebind all close a Runtime that never dispatched
+// anything, and each of those would otherwise build a timer, a context and a
+// watcher goroutine to wait on a queue that is empty. With the check, a Close
+// with nothing outstanding costs one mutex acquisition.
+func drainShadowComparisons() {
+	if client.CanaryShadowPending() == 0 {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), shadowDrainBudget)
+	defer cancel()
+	_ = client.DrainCanaryShadow(ctx)
+}
+
+// FlushDivergenceRecord writes any buffered divergence counts to disk.
+//
+// It is exported because the composition root is not the only place a graphi
+// process ends: a verb that never builds a Runtime, or a test that wants the
+// record on disk without tearing a session down, needs the same barrier.
+// Calling it with no store installed is a no-op.
+func FlushDivergenceRecord() {
+	installedDivergence.mu.Lock()
+	store := installedDivergence.store
+	installedDivergence.mu.Unlock()
+	if store != nil {
+		_ = store.Flush()
+	}
 }
 
 func newRuntime() *Runtime { return &Runtime{done: make(chan struct{})} }
@@ -556,6 +625,7 @@ func installDivergenceRecorder() {
 	defer installedDivergence.mu.Unlock()
 
 	if key == "" {
+		drainBeforeRecorderChange()
 		retireDivergenceStoreLocked()
 		client.SetDivergenceRecorder(nil)
 		return
@@ -566,6 +636,7 @@ func installDivergenceRecorder() {
 		// observations through a roots-change rebind instead of dropping them.
 		return
 	}
+	drainBeforeRecorderChange()
 	store, err := divergence.NewStore(state.StateDir())
 	if err != nil {
 		retireDivergenceStoreLocked()
@@ -575,6 +646,30 @@ func installDivergenceRecorder() {
 	retireDivergenceStoreLocked()
 	installedDivergence.store, installedDivergence.key = store, key
 	client.SetDivergenceRecorder(store)
+}
+
+// drainBeforeRecorderChange empties the deferred-comparison queue before the
+// installed recorder is replaced or removed.
+//
+// Without it, jobs queued under the OUTGOING recorder run after the swap and
+// record through the incoming one — into a different state directory, or, when
+// the new position set is all-`legacy`, into nothing at all. Neither outcome is
+// observed durably and neither is counted as skipped, which is the one hole
+// AC-4's observed + skipped == dispatched equation forbids. Draining first
+// makes every job that was queued under a recorder record through that
+// recorder.
+//
+// It runs while installedDivergence.mu is held. That is safe because nothing on
+// the worker's path takes that mutex: the worker reaches the recorder through
+// the pointer surfaces/client holds, not through this package.
+//
+// The window it closes is narrow — it needs the recorder key to change inside a
+// live process, which today means the environment moving between two
+// ApplyCanaryMode calls — so it shares Close's budget rather than getting a
+// longer one, and it is a no-op (one mutex acquisition) when nothing is queued,
+// which is every startup.
+func drainBeforeRecorderChange() {
+	drainShadowComparisons()
 }
 
 // retireDivergenceStoreLocked flushes and forgets the installed store. The

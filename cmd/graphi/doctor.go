@@ -199,6 +199,8 @@ func executorDivergence() (doctor.ExecutorDivergence, error) {
 		Directory:    doc.Directory,
 		Observations: doc.Observations,
 		Mismatches:   doc.Mismatches,
+		Skipped:      doc.Skipped,
+		SkipReasons:  doc.SkipReasons,
 		Unreadable:   doc.Unreadable,
 		Pruned:       doc.Pruned,
 	}

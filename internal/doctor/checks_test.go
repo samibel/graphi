@@ -1364,3 +1364,54 @@ func TestExecutorDivergenceCheckDisclosesPrunedSegments(t *testing.T) {
 		t.Errorf("detail does not disclose that the totals are incomplete:\n%s", res.Detail)
 	}
 }
+
+// SW-245 AC-4: a record with skipped comparisons does not PASS.
+//
+// PASS is the check's one earned verdict — every migrated operation observed,
+// none diverged — and an operator scanning statuses reads it as "the seam is
+// proven". Since SW-245 the dual run happens on a bounded queue, so a call can
+// reach the seam and never be compared; the operations can all be observed and
+// the evidence still be partial. Downgrading to INFO with the numbers is the
+// honest answer. PASS with a footnote is not: the footnote is in the detail,
+// which is precisely what a status scan does not read.
+func TestExecutorDivergenceCheckDoesNotPassWithSkippedComparisons(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 40,
+		Skipped:      12,
+		SkipReasons:  map[string]int{"queue-full": 10, "drain-abandoned": 2},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status == StatusPass {
+		t.Fatalf("a record with 12 uncompared dispatches reports PASS: %q", res.Message)
+	}
+	if res.Status != StatusInfo {
+		t.Fatalf("status = %q, want %q", res.Status, StatusInfo)
+	}
+	if !strings.Contains(res.Message, "never compared") {
+		t.Errorf("the message hides the coverage gap: %q", res.Message)
+	}
+	if !strings.Contains(res.Detail, "drain-abandoned=2, queue-full=10") {
+		t.Errorf("the detail does not break the gap down by cause:\n%s", res.Detail)
+	}
+	if !strings.Contains(res.Detail, "covers 40 of 52") {
+		t.Errorf("the detail does not state the effective coverage:\n%s", res.Detail)
+	}
+	if !strings.Contains(res.Action, "not evidence of agreement") {
+		t.Errorf("the action lets a skipped comparison read as agreement: %q", res.Action)
+	}
+}
+
+// The clean case must stay clean: no skipped comparisons, no coverage
+// paragraph. A disclosure that prints unconditionally stops being read.
+func TestExecutorDivergenceCheckIsSilentAboutCoverageWhenItIsWhole(t *testing.T) {
+	res := ExecutorDivergenceCheck(ExecutorDivergence{
+		State:        "NO-DIVERGENCE-OBSERVED",
+		Observations: 40,
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusPass {
+		t.Fatalf("a complete, fully-compared record reports %q, want %q", res.Status, StatusPass)
+	}
+	if strings.Contains(res.Detail, "NOT compared") {
+		t.Errorf("a full-coverage record warns about a gap it does not have:\n%s", res.Detail)
+	}
+}

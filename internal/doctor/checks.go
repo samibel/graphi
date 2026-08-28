@@ -530,6 +530,15 @@ type ExecutorDivergence struct {
 	Directory string
 	// Observations and Mismatches are the totals across every segment.
 	Observations, Mismatches int
+	// Skipped counts dispatches that reached the shadow seam and were NOT
+	// compared — the bounded deferral queue was full, or a shutdown drain ran
+	// out of budget (SW-245). It is here because Observations without it reads
+	// as coverage: "12 000 observations, no divergence" and "12 000
+	// observations, 40 000 skipped, no divergence" are very different findings
+	// and the check must not print them the same way.
+	Skipped int
+	// SkipReasons breaks Skipped down by cause, in the record's own wording.
+	SkipReasons map[string]int
 	// Diverged names the operations with at least one recorded mismatch.
 	Diverged []string
 	// Unobserved names the migrated operations with NO observation at all.
@@ -585,6 +594,11 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 			var detail strings.Builder
 			fmt.Fprintf(&detail, "record: %s\n", d.Directory)
 			fmt.Fprintf(&detail, "%d observation(s), %d mismatch(es)\n", d.Observations, d.Mismatches)
+			if d.Skipped > 0 {
+				fmt.Fprintf(&detail, "%d dispatch(es) reached the seam and were NOT compared (%s): "+
+					"the observation count covers %d of %d\n",
+					d.Skipped, renderSkipReasons(d.SkipReasons), d.Observations, d.Observations+d.Skipped)
+			}
 			if len(d.Unobserved) > 0 {
 				sort.Strings(d.Unobserved)
 				fmt.Fprintf(&detail, "never observed (UNKNOWN, not agreed): %s\n", strings.Join(d.Unobserved, ", "))
@@ -626,6 +640,23 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 					Detail: detail.String(),
 				}
 			}
+			if d.Skipped > 0 {
+				// Every migrated operation was observed and none diverged — but
+				// some calls were never compared at all, so this is not the
+				// clean bill of health PASS is reserved for. INFO with the
+				// numbers, not PASS with a footnote: an operator scanning
+				// statuses reads PASS as "the seam is proven", and a partial
+				// comparison has not proven it (SW-245 AC-4).
+				return CheckResult{
+					ID: "executor-divergence", Category: "internals", Status: StatusInfo,
+					Message: fmt.Sprintf("%d observation(s) across every migrated operation and no "+
+						"divergence recorded, but %d dispatch(es) were never compared — coverage is "+
+						"partial, not clean", d.Observations, d.Skipped),
+					Action: "read `graphi doctor -divergence` for the per-operation coverage; a skipped " +
+						"comparison is a gap in the evidence, not evidence of agreement",
+					Detail: detail.String(),
+				}
+			}
 			return CheckResult{
 				ID: "executor-divergence", Category: "internals", Status: StatusPass,
 				Message: fmt.Sprintf("%d observation(s) across every migrated operation, no divergence recorded",
@@ -635,6 +666,27 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 			}
 		},
 	}
+}
+
+// renderSkipReasons renders a divergence skip breakdown in a stable order. It
+// is a copy of the renderer in internal/divergence rather than an import
+// because internal/doctor computes only over what it is GIVEN — it does not
+// read the record, and taking a dependency on the package that owns the files
+// to format a string would undo that separation.
+func renderSkipReasons(reasons map[string]int) string {
+	if len(reasons) == 0 {
+		return "reason not recorded"
+	}
+	keys := make([]string, 0, len(reasons))
+	for k := range reasons {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%d", k, reasons[k]))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // KnownDefectsCheck discloses OPEN, published product defects that affect a

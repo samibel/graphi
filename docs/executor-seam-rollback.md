@@ -55,18 +55,42 @@ The variable name is always `GRAPHI_CANARY_` + the operation id in upper case.
 `shadow` runs every call twice, and it is what a normal install runs. What that
 buys is §5: every call compares the two paths and persists what it saw, so a
 divergence is a thing you can read rather than a thing someone has to reproduce.
-What it costs, measured rather than estimated
-(`docs/rc/ax06-canary-latency.md` §6, one fixture, one machine): **about 2.0×
-legacy** in latency, CPU and allocations for the ten operations in §1 — one
-extra legacy-plus-executor call, and **9.5 µs at the median plus zero
-allocations** for everything else the position does. It does **not** double the
-work of a graphi session: the ten operations are Labs, and nothing else on any
-surface is on this seam.
 
-`shadow` cannot change an answer. The bytes the caller receives are the legacy
-method's own return value; the executor's result is compared and recorded and
-never returned. If you need the second path to stop running anyway — during an
-incident, or to reclaim the 2× — §3 is that switch.
+**What it costs, measured rather than estimated** (`docs/rc/ax06-canary-latency.md`
+§6 and §7, one fixture, one machine). Since SW-245 the second path does **not**
+run on the thread that serves your request: the caller is answered from the
+legacy method and the comparison runs afterwards on a background worker. That
+splits the cost in two, and both halves are stated here because only one of them
+went away.
+
+* **What the caller waits for: essentially nothing.** Under the measurement
+  method AX-06 uses (a rotating A/B on a machine with headroom, N = 200 per
+  arm), `shadow`'s p50 is **0.973× legacy** and its p95 **0.918×** — inside the
+  run's own noise band, i.e. not separable from `legacy` at that resolution. It
+  was **2.05×** at p50 before SW-245.
+* **What the machine still pays: the whole second path.** CPU and allocations
+  are **unchanged at about 2.0× legacy** — 3 867 allocations per call against
+  legacy's 1 905. Moving work to another goroutine does not stop it costing.
+  On a box with spare capacity you will not feel it in request latency; on a
+  **saturated or single-CPU** host you will, and the same benchmark reads
+  **1.26×** under a back-to-back single-caller loop and **1.89×** at
+  `GOMAXPROCS=1`.
+
+It does **not** double the work of a graphi session: the ten operations are Labs,
+and nothing else on any surface is on this seam.
+
+Because the comparison is deferred, it is also **bounded**: at most 64 comparisons
+may be waiting at once, and a process that outruns that loses the surplus. Those
+losses are counted and printed — see §5's coverage line — and are the normal
+outcome on a host with no spare CPU. They are a gap in the evidence, never
+evidence of agreement.
+
+`shadow` cannot change an answer, and since SW-245 it cannot change a *timing*
+either. The bytes the caller receives are the legacy method's own return value,
+byte for byte what `legacy` returns; the executor's result is compared and
+recorded and never returned; and the caller does not wait for that comparison to
+finish. If you need the second path to stop running anyway — during an incident,
+or to reclaim the CPU and allocations — §3 is that switch.
 
 `active` makes the executor authoritative. It is **not** a shipped position and
 is the one a rollback most urgently undoes.
@@ -143,13 +167,29 @@ its own `env` block, check that block — do not infer it from a shell.
 ## 5. Reading the divergence record
 
 While any operation is in `shadow`, graphi compares the two paths on every call
-and persists what it saw to the graphi state directory
+it can and persists what it saw to the graphi state directory
 (`$XDG_STATE_HOME/graphi/executor-divergence/`, else `~/.graphi/…`). The record
 survives a restart and is read **without starting a server**:
 
 ```sh
 $ graphi doctor -divergence
 $ graphi doctor -divergence --json
+```
+
+A readout looks like this (three MCP tool calls on a fresh install):
+
+```
+executor-seam divergence record (executor-divergence-v1)
+  state:      PARTIAL-UNKNOWN — some migrated operations have never been observed
+  directory:  /home/you/.local/state/graphi/executor-divergence
+  segments:   1 recorded, 0 unreadable, 0 pruned
+  totals:     3 observation(s), 0 mismatch(es)
+  coverage:   3 of 3 dispatch(es) compared (100%) — no sampling, nothing dropped
+
+OPERATION      DISPATCHES  OBSERVATIONS  SKIPPED  MISMATCHES  STATE                   …
+dead_code      2           2             0        0           NO-DIVERGENCE-OBSERVED  …
+repo_overview  1           1             0        0           NO-DIVERGENCE-OBSERVED  …
+compound       0           0             0        0           UNKNOWN                 …
 ```
 
 Each operation reads as one of:
@@ -173,6 +213,69 @@ a fresh install is correct and expected; all ten still reading `UNKNOWN` after
 weeks of use means either nothing on the seam is being called or something rolled
 the seam back — check `graphi doctor` (§4) before concluding anything.
 
+### Coverage — how much of what happened was actually compared
+
+Read the `coverage:` line before you read the totals. Since SW-245 the comparison
+runs on a background worker with a bounded queue, so a call can reach the seam
+and never be compared. The record therefore reports **three** numbers per
+operation, not one:
+
+* **DISPATCHES** — calls that reached the seam and were candidates for comparison.
+* **OBSERVATIONS** — calls that were actually compared.
+* **SKIPPED** — the difference, with its cause.
+
+When nothing was skipped the header says so outright (`3 of 3 dispatch(es)
+compared (100%) — no sampling, nothing dropped`). When something was, it says
+that instead, names the cause, and prints a paragraph under the table:
+
+```
+  coverage:   612 of 640 dispatch(es) compared (95.6%) — 28 NOT compared (queue-full=28)
+…
+28 dispatch(es) reached the seam and were NOT compared (queue-full=28), so the
+observation counts above cover 95.6% of what the seam saw. A call that was not
+compared is NOT evidence that the two paths agree — it is a coverage gap, …
+```
+
+The three causes you can see:
+
+* **`queue-full`** — calls arrived faster than the worker could compare them and
+  the 64-deep queue was full. Expect this on a busy or CPU-starved host; it is
+  the bound doing its job rather than the process growing without limit. It is
+  the *normal* reading at `GOMAXPROCS=1`.
+* **`drain-abandoned`** — the process was shutting down and ran out of its
+  5-second drain budget with comparisons still queued. This should be rare; a
+  standing non-zero count here means comparisons are routinely outliving the
+  sessions that started them.
+* **`caller-cancelled`** — the caller hung up or timed out *while the legacy
+  method was still running*, so the legacy outcome was `context canceled` /
+  `context deadline exceeded` rather than a result. There is nothing comparable
+  to compare: the deferred pass runs on a context that survives the caller (it
+  has to, or the comparison would be cancelled the instant the request ends), so
+  it would succeed and the pair would be recorded as an `error-presence`
+  divergence manufactured by the shutdown of the request. Expect a low steady
+  count on an HTTP surface with impatient clients; a *large* one means callers
+  are giving up on the legacy path, which is a latency problem, not a parity
+  one.
+
+**There is no sampling.** graphi does not compare a fraction of calls on purpose;
+every dispatch is queued for a full byte-exact comparison, and the only way one
+is missed is one of the three causes above, all of which are counted. So a
+`SKIPPED` of zero means what it says.
+
+**Record format.** The `executor-divergence-v1` document gained three additive
+fields with SW-245 — `dispatches` and `skipped` per operation and per document,
+and `coverage` — alongside the existing observation and mismatch counts. The
+schema tag is unchanged because the addition is backward compatible in both
+directions: an older reader ignores the new keys, and a newer reader treats a
+record written without them as `skipped: 0` and derives `dispatches` from the
+observations, which is exactly what a pre-SW-245 record meant. `graphi doctor`
+and the CI leg read the new fields; nothing else does.
+
+`graphi doctor`'s own `executor-divergence` check refuses to report **PASS** while
+anything is skipped, even when every operation was observed and none diverged:
+partial evidence is INFO with the numbers, because PASS is what a reader scanning
+statuses treats as "proven".
+
 ### What the totals do and do not promise
 
 The counts are a **lower bound whenever the record says so**, and it says so in
@@ -183,16 +286,32 @@ doctor` repeats both in the `executor-divergence` check's detail.
 
 Three things can make it a lower bound:
 
-* **The last two seconds of a process's life.** A store writes its **first**
-  observation immediately and every **mismatch** immediately; everything in
-  between coalesces and is written at most once every two seconds. A server
-  killed inside that window loses the coalesced counts it was still holding — a
-  short-lived session that made five calls in a tenth of a second persists as
-  **one** observation, not five. This is a *count* imprecision and never a lost
-  finding: mismatches do not coalesce. It matters more since SW-244 made
-  `shadow` the shipped position than it did when the seam only ran on request,
-  so do not read a low observation count as low usage. A graceful rollback
-  (§3, `GRAPHI_CANARY_ALL=legacy` + restart) flushes on the way out.
+* **The last two seconds of a process that is KILLED.** A store writes its
+  **first** observation immediately and every **mismatch** immediately;
+  everything in between coalesces and is written at most once every two seconds.
+  A server killed inside that window loses the coalesced counts it was still
+  holding — a short-lived session that made five calls in a tenth of a second
+  would persist as **one** observation, not five. This is a *count* imprecision
+  and never a lost finding: mismatches do not coalesce.
+
+  SW-245 closed this for every session that **ends normally**. Because the
+  comparison is now deferred, a session that walked away would have left findings
+  in a queue as well as counts in a buffer, so shutting a session down now drains
+  the queue *and* flushes the buffer before releasing anything. A graceful exit —
+  including a graceful rollback (§3, `GRAPHI_CANARY_ALL=legacy` + restart) —
+  therefore persists everything **that session** observed. What is left is the
+  case that was always unrecoverable: a `SIGKILL`, a crash, or a power loss,
+  where anything still queued or buffered goes with the process.
+
+  Be precise about which sessions those are. The drain-and-flush belongs to the
+  MCP session lifecycle (`graphi mcp`, and `graphi doctor`, which apply the
+  kill-switch positions and install the recorder); replacing or retiring the
+  recorder mid-process — a state-directory repoint, or a rollback to all-`legacy`
+  applied without a restart — drains first for the same reason. `graphi http`
+  drains its queue at exit too, so no comparison runs against a store that is
+  closing under it, but that surface never installs a recorder and never applies
+  the kill switch, so it has no durable record to flush and no per-operation
+  override to honour in the first place. Its comparisons are in-process only.
 * **Unreadable segments.** A file in the directory that does not parse is
   counted and disclosed, never silently skipped.
 * **Pruned segments.** One process writes one segment file, and the directory

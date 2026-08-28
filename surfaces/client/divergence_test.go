@@ -4,14 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 )
 
 // recorderStub is a DivergenceRecorder that keeps what it was handed, so a test
 // can assert on the OBSERVATIONS the seam reports rather than on the durable
 // file (which internal/divergence owns and tests for itself).
+//
+// It is mutex-guarded since SW-245: the seam records from a worker goroutine
+// now, not from the dispatching one, so an unguarded slice here would be a data
+// race in the test rather than a fact about the seam. Read it through
+// observed(), which drains the deferred comparisons first.
 type recorderStub struct {
+	mu           sync.Mutex
 	observations []observation
+	skips        []skip
 }
 
 type observation struct {
@@ -22,10 +30,49 @@ type observation struct {
 	executor  string
 }
 
+// skip is one RecordSkipped call — a comparison the seam did NOT perform.
+type skip struct {
+	operation string
+	count     int
+	reason    string
+}
+
 func (r *recorderStub) RecordDivergence(operation string, mismatch bool, kind, legacy, executor string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.observations = append(r.observations, observation{
 		operation: operation, mismatch: mismatch, kind: kind, legacy: legacy, executor: executor,
 	})
+}
+
+func (r *recorderStub) RecordSkipped(operation string, count int, reason string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.skips = append(r.skips, skip{operation: operation, count: count, reason: reason})
+}
+
+// observed drains the deferred comparisons and returns what the seam reported.
+// Every assertion on this stub goes through it: without the barrier the test
+// would be racing the worker instead of measuring the seam.
+func (r *recorderStub) observed(t *testing.T) []observation {
+	t.Helper()
+	if err := DrainCanaryShadow(context.Background()); err != nil {
+		t.Fatalf("DrainCanaryShadow: %v", err)
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]observation(nil), r.observations...)
+}
+
+// skipped is observed()'s counterpart for the coverage half of the record.
+func (r *recorderStub) skipped(t *testing.T) []skip {
+	t.Helper()
+	if err := DrainCanaryShadow(context.Background()); err != nil {
+		t.Fatalf("DrainCanaryShadow: %v", err)
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]skip(nil), r.skips...)
 }
 
 // withDivergenceRecorder installs a recorder for one test and removes it again,
@@ -52,10 +99,10 @@ func TestSW232_ShadowAgreementIsObserved(t *testing.T) {
 	if _, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{MaxItems: 3}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
-	if len(recorder.observations) != 1 {
-		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observations))
+	if len(recorder.observed(t)) != 1 {
+		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observed(t)))
 	}
-	obs := recorder.observations[0]
+	obs := recorder.observed(t)[0]
 	if obs.operation != CanaryOperation || obs.mismatch {
 		t.Fatalf("observation = %+v, want an agreement on %q", obs, CanaryOperation)
 	}
@@ -77,10 +124,10 @@ func TestSW232_ShadowMismatchIsObservedWithItsRendering(t *testing.T) {
 	if _, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
-	if len(recorder.observations) != 1 {
-		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observations))
+	if len(recorder.observed(t)) != 1 {
+		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observed(t)))
 	}
-	obs := recorder.observations[0]
+	obs := recorder.observed(t)[0]
 	if !obs.mismatch || obs.kind != "bytes" {
 		t.Fatalf("observation = %+v, want a `bytes` mismatch", obs)
 	}
@@ -116,10 +163,10 @@ func TestSW232_ExecutorUnavailableIsObserved(t *testing.T) {
 		Executor:  "client: executor requires a client",
 	}, true)
 
-	if len(recorder.observations) != 1 {
-		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observations))
+	if len(recorder.observed(t)) != 1 {
+		t.Fatalf("recorded %d observation(s), want 1", len(recorder.observed(t)))
 	}
-	if obs := recorder.observations[0]; !obs.mismatch || obs.kind != "executor-unavailable" {
+	if obs := recorder.observed(t)[0]; !obs.mismatch || obs.kind != "executor-unavailable" {
 		t.Fatalf("observation = %+v, want an executor-unavailable mismatch", obs)
 	}
 	if count, _ := CanaryMismatches(); count != 1 {
@@ -139,8 +186,8 @@ func TestSW232_LegacyPositionRecordsNothing(t *testing.T) {
 	if _, err := DispatchOperation(context.Background(), stub, &DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
-	if len(recorder.observations) != 0 {
-		t.Fatalf("the shipped legacy position recorded %+v", recorder.observations)
+	if len(recorder.observed(t)) != 0 {
+		t.Fatalf("the shipped legacy position recorded %+v", recorder.observed(t))
 	}
 }
 
@@ -156,8 +203,8 @@ func TestSW232_ActivePositionRecordsNoComparison(t *testing.T) {
 	if _, err := DispatchOperation(context.Background(), direct, &DeadCodeArgs{}); err != nil {
 		t.Fatalf("DispatchOperation: %v", err)
 	}
-	if len(recorder.observations) != 0 {
-		t.Fatalf("active recorded %+v, but it ran only one path", recorder.observations)
+	if len(recorder.observed(t)) != 0 {
+		t.Fatalf("active recorded %+v, but it ran only one path", recorder.observed(t))
 	}
 }
 
