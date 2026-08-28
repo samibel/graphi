@@ -12,7 +12,7 @@ machine, with a `file:line` and a confidence tier on every edge it returns.
 Structural answers cover the symbols your repo defines: stdlib and third-party
 targets are recorded, but deliberately not navigable ([docs/external-nodes.md](docs/external-nodes.md)).
 
-Current release **v0.10.0** · 12 frozen GA operations over CLI + MCP stdio · Apache-2.0 · no account, no telemetry, no cloud.
+Current release **v0.11.0** · 12 frozen GA operations over CLI + MCP stdio · Apache-2.0 · no account, no telemetry, no cloud.
 
 ## Quick start
 
