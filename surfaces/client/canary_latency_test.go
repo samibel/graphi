@@ -461,28 +461,118 @@ func (r canaryLatencyResult) String() string {
 	return s
 }
 
-// evaluateCanaryLatency is §2's rule: judge the median, judge the tail, compose.
-func evaluateCanaryLatency(base, ref, exec []time.Duration) canaryLatencyResult {
-	r := canaryLatencyResult{
-		Median: evaluateCanaryStat("p50", 0.50, base, ref, exec),
-		Tail:   evaluateCanaryStat("p95", 0.95, base, ref, exec),
+// canaryLatencyStatDecisive reports whether ONE statistic's FAIL is DECISIVE:
+// an overhead so far past every scale the measurement demonstrated that it is
+// signal at whatever resolution was achieved, however poor that resolution is.
+//
+// # This is not a new idea — it is round 2's idea, applied consistently
+//
+// evaluateCanaryStat already tests FAIL BEFORE the degraded branch, on the
+// reasoning that an overhead past both the clamp and the run's own
+// signal-to-noise requirement is signal at any resolution. That reasoning was
+// accepted and verified. It was simply not applied in the two places where one
+// statistic's answer meets another's: the composition of a round, and the
+// arbitration of a run. SW-242's PR #169 failed in exactly that gap — a tail
+// FAIL at 42x its budget was discarded because the median of the same round was
+// unjudgeable, and two earlier rounds that had caught the same regression at 79
+// and 92 ms over budget were then erased by that one UNKNOWN round.
+//
+// # Why the threshold is 3x the widest scale, not 1x
+//
+// The literal form of the round-2 rule — overhead past the clamp AND past 3x
+// THIS statistic's own A/A control — was implemented first and measured, on the
+// same contended noise model round 3 used. It reds 2.365 % of clean runs
+// against the 0.100 % the shipped rule reds: a 24x regression on the very
+// runner SW-242 exists to stop crying wolf on (§5.9). The reason is structural
+// rather than incidental. RefDelta is |a - b| from a SINGLE pair of A/A arms; it
+// is a folded-normal draw that is sometimes near zero, and 3x a lucky-narrow
+// control is not a bar at all. So the rule uses the widest scale the
+// measurement actually demonstrated:
+//
+//	scale    = max(Ceiling, resolution)
+//	decisive = Overhead > canaryLatencyNoiseFactor x scale
+//
+// where resolution is the WORST A/A control observed at that percentile — the
+// round's own when only the round is in evidence, the worst any round of the run
+// produced when the whole run is (canaryLatencyRunResolution). No new constant
+// is introduced: the multiple is the gate's existing signal-to-noise factor,
+// applied to the largest scale in evidence instead of the smallest.
+//
+// Measured on the round-2/round-3 contended model this leaves the false-FAIL
+// rate at 0.100 %, bit-for-bit the shipped rule's, versus 9.99 % for the
+// rejected "any FAIL always stands" variant (§5.9).
+func canaryLatencyStatDecisive(s canaryLatencyStat, resolution time.Duration) bool {
+	if s.Verdict != canaryLatencyFail {
+		return false
 	}
+	scale := s.Ceiling
+	if resolution > scale {
+		scale = resolution
+	}
+	return float64(s.Overhead) > canaryLatencyNoiseFactor*float64(scale)
+}
+
+// canaryLatencyTailFailNote explains a tail FAIL in the terms of whatever the
+// median did, so the verdict line never claims "the median is clean" about a
+// round whose median was never judged.
+func canaryLatencyTailFailNote(median canaryLatencyStat) string {
+	if median.Verdict == canaryLatencyUnknown {
+		return ". The MEDIAN of this round could not be judged, and that does NOT withdraw this " +
+			"measurement: the tail overhead is past 3x every scale the round demonstrated — its " +
+			"own ceiling clamp and its own same-run A/A control — so it is signal at whatever " +
+			"resolution the round achieved. An unjudgeable median is an absence of evidence, " +
+			"and absence of evidence does not erase a measurement that was taken"
+	}
+	return ". The median is clean, so this is a regression confined to a minority of calls " +
+		"— the shape the median cannot see and the tail exists to catch"
+}
+
+// canaryLatencyCompose is §2's composition: two judged statistics in, one round
+// verdict out.
+//
+// It is split out of evaluateCanaryLatency so the arbitration property tests can
+// drive the SHIPPED composition with synthesised statistics rather than a copy
+// of it that could drift.
+//
+// Order, and what each step is for:
+//
+//  1. A median FAIL fails the round, whatever the tail did. Unchanged.
+//  2. A DECISIVE tail FAIL fails the round, whatever the median did — including
+//     when the median could not be judged at all. This is the round-4 fix: a
+//     definitive measurement by one statistic is not suppressed by the other
+//     statistic being unjudgeable. A MARGINAL tail FAIL is deliberately NOT
+//     given that power (step 4 still requires a judged median), which is the
+//     boundary that keeps the false-FAIL rate where it was.
+//  3. A median that could not be judged, with no decisive tail FAIL to stand on,
+//     takes the round to UNKNOWN. Unchanged.
+//  4. A tail FAIL against a clean median fails the round. Unchanged.
+func canaryLatencyCompose(median, tail canaryLatencyStat) canaryLatencyResult {
+	r := canaryLatencyResult{Median: median, Tail: tail}
 	switch {
-	case r.Median.Verdict == canaryLatencyUnknown:
-		r.Verdict = canaryLatencyUnknown
-		r.Reason = r.Median.Reason
 	case r.Median.Verdict == canaryLatencyFail:
 		r.Verdict = canaryLatencyFail
 		r.Reason = r.Median.Reason
+	case canaryLatencyStatDecisive(r.Tail, r.Tail.RefDelta):
+		r.Verdict = canaryLatencyFail
+		r.Reason = r.Tail.Reason + canaryLatencyTailFailNote(r.Median)
+	case r.Median.Verdict == canaryLatencyUnknown:
+		r.Verdict = canaryLatencyUnknown
+		r.Reason = r.Median.Reason
 	case r.Tail.Verdict == canaryLatencyFail:
 		r.Verdict = canaryLatencyFail
-		r.Reason = r.Tail.Reason +
-			". The median is clean, so this is a regression confined to a minority of calls " +
-			"— the shape the median cannot see and the tail exists to catch"
+		r.Reason = r.Tail.Reason + canaryLatencyTailFailNote(r.Median)
 	default:
 		r.Verdict = canaryLatencyPass
 	}
 	return r
+}
+
+// evaluateCanaryLatency is §2's rule: judge the median, judge the tail, compose.
+func evaluateCanaryLatency(base, ref, exec []time.Duration) canaryLatencyResult {
+	return canaryLatencyCompose(
+		evaluateCanaryStat("p50", 0.50, base, ref, exec),
+		evaluateCanaryStat("p95", 0.95, base, ref, exec),
+	)
 }
 
 // canaryLatencyReport renders one round's four arms for the record.
@@ -624,6 +714,19 @@ func canaryLatencyOverall(results []canaryLatencyResult) canaryLatencyResult {
 			return r
 		}
 	}
+	// SW-242 round 4. A DECISIVE FAIL — an overhead past 3x the widest scale
+	// this RUN demonstrated at that percentile — is not erased by another round
+	// being unjudgeable. Ranked below a full pass, because a full pass is a
+	// positive measurement that contradicts the FAIL, and above UNKNOWN and
+	// median-only, because those are the ABSENCE of a measurement and AC-2's
+	// rule is that absence of a measurement is not evidence — in either
+	// direction.
+	medRes, tailRes := canaryLatencyRunResolution(results)
+	for _, r := range results {
+		if canaryLatencyDecisiveRound(r, medRes, tailRes) {
+			return canaryLatencyDecisiveOverall(results, r)
+		}
+	}
 	for _, r := range results {
 		if r.Verdict == canaryLatencyUnknown {
 			return r
@@ -640,6 +743,66 @@ func canaryLatencyOverall(results []canaryLatencyResult) canaryLatencyResult {
 		}
 	}
 	return results[len(results)-1]
+}
+
+// canaryLatencyRunResolution returns the widest same-run A/A control the RUN
+// demonstrated, per gated percentile: the worst disagreement between two
+// byte-identical legacy paths that any round of this run produced.
+//
+// This — not the narrowest control, and not the control of the round that
+// happens to carry the FAIL — is what the run has DEMONSTRATED about its own
+// resolution. A single round's RefDelta can be near zero by luck, and a bar set
+// at 3x a lucky-narrow control is not a bar; §5.9 measures what using it costs.
+//
+// The two percentiles are kept separate on purpose. A round that could not
+// resolve the TAIL says nothing about the run's resolution at the MEDIAN, and
+// vice versa. That separation is what makes the PR #169 sequence come out right:
+// its round 3 had a collapsed MEDIAN control (443 µs), which raises the bar for
+// median FAILs and leaves the bar for the tail FAILs — measured against narrow
+// tail controls in all three rounds — exactly where it was.
+func canaryLatencyRunResolution(results []canaryLatencyResult) (median, tail time.Duration) {
+	for _, r := range results {
+		if r.Median.RefDelta > median {
+			median = r.Median.RefDelta
+		}
+		if r.Tail.RefDelta > tail {
+			tail = r.Tail.RefDelta
+		}
+	}
+	return median, tail
+}
+
+// canaryLatencyDecisiveRound reports whether a round recorded a DECISIVE FAIL in
+// either gated statistic, judged against the resolution the whole run
+// demonstrated rather than against the luckiest single control in it.
+func canaryLatencyDecisiveRound(r canaryLatencyResult, medRes, tailRes time.Duration) bool {
+	return canaryLatencyStatDecisive(r.Median, medRes) ||
+		canaryLatencyStatDecisive(r.Tail, tailRes)
+}
+
+// canaryLatencyDecisiveOverall is the run-level verdict when a round recorded a
+// decisive FAIL: that round's FAIL, with the rounds that could not be judged
+// counted in the reason so the reader can see they were considered and did not
+// withdraw it.
+func canaryLatencyDecisiveOverall(results []canaryLatencyResult, failed canaryLatencyResult) canaryLatencyResult {
+	out := failed
+	var unjudged int
+	for _, r := range results {
+		if r.Verdict == canaryLatencyUnknown || canaryLatencyMedianOnlyPass(r) {
+			unjudged++
+		}
+	}
+	if unjudged > 0 {
+		out.Reason += fmt.Sprintf(
+			". NOTE: %d of %d round(s) of this run could not be judged, and that does NOT "+
+				"withdraw this FAIL: the overhead is past 3x every scale the run demonstrated "+
+				"— the ceiling clamp and the widest same-run A/A control any round of this run "+
+				"produced at that percentile — so it is signal at whatever resolution this "+
+				"runner achieved. A round that measured nothing is not evidence of good "+
+				"latency (AC-2)",
+			unjudged, len(results))
+	}
+	return out
 }
 
 // canaryLatencyMedianOnlyOverall is the run-level verdict when no round was a
@@ -890,6 +1053,32 @@ func canaryLatencyTailUnjudgeable(results []canaryLatencyResult) bool {
 	return true
 }
 
+// canaryLatencyMedianUnjudgeable is the same guard for the MEDIAN. PR #169's
+// round 3 is why it exists: a runner can lose the median while keeping the tail,
+// not only the other way round, and a run that could not resolve two
+// byte-identical legacy paths at the centre of the distribution has not measured
+// the injection either.
+func canaryLatencyMedianUnjudgeable(results []canaryLatencyResult) bool {
+	if len(results) == 0 {
+		return false
+	}
+	for _, r := range results {
+		if r.Median.Verdict != canaryLatencyUnknown {
+			return false
+		}
+	}
+	return true
+}
+
+// canaryLatencyRunUnresolved reports whether a run failed to resolve a gated
+// statistic in EVERY round — either statistic. It is the guard on the
+// demonstrations below, and it is deliberately narrow: it asks that a whole
+// statistic was unavailable for the whole run, not that any single round was
+// noisy.
+func canaryLatencyRunUnresolved(results []canaryLatencyResult) bool {
+	return canaryLatencyTailUnjudgeable(results) || canaryLatencyMedianUnjudgeable(results)
+}
+
 func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 	if testing.Short() {
 		t.Skip("latency measurement is not a -short gate")
@@ -918,12 +1107,15 @@ func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 				// same way, and it is the limit recorded in doc §3: sustained
 				// contention costs the tail statistic, and with it the
 				// minority-incidence coverage, for that run.
-				if canaryLatencyTailUnjudgeable(results) {
-					t.Skipf("minority-incidence demonstration inconclusive: the tail was "+
-						"unjudgeable in all %d round(s) (this runner could not tell two "+
-						"byte-identical legacy paths apart at p95), so the injection could not "+
-						"be measured. Not evidence that the gate missed it: %s",
-						len(results), overall)
+				if canaryLatencyRunUnresolved(results) {
+					which := "tail was unjudgeable in all %d round(s) at p95"
+					if canaryLatencyMedianUnjudgeable(results) {
+						which = "median was unjudgeable in all %d round(s) at p50"
+					}
+					t.Skipf("minority-incidence demonstration inconclusive: the "+which+
+						" (this runner could not tell two byte-identical legacy paths apart "+
+						"there), so the injection could not be measured. Not evidence that the "+
+						"gate missed it: %s", len(results), overall)
 				}
 				t.Fatalf("SW-242 AC-3 (minority incidence): %d extra executor-seam pass(es) on "+
 					"1 call in %d must turn the gate red, got %s after %d round(s): %s",
@@ -1232,6 +1424,211 @@ func TestAX06_LatencyDecisionRuleRejectsEmptyInput(t *testing.T) {
 // minority-incidence regression the tail caught in one round, measured again in
 // a round whose p95 control has widened the way contention widens it, so the
 // tail can no longer judge it and the round passes on the median alone.
+// canaryLatencyPR169Rounds rebuilds the three rounds of the CI failure on
+// SW-242's own PR #169 as sample data, so the sequence that broke the gate is a
+// pinned test rather than a paragraph in a story file.
+//
+// The job failed in test-gate, `go test -race` and release-gate, all on
+// TestAX06_LatencyGateFailsOnMinorityIncidenceRegression/one_call_in_eight, and
+// printed:
+//
+//	round 1/3: FAIL — p50 PASS overhead=143.42µs budget=400.893µs
+//	                | p95 FAIL overhead=79.556457ms budget=805.63µs
+//	round 2/3: FAIL — p50 PASS overhead=142.363µs budget=402.244µs
+//	                | p95 FAIL overhead=92.47372ms budget=2.151255ms
+//	round 3/3: UNKNOWN — p50 UNKNOWN overhead=569.458µs budget=1.297072ms
+//	                     (fixed=324.268µs noise=3x442.871µs=1.328613ms ceiling=1.297072ms)
+//	                   | p95 FAIL overhead=74.651076ms budget=1.773147ms
+//	final: "must turn the gate red, got UNKNOWN after 3 round(s)"
+//
+// # What is real and what is reconstructed
+//
+// Every number the log printed is reproduced exactly and asserted below. Round
+// 3's p50 line was printed in full — fixed, noise, control and ceiling — and it
+// pins that arm completely: a 3.24268 ms p50 baseline (the 324.268 µs fixed bar
+// is 10 % of it) and a 442.871 µs A/A control whose noise term, 1.328613 ms,
+// exceeded the 1.297072 ms ceiling. That is what took the median to UNKNOWN.
+//
+// The p95 fixed/noise/ceiling triple was NOT printed. The reconstruction takes
+// each round's p95 budget as its FIXED bar (a narrow p95 A/A control), which is
+// the most conservative of the possibilities available: it gives the WIDEST
+// ceiling — 4x the budget rather than 1x it, had the budget been the clamp — and
+// therefore makes "decisive" hardest to reach. The observed overheads clear even
+// that by 8x, 11x and 11x.
+func canaryLatencyPR169Rounds() []canaryLatencyResult {
+	ns := func(d int) time.Duration { return time.Duration(d) }
+	// arm builds one arm from its p50 and p95, which is all the two gated
+	// statistics read.
+	arm := func(p50, p95 time.Duration) []time.Duration {
+		return canaryLatencySamplesAt(p50, p95-p50)
+	}
+	round := func(aP50, aP95, bP50, bP95, xP50, xP95 time.Duration) canaryLatencyResult {
+		return evaluateCanaryLatency(arm(aP50, aP95), arm(bP50, bP95), arm(xP50, xP95))
+	}
+	return []canaryLatencyResult{
+		// Round 1: p50 baseline 4.00893 ms (fixed bar 400.893 µs), p95 baseline
+		// 8.0563 ms (fixed bar 805.63 µs), both legacy arms agreeing.
+		round(ns(4008930), ns(8056300), ns(4008930), ns(8056300),
+			ns(4008930+143420), ns(8056300+79556457)),
+		// Round 2: p50 baseline 4.02244 ms, p95 baseline 21.51255 ms.
+		round(ns(4022440), ns(21512550), ns(4022440), ns(21512550),
+			ns(4022440+142363), ns(21512550+92473720)),
+		// Round 3: the median control collapses — the two byte-identical legacy
+		// arms disagree by 442.871 µs at p50 around a 3.24268 ms baseline — while
+		// the tail control stays narrow and the tail overhead is 74.651076 ms.
+		round(ns(3464116), ns(17731470), ns(3021245), ns(17731470),
+			ns(3242680+569458), ns(17731470+74651076)),
+	}
+}
+
+// TestAX06_LatencyGateFailsThePR169CISequence is the regression test for the
+// defect this round fixes, driven by the numbers CI actually printed.
+//
+// Two stacked ordering bugs produced one wrong answer:
+//
+//  1. WITHIN round 3, a p95 FAIL at 42x its budget was discarded because the p50
+//     of the same round was unjudgeable — a definitive measurement suppressed by
+//     the absence of another one.
+//  2. ACROSS rounds, that single UNKNOWN round then erased two FAIL rounds that
+//     had each caught the same regression at 79 ms and 92 ms over budget.
+//
+// The run reported UNKNOWN. Because cmd/testgate does not summarise skips, an
+// UNKNOWN renders GREEN in the CI rollup, so the net effect was a run in which
+// the tail definitively caught a ~75–90 ms regression reporting no failure at
+// all — strictly worse than the gate SW-242 replaces.
+//
+// The test asserts the "before" as well as the "after", against the superseded
+// rules kept in this file, so the sequence cannot silently stop being a
+// regression test if a future edit makes the two rules agree.
+func TestAX06_LatencyGateFailsThePR169CISequence(t *testing.T) {
+	rounds := canaryLatencyPR169Rounds()
+	if len(rounds) != canaryLatencyRounds {
+		t.Fatalf("the CI sequence is %d rounds, got %d", canaryLatencyRounds, len(rounds))
+	}
+
+	// 1. The reconstruction reproduces the numbers the job printed. If it stops
+	//    doing so, everything below is testing a different failure.
+	us := time.Microsecond
+	ms := time.Millisecond
+	for _, w := range []struct {
+		round            int
+		stat             string
+		overhead, budget time.Duration
+	}{
+		{0, "p50", 143420 * time.Nanosecond, 400893 * time.Nanosecond},
+		{0, "p95", 79556457 * time.Nanosecond, 805630 * time.Nanosecond},
+		{1, "p50", 142363 * time.Nanosecond, 402244 * time.Nanosecond},
+		{1, "p95", 92473720 * time.Nanosecond, 2151255 * time.Nanosecond},
+		{2, "p50", 569458 * time.Nanosecond, 1297072 * time.Nanosecond},
+		{2, "p95", 74651076 * time.Nanosecond, 1773147 * time.Nanosecond},
+	} {
+		s := rounds[w.round].Median
+		if w.stat == "p95" {
+			s = rounds[w.round].Tail
+		}
+		if s.Overhead != w.overhead || s.Budget != w.budget {
+			t.Fatalf("round %d %s: reconstruction drifted from the PR #169 log: want "+
+				"overhead=%v budget=%v, got overhead=%v budget=%v",
+				w.round+1, w.stat, w.overhead, w.budget, s.Overhead, s.Budget)
+		}
+	}
+	// Round 3's p50 line was printed in full, so it is pinned in full.
+	r3 := rounds[2].Median
+	if r3.FixedBar != 324268*time.Nanosecond || r3.RefDelta != 442871*time.Nanosecond ||
+		r3.NoiseTerm != 1328613*time.Nanosecond || r3.Ceiling != 1297072*time.Nanosecond {
+		t.Fatalf("round 3 p50: want fixed=324.268µs noise=3x442.871µs=1.328613ms "+
+			"ceiling=1.297072ms, got fixed=%v noise=3x%v=%v ceiling=%v",
+			r3.FixedBar, r3.RefDelta, r3.NoiseTerm, r3.Ceiling)
+	}
+
+	// 2. BEFORE — the shipped round-3 rules, round by round and overall.
+	wantBefore := []canaryLatencyVerdict{canaryLatencyFail, canaryLatencyFail, canaryLatencyUnknown}
+	for i, r := range rounds {
+		got := canaryLatencyComposeRound3Rule(r.Median, r.Tail).Verdict
+		if got != wantBefore[i] {
+			t.Fatalf("before: round %d composed to %s under the superseded rule, want %s "+
+				"(that is what the CI log printed)", i+1, got, wantBefore[i])
+		}
+	}
+	if before := canaryLatencyOverallRound3Rule(rounds); before.Verdict != canaryLatencyUnknown {
+		t.Fatalf("before: the superseded arbitration answered %s on the PR #169 sequence, "+
+			"want UNKNOWN — this test is no longer reproducing the defect", before.Verdict)
+	}
+
+	// 3. AFTER, part one — the WITHIN-round fix, isolated. Round 3 on its own:
+	//    an unjudgeable median must not suppress a tail FAIL that is past 3x
+	//    every scale the round demonstrated.
+	if got := rounds[2].Verdict; got != canaryLatencyFail {
+		t.Fatalf("within a round: round 3 composed to %s, want FAIL — its p95 overhead of %v "+
+			"is %.0fx its %v budget and past 3x its %v ceiling, and an unjudgeable median "+
+			"must not discard it: %s",
+			got, rounds[2].Tail.Overhead,
+			float64(rounds[2].Tail.Overhead)/float64(rounds[2].Tail.Budget),
+			rounds[2].Tail.Budget, rounds[2].Tail.Ceiling, rounds[2])
+	}
+	if !strings.Contains(rounds[2].Reason, "MEDIAN of this round could not be judged") {
+		t.Fatalf("the round must say WHY it failed with an unjudged median, got %q", rounds[2].Reason)
+	}
+	if single := canaryLatencyOverall(rounds[2:]); single.Verdict != canaryLatencyFail {
+		t.Fatalf("within a round: round 3 alone answered %s, want FAIL", single.Verdict)
+	}
+
+	// 4. AFTER, part two — the ACROSS-rounds fix, isolated. Round 1's FAIL must
+	//    survive a round that could not be judged. Round 3 is replaced by a
+	//    round that resolved nothing at all, so only the arbitration can produce
+	//    the FAIL.
+	blind := evaluateCanaryLatency(
+		canaryLatencySamplesAt(1*ms, 1*ms), canaryLatencySamplesAt(3*ms, 1*ms),
+		canaryLatencySamplesAt(1*ms, 1*ms))
+	if blind.Verdict != canaryLatencyUnknown {
+		t.Fatalf("premise: the blind round must be UNKNOWN, got %s", blind)
+	}
+	across := canaryLatencyOverall([]canaryLatencyResult{rounds[0], blind, blind})
+	if across.Verdict != canaryLatencyFail {
+		t.Fatalf("across rounds: a decisive FAIL followed by two unjudgeable rounds answered "+
+			"%s, want FAIL — an UNKNOWN round must not erase a FAIL that is outside the "+
+			"degraded regime: %s", across.Verdict, across)
+	}
+	if !strings.Contains(across.Reason, "could not be judged, and that does NOT withdraw this FAIL") {
+		t.Fatalf("the held FAIL must say that the unjudgeable rounds did not withdraw it, got %q",
+			across.Reason)
+	}
+
+	// 5. AFTER — the whole sequence, which is what PR #169 ran.
+	after := canaryLatencyOverall(rounds)
+	if after.Verdict != canaryLatencyFail {
+		t.Fatalf("the PR #169 sequence (FAIL, FAIL, UNKNOWN-with-a-tail-FAIL) answered %s, "+
+			"want FAIL: %s", after.Verdict, after)
+	}
+	if after.Tail.Verdict != canaryLatencyFail {
+		t.Fatalf("the tail is the statistic that caught it; the run must report the tail's "+
+			"FAIL, got tail=%s", after.Tail.Verdict)
+	}
+
+	// 6. The boundary that keeps this safe: the same sequence with a MARGINAL
+	//    tail FAIL — over budget, inside 3x the clamp — is still UNKNOWN, not
+	//    FAIL. "Any FAIL always stands" was measured and rejected; this is the
+	//    line that was drawn instead.
+	marginal := evaluateCanaryLatency(
+		canaryLatencySamplesAt(400*us, 100*us), canaryLatencySamplesAt(400*us, 100*us),
+		canaryLatencySamplesIncident(400*us, 600*us, 3))
+	if marginal.Verdict != canaryLatencyFail || marginal.Tail.Verdict != canaryLatencyFail {
+		t.Fatalf("premise: the marginal round must be a tail FAIL, got %s", marginal)
+	}
+	if marginal.Tail.Overhead > 3*marginal.Tail.Ceiling {
+		t.Fatalf("premise: the marginal round must NOT be decisive, overhead %v vs 3x%v",
+			marginal.Tail.Overhead, marginal.Tail.Ceiling)
+	}
+	if got := canaryLatencyOverall([]canaryLatencyResult{marginal, blind, blind}); got.Verdict != canaryLatencyUnknown {
+		t.Fatalf("boundary: a MARGINAL tail FAIL beside unjudgeable rounds must stay UNKNOWN, "+
+			"got %s — round 4 has overcorrected into \"any FAIL always stands\": %s",
+			got.Verdict, got)
+	}
+
+	t.Logf("PR #169 sequence: superseded rule -> UNKNOWN (green in the rollup), round 4 -> %s\n  %s\n  %s",
+		after.Verdict, after, after.Reason)
+}
+
 func TestAX06_LatencyRoundArbitration(t *testing.T) {
 	ms := time.Millisecond
 	us := time.Microsecond
@@ -1250,9 +1647,20 @@ func TestAX06_LatencyRoundArbitration(t *testing.T) {
 	fullPass := evaluateCanaryLatency(at(400*us, 100*us), at(400*us, 100*us), at(400*us, 100*us))
 	// The median's own control past the ceiling: nothing was resolved at all.
 	unknown := evaluateCanaryLatency(at(1*ms, 1*ms), at(3*ms, 1*ms), at(1*ms, 1*ms))
-	// A systemic regression the median itself catches.
+	// A systemic regression the median itself catches. MARGINAL: 251 µs is one
+	// microsecond past a 250 µs budget and well inside 3x the 1 ms clamp.
 	medianFail := evaluateCanaryLatency(
 		at(400*us, 20*ms), at(400*us, 20*ms), at(400*us+251*us, 20*ms))
+	// The same tail-caught shape as tailFail but DECISIVE: 29.9 ms of tail
+	// overhead against a 1 ms ceiling, past 3x every scale any round below
+	// demonstrates. This is the PR #169 magnitude in miniature.
+	tailFailDecisive := evaluateCanaryLatency(
+		at(400*us, 100*us), at(400*us, 100*us), canaryLatencySamplesIncident(400*us, 30*ms, 3))
+	// The PR #169 round-3 shape: the MEDIAN control collapsed while the tail
+	// control stayed narrow and the tail overhead was enormous. The round must
+	// FAIL — an unjudgeable median does not suppress a definitive tail.
+	medianUnknownTailDecisive := evaluateCanaryLatency(
+		at(1*ms, 5*ms), at(3*ms, 3*ms), at(2*ms, 14*ms))
 
 	// The premises the table rests on. If any of these stops holding, the cases
 	// below would still pass while testing something else, so they are checked
@@ -1268,10 +1676,31 @@ func TestAX06_LatencyRoundArbitration(t *testing.T) {
 		{"fullPass", fullPass, canaryLatencyPass, canaryLatencyPass, canaryLatencyPass},
 		{"unknown", unknown, canaryLatencyUnknown, canaryLatencyUnknown, canaryLatencyUnknown},
 		{"medianFail", medianFail, canaryLatencyFail, canaryLatencyFail, canaryLatencyPass},
+		{"tailFailDecisive", tailFailDecisive, canaryLatencyFail, canaryLatencyPass, canaryLatencyFail},
+		{"medianUnknownTailDecisive", medianUnknownTailDecisive,
+			canaryLatencyFail, canaryLatencyUnknown, canaryLatencyFail},
 	} {
 		if p.r.Verdict != p.run || p.r.Median.Verdict != p.med || p.r.Tail.Verdict != p.tailVer {
 			t.Fatalf("premise %s: want run=%s median=%s tail=%s, got run=%s median=%s tail=%s: %s",
 				p.name, p.run, p.med, p.tailVer, p.r.Verdict, p.r.Median.Verdict, p.r.Tail.Verdict, p.r)
+		}
+	}
+
+	// The MARGINAL/DECISIVE split the round-4 arbitration turns on, asserted so
+	// the cases below cannot quietly stop exercising both sides of it.
+	for _, d := range []struct {
+		name     string
+		stat     canaryLatencyStat
+		decisive bool
+	}{
+		{"tailFail (marginal)", tailFail.Tail, false},
+		{"medianFail (marginal)", medianFail.Median, false},
+		{"tailFailDecisive", tailFailDecisive.Tail, true},
+		{"medianUnknownTailDecisive", medianUnknownTailDecisive.Tail, true},
+	} {
+		if got := canaryLatencyStatDecisive(d.stat, d.stat.RefDelta); got != d.decisive {
+			t.Fatalf("premise %s: decisive=%v, want %v (overhead %v, ceiling %v, control %v)",
+				d.name, got, d.decisive, d.stat.Overhead, d.stat.Ceiling, d.stat.RefDelta)
 		}
 	}
 
@@ -1358,7 +1787,13 @@ func TestAX06_LatencyRoundArbitration(t *testing.T) {
 			want:   canaryLatencyUnknown,
 		},
 		{
-			name:   "an_unknown_round_still_beats_a_tail_fail",
+			// The boundary. This is the SAME shape as
+			// a_decisive_tail_fail_survives_an_unknown_round below, at a
+			// magnitude inside 3x the clamp. A marginal FAIL is exactly what
+			// "any FAIL always stands" would have red-flagged here, at ~10 % of
+			// clean contended runs (§5.9), and it is what round 4 deliberately
+			// does not do.
+			name:   "an_unknown_round_still_beats_a_MARGINAL_tail_fail",
 			rounds: []canaryLatencyResult{tailFail, unknown},
 			want:   canaryLatencyUnknown,
 		},
@@ -1393,6 +1828,59 @@ func TestAX06_LatencyRoundArbitration(t *testing.T) {
 		{
 			name:   "every_round_full_pass_is_a_pass",
 			rounds: []canaryLatencyResult{fullPass, fullPass},
+			want:   canaryLatencyPass,
+		},
+		{
+			// SW-242 round 4, within a round: the PR #169 round-3 shape. The
+			// median could not be judged; the tail measured a regression past
+			// 3x every scale the round demonstrated. The round FAILs.
+			name:   "a_decisive_tail_fail_is_not_suppressed_by_an_unjudgeable_median",
+			rounds: []canaryLatencyResult{medianUnknownTailDecisive},
+			want:   canaryLatencyFail,
+			checkFn: func(t *testing.T, got canaryLatencyResult) {
+				if got.Median.Verdict != canaryLatencyUnknown {
+					t.Fatalf("the premise of this case is an unjudged median, got %s",
+						got.Median.Verdict)
+				}
+				if !strings.Contains(got.Reason, "MEDIAN of this round could not be judged") {
+					t.Fatalf("the reason must state that the median was not judged, got %q",
+						got.Reason)
+				}
+			},
+		},
+		{
+			// SW-242 round 4, across rounds: this is the case PR #169 failed
+			// on. A round that resolved NOTHING does not withdraw a FAIL that
+			// is outside the degraded regime.
+			name:   "a_decisive_tail_fail_survives_an_unknown_round",
+			rounds: []canaryLatencyResult{tailFailDecisive, unknown},
+			want:   canaryLatencyFail,
+			checkFn: func(t *testing.T, got canaryLatencyResult) {
+				if !strings.Contains(got.Reason, "does NOT withdraw this FAIL") {
+					t.Fatalf("the run must say the unjudgeable round did not withdraw the "+
+						"FAIL, got %q", got.Reason)
+				}
+			},
+		},
+		{
+			name:   "a_decisive_fail_survives_an_unknown_round_in_either_order",
+			rounds: []canaryLatencyResult{unknown, tailFailDecisive, unknown},
+			want:   canaryLatencyFail,
+		},
+		{
+			// The same across a median-only round, which is the shape §5.6
+			// measured as the COMMON one on a contended runner.
+			name:   "a_decisive_tail_fail_survives_a_median_only_round",
+			rounds: []canaryLatencyResult{tailFailDecisive, medianOnly, medianOnly},
+			want:   canaryLatencyFail,
+		},
+		{
+			// The anti-flake provision outranks even a decisive FAIL: a full
+			// pass is a POSITIVE measurement that contradicts it, where an
+			// UNKNOWN round is the absence of one. That asymmetry is the whole
+			// principle, and it cuts both ways.
+			name:   "a_full_pass_still_wins_over_a_decisive_fail",
+			rounds: []canaryLatencyResult{tailFailDecisive, fullPass},
 			want:   canaryLatencyPass,
 		},
 		{
@@ -1521,26 +2009,94 @@ func TestAX06_LatencyGateStopsOnlyOnAFullPass(t *testing.T) {
 		len(results), canaryLatencyRounds, medianOnly, overall.Verdict, overall, overall.Reason)
 }
 
-// canaryLatencyOverallRound1Rule is the arbitration EXACTLY as it stood at
-// SW-242 round 1 — "any PASS wins, then UNKNOWN, then the last round". It is
-// never used by the gate. It is the comparison arm of the two tests below, so
-// the claim "round 3 cannot fail anything round 1 passed" is checked against
-// the old rule rather than argued about it.
-func canaryLatencyOverallRound1Rule(results []canaryLatencyResult) canaryLatencyResult {
+// canaryLatencyComposeRound3Rule and canaryLatencyOverallRound3Rule are the
+// SUPERSEDED SW-242 round-3 rules — the ones that shipped at e03bd97 and that
+// PR #169 proved wrong. They are kept ONLY as the comparison arm of the two
+// property tests below, so "the round-4 change can only ever turn an UNKNOWN
+// into a FAIL" is a checked statement about two functions rather than a claim in
+// prose. Neither is ever called by the gate.
+//
+// The round-3 composition collapsed a round to UNKNOWN whenever the median was
+// unjudgeable, even when the tail had definitively FAILed; the round-3
+// arbitration then let a single such round outrank every FAIL in the run.
+func canaryLatencyComposeRound3Rule(median, tail canaryLatencyStat) canaryLatencyResult {
+	r := canaryLatencyResult{Median: median, Tail: tail}
+	switch {
+	case r.Median.Verdict == canaryLatencyUnknown:
+		r.Verdict = canaryLatencyUnknown
+		r.Reason = r.Median.Reason
+	case r.Median.Verdict == canaryLatencyFail:
+		r.Verdict = canaryLatencyFail
+		r.Reason = r.Median.Reason
+	case r.Tail.Verdict == canaryLatencyFail:
+		r.Verdict = canaryLatencyFail
+		r.Reason = r.Tail.Reason + canaryLatencyTailFailNote(r.Median)
+	default:
+		r.Verdict = canaryLatencyPass
+	}
+	return r
+}
+
+func canaryLatencyOverallRound3Rule(results []canaryLatencyResult) canaryLatencyResult {
 	if len(results) == 0 {
 		return canaryLatencyResult{Verdict: canaryLatencyUnknown, Reason: "no rounds ran"}
 	}
+	rounds := make([]canaryLatencyResult, 0, len(results))
 	for _, r := range results {
-		if r.Verdict == canaryLatencyPass {
+		rounds = append(rounds, canaryLatencyComposeRound3Rule(r.Median, r.Tail))
+	}
+	for _, r := range rounds {
+		if canaryLatencyFullPass(r) {
 			return r
 		}
 	}
-	for _, r := range results {
+	for _, r := range rounds {
 		if r.Verdict == canaryLatencyUnknown {
 			return r
 		}
 	}
-	return results[len(results)-1]
+	for _, r := range rounds {
+		if canaryLatencyMedianOnlyPass(r) {
+			return canaryLatencyMedianOnlyOverall(rounds)
+		}
+	}
+	for _, r := range rounds {
+		if r.Verdict == canaryLatencyFail {
+			return r
+		}
+	}
+	return rounds[len(rounds)-1]
+}
+
+// canaryLatencyOverallAnyFailStands is the REJECTED variant: "any FAIL always
+// stands", with no decisiveness test at all. Round 3 measured it at 10.4 % false
+// FAIL on a contended runner and rejected it; §5.9 re-measures it beside the
+// shipped rule so the boundary the round-4 change draws is justified by a
+// number rather than by an assurance. Never called by the gate.
+func canaryLatencyOverallAnyFailStands(results []canaryLatencyResult) canaryLatencyResult {
+	if len(results) == 0 {
+		return canaryLatencyResult{Verdict: canaryLatencyUnknown, Reason: "no rounds ran"}
+	}
+	rounds := make([]canaryLatencyResult, 0, len(results))
+	for _, r := range results {
+		rounds = append(rounds, canaryLatencyComposeRound3Rule(r.Median, r.Tail))
+	}
+	for _, r := range rounds {
+		if canaryLatencyFullPass(r) {
+			return r
+		}
+	}
+	for _, r := range rounds {
+		if r.Verdict == canaryLatencyFail {
+			return r
+		}
+	}
+	for _, r := range rounds {
+		if r.Verdict == canaryLatencyUnknown {
+			return r
+		}
+	}
+	return canaryLatencyMedianOnlyOverall(rounds)
 }
 
 // canaryLatencyStopAt models a round loop's early exit over a pre-computed
@@ -1557,95 +2113,157 @@ func canaryLatencyStopAt(rounds []canaryLatencyResult, stop func(canaryLatencyRe
 	return rounds
 }
 
-// canaryLatencyRoundShapes returns one result per reachable (run, median, tail)
-// verdict combination. evaluateCanaryLatency's composition admits exactly these
-// nine; the table test above pins five of them against real sample data, and
-// these are the same shapes with the arithmetic elided, because the arbitration
-// reads nothing but the three verdicts.
-func canaryLatencyRoundShapes() []canaryLatencyResult {
-	shape := func(run, median, tail canaryLatencyVerdict) canaryLatencyResult {
-		r := canaryLatencyResult{
-			Verdict: run,
-			Median:  canaryLatencyStat{Name: "p50", Verdict: median},
-			Tail:    canaryLatencyStat{Name: "p95", Verdict: tail},
-		}
-		if run != canaryLatencyPass {
-			r.Reason = "synthetic " + string(run)
-		}
-		return r
+// canaryLatencyShapeStat builds ONE synthesised statistic for the arbitration
+// property test: a verdict plus the arithmetic the decisiveness test reads.
+//
+// The numbers are chosen so the shapes stay meaningful when they are mixed in
+// one slate. A DECISIVE FAIL is 50 ms against a 1 ms ceiling, which is past 3x
+// the widest control any shape here produces (an UNKNOWN statistic's 2 ms), so a
+// decisive FAIL stays decisive even in a run whose other rounds could not
+// resolve anything — which is exactly the situation the round-4 change is about.
+// A MARGINAL FAIL is 500 µs: past its budget, well inside 3x the clamp.
+func canaryLatencyShapeStat(name string, v canaryLatencyVerdict, decisive bool) canaryLatencyStat {
+	s := canaryLatencyStat{
+		Name:     name,
+		Verdict:  v,
+		FixedBar: 250 * time.Microsecond,
+		Budget:   250 * time.Microsecond,
+		Ceiling:  time.Millisecond,
+		RefDelta: 10 * time.Microsecond,
 	}
-	p, f, u := canaryLatencyPass, canaryLatencyFail, canaryLatencyUnknown
-	return []canaryLatencyResult{
-		shape(p, p, p), // full pass
-		shape(p, p, u), // median-only pass
-		shape(f, p, f), // tail caught it
-		shape(f, f, p), // median caught it
-		shape(f, f, u), // median caught it, tail unjudgeable
-		shape(f, f, f), // both caught it
-		shape(u, u, p), // median unjudgeable
-		shape(u, u, f),
-		shape(u, u, u),
+	switch v {
+	case canaryLatencyFail:
+		s.Overhead = 500 * time.Microsecond
+		if decisive {
+			s.Overhead = 50 * time.Millisecond
+		}
+		s.Reason = "synthetic FAIL"
+	case canaryLatencyUnknown:
+		// An unjudgeable statistic is one whose own A/A control blew past the
+		// ceiling; carrying that width is what makes it contribute honestly to
+		// the run's demonstrated resolution.
+		s.RefDelta = 2 * time.Millisecond
+		s.NoiseTerm = 6 * time.Millisecond
+		s.Budget = s.Ceiling
+		s.Reason = "synthetic UNKNOWN"
 	}
+	if v == canaryLatencyFail {
+		s.NoiseTerm = 30 * time.Microsecond
+	}
+	return s
 }
 
-// TestAX06_LatencyArbitrationIsMonotone is the safety half of the round-3
+// canaryLatencyRoundShapes returns one result per reachable (median, tail)
+// combination, composed through the SHIPPED composition rather than asserted.
+//
+// FAIL appears twice for each statistic — marginal and decisive — because that
+// distinction is the whole boundary the round-4 change draws, and a shape table
+// that could not express it would let the property tests pass while testing
+// nothing. TestAX06_LatencyRoundArbitration pins the shapes that matter against
+// real evaluated sample data.
+func canaryLatencyRoundShapes() []canaryLatencyResult {
+	p := canaryLatencyShapeStat
+	type spec struct {
+		medV, tailV     canaryLatencyVerdict
+		medDec, tailDec bool
+	}
+	pass, fail, unk := canaryLatencyPass, canaryLatencyFail, canaryLatencyUnknown
+	specs := []spec{
+		{pass, pass, false, false}, // full pass
+		{pass, unk, false, false},  // median-only pass
+		{pass, fail, false, false}, // tail caught it, marginally
+		{pass, fail, false, true},  // tail caught it, decisively
+		{fail, pass, false, false}, // median caught it, marginally
+		{fail, pass, true, false},  // median caught it, decisively
+		{fail, unk, false, false},  // median caught it, tail unjudgeable
+		{fail, unk, true, false},   // ditto, decisively
+		{fail, fail, false, false}, // both caught it
+		{fail, fail, true, true},   // both, decisively
+		{unk, pass, false, false},  // median unjudgeable
+		{unk, fail, false, false},  // median unjudgeable, marginal tail FAIL
+		{unk, fail, false, true},   // median unjudgeable, DECISIVE tail FAIL
+		{unk, unk, false, false},   // nothing resolved
+	}
+	out := make([]canaryLatencyResult, 0, len(specs))
+	for _, sp := range specs {
+		out = append(out, canaryLatencyCompose(
+			p("p50", sp.medV, sp.medDec), p("p95", sp.tailV, sp.tailDec)))
+	}
+	return out
+}
+
+// TestAX06_LatencyArbitrationIsMonotone is the safety half of the round-4
 // change, and it is a proof rather than a sample.
 //
-// Making a median-only pass stop winning is a STRICTER rule, and the whole
-// reason SW-242 exists is that a gate which cries wolf is worse than no gate.
-// So the question that has to be settled is not whether the new rule is
-// stricter — it is — but whether the extra strictness can ever land on a run
-// the old rule passed. It cannot, and the reason is structural rather than
-// statistical:
+// Round 4 makes the gate STRICTER in two places — a decisive FAIL now survives
+// an unjudgeable median within a round, and an unjudgeable round across rounds —
+// and the whole reason SW-242 exists is that a gate which cries wolf is worse
+// than no gate. So the question is not whether the new rule is stricter (it is)
+// but whether the extra strictness can land on a run the SHIPPED rule passed. It
+// cannot, and the reason is structural rather than statistical:
 //
-//   - The new rule returns FAIL only when EVERY round it saw FAILed (no full
-//     pass, no UNKNOWN round, no median-only round). A slate of nothing but
-//     FAILs contains no PASS round, so the round-1 loop would not have stopped
-//     early either, and the round-1 rule returns FAIL on exactly that slate.
-//   - The new rule returns PASS only on a full-pass round, which the round-1
-//     rule would also have read as a PASS.
+//   - The round-4 composition FAILs a superset of the rounds the round-3
+//     composition FAILed (it adds "median UNKNOWN + decisive tail FAIL" and
+//     changes nothing else), and it PASSes exactly the same rounds.
+//   - Both arbitrations scan for a full pass FIRST, so a run containing a full
+//     pass reports PASS under both.
+//   - Round 4's extra FAIL branch is reachable only when no round was a full
+//     pass, so it can only ever convert UNKNOWN into FAIL.
 //
-// So the two rules differ ONLY by turning some PASS verdicts into UNKNOWN. This
+// So the two rules differ ONLY by turning some UNKNOWN verdicts into FAIL. This
 // test walks every sequence of one, two and three rounds over every reachable
-// round shape — 819 sequences — and checks both implications on each, plus that
-// the difference is real (there are sequences where they disagree) so the
-// property cannot be satisfied vacuously by the two rules being identical.
+// round shape and checks the implication on each, plus that the difference is
+// real, so the property cannot be satisfied vacuously by the change not being
+// wired in.
 func TestAX06_LatencyArbitrationIsMonotone(t *testing.T) {
 	shapes := canaryLatencyRoundShapes()
 	fullStop := func(r canaryLatencyResult) bool { return canaryLatencyFullPass(r) }
-	anyPassStop := func(r canaryLatencyResult) bool { return r.Verdict == canaryLatencyPass }
 
 	var checked, disagreed int
 	var walk func(prefix []canaryLatencyResult)
 	walk = func(prefix []canaryLatencyResult) {
 		if len(prefix) > 0 {
 			slate := append([]canaryLatencyResult(nil), prefix...)
-			now := canaryLatencyOverall(canaryLatencyStopAt(slate, fullStop))
-			was := canaryLatencyOverallRound1Rule(canaryLatencyStopAt(slate, anyPassStop))
+			stopped := canaryLatencyStopAt(slate, fullStop)
+			now := canaryLatencyOverall(stopped)
+			was := canaryLatencyOverallRound3Rule(stopped)
 			checked++
-			if now.Verdict == canaryLatencyFail && was.Verdict != canaryLatencyFail {
-				t.Fatalf("round 3 FAILED a run round 1 answered %s — the arbitration is "+
-					"manufacturing failures: %v", was.Verdict, canaryLatencyShapeNames(slate))
-			}
 			if now.Verdict == canaryLatencyPass && was.Verdict != canaryLatencyPass {
-				t.Fatalf("round 3 PASSED a run round 1 answered %s: %v",
-					was.Verdict, canaryLatencyShapeNames(slate))
+				t.Fatalf("round 4 PASSED a run the shipped rule answered %s: %v",
+					was.Verdict, canaryLatencyShapeNames(stopped))
+			}
+			if was.Verdict == canaryLatencyPass && now.Verdict != canaryLatencyPass {
+				t.Fatalf("round 4 answered %s on a run the shipped rule PASSED — the "+
+					"arbitration is manufacturing failures: %v",
+					now.Verdict, canaryLatencyShapeNames(stopped))
 			}
 			if now.Verdict == canaryLatencyPass && now.Tail.Verdict != canaryLatencyPass {
-				t.Fatalf("round 3 reported PASS with an unjudged tail: %v",
-					canaryLatencyShapeNames(slate))
+				t.Fatalf("round 4 reported PASS with an unjudged tail: %v",
+					canaryLatencyShapeNames(stopped))
 			}
 			if now.Verdict != canaryLatencyPass && now.Reason == "" {
-				t.Fatalf("round 3 reported %s with no reason: %v",
-					now.Verdict, canaryLatencyShapeNames(slate))
+				t.Fatalf("round 4 reported %s with no reason: %v",
+					now.Verdict, canaryLatencyShapeNames(stopped))
 			}
 			if now.Verdict != was.Verdict {
 				disagreed++
 				// The only permitted difference.
-				if was.Verdict != canaryLatencyPass || now.Verdict != canaryLatencyUnknown {
-					t.Fatalf("round 1 said %s and round 3 said %s; the only difference the "+
-						"change is allowed to make is PASS -> UNKNOWN: %v",
-						was.Verdict, now.Verdict, canaryLatencyShapeNames(slate))
+				if was.Verdict != canaryLatencyUnknown || now.Verdict != canaryLatencyFail {
+					t.Fatalf("the shipped rule said %s and round 4 said %s; the only difference "+
+						"the change is allowed to make is UNKNOWN -> FAIL: %v",
+						was.Verdict, now.Verdict, canaryLatencyShapeNames(stopped))
+				}
+				// And it may only make it where a FAIL was actually decisive.
+				medRes, tailRes := canaryLatencyRunResolution(stopped)
+				var decisive bool
+				for _, r := range stopped {
+					if canaryLatencyDecisiveRound(r, medRes, tailRes) {
+						decisive = true
+					}
+				}
+				if !decisive {
+					t.Fatalf("round 4 turned UNKNOWN into FAIL with no decisive FAIL in the "+
+						"run: %v", canaryLatencyShapeNames(stopped))
 				}
 			}
 		}
@@ -1658,17 +2276,19 @@ func TestAX06_LatencyArbitrationIsMonotone(t *testing.T) {
 	}
 	walk(nil)
 
-	if checked != len(shapes)+len(shapes)*len(shapes)+len(shapes)*len(shapes)*len(shapes) {
+	n := len(shapes)
+	if checked != n+n*n+n*n*n {
 		t.Fatalf("walked %d sequences, expected every sequence of 1..%d rounds over %d shapes",
-			checked, canaryLatencyRounds, len(shapes))
+			checked, canaryLatencyRounds, n)
 	}
 	if disagreed == 0 {
 		t.Fatal("the two rules never disagreed: the monotonicity property is vacuous, " +
-			"which means the round-3 change is not wired into canaryLatencyOverall")
+			"which means the round-4 change is not wired into canaryLatencyOverall")
 	}
-	t.Logf("arbitration monotonicity: %d round sequences checked, %d differ from the round-1 "+
-		"rule, every difference PASS -> UNKNOWN; no sequence exists on which round 3 fails a "+
-		"run round 1 passed", checked, disagreed)
+	t.Logf("arbitration monotonicity: %d round sequences over %d shapes checked, %d differ "+
+		"from the shipped rule, every difference UNKNOWN -> FAIL and every one carrying a "+
+		"decisive FAIL; no sequence exists on which round 4 fails a run the shipped rule passed",
+		checked, n, disagreed)
 }
 
 // canaryLatencyShapeNames renders a slate as its verdict triples, so a failure
@@ -1728,6 +2348,13 @@ func canaryLatencyNoiseLevels() []canaryLatencyNoiseLevel {
 		{"lightly_loaded", 800 * time.Microsecond, 0.20, 0.08, 0.8},
 		{"contended_as_measured", 900 * time.Microsecond, 0.30, 0.12, 1.5},
 		{"worse_than_measured", 2 * time.Millisecond, 0.35, 0.15, 2.0},
+		// The runner PR #169 actually ran on, calibrated to the numbers in that
+		// job's own log rather than to a laptop: a p50 baseline of 3.24 ms
+		// (round 3 printed fixed=324.268 µs, which is 10 % of it) and a p50 A/A
+		// control wide enough to reach the 442.871 µs that collapsed round 3's
+		// median. It is the condition the defect lives on, so the rates below
+		// are meaningless without it.
+		{"ci_pr169_runner", 3240 * time.Microsecond, 0.40, 0.18, 2.5},
 	}
 }
 
@@ -1776,6 +2403,18 @@ func TestAX06_LatencyNoiseModelIsCalibrated(t *testing.T) {
 			if got := quantile(d95s, 0.90); got > 60*time.Microsecond {
 				t.Fatalf("idle p95 A/A control %v is far above the 6–28 µs §5.1 measured", got)
 			}
+		case "ci_pr169_runner":
+			// PR #169's own log: round 3 printed a p50 fixed bar of 324.268 µs
+			// (so a 3.24268 ms p50 baseline) and a p50 A/A control of
+			// 442.871 µs, which is what took that round's median to UNKNOWN.
+			// The model has to be able to produce both.
+			if got := quantile(p50s, 0.50); got < 2900*time.Microsecond || got > 3600*time.Microsecond {
+				t.Fatalf("PR #169 p50 %v is not the ~3.24 ms that job's round 3 printed", got)
+			}
+			if got := quantile(d50s, 0.90); got < 150*time.Microsecond || got > 600*time.Microsecond {
+				t.Fatalf("PR #169 p50 A/A control %v does not bracket the 442.871 µs that "+
+					"collapsed round 3's median", got)
+			}
 		case "contended_as_measured":
 			// §5.6: p95 control 297 µs–1.12 ms, median budget still at its floor
 			// (which needs 3 x the p50 control to stay under 250 µs).
@@ -1790,33 +2429,40 @@ func TestAX06_LatencyNoiseModelIsCalibrated(t *testing.T) {
 	}
 }
 
-// TestAX06_LatencyArbitrationOnPureNoise measures what the round-3 arbitration
-// does on runs with NO regression injected anywhere — every arm in every round
-// drawn from one distribution, so any FAIL is a false FAIL by construction —
-// and on runs that DO carry a minority-incidence regression, so the same run of
-// trials reports both halves of the trade.
+// TestAX06_LatencyArbitrationOnPureNoise is the measurement half of the round-4
+// change: what the new rule costs on runs with NO regression injected anywhere —
+// every arm in every round drawn from one distribution, so any FAIL is a false
+// FAIL by construction — and what it buys on runs that DO carry a
+// minority-incidence regression.
 //
-// The monotonicity test above already proves the false-FAIL rate cannot rise.
-// This is what that proof buys, in numbers, on the runner conditions the gate
-// actually meets; the figures it logs are the ones recorded in §5.8. The
-// assertions restate the two implications on real evaluated data, per trial, as
-// a check that the proof is about the function the gate really calls.
+// Three rules are evaluated on the SAME trials, so the comparison is paired
+// rather than across separate samples:
+//
+//   - shipped: the round-3 rule PR #169 failed under;
+//   - round 4: the rule this file implements;
+//   - "any FAIL stands": the variant round 3 measured at ~10.4 % false FAIL and
+//     rejected, re-measured here so the boundary round 4 draws is justified by a
+//     number rather than by an assurance.
+//
+// The assertion is the one the story turns on: on the contended condition the
+// round-4 false-FAIL rate must not exceed the shipped rule's by more than a
+// rounding of the sample, and must stay far below the rejected variant's.
 func TestAX06_LatencyArbitrationOnPureNoise(t *testing.T) {
 	if testing.Short() {
 		t.Skip("the Monte Carlo is not a -short gate")
 	}
 	const trials = 2000
 	fullStop := func(r canaryLatencyResult) bool { return canaryLatencyFullPass(r) }
-	anyPassStop := func(r canaryLatencyResult) bool { return r.Verdict == canaryLatencyPass }
 
 	for _, lvl := range canaryLatencyNoiseLevels() {
 		lvl := lvl
 		t.Run(lvl.name, func(t *testing.T) {
 			// inject is the per-incident cost added to one executor call in
 			// eight; 0 is the no-regression arm.
-			for _, inject := range []time.Duration{0, 2 * time.Millisecond} {
+			for _, inject := range []time.Duration{0, 2 * time.Millisecond, 20 * time.Millisecond} {
 				rng := rand.New(rand.NewSource(20260828))
-				var wasPass, wasFail, nowPass, nowFail, nowUnknown, medianOnlyRounds, roundsSeen int
+				var shipPass, shipFail, nowPass, nowFail, nowUnknown, anyFail int
+				var medianOnlyRounds, decisiveRounds, roundsSeen int
 				for i := 0; i < trials; i++ {
 					rounds := make([]canaryLatencyResult, 0, canaryLatencyRounds)
 					for r := 0; r < canaryLatencyRounds; r++ {
@@ -1834,33 +2480,43 @@ func TestAX06_LatencyArbitrationOnPureNoise(t *testing.T) {
 							canaryLatencyNoisyArm(rng, lvl.mean, lvl.sdFrac, lvl.spikeRate, lvl.spikeMul),
 							exec))
 					}
+					// Both rules stop the loop on the same thing — a full pass —
+					// so one slate serves both.
 					slate := canaryLatencyStopAt(rounds, fullStop)
 					now := canaryLatencyOverall(slate)
-					was := canaryLatencyOverallRound1Rule(canaryLatencyStopAt(rounds, anyPassStop))
+					was := canaryLatencyOverallRound3Rule(slate)
+					strict := canaryLatencyOverallAnyFailStands(slate)
 					roundsSeen += len(slate)
+					medRes, tailRes := canaryLatencyRunResolution(slate)
 					for _, r := range slate {
 						if canaryLatencyMedianOnlyPass(r) {
 							medianOnlyRounds++
 						}
+						if canaryLatencyDecisiveRound(r, medRes, tailRes) {
+							decisiveRounds++
+						}
 					}
-					// The two implications, on evaluated data rather than on
-					// synthesised verdict triples.
-					if now.Verdict == canaryLatencyFail && was.Verdict != canaryLatencyFail {
-						t.Fatalf("trial %d: round 3 failed a run round 1 answered %s: %s",
-							i, was.Verdict, now)
+					// The monotonicity implication, on evaluated data rather
+					// than on synthesised verdict triples.
+					if was.Verdict == canaryLatencyPass && now.Verdict != canaryLatencyPass {
+						t.Fatalf("trial %d: round 4 answered %s on a run the shipped rule passed: %s",
+							i, now.Verdict, now)
 					}
 					if now.Verdict == canaryLatencyPass && was.Verdict != canaryLatencyPass {
-						t.Fatalf("trial %d: round 3 passed a run round 1 answered %s: %s",
+						t.Fatalf("trial %d: round 4 passed a run the shipped rule answered %s: %s",
 							i, was.Verdict, now)
 					}
 					if now.Verdict == canaryLatencyPass && now.Tail.Verdict != canaryLatencyPass {
-						t.Fatalf("trial %d: round 3 reported PASS on an unjudged tail: %s", i, now)
+						t.Fatalf("trial %d: round 4 reported PASS on an unjudged tail: %s", i, now)
 					}
 					switch was.Verdict {
 					case canaryLatencyPass:
-						wasPass++
+						shipPass++
 					case canaryLatencyFail:
-						wasFail++
+						shipFail++
+					}
+					if strict.Verdict == canaryLatencyFail {
+						anyFail++
 					}
 					switch now.Verdict {
 					case canaryLatencyPass:
@@ -1876,12 +2532,32 @@ func TestAX06_LatencyArbitrationOnPureNoise(t *testing.T) {
 				if inject > 0 {
 					label = fmt.Sprintf("%v on 1 call in 8 (every PASS a miss)", inject)
 				}
-				t.Logf("%s | %s\n    round 1 rule: PASS=%.2f%% FAIL=%.2f%%\n"+
-					"    round 3 rule: PASS=%.2f%% FAIL=%.2f%% UNKNOWN=%.2f%%\n"+
-					"    median-only rounds: %.1f%% of %d rounds evaluated",
-					lvl.name, label, pct(wasPass), pct(wasFail),
-					pct(nowPass), pct(nowFail), pct(nowUnknown),
-					100*float64(medianOnlyRounds)/float64(roundsSeen), roundsSeen)
+				t.Logf("%s | %s\n    shipped (round 3): PASS=%.2f%% FAIL=%.2f%%\n"+
+					"    round 4:           PASS=%.2f%% FAIL=%.2f%% UNKNOWN=%.2f%%\n"+
+					"    rejected any-FAIL: FAIL=%.2f%%\n"+
+					"    of %d rounds evaluated: %.1f%% median-only, %.1f%% decisive",
+					lvl.name, label, pct(shipPass), pct(shipFail),
+					pct(nowPass), pct(nowFail), pct(nowUnknown), pct(anyFail), roundsSeen,
+					100*float64(medianOnlyRounds)/float64(roundsSeen),
+					100*float64(decisiveRounds)/float64(roundsSeen))
+
+				if inject != 0 {
+					continue
+				}
+				// AC-5 / the round-2 finding, re-checked: the round-4 boundary
+				// must not have bought its detection with false FAILs. On a
+				// clean tree the two rules must red the same runs to within one
+				// trial in 200, and the rejected variant must be visibly worse
+				// wherever it costs anything at all.
+				if nowFail > shipFail+trials/200 {
+					t.Fatalf("%s: round 4 reds %.2f%% of clean runs against the shipped rule's "+
+						"%.2f%% — the decisiveness boundary is not holding the false-FAIL rate",
+						lvl.name, pct(nowFail), pct(shipFail))
+				}
+				if anyFail > nowFail+trials/200 && nowFail > shipFail {
+					t.Logf("%s: the rejected any-FAIL variant would red %.2f%% here against "+
+						"round 4's %.2f%%", lvl.name, pct(anyFail), pct(nowFail))
+				}
 			}
 		})
 	}
