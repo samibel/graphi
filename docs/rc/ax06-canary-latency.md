@@ -2,6 +2,7 @@
 
 **Story:** SW-226 (AX-06) · **Spec:** extension-platform-kernel · **Canary:** `dead_code`
 **Amended:** SW-242 (2026-08-28) — §1, §2 and §3 replaced; see "Amendment record" below.
+**Extended:** SW-244 (2026-08-28) — §6 added (the dual-run cost of the shipped default). §1–§3 untouched.
 
 This page exists so the acceptance bar for SW-226 AC-5 is a **prediction**, not a
 description. It is committed on its own, ahead of the implementation and ahead of any
@@ -851,3 +852,119 @@ observable, and asserts the before and the after:
 Every p95 overhead in that job — 79.556457 ms, 92.47372 ms, 74.651076 ms — clears 3× its own
 ceiling by 8×, 11× and 11× even under the most conservative reconstruction of the ceiling
 available from the log.
+
+---
+
+## 6. The dual-run cost of the shipped default (SW-244, 2026-08-28)
+
+SW-244 moves the compiled-in kill-switch default from `legacy` to `shadow`, which makes the
+**shadow arm the default path** for the ten migrated operations. §1–§3 are **not amended**:
+the bar is untouched, the gate still judges the executor arm, and §3's exemption of shadow's
+*total* still stands for the reason it always gave — shadow runs both paths by construction,
+so ~2× legacy is its correct behaviour and gating the total would be either vacuous or a
+standing invitation to weaken the comparison the position exists to perform.
+
+What this section adds is the measurement AC-2 of that story requires and the question §3
+left unasked, which is the one that actually decides whether the default may move:
+
+> How much of shadow's cost is **not** explained by "both paths ran"?
+
+### 6.1 The residue, and the bar it is held to
+
+At each gated percentile, with the same four arms, the same rotation and the same run:
+
+```
+baseline    = (legacy-a + legacy-b) / 2      the pooled legacy centre
+accounted   = baseline + executor            what running both paths costs
+unaccounted = shadow − accounted             the residue: comparison + recorder hand-off
+```
+
+`unaccounted` is judged by **`canaryLatencyBudget`** — literally the function §2's rule
+calls, extracted by SW-244 so there is exactly one copy. Same 10 %/250 µs fixed term, same
+3× same-run noise term, same 4× ceiling, same three-valued verdict, same evaluation order.
+`TestSW244_ShadowAccountingSharesTheGateBudget` asserts the two agree across a sweep of
+baselines and controls, so softening the accounting would require softening the AX-06 gate
+itself. That is deliberate: SW-244 introduces the cost being judged, and a story does not get
+to pick the budget that judges its own cost.
+
+**Where this is lenient, stated rather than hidden.** At the median the arithmetic is sound —
+the median of a sum of two costs is close to the sum of their medians. At the tail it is
+**generous**: `p95(legacy) + p95(executor)` overestimates `p95(legacy + executor)`, because
+the two arms' slow calls need not coincide inside the same shadow call. So `accounted` at p95
+is too large, the residue is understated, and a healthy run reads **negative** there. The
+consequence is asymmetric and is the reason the median carries this check: a p95 FAIL is
+strong evidence, a p95 PASS is weak.
+
+### 6.2 Measured — `TestSW244_ShadowDefaultCostIsAccounted`, round 1
+
+Apple M2 Max, darwin/arm64, N = 200 per arm after 20 warm-up, rotation balanced, one round
+(the first round passed, so no second was taken).
+
+| arm | p50 | p95 |
+|---|---|---|
+| legacy-a | 383.125 µs | 761.500 µs |
+| legacy-b | 382.834 µs | 774.542 µs |
+| **legacy baseline** (pooled) | **382.979 µs** | **768.021 µs** |
+| executor | 391.083 µs | 769.959 µs |
+| **shadow** (the new default path) | **783.542 µs** | **1.265625 ms** |
+
+| statistic | shadow vs legacy | accounted | **unaccounted** | budget | verdict |
+|---|---|---|---|---|---|
+| p50 | +400.563 µs (**2.05×**) | 774.062 µs | **+9.480 µs** | 250 µs (fixed 250 µs, noise 3×291 ns = 873 ns, ceiling 1 ms) | **PASS** |
+| p95 | +497.604 µs (**1.65×**) | 1.537980 ms | **−272.355 µs** | 250 µs (fixed 250 µs, noise 3×13.042 µs = 39.126 µs, ceiling 1 ms) | **PASS** |
+
+**The whole of the dual-run cost is the second path.** The residue at the median — the
+byte comparison, the error-class comparison and the recorder hand-off together — is
+**9.5 µs, about 2.5 % of one legacy call, against a 250 µs budget it uses 3.8 % of.** At the
+tail the residue is negative, which is the shape §6.1 predicts for a run with nothing wrong
+with it.
+
+The AX-06 gate's own verdict is unchanged by this story, because the gate sets each arm's
+position explicitly and never reads the default. A separate run of
+`TestAX06_ExecutorSeamLatencyWithinThreshold` on the same fixture and machine, taken the same
+day: `p50 PASS overhead=6.085 µs budget=250 µs (legacy baseline 387.124 µs, executor
+393.209 µs)`, `p95 PASS overhead=16.896 µs budget=250 µs (legacy baseline 795.313 µs,
+executor 812.209 µs)` — one round, no retry. Its shadow arm read p50 788.333 µs / p95
+1.280334 ms, reproducing §6.2's numbers on an independent run.
+
+### 6.3 CPU and allocation — `BenchmarkCanaryDispatch`
+
+`go test ./surfaces/client/ -run '^$' -bench BenchmarkCanaryDispatch -benchtime 300x -count=3`,
+same machine. Medians of the three runs:
+
+| position | ns/op | B/op | allocs/op |
+|---|---|---|---|
+| legacy | 446 048 | 456 036 | 1 905 |
+| active (executor only) | 463 359 | 463 398 | 1 989 |
+| **shadow (new default)** | **916 012** | **919 375** | **3 894** |
+| shadow ÷ legacy | **2.05×** | **2.02×** | **2.04×** |
+| shadow − (legacy + active) | **+6.6 µs** | **−59 B** | **0** |
+
+The allocation residue is **exactly zero**: shadow allocates 3 894 objects and the two arms
+it runs allocate 1 905 + 1 989 = 3 894 between them. That is the expected result and it is
+worth saying why it is expected rather than lucky — the comparison is `bytes.Equal` plus an
+error-class check, and the recorder is handed **rendered strings only on a mismatch**
+(`canary.go`, "Why observations and not only mismatches"), so an agreeing call allocates
+nothing for the record beyond the counters it increments.
+
+### 6.4 The stop condition, and what would have triggered it
+
+AC-3 of SW-244 is a hard stop: if the measured cost had exceeded what this bar permits, the
+story stops and reports rather than widening the budget. **It was not triggered** — 9.5 µs
+against 250 µs at the median, negative at the tail.
+
+That the check *can* trigger is not asserted in prose.
+`TestSW244_ShadowAccountingCatchesUnexplainedCost` runs two extra executor passes inside the
+shadow arm's timed window — real seam code, same clock, same rotation — and requires the
+shipped decision path to return **FAIL**, not UNKNOWN. Measured: `p50 FAIL shadow=1.961375 ms
+(4.98× legacy) accounted=796.709 µs unaccounted=1.164666 ms budget=250 µs`.
+`TestSW244_ShadowAccountingDecisionRule` pins the boundaries — a clean dual run passes, a
+negative tail residue passes, +200 µs inside the floor passes, +600 µs fails, a degraded
+control is UNKNOWN and not a pass, and a gross residue fails even on a degraded control.
+
+### 6.5 Scope
+
+§5.7 applies unchanged: same-process, same-run A/B on one machine and one fixture. These are
+evidence that the dual run costs one extra legacy-plus-executor call and essentially nothing
+else. They are not a published performance figure, they are not comparable across machines,
+and they do not enter `docs/eval/`.

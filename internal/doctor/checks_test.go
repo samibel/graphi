@@ -1176,6 +1176,49 @@ func TestExecutorSeamCheckWarnsOnShadow(t *testing.T) {
 	}
 }
 
+// TestSW244_ExecutorSeamCheckDoesNotWarnOnTheShippedDefault is the counterpart
+// to the test above, and the reason that one is written with Overridden: true.
+//
+// SW-244 made `shadow` the compiled-in default. A check that WARNed on the
+// shipped configuration of a stock install would be wrong twice over: it would
+// train an operator to ignore this check, and its action would tell them to
+// unset a variable that is not set — and that, if it were set, they would have
+// to keep set to get the behaviour the action promises.
+//
+// So the compiled-in shadow is INFO. It is still not SILENT: the position costs
+// about 2x on the operations it covers, so the action states the cost and names
+// the opt-out.
+func TestSW244_ExecutorSeamCheckDoesNotWarnOnTheShippedDefault(t *testing.T) {
+	res := ExecutorSeamCheck([]ExecutorSeamPosition{
+		{Operation: "compound", Mode: "shadow", EnvVar: "GRAPHI_CANARY_COMPOUND"},
+		{Operation: "dead_code", Mode: "shadow", EnvVar: "GRAPHI_CANARY_DEAD_CODE"},
+	}, nil).Run(context.Background(), fakeEnv{})
+	if res.Status != StatusInfo {
+		t.Fatalf("the shipped default reports %q, want %q — a stock install must not warn "+
+			"about its own configuration", res.Status, StatusInfo)
+	}
+	if !strings.Contains(res.Message, "0 legacy, 2 shadow, 0 active") {
+		t.Errorf("message does not count the positions: %q", res.Message)
+	}
+	// Not silent: the cost and the opt-out are both stated.
+	for _, want := range []string{"2x", "GRAPHI_CANARY_ALL=legacy"} {
+		if !strings.Contains(res.Action, want) {
+			t.Errorf("the action does not mention %q: %q", want, res.Action)
+		}
+	}
+	if strings.Contains(res.Action, "unset") {
+		t.Errorf("the action tells the operator to unset a variable that is not set: %q", res.Action)
+	}
+	for _, want := range []string{
+		"compound: shadow (compiled-in default)",
+		"dead_code: shadow (compiled-in default)",
+	} {
+		if !strings.Contains(res.Detail, want) {
+			t.Errorf("detail is missing %q:\n%s", want, res.Detail)
+		}
+	}
+}
+
 // TestExecutorSeamCheckReportsActive pins the third position: not a warning
 // (nothing is paid twice) but never silent, because the executor is authoritative.
 func TestExecutorSeamCheckReportsActive(t *testing.T) {

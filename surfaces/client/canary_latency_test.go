@@ -319,6 +319,39 @@ func (s canaryLatencyStat) String() string {
 		s.Ceiling, s.BaseVal, s.RefVal, s.Baseline, s.ExecVal)
 }
 
+// canaryLatencyBudget is §2's budget arithmetic, extracted so every judgement
+// made anywhere in this file is made against the SAME bar.
+//
+// SW-244 extracted it. That story flips the shipped kill-switch default to
+// `shadow` and therefore has to judge a cost it introduces itself, which is
+// exactly the situation in which a second, more forgiving copy of this
+// arithmetic would appear. There is no second copy: the shadow accounting in
+// TestSW244_ShadowDefaultCostIsAccounted calls this function, so the 10 %/250 µs
+// fixed term, the 3x same-run noise term and the 4x ceiling it is held to are
+// the ones SW-242 fixed, byte for byte, and widening them for shadow would mean
+// widening the AX-06 gate itself — a change no story gets to make quietly.
+//
+// The clamp is unconditional, so "budget <= ceiling" is an invariant of this
+// function rather than a property of its inputs.
+func canaryLatencyBudget(baseline, refDelta time.Duration) (noiseTerm, fixedBar, ceiling, budget time.Duration) {
+	noiseTerm = time.Duration(float64(refDelta) * canaryLatencyNoiseFactor)
+
+	fixedBar = time.Duration(float64(baseline) * canaryLatencyRelative)
+	if fixedBar < canaryLatencyAbsolute {
+		fixedBar = canaryLatencyAbsolute
+	}
+	ceiling = time.Duration(float64(fixedBar) * canaryLatencyDegradedMultiple)
+
+	budget = fixedBar
+	if noiseTerm > budget {
+		budget = noiseTerm
+	}
+	if budget > ceiling {
+		budget = ceiling
+	}
+	return noiseTerm, fixedBar, ceiling, budget
+}
+
 // evaluateCanaryStat is §2's rule applied at one percentile, as a pure function
 // of three sorted sample sets, so the decision can be unit-tested at its
 // boundaries without owning a contended machine.
@@ -338,24 +371,7 @@ func evaluateCanaryStat(name string, pct float64, base, ref, exec []time.Duratio
 		s.RefDelta = -s.RefDelta
 	}
 	s.Overhead = s.ExecVal - s.Baseline
-	s.NoiseTerm = time.Duration(float64(s.RefDelta) * canaryLatencyNoiseFactor)
-
-	s.FixedBar = time.Duration(float64(s.Baseline) * canaryLatencyRelative)
-	if s.FixedBar < canaryLatencyAbsolute {
-		s.FixedBar = canaryLatencyAbsolute
-	}
-	s.Ceiling = time.Duration(float64(s.FixedBar) * canaryLatencyDegradedMultiple)
-
-	s.Budget = s.FixedBar
-	if s.NoiseTerm > s.Budget {
-		s.Budget = s.NoiseTerm
-	}
-	// The clamp is unconditional, so "Budget <= Ceiling" is an invariant of this
-	// function rather than a property of the inputs — and because both gated
-	// statistics are produced here, it is an invariant of both.
-	if s.Budget > s.Ceiling {
-		s.Budget = s.Ceiling
-	}
+	s.NoiseTerm, s.FixedBar, s.Ceiling, s.Budget = canaryLatencyBudget(s.Baseline, s.RefDelta)
 
 	switch {
 	case len(base) == 0 || len(ref) == 0 || len(exec) == 0 || s.Baseline <= 0:
@@ -2659,5 +2675,384 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// SW-244 — the dual-run cost of the shipped default, measured and accounted.
+//
+// The AX-06 gate above judges the EXECUTOR arm, and §3 of the document
+// deliberately does not gate shadow: shadow runs both paths by construction, so
+// ~2x legacy is its correct behaviour and gating its total would be either
+// vacuous or a standing invitation to weaken the comparison it exists to
+// perform. That exemption was written while `shadow` was an opt-in position an
+// operator turned on while investigating.
+//
+// SW-244 makes `shadow` the DEFAULT path, so "not gated" stops being an
+// acceptable answer and "gate the total" is still the wrong one. What this
+// section adds is the question in between, which is the one a reviewer actually
+// needs answered: how much of shadow's cost is NOT explained by "both paths
+// ran"? That residue is the comparison, the recorder hand-off and whatever else
+// the position costs beyond running two things that are each already measured —
+// and unlike shadow's total, it has no reason to be large.
+//
+// It is judged against canaryLatencyBudget, which is SW-242's bar unmodified.
+// AC-3 of this story forbids widening a budget to admit a cost the story
+// introduces, and the way that prohibition is honoured here is structural: there
+// is no second budget to widen.
+
+// canaryLatencyAccounting is the shadow residue at one percentile.
+//
+// The arithmetic:
+//
+//	baseline    = (legacy-a + legacy-b) / 2      the pooled legacy centre
+//	accounted   = baseline + executor            what "both paths ran" costs
+//	unaccounted = shadow - accounted             what is left to explain
+//
+// and unaccounted is then held to canaryLatencyBudget(baseline, |a-b|) — the
+// same fixed bar, the same 3x same-run noise term, the same 4x ceiling and the
+// same three-valued verdict as the gate.
+//
+// # What this measures well, and where it is lenient
+//
+// At the MEDIAN the arithmetic is sound in the way that matters: the median of
+// a sum of two independent costs is close to the sum of their medians, so a
+// residue at p50 is a real per-call cost and is reported as one.
+//
+// At the TAIL it is deliberately LENIENT and the leniency is stated rather than
+// hidden. p95(legacy) + p95(executor) is an OVERestimate of p95(legacy +
+// executor), because the two arms' slow calls do not have to coincide — a slow
+// legacy pass and a slow executor pass land in the same shadow call only
+// sometimes. So `accounted` at p95 is generous, `unaccounted` is correspondingly
+// understated, and a healthy run reads NEGATIVE there (it did on the recorded
+// measurement: -327µs). The consequence is asymmetric and worth being explicit
+// about: a FAIL at p95 is strong evidence, a PASS at p95 is weak. The p50
+// judgement is what carries this check, exactly as it carries the gate.
+type canaryLatencyAccounting struct {
+	Name        string
+	Pct         float64
+	Baseline    time.Duration
+	ExecVal     time.Duration
+	ShadowVal   time.Duration
+	Accounted   time.Duration
+	Unaccounted time.Duration
+	RefDelta    time.Duration
+	NoiseTerm   time.Duration
+	FixedBar    time.Duration
+	Ceiling     time.Duration
+	Budget      time.Duration
+	Verdict     canaryLatencyVerdict
+	Reason      string
+}
+
+func (a canaryLatencyAccounting) String() string {
+	ratio := 0.0
+	if a.Baseline > 0 {
+		ratio = float64(a.ShadowVal) / float64(a.Baseline)
+	}
+	return fmt.Sprintf(
+		"%s %s shadow=%v (%.2fx legacy) accounted=%v unaccounted=%v budget=%v "+
+			"(fixed=%v noise=3x%v=%v ceiling=%v) baseline=%v executor=%v",
+		a.Name, a.Verdict, a.ShadowVal, ratio, a.Accounted, a.Unaccounted, a.Budget,
+		a.FixedBar, a.RefDelta, a.NoiseTerm, a.Ceiling, a.Baseline, a.ExecVal)
+}
+
+// evaluateCanaryAccounting applies the rule above at one percentile. It is a
+// pure function of four sorted sample sets so the decision is testable without
+// owning a quiet machine.
+func evaluateCanaryAccounting(name string, pct float64, base, ref, exec, shadow []time.Duration) canaryLatencyAccounting {
+	a := canaryLatencyAccounting{Name: name, Pct: pct}
+	if len(base) == 0 || len(ref) == 0 || len(exec) == 0 || len(shadow) == 0 {
+		a.Verdict = canaryLatencyUnknown
+		a.Reason = fmt.Sprintf("%s: no usable measurement: an arm produced no samples", name)
+		return a
+	}
+	baseVal, refVal := percentile(base, pct), percentile(ref, pct)
+	a.ExecVal = percentile(exec, pct)
+	a.ShadowVal = percentile(shadow, pct)
+	a.Baseline = (baseVal + refVal) / 2
+	a.RefDelta = baseVal - refVal
+	if a.RefDelta < 0 {
+		a.RefDelta = -a.RefDelta
+	}
+	a.Accounted = a.Baseline + a.ExecVal
+	a.Unaccounted = a.ShadowVal - a.Accounted
+	a.NoiseTerm, a.FixedBar, a.Ceiling, a.Budget = canaryLatencyBudget(a.Baseline, a.RefDelta)
+
+	switch {
+	case a.Baseline <= 0:
+		a.Verdict = canaryLatencyUnknown
+		a.Reason = fmt.Sprintf("%s: zero legacy baseline", name)
+	case a.Unaccounted > a.Budget && a.Unaccounted > a.NoiseTerm:
+		// Same ordering as the gate, for the same reason: an excess past both
+		// the clamped budget AND three times this run's own demonstrated
+		// resolution is signal at whatever resolution the run achieved, and a
+		// degraded runner is not a licence to launder it into a pass.
+		a.Verdict = canaryLatencyFail
+		a.Reason = fmt.Sprintf(
+			"%s: shadow %v - (legacy %v + executor %v) = %v is cost the dual run does NOT "+
+				"explain; it exceeds the %v budget AND 3x the same-run A/A control (%v)",
+			name, a.ShadowVal, a.Baseline, a.ExecVal, a.Unaccounted, a.Budget, a.RefDelta)
+	case a.NoiseTerm > a.Ceiling:
+		a.Verdict = canaryLatencyUnknown
+		a.Reason = fmt.Sprintf(
+			"%s: runner degraded beyond comparison: the same-run A/A control differs by %v, "+
+				"so 3x noise = %v exceeds the %v ceiling", name, a.RefDelta, a.NoiseTerm, a.Ceiling)
+	case a.Unaccounted <= a.Budget:
+		a.Verdict = canaryLatencyPass
+	default:
+		a.Verdict = canaryLatencyFail
+		a.Reason = fmt.Sprintf(
+			"%s: shadow %v - (legacy %v + executor %v) = %v exceeds the %v budget, and the "+
+				"same-run A/A control (%v) is small enough that the difference is signal",
+			name, a.ShadowVal, a.Baseline, a.ExecVal, a.Unaccounted, a.Budget, a.RefDelta)
+	}
+	return a
+}
+
+// TestSW244_ShadowDefaultCostIsAccounted is AC-2's measurement and AC-3's stop
+// condition, in the shipped decision path rather than in a spreadsheet.
+//
+// It records the dual-run cost of the position this story makes the default —
+// shadow's p50 and p95 against the legacy baseline measured in the SAME run,
+// same rotation, same machine, same moment — and it FAILS if the part of that
+// cost which "both paths ran" does not explain exceeds SW-242's bar.
+//
+// The anti-flake provision is the gate's: up to canaryLatencyRounds rounds,
+// pass on the first round where both percentiles pass, and report the FIRST
+// round's numbers regardless of which round passed so the record is not
+// cherry-picked. UNKNOWN is a skip with the numbers attached, never a silent
+// pass — a run that could not measure says so.
+func TestSW244_ShadowDefaultCostIsAccounted(t *testing.T) {
+	if testing.Short() {
+		t.Skip("latency measurement is not a -short gate")
+	}
+	direct := canaryLatencyFixture(t)
+
+	var (
+		first  []canaryLatencyAccounting
+		last   []canaryLatencyAccounting
+		passed bool
+	)
+	for round := 1; round <= canaryLatencyRounds && !passed; round++ {
+		samples := canaryLatencySample(t, direct, canaryLatencyGateArms())
+		stats := []canaryLatencyAccounting{
+			evaluateCanaryAccounting("p50", 0.50,
+				samples[canaryArmBaseline], samples[canaryArmReference],
+				samples[canaryArmExecutor], samples[canaryArmShadow]),
+			evaluateCanaryAccounting("p95", 0.95,
+				samples[canaryArmBaseline], samples[canaryArmReference],
+				samples[canaryArmExecutor], samples[canaryArmShadow]),
+		}
+		if round == 1 {
+			first = stats
+		}
+		last = stats
+		passed = stats[0].Verdict == canaryLatencyPass && stats[1].Verdict == canaryLatencyPass
+		t.Logf("SW-244-SHADOW-COST round %d/%d: %s | %s%s",
+			round, canaryLatencyRounds, stats[0], stats[1], canaryLatencyReport(samples))
+	}
+
+	// The record is round 1's, whichever round passed.
+	for _, a := range first {
+		t.Logf("SW-244-SHADOW-COST-RECORD %s", a)
+	}
+	if passed {
+		t.Logf("SW-244-SHADOW-COST-VERDICT: PASS — the dual-run cost of the shipped default "+
+			"is explained by running both paths (p50 residue %v against a %v budget)",
+			first[0].Unaccounted, first[0].Budget)
+		return
+	}
+	for _, a := range last {
+		switch a.Verdict {
+		case canaryLatencyFail:
+			// AC-3. The remedy is NOT to widen canaryLatencyBudget — that is the
+			// AX-06 gate's own bar, and widening it to admit a cost this story
+			// introduced is what AC-3 exists to forbid. The remedy is to find
+			// the unexplained cost, or to leave the shipped default at `legacy`.
+			t.Errorf("SW-244-SHADOW-COST-VERDICT: FAIL — %s\n  %s\n  The shipped default may "+
+				"not be moved to `shadow` on this evidence. Do NOT widen the budget: it is "+
+				"SW-242's AX-06 bar, shared with the gate.", a.Reason, a)
+		case canaryLatencyUnknown:
+			t.Logf("SW-244-SHADOW-COST-VERDICT: UNKNOWN at %s — %s\n  %s", a.Name, a.Reason, a)
+		}
+	}
+	if !t.Failed() {
+		t.Skipf("SW-244-SHADOW-COST-VERDICT: UNKNOWN after %d round(s) — this runner could "+
+			"not resolve the residue. NOT evidence that the dual run is cheap; re-run on a "+
+			"quieter machine.", canaryLatencyRounds)
+	}
+}
+
+// TestSW244_ShadowAccountingCatchesUnexplainedCost is the load-bearing test of
+// the check above: an accounting rule that cannot go red is not an accounting
+// rule.
+//
+// The injected cost is real and is added to the SHADOW arm only — the seam's own
+// code, run extra times inside shadow's timed window. That is a cost the dual
+// run does not explain by construction, since neither the legacy arm nor the
+// executor arm paid it, so the residue must move by it and the verdict must be
+// FAIL. UNKNOWN would not do: a check that answers "I could not tell" to a
+// tripled shadow arm has the practical value of one that answers PASS.
+func TestSW244_ShadowAccountingCatchesUnexplainedCost(t *testing.T) {
+	if testing.Short() {
+		t.Skip("latency measurement is not a -short gate")
+	}
+	direct := canaryLatencyFixture(t)
+	// Two extra executor passes inside the shadow window: ~2x the executor
+	// arm's cost, several hundred microseconds on the recorded machine, well
+	// past the 250 µs floor and well past 3x any plausible A/A control.
+	arms := canaryLatencyArmsWith(canaryArmShadow, canaryLatencyExtraSeamPasses(2))
+
+	var got canaryLatencyVerdict
+	for round := 1; round <= canaryLatencyRounds; round++ {
+		samples := canaryLatencySample(t, direct, arms)
+		a := evaluateCanaryAccounting("p50", 0.50,
+			samples[canaryArmBaseline], samples[canaryArmReference],
+			samples[canaryArmExecutor], samples[canaryArmShadow])
+		t.Logf("injected round %d/%d: %s", round, canaryLatencyRounds, a)
+		got = a.Verdict
+		if got == canaryLatencyFail {
+			return
+		}
+	}
+	t.Errorf("the shadow accounting answered %q to a shadow arm carrying two whole extra "+
+		"executor passes. A residue that large is cost the dual run does not explain, and a "+
+		"check that cannot see it cannot justify the shipped default", got)
+}
+
+// TestSW244_ShadowAccountingDecisionRule pins the rule's boundaries without
+// owning a machine, the way TestAX06_LatencyDecisionRule pins the gate's.
+//
+// The cases that matter are: a clean dual run passes (including the NEGATIVE
+// residue a healthy tail produces), an unexplained cost past the bar fails, an
+// empty arm is UNKNOWN and not a pass, and the budget invariants SW-242 made
+// code hold here too — because they are the same function.
+func TestSW244_ShadowAccountingDecisionRule(t *testing.T) {
+	rep := func(d time.Duration) []time.Duration {
+		out := make([]time.Duration, 20)
+		for i := range out {
+			out[i] = d
+		}
+		return out
+	}
+	ms := time.Millisecond
+
+	for _, tc := range []struct {
+		name                       string
+		base, ref, exec, shadow    []time.Duration
+		want                       canaryLatencyVerdict
+		wantUnaccountedNonPositive bool
+	}{
+		{
+			name: "clean_dual_run_passes",
+			base: rep(1 * ms), ref: rep(1 * ms), exec: rep(1 * ms),
+			// Exactly legacy + executor, nothing else.
+			shadow: rep(2 * ms),
+			want:   canaryLatencyPass,
+		},
+		{
+			name: "negative_residue_passes",
+			base: rep(1 * ms), ref: rep(1 * ms), exec: rep(1 * ms),
+			// The tail shape: the two arms' slow calls did not coincide.
+			shadow:                     rep(1500 * time.Microsecond),
+			want:                       canaryLatencyPass,
+			wantUnaccountedNonPositive: true,
+		},
+		{
+			name: "residue_inside_the_fixed_bar_passes",
+			base: rep(1 * ms), ref: rep(1 * ms), exec: rep(1 * ms),
+			// +200 µs, inside the 250 µs floor. 10 % of a 1 ms baseline is
+			// 100 µs, so the floor is what is doing the work here.
+			shadow: rep(2*ms + 200*time.Microsecond),
+			want:   canaryLatencyPass,
+		},
+		{
+			name: "residue_past_the_bar_fails",
+			base: rep(1 * ms), ref: rep(1 * ms), exec: rep(1 * ms),
+			// +600 µs of cost neither arm paid.
+			shadow: rep(2*ms + 600*time.Microsecond),
+			want:   canaryLatencyFail,
+		},
+		{
+			name: "degraded_control_is_unknown_not_pass",
+			// A/A control 2 ms wide against a 2 ms baseline: 3x noise = 6 ms,
+			// past the 4x800 µs ceiling. The residue is inside it, so nothing
+			// can be concluded.
+			base: rep(1 * ms), ref: rep(3 * ms), exec: rep(2 * ms),
+			shadow: rep(4*ms + 500*time.Microsecond),
+			want:   canaryLatencyUnknown,
+		},
+		{
+			name: "degraded_control_still_fails_a_gross_residue",
+			// Same degraded control, but a residue past BOTH the ceiling and
+			// 3x the control. A noisy runner may not launder that into a pass.
+			base: rep(1 * ms), ref: rep(3 * ms), exec: rep(2 * ms),
+			shadow: rep(11 * ms),
+			want:   canaryLatencyFail,
+		},
+		{
+			name: "empty_shadow_arm_is_unknown",
+			base: rep(1 * ms), ref: rep(1 * ms), exec: rep(1 * ms), shadow: nil,
+			want: canaryLatencyUnknown,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := evaluateCanaryAccounting("p50", 0.50, tc.base, tc.ref, tc.exec, tc.shadow)
+			if a.Verdict != tc.want {
+				t.Fatalf("verdict = %q, want %q — %s", a.Verdict, tc.want, a)
+			}
+			if a.Verdict != canaryLatencyPass && a.Reason == "" {
+				t.Errorf("a non-PASS verdict carries no reason: %s", a)
+			}
+			if tc.wantUnaccountedNonPositive && a.Unaccounted > 0 {
+				t.Errorf("unaccounted = %v, want <= 0: %s", a.Unaccounted, a)
+			}
+			if len(tc.shadow) == 0 {
+				return
+			}
+			// SW-242's invariants, which this rule inherits by construction
+			// because it calls the same function.
+			if a.Budget > a.Ceiling {
+				t.Errorf("invariant broken: budget %v > ceiling %v", a.Budget, a.Ceiling)
+			}
+			if a.Budget < a.FixedBar && a.FixedBar <= a.Ceiling {
+				t.Errorf("invariant broken: budget %v < fixed bar %v", a.Budget, a.FixedBar)
+			}
+			if a.Ceiling != time.Duration(float64(a.FixedBar)*canaryLatencyDegradedMultiple) {
+				t.Errorf("ceiling %v is not %vx the fixed bar %v",
+					a.Ceiling, canaryLatencyDegradedMultiple, a.FixedBar)
+			}
+		})
+	}
+}
+
+// TestSW244_ShadowAccountingSharesTheGateBudget is AC-3 made structural.
+//
+// The prohibition on widening a budget to admit this story's cost is only worth
+// anything if there is one budget. This asserts that the accounting rule and the
+// AX-06 gate read the SAME arithmetic for the same inputs, so a future edit that
+// softened the accounting would have to soften the gate — which is a change no
+// reviewer would miss.
+func TestSW244_ShadowAccountingSharesTheGateBudget(t *testing.T) {
+	for _, baseline := range []time.Duration{
+		100 * time.Microsecond, 400 * time.Microsecond, time.Millisecond, 50 * time.Millisecond,
+	} {
+		for _, refDelta := range []time.Duration{0, time.Microsecond, 200 * time.Microsecond, time.Second} {
+			base := []time.Duration{baseline + refDelta/2}
+			ref := []time.Duration{baseline - refDelta/2}
+			exec := []time.Duration{baseline}
+			shadow := []time.Duration{2 * baseline}
+
+			gate := evaluateCanaryStat("p50", 0.50, base, ref, exec)
+			acct := evaluateCanaryAccounting("p50", 0.50, base, ref, exec, shadow)
+
+			if gate.Budget != acct.Budget || gate.FixedBar != acct.FixedBar ||
+				gate.Ceiling != acct.Ceiling || gate.NoiseTerm != acct.NoiseTerm {
+				t.Fatalf("baseline=%v refDelta=%v: the shadow accounting judges against a "+
+					"DIFFERENT bar than the AX-06 gate\n  gate: %s\n  acct: %s",
+					baseline, refDelta, gate, acct)
+			}
+		}
 	}
 }

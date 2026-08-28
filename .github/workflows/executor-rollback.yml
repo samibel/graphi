@@ -19,8 +19,18 @@
 #               compiled-in default. Half a rollback is the failure mode that
 #               strands an install in a position nobody chose.
 #
-# This workflow deliberately does NOT flip the shipped default to `shadow`. The
-# default stays `legacy`; moving it is a release decision taken elsewhere.
+# SW-244 moved the shipped default from `legacy` to `shadow`, and this workflow
+# is AC-4's evidence that the rollback still works against it. Two legs had to
+# change and neither weakened:
+#
+#   * the round-trip now asserts `10 shadow` and `shadow (compiled-in default)`,
+#     because that is what the shipped configuration now is. Asserting `10
+#     legacy` after the flip would have been asserting that the rollback FAILED
+#     to round-trip.
+#   * a fourth leg was added: with NO variable set, a real dispatch must leave
+#     an observation in the divergence record. That is the property the flip
+#     exists to buy, and leg 2 (fresh state directory reads UNKNOWN) cannot
+#     show it — the two legs are the same read path on opposite inputs.
 name: executor-rollback
 
 on:
@@ -111,17 +121,102 @@ jobs:
           set -e
           jq -e -r '.checks[] | select(.id=="executor-seam") | .message' \
             < "$RUNNER_TEMP/doctor.json" | tee "$RUNNER_TEMP/seam-message.txt"
-          grep -q '10 legacy' "$RUNNER_TEMP/seam-message.txt"
+          grep -q '0 legacy, 10 shadow, 0 active' "$RUNNER_TEMP/seam-message.txt"
           jq -e -r '.checks[] | select(.id=="executor-seam") | .detail' \
             < "$RUNNER_TEMP/doctor.json" > "$RUNNER_TEMP/seam-detail.txt"
           cat "$RUNNER_TEMP/seam-detail.txt"
-          defaults=$(grep -c 'legacy (compiled-in default)' "$RUNNER_TEMP/seam-detail.txt" || true)
-          pinned=$(grep -c 'legacy (GRAPHI_CANARY_' "$RUNNER_TEMP/seam-detail.txt" || true)
+          defaults=$(grep -c 'shadow (compiled-in default)' "$RUNNER_TEMP/seam-detail.txt" || true)
+          pinned=$(grep -c '(GRAPHI_CANARY_' "$RUNNER_TEMP/seam-detail.txt" || true)
           if [ "$defaults" != "10" ] || [ "$pinned" != "0" ]; then
             echo "::error::round-trip failed: $defaults operation(s) on the compiled-in default, $pinned still pinned by a variable"
             exit 1
           fi
           go test ./cmd/internal/runtime/ -run 'Canary|SW232' -count=1
+
+      # LEG 4 (SW-244 AC-5) — the flip, end to end through the REAL binary.
+      #
+      # With NO kill-switch variable set, a session on the shipped default must
+      # actually FILL the divergence record: a fresh `graphi doctor -divergence`
+      # process, started after the server has exited, has to report observations
+      # rather than UNKNOWN. This is the property the whole flip exists to buy,
+      # and leg 2 cannot show it — leg 2 is the same read path on the opposite
+      # input, and both are needed: one proves the record does not lie when
+      # nothing was seen, this one proves it fills when something was.
+      #
+      # It goes through `graphi mcp` and not `graphi dead-code` because the seam
+      # is on the MCP and HTTP surfaces only; the CLI verbs call the legacy
+      # client methods directly and are not part of AX-06/AX-08's scope. A CLI
+      # workload here would pass while proving nothing.
+      #
+      # `-labs` is required and is itself evidence for AC-6: the migrated
+      # operations are Labs, the default MCP profile is Stable, and this story
+      # did not move one into the other.
+      - name: shipped default fills the divergence record
+        run: |
+          for var in $(env | grep -o '^GRAPHI_CANARY_[A-Z_]*' || true); do unset "$var"; done
+          export XDG_STATE_HOME="$RUNNER_TEMP/state-shadow"
+          mkdir -p "$XDG_STATE_HOME"
+
+          # A tiny hermetic repo, so the leg indexes two files instead of the
+          # whole checkout and its result does not move with the codebase.
+          fixture="$RUNNER_TEMP/seam-fixture"
+          mkdir -p "$fixture"
+          cd "$fixture"
+          printf 'module example.com/seamfixture\n\ngo 1.22\n' > go.mod
+          printf 'package main\n\nimport "fmt"\n\nfunc Used() string { return "used" }\n\nfunc Unused() string { return "nobody calls me" }\n\nfunc main() { fmt.Println(Used()) }\n' > main.go
+          git init -q .
+          git -c user.email=ci@example.com -c user.name=ci add -A
+          git -c user.email=ci@example.com -c user.name=ci commit -qm fixture
+
+          # Three migrated operations, one MCP SESSION EACH — which is both the
+          # stronger assertion and the realistic shape. A store flushes its
+          # first observation immediately and then coalesces for two seconds
+          # (internal/divergence, defaultFlushInterval), so three calls fired
+          # into one short-lived session would legitimately persist as one
+          # observation and prove less than it looks like. Three sessions write
+          # three segments, which is also what a release line actually
+          # accumulates: many server processes, each leaving its own record.
+          for op in dead_code repo_overview architecture; do
+            {
+              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"executor-rollback","version":"1"}}}'
+              printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+              printf '{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"%s","arguments":{}}}\n' "$op"
+            } > "calls-$op.jsonl"
+            "$RUNNER_TEMP/graphi" mcp -labs < "calls-$op.jsonl" > "mcp-$op.out" 2> "mcp-$op.err" || true
+            cat "mcp-$op.err"
+            if ! jq -e -s '[.[] | select(.id == 10 and .result != null)] | length == 1' < "mcp-$op.out" > /dev/null; then
+              echo "::error::$op failed over MCP; the seam was not exercised"
+              cat "mcp-$op.out"
+              exit 1
+            fi
+          done
+
+          # The server has exited. A DIFFERENT, short-lived process reads the
+          # record — which is the capability SW-232 added and the precondition
+          # SW-228 named for moving the default back to `shadow`.
+          "$RUNNER_TEMP/graphi" doctor -divergence --json > "$RUNNER_TEMP/divergence-shadow.json"
+          cat "$RUNNER_TEMP/divergence-shadow.json"
+          state=$(jq -r '.state' < "$RUNNER_TEMP/divergence-shadow.json")
+          if [ "$state" = "UNKNOWN" ]; then
+            echo "::error::the shipped default recorded NOTHING; a release cut from here would accrue zero shadow evidence"
+            exit 1
+          fi
+          observed=$(jq '[.operations[] | select(.observations > 0)] | length' < "$RUNNER_TEMP/divergence-shadow.json")
+          if [ "$observed" -lt 3 ]; then
+            echo "::error::only $observed migrated operation(s) were observed; 3 were called"
+            exit 1
+          fi
+          mismatches=$(jq -r '.mismatches' < "$RUNNER_TEMP/divergence-shadow.json")
+          if [ "$mismatches" != "0" ]; then
+            echo "::error::the two paths DIVERGED on the shipped default ($mismatches mismatch(es))"
+            exit 1
+          fi
+          "$RUNNER_TEMP/graphi" doctor -divergence
+
+          # And the in-process guard for the same property, so a regression
+          # fails a unit run too rather than only this leg.
+          cd "$GITHUB_WORKSPACE"
+          go test ./cmd/internal/runtime/ -run 'TestSW244' -count=1 -v
 
       # The seam's own kill-switch semantics, asserted directly: the three
       # positions install, the per-operation variable wins over the whole-seam

@@ -55,9 +55,10 @@ package client
 //	legacy   Only Client.DeadCode runs. Byte-for-byte the AX-00 behaviour, and
 //	         the position to move to if anything at all goes wrong.
 //	shadow   BOTH run. The caller receives the LEGACY result; the executor result
-//	         is compared against it and a divergence is RECORDED. This was the
-//	         shipped default until SW-228 — see "Why the shipped default is now
-//	         `legacy`" below.
+//	         is compared against it and a divergence is RECORDED. This is the
+//	         SHIPPED DEFAULT: AX-06 shipped it, SW-228 withdrew it, SW-244
+//	         restored it once the record became readable — see the three dated
+//	         sections below, in that order.
 //	active   Only the executor runs, and its result is what the caller receives.
 //
 // Rolling back is a value change and nothing else: no schema, no persisted
@@ -121,7 +122,7 @@ package client
 // under its own name. A single global position across ten operations would have
 // meant that rolling one back rolled back nine that were fine.
 //
-// # Why the shipped default is now `legacy`
+// # Why the shipped default became `legacy` (SUPERSEDED by SW-244)
 //
 // AX-06 shipped `shadow` as the default and gave a good reason: a canary that
 // never flies teaches nothing. The reason did not survive contact with the
@@ -161,6 +162,60 @@ package client
 // price, taken separately. And nothing about the legacy dispatch path changed —
 // the recorder is consulted only after a comparison has already happened, which
 // on the shipped position never occurs.
+//
+// ---------------------------------------------------------------------------
+//
+// # SW-244 (AX-12b) — why the shipped default is `shadow` again
+//
+// This is the release decision SW-232 left open, and it is a one-constant
+// change: canaryModeDefault moves from CanaryModeLegacy to CanaryModeShadow.
+// Nothing else about the seam moves — same three positions, same per-operation
+// switch, same comparison, same recorder, same closed migratedOperations set,
+// and no Stable operation joins it.
+//
+// SW-228's objection is answered rather than overruled. Its objection was not
+// "shadow is expensive", it was "shadow is expensive AND its evidence is
+// unretrievable", and TestCanary_ShippedDefaultIsLegacy wrote the condition for
+// reversing it into the test itself: moving back to `shadow` is legitimate
+// "only together with a way to READ a divergence outside the test binary". That
+// way exists as of SW-232 — the durable segment file under the state directory,
+// and `graphi doctor -divergence [--json]`, which reads it without starting a
+// server. The condition is met, so the position that pays for evidence is worth
+// paying for again.
+//
+// What forced the timing is that the evidence gate for migrating STABLE
+// operations (SW-238) requires "at least one release line with the shadow
+// catalog live", and with `legacy` compiled in that precondition was not merely
+// unmet but unreachable: `graphi doctor` reports 10 legacy / 0 shadow / 0 active
+// on tip, so a release cut today would accrue exactly zero shadow evidence, and
+// so would the next one. Nothing else in the backlog moves that row.
+//
+// The price is stated as a measurement, not as an adjective. Under the AX-06
+// method recalibrated by SW-242 — same-run A/A control, median AND tail — the
+// shadow arm's cost over the legacy baseline is recorded in
+// docs/rc/ax06-canary-latency.md §6, and TestSW244_ShadowDefaultCostIsAccounted
+// checks the part of that cost which is NOT explained by "both paths ran". Two
+// things follow deliberately from how that check is written. It reuses the AX-06
+// bar exactly as SW-242 fixed it — the same 10 %/250 µs fixed term, the same
+// 3x same-run noise term, the same 4x ceiling — because a story that introduces
+// a cost does not get to choose the budget that judges it. And it judges the
+// UNACCOUNTED part only: ~2x legacy is shadow's correct behaviour by
+// construction (§3), so gating shadow's total would have been either vacuous or
+// a standing invitation to weaken the comparison the position exists to perform.
+//
+// What did NOT change, and is the reason this is affordable at all: in `shadow`
+// the caller still receives the LEGACY result, byte for byte. The executor's
+// answer is compared and recorded and is never returned. So the default flip
+// moves latency and allocation, and moves no bytes — Stable wire names, request
+// schemas, canonical result bytes, error codes and the default MCP profile are
+// untouched, which is why the AX-00 goldens are unmodified by this story.
+//
+// Rolling it back is unchanged and still free: GRAPHI_CANARY_ALL=legacy for the
+// whole seam, GRAPHI_CANARY_<OP>=legacy for one operation, and the round trip
+// (unset everything) now returns to `shadow` rather than to `legacy` — which is
+// the one operator-visible change docs/executor-seam-rollback.md had to be
+// corrected for, since a page that names the wrong starting position is worse
+// than no page during an incident.
 
 import (
 	"bytes"
@@ -293,12 +348,19 @@ func CanaryModes() []CanaryMode {
 // canaryModeDefault is the compiled-in position of record — the one a release
 // ships with, changed in a diff like every other behaviour change.
 //
-// SW-228 moved it from `shadow` to `legacy`. The reasoning is in the package
-// comment above ("Why the shipped default is now `legacy`"); the short form is
-// that shadow's evidence is recorded in a process-local counter no operator can
-// read on a live server, so the dual run was paying 1.88x for nothing
-// retrievable — and this story would have multiplied that by ten.
-const canaryModeDefault = CanaryModeLegacy
+// SW-228 moved it from `shadow` to `legacy` because shadow's evidence was
+// recorded in a process-local counter no operator could read on a live server.
+// SW-232 removed that reason by persisting the record, and SW-244 moves it back
+// to `shadow` — see the package comment above ("Why the shipped default is
+// `shadow` again"). The short form: the condition SW-228's own test wrote down
+// ("only together with a way to READ a divergence outside the test binary") is
+// met, and the dual-run cost is now measured under the recalibrated AX-06
+// method rather than assumed.
+//
+// It applies to the migrated operations and to those only: CanaryModeFor
+// short-circuits to `legacy` for every id outside migratedOperations, so a
+// non-migrated operation is untouched by this constant.
+const canaryModeDefault = CanaryModeShadow
 
 // canaryModeSelected holds the positions installed by the composition root
 // (cmd/internal/runtime, from the GRAPHI_CANARY_* environment). It stores an

@@ -37,6 +37,41 @@ func restoreCanaryMode(t *testing.T) {
 	client.ResetCanaryModes()
 }
 
+// compiledInCanaryDefault is the position a migrated operation reports when no
+// GRAPHI_CANARY_* variable selected one — the compiled-in default of record.
+//
+// SW-244 introduced it. Before it, these tests spelled the default as the
+// literal `legacy`, which made a change of the shipped default read as four
+// unrelated failures in the composition root rather than as the one deliberate
+// edit it is. The VALUE is pinned in exactly one place — surfaces/client's
+// TestSW244_ShippedDefaultIsShadow, next to the constant — and what this
+// package is responsible for is a different property: that ApplyCanaryMode
+// leaves an unselected operation on whatever that default is, and returns it
+// there when a variable is removed.
+//
+// It reads the default from a CLEAN switch, so an ambient variable in the
+// runner's environment cannot be mistaken for the compiled-in value.
+func compiledInCanaryDefault(t *testing.T) client.CanaryMode {
+	t.Helper()
+	clearCanaryEnv(t)
+	client.ResetCanaryModes()
+	return client.CanaryModeDefault()
+}
+
+// otherCanaryPosition returns a declared position that is NOT the argument, so
+// a test that installs "some position other than the default" cannot silently
+// install the default and assert nothing.
+func otherCanaryPosition(t *testing.T, not client.CanaryMode) client.CanaryMode {
+	t.Helper()
+	for _, m := range client.CanaryModes() {
+		if m != not {
+			return m
+		}
+	}
+	t.Fatalf("no declared position differs from %q", not)
+	return ""
+}
+
 // TestEnvCanaryMode_MatchesTheDerivedName pins the one constant that is spelled
 // out rather than derived, so the literal and the deriving function cannot
 // drift apart.
@@ -57,25 +92,32 @@ func TestApplyCanaryMode_EveryMigratedOperationHasAVariable(t *testing.T) {
 	if len(operations) < 2 {
 		t.Fatalf("MigratedOperations() = %v — AX-08 migrates a set", operations)
 	}
+	// The position the variable installs must DIFFER from the compiled-in
+	// default, or "only that operation moved" would hold for every operation
+	// whether or not the variable did anything.
+	def := compiledInCanaryDefault(t)
+	selected := otherCanaryPosition(t, def)
 	for _, operation := range operations {
 		name := EnvCanaryModeFor(operation)
 		if !strings.HasPrefix(name, EnvCanaryModePrefix) {
 			t.Errorf("%q derives the variable name %q", operation, name)
 		}
-		t.Setenv(name, string(client.CanaryModeActive))
+		t.Setenv(name, string(selected))
 		if err := ApplyCanaryMode(); err != nil {
-			t.Fatalf("%s=active: %v", name, err)
+			t.Fatalf("%s=%s: %v", name, selected, err)
 		}
-		if got := client.CanaryModeFor(operation); got != client.CanaryModeActive {
-			t.Errorf("%s=active installed %q for %q", name, got, operation)
+		if got := client.CanaryModeFor(operation); got != selected {
+			t.Errorf("%s=%s installed %q for %q", name, selected, got, operation)
 		}
-		// And only that operation moved.
+		// And only that operation moved: every other one is still on the
+		// compiled-in default.
 		for _, other := range operations {
 			if other == operation {
 				continue
 			}
-			if got := client.CanaryModeFor(other); got != client.CanaryModeLegacy {
-				t.Errorf("%s=active also moved %q to %q", name, other, got)
+			if got := client.CanaryModeFor(other); got != def {
+				t.Errorf("%s=%s also moved %q to %q (compiled-in default is %q)",
+					name, selected, other, got, def)
 			}
 		}
 		// Remove it again before the next iteration: a loop that left every
@@ -135,13 +177,14 @@ func TestApplyCanaryMode_AllMovesEveryOperation(t *testing.T) {
 
 func TestApplyCanaryMode_UnsetLeavesTheCompiledInDefault(t *testing.T) {
 	restoreCanaryMode(t)
+	def := compiledInCanaryDefault(t)
 	if err := ApplyCanaryMode(); err != nil {
 		t.Fatalf("ApplyCanaryMode with %s unset: %v", EnvCanaryMode, err)
 	}
 	for _, operation := range client.MigratedOperations() {
-		if got := client.CanaryModeFor(operation); got != client.CanaryModeLegacy {
+		if got := client.CanaryModeFor(operation); got != def {
 			t.Errorf("with no variable set, %q reports %q — the compiled-in default is %q",
-				operation, got, client.CanaryModeLegacy)
+				operation, got, def)
 		}
 	}
 }
@@ -152,20 +195,31 @@ func TestApplyCanaryMode_UnsetLeavesTheCompiledInDefault(t *testing.T) {
 // position past the point where the operator removed it.
 func TestApplyCanaryMode_ClearingAVariableRollsBack(t *testing.T) {
 	restoreCanaryMode(t)
-	t.Setenv(EnvCanaryMode, string(client.CanaryModeActive))
+	def := compiledInCanaryDefault(t)
+	// Pinning `legacy` here specifically, not just "not the default": this is
+	// the ROLLBACK sequence from docs/executor-seam-rollback.md, and the
+	// position an operator reaches for mid-incident is legacy. That only proves
+	// anything while the default is something else, so say so out loud rather
+	// than letting the assertion go quietly vacuous if the default ever moves
+	// back.
+	if def == client.CanaryModeLegacy {
+		t.Fatalf("the compiled-in default is %q, so setting and clearing %s proves nothing "+
+			"— pick a position that differs from the default", def, EnvCanaryMode)
+	}
+	t.Setenv(EnvCanaryMode, string(client.CanaryModeLegacy))
 	if err := ApplyCanaryMode(); err != nil {
 		t.Fatalf("ApplyCanaryMode: %v", err)
 	}
-	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeActive {
+	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeLegacy {
 		t.Fatalf("the position did not install: %q", got)
 	}
 	// The operator removes the variable and the session restarts.
 	if err := unsetAndApply(EnvCanaryMode); err != nil {
 		t.Fatalf("ApplyCanaryMode after unset: %v", err)
 	}
-	if got := client.CanaryModeFor(client.CanaryOperation); got != client.CanaryModeLegacy {
-		t.Errorf("after the variable was removed the position is still %q — a kill switch "+
-			"that cannot be turned off is not a kill switch", got)
+	if got := client.CanaryModeFor(client.CanaryOperation); got != def {
+		t.Errorf("after the variable was removed the position is %q, want the compiled-in "+
+			"default %q — a kill switch that cannot be turned off is not a kill switch", got, def)
 	}
 }
 
