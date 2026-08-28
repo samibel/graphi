@@ -92,10 +92,19 @@ jobs:
           "$RUNNER_TEMP/graphi" doctor -divergence --json > "$RUNNER_TEMP/divergence.json"
           cat "$RUNNER_TEMP/divergence.json"
           state=$(jq -r '.state' < "$RUNNER_TEMP/divergence.json")
-          if [ "$state" != "UNKNOWN" ]; then
-            echo "::error::an unobserved seam reported state=$state; it must report UNKNOWN"
-            exit 1
-          fi
+          # SW-248 sharpened this verdict and did not relax it. The default MCP
+          # profile advertises none of the migrated operations, so an empty
+          # record here is not merely empty — it cannot fill for a client bound
+          # to the shipped default, and the document now says which of the two
+          # it is. Both spellings begin with UNKNOWN and neither may ever be a
+          # statement of parity, which is what the assertion is on.
+          case "$state" in
+            UNKNOWN|UNKNOWN-AND-UNOBSERVABLE) ;;
+            *)
+              echo "::error::an unobserved seam reported state=$state; it must report UNKNOWN"
+              exit 1
+              ;;
+          esac
           unknown=$(jq '[.operations[] | select(.state != "UNKNOWN")] | length' < "$RUNNER_TEMP/divergence.json")
           if [ "$unknown" != "0" ]; then
             echo "::error::an unobserved operation reported a state other than UNKNOWN"
@@ -103,6 +112,28 @@ jobs:
           fi
           "$RUNNER_TEMP/graphi" doctor -divergence | tee "$RUNNER_TEMP/divergence.txt"
           grep -q 'NOT' "$RUNNER_TEMP/divergence.txt"
+
+          # SW-248 AC-3/AC-4: the readout must say WHY it is empty. On this
+          # binary every migrated operation is Labs and the default profile is
+          # Stable, so the honest reading is "not possible here", and an output
+          # that stopped at "no observation has been recorded" would be the
+          # defect this story closed coming back.
+          grep -q 'THIS RECORD CANNOT FILL' "$RUNNER_TEMP/divergence.txt"
+          grep -q 'NOT OBSERVABLE through' "$RUNNER_TEMP/divergence.txt"
+          if grep -q 'NOT YET OBSERVED, but reachable' "$RUNNER_TEMP/divergence.txt"; then
+            echo "::error::an operation no shipped default profile advertises is filed as merely not-yet-observed"
+            exit 1
+          fi
+          reachable=$(jq -r '.reachable_in_default' < "$RUNNER_TEMP/divergence.json")
+          evaluated=$(jq -r '.reach_evaluated' < "$RUNNER_TEMP/divergence.json")
+          if [ "$evaluated" != "true" ]; then
+            echo "::error::the divergence document did not evaluate reachability at all"
+            exit 1
+          fi
+          if [ "$reachable" != "0" ]; then
+            echo "::error::reachable_in_default=$reachable — the default profile now advertises a migrated operation; that is a tier move and needs a decision, not a green run"
+            exit 1
+          fi
 
       # LEG 3 — the round-trip. With no GRAPHI_CANARY_* variable set, every
       # operation must read `legacy (compiled-in default)`: the rollback
@@ -245,8 +276,50 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           go test ./cmd/internal/runtime/ -run 'TestSW244|TestSW245' -count=1 -v
 
+      # LEG 5 (SW-248 AC-5) — the reachability gate, and the proof that it bites.
+      #
+      # The defect this closes existed because nothing asked, at merge time,
+      # whether an operation put on the executor seam could be reached by any
+      # profile the binary actually ships. SW-228 migrated Labs operations
+      # (correct — Stable is frozen) and SW-244 made `shadow` the default
+      # (correct — the record had become readable), and between the two correct
+      # stories ten operations began dual-running where no stock client could
+      # call them. Both reviews passed. This is the question, asked
+      # mechanically.
+      #
+      # The leg has two halves and the second is the one that matters. A gate
+      # nobody has watched fail is a claim about a gate, so the same binary is
+      # run again with a deliberately introduced violation — an operation in
+      # `shadow` that no shipped profile advertises — and it MUST exit non-zero.
+      # A green first half alone would be indistinguishable from a gate that
+      # cannot fail.
+      - name: seam reachability — the gate, and the gate failing
+        run: |
+          go run ./cmd/seamreach -check | tee "$RUNNER_TEMP/seamreach.txt"
+          grep -q 'seam-reachability check PASS' "$RUNNER_TEMP/seamreach.txt"
+
+          set +e
+          go run ./cmd/seamreach -check -inject-unreachable ci_injected_unreachable_op \
+            > "$RUNNER_TEMP/seamreach-injected.txt" 2>&1
+          injected_status=$?
+          set -e
+          cat "$RUNNER_TEMP/seamreach-injected.txt"
+          if [ "$injected_status" -eq 0 ]; then
+            echo "::error::the reachability gate PASSED a shadow-mode operation no shipped profile reaches; it would not catch the migration it exists to catch"
+            exit 1
+          fi
+          grep -q 'seam-reachability check FAILED' "$RUNNER_TEMP/seamreach-injected.txt"
+          grep -q 'ci_injected_unreachable_op' "$RUNNER_TEMP/seamreach-injected.txt"
+
+          # The checked-in declaration is the half the invariant cannot cover:
+          # `graphi mcp -labs` reaches all ten today and reached all ten on the
+          # day the defect shipped, so the invariant held throughout. What was
+          # missing was a file whose summary line changes, in the diff, when the
+          # answer to "can a stock install reach any of this?" changes.
+          go test ./internal/seamreach/ ./surfaces/mcp/ -run 'SW248' -count=1 -v
+
       # The seam's own kill-switch semantics, asserted directly: the three
       # positions install, the per-operation variable wins over the whole-seam
       # one, and an invalid value fails closed rather than degrading quietly.
       - name: kill-switch semantics
-        run: go test ./cmd/internal/runtime/ ./internal/divergence/ ./internal/doctor/ -count=1
+        run: go test ./cmd/internal/runtime/ ./internal/divergence/ ./internal/doctor/ ./internal/seamreach/ -count=1

@@ -150,7 +150,7 @@ func TestSW232_ShadowSessionWritesADurableRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-	doc := divergence.Assess(rep, client.MigratedOperations())
+	doc := divergence.Assess(rep, client.MigratedOperations(), nil)
 	if doc.Observations != 1 {
 		t.Fatalf("observations = %d, want 1\n%+v", doc.Observations, doc.Operations)
 	}
@@ -199,7 +199,7 @@ func TestSW232_LegacyPositionWritesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-	doc := divergence.Assess(rep, client.MigratedOperations())
+	doc := divergence.Assess(rep, client.MigratedOperations(), nil)
 	if doc.State != divergence.StateUnknown {
 		t.Fatalf("state = %q, want UNKNOWN — nothing was ever observed", doc.State)
 	}
@@ -246,7 +246,7 @@ func TestSW244_ShippedDefaultSessionWritesTheRecord(t *testing.T) {
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-	doc := divergence.Assess(rep, client.MigratedOperations())
+	doc := divergence.Assess(rep, client.MigratedOperations(), nil)
 	if doc.Observations != 3 {
 		t.Fatalf("observations = %d, want 3 — the shipped default must fill the record "+
 			"without an operator opting in\n%+v", doc.Observations, doc.Operations)
@@ -487,7 +487,7 @@ func TestSW245_ProcessExitDoesNotDiscardAPendingMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-	doc := divergence.Assess(rep, client.MigratedOperations())
+	doc := divergence.Assess(rep, client.MigratedOperations(), nil)
 	if doc.Mismatches != 1 {
 		t.Fatalf("the record holds %d mismatch(es) after the session ended, want 1 — a "+
 			"comparison that was still queued at exit was discarded\n%+v", doc.Mismatches, doc.Operations)
@@ -542,7 +542,7 @@ func TestSW245_CloseFlushesCoalescedObservations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("divergence.Read: %v", err)
 	}
-	doc := divergence.Assess(rep, client.MigratedOperations())
+	doc := divergence.Assess(rep, client.MigratedOperations(), nil)
 	if doc.Observations != calls {
 		t.Fatalf("the record holds %d observation(s) after the session ended, want %d — Close "+
 			"either did not drain the deferred comparisons or did not flush what they recorded",

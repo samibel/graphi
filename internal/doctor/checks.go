@@ -389,6 +389,24 @@ type ExecutorSeamPosition struct {
 	Overridden bool
 	// EnvVar is the variable that would change it.
 	EnvVar string
+	// ReachableVia holds the invocations of the shipped surface profiles that
+	// can reach this operation, in profile order — empty when none can
+	// (SW-248 AC-1). The composition root computes it from the live profile
+	// builders, for the same reason it computes Mode: this package renders what
+	// it is handed and holds no surface imports.
+	ReachableVia []string
+	// InDefaultProfile reports whether the profile a stock install binds
+	// reaches this operation. It is the fact that turns "10 shadow" from a
+	// useful line into a misleading one: ten operations dual-running on a seam
+	// nothing bound to the default can call.
+	InDefaultProfile bool
+	// ReachEvaluated is false when no profile picture was supplied, in which
+	// case the two fields above assert NOTHING and the check says so rather
+	// than rendering an absence as a negative.
+	ReachEvaluated bool
+	// DefaultProfile is the invocation of the reference profile, so the check
+	// names a command an operator can run instead of an internal id.
+	DefaultProfile string
 }
 
 // ExecutorSeamCheck reports which internal path serves each migrated operation
@@ -453,6 +471,15 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 			}
 			counts := map[string]int{}
 			var shadowed, pinnedShadow, activated []string
+			// SW-248 AC-2. The mode counts alone are true and useless: they
+			// count CONFIGURATION. `10 shadow` on a binary whose default
+			// profile advertises none of the ten says the seam is armed and
+			// says nothing about whether a client can fire it, and those two
+			// were read as the same sentence for a whole release.
+			var dualRun, dualRunInDefault int
+			var unreachableDualRun []string
+			reachEvaluated := false
+			defaultProfile := ""
 			var detail strings.Builder
 			for _, p := range positions {
 				counts[p.Mode]++
@@ -465,17 +492,52 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 				case "active":
 					activated = append(activated, p.Operation)
 				}
+				if p.ReachEvaluated {
+					reachEvaluated = true
+					if p.DefaultProfile != "" {
+						defaultProfile = p.DefaultProfile
+					}
+				}
+				if p.Mode != "legacy" {
+					dualRun++
+					if p.InDefaultProfile {
+						dualRunInDefault++
+					}
+					if p.ReachEvaluated && len(p.ReachableVia) == 0 {
+						unreachableDualRun = append(unreachableDualRun, p.Operation)
+					}
+				}
 				source := "compiled-in default"
 				if p.Overridden {
 					source = p.EnvVar
 				}
-				fmt.Fprintf(&detail, "%s: %s (%s)\n", p.Operation, p.Mode, source)
+				fmt.Fprintf(&detail, "%s: %s (%s), %s\n", p.Operation, p.Mode, source, reachPhrase(p))
 			}
 			detail.WriteString("a shadow divergence is counted in-process AND persisted to the " +
 				"graphi state directory (SW-232); read it with `graphi doctor -divergence` " +
-				"or `graphi doctor -divergence --json`")
-			message := fmt.Sprintf("%d migrated operation(s): %d legacy, %d shadow, %d active",
-				len(positions), counts["legacy"], counts["shadow"], counts["active"])
+				"or `graphi doctor -divergence --json`\n")
+			detail.WriteString(seamReachDetail(reachEvaluated, defaultProfile, dualRun, dualRunInDefault))
+			message := fmt.Sprintf("%d migrated operation(s): %d legacy, %d shadow, %d active%s",
+				len(positions), counts["legacy"], counts["shadow"], counts["active"],
+				seamReachMessage(reachEvaluated, defaultProfile, dualRun, dualRunInDefault))
+			// An operation dual-running on a seam NO shipped profile can reach
+			// is not a configuration an operator chose — it is a migration that
+			// shipped with no way to exercise it. cmd/seamreach refuses to let
+			// that merge; this is the same finding on a binary already built,
+			// and it outranks the position-based outcomes below because none of
+			// them can be acted on until it is fixed.
+			if len(unreachableDualRun) > 0 {
+				sort.Strings(unreachableDualRun)
+				return CheckResult{
+					ID: "executor-seam", Category: "internals", Status: StatusWarn,
+					Message: fmt.Sprintf("%s; %d of them (%s) are reachable through NO shipped profile",
+						message, len(unreachableDualRun), strings.Join(unreachableDualRun, ", ")),
+					Action: "no surface can call these, so their dual run can never be observed; " +
+						"roll them back with GRAPHI_CANARY_<OP>=legacy and report it — a migrated " +
+						"operation with no profile that reaches it is a build defect",
+					Detail: detail.String(),
+				}
+			}
 			if len(pinnedShadow) > 0 {
 				sort.Strings(pinnedShadow)
 				return CheckResult{
@@ -515,6 +577,80 @@ func ExecutorSeamCheck(positions []ExecutorSeamPosition, envErr error) Check {
 	}
 }
 
+// reachPhrase renders one position's reachability for the per-operation detail
+// line (SW-248 AC-1/AC-2). An unevaluated picture says so: rendering "reachable
+// via: none" for an answer nobody computed would manufacture the exact false
+// negative this story exists to remove, in the opposite direction.
+func reachPhrase(p ExecutorSeamPosition) string {
+	switch {
+	case !p.ReachEvaluated:
+		return "reachability not evaluated"
+	case len(p.ReachableVia) == 0:
+		return "reachable through NO shipped profile"
+	case p.InDefaultProfile:
+		return "reachable via " + strings.Join(p.ReachableVia, " | ")
+	default:
+		return "NOT in the default profile; reachable via " + strings.Join(p.ReachableVia, " | ")
+	}
+}
+
+// seamReachMessage is the clause appended to the mode counts.
+//
+// It is appended rather than replacing anything, so the counts a reader (and
+// the executor-rollback workflow) already look for stay where they were. The
+// clause is what stops them being the whole sentence.
+func seamReachMessage(evaluated bool, defaultProfile string, dualRun, inDefault int) string {
+	if !evaluated || dualRun == 0 {
+		return ""
+	}
+	profile := defaultProfile
+	if profile == "" {
+		profile = "the default profile"
+	} else {
+		profile = "`" + profile + "`"
+	}
+	if inDefault == 0 {
+		return fmt.Sprintf("; NONE of the %d dual-running operation(s) is reachable through %s",
+			dualRun, profile)
+	}
+	return fmt.Sprintf("; %d of %d dual-running operation(s) reachable through %s",
+		inDefault, dualRun, profile)
+}
+
+// seamReachDetail is the paragraph under the per-operation lines. The all-zero
+// case gets its own wording because it is the one an operator most needs
+// spelled out: the seam is armed and no client bound to the shipped default can
+// fire it, so the divergence record's emptiness is a fact about the profile.
+func seamReachDetail(evaluated bool, defaultProfile string, dualRun, inDefault int) string {
+	if !evaluated {
+		return "reachability was NOT evaluated for this readout: the mode counts above say " +
+			"what is configured, not what any client can reach"
+	}
+	profile := defaultProfile
+	if profile == "" {
+		profile = "the default profile"
+	} else {
+		profile = "`" + profile + "`"
+	}
+	switch {
+	case dualRun == 0:
+		return "no operation dual-runs, so nothing on the seam is waiting to be reached"
+	case inDefault == 0:
+		return fmt.Sprintf("NOT ONE of the %d dual-running operation(s) is advertised by %s — the "+
+			"profile a stock install binds. They run twice only for a client that opted into a "+
+			"profile advertising them, so on a default binding the divergence record cannot fill "+
+			"and its emptiness is a fact about the profile, not about the two paths", dualRun, profile)
+	case inDefault < dualRun:
+		return fmt.Sprintf("%d of the %d dual-running operation(s) are advertised by %s; the other "+
+			"%d are reachable only through a profile an operator opts into, so their rows in the "+
+			"divergence record cannot fill on a default binding",
+			inDefault, dualRun, profile, dualRun-inDefault)
+	default:
+		return fmt.Sprintf("all %d dual-running operation(s) are advertised by %s, so a call "+
+			"through a stock install records an observation", dualRun, profile)
+	}
+}
+
 // ExecutorDivergence is the persisted executor-seam divergence record as the
 // composition root reads it (internal/divergence), reduced to the vocabulary
 // this package renders.
@@ -543,6 +679,29 @@ type ExecutorDivergence struct {
 	Diverged []string
 	// Unobserved names the migrated operations with NO observation at all.
 	Unobserved []string
+	// SW-248 AC-3 splits Unobserved by the REASON it is unobserved, because one
+	// list rendered three conditions identically. UnobservedReachable is
+	// waiting for a call the bound profile can make; UnobservedOptIn cannot be
+	// called through the profile a stock install binds at all; UnobservedNowhere
+	// cannot be called through any shipped profile. Only the first of the three
+	// means "not yet".
+	UnobservedReachable []string
+	UnobservedOptIn     []string
+	UnobservedNowhere   []string
+	// ReachEvaluated is false when no profile picture was supplied; the three
+	// lists above are then empty and assert nothing, and the check says so
+	// rather than rendering silence as reachability.
+	ReachEvaluated bool
+	// DefaultProfile is the invocation of the reference profile.
+	DefaultProfile string
+	// SeamOperations is how many operations the document covers, and
+	// ReachableInDefault how many of them the reference profile reaches.
+	SeamOperations, ReachableInDefault int
+	// Unfillable is AC-4's condition, taken from the document's own verdict:
+	// the record is empty AND nothing on the seam is reachable through the
+	// reference profile, so it is not waiting for a call — there is no call to
+	// wait for.
+	Unfillable bool
 	// Unreadable counts segment files that could not be parsed. They are
 	// disclosed rather than dropped: a silently skipped segment would make the
 	// totals a lower bound that reads like a total.
@@ -599,9 +758,30 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 					"the observation count covers %d of %d\n",
 					d.Skipped, renderSkipReasons(d.SkipReasons), d.Observations, d.Observations+d.Skipped)
 			}
-			if len(d.Unobserved) > 0 {
+			// SW-248 AC-3: one line per REASON, never one line for all three.
+			// The old single line — "never observed (UNKNOWN, not agreed): …" —
+			// was accurate about what it said and silent about the thing that
+			// decided what it meant, and on the shipped binary every operation
+			// it listed was in the second bucket.
+			if !d.ReachEvaluated && len(d.Unobserved) > 0 {
 				sort.Strings(d.Unobserved)
-				fmt.Fprintf(&detail, "never observed (UNKNOWN, not agreed): %s\n", strings.Join(d.Unobserved, ", "))
+				fmt.Fprintf(&detail, "never observed (UNKNOWN, not agreed; reachability not evaluated): %s\n",
+					strings.Join(d.Unobserved, ", "))
+			}
+			if len(d.UnobservedReachable) > 0 {
+				sort.Strings(d.UnobservedReachable)
+				fmt.Fprintf(&detail, "never observed YET, but reachable through %s — a call would record one: %s\n",
+					doctorProfile(d.DefaultProfile), strings.Join(d.UnobservedReachable, ", "))
+			}
+			if len(d.UnobservedOptIn) > 0 {
+				sort.Strings(d.UnobservedOptIn)
+				fmt.Fprintf(&detail, "NOT OBSERVABLE through %s (UNKNOWN here means \"not possible\", not \"not yet\"): %s\n",
+					doctorProfile(d.DefaultProfile), strings.Join(d.UnobservedOptIn, ", "))
+			}
+			if len(d.UnobservedNowhere) > 0 {
+				sort.Strings(d.UnobservedNowhere)
+				fmt.Fprintf(&detail, "NOT REACHABLE through ANY shipped profile — nothing can ever observe these: %s\n",
+					strings.Join(d.UnobservedNowhere, ", "))
 			}
 			if d.Unreadable > 0 {
 				fmt.Fprintf(&detail, "%d unreadable segment(s): the totals are a lower bound\n", d.Unreadable)
@@ -623,6 +803,23 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 				}
 			}
 			if d.Observations == 0 {
+				// SW-248 AC-4. An empty record has two causes and only one of
+				// them is "not yet". One message for both is what made a record
+				// that CANNOT fill read like one that had not filled yet, on
+				// every stock v0.11.0 install.
+				if d.Unfillable {
+					return CheckResult{
+						ID: "executor-divergence", Category: "internals", Status: StatusInfo,
+						Message: fmt.Sprintf("UNKNOWN and UNFILLABLE: none of the %d operation(s) on the "+
+							"seam is reachable through %s, so no dual-run observation can be recorded "+
+							"there — this is NOT \"not yet\", and NOT a statement that the two paths agree",
+							d.SeamOperations, doctorProfile(d.DefaultProfile)),
+						Action: "the record's emptiness is a fact about the bound profile, not about the " +
+							"two paths; to observe these operations bind a profile that advertises them " +
+							"(the executor-seam check names it per operation)",
+						Detail: detail.String(),
+					}
+				}
 				return CheckResult{
 					ID: "executor-divergence", Category: "internals", Status: StatusInfo,
 					Message: "UNKNOWN: no dual-run observation has been recorded — this is NOT a " +
@@ -635,7 +832,8 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 				return CheckResult{
 					ID: "executor-divergence", Category: "internals", Status: StatusInfo,
 					Message: fmt.Sprintf("%s: %d observation(s), no divergence, but %d migrated "+
-						"operation(s) have never been observed", d.State, d.Observations, len(d.Unobserved)),
+						"operation(s) have never been observed%s", d.State, d.Observations, len(d.Unobserved),
+						unobservedReachClause(d)),
 					Action: "",
 					Detail: detail.String(),
 				}
@@ -666,6 +864,36 @@ func ExecutorDivergenceCheck(d ExecutorDivergence, readErr error) Check {
 			}
 		},
 	}
+}
+
+// doctorProfile names the reference profile the way an operator can act on it —
+// a command, not an internal id — and degrades to prose rather than to an empty
+// pair of backticks when the picture declares no default.
+func doctorProfile(invocation string) string {
+	if invocation == "" {
+		return "the default shipped profile"
+	}
+	return "`" + invocation + "`"
+}
+
+// unobservedReachClause qualifies the PARTIAL-UNKNOWN message. A record with
+// some observations and some UNKNOWN rows is a mixed finding, and "N have never
+// been observed" is the same sentence whether those N are one call away or
+// unreachable — which is the distinction the whole story is about, so it is
+// carried into the headline rather than left in the detail.
+func unobservedReachClause(d ExecutorDivergence) string {
+	if !d.ReachEvaluated {
+		return ""
+	}
+	switch {
+	case len(d.UnobservedNowhere) > 0:
+		return fmt.Sprintf(", %d of them reachable through NO shipped profile", len(d.UnobservedNowhere))
+	case len(d.UnobservedOptIn) > 0 && len(d.UnobservedReachable) == 0:
+		return fmt.Sprintf(" — none of which %s can reach", doctorProfile(d.DefaultProfile))
+	case len(d.UnobservedOptIn) > 0:
+		return fmt.Sprintf(", %d of which %s cannot reach", len(d.UnobservedOptIn), doctorProfile(d.DefaultProfile))
+	}
+	return ""
 }
 
 // renderSkipReasons renders a divergence skip breakdown in a stable order. It

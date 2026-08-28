@@ -50,7 +50,7 @@ func TestRecordSurvivesProcessRestart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read after restart: %v", err)
 	}
-	doc := Assess(rep, []string{"dead_code", "search_ast", "compound"})
+	doc := Assess(rep, []string{"dead_code", "search_ast", "compound"}, nil)
 	if doc.State != StateDiverged {
 		t.Fatalf("state after restart = %q, want %q", doc.State, StateDiverged)
 	}

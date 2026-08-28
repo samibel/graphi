@@ -91,7 +91,7 @@ func TestNoObservationsReadsUnknownNotZeroDeviations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	doc := Assess(rep, []string{"dead_code", "compound"})
+	doc := Assess(rep, []string{"dead_code", "compound"}, nil)
 	if doc.State != StateUnknown {
 		t.Fatalf("overall state = %q, want %q", doc.State, StateUnknown)
 	}
@@ -145,7 +145,7 @@ func TestObservedAndUnobservedOperationsAreNotConflated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	doc := Assess(rep, []string{"dead_code", "compound"})
+	doc := Assess(rep, []string{"dead_code", "compound"}, nil)
 	if doc.State != StatePartial {
 		t.Fatalf("overall state = %q, want %q while an operation is unobserved", doc.State, StatePartial)
 	}
@@ -180,7 +180,7 @@ func TestOneMismatchDominatesTheVerdict(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	doc := Assess(rep, []string{"dead_code", "compound"})
+	doc := Assess(rep, []string{"dead_code", "compound"}, nil)
 	if doc.State != StateDiverged {
 		t.Fatalf("state = %q, want %q", doc.State, StateDiverged)
 	}
@@ -215,7 +215,7 @@ func TestUnreadableSegmentIsReportedNotSwallowed(t *testing.T) {
 	if rep.Unreadable != 1 {
 		t.Fatalf("unreadable = %d, want 1", rep.Unreadable)
 	}
-	doc := Assess(rep, []string{"dead_code"})
+	doc := Assess(rep, []string{"dead_code"}, nil)
 	if !contains(renderString(t, doc), "unreadable") {
 		t.Fatalf("the readout must disclose the unreadable segment:\n%s", renderString(t, doc))
 	}

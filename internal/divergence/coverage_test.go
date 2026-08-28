@@ -81,7 +81,7 @@ func TestSkippedComparisonsAreNotDivergences(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Read: %v", err)
 	}
-	doc := Assess(rep, []string{"dead_code"})
+	doc := Assess(rep, []string{"dead_code"}, nil)
 	if doc.State != StateAgreed {
 		t.Fatalf("state = %q, want %q — a dropped comparison is not a divergence", doc.State, StateAgreed)
 	}
@@ -124,7 +124,7 @@ func TestAssessReportsCoverageNotJustObservations(t *testing.T) {
 			{Operation: "compound", Observations: 10},
 		},
 	}
-	doc := Assess(rep, []string{"dead_code", "compound"})
+	doc := Assess(rep, []string{"dead_code", "compound"}, nil)
 	if doc.Dispatches != 20 || doc.Skipped != 4 || doc.Observations != 16 {
 		t.Fatalf("totals = %d dispatches / %d observations / %d skipped, want 20/16/4",
 			doc.Dispatches, doc.Observations, doc.Skipped)
@@ -154,7 +154,7 @@ func TestAssessReportsCoverageNotJustObservations(t *testing.T) {
 // state's job — reporting it twice, once as UNKNOWN and once as a 0 % that
 // means something else entirely, is how a reader learns to distrust both.
 func TestCoverageOfNothingIsCompleteNotZero(t *testing.T) {
-	doc := Assess(Report{}, []string{"dead_code"})
+	doc := Assess(Report{}, []string{"dead_code"}, nil)
 	if doc.Coverage != 1 {
 		t.Fatalf("coverage = %v with nothing dispatched, want 1", doc.Coverage)
 	}
@@ -176,7 +176,7 @@ func TestCoverageOfNothingIsCompleteNotZero(t *testing.T) {
 func TestHumanRenderStatesCoverageOnEveryDocument(t *testing.T) {
 	clean := Assess(Report{Segments: 1, Operations: []OperationRecord{
 		{Operation: "dead_code", Observations: 5},
-	}}, []string{"dead_code"})
+	}}, []string{"dead_code"}, nil)
 	out := renderString(t, clean)
 	if !contains(out, "coverage:") {
 		t.Fatalf("a full-coverage document does not state its coverage:\n%s", out)
@@ -200,7 +200,7 @@ func TestHumanRenderDisclosesPartialCoverage(t *testing.T) {
 		{Operation: "dead_code", Observations: 6, Skipped: 4, SkipReasons: map[string]int{
 			"queue-full": 3, "drain-abandoned": 1,
 		}},
-	}}, []string{"dead_code"})
+	}}, []string{"dead_code"}, nil)
 	out := renderString(t, doc)
 
 	for _, want := range []string{
@@ -222,7 +222,7 @@ func TestHumanRenderDisclosesPartialCoverage(t *testing.T) {
 func TestNearCompleteCoverageDoesNotRoundToWhole(t *testing.T) {
 	doc := Assess(Report{Segments: 1, Operations: []OperationRecord{
 		{Operation: "dead_code", Observations: 9999, Skipped: 1, SkipReasons: map[string]int{"queue-full": 1}},
-	}}, []string{"dead_code"})
+	}}, []string{"dead_code"}, nil)
 	out := renderString(t, doc)
 	if !contains(out, "<100%") {
 		t.Fatalf("9999 of 10000 rendered without the <100%% qualifier:\n%s", out)
@@ -238,7 +238,7 @@ func TestNearCompleteCoverageDoesNotRoundToWhole(t *testing.T) {
 func TestJSONCarriesCoverage(t *testing.T) {
 	doc := Assess(Report{Segments: 1, Operations: []OperationRecord{
 		{Operation: "dead_code", Observations: 6, Skipped: 4, SkipReasons: map[string]int{"queue-full": 4}},
-	}}, []string{"dead_code"})
+	}}, []string{"dead_code"}, nil)
 
 	var out struct {
 		Dispatches  int            `json:"dispatches"`
