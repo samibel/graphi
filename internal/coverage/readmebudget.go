@@ -64,6 +64,69 @@ import (
 
 // ReadmeCeiling is the maximum source-line count for readme.md, per the
 // 2026-08-26 composition-contract decision record. `wc -l` semantics.
+//
+// 2026-08-28 — SW-246 HELD THIS CEILING AT 400 AND WROTE THE REFUSALS BELOW.
+//
+// SW-246 was the first story after SW-218 that had to ADD a readme line: the
+// shipped `graphi extension` verb family (SW-229/SW-230) was absent from the
+// command table, and the document was at 400/400 with zero headroom. That is
+// exactly the situation backlog.md's SW-218 review minor m4 predicted, and it
+// is the FOURTH time this one constraint has become binding — the first three
+// all inside 2026-08-26, and all three resolved in the permissive direction.
+// THE CEILING DID NOT MOVE. Room was made INSIDE 400, by deleting the
+// `symbol-context · task-context · repo-overview · test-impact · change-impact
+// · hotspots` row of the subcommand table, whose six commands are listed
+// verbatim eighteen lines above it in the Labs product-line table ("Agent,
+// test, change & git intelligence") — duplication removed, no claim lost,
+// which is SW-218 AC-2's own rule. Net +0 lines, 400/400 before and after.
+//
+// THE FOUR REFUSALS. They are written here, not only in a decision record,
+// because this is the file the next builder opens when the gate goes red:
+//
+//	(R1) NO RAISE TO FUND AN ADDITION. A line a story wants to add is not
+//	     evidence that the ceiling is wrong. The compliant move is to find
+//	     content whose claim survives elsewhere in the same file and delete
+//	     it. Only when that search has been done and NAMED — the sections
+//	     searched, the candidates rejected and why — is the ceiling even in
+//	     question. SW-246 found its candidate in one pass.
+//
+//	(R2) NO RAISE WHILE A REMOVABLE DUPLICATE REMAINS. This is R1's testable
+//	     form and it is THE STATED CONDITION UNDER WHICH 400 DOES NOT MOVE:
+//	     while readme.md still contains a claim stated twice, the cheapest
+//	     compliant move has not been exhausted and the ceiling stays. A
+//	     ceiling that yields the first time it binds was never a ceiling.
+//
+//	(R3) JOINING LINES IS NOT COMPLIANCE, AND NEVER BUYS A RAISE. `wc -l` is
+//	     the unit, so joining two source lines lowers the MEASUREMENT without
+//	     lowering the DOCUMENT — the failure mode the SW-218 reviewer named
+//	     ("the next contributor's rational move is the one that makes the
+//	     metric mean less"; backlog.md, SW-218 review minor m4). A story that
+//	     funds an addition that way has disarmed the gate, not passed it, and
+//	     the resulting number may not afterwards be cited as evidence that
+//	     400 is too tight. Nothing in this file can detect that; it is a
+//	     review obligation, stated here so it can be pointed at.
+//
+//	(R4) AN INPUT SHOWN TO BE A MEASUREMENT ERROR MAY BE CORRECTED; AN OUTPUT
+//	     SHOWN TO BE INCONVENIENT MAY NOT — the standard bound by
+//	     memory/decisions/2026-08-26-435-envelope-holds-sw-219-takes-the-
+//	     independent-dedup-early.md, restated so it survives in the code. 400
+//	     is not newly measured wrong; it is newly binding, which is what a
+//	     ceiling does. And no delegated agent may take the fourth move on
+//	     this constraint alone: the first three were all taken under the
+//	     2026-08-25 autonomy grant and the owner has weighed none of them
+//	     (backlog.md, "Three delegated loosening-adjacent decisions"). A
+//	     raise needs the owner or an ADR.
+//
+// WHAT SW-246 DELIBERATELY DID NOT BUILD. The SW-218 reviewer's limb (a) — a
+// companion max-source-line-length assertion, which is what would make R3
+// mechanical instead of a review obligation — is NOT built here. It is limb
+// (a) of an OWNER DECISION entry in backlog.md, and the calibration is the
+// decision: pinning above `:6`'s 969 characters ratifies the status quo,
+// pinning lower reformats the file, and either choice is a composition ruling
+// no builder should take alone. SW-246 AC-3 commissioned the CEILING call, not
+// that one. The measured line lengths on the tree SW-246 shipped against, so
+// whoever takes it starts from data rather than a re-count: 969 (`:6`, the
+// badge row), 458, 438, 437, 401, 368, then a long tail under 350.
 const ReadmeCeiling = 400
 
 // ReadmeSpineBudget is SW-212 AC-7's maximum source-line count for the spine.
