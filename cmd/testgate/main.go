@@ -6,6 +6,7 @@
 // Usage:
 //
 //	go run ./cmd/testgate
+//	go run ./cmd/testgate -json
 //	go run ./cmd/testgate -target ./internal/example
 //	go run ./cmd/testgate -stdin -producer-exit-code 0 < go-test-events.json
 //
@@ -13,13 +14,24 @@
 // go test exit status itself. Stdin mode requires the producer's recorded exit
 // code explicitly; a plain shell pipeline cannot safely communicate it.
 //
-// Exit code is 0 when the run is fully green, 1 when the tests are
-// not green, and 2 when the gate itself cannot obtain or validate a complete run.
+// Exit codes are the four verdicts, not a boolean (SW-250):
+//
+//	0  GREEN       — a complete stream with no failures and nothing unverified
+//	1  NOT GREEN   — at least one test, package, build or producer failure
+//	2  ERROR       — the gate could not obtain or validate the run, or the
+//	                 UNVERIFIED channel carried something it will not interpret
+//	3  UNVERIFIED  — no failure, but a gate reported it could not measure
+//
+// With -json the machine-readable verdict goes to stdout and the human prose
+// to stderr, so a caller can read the structured result without parsing prose
+// while an operator still sees the same words in the log. Without -json the
+// prose goes to stdout, unchanged.
 package main
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -43,6 +55,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	target := fs.String("target", "./...", "test target when running go test")
 	timeout := fs.Duration("timeout", 15*time.Minute, "overall timeout when running go test")
 	producerExitCode := fs.Int("producer-exit-code", -1, "recorded producer exit code (required with -stdin)")
+	emitJSON := fs.Bool("json", false, "write the machine-readable verdict to stdout and the human prose to stderr")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -124,11 +137,23 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "testgate: evaluate: %v\n", err)
 		return 2
 	}
-	fmt.Fprint(stdout, testgate.FormatVerdict(res))
-	if !res.Green {
-		return 1
+	// SW-250's transport decision. EvaluateResult has carried a machine-readable
+	// summary since SW-249, but nothing could get it out of this binary: main
+	// printed prose and cmd/release-gate read the exit code alone. Recognising a
+	// marker is worthless if the result cannot cross a process boundary, so the
+	// struct itself is now an output.
+	if *emitJSON {
+		encoded, err := json.Marshal(res)
+		if err != nil {
+			fmt.Fprintf(stderr, "testgate: encode verdict: %v\n", err)
+			return 2
+		}
+		fmt.Fprintf(stdout, "%s\n", encoded)
+		fmt.Fprint(stderr, testgate.FormatVerdict(res))
+	} else {
+		fmt.Fprint(stdout, testgate.FormatVerdict(res))
 	}
-	return 0
+	return testgate.ExitCode(res)
 }
 
 // discoverFirstPartyTargets preserves ./... auto-discovery while preventing a

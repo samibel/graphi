@@ -21,11 +21,10 @@ import (
 // suite (DefaultUX).
 func DefaultGates() map[string]Runner {
 	return map[string]Runner{
-		"testgate": &shellRunner{
-			name:    "testgate",
-			cmd:     "go",
-			args:    []string{"run", "./cmd/testgate", "-timeout", "15m"},
-			env:     append(os.Environ(), "CGO_ENABLED=0"),
+		// testgate is read STRUCTURALLY, not by exit code alone: since SW-250
+		// the suite has four answers and the exit code is only the label on
+		// one of them. See testgate_runner.go for the transport decision.
+		"testgate": &testgateRunner{
 			timeout: 16 * time.Minute,
 			score:   100,
 		},

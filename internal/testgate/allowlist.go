@@ -7,6 +7,14 @@
 // change the verdict, but it is also not evidence of a pass: the assertion never
 // ran. EvaluateResult therefore carries SkippedTests and SkippedPackages so a
 // consumer can see what a run did not measure without parsing the human verdict.
+//
+// SW-250 adds one narrow exception to "skips are recorded, never judged". A
+// measurement that can positively demonstrate its own inability to measure may
+// say so on a structured channel (internal/gatemarker), and the verdict then
+// reports UNVERIFIED instead of GREEN. The exception is deliberately not a
+// rule: only the gate ids in permittedUnverifiedGates may use the channel, and
+// a marker from anyone else — or twice from the same gate, or malformed — is
+// ERROR, fail-closed. Ordinary skips remain ordinary skips.
 package testgate
 
 import (
@@ -17,7 +25,66 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/samibel/graphi/internal/gatemarker"
 )
+
+// Verdict is the answer a run produces. A gate has four answers, not two.
+//
+// ERROR is not a degree of failure: it is "this gate could not validate the
+// run", and it outranks everything because a reader that cannot trust its own
+// input must not report a verdict about the code.
+type Verdict string
+
+const (
+	VerdictGreen      Verdict = "GREEN"
+	VerdictNotGreen   Verdict = "NOT GREEN"
+	VerdictUnverified Verdict = "UNVERIFIED"
+	VerdictError      Verdict = "ERROR"
+)
+
+// permittedUnverifiedGates is SW-250's deliberate migration mechanism: the
+// complete, hardcoded list of gate ids allowed to report UNVERIFIED.
+//
+// It is two entries because exactly two measurements in this repository can
+// positively demonstrate their own inability to measure — AX-06's executor-seam
+// latency gate and SW-244's shadow-cost accounting, both of which compare two
+// byte-identical paths against each other in the same run and can therefore
+// show that their own resolution was insufficient. Every other gate here
+// (daemon lifecycle, cold_start_p95_ms, the rest of the suite) cannot yet tell
+// "the thing under test is broken" from "this runner could not schedule", so a
+// timeout stays FAIL and a budget breach stays FAIL.
+//
+// This is NOT a registry, and it is not an extension point. Adding an entry
+// means asserting that a new instrument can prove its own blindness, which is a
+// decision with an argument attached — see the spec at
+// projects/graphi/specs/gate-states-not-a-boolean.md.
+var permittedUnverifiedGates = map[string]struct{}{
+	"ax06_executor_seam_latency": {},
+	"sw244_shadow_default_cost":  {},
+}
+
+// PermittedUnverifiedGates returns the permitted list, sorted.
+func PermittedUnverifiedGates() []string {
+	out := make([]string, 0, len(permittedUnverifiedGates))
+	for id := range permittedUnverifiedGates {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// UnverifiedGate is one gate's report that it could not measure, carried out of
+// the go test -json stream. It is neither a pass nor a failure: the assertion
+// the gate exists to make did not run, and the gate said so with numbers.
+type UnverifiedGate struct {
+	GateID       string             `json:"gate_id"`
+	Package      string             `json:"package"`
+	Test         string             `json:"test"`
+	ReasonCode   string             `json:"reason_code"`
+	Measurements map[string]float64 `json:"measurements,omitempty"`
+	Detail       string             `json:"detail,omitempty"`
+}
 
 // TestEvent is the subset of a `go test -json` event this gate consumes.
 type TestEvent struct {
@@ -56,11 +123,72 @@ type SkippedPackage struct {
 // Green and are not failures; they exist so that a machine consumer reads what
 // was not measured from the struct rather than from FormatVerdict's prose.
 type EvaluateResult struct {
+	// Verdict is the four-valued answer. Green is kept as the boolean
+	// shorthand for VerdictGreen so existing consumers keep working.
+	Verdict          Verdict          `json:"verdict"`
 	Green            bool             `json:"green"`
 	UnexpectedFails  []string         `json:"unexpected_fails,omitempty"`  // every observed test/package/build failure
 	ProducerFailures []string         `json:"producer_failures,omitempty"` // exit/stderr inconsistencies from the go test producer
 	SkippedTests     []SkippedTest    `json:"skipped_tests,omitempty"`     // tests that reported "skip", sorted by package then test
 	SkippedPackages  []SkippedPackage `json:"skipped_packages,omitempty"`  // packages that reported "skip" as a whole, sorted by package
+	Unverified       []UnverifiedGate `json:"unverified,omitempty"`        // gates that demonstrated they could not measure, sorted by gate id
+	MarkerErrors     []string         `json:"marker_errors,omitempty"`     // fail-closed rejections on the UNVERIFIED channel
+}
+
+// decide applies the precedence the whole design turns on:
+//
+//	ERROR > FAIL > UNVERIFIED > PASS
+//
+// An instrument may report its own inability to measure. It may never
+// downgrade someone else's failure, so UNVERIFIED is only ever consulted once
+// the run is otherwise clean. And a marker the reader could not trust outranks
+// both, because the alternative is a verdict computed from input the gate
+// admits it does not understand.
+func (res *EvaluateResult) decide() {
+	switch {
+	case len(res.MarkerErrors) > 0:
+		res.Verdict = VerdictError
+	case len(res.UnexpectedFails) > 0 || len(res.ProducerFailures) > 0:
+		res.Verdict = VerdictNotGreen
+	case len(res.Unverified) > 0:
+		res.Verdict = VerdictUnverified
+	default:
+		res.Verdict = VerdictGreen
+	}
+	res.Green = res.Verdict == VerdictGreen
+}
+
+// ExitCode maps a verdict to a process exit status. The three verdicts AC-3
+// names have three distinct codes; ERROR keeps 2, the status this gate already
+// reserved for "cannot obtain or validate a complete run".
+func ExitCode(res EvaluateResult) int {
+	switch res.Verdict {
+	case VerdictGreen:
+		return 0
+	case VerdictNotGreen:
+		return 1
+	case VerdictUnverified:
+		return 3
+	case VerdictError:
+		return 2
+	default:
+		// An unset verdict is a programming error in this package, and the
+		// fail-closed answer is the one that blocks.
+		return 2
+	}
+}
+
+// markerHit is one marker line observed in the stream, held until the whole
+// stream is classified. Whether the emitting test declined to assert is only
+// known once its terminal event has arrived, so the fail-closed rules are
+// applied after the loop rather than inside it.
+type markerHit struct {
+	line    int
+	pkg     string
+	test    string
+	testKey string
+	marker  gatemarker.Marker
+	err     error
 }
 
 // ProducerStatus is the out-of-band status of the command that produced the
@@ -90,7 +218,48 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	skippedPackages := make(map[string]string) // package -> skip reason
 	lastOutput := make(map[string]string)      // package or package\x00test -> last non-marker output line
 	skipMessage := make(map[string]string)     // package\x00test -> line that preceded "--- SKIP"
+	// go test -json emits output in 1024-BYTE CHUNKS, not in lines: any output
+	// line longer than 1024 bytes arrives as several "output" events and only
+	// the last of them ends in a newline. These hold the unterminated remainder
+	// per emitter until its line is complete. See reassembly note below.
+	type outputRemainder struct {
+		text    string
+		at      int // stream line the remainder began on
+		pkg     string
+		test    string
+		testKey string
+	}
+	partial := make(map[string]outputRemainder) // package or package\x00test -> remainder
+	var markerHits []markerHit                  // UNVERIFIED markers, in stream order
 	eventCount := 0
+
+	// handleOutputLine interprets ONE COMPLETE output line. It is a closure
+	// rather than inline code because a line no longer corresponds to an event:
+	// the caller reassembles chunks first and may hand over several lines from
+	// one event, or one line built from several events.
+	handleOutputLine := func(raw string, at int, pkg, test, testKey, key string) {
+		outLine := strings.TrimSpace(raw)
+		// The UNVERIFIED channel is read FIRST and structurally. It is
+		// never a prose match on the skip text: SW-249 showed that
+		// position to be fragile (a skip reason that happens to begin
+		// with a go test marker prefix is already mishandled there),
+		// and a laundering path built on prose would be trivial to
+		// open by accident.
+		marker, isMarker, markerErr := gatemarker.Parse(outLine)
+		switch {
+		case isMarker:
+			markerHits = append(markerHits, markerHit{
+				line: at, pkg: pkg, test: test,
+				testKey: testKey, marker: marker, err: markerErr,
+			})
+		case strings.HasPrefix(outLine, "--- SKIP"):
+			if test != "" {
+				skipMessage[testKey] = lastOutput[testKey]
+			}
+		case isSkipReasonCandidate(outLine):
+			lastOutput[key] = outLine
+		}
+	}
 
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 1024*1024), 16*1024*1024)
@@ -182,14 +351,36 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 				if ev.Test != "" {
 					key = testKey
 				}
-				line := strings.TrimSpace(ev.Output)
-				switch {
-				case strings.HasPrefix(line, "--- SKIP"):
-					if ev.Test != "" {
-						skipMessage[testKey] = lastOutput[testKey]
+				// REASSEMBLY. An "output" event is a chunk of the emitter's
+				// stream, NOT a line: go test -json cuts every output line at
+				// 1024 bytes and only the final chunk carries the newline.
+				// Interpreting a chunk as a line splits any marker whose JSON
+				// payload pushes it past that limit — the head parses as a
+				// truncated marker ("unexpected EOF") and the tail arrives as
+				// ordinary prose. That is a gate reporting it could not measure
+				// being turned into a run-breaking ERROR by the LENGTH of its
+				// own detail text, and it is exactly what PR #177's release-gate
+				// and test-gate hit at line 23069.
+				rem, isHeld := partial[key]
+				if !isHeld {
+					rem = outputRemainder{at: lineNumber, pkg: ev.Package, test: ev.Test, testKey: testKey}
+				}
+				buf := rem.text + ev.Output
+				for {
+					end := strings.IndexByte(buf, '\n')
+					if end < 0 {
+						break
 					}
-				case isSkipReasonCandidate(line):
-					lastOutput[key] = line
+					handleOutputLine(buf[:end], rem.at, rem.pkg, rem.test, rem.testKey, key)
+					buf = buf[end+1:]
+					// Whatever follows the newline started on THIS event.
+					rem = outputRemainder{at: lineNumber, pkg: ev.Package, test: ev.Test, testKey: testKey}
+				}
+				if buf == "" {
+					delete(partial, key)
+				} else {
+					rem.text = buf
+					partial[key] = rem
 				}
 			}
 		default:
@@ -203,6 +394,20 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	}
 	if err := sc.Err(); err != nil {
 		return EvaluateResult{}, fmt.Errorf("testgate: read go test -json stream: %w", err)
+	}
+	// A remainder that no newline ever terminated is still interpreted, in a
+	// deterministic order. Dropping it would let a truncated marker vanish,
+	// and a marker this gate cannot read must be an ERROR, never a silence.
+	if len(partial) > 0 {
+		keys := make([]string, 0, len(partial))
+		for key := range partial {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			rem := partial[key]
+			handleOutputLine(rem.text, rem.at, rem.pkg, rem.test, rem.testKey, key)
+		}
 	}
 	if eventCount == 0 {
 		return EvaluateResult{}, fmt.Errorf("testgate: empty go test -json stream")
@@ -249,13 +454,21 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 		}
 	}
 
-	res := EvaluateResult{}
+	unverified, markerErrors, markerTests := reconcileMarkers(markerHits, skippedTests, failed)
+
+	res := EvaluateResult{Unverified: unverified, MarkerErrors: markerErrors}
 	for failure := range unexpected {
 		res.UnexpectedFails = append(res.UnexpectedFails, failure)
 	}
 	sort.Strings(res.UnexpectedFails)
 
 	for key, reason := range skippedTests {
+		// AC-3: ordinary skips are reported SEPARATELY from unverified
+		// measurements. A gate that reported UNVERIFIED is listed as such and
+		// is not also counted among the platform guards and -short skips.
+		if _, isGate := markerTests[key]; isGate {
+			continue
+		}
 		pkg, test, _ := strings.Cut(key, "\x00")
 		res.SkippedTests = append(res.SkippedTests, SkippedTest{Package: pkg, Test: test, Reason: reason})
 	}
@@ -272,10 +485,79 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 		return res.SkippedPackages[i].Package < res.SkippedPackages[j].Package
 	})
 
-	// Skips are deliberately absent from this expression. SW-249 changes what a
-	// verdict reports, not what it decides.
-	res.Green = len(res.UnexpectedFails) == 0 && len(res.ProducerFailures) == 0
+	// Ordinary skips are deliberately absent from this decision. SW-249 changed
+	// what a verdict reports, not what it decides; SW-250 changes the decision
+	// only for the two gates on the permitted list, and only via a structured
+	// marker they had to construct with numbers attached.
+	res.decide()
 	return res, nil
+}
+
+// reconcileMarkers applies AC-5's fail-closed rules once the whole stream has
+// been classified, and returns the accepted reports, the rejections, and the
+// set of tests whose skip belongs to a gate rather than to a platform guard.
+//
+// Every rejection is a diagnostic. None of them is a silent drop: a channel
+// that ignores unknown senders is a channel someone will use.
+func reconcileMarkers(hits []markerHit, skippedTests map[string]string, failed map[string]struct{}) ([]UnverifiedGate, []string, map[string]struct{}) {
+	var (
+		accepted     []UnverifiedGate
+		markerErrors []string
+		markerTests  = make(map[string]struct{})
+		seen         = make(map[string]int) // gate id -> line of its first marker
+	)
+	for _, hit := range hits {
+		switch {
+		case hit.err != nil:
+			markerErrors = append(markerErrors, fmt.Sprintf(
+				"line %d: malformed UNVERIFIED marker: %v", hit.line, hit.err))
+		case hit.test == "":
+			markerErrors = append(markerErrors, fmt.Sprintf(
+				"line %d: gate %q emitted an UNVERIFIED marker on a package-level output line; a marker must name the test that could not measure",
+				hit.line, hit.marker.GateID))
+		case !isPermittedUnverifiedGate(hit.marker.GateID):
+			markerErrors = append(markerErrors, fmt.Sprintf(
+				"line %d: gate id %q is not on testgate's permitted UNVERIFIED list %v; only a gate that can positively demonstrate its own inability to measure may report UNVERIFIED",
+				hit.line, hit.marker.GateID, PermittedUnverifiedGates()))
+		case seen[hit.marker.GateID] != 0:
+			markerErrors = append(markerErrors, fmt.Sprintf(
+				"line %d: gate id %q emitted an UNVERIFIED marker twice in one run (first at line %d); the verdict cannot rest on two measurements from one instrument",
+				hit.line, hit.marker.GateID, seen[hit.marker.GateID]))
+		default:
+			// Only a skip is a declined assertion. A FAIL is a result as
+			// much as a PASS is — and the more consequential one — so a
+			// marker alongside either is the same contradiction and is
+			// rejected the same way.
+			if _, didSkip := skippedTests[hit.testKey]; !didSkip {
+				outcome := "it passed"
+				if _, didFail := failed[hit.testKey]; didFail {
+					outcome = "it failed"
+				}
+				markerErrors = append(markerErrors, fmt.Sprintf(
+					"line %d: gate %q reported UNVERIFIED but %s.%s did not decline to assert — %s; a gate cannot report both that it could not measure and a result",
+					hit.line, hit.marker.GateID, hit.pkg, hit.test, outcome))
+				continue
+			}
+			seen[hit.marker.GateID] = hit.line
+			markerTests[hit.testKey] = struct{}{}
+			accepted = append(accepted, UnverifiedGate{
+				GateID:       hit.marker.GateID,
+				Package:      hit.pkg,
+				Test:         hit.test,
+				ReasonCode:   string(hit.marker.ReasonCode),
+				Measurements: hit.marker.Measurements,
+				Detail:       hit.marker.Detail,
+			})
+		}
+	}
+	sort.Slice(accepted, func(i, j int) bool { return accepted[i].GateID < accepted[j].GateID })
+	sort.Strings(markerErrors)
+	return accepted, markerErrors, markerTests
+}
+
+func isPermittedUnverifiedGate(id string) bool {
+	_, ok := permittedUnverifiedGates[id]
+	return ok
 }
 
 // isSkipReasonCandidate reports whether an output line could be a test's own
@@ -339,7 +621,7 @@ func EvaluateWithProducer(r io.Reader, status ProducerStatus) (EvaluateResult, e
 		res.ProducerFailures = append(res.ProducerFailures, fmt.Sprintf("go test exited %d without a structured failure event", status.ExitCode))
 	}
 	sort.Strings(res.ProducerFailures)
-	res.Green = len(res.UnexpectedFails) == 0 && len(res.ProducerFailures) == 0
+	res.decide()
 	return res, nil
 }
 
@@ -359,10 +641,34 @@ func formatProducerStderr(stderr string) string {
 func FormatVerdict(res EvaluateResult) string {
 	var b strings.Builder
 	b.WriteString("test gate: ")
-	if res.Green {
+	switch res.Verdict {
+	case VerdictGreen:
 		b.WriteString("GREEN — complete go test stream contains no failures\n")
-	} else {
+	case VerdictUnverified:
+		b.WriteString("UNVERIFIED — no failure, but a gate reported that it could not measure; " +
+			"this run is not evidence that the thing it gates is healthy\n")
+	case VerdictError:
+		b.WriteString("ERROR — the UNVERIFIED channel carried something this gate will not " +
+			"interpret; failing closed rather than guessing\n")
+	default:
 		b.WriteString("NOT GREEN\n")
+	}
+	if len(res.MarkerErrors) > 0 {
+		fmt.Fprintf(&b, "  marker errors: %d — every one of these is fail-closed, never ignored\n", len(res.MarkerErrors))
+		for _, markerErr := range res.MarkerErrors {
+			fmt.Fprintf(&b, "    - %s\n", markerErr)
+		}
+	}
+	if len(res.Unverified) > 0 {
+		fmt.Fprintf(&b, "  unverified measurements: %d — a gate that can demonstrate its own "+
+			"inability to measure did so; the assertion did not run\n", len(res.Unverified))
+		for _, gate := range res.Unverified {
+			fmt.Fprintf(&b, "    - %s (%s.%s): %s %s\n",
+				gate.GateID, gate.Package, gate.Test, gate.ReasonCode, formatMeasurements(gate.Measurements))
+			if gate.Detail != "" {
+				fmt.Fprintf(&b, "      %s\n", gate.Detail)
+			}
+		}
 	}
 	if len(res.UnexpectedFails) > 0 {
 		fmt.Fprintf(&b, "  test/package/build failures: %v\n", res.UnexpectedFails)
@@ -391,4 +697,22 @@ func FormatVerdict(res EvaluateResult) string {
 		}
 	}
 	return b.String()
+}
+
+// formatMeasurements renders a marker's raw numbers in a stable key order, so
+// two runs of the same shape produce the same line.
+func formatMeasurements(m map[string]float64) string {
+	if len(m) == 0 {
+		return "{}"
+	}
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%s", key, strconv.FormatFloat(m[key], 'f', -1, 64)))
+	}
+	return "{" + strings.Join(parts, " ") + "}"
 }

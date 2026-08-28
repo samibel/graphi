@@ -14,7 +14,89 @@ import (
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/gatemarker"
 )
+
+// SW-250. These two ids are the complete set testgate permits on the UNVERIFIED
+// channel (internal/testgate.permittedUnverifiedGates). They are here because
+// these two measurements — and, in this repository, only these two — compare two
+// byte-identical paths against each other in the same run, and can therefore
+// PROVE that their own resolution was insufficient rather than merely assert it.
+//
+// Both already made that decision correctly and emitted it through t.Skipf,
+// which cmd/testgate read as a pass. SW-250 changes the transport, not the
+// decision: the verdicts, the thresholds and the round logic below are
+// untouched.
+const (
+	ax06GateID  = "ax06_executor_seam_latency"
+	sw244GateID = "sw244_shadow_default_cost"
+)
+
+// canaryMicros renders a duration as the float64 microseconds the marker
+// contract carries. Units live in the measurement key names, so the conversion
+// happens exactly here and nowhere else.
+func canaryMicros(d time.Duration) float64 {
+	return float64(d) / float64(time.Microsecond)
+}
+
+// ax06UnverifiedMarker builds the structured report for an UNKNOWN run of the
+// AX-06 gate, carrying the raw numbers the chosen reason code refers to.
+//
+// The three shapes are the three the gate can actually reach, and they are not
+// the same report: a run that resolved nothing, a run that resolved the median
+// and not the tail, and a run whose arms produced no usable samples at all.
+func ax06UnverifiedMarker(overall canaryLatencyResult, rounds int) gatemarker.Marker {
+	m := gatemarker.Marker{GateID: ax06GateID, Detail: overall.Reason}
+	switch {
+	case canaryLatencyMedianOnly(overall):
+		m.ReasonCode = gatemarker.ReasonTailControlAboveCeiling
+		m.Measurements = map[string]float64{
+			"rounds":                float64(rounds),
+			"tail_control_delta_us": canaryMicros(overall.Tail.RefDelta),
+			"tail_noise_term_us":    canaryMicros(overall.Tail.NoiseTerm),
+			"tail_ceiling_us":       canaryMicros(overall.Tail.Ceiling),
+			"median_overhead_us":    canaryMicros(overall.Median.Overhead),
+			"median_budget_us":      canaryMicros(overall.Median.Budget),
+		}
+	case overall.Median.Baseline <= 0:
+		m.ReasonCode = gatemarker.ReasonInsufficientSamples
+		m.Measurements = map[string]float64{
+			"rounds":      float64(rounds),
+			"baseline_us": canaryMicros(overall.Median.Baseline),
+		}
+	default:
+		m.ReasonCode = gatemarker.ReasonControlAboveCeiling
+		m.Measurements = map[string]float64{
+			"rounds":           float64(rounds),
+			"control_delta_us": canaryMicros(overall.Median.RefDelta),
+			"noise_term_us":    canaryMicros(overall.Median.NoiseTerm),
+			"ceiling_us":       canaryMicros(overall.Median.Ceiling),
+		}
+	}
+	return m
+}
+
+// sw244UnverifiedMarker builds the structured report for an UNKNOWN run of the
+// shadow-cost accounting, from the percentile the run reports on.
+func sw244UnverifiedMarker(a canaryLatencyAccounting, rounds int) gatemarker.Marker {
+	m := gatemarker.Marker{GateID: sw244GateID, Detail: a.Reason}
+	if a.Baseline <= 0 {
+		m.ReasonCode = gatemarker.ReasonInsufficientSamples
+		m.Measurements = map[string]float64{
+			"rounds":      float64(rounds),
+			"baseline_us": canaryMicros(a.Baseline),
+		}
+		return m
+	}
+	m.ReasonCode = gatemarker.ReasonControlAboveCeiling
+	m.Measurements = map[string]float64{
+		"rounds":           float64(rounds),
+		"control_delta_us": canaryMicros(a.RefDelta),
+		"noise_term_us":    canaryMicros(a.NoiseTerm),
+		"ceiling_us":       canaryMicros(a.Ceiling),
+	}
+	return m
+}
 
 // SW-226 (AX-06) AC-5: the executor seam's latency cost, measured against the
 // threshold that was written down FIRST.
@@ -950,10 +1032,14 @@ func TestAX06_ExecutorSeamLatencyWithinThreshold(t *testing.T) {
 		t.Logf("AX-06-LATENCY-VERDICT: PASS after %d round(s): %s", len(results), overall)
 	case canaryLatencyUnknown:
 		// AC-2. Not a pass: this run did not measure what the gate claims to
-		// judge, and says so. The message is emitted by t.Skipf, which
-		// `go test -json` (and therefore cmd/testgate) always records, so an
-		// UNKNOWN run is visible in CI output rather than hidden behind a green
-		// package line.
+		// judge, and says so.
+		//
+		// SW-250: the report now travels on a structured channel as well as in
+		// prose. It is still a skip — the assertion did not run — but it now
+		// carries a versioned marker naming this gate, a reason code from a
+		// closed set, and the raw numbers that reason refers to, so cmd/testgate
+		// records UNVERIFIED instead of reading the skip as a pass. The DECISION
+		// below is unchanged; only its transport is.
 		//
 		// There are two shapes of UNKNOWN and they are not the same report, so
 		// they do not get the same words. Either the median control collapsed
@@ -969,10 +1055,11 @@ func TestAX06_ExecutorSeamLatencyWithinThreshold(t *testing.T) {
 				"  (docs/rc/ax06-canary-latency.md §3) — which is why it is reported as UNKNOWN and\n" +
 				"  not as a pass. Re-run on a quieter machine to obtain a full verdict."
 		}
-		t.Skipf("AX-06-LATENCY-VERDICT: UNKNOWN after %d round(s) — %s\n"+
-			"  %s\n"+
-			"  %s\n"+
-			"  Round 1 samples:%s",
+		gatemarker.SkipUnverified(t, ax06UnverifiedMarker(overall, len(results)),
+			"AX-06-LATENCY-VERDICT: UNKNOWN after %d round(s) — %s\n"+
+				"  %s\n"+
+				"  %s\n"+
+				"  Round 1 samples:%s",
 			len(results), overall.Reason, overall, detail, canaryLatencyReport(first))
 	default:
 		t.Errorf("AX-06-LATENCY-VERDICT: FAIL in all %d round(s) "+
@@ -3031,9 +3118,14 @@ func TestSW244_ShadowDefaultCostIsAccounted(t *testing.T) {
 		}
 	}
 	if !t.Failed() {
-		t.Skipf("SW-244-SHADOW-COST-VERDICT: UNKNOWN after %d round(s) — this runner could "+
-			"not resolve the residue. NOT evidence that the dual run is cheap; re-run on a "+
-			"quieter machine.", canaryLatencyRounds)
+		// SW-250: same decision, structured transport. The marker reports the
+		// p50 accounting the round loop ended on, with the control that could
+		// not be resolved attached, so cmd/testgate records UNVERIFIED rather
+		// than reading this skip as a pass.
+		gatemarker.SkipUnverified(t, sw244UnverifiedMarker(last[0], canaryLatencyRounds),
+			"SW-244-SHADOW-COST-VERDICT: UNKNOWN after %d round(s) — this runner could "+
+				"not resolve the residue. NOT evidence that the dual run is cheap; re-run on a "+
+				"quieter machine.\n  %s", canaryLatencyRounds, last[0])
 	}
 }
 
