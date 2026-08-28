@@ -90,6 +90,38 @@ justified performance change is a **manifest-only edit**: update the
 `baseline_version`. No code change is required — reviewers can bless a change
 through the manifest alone.
 
+### `binary_size_bytes` is a ratchet — when it may move, and when it may not
+
+Re-pinning the **baseline** is routine bookkeeping: the baseline is only the
+number the gate reports a delta against, so letting it drift stale makes every
+green run report a wrong delta. Raising the **budget** is not routine, because
+the budget is the gate. The 2026-08-28 decision (SW-243) re-pinned the baseline
+to the measured `main` and left the budget at 36,100,000 B, and wrote four
+standing refusals into
+[`bench/bench-budget.yml`](../../bench/bench-budget.yml) so the budget cannot be
+moved by feel:
+
+1. **No raise without attribution** — a same-method before/after build, a
+   `go tool nm -size` package rollup, and a `go.mod`/`go.sum`/grammar-tag diff
+   showing no new external dependency and no new grammar blob.
+2. **No raise for a newly *linked* existing dependency** until that link is shown
+   to be needed on the shipped default path.
+3. **No raise while headroom still exceeds 10x the largest measured
+   toolchain-noise event** (currently 8,854 B, so 88,540 B). Above that line the
+   gate still discriminates and a raise is relief, not necessity; below it the
+   gate fires on compiler noise and a raise is the honest move.
+4. **No budget above 40,000,000 B** — 80% of ADR 0001's hard < 50 MB ceiling —
+   without a new ADR amending the sizing model.
+
+**Measure from the real repository working directory, never from a `git worktree`
+checkout.** Go's VCS stamping requires `.git` to be a *directory*, so a linked
+worktree silently drops `-buildvcs=true` — no error, no warning — and produces an
+unstamped binary of a different size. The discrepancy is not a constant: at
+`a2ae62c` the worktree build read 72 B *more* than the canonical one, at `ebe0e87`
+4,024 B *less*. Built the right way, the canonical measurement is exact — the same
+command at `a2ae62c` reproduces the CI-pinned 34,267,107 B to the byte from
+darwin/arm64.
+
 The gate fails when any metric exceeds its budget and reports the delta vs the
 pinned baseline:
 

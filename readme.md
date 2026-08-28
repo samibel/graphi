@@ -180,7 +180,7 @@ row turns on that difference. Only the release-binary row is decimal end to end.
 | `callers` / `callees` / `impact` p95 (*structural*) | ≤ 200 ms | 0.999 ms | PASS |
 | Agent context p95 | ≤ 500 ms | 471.250 ms · 601.732 ms | **UNKNOWN** |
 | **Incremental freshness p95** | **≤ 2 s** | **6.315 s** | **FAIL — 3.2× over** |
-| Release binary ¹ | ≤ 36.10 MB | 34.27 MB (34 267 107 B) | PASS |
+| Release binary ¹ | ≤ 36.10 MB | 35.35 MB (35 351 306 B) | PASS |
 
 **The UNKNOWN is a row on purpose.** Agent context pooled 975 of the 1000
 executions its gate requires in both runs, then landed on opposite sides of it, so
@@ -199,7 +199,7 @@ xychart-beta
   title "Each row with a single reading, % of budget"
   x-axis ["cold index", "peak RSS", "DB size", "search", "structural", "freshness", "binary"]
   y-axis "% of budget" 0 --> 330
-  bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 94.9]
+  bar [17.0, 33.5, 10.9, 3.6, 0.5, 315.7, 97.9]
   line [100, 100, 100, 100, 100, 100, 100]
 ```
 
@@ -209,7 +209,7 @@ of 100 converged changes, 2.7 % apart on two different CPUs (both AMD EPYC,
 different generations). The most reproducible number in the series is the one that
 misses — and it is the sync promise below, measured. Open work, not done work.
 
-¹ Not from that series: `bench/bench-budget.yml`, re-pinned 2026-08-24, measured
+¹ Not from that series: `bench/bench-budget.yml`, re-pinned 2026-08-28, measured
 by the canonical CGo-free release build (`internal/release.CanonicalBuildArgs`).
 No release scorecard is quoted anywhere on this page — the last one committed is a
 2026-07-29 snapshot of a superseded build, and the release gate no longer commits
@@ -316,7 +316,7 @@ go-sitter-forest grammar seam for trusted input — see
 | Guarantee | What it means for you |
 |---|---|
 | **Zero outbound network, no telemetry** | The engine makes no non-loopback network calls, reports nothing anywhere — no usage data, no phone-home — and your code stays on disk; but `graphi privacy-audit` only reports that check `PASS` under the CI deny-egress harness; run on a laptop it says **UNVERIFIED**, as above — and the audit needs the Go toolchain in a graphi checkout, or its other two static gates cannot run at all. |
-| **One CGo-free static binary, no accounts** | Builds anywhere Go does, with no C toolchain required: one self-contained executable (**34.27 MB** as shipped, against a CI budget of 36.10 MB — `bench/bench-budget.yml`), easy to drop into any environment, with nothing to sign up for and no external services. |
+| **One CGo-free static binary, no accounts** | Builds anywhere Go does, with no C toolchain required: one self-contained executable (**35.35 MB** as shipped, against a CI budget of 36.10 MB — `bench/bench-budget.yml`), easy to drop into any environment, with nothing to sign up for and no external services. |
 | **Semantic search off by default** | No embedder ships and nothing leaves loopback: `graphi search -semantic` degrades to a typed "unavailable" until you opt in — [docs/semantic-search.md](docs/semantic-search.md). |
 | **Labs and forge features are opt-in** | The Stable default tier runs with no accounts and no outbound network access. Explicitly configured Labs/forge or embedder features may contact their configured service; they are not part of that default claim. The git-history provider behind the Labs git intelligence executes the local `git` binary against the local repository — no network, no writes. |
 

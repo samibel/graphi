@@ -102,7 +102,121 @@ version: 1
 # budget. No second tripwire is left cocked by this re-pin. (Separately, several
 # *_ms baselines now sit 10-30x above measured — a stale-baseline reporting
 # problem, not a gate failure, and deliberately left for the owner.)
-baseline_version: "2026-08-24-sw194b5-ruby-pendingref-go1.26.6-linux-amd64-release"
+#
+# 2026-08-28-sw243-baseline-decision: baseline re-pinned to today's measured
+# `main`; the BUDGET IS DELIBERATELY NOT MOVED. Only binary_size_bytes' baseline
+# changes; every budget in this file, including this metric's, stays exactly as
+# pinned above.
+#
+# THE MEASUREMENT (SW-243 AC-1). Canonical release shape, measured — not carried
+# over from the backlog entry that opened this story:
+#
+#     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 \
+#       go build -trimpath -buildvcs=true \
+#         -tags "$(internal/release.DefaultGrammarSubsetTags, all 21)" \
+#         -ldflags "-X github.com/samibel/graphi/internal/version.Version=dev" \
+#         -o /tmp/graphi ./cmd/graphi/
+#
+# run from a CLEAN checkout of `main` @ ebe0e87 on go1.26.6/darwin-arm64:
+# 35,351,306 B, sha256 424e270d4efa1616a6fc9f1c2ec34ec5e887bfa744d888513aa1df0f
+# c58ac7e4, byte-identical on a second build. Against the unchanged 36,100,000 B
+# budget that is 748,694 B of headroom — 2.07% of the budget, 2.12% of the
+# measured size. Drift since the 2026-08-24 pin: +1,084,199 B (+3.16%).
+#
+# THE METHOD IS EXACT, AND THE PREVIOUS NOTE'S "+72 B HOST-METHOD DELTA" WAS NOT
+# A HOST DELTA. The same command at a2ae62c — the commit carrying SW-194b.5 —
+# reproduces the CI-pinned 34,267,107 B EXACTLY, to the byte, cross-built from
+# darwin/arm64. So this gate's number IS reproducible off-CI and no host
+# correction is needed. What produced the 72 B was measuring inside a LINKED GIT
+# WORKTREE: Go's VCS stamping requires `.git` to be a DIRECTORY, so `git worktree`
+# checkouts silently drop `-buildvcs=true` (no error, no warning) and build an
+# unstamped, differently-sized binary — 34,267,179 B there against 34,267,107 B
+# here at the same commit, and 35,347,282 B against 35,351,306 B at ebe0e87. The
+# delta is not a constant and must not be applied as one. MEASURE FROM THE REAL
+# REPOSITORY WORKING DIRECTORY, NOT FROM A `git worktree` CHECKOUT.
+#
+# WHAT GREW, ATTRIBUTED. Same-method ladder on `main`'s first-parent line:
+#     a2ae62c  SW-194b.5 (the pinned baseline)      34,267,107
+#     4990599  SW-229 declarative rule packs        35,122,398   (+855,291)
+#     710c90e  SW-230 dev kit / SW-231 spike        35,247,321   (+124,923)
+#     1624de2  SW-228 bulk read-only migration      35,276,703   (+29,382)
+#     ebe0e87  SW-232/239/240/241                   35,351,306   (+74,603)
+# `go tool nm -size` rolled up by package, a2ae62c → ebe0e87, largest first:
+# gopkg.in/yaml.v3 +142,864 (newly LINKED, not newly depended on); engine/opcatalog
+# +95,244 (new); engine/extpack +93,749 (new); go:func metadata +50,312; main
+# +28,951; surfaces/client +23,546; internal/divergence +16,462 (new);
+# engine/module +15,954 (new); engine/extpack/conformance +14,529 (new);
+# engine/analysis/taint +11,871; text/tabwriter +7,795 (newly linked);
+# surfaces/http +6,583; cmd/internal/runtime +6,001; engine/agenttools/archintel
+# +4,827; core/registry +4,570 (new). Symbol bytes account for +542,679 of the
+# +1,084,199; the remainder is pclntab/funcdata/type metadata and section
+# alignment, which no source-level change reaches. This is the AX extension
+# platform kernel (SW-220..232), and it is one subsystem, not scattered bloat.
+# `git diff a2ae62c ebe0e87 -- go.mod go.sum internal/release/build.go` is EMPTY:
+# no new external dependency, no new grammar blob. yaml.v3 and text/tabwriter were
+# already in the module graph and are newly reachable from the shipped binary.
+#
+# WHY RE-BASELINE. The baseline is the REPORTING number — the gate prints the
+# delta against it — and it had drifted 1,084,199 B stale, so every green run was
+# reporting a delta that was wrong by 3.16%. Re-pinning it costs nothing in
+# enforcement and restores an honest report. This is the sanctioned mechanism this
+# file's own header (lines 3-7) describes.
+#
+# WHY THE BUDGET DOES NOT MOVE — THE MEASURED ANSWER, NOT THE COMFORTABLE ONE.
+# The story that opened this decision assumed thin headroom meant a raise. It does
+# not, because the work queued behind this gate was sized rather than guessed:
+#   * SW-244 flips the canary default legacy → shadow. That is a default value; the
+#     dual-run executor path has been linked since SW-226. New linked code: none.
+#   * SW-238 migrates the ~11 read-only Stable operations onto the executor. Its
+#     closest measured analogue is SW-228, which migrated 8-12 read-only Labs ops
+#     by the same recipe for a NET +29,382 B — net of the manual dispatch arms it
+#     deleted. At that rate SW-238 costs roughly 30-45 kB; call it 50 kB with
+#     metadata slack. That is 6.7% of the 748,694 B available.
+# Raising the budget now would be raising it because it COULD be raised, not
+# because anything needs it. A budget that moves without a forcing measurement is
+# not a budget.
+#
+# THIS IS NOT THE 2026-08-24 SITUATION. That raise was justified because headroom
+# (4,995 B, 0.0146%) had fallen BELOW the noise floor: bench/lang-budget.md's
+# SW-177 amendment measured the go1.26.5 → go1.26.6 bump alone at +8,854 B on an
+# unchanged tree, so the gate would have failed on a toolchain patch release with
+# no code change. Today's 748,694 B is 84.6x that event. The gate still
+# discriminates, so the condition that justified moving it is absent.
+#
+# THE CEILING, AND WHAT WOULD MAKE ME REFUSE TO MOVE IT AGAIN (SW-243 AC-3). The
+# ceiling is the budget itself: 36,100,000 B, unchanged, 13,900,000 B below the
+# < 50 MB hard product ceiling of docs/adr/0001-parser-tier1-and-sizing.md:22. It
+# is defensible because it is not a physical limit but a self-imposed ratchet, and
+# a ratchet is only worth anything while it ratchets. Four standing refusals, so
+# the next person cannot move it by feel:
+#   R1. REFUSE any raise whose growth is not ATTRIBUTED to the same standard used
+#       here: a same-method before/after build from a real repository checkout, a
+#       `go tool nm -size` rollup naming the packages that grew, and a `go.mod` /
+#       `go.sum` / grammar-tag diff proving no new external dependency and no new
+#       grammar blob.
+#   R2. REFUSE a raise caused by a newly LINKED existing dependency until that
+#       link is shown to be needed on the shipped DEFAULT path. Today's drift
+#       contains exactly one such case — yaml.v3, 142,864 B, 13.2% of the drift,
+#       pulled in by the extension-pack manifest readers — and it is accepted here
+#       only because the extension kernel is a shipped default capability.
+#   R3. REFUSE a raise while headroom still exceeds 10x the largest measured
+#       toolchain-noise event (currently 88,540 B). Below that line the gate has
+#       stopped separating justified growth from compiler noise and a raise is the
+#       honest move; above it, a raise is just relief. This is the 2026-08-24
+#       argument restated as a threshold instead of a judgement call.
+#   R4. REFUSE any budget above 40,000,000 B — 80% of the hard ceiling — without a
+#       new ADR amending ADR 0001's sizing model. Past that point "13.9 MB below
+#       the ceiling" has stopped being an answer.
+# By R3, the next legitimate raise conversation starts when a measured `main` is
+# within ~88.5 kB of 36,100,000 B, i.e. at about 36,011,000 B. That is 660 kB of
+# growth away, and SW-244 plus SW-238 are projected to spend under 8% of it.
+#
+# NOTHING ELSE MOVES. binary_size_bytes' baseline is the only value edited. No
+# metric is added, removed, re-severitied or soft-failed; binary_size_bytes carries
+# no `severity` key and therefore still gates at `fail` (internal/bench/budget.go
+# :186,191). bench/lang-budget.md, the per-language attribution ledger, is NOT
+# touched — the SW-177/SW-203 refusals stand.
+baseline_version: "2026-08-28-sw243-baseline-decision-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -119,8 +233,12 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    # Re-pinned 2026-08-24 (SW-194b.5) — see the baseline_version note above.
-    baseline: 34267107
+    # Baseline re-pinned 2026-08-28 (SW-243) to the measured canonical release
+    # build of main @ ebe0e87. The BUDGET IS UNCHANGED AND DELIBERATELY SO —
+    # see the 2026-08-28-sw243-baseline-decision note above for the measurement,
+    # the attribution, the projection for SW-238/SW-244, and the four standing
+    # refusals that say when this budget may move next.
+    baseline: 35351306
     budget: 36100000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
