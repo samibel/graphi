@@ -10,6 +10,7 @@
 //
 //	graphi-canary runtime   # run the runtime egress canary, emit JSON artifact
 //	graphi-canary gate      # run the static zero-telemetry gate
+//	graphi-canary -tags grammar_subset,webui_embed -goos linux -goarch amd64 gate
 //	graphi-canary all       # run both
 //
 // Exit codes: 0 on pass, non-zero on any fail/hard-fail so CI naturally gates.
@@ -21,12 +22,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/internal/canary"
 )
 
 func main() {
+	buildTags := flag.String("tags", "", "comma-separated build tags for the exact static dependency graph")
+	goos := flag.String("goos", "", "target GOOS for the static dependency graph (default host)")
+	goarch := flag.String("goarch", "", "target GOARCH for the static dependency graph (default host)")
 	flag.Parse()
 	mode := "all"
 	if flag.NArg() >= 1 {
@@ -37,9 +42,9 @@ func main() {
 	case "runtime":
 		os.Exit(runRuntime())
 	case "gate":
-		os.Exit(runGate())
+		os.Exit(runGate(parseBuildTags(*buildTags), *goos, *goarch))
 	case "all":
-		c := runGate()
+		c := runGate(parseBuildTags(*buildTags), *goos, *goarch)
 		if c == 0 {
 			c = runRuntime()
 		}
@@ -67,8 +72,8 @@ func runRuntime() int {
 	return 0
 }
 
-func runGate() int {
-	res, err := canary.RunGate(canary.GateConfig{})
+func runGate(buildTags []string, goos, goarch string) int {
+	res, err := canary.RunGate(canary.GateConfig{BuildTags: buildTags, GOOS: goos, GOARCH: goarch})
 	b, _ := json.MarshalIndent(res, "", "  ")
 	fmt.Println(string(b))
 	if err != nil {
@@ -79,4 +84,14 @@ func runGate() int {
 		return 1
 	}
 	return 0
+}
+
+func parseBuildTags(raw string) []string {
+	var tags []string
+	for _, tag := range strings.Split(raw, ",") {
+		if tag = strings.TrimSpace(tag); tag != "" {
+			tags = append(tags, tag)
+		}
+	}
+	return tags
 }

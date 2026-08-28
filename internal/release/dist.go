@@ -15,13 +15,18 @@ func BuildAll(ctx context.Context, cfg BuildConfig, distDir string) ([]string, e
 	if err := os.MkdirAll(distDir, 0o755); err != nil {
 		return nil, fmt.Errorf("mkdir dist dir %s: %w", distDir, err)
 	}
+	moduleDir := moduleRootPath()
 	paths := make([]string, 0, len(ReleaseTargets))
 	for _, p := range ReleaseTargets {
 		tc := cfg
 		tc.OS = p.OS
 		tc.Arch = p.Arch
+		prepared, err := prepareBuildConfig(tc, moduleDir)
+		if err != nil {
+			return nil, fmt.Errorf("prepare %s/%s privacy evidence: %w", p.OS, p.Arch, err)
+		}
 		out := filepath.Join(distDir, AssetName(p))
-		if err := Build(ctx, tc, out); err != nil {
+		if err := buildPrepared(ctx, prepared, out, moduleDir); err != nil {
 			return nil, fmt.Errorf("build %s/%s: %w", p.OS, p.Arch, err)
 		}
 		paths = append(paths, out)

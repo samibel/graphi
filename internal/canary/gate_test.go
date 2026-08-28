@@ -112,4 +112,48 @@ func TestGate_DoesNotFlagBareNewRequest(t *testing.T) {
 			t.Fatalf("bare http.NewRequest must not be flagged as egress; got %+v", f)
 		}
 	}
+	if res.EvidenceDigest == "" {
+		t.Fatal("static gate returned a verdict without an evidence digest")
+	}
+}
+
+func TestStaticEvidenceDigestIsCheckoutPathIndependent(t *testing.T) {
+	rootA := writeFixture(t, newRequestOnlyFixture)
+	rootB := writeFixture(t, newRequestOnlyFixture)
+	deps := []string{"net/http", "fmt"}
+	a, err := staticEvidenceDigest(rootA, deps, nil, "linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := staticEvidenceDigest(rootB, []string{"fmt", "net/http"}, nil, "linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a != b {
+		t.Fatalf("evidence digest depends on checkout path or dependency order: %s != %s", a, b)
+	}
+	tagged, err := staticEvidenceDigest(rootA, deps, []string{"webui_embed"}, "linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tagged == a {
+		t.Fatal("build tags did not change the evidence digest")
+	}
+	otherPlatform, err := staticEvidenceDigest(rootA, deps, nil, "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if otherPlatform == a {
+		t.Fatal("target platform did not change the evidence digest")
+	}
+}
+
+func TestResolveModuleDirRejectsAnUnrelatedModule(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module example.com/not-graphi\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ResolveModuleDir(root); err == nil {
+		t.Fatal("unrelated Go module was accepted as graphi source evidence")
+	}
 }

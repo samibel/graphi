@@ -28,7 +28,11 @@ echo ">> copying web/dist -> ${EMBED_DIR} (gitignored embed dir)"
 rm -rf "${EMBED_DIR}"
 cp -R web/dist "${EMBED_DIR}"
 
-echo ">> building bundled binary (CGO_ENABLED=0, -tags webui_embed)"
-CGO_ENABLED=0 go build -tags webui_embed -o graphi ./cmd/graphi
+echo ">> building bundled binary with the canonical release builder"
+# The canonical builder selects the shipped grammar subset + webui_embed,
+# verifies reproducibility, runs the static privacy gate, and embeds the
+# source-bound privacy evidence. A direct go build intentionally has no such
+# attestation and is therefore not a release artifact.
+CGO_ENABLED=0 go run ./cmd/release -webui -version dev -out graphi
 
 echo ">> done: ./graphi (web UI embedded, served at / over loopback)"

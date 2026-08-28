@@ -7,7 +7,8 @@
 # the audit gate. Only this Linux job gates the merge.
 #
 # Two checks, both gating (non-zero exit fails the build):
-#   audit    — `graphi privacy-audit` under netns; CONFIRMED required (exit 0).
+#   audit    — the canonical release binary runs `privacy-audit` outside the
+#              checkout under netns; CONFIRMED required (exit 0).
 #   tripwire — the audit's egress-tripwire test proves the harness has teeth:
 #              a deliberate non-loopback dial under isolation must turn the
 #              verdict red (FAIL). A silently-passing audit is worse than none.
@@ -30,14 +31,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Build graphi (CGo-free)
-        run: go build -o /tmp/graphi ./cmd/graphi
+      - name: Build canonical graphi release binary with privacy evidence
+        run: go run ./cmd/release -version "ci-${GITHUB_SHA}" -out /tmp/graphi
       # The live exercise must run with CAP_SYS_ADMIN to unshare a network
       # namespace. If isolation is unavailable the audit reports UNVERIFIED and
       # exits non-zero by design — this job then fails (the anti-false-green
       # guarantee), which is the intended behaviour for the gating runner.
       - name: Run privacy-audit under network isolation (privileged for netns)
-        run: sudo --preserve-env=CGO_ENABLED /tmp/graphi privacy-audit
+        run: |
+          cd /tmp
+          sudo --preserve-env=CGO_ENABLED /tmp/graphi privacy-audit
 
   tripwire:
     name: egress tripwire (a deliberate non-loopback dial must fail the gate)

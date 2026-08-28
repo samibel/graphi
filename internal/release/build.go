@@ -18,14 +18,21 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/internal/buildattest"
+	"github.com/samibel/graphi/internal/canary"
+	"github.com/samibel/graphi/internal/gitinfo"
 )
 
 const (
 	// VersionVar is the ldflags target for the release version string.
 	VersionVar = "github.com/samibel/graphi/internal/version.Version"
+	// PrivacyAttestationVar is populated only by the canonical builder after
+	// the source privacy gate has returned a complete PASS.
+	PrivacyAttestationVar = "github.com/samibel/graphi/internal/buildattest.PrivacyEncoded"
 	// CanonicalBuildContract versions the exact release argument contract shared
 	// by release builds and the binary-size benchmark.
-	CanonicalBuildContract = "internal/release.CanonicalBuildArgs/v1"
+	CanonicalBuildContract = "internal/release.CanonicalBuildArgs/v2"
 )
 
 // DefaultGrammarSubsetTags is the build-tag set the shipped default graphi
@@ -134,6 +141,11 @@ type BuildConfig struct {
 	// the host platform, preserving the original (host-only) Build behavior.
 	OS   string
 	Arch string
+
+	// privacyAttestation is deliberately private. Callers cannot ask the
+	// canonical builder to embed an arbitrary PASS; prepareBuildConfig derives
+	// it by running the real static gate.
+	privacyAttestation string
 }
 
 func (c *BuildConfig) defaults() {
@@ -154,6 +166,9 @@ func (c *BuildConfig) defaults() {
 func CanonicalBuildArgs(cfg BuildConfig, out string) []string {
 	cfg.defaults()
 	ldflags := fmt.Sprintf("-X %s=%s", VersionVar, cfg.Version)
+	if cfg.privacyAttestation != "" {
+		ldflags += fmt.Sprintf(" -X %s=%s", PrivacyAttestationVar, cfg.privacyAttestation)
+	}
 	args := []string{"build", "-trimpath", "-buildvcs=true"}
 	if len(cfg.Tags) > 0 {
 		args = append(args, "-tags", strings.Join(cfg.Tags, " "))
@@ -164,7 +179,22 @@ func CanonicalBuildArgs(cfg BuildConfig, out string) []string {
 // Build produces the static binary at out under CGO_ENABLED=0 with trimpath,
 // VCS stamping, and the version ldflag. It runs from the module root.
 func Build(ctx context.Context, cfg BuildConfig, out string) error {
-	cfg.defaults()
+	return BuildInModule(ctx, cfg, out, moduleRootPath())
+}
+
+// BuildInModule produces the canonical binary from moduleDir. Before linking,
+// it runs the static privacy gate and embeds its source-bound PASS evidence.
+// The explicit directory lets the benchmark build the exact release flavor
+// without depending on the caller's current directory.
+func BuildInModule(ctx context.Context, cfg BuildConfig, out, moduleDir string) error {
+	prepared, err := prepareBuildConfig(cfg, moduleDir)
+	if err != nil {
+		return err
+	}
+	return buildPrepared(ctx, prepared, out, moduleDir)
+}
+
+func buildPrepared(ctx context.Context, cfg BuildConfig, out, moduleDir string) error {
 	args := CanonicalBuildArgs(cfg, out)
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Env = withCgo(os.Environ(), "0")
@@ -175,16 +205,86 @@ func Build(ctx context.Context, cfg BuildConfig, out string) error {
 	if cfg.Arch != "" {
 		cmd.Env = append(cmd.Env, "GOARCH="+cfg.Arch)
 	}
-	cmd.Dir = moduleRootPath()
+	cmd.Dir = moduleDir
 	cmd.Stdout = io.Discard
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
+func prepareBuildConfig(cfg BuildConfig, moduleDir string) (BuildConfig, error) {
+	cfg.defaults()
+	if cfg.privacyAttestation != "" {
+		return cfg, nil
+	}
+	res, err := canary.RunGate(canary.GateConfig{
+		ModuleDir: moduleDir,
+		BuildTags: cfg.Tags,
+		GOOS:      cfg.OS,
+		GOARCH:    cfg.Arch,
+	})
+	if err != nil {
+		return BuildConfig{}, fmt.Errorf("static privacy gate could not produce build evidence: %w", err)
+	}
+	head, ok := gitinfo.Head(moduleDir)
+	if !ok || head.Commit == "" {
+		return BuildConfig{}, fmt.Errorf("resolve source revision for privacy attestation")
+	}
+	modified, err := sourceModified(moduleDir)
+	if err != nil {
+		return BuildConfig{}, err
+	}
+	encoded, err := privacyAttestationFromResult(res, head.Commit, modified)
+	if err != nil {
+		return BuildConfig{}, err
+	}
+	cfg.privacyAttestation = encoded
+	return cfg, nil
+}
+
+func privacyAttestationFromResult(res canary.GateResult, revision string, modified bool) (string, error) {
+	if res.Verdict != "pass" {
+		return "", fmt.Errorf("static privacy gate failed; refusing to embed a clean attestation: %v", res.Findings)
+	}
+	if res.EvidenceDigest == "" {
+		return "", fmt.Errorf("static privacy gate passed without an evidence digest")
+	}
+	encoded, err := buildattest.Encode(buildattest.Privacy{
+		SchemaVersion:  buildattest.PrivacySchemaVersion,
+		Status:         "PASS",
+		GateID:         buildattest.PrivacyGateID,
+		Scope:          buildattest.PrivacyScope,
+		SourceRevision: revision,
+		SourceModified: modified,
+		EvidenceDigest: res.EvidenceDigest,
+		CGOEnabled:     "0",
+		BuildTags:      append([]string(nil), res.BuildTags...),
+		GOOS:           res.GOOS,
+		GOARCH:         res.GOARCH,
+	})
+	if err != nil {
+		return "", fmt.Errorf("encode privacy attestation: %w", err)
+	}
+	return encoded, nil
+}
+
+func sourceModified(moduleDir string) (bool, error) {
+	cmd := exec.Command("git", "status", "--porcelain=v1", "--untracked-files=all")
+	cmd.Dir = moduleDir
+	out, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("resolve source state for privacy attestation: %w", err)
+	}
+	return strings.TrimSpace(string(out)) != "", nil
+}
+
 // VerifyReproducible builds the same source twice and returns the shared sha256
 // and whether the two builds are byte-for-byte identical.
 func VerifyReproducible(ctx context.Context, cfg BuildConfig) (sha string, ok bool, err error) {
-	cfg.defaults()
+	moduleDir := moduleRootPath()
+	cfg, err = prepareBuildConfig(cfg, moduleDir)
+	if err != nil {
+		return "", false, err
+	}
 	tmp, err := os.MkdirTemp("", "graphi-release-repro-*")
 	if err != nil {
 		return "", false, err
@@ -192,10 +292,10 @@ func VerifyReproducible(ctx context.Context, cfg BuildConfig) (sha string, ok bo
 	defer os.RemoveAll(tmp)
 	a := filepath.Join(tmp, "graphi-a")
 	b := filepath.Join(tmp, "graphi-b")
-	if err := Build(ctx, cfg, a); err != nil {
+	if err := buildPrepared(ctx, cfg, a, moduleDir); err != nil {
 		return "", false, fmt.Errorf("build A: %w", err)
 	}
-	if err := Build(ctx, cfg, b); err != nil {
+	if err := buildPrepared(ctx, cfg, b, moduleDir); err != nil {
 		return "", false, fmt.Errorf("build B: %w", err)
 	}
 	sa, err := sha256file(a)
