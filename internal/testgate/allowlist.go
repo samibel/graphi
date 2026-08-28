@@ -2,6 +2,11 @@
 // stream and its producer status. There are no expected-failure carve-outs:
 // every named test failure, package-level failure, build failure, truncated
 // stream, non-zero unexplained producer status, or producer stderr fails closed.
+//
+// Skips are recorded, never judged. A skipped test is not a failure and does not
+// change the verdict, but it is also not evidence of a pass: the assertion never
+// ran. EvaluateResult therefore carries SkippedTests and SkippedPackages so a
+// consumer can see what a run did not measure without parsing the human verdict.
 package testgate
 
 import (
@@ -21,13 +26,41 @@ type TestEvent struct {
 	Test        string `json:"Test"`
 	ImportPath  string `json:"ImportPath"`  // build-output/build-fail events emitted by recent Go versions
 	FailedBuild string `json:"FailedBuild"` // package fail caused by a compile/setup failure
+	Output      string `json:"Output"`      // free-form producer output; the only place a skip reason exists
+}
+
+// SkippedTest is one test that ended with a "skip" action. Reason is the last
+// output line the test emitted before go test's "--- SKIP" marker, which is
+// where t.Skip/t.Skipf messages land; it is empty when the stream carries no
+// message (t.SkipNow, or a skip with no explanation). A multi-line skip message
+// is represented by its final line.
+type SkippedTest struct {
+	Package string `json:"package"`
+	Test    string `json:"test"`
+	Reason  string `json:"reason,omitempty"`
+}
+
+// SkippedPackage is a package that ended with a package-level "skip" action —
+// the package as a whole, not one of its tests. In practice this is go test's
+// "[no test files]" result. It is deliberately a separate list from
+// SkippedTests: "this package ran nothing" and "these tests inside a package
+// that ran declined to assert" are different observations.
+type SkippedPackage struct {
+	Package string `json:"package"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 // EvaluateResult is the gate verdict.
+//
+// SkippedTests and SkippedPackages are observational only. They never affect
+// Green and are not failures; they exist so that a machine consumer reads what
+// was not measured from the struct rather than from FormatVerdict's prose.
 type EvaluateResult struct {
-	Green            bool
-	UnexpectedFails  []string // every observed test/package/build failure
-	ProducerFailures []string // exit/stderr inconsistencies from the go test producer
+	Green            bool             `json:"green"`
+	UnexpectedFails  []string         `json:"unexpected_fails,omitempty"`  // every observed test/package/build failure
+	ProducerFailures []string         `json:"producer_failures,omitempty"` // exit/stderr inconsistencies from the go test producer
+	SkippedTests     []SkippedTest    `json:"skipped_tests,omitempty"`     // tests that reported "skip", sorted by package then test
+	SkippedPackages  []SkippedPackage `json:"skipped_packages,omitempty"`  // packages that reported "skip" as a whole, sorted by package
 }
 
 // ProducerStatus is the out-of-band status of the command that produced the
@@ -53,6 +86,10 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	testSeen := make(map[string]struct{})
 	testStarted := make(map[string]struct{})
 	testFinished := make(map[string]struct{})
+	skippedTests := make(map[string]string)    // package\x00test -> skip reason
+	skippedPackages := make(map[string]string) // package -> skip reason
+	lastOutput := make(map[string]string)      // package or package\x00test -> last non-marker output line
+	skipMessage := make(map[string]string)     // package\x00test -> line that preceded "--- SKIP"
 	eventCount := 0
 
 	sc := bufio.NewScanner(r)
@@ -106,10 +143,22 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 			}
 			testStarted[testKey] = struct{}{}
 		case "pass", "skip":
+			// A skip is recorded, not judged: it is neither a pass nor a
+			// failure, and this switch keeps treating it exactly as it always
+			// did for the purpose of the verdict.
 			if ev.Test == "" {
 				packageFinished[packageKey] = struct{}{}
+				if ev.Action == "skip" {
+					skippedPackages[packageKey] = packageSkipReason(lastOutput[packageKey], ev.Package)
+				}
+				delete(lastOutput, packageKey)
 			} else {
 				testFinished[testKey] = struct{}{}
+				if ev.Action == "skip" {
+					skippedTests[testKey] = skipMessage[testKey]
+				}
+				delete(lastOutput, testKey)
+				delete(skipMessage, testKey)
 			}
 		case "fail":
 			if ev.Test == "" {
@@ -126,7 +175,23 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 			}
 			testFinished[testKey] = struct{}{}
 		case "output", "pause", "cont", "bench":
-			// These events carry no independent verdict.
+			// These events carry no independent verdict. Output is still read,
+			// because go test reports a skip reason nowhere else.
+			if ev.Action == "output" {
+				key := packageKey
+				if ev.Test != "" {
+					key = testKey
+				}
+				line := strings.TrimSpace(ev.Output)
+				switch {
+				case strings.HasPrefix(line, "--- SKIP"):
+					if ev.Test != "" {
+						skipMessage[testKey] = lastOutput[testKey]
+					}
+				case isSkipReasonCandidate(line):
+					lastOutput[key] = line
+				}
+			}
 		default:
 			return EvaluateResult{}, fmt.Errorf("testgate: invalid go test -json event on line %d: unknown Action %q", lineNumber, ev.Action)
 		}
@@ -190,8 +255,57 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	}
 	sort.Strings(res.UnexpectedFails)
 
+	for key, reason := range skippedTests {
+		pkg, test, _ := strings.Cut(key, "\x00")
+		res.SkippedTests = append(res.SkippedTests, SkippedTest{Package: pkg, Test: test, Reason: reason})
+	}
+	sort.Slice(res.SkippedTests, func(i, j int) bool {
+		if res.SkippedTests[i].Package != res.SkippedTests[j].Package {
+			return res.SkippedTests[i].Package < res.SkippedTests[j].Package
+		}
+		return res.SkippedTests[i].Test < res.SkippedTests[j].Test
+	})
+	for pkg, reason := range skippedPackages {
+		res.SkippedPackages = append(res.SkippedPackages, SkippedPackage{Package: pkg, Reason: reason})
+	}
+	sort.Slice(res.SkippedPackages, func(i, j int) bool {
+		return res.SkippedPackages[i].Package < res.SkippedPackages[j].Package
+	})
+
+	// Skips are deliberately absent from this expression. SW-249 changes what a
+	// verdict reports, not what it decides.
 	res.Green = len(res.UnexpectedFails) == 0 && len(res.ProducerFailures) == 0
 	return res, nil
+}
+
+// isSkipReasonCandidate reports whether an output line could be a test's own
+// message rather than one of go test's structural markers.
+func isSkipReasonCandidate(line string) bool {
+	if line == "" || line == "PASS" || line == "FAIL" {
+		return false
+	}
+	for _, marker := range []string{"=== ", "--- ", "ok  ", "ok\t", "FAIL\t", "PASS\t"} {
+		if strings.HasPrefix(line, marker) {
+			return false
+		}
+	}
+	return true
+}
+
+// packageSkipReason renders a package-level skip line. go test writes it as
+// "?   \tsome/import/path\t[no test files]"; the import path is already carried
+// by SkippedPackage.Package, so only the explanation is kept.
+func packageSkipReason(line, pkg string) string {
+	line = strings.TrimSpace(line)
+	if !strings.HasPrefix(line, "?") {
+		return line
+	}
+	if i := strings.Index(line, pkg); i >= 0 {
+		line = line[i+len(pkg):]
+	} else {
+		line = strings.TrimPrefix(line, "?")
+	}
+	return strings.TrimSpace(strings.Trim(strings.TrimSpace(line), "[]"))
 }
 
 // EvaluateWithProducer additionally validates the status of the command that
@@ -255,6 +369,26 @@ func FormatVerdict(res EvaluateResult) string {
 	}
 	if len(res.ProducerFailures) > 0 {
 		fmt.Fprintf(&b, "  producer failures (exit/stderr inconsistency): %v\n", res.ProducerFailures)
+	}
+	if len(res.SkippedTests) > 0 {
+		fmt.Fprintf(&b, "  skipped tests: %d — a skip is not a failure, and it is not a pass either; these assertions did not run\n", len(res.SkippedTests))
+		for _, skipped := range res.SkippedTests {
+			reason := skipped.Reason
+			if reason == "" {
+				reason = "(no reason in stream)"
+			}
+			fmt.Fprintf(&b, "    - %s.%s: %s\n", skipped.Package, skipped.Test, reason)
+		}
+	}
+	if len(res.SkippedPackages) > 0 {
+		fmt.Fprintf(&b, "  skipped packages: %d — the package itself reported skip, so none of its tests were reached\n", len(res.SkippedPackages))
+		for _, skipped := range res.SkippedPackages {
+			reason := skipped.Reason
+			if reason == "" {
+				reason = "(no reason in stream)"
+			}
+			fmt.Fprintf(&b, "    - %s: %s\n", skipped.Package, reason)
+		}
 	}
 	return b.String()
 }
