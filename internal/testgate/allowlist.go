@@ -460,12 +460,18 @@ func reconcileMarkers(hits []markerHit, skippedTests map[string]string, failed m
 				"line %d: gate id %q emitted an UNVERIFIED marker twice in one run (first at line %d); the verdict cannot rest on two measurements from one instrument",
 				hit.line, hit.marker.GateID, seen[hit.marker.GateID]))
 		default:
-			_, didSkip := skippedTests[hit.testKey]
-			_, didFail := failed[hit.testKey]
-			if !didSkip && !didFail {
+			// Only a skip is a declined assertion. A FAIL is a result as
+			// much as a PASS is — and the more consequential one — so a
+			// marker alongside either is the same contradiction and is
+			// rejected the same way.
+			if _, didSkip := skippedTests[hit.testKey]; !didSkip {
+				outcome := "it passed"
+				if _, didFail := failed[hit.testKey]; didFail {
+					outcome = "it failed"
+				}
 				markerErrors = append(markerErrors, fmt.Sprintf(
-					"line %d: gate %q reported UNVERIFIED but %s.%s did not decline to assert; a gate cannot report both that it could not measure and a result",
-					hit.line, hit.marker.GateID, hit.pkg, hit.test))
+					"line %d: gate %q reported UNVERIFIED but %s.%s did not decline to assert — %s; a gate cannot report both that it could not measure and a result",
+					hit.line, hit.marker.GateID, hit.pkg, hit.test, outcome))
 				continue
 			}
 			seen[hit.marker.GateID] = hit.line

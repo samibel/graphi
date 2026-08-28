@@ -329,6 +329,38 @@ func TestEvaluate_MarkerMustComeFromATestThatDidNotPass(t *testing.T) {
 	}
 }
 
+// A FAIL is a result too. The same contradiction the PASS case is guarded
+// against — "I could not measure" plus an assertion outcome — is exactly as
+// wrong when the assertion outcome is a failure, and the marker must not reach
+// the unverified list on the strength of a failing test.
+func TestEvaluate_MarkerMustComeFromATestThatDidNotFail(t *testing.T) {
+	failing := stream(
+		[]string{
+			event("start", unverifiedTestPkg, "", ""),
+			event("run", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", ""),
+			event("output", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", "        "+markerLine(t, ax06Marker())+"\n"),
+			event("fail", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", ""),
+			event("fail", unverifiedTestPkg, "", ""),
+		},
+	)
+	res, err := EvaluateWithProducer(strings.NewReader(failing), ProducerStatus{ExitCode: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Verdict != VerdictError || len(res.MarkerErrors) == 0 {
+		t.Fatalf("a marker from a FAILING test must be ERROR, got %q\n%s", res.Verdict, FormatVerdict(res))
+	}
+	if len(res.Unverified) != 0 {
+		t.Fatalf("a marker from a FAILING test reached the unverified list: %+v", res.Unverified)
+	}
+	// The diagnostic has to name what actually happened, not borrow the PASS
+	// wording: a reader who is told the test "passed" will look in the wrong
+	// place.
+	if !strings.Contains(res.MarkerErrors[0], "it failed") {
+		t.Fatalf("the diagnostic does not name the failure: %q", res.MarkerErrors[0])
+	}
+}
+
 // AC-1: recognition is on the structured marker, never on a prose match of the
 // skip text. Skip messages that talk about being unverified, that name a gate
 // id, or that begin with a go-test marker prefix stay ordinary skips.
