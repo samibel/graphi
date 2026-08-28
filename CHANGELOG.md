@@ -26,6 +26,52 @@ file:
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-29
+
+Privacy evidence now describes the shipped binary instead of accidentally
+describing whichever source checkout happens to be the current directory. This
+is a trust-boundary correction: the static telemetry proof remains a build-time
+source measurement, while the runtime command reports exactly which measurement
+was accepted for the binary being executed.
+
+The embedded record is deliberately not presented as an independent signature.
+`privacy-audit` prints the running binary's SHA-256 together with the source
+revision, target, build tags and evidence digest; a sceptical user still verifies
+that binary against the published `SHA256SUMS`/build provenance or reproduces the
+source scan and build.
+
+### Changed
+
+- **Canonical release binaries carry source-bound privacy evidence.** Before each
+  target is linked, `cmd/release` runs the static telemetry gate against the exact
+  `GOOS`/`GOARCH`, CGo-free setting and build-tag set. Only a complete PASS with a
+  deterministic evidence digest can be embedded; a failed, unavailable or
+  incomplete measurement stops the release build instead of producing an
+  assertion. `graphi privacy-audit` binds that record to the running binary's VCS
+  revision and platform and reports the binary digest needed to check published
+  provenance.
+
+- **An unavailable source scan is no longer rendered as a toolchain failure.** A
+  non-canonical developer binary run outside the graphi module now reports the
+  static CGo and telemetry properties as `UNVERIFIED`, explains that no embedded
+  evidence or source module is available, and gives an actionable verification
+  path. It does not expose a raw `go list: exit status 1`, and it never turns the
+  missing measurement into PASS or FAIL. The live zero-outbound check and its
+  three-state verdict remain independent.
+
+- **Privacy CI exercises the end-user invocation.** The gating Linux job builds
+  through the canonical release path and runs the resulting binary from `/tmp`
+  under loopback-only network isolation, so a checkout-relative implementation
+  cannot satisfy the gate.
+
+### Added
+
+- **`graphi privacy-audit --source` keeps the developer checkout scan explicit.**
+  Its output is scoped to the selected source tree and says that it does not
+  describe the running binary. `--target` is accepted only with `--source`, while
+  `cmd/canary` exposes target platform and build-tag inputs for reproducing an
+  attested release measurement offline.
+
 ## [0.11.1] - 2026-08-28
 
 A diagnostics-only patch. No operation behaves differently, no wire name, request
