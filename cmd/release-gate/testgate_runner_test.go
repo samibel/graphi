@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -136,7 +138,9 @@ func TestTestgateRunnerExitCodeMustAgreeWithTheVerdict(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			return encoded, "", 0, nil // claims failure, exits 0
+			// claims failure, exits 0; the prose stderr is what an operator
+			// needs to see to know WHICH gate the contradiction is about.
+			return encoded, "test gate: NOT GREEN\n  test/package/build failures: [pkg.TestBroken]\n", 0, nil
 		},
 	}
 	_, err := runner.Run()
@@ -145,6 +149,12 @@ func TestTestgateRunnerExitCodeMustAgreeWithTheVerdict(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "refusing to guess") {
 		t.Fatalf("error = %v, want the contradiction named", err)
+	}
+	// PR #177's release-gate log carried this line and nothing else, so which
+	// gate had reported UNVERIFIED could not be recovered from CI at all. The
+	// child's prose must travel with the contradiction.
+	if !strings.Contains(err.Error(), "pkg.TestBroken") {
+		t.Fatalf("the contradiction is undiagnosable without the child's prose: %v", err)
 	}
 }
 
@@ -158,5 +168,144 @@ func TestTestgateRunnerProcessFailureBlocks(t *testing.T) {
 	}
 	if _, err := runner.Run(); err == nil || !strings.Contains(err.Error(), "toolchain unavailable") {
 		t.Fatalf("a child that could not run must block with its diagnostics, got %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// The invocation path itself (SW-250 rebuild round 2).
+//
+// Every test above injects `exec`, so none of them exercised how release-gate
+// actually reaches testgate — which is precisely how a transport that cannot
+// carry an exit code shipped. These two do exercise it.
+// ---------------------------------------------------------------------------
+
+// writeExitCodeProbe writes a throwaway main package whose only job is to print
+// a payload on stdout, an optional payload on stderr, and exit with a chosen
+// code. It is the smallest thing that can tell an invocation path which
+// propagates exit codes apart from one which does not.
+func writeExitCodeProbe(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	write := func(name, body string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	write("go.mod", "module exitcodeprobe\n\ngo 1.22\n")
+	write("main.go", `package main
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
+
+func main() {
+	code, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "probe: bad exit code")
+		os.Exit(9)
+	}
+	fmt.Fprint(os.Stdout, os.Args[2])
+	if len(os.Args) > 3 {
+		fmt.Fprint(os.Stderr, os.Args[3])
+	}
+	os.Exit(code)
+}
+`)
+	return dir
+}
+
+// AC-3's "distinct exit code" is only real if it survives the invocation.
+// testgate's four verdicts are exit 0/1/2/3; `go run` collapses every non-zero
+// child status to 1 and prints "exit status N" on its own stderr instead, so
+// under `go run` this test passes for GREEN and NOT GREEN and FAILS for ERROR
+// and UNVERIFIED. See runTestgateJSON's comment for the reproduction.
+func TestBuildAndRunPropagatesEveryVerdictExitCode(t *testing.T) {
+	probe := writeExitCodeProbe(t)
+	bin := filepath.Join(t.TempDir(), "probe")
+
+	for _, res := range []testgate.EvaluateResult{
+		{Verdict: testgate.VerdictGreen, Green: true},
+		{Verdict: testgate.VerdictNotGreen},
+		{Verdict: testgate.VerdictError},
+		{Verdict: testgate.VerdictUnverified},
+	} {
+		want := testgate.ExitCode(res)
+		t.Run(string(res.Verdict), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+
+			payload := "stdout-of-" + string(res.Verdict)
+			stdout, stderr, code, err := buildAndRun(ctx, probe, bin, ".",
+				strconv.Itoa(want), payload, "prose-of-"+string(res.Verdict))
+			if err != nil {
+				t.Fatalf("buildAndRun: %v: %s", err, stderr)
+			}
+			if code != want {
+				t.Fatalf("verdict %q implies exit %d but the invocation reported %d; "+
+					"an invocation that cannot carry the code makes AC-3's distinct exit code fiction",
+					res.Verdict, want, code)
+			}
+			if string(stdout) != payload {
+				t.Fatalf("stdout = %q, want %q", stdout, payload)
+			}
+			if !strings.Contains(stderr, "prose-of-"+string(res.Verdict)) {
+				t.Fatalf("stderr lost the child's prose: %q", stderr)
+			}
+		})
+	}
+}
+
+// The defect PR #177's release-gate hit, at the level it hit it: an UNVERIFIED
+// verdict produced by a real process and read by the real runner. Only the
+// program being executed is substituted — the runner, the JSON decode, the
+// exit-code cross-check and the invocation helper are all the production ones.
+//
+// Against the `go run` invocation this fails with the CI message verbatim:
+// `verdict "UNVERIFIED" implies exit 3 but the process exited 1; refusing to
+// guess which is right`.
+func TestUnverifiedSurvivesARealProcessBoundary(t *testing.T) {
+	res := testgate.EvaluateResult{
+		Verdict: testgate.VerdictUnverified,
+		Unverified: []testgate.UnverifiedGate{{
+			GateID:       "ax06_executor_seam_latency",
+			Package:      "github.com/samibel/graphi/surfaces/client",
+			Test:         "TestAX06_ExecutorSeamLatencyWithinThreshold",
+			ReasonCode:   "control_above_ceiling",
+			Measurements: map[string]float64{"ceiling_us": 750, "control_delta_us": 412.5},
+		}},
+	}
+	encoded, err := json.Marshal(res)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	probe := writeExitCodeProbe(t)
+	bin := filepath.Join(t.TempDir(), "probe")
+	runner := &testgateRunner{
+		timeout: 2 * time.Minute,
+		score:   100,
+		exec: func(ctx context.Context) ([]byte, string, int, error) {
+			return buildAndRun(ctx, probe, bin, ".",
+				strconv.Itoa(testgate.ExitCode(res)),
+				string(encoded)+"\n",
+				strings.TrimSpace(testgate.FormatVerdict(res)))
+		},
+	}
+
+	score, runErr := runner.Run()
+	var unverified *UnverifiedError
+	if !errors.As(runErr, &unverified) {
+		t.Fatalf("UNVERIFIED did not survive the process boundary: %v", runErr)
+	}
+	if score != 100 {
+		t.Fatalf("score = %v, want the informational 100", score)
+	}
+	for _, fragment := range []string{"ax06_executor_seam_latency", "control_above_ceiling", "SW-251"} {
+		if !strings.Contains(unverified.Detail, fragment) {
+			t.Fatalf("the report lost %q: %s", fragment, unverified.Detail)
+		}
 	}
 }

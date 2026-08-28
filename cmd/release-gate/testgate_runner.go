@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -89,10 +90,16 @@ func (r *testgateRunner) Run() (float64, error) {
 	// The exit code and the parsed verdict are two independent statements about
 	// the same run, and they must agree. A disagreement means one of them is
 	// lying, and the gate cannot tell which.
+	//
+	// The child's stderr carries FormatVerdict's prose, which names the gate and
+	// the reason code. It is included here because without it this message is
+	// undiagnosable: PR #177's release-gate run printed exactly this line and
+	// nothing else, so which gate reported UNVERIFIED could not be recovered
+	// from the CI log at all.
 	if want := testgate.ExitCode(res); want != exitCode {
 		return 0, fmt.Errorf(
-			"testgate: verdict %q implies exit %d but the process exited %d; refusing to guess which is right",
-			res.Verdict, want, exitCode)
+			"testgate: verdict %q implies exit %d but the process exited %d; refusing to guess which is right: %s",
+			res.Verdict, want, exitCode, strings.TrimSpace(stderr))
 	}
 
 	switch res.Verdict {
@@ -123,8 +130,81 @@ func formatUnverified(res testgate.EvaluateResult) string {
 		"what an unverified measurement means for a release is SW-251's decision, not this runner's"
 }
 
+// runTestgateJSON builds cmd/testgate once and executes the resulting binary.
+// It deliberately does NOT use `go run`.
+//
+// # Why not `go run` (SW-250 rebuild round 2)
+//
+// `go run` does not propagate a child's exit code. It reports every non-zero
+// child status as the prose line "exit status N" on ITS stderr and then exits 1
+// itself. Reproduced with a throwaway program that exits with a chosen code:
+//
+//	go run . 1 -> exit 1   (stderr: exit status 1)
+//	go run . 2 -> exit 1   (stderr: exit status 2)
+//	go run . 3 -> exit 1   (stderr: exit status 3)
+//	./probe  1 -> exit 1
+//	./probe  2 -> exit 2
+//	./probe  3 -> exit 3
+//
+// Only 0 and 1 survive `go run`, so of testgate's four verdicts only GREEN and
+// NOT GREEN could cross this boundary. ERROR (2) and UNVERIFIED (3) both
+// arrived as 1 and contradicted the parsed verdict, and the cross-check in Run
+// correctly refused to guess — which is how PR #177's release-gate failed with
+// `verdict "UNVERIFIED" implies exit 3 but the process exited 1`. The guard was
+// right; the transport was wrong.
+//
+// Two alternatives were considered and rejected:
+//
+//   - Trust the parsed JSON verdict and drop the exit-code cross-check. That
+//     deletes the only thing that noticed this defect, and leaves the gate with
+//     one unchecked statement about the run instead of two that must agree.
+//
+//   - Special-case "exit 1 with `exit status 3` on stderr". That is a prose
+//     match on a Go toolchain message — the same fragility this story rejected
+//     when it refused to recognise UNVERIFIED by matching skip text. The
+//     toolchain is free to reword it, and a test that printed that phrase would
+//     forge a verdict.
+//
+// Building and executing makes the exit code real, so both statements are
+// genuine and the cross-check keeps its teeth. cmd/release-gate already uses
+// this shape for privacyRunner, for a different reason (see runners.go).
 func runTestgateJSON(ctx context.Context) ([]byte, string, int, error) {
-	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/testgate", "-json", "-timeout", "15m")
+	dir, err := os.MkdirTemp("", "graphi-release-gate-testgate-*")
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("temp dir: %w", err)
+	}
+	// The artifact lives outside the repository and is removed on the way out,
+	// so nothing is left in the worktree for a later gate to trip over.
+	defer os.RemoveAll(dir)
+	return buildAndRun(ctx, "", filepath.Join(dir, "testgate"), "./cmd/testgate",
+		"-json", "-timeout", "15m")
+}
+
+// buildAndRun compiles pkg into bin and then executes bin with args, returning
+// the child's stdout, its stderr, and its REAL exit code. A non-nil error means
+// the child could not be built or did not produce an exit code at all.
+//
+// dir is the working directory for both commands; "" inherits this process's,
+// which is what production wants — testgate discovers its own targets with
+// `go list ./...` relative to the repository root, exactly as it did under
+// `go run`. bin must be an absolute path.
+//
+// Build and execution share the caller's context, so the compile is charged to
+// the same budget it was charged to inside `go run`; the total time available
+// to the gate is unchanged. Unlike `go run`, the process this context kills on
+// timeout is testgate itself rather than a `go` parent holding it.
+func buildAndRun(ctx context.Context, dir, bin, pkg string, args ...string) ([]byte, string, int, error) {
+	build := exec.CommandContext(ctx, "go", "build", "-o", bin, pkg)
+	build.Dir = dir
+	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	var buildErr bytes.Buffer
+	build.Stderr = &buildErr
+	if err := build.Run(); err != nil {
+		return nil, buildErr.String(), 0, fmt.Errorf("build %s: %w", pkg, err)
+	}
+
+	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
