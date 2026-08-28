@@ -42,6 +42,22 @@ file:
   separable from legacy at this resolution", not "faster". The non-vacuity leg
   (an injected synchronous dual run) fails the new bar at 2.2×.
 
+  **Correction, round 3.** The AX-06 sampler first shipped this without draining
+  the deferred comparisons between samples, on the argument that the worker's
+  concurrent load is what `shadow` really costs a host. The rotation is cyclic,
+  so adjacency is fixed rather than shuffled — `shadow` is followed by `legacy-a`
+  in three of every four occurrences and by `legacy-b` in one — and the leaked
+  comparison therefore landed on one A/A control arm three times as often as on
+  the other. On PR #172's runner that drove the gate's own control to 26–38 % of
+  the baseline (it can judge a median only under 13.3 %) and took the AX-06 gate
+  to UNKNOWN for three rounds against an *injected 2× seam regression*, while
+  flattering AC-1's own p95 (0.918× undrained, 1.012× drained). The sampler now
+  drains outside the timed window after every call; `TestSW245_SamplerDrainsBetweenSamples`
+  pins it, and §7.2.1 of `docs/rc/ax06-canary-latency.md` records the correction.
+  No gate arithmetic changed: `canaryLatencyBudget`, `evaluateCanaryStat`, the
+  floor/noise/ceiling constants and the `budget ≤ 4×fixedBar` clamp are
+  byte-for-byte SW-242's.
+
   **What did not get cheaper, stated rather than omitted** (AC-6): allocations stay
   **2.03×** legacy; a saturating single caller still absorbs 1.26× ns/op; at
   `GOMAXPROCS=1` 1.89×, where the queue starts dropping and says so. The work

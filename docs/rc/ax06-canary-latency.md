@@ -128,8 +128,16 @@ assumption about the machine:
 
 - no arm is systematically sampled later in the run than another, so a drift in machine load
   across the run cannot be charged to one arm;
-- no arm is systematically sampled immediately after the same neighbour, so the cache and GC
-  after-effects of an expensive neighbour (`shadow` runs both paths) are shared evenly.
+- every arm is sampled the same number of times, so no arm's percentile is taken over a
+  different population than another's.
+
+What the rotation does **not** balance — this bullet claimed the opposite until §7.2.1 — is
+**adjacency**. A cyclic rotation preserves the order of the cycle, so each arm's predecessor
+is fixed except at the wrap: over four iterations `shadow` is followed by `legacy-a` three
+times and by `legacy-b` once. Anything an expensive neighbour leaves behind therefore lands
+on one control arm three times as often as on the other. Cache and GC after-effects are small
+enough to live with; a deferred comparison still *running* is not, which is why the sampler
+drains outside the timed window after every call (§7.2.1).
 
 This is the correctness argument for the method, and it is deliberately a property of the
 code rather than of a lucky reproduction — `TestAX06_LatencyRotationIsBalanced` **runs the
@@ -1025,25 +1033,80 @@ resolution**, not that it is negative.
 
 **What this instrument cannot separate — read the two baselines carefully.** The pooled
 legacy baseline moved from **382.979 µs** in §6.2 to **429.271 µs** here, +12 %. It would be
-convenient to write that off as machine state, and the run gives no basis to. The sampler
-does **not** drain between samples: after each `shadow` sample the worker runs a full
-executor pass (plus a `NewExecutor`) *concurrently with the next arms' timed calls*, so every
-arm in the after-run — including both legacy control arms — is measured on a machine carrying
-that load. The same-run A/A control cannot detect it either, because both control arms carry
-it equally. So the honest statement is that the +12 % shift is **unattributed**: this
-instrument cannot say how much of it is the worker and how much is the machine, and neither
-reading is claimed here.
+convenient to write that off as machine state, and the run above gives no basis to: as first
+shipped, the sampler did **not** drain between samples, so after each `shadow` sample the
+worker ran a full executor pass (plus a `NewExecutor`) *concurrently with the next arms'
+timed calls*, and every arm in the after-run — including both legacy control arms — was
+measured on a machine carrying that load. The +12 % shift is therefore **unattributed**: that
+run cannot say how much of it is the worker and how much is the machine, and neither reading
+is claimed here.
 
-The instrument is deliberately left that way rather than drained between arms. The concurrent
-worker load is not an artefact of the test — it is what the shipped `shadow` default actually
-does to a host — so keeping it in makes the after-run's baseline a *loaded-machine* baseline
-and the 0.973× a caller-perceived ratio measured under the load shadow really imposes. That
-is the conservative direction for AC-1: draining would remove real cost from the comparison
-and flatter the result. It also does not threaten the verdict, which survives the bias in
-either direction — the ≤1.15× bar is met at 0.973×, and §7.3's injected synchronous dual run
-still reads 2.7× on the same instrument. What must not be read off this table is a
-before/after comparison of the *baselines* themselves; the comparison that carries the claim
-is shadow against legacy **within** each run.
+#### 7.2.1 Correction (round 3): the sampler now drains between samples
+
+The paragraph that used to stand here argued the instrument should be left undrained, because
+the worker load is what the shipped default really does to a host and removing it would
+flatter AC-1. It rested on one claim that is false: *"the same-run A/A control cannot detect
+it either, because both control arms carry it equally."*
+
+They do not carry it equally. The rotation is **cyclic**, and a cyclic rotation preserves
+adjacency rather than shuffling it. For arms `[legacy-a, legacy-b, executor, shadow]` the
+sample that follows `shadow` is `legacy-a` in three of every four occurrences and `legacy-b`
+in one, so legacy-a is timed against a running comparison in ~75 % of its samples and
+legacy-b in ~25 %. A p50 is decided by which side of that split the middle sample falls on,
+so the two byte-identical control arms end up measuring two different machines. The A/A
+control does not merely fail to detect the leaked load — **it is manufactured by it**.
+
+PR #172's CI is the measurement. All three rounds read legacy-a above legacy-b at both gated
+percentiles:
+
+| round | legacy-a p50 | legacy-b p50 | control | control ÷ baseline | median verdict |
+|---|---|---|---|---|---|
+| 1 | 5.340806 ms | 4.107976 ms | 1.23283 ms | 26 % | UNKNOWN |
+| 2 | 7.017396 ms | 4.775357 ms | 2.242039 ms | 38 % | UNKNOWN |
+| 3 | 6.841147 ms | 4.863873 ms | 1.977274 ms | 34 % | UNKNOWN |
+
+§2's rule can judge a median only while `3 × control ≤ 4 × fixed bar`, i.e. while the control
+stays under **13.3 %** of the baseline. So the gate lost its own resolution for three rounds
+running, against an *injected 2× seam regression*, because of an arm §3 does not even gate.
+For comparison, the same CI on PR #169 — the same four arms, but with `shadow` still running
+both paths synchronously inside its own window — produced a p50 control of ≤ 3.3 % of the
+baseline in two rounds of three.
+
+The mis-attribution also flattered AC-1 itself: that run measured `shadow` at 4.065767 ms
+against a `legacy-a` of 5.340806 ms — the dual-run path reading *faster* than the single-run
+baseline whose timed window it had spilled into. "Draining would flatter the result" had it
+backwards; not draining is what flattered it.
+
+`canaryLatencySample` therefore drains the deferred comparisons **outside** the timed window
+after every call, and `TestSW245_SamplerDrainsBetweenSamples` pins it: with the drain removed,
+101 of 220 timed windows on the arm that follows `shadow` are measured with a comparison still
+in flight. Measured at `GOMAXPROCS=2` on the recorded machine, the legacy-a/legacy-b p50 ratio
+over five samples goes from a mean of **1.085** (worst 1.335) undrained to **1.000** (range
+0.985–1.015) drained — the same band an all-legacy four-arm control produces.
+
+Re-measured on the same machine with the drain in place, round 1 of
+`TestSW245_ShadowIsOffTheCallersCriticalPath` — this is the number AC-1 now stands on, and it
+supersedes the table above:
+
+| statistic | legacy baseline (pooled) | shadow | ratio | same-run A/A control | verdict |
+|---|---|---|---|---|---|
+| p50 | 422.750 µs | **413.833 µs** | **0.979×** | 4.500 µs (1.011×) | **PASS** |
+| p95 | 780.520 µs | **790.208 µs** | **1.012×** | 10.791 µs (1.014×) | **PASS** |
+
+The control tightened from 10.874 µs to 4.500 µs at p50 and from 43.833 µs to 10.791 µs at
+p95, which is the leaked load leaving the control arms. The p95 ratio moved the other way,
+0.918× → 1.012×: the undrained run had been reading the *flattered* figure, exactly as the
+p50/legacy-a arithmetic above predicts. SW-244's accounting on the same session reads
+`p50 PASS shadow=419 µs (1.00× legacy) accounted=845.791 µs unaccounted=−426.791 µs`.
+
+What is given up is the loaded-machine reading. The ratio in the table above is now a
+statement about the **caller's** cost measured against an idle-worker baseline, which is what
+AC-1 claims and all it claims; it is not a statement about shadow's total cost to a host.
+That cost has not gone unmeasured — §6 and `TestSW244_ShadowDefaultCostIsAccounted` are where
+it is accounted for, and B/op and allocs/op in `BenchmarkCanaryDispatch` still count the
+worker's allocations process-wide. What must not be read off this table is a before/after
+comparison of the *baselines* themselves; the comparison that carries the claim is shadow
+against legacy **within** each run.
 
 The AX-06 gate itself, measured in the same session and unchanged by this story:
 `p50 PASS overhead=4.646 µs budget=250 µs (legacy baseline 426.229 µs, executor 430.875 µs)`,
