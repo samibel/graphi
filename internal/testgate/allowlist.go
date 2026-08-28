@@ -218,8 +218,48 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	skippedPackages := make(map[string]string) // package -> skip reason
 	lastOutput := make(map[string]string)      // package or package\x00test -> last non-marker output line
 	skipMessage := make(map[string]string)     // package\x00test -> line that preceded "--- SKIP"
-	var markerHits []markerHit                 // UNVERIFIED markers, in stream order
+	// go test -json emits output in 1024-BYTE CHUNKS, not in lines: any output
+	// line longer than 1024 bytes arrives as several "output" events and only
+	// the last of them ends in a newline. These hold the unterminated remainder
+	// per emitter until its line is complete. See reassembly note below.
+	type outputRemainder struct {
+		text    string
+		at      int // stream line the remainder began on
+		pkg     string
+		test    string
+		testKey string
+	}
+	partial := make(map[string]outputRemainder) // package or package\x00test -> remainder
+	var markerHits []markerHit                  // UNVERIFIED markers, in stream order
 	eventCount := 0
+
+	// handleOutputLine interprets ONE COMPLETE output line. It is a closure
+	// rather than inline code because a line no longer corresponds to an event:
+	// the caller reassembles chunks first and may hand over several lines from
+	// one event, or one line built from several events.
+	handleOutputLine := func(raw string, at int, pkg, test, testKey, key string) {
+		outLine := strings.TrimSpace(raw)
+		// The UNVERIFIED channel is read FIRST and structurally. It is
+		// never a prose match on the skip text: SW-249 showed that
+		// position to be fragile (a skip reason that happens to begin
+		// with a go test marker prefix is already mishandled there),
+		// and a laundering path built on prose would be trivial to
+		// open by accident.
+		marker, isMarker, markerErr := gatemarker.Parse(outLine)
+		switch {
+		case isMarker:
+			markerHits = append(markerHits, markerHit{
+				line: at, pkg: pkg, test: test,
+				testKey: testKey, marker: marker, err: markerErr,
+			})
+		case strings.HasPrefix(outLine, "--- SKIP"):
+			if test != "" {
+				skipMessage[testKey] = lastOutput[testKey]
+			}
+		case isSkipReasonCandidate(outLine):
+			lastOutput[key] = outLine
+		}
+	}
 
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 1024*1024), 16*1024*1024)
@@ -311,26 +351,36 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 				if ev.Test != "" {
 					key = testKey
 				}
-				outLine := strings.TrimSpace(ev.Output)
-				// The UNVERIFIED channel is read FIRST and structurally. It is
-				// never a prose match on the skip text: SW-249 showed that
-				// position to be fragile (a skip reason that happens to begin
-				// with a go test marker prefix is already mishandled there),
-				// and a laundering path built on prose would be trivial to
-				// open by accident.
-				marker, isMarker, markerErr := gatemarker.Parse(outLine)
-				switch {
-				case isMarker:
-					markerHits = append(markerHits, markerHit{
-						line: lineNumber, pkg: ev.Package, test: ev.Test,
-						testKey: testKey, marker: marker, err: markerErr,
-					})
-				case strings.HasPrefix(outLine, "--- SKIP"):
-					if ev.Test != "" {
-						skipMessage[testKey] = lastOutput[testKey]
+				// REASSEMBLY. An "output" event is a chunk of the emitter's
+				// stream, NOT a line: go test -json cuts every output line at
+				// 1024 bytes and only the final chunk carries the newline.
+				// Interpreting a chunk as a line splits any marker whose JSON
+				// payload pushes it past that limit — the head parses as a
+				// truncated marker ("unexpected EOF") and the tail arrives as
+				// ordinary prose. That is a gate reporting it could not measure
+				// being turned into a run-breaking ERROR by the LENGTH of its
+				// own detail text, and it is exactly what PR #177's release-gate
+				// and test-gate hit at line 23069.
+				rem, isHeld := partial[key]
+				if !isHeld {
+					rem = outputRemainder{at: lineNumber, pkg: ev.Package, test: ev.Test, testKey: testKey}
+				}
+				buf := rem.text + ev.Output
+				for {
+					end := strings.IndexByte(buf, '\n')
+					if end < 0 {
+						break
 					}
-				case isSkipReasonCandidate(outLine):
-					lastOutput[key] = outLine
+					handleOutputLine(buf[:end], rem.at, rem.pkg, rem.test, rem.testKey, key)
+					buf = buf[end+1:]
+					// Whatever follows the newline started on THIS event.
+					rem = outputRemainder{at: lineNumber, pkg: ev.Package, test: ev.Test, testKey: testKey}
+				}
+				if buf == "" {
+					delete(partial, key)
+				} else {
+					rem.text = buf
+					partial[key] = rem
 				}
 			}
 		default:
@@ -344,6 +394,20 @@ func Evaluate(r io.Reader) (EvaluateResult, error) {
 	}
 	if err := sc.Err(); err != nil {
 		return EvaluateResult{}, fmt.Errorf("testgate: read go test -json stream: %w", err)
+	}
+	// A remainder that no newline ever terminated is still interpreted, in a
+	// deterministic order. Dropping it would let a truncated marker vanish,
+	// and a marker this gate cannot read must be an ERROR, never a silence.
+	if len(partial) > 0 {
+		keys := make([]string, 0, len(partial))
+		for key := range partial {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			rem := partial[key]
+			handleOutputLine(rem.text, rem.at, rem.pkg, rem.test, rem.testKey, key)
+		}
 	}
 	if eventCount == 0 {
 		return EvaluateResult{}, fmt.Errorf("testgate: empty go test -json stream")

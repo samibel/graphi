@@ -473,3 +473,138 @@ func TestUnverifiedVerdictSurvivesJSON(t *testing.T) {
 		t.Fatalf("the measurements did not survive JSON: %s", encoded)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Output chunking (SW-250 rebuild round 2, second CI finding).
+//
+// `go test -json` does not emit LINES. It emits the emitter's stream in
+// 1024-byte "output" events, and only the last event of a long line carries the
+// newline. Measured, not assumed: a test skipping with a 4200-byte line produced
+// events of 1024/1024/1024/1024/141 bytes, the first four with no newline.
+//
+// A marker whose JSON payload pushes its line past 1024 bytes therefore arrived
+// as a truncated head ("unexpected EOF") plus a tail that read as ordinary
+// prose — turning a gate's honest "I could not measure" into a run-breaking
+// ERROR because of the LENGTH of its own detail text. That is what PR #177's
+// release-gate and test-gate both hit, at stream line 23069.
+//
+// NOTE, per the hazard at the top of this file: these tests build marker text.
+// Nothing below prints it at the start of a line.
+// ---------------------------------------------------------------------------
+
+// chunkedOutput splits ONE output line into events the way go test -json does.
+func chunkedOutput(pkg, test, line string) []string {
+	const chunk = 1024
+	raw := line + "\n"
+	var events []string
+	for len(raw) > chunk {
+		events = append(events, event("output", pkg, test, raw[:chunk]))
+		raw = raw[chunk:]
+	}
+	return append(events, event("output", pkg, test, raw))
+}
+
+// skippedWithChunkedMarker is skippedWithMarker with the marker line delivered
+// in 1024-byte chunks instead of as one event.
+func skippedWithChunkedMarker(pkg, test, human, marker string) []string {
+	events := []string{
+		event("run", pkg, test, ""),
+		event("output", pkg, test, "=== RUN   "+test+"\n"),
+		event("output", pkg, test, "    canary_latency_test.go:1058: "+human+"\n"),
+	}
+	events = append(events, chunkedOutput(pkg, test, "        "+marker)...)
+	return append(events,
+		event("output", pkg, test, "--- SKIP: "+test+" (12.00s)\n"),
+		event("skip", pkg, test, ""),
+	)
+}
+
+// A marker too long for one output event is still ONE marker. AX-06's
+// median-only UNKNOWN puts its whole prose verdict in Detail, which is how a
+// real marker crosses 1024 bytes on a real runner.
+func TestEvaluate_MarkerSplitAcrossOutputEventsIsStillOneMarker(t *testing.T) {
+	m := ax06Marker()
+	m.ReasonCode = gatemarker.ReasonTailControlAboveCeiling
+	m.Measurements = map[string]float64{
+		"rounds":                3,
+		"tail_control_delta_us": 151856,
+		"tail_noise_term_us":    455568,
+		"tail_ceiling_us":       735068,
+		"median_overhead_us":    12,
+		"median_budget_us":      250,
+	}
+	m.Detail = strings.Repeat(
+		"The median is clean, so this is a regression confined to a minority of calls "+
+			"- the shape the median cannot see and the tail exists to catch. ", 12)
+
+	line := markerLine(t, m)
+	if len(line) <= 1024 {
+		t.Fatalf("fixture is not long enough to be chunked: %d bytes", len(line))
+	}
+
+	s := stream(
+		[]string{event("start", unverifiedTestPkg, "", "")},
+		skippedWithChunkedMarker(unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold",
+			"AX-06-LATENCY-VERDICT: UNKNOWN after 3 round(s)", line),
+		[]string{event("pass", unverifiedTestPkg, "", "")},
+	)
+	res, err := EvaluateWithProducer(strings.NewReader(s), ProducerStatus{ExitCode: 0})
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	if len(res.MarkerErrors) != 0 {
+		t.Fatalf("a marker is not malformed merely for being long; marker errors: %q", res.MarkerErrors)
+	}
+	if res.Verdict != VerdictUnverified {
+		t.Fatalf("verdict = %q, want UNVERIFIED; a gate reporting it could not measure "+
+			"must not be turned into an ERROR by the length of its own detail text\n%s",
+			res.Verdict, FormatVerdict(res))
+	}
+	if len(res.Unverified) != 1 {
+		t.Fatalf("unverified = %d, want exactly 1", len(res.Unverified))
+	}
+	got := res.Unverified[0]
+	if got.GateID != m.GateID || got.ReasonCode != string(m.ReasonCode) {
+		t.Fatalf("gate/reason = %q/%q, want %q/%q", got.GateID, got.ReasonCode, m.GateID, m.ReasonCode)
+	}
+	// Lossless: reassembly must not drop, duplicate or reorder a byte.
+	if got.Detail != m.Detail {
+		t.Fatalf("detail was corrupted by reassembly:\n got %q\nwant %q", got.Detail, m.Detail)
+	}
+	if got.Measurements["tail_ceiling_us"] != 735068 {
+		t.Fatalf("measurements did not survive reassembly: %v", got.Measurements)
+	}
+	// And the tail of the marker must not have been mistaken for the skip
+	// reason, which is what put a JSON fragment in PR #177's log.
+	if len(res.SkippedTests) != 0 {
+		t.Fatalf("a marker-carrying skip is not an ordinary skip: %+v", res.SkippedTests)
+	}
+}
+
+// Fail-closed is preserved: a marker fragment that no newline ever terminates
+// is still read, and still an ERROR. Reassembly must not become a hiding place.
+func TestEvaluate_UnterminatedMarkerFragmentIsStillError(t *testing.T) {
+	line := "        " + markerLine(t, ax06Marker())
+	s := stream(
+		[]string{
+			event("start", unverifiedTestPkg, "", ""),
+			event("run", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", ""),
+			event("output", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", line[:60]),
+			event("output", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold",
+				"--- SKIP: TestAX06_ExecutorSeamLatencyWithinThreshold (1.00s)\n"),
+			event("skip", unverifiedTestPkg, "TestAX06_ExecutorSeamLatencyWithinThreshold", ""),
+			event("pass", unverifiedTestPkg, "", ""),
+		},
+	)
+	res, err := EvaluateWithProducer(strings.NewReader(s), ProducerStatus{ExitCode: 0})
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	if res.Verdict != VerdictError || len(res.MarkerErrors) == 0 {
+		t.Fatalf("an unterminated marker fragment must be ERROR, got %q with %d marker error(s)",
+			res.Verdict, len(res.MarkerErrors))
+	}
+	if len(res.Unverified) != 0 {
+		t.Fatalf("a fragment must never be carried as a verdict: %+v", res.Unverified)
+	}
+}
