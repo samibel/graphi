@@ -58,6 +58,21 @@ gates the median **and** the tail, by the same arithmetic; §3 states in numbers
 and cannot see. `TestAX06_LatencyGateFailsOnMinorityIncidenceRegression` is the test that
 holds it, and §5.5 the measurement that calibrates it.
 
+**A third finding, from review of the amendment's second cut.** Gating the tail created a
+second, weaker way to reach a PASS — the *median-only* verdict, returned when the median is
+clean and the tail's own control is too wide to judge. The round arbitration ("any PASS
+round wins") did not distinguish it from a full pass, and review demonstrated the two
+consequences. A later round's median-only PASS could turn an earlier round's genuine,
+tail-caught FAIL of the *same* regression into a green run, because contention arriving
+mid-run widens the p95 control and the tail then measures nothing. And the round loop, which
+exits on the first PASS, exited on the first *median-only* PASS — so on a runner contended
+enough for the tail to be unjudgeable (4 runs in 6 under the load §5.6 measured) the gate
+routinely ended after round 1 and never used the calmer rounds the anti-flake provision
+exists to buy. Absence of a measurement was reading as evidence of good latency again, this
+time across rounds rather than within one. §2's round-collapse rule and §3's disclosure are
+corrected below, and §5.8 records the measurement that chose between the two candidate
+corrections.
+
 **What did not move.** The seam itself is untouched — SW-242 changes how the executor path
 is *measured*, never what it does. The kill-switch default stays `legacy`. And the direction
 of the bar did not soften: the fixed part of the threshold is the same 10 % / 250 µs it
@@ -165,8 +180,8 @@ read in the opposite direction.
 | UNKNOWN | anything | **UNKNOWN** — nothing was resolved at the centre, so nothing was resolved |
 | FAIL | anything | **FAIL** (median reason) |
 | PASS | FAIL | **FAIL** — a regression the median cannot see, which is what the tail is for |
-| PASS | UNKNOWN | **PASS**, on the median alone, and the log line says so |
-| PASS | PASS | **PASS** |
+| PASS | UNKNOWN | **PASS on the median alone**, and the log line says so. This is a verdict for the ROUND; it is not enough to pass the RUN — see the round-collapse rule below |
+| PASS | PASS | **full PASS** — the only round shape that can pass the run |
 
 The asymmetry is deliberate and it is what preserves this story's win. The tail is the
 noisier measurement and its noise is exactly what made the old gate cry wolf, so a tail whose
@@ -216,10 +231,54 @@ Each term earns its place:
   specifically, because it is the one where a lazy implementation would launder noise into
   a green tick.
 
-- **Rounds collapse in this order:** any PASS round wins (the anti-flake provision). Failing
-  that, an UNKNOWN round beats a FAIL round — if the machine was at any point too degraded
-  to distinguish two identical paths, the honest answer to "did the seam regress" is that
-  this run does not know, not that it did.
+- **Rounds collapse in this order:**
+
+  1. a **full PASS** round wins — both statistics judged, both clean. This is §1's anti-flake
+     provision, restricted to the rounds that earn it;
+  2. failing that, an **UNKNOWN** round beats a FAIL round — if the machine was at any point
+     too degraded to distinguish two identical paths *at the centre of the distribution*, it
+     resolved nothing, and the honest answer to "did the seam regress" is that this run does
+     not know, not that it did;
+  3. failing that, a **median-only** round makes the run UNKNOWN too — half the gate ran, so
+     the run cannot claim the conclusion the other half would have supplied;
+  4. failing that, every round FAILed, and the run **FAILs**.
+
+  And the round loop stops **only on a full PASS**. A median-only round has not measured the
+  tail, so ending the loop on one spends the remaining rounds — whose only purpose is to give
+  a regression another chance to be measured on a calmer interval — to buy nothing.
+
+  The consequence that matters: **a median-only round can never turn a FAIL into a PASS.**
+  When another round in the same run recorded a FAIL, the run is UNKNOWN and that FAIL is
+  quoted verbatim in the verdict line, explicitly *not withdrawn and not disbelieved* — it
+  simply could not be re-measured on a round that could resolve the tail, and one
+  unrepeatable measurement is not the standard this gate fails on.
+
+  **Why UNKNOWN and not FAIL, when a FAIL was recorded.** The alternative — letting a
+  recorded FAIL outrank median-only rounds, so a tail-caught regression survives to red — was
+  implemented and measured before being rejected. On a noise model calibrated against this
+  gate's own measured observables (§5.8) it raises the run-level *false*-fail rate on a clean
+  tree from 0.05 % to 10.4 %: roughly one PR in ten turned red for being scheduled on a busy
+  runner. That is the disease SW-242 exists to cure, reintroduced through the tail statistic
+  that caused it the first time. The rule as written costs nothing at all by comparison, and
+  the "nothing" is a theorem rather than an estimate:
+
+  > The run FAILs only when **every** round FAILed, which is exactly when the superseded
+  > "any PASS wins" rule failed; and it PASSes only on a full-pass round, which that rule
+  > would also have read as a pass. So the corrected arbitration differs from the superseded
+  > one **only by turning some PASS verdicts into UNKNOWN**. It cannot fail anything the old
+  > rule passed.
+
+  `TestAX06_LatencyArbitrationIsMonotone` checks that exhaustively over all 819 sequences of
+  one to three rounds across every reachable round shape, and fails if the two rules ever
+  agree everywhere (which would mean the correction was not wired in).
+
+- **An all-median-only run is UNKNOWN, not PASS.** If the tail was never judgeable in any
+  round, the run holds no evidence either way about a regression confined to a minority of
+  calls, and saying PASS would state a conclusion it never reached. It is not a FAIL either:
+  nothing failed. So it is reported as what it is, through the same `t.Skip` path as any
+  other UNKNOWN, with the median's numbers, the tail's control width, and the sentence
+  *"Reported as UNKNOWN rather than PASS because half the gate did not run"*. A job that
+  reports this routinely is a finding about the runner.
 
 **The gate must still be able to fail, and that is tested, not asserted — in both shapes.**
 `TestAX06_LatencyGateFailsOnInjectedSeamRegression` injects a real *systemic* slowdown at the
@@ -278,17 +337,29 @@ darwin/arm64 M2 Max, where a `dead_code` call costs ~385 µs at p50 and ~775 µs
   measured, one extra seam pass (~420 µs) is caught at 25 % incidence but not at 12.5 %,
   because at low incidence the injected calls compete with the fixture's own ~385 µs natural
   spread between p50 and p95 rather than clearing it outright.
-- **Under sustained contention the tail can stop being judgeable at all**, and the run then
-  passes on the median alone — with the tail's UNKNOWN and its numbers printed in the verdict
-  line as `tail not judgeable this run (median-only verdict)`, never silently. Measured under
-  24 spinning processes on 12 cores (~2.2× slowdown), this happened in **4 runs out of 6**
-  (§5.6), the p95 A/A control widening from 6–28 µs idle to 297 µs–1.12 ms. **For those runs,
-  minority-incidence coverage is lost** — roughly two runs in three on a runner that bad. It
-  is not lost quietly, and it does not cost the run its verdict. The median's coverage is not
-  lost at all: it held at +19…+35 µs of overhead against an unmoved 250 µs budget through the
-  same load, and the injected minority regression still turned the gate red in **6 of 6** runs
-  under it. A CI job that reports a median-only verdict routinely is a finding about the
-  runner, not a reason to widen the ceiling.
+- **Under sustained contention the tail can stop being judgeable at all**, and the run is
+  then reported as **UNKNOWN**, not as a pass — with the tail's UNKNOWN and its numbers
+  printed in the verdict line as `tail not judgeable this run (median-only verdict)`, never
+  silently. Measured under 24 spinning processes on 12 cores (~2.2× slowdown), the tail was
+  unjudgeable in **4 runs out of 6** (§5.6), the p95 A/A control widening from 6–28 µs idle
+  to 297 µs–1.12 ms. **For those runs, minority-incidence coverage is lost** — roughly two
+  runs in three on a runner that bad — and the run says so rather than reporting a verdict it
+  did not reach. Three things bound the damage:
+
+  - the **median's** coverage is not lost at all: it held at +19…+35 µs of overhead against
+    an unmoved 250 µs budget through the same load, and the injected minority regression
+    still turned the gate red in **6 of 6** runs under it;
+  - the gate now uses **all three rounds** in that state instead of stopping at the first
+    one, so the tail gets every chance the anti-flake provision was meant to give it;
+  - and the result of losing the tail is an honest UNKNOWN rather than a green tick. On the
+    calibrated model of that same runner, a 2 ms-per-incident regression on one call in eight
+    went from being reported PASS in **85.5 %** of runs under the superseded rule to **7.8 %**
+    under the corrected one, with the FAIL rate unchanged at 14.5 % and the remainder reported
+    as UNKNOWN (§5.8). The regression is not caught more often; it is *laundered* far less
+    often, which is the property AC-2 asks for.
+
+  A CI job that reports a median-only verdict routinely is a finding about the runner, not a
+  reason to widen the ceiling.
 - **Everything above is per-run resolution, not a guarantee about production.** These are
   same-process A/B numbers on one fixture, and §5.7 bounds what they claim.
 
@@ -570,3 +641,60 @@ Same-process, same-run A/B on one machine and one fixture, per §3. They are evi
 the seam is cheap and that the instrument measuring it is trustworthy. They are not a
 published performance figure, they are not comparable across machines, and they do not enter
 `docs/eval/`.
+
+### 5.8 The round-collapse rule, measured (SW-242 round 3)
+
+The correction in §2 had two candidate shapes, and the choice between them is a measurement,
+not a preference. Both stop a median-only round from ending the loop and from producing a
+PASS; they differ only in what happens when one round recorded a FAIL and another could not
+judge the tail:
+
+- **(A) FAIL outranks median-only** — the tail-caught regression survives to red.
+- **(B) median-only ranks with UNKNOWN** — the run is UNKNOWN and the FAIL is quoted, held
+  rather than withdrawn. This is what shipped.
+
+`TestAX06_LatencyArbitrationOnPureNoise` drives both against the superseded rule over 2 000
+three-round trials per condition, on a heavy-right-tailed noise model whose observables are
+pinned against this page's own measurements by `TestAX06_LatencyNoiseModelIsCalibrated`
+(idle: p50 386 µs, p50 A/A control ≤ 4.4 µs, p95 A/A control 7.5 µs median / 30 µs p90 —
+compare §5.1's 385 µs, 0.25–3.4 µs, 6–28 µs; contended: p95 A/A control 363 µs median /
+902 µs p90 with the median budget still on its 250 µs floor — compare §5.6's 297 µs–1.12 ms).
+
+The shipped and superseded columns below are the figures that test logs on every run. The
+**rejected rule (A)** column was measured the same way, with a temporary probe carrying that
+rule instead — it is not committed, because the repository does not keep an implementation of
+a rule it rejected; the probe differed from the committed test only in the arbitration
+function it called and in using 6 000 trials per condition.
+
+**No regression injected — every FAIL here is false:**
+
+| condition | superseded rule | shipped rule (B) | rejected rule (A) |
+|---|---|---|---|
+| idle | PASS 100 %, FAIL 0 % | PASS 100 %, FAIL 0 % | FAIL 0 % |
+| lightly loaded | PASS 100 %, FAIL 0 % | PASS 99.95 %, UNKNOWN 0.05 %, FAIL 0 % | FAIL 0.03 % |
+| **contended as measured** | PASS 99.95 %, **FAIL 0.05 %** | PASS 75.75 %, UNKNOWN 24.20 %, **FAIL 0.05 %** | **FAIL 10.4 %** |
+| worse than measured | PASS 99.95 %, FAIL 0.05 % | PASS 59.95 %, UNKNOWN 40.00 %, FAIL 0.05 % | FAIL 13.7 % |
+
+**2 ms per incident on one call in eight — every PASS here is a missed regression:**
+
+| condition | superseded rule | shipped rule (B) |
+|---|---|---|
+| idle | PASS 0 %, FAIL 100 % | PASS 0 %, FAIL 100 % |
+| lightly loaded | PASS 2.75 %, FAIL 97.25 % | **PASS 0 %**, FAIL 97.25 %, UNKNOWN 2.75 % |
+| contended as measured | **PASS 85.5 %**, FAIL 14.5 % | **PASS 7.8 %**, FAIL 14.5 %, UNKNOWN 77.7 % |
+| worse than measured | PASS 99.55 %, FAIL 0.45 % | PASS 55.5 %, FAIL 0.45 %, UNKNOWN 44.05 % |
+
+Read together: the shipped rule cuts the rate at which a real minority-incidence regression
+is reported as a pass by an order of magnitude on the runner that motivated this story, and
+it does so at **exactly zero** false-FAIL cost — the FAIL columns are identical to the
+superseded rule's, which is the theorem in §2 rather than a fortunate sample. The rejected
+rule buys more red (84.4 % FAIL at 2 ms/1-in-8 on the contended condition, against 14.5 %)
+for a 200× worse false-FAIL rate, and a gate that reds one clean PR in ten is the failure
+this story exists to remove. A corroboration variant — a FAIL standing only when two rounds
+recorded it — was also measured: 51.5 % FAIL for a 1.95 % false-FAIL rate, still 39× the
+superseded rule's, and also rejected.
+
+The incidence boundary is unaffected by the change, re-measured through the shipped path
+after it: 1 in 18 (5.6 %) FAILs with a tail overhead of 8.56 ms against a 250 µs budget, 1 in
+20 (5.0 %) passes with 94.6 µs — the same boundary §5.5 recorded, because the round-collapse
+rule does not touch the per-statistic arithmetic that sets it.
