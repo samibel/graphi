@@ -245,13 +245,19 @@ func (r *privacyRunner) Run() (float64, error) {
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		// Platform robustness (never a false green): the AUDIT keeps its
-		// non-zero exit on UNVERIFIED, but the GATE distinguishes "cannot
-		// observe the network layer on this platform" (macOS / unprivileged
-		// local runs — no loopback-only netns) from an actual violation. The
-		// zero-outbound invariant is verified for real by the Linux CI
-		// deny-egress gates; a merely-UNVERIFIED local posture therefore
-		// degrades to a warning instead of zeroing the release verdict.
+		// Never a false green: the AUDIT keeps its non-zero exit on
+		// UNVERIFIED, and this runner only classifies — it distinguishes
+		// "cannot observe the network layer on this platform" (macOS /
+		// unprivileged local runs — no loopback-only netns) from an actual
+		// violation, and says so as *UnverifiedError.
+		//
+		// What that costs is policy.go's decision, and since SW-251 it is no
+		// longer free. The claim below — that the Linux CI deny-egress gate
+		// verifies the invariant for real — is a documented ASSUMPTION, not
+		// SHA-bound evidence for this commit, so it buys a pull request and
+		// nothing more: on `main` and the release path an unobservable
+		// zero-outbound posture blocks. Substitute evidence that would earn
+		// more is a filed infrastructure story, not this text.
 		combined := out.String() + stderr.String()
 		if strings.Contains(combined, "UNVERIFIED") && !strings.Contains(combined, "VIOLATED") {
 			return r.score, &UnverifiedError{Detail: "privacy zero-outbound unverified on this platform (no netns isolation); verified by the Linux CI deny-egress gate"}
@@ -261,9 +267,11 @@ func (r *privacyRunner) Run() (float64, error) {
 	return r.score, nil
 }
 
-// UnverifiedError marks a gate that could not be OBSERVED on this platform
-// (as opposed to failing). The gate records it as a warning, not a blocker;
-// the invariant is enforced for real on the platforms that can observe it.
+// UnverifiedError marks a gate that could not be OBSERVED (as opposed to
+// failing) — the absence of a measurement, not a bad one. It is one of the two
+// typed errors that reach the four-state classification; GateError in policy.go
+// is the other. Whether it blocks depends on the execution context and is
+// decided there, never here.
 type UnverifiedError struct{ Detail string }
 
 func (e *UnverifiedError) Error() string { return e.Detail }

@@ -49,12 +49,12 @@ import (
 //
 // # What this runner does NOT decide
 //
-// It does not decide what UNVERIFIED means for a PR or a release — that is
-// SW-251. UNVERIFIED is therefore returned as *UnverifiedError, which this gate
-// already records as a non-blocking warning. That is deliberately the same
-// release outcome as today, where a skip read as a pass: this story makes the
-// state visible and named, and changes no one's blocking status. A FAIL still
-// blocks, and so does an ERROR.
+// It does not decide what UNVERIFIED means for a PR or a release. It reports a
+// state; policy.go decides what that state costs, and the two are kept apart on
+// purpose so that an instrument can never quietly become a policy. UNVERIFIED
+// is returned as *UnverifiedError and an unusable answer as *GateError; the
+// classification of those two into the four states, and the blocking decision
+// over them, both live in policy.go.
 type testgateRunner struct {
 	timeout time.Duration
 	score   float64
@@ -74,7 +74,8 @@ func (r *testgateRunner) Run() (float64, error) {
 	}
 	stdout, stderr, exitCode, err := runFn(ctx)
 	if err != nil {
-		return 0, fmt.Errorf("testgate: %w: %s", err, strings.TrimSpace(stderr))
+		// The child never produced an exit code: machinery, not measurement.
+		return 0, &GateError{Detail: fmt.Sprintf("testgate: %v: %s", err, strings.TrimSpace(stderr))}
 	}
 
 	var res testgate.EvaluateResult
@@ -83,8 +84,8 @@ func (r *testgateRunner) Run() (float64, error) {
 		// Fail closed. An unreadable verdict is not an absent verdict; the
 		// only safe reading of "the gate produced something I cannot parse"
 		// is that the run was not validated.
-		return 0, fmt.Errorf("testgate: unreadable verdict (exit %d): %v: %s",
-			exitCode, err, strings.TrimSpace(stderr))
+		return 0, &GateError{Detail: fmt.Sprintf("testgate: unreadable verdict (exit %d): %v: %s",
+			exitCode, err, strings.TrimSpace(stderr))}
 	}
 
 	// The exit code and the parsed verdict are two independent statements about
@@ -97,9 +98,9 @@ func (r *testgateRunner) Run() (float64, error) {
 	// nothing else, so which gate reported UNVERIFIED could not be recovered
 	// from the CI log at all.
 	if want := testgate.ExitCode(res); want != exitCode {
-		return 0, fmt.Errorf(
+		return 0, &GateError{Detail: fmt.Sprintf(
 			"testgate: verdict %q implies exit %d but the process exited %d; refusing to guess which is right: %s",
-			res.Verdict, want, exitCode, strings.TrimSpace(stderr))
+			res.Verdict, want, exitCode, strings.TrimSpace(stderr))}
 	}
 
 	switch res.Verdict {
@@ -109,10 +110,15 @@ func (r *testgateRunner) Run() (float64, error) {
 		// Reported, not decided. SW-251 owns the policy; this story owns the
 		// transport, and silently blocking here would be taking that decision.
 		return r.score, &UnverifiedError{Detail: formatUnverified(res)}
-	case testgate.VerdictNotGreen, testgate.VerdictError:
+	case testgate.VerdictNotGreen:
+		// A real failure of the thing measured: FAIL, blocking everywhere.
 		return 0, fmt.Errorf("testgate: %s", strings.TrimSpace(testgate.FormatVerdict(res)))
+	case testgate.VerdictError:
+		// The suite could not produce a usable answer at all — a broken
+		// instrument, not a broken subject. ERROR, blocking everywhere.
+		return 0, &GateError{Detail: "testgate: " + strings.TrimSpace(testgate.FormatVerdict(res))}
 	default:
-		return 0, fmt.Errorf("testgate: unknown verdict %q", res.Verdict)
+		return 0, &GateError{Detail: fmt.Sprintf("testgate: unknown verdict %q", res.Verdict)}
 	}
 }
 
@@ -126,8 +132,10 @@ func formatUnverified(res testgate.EvaluateResult) string {
 			gate.GateID, gate.Package, gate.Test, gate.ReasonCode, gate.Measurements))
 	}
 	return "test suite reported no failure, but " + strings.Join(parts, "; ") +
-		". This is NOT evidence that what these gates measure is healthy; " +
-		"what an unverified measurement means for a release is SW-251's decision, not this runner's"
+		". This is NOT evidence that what these gates measure is healthy. " +
+		"Whether it blocks is decided by the execution context, not by this runner: " +
+		"see SW-251's policy in cmd/release-gate/policy.go — on a pull request it does not block, " +
+		"on main and the release path it does"
 }
 
 // runTestgateJSON builds cmd/testgate once and executes the resulting binary.

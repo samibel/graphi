@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,12 +26,29 @@ type GateResult struct {
 	Warnings []string
 	Errors   []string
 	Pass     bool
+
+	// Context is the execution context the policy was applied in. It is
+	// recorded on the result so the verdict can never be read without the
+	// question "blocking WHERE?" already answered.
+	Context Context
+	// Gates is every constituent gate's four-state answer and what this
+	// context did about it, sorted by name. This is the record the policy
+	// acted on; FormatVerdict renders it before anything else.
+	Gates []GateOutcome
 }
 
-// Runner executes one hard constituent gate. A non-nil error blocks the
-// release; the returned score is informational only — the 9/10 verdict comes
-// from the MEASURED eval scorecard report, never from runner pass/fail
-// averaging.
+// Unverified names every gate that reported UNVERIFIED in this run, blocking
+// or not.
+func (r GateResult) Unverified() []string { return unverifiedGateNames(r.Gates) }
+
+// Runner executes one hard constituent gate. The returned score is
+// informational only — the 9/10 verdict comes from the MEASURED eval scorecard
+// report, never from runner pass/fail averaging.
+//
+// The error says WHICH of the four states this run reached, and it is the only
+// thing a Runner decides: nil is PASS, *UnverifiedError is UNVERIFIED,
+// *GateError is ERROR, anything else is FAIL. Whether a state blocks is not a
+// Runner's business — see classifyGate and Context.Blocks in policy.go.
 type Runner interface {
 	Run() (float64, error)
 }
@@ -45,30 +62,38 @@ type UXFn func() (evalreport.UXMetrics, error)
 
 // Run executes the release gate:
 //
-//  1. every hard gate (testgate, coverage, privacy) must succeed;
+//  1. every hard gate (see requiredGates) must report a state this context
+//     allows;
 //  2. the eval scorecard report supplies the MEASURED area scores;
 //  3. the web suite supplies the measured ux score;
 //  4. the final scorecard is recomputed from those inputs.
 //
-// The release is blocked when any hard gate fails, an MCP tool was removed
-// against the baseline, the report carries a Tier-1 regression, any area is
-// below the 80 floor, or the overall score is below 90.
-func Run(gates map[string]Runner, evalFn EvalReportFn, uxFn UXFn, baselinePath string) (GateResult, error) {
+// The release is blocked when any hard gate BLOCKS in ctx (see Context.Blocks
+// in policy.go — the four-state policy this gate applies), an MCP tool was
+// removed against the baseline, the report carries a Tier-1 regression, any
+// area is below the 80 floor, or the overall score is below 90.
+//
+// ctx is the execution context and it changes exactly one thing: whether an
+// UNVERIFIED gate blocks. It is passed in rather than sniffed from the
+// environment so that the policy is exercised by tests in both contexts
+// without either of them having to fake a CI runner.
+func Run(ctx Context, gates map[string]Runner, evalFn EvalReportFn, uxFn UXFn, baselinePath string) (GateResult, error) {
 	var res GateResult
+	res.Context = ctx
 
-	gateNames := make([]string, 0, len(gates))
-	for name := range gates {
-		gateNames = append(gateNames, name)
-	}
-	sort.Strings(gateNames)
-	for _, name := range gateNames {
-		if _, err := gates[name].Run(); err != nil {
-			var unverified *UnverifiedError
-			if errors.As(err, &unverified) {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("%s unverified: %s", name, unverified.Detail))
-				continue
-			}
-			res.Errors = append(res.Errors, fmt.Sprintf("%s failed: %v", name, err))
+	// Every constituent gate is classified into one of four states and the
+	// policy in policy.go decides what this context does about it. Nothing
+	// here re-decides: a blocking outcome becomes an error, a non-blocking
+	// non-PASS outcome becomes a warning, and the reason is carried verbatim.
+	res.Gates = evaluateGates(ctx, gates)
+	for _, out := range res.Gates {
+		switch {
+		case out.State == StatePass:
+		case out.Blocking:
+			res.Errors = append(res.Errors, fmt.Sprintf("%s %s: %s", out.Name, out.State, out.Detail))
+		default:
+			res.Warnings = append(res.Warnings, fmt.Sprintf("%s %s (not blocking in context=%s): %s",
+				out.Name, out.State, ctx, out.Detail))
 		}
 	}
 
@@ -167,9 +192,37 @@ func checkToolBaseline(path string) ([]string, error) {
 	return removed, nil
 }
 
+// PublishRefusedError reports that release evidence was NOT written because
+// writing it would have published a PASS verdict over a measurement that was
+// never taken.
+type PublishRefusedError struct{ Gates []string }
+
+func (e *PublishRefusedError) Error() string {
+	return fmt.Sprintf(
+		"refusing to publish release evidence: %s unverified. "+
+			"A published scorecard outlives the run that produced it and is read as the "+
+			"record of what was measured; one that cannot honestly say PASS must not be "+
+			"written saying it",
+		strings.Join(e.Gates, ", "))
+}
+
 // Publish writes the scorecard evidence to docs/: the full measured eval
 // report with the gate's recomputed scorecard and ux metrics embedded.
+//
+// It REFUSES, returning *PublishRefusedError, while any gate is UNVERIFIED
+// (AC-4). Whether an unverified measurement blocks the run is
+// context-dependent; whether it may be laundered into a published PASS is not.
+// On a pull request the gate itself passes and this refusal is not a failure —
+// see main.go — but the artifact is still not written, because the artifact
+// makes a claim the run cannot support.
+//
+// Publishing is also verified: both files must exist on the way out. That
+// assertion used to live in .github/workflows/release-gate.yml, where it could
+// not distinguish "publish was refused" from "publish silently wrote nothing".
 func Publish(result GateResult, docsDir, version, commit string) error {
+	if unverified := result.Unverified(); len(unverified) > 0 {
+		return &PublishRefusedError{Gates: unverified}
+	}
 	report := result.Report
 	header := evalreport.NewHeader(version, commit)
 	// The eval report carries the richer provenance (resolved SHA, corpus
@@ -183,17 +236,57 @@ func Publish(result GateResult, docsDir, version, commit string) error {
 	report.UXMetrics = result.UX
 	report.Target = 90.0
 	report.SelfReported = true
-	if err := evalreport.WriteJSON(report, filepath.Join(docsDir, "release-scorecard.json")); err != nil {
+	jsonPath := filepath.Join(docsDir, "release-scorecard.json")
+	mdPath := filepath.Join(docsDir, "release-scorecard.md")
+	if err := evalreport.WriteJSON(report, jsonPath); err != nil {
 		return err
 	}
-	return evalreport.WriteMarkdown(report, filepath.Join(docsDir, "release-scorecard.md"))
+	if err := evalreport.WriteMarkdown(report, mdPath); err != nil {
+		return err
+	}
+	for _, path := range []string{jsonPath, mdPath} {
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("published evidence missing after publish: %w", err)
+		}
+	}
+	return nil
 }
 
 // FormatVerdict returns a human-readable summary.
+//
+// The gate table and the UNVERIFIED banner come FIRST, immediately under the
+// verdict line, because AC-2 is about prominence: an unverified measurement
+// that a reader has to go looking for at the bottom of a 16-minute log is not
+// meaningfully different from one that was never reported. Everything a reader
+// needs to know that a measurement is missing — and that it did not block —
+// is in the first few lines.
 func FormatVerdict(result GateResult) string {
-	var b string
-	b += fmt.Sprintf("Release gate: %s\n", map[bool]string{true: "PASS", false: "FAIL"}[result.Pass])
-	b += fmt.Sprintf("Overall: %.1f/100 (pass needs >= 90 overall, every area >= 80)\n", result.Scorecard.Overall)
+	var b strings.Builder
+	fmt.Fprintf(&b, "Release gate: %s  [context=%s]\n",
+		map[bool]string{true: "PASS", false: "FAIL"}[result.Pass], result.Context)
+
+	if len(result.Gates) > 0 {
+		b.WriteString("Constituent gates (four states; only UNVERIFIED depends on the context):\n")
+		for _, g := range result.Gates {
+			line := fmt.Sprintf("  %-13s %-10s %s", g.Name, g.State, gateDisposition(result.Context, g))
+			b.WriteString(strings.TrimRight(line, " ") + "\n")
+		}
+	}
+	if unverified := result.Unverified(); len(unverified) > 0 {
+		fmt.Fprintf(&b, "\n!! UNVERIFIED: %s could not be measured on this run.\n", strings.Join(unverified, ", "))
+		b.WriteString("   This is NOT evidence of health. No measurement was taken.\n")
+		if result.Context.Blocks(StateUnverified) {
+			b.WriteString("   context=" + string(result.Context) + ": this BLOCKS. On the release line a missing\n" +
+				"   measurement is not an approval, and no release evidence is published.\n")
+		} else {
+			b.WriteString("   context=" + string(result.Context) + ": this does NOT block — a measurement that could\n" +
+				"   not be taken is not a reason to refuse a change. The same run on the\n" +
+				"   release line would be refused, and no release evidence is published.\n")
+		}
+		b.WriteString("\n")
+	}
+
+	fmt.Fprintf(&b, "Overall: %.1f/100 (pass needs >= 90 overall, every area >= 80)\n", result.Scorecard.Overall)
 	var keys []string
 	for k := range result.Scorecard.Breakdown {
 		keys = append(keys, k)
@@ -205,19 +298,77 @@ func FormatVerdict(result GateResult) string {
 		if prov == "" {
 			prov = "unknown"
 		}
-		b += fmt.Sprintf("  %s: %.1f/100 (weight %d, below_floor=%v, %s)\n", k, v.Score, v.Weight, v.BelowFloor, prov)
+		fmt.Fprintf(&b, "  %s: %.1f/100 (weight %d, below_floor=%v, %s)\n", k, v.Score, v.Weight, v.BelowFloor, prov)
 	}
 	for _, r := range result.Regressions {
-		b += fmt.Sprintf("  tier-1 regression: %s (%s → %s)\n", r.ScenarioID, r.Before, r.After)
+		fmt.Fprintf(&b, "  tier-1 regression: %s (%s \u2192 %s)\n", r.ScenarioID, r.Before, r.After)
 	}
 	for _, r := range result.Removed {
-		b += fmt.Sprintf("  removed tool: %s\n", r)
+		fmt.Fprintf(&b, "  removed tool: %s\n", r)
 	}
 	for _, w := range result.Warnings {
-		b += fmt.Sprintf("  warning: %s\n", w)
+		fmt.Fprintf(&b, "  warning: %s\n", w)
 	}
 	for _, e := range result.Errors {
-		b += fmt.Sprintf("  error: %s\n", e)
+		fmt.Fprintf(&b, "  error: %s\n", e)
 	}
-	return b
+	return b.String()
+}
+
+// gateDisposition says what the policy did with one gate, in the reader's
+// words rather than a boolean.
+func gateDisposition(ctx Context, g GateOutcome) string {
+	switch {
+	case g.State == StatePass:
+		return ""
+	case g.Blocking:
+		return "BLOCKS \u2014 " + g.Detail
+	default:
+		return fmt.Sprintf("not blocking in context=%s (blocks in context=%s) \u2014 %s",
+			ctx, ContextRelease, g.Detail)
+	}
+}
+
+// WriteStepSummary appends the verdict to GitHub's check summary when running
+// under Actions, so an UNVERIFIED gate is visible on the checks page itself
+// rather than only to whoever expands the step log (AC-2).
+//
+// It is a no-op off CI, and a failure to write it is never allowed to change a
+// verdict — reporting the result and deciding the result are different jobs.
+func WriteStepSummary(result GateResult) error {
+	path := os.Getenv("GITHUB_STEP_SUMMARY")
+	if path == "" {
+		return nil
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "## Release gate: %s (context=%s)\n\n",
+		map[bool]string{true: "PASS", false: "FAIL"}[result.Pass], result.Context)
+	if unverified := result.Unverified(); len(unverified) > 0 {
+		verb := "does not block on a pull request"
+		if result.Context.Blocks(StateUnverified) {
+			verb = "BLOCKS on the release line"
+		}
+		fmt.Fprintf(&b, "> **UNVERIFIED — %s could not be measured.** This %s. "+
+			"It is not evidence of health, and no release evidence is published while it stands.\n\n",
+			strings.Join(unverified, ", "), verb)
+	}
+	b.WriteString("| gate | state | disposition |\n|---|---|---|\n")
+	for _, g := range result.Gates {
+		disposition := "allowed"
+		if g.Blocking {
+			disposition = "**BLOCKS**"
+		} else if g.State != StatePass {
+			disposition = "not blocking in context=" + string(result.Context)
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s |\n", g.Name, g.State, disposition)
+	}
+	fmt.Fprintf(&b, "\n```\n%s```\n", FormatVerdict(result))
+
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(b.String())
+	return err
 }

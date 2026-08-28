@@ -34,10 +34,20 @@ jobs:
       - name: Install web dependencies
         run: cd web && npm ci
 
+      # The workflow states a FACT — where this run is happening — and holds no
+      # policy. What `pr` and `release` MEAN is decided in reviewed Go, in
+      # cmd/release-gate/policy.go, beside the gates the rule protects. The only
+      # thing the context changes is whether an UNVERIFIED gate blocks: on a
+      # pull request a measurement that could not be taken is not a reason to
+      # refuse a change; on `main` and the release path it is not an approval
+      # either, so it blocks.
+      #
+      # A missing or misspelt value is not a loophole: release-gate rejects an
+      # unknown context outright, and an absent one defaults to `release`, the
+      # strict side.
+      #
+      # push-to-main and workflow_dispatch both take the release side.
       - name: Run release gate
-        run: go run ./cmd/release-gate -publish
-
-      - name: Assert published scorecard exists
-        run: |
-          test -f docs/release-scorecard.json
-          test -f docs/release-scorecard.md
+        env:
+          GATE_CONTEXT: ${{ github.event_name == 'pull_request' && 'pr' || 'release' }}
+        run: go run ./cmd/release-gate -publish -context="$GATE_CONTEXT"

@@ -86,23 +86,37 @@ func TestTestgateRunnerUnverifiedIsReportedNotDecided(t *testing.T) {
 		}
 	}
 
-	// And the gate records it as a warning rather than a blocker: SW-250
-	// transports the state, SW-251 decides who it blocks. Changing that here
-	// would be taking SW-251's decision inside SW-250.
-	dir := t.TempDir()
-	baseline := filepath.Join(dir, "baseline.json")
-	writeBaseline(t, baseline, []string{"search", "analyze"})
-	gates := allPassGates()
-	gates["testgate"] = testgateRunnerWith(res, "")
-	result, err := Run(gates, passEval(t), passUX(), baseline)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if len(result.Errors) != 0 {
-		t.Fatalf("SW-250 must not decide the policy SW-251 owns; errors = %v", result.Errors)
-	}
-	if len(result.Warnings) != 1 || !strings.Contains(result.Warnings[0], "ax06_executor_seam_latency") {
-		t.Fatalf("the unverified measurement is not in the record: %v", result.Warnings)
+	// SW-250 transported the state; SW-251 decides what it costs, and the
+	// decision is the CONTEXT's, not the runner's. The same runner, the same
+	// verdict, two different dispositions — and the gate id survives into the
+	// record either way, because a warning nobody can trace to a gate is not a
+	// report.
+	for _, tc := range []struct {
+		ctx      Context
+		wantPass bool
+	}{
+		{ctx: ContextPR, wantPass: true},
+		{ctx: ContextRelease, wantPass: false},
+	} {
+		t.Run(string(tc.ctx), func(t *testing.T) {
+			dir := t.TempDir()
+			baseline := filepath.Join(dir, "baseline.json")
+			writeBaseline(t, baseline, []string{"search", "analyze"})
+			gates := allPassGates()
+			gates["testgate"] = testgateRunnerWith(res, "")
+			result, err := Run(tc.ctx, gates, passEval(t), passUX(), baseline)
+			if err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if result.Pass != tc.wantPass {
+				t.Fatalf("Pass = %v, want %v (warnings %v, errors %v)",
+					result.Pass, tc.wantPass, result.Warnings, result.Errors)
+			}
+			record := append(append([]string{}, result.Warnings...), result.Errors...)
+			if len(record) != 1 || !strings.Contains(record[0], "ax06_executor_seam_latency") {
+				t.Fatalf("the unverified measurement is not in the record: %v", record)
+			}
+		})
 	}
 }
 
