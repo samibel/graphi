@@ -34,5 +34,20 @@ jobs:
       # Direct mode auto-discovers first-party Go packages, excludes npm's
       # node_modules dependency trees, and captures JSON, stderr, and exit status
       # together. A shell pipeline would expose only testgate's own exit status.
+      # Build first, then execute. `go run` does not propagate a child's exit
+      # code — it reports every non-zero child status as "exit status N" on its
+      # own stderr and exits 1 itself — so of testgate's four verdicts (0 GREEN,
+      # 1 NOT GREEN, 2 ERROR, 3 UNVERIFIED) only two survived, and an UNVERIFIED
+      # run was indistinguishable here from a failing one. That failed CLOSED,
+      # never green, but it was undiagnosable. cmd/release-gate solved the same
+      # problem the same way in SW-250.
+      #
+      # This step holds no policy: it reports the instrument's verdict and every
+      # non-zero verdict is still red here. Whether an UNVERIFIED measurement
+      # blocks a release is decided in cmd/release-gate/policy.go, and this
+      # standalone check is the duplicate full-suite execution the spec defers
+      # to the release-DAG split.
       - name: strict all-green gate (full suite)
-        run: go run ./cmd/testgate
+        run: |
+          go build -o "$RUNNER_TEMP/testgate" ./cmd/testgate
+          "$RUNNER_TEMP/testgate"

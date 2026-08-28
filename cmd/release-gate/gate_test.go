@@ -70,7 +70,7 @@ func TestReleaseGatePasses(t *testing.T) {
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze"})
 
-	result, err := Run(allPassGates(), passEval(t), passUX(), baseline)
+	result, err := Run(ContextRelease, allPassGates(), passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestReleaseGateFailsSubEightyArea(t *testing.T) {
 	evalFn := func() (evalreport.Report, error) {
 		return fakeReport(t, map[string]float64{scorecard.AreaSignal: 70}), nil
 	}
-	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
+	result, err := Run(ContextRelease, allPassGates(), evalFn, passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestReleaseGateFailsTier1Regression(t *testing.T) {
 		r.RegressionsVsBaseline = []evalreport.Regression{{ScenarioID: "go-symbol", Before: "pass", After: "fail"}}
 		return r, nil
 	}
-	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
+	result, err := Run(ContextRelease, allPassGates(), evalFn, passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestReleaseGateFailsRemovedTool(t *testing.T) {
 	baseline := filepath.Join(dir, "baseline.json")
 	writeBaseline(t, baseline, []string{"search", "analyze", "removed_tool"})
 
-	result, err := Run(allPassGates(), passEval(t), passUX(), baseline)
+	result, err := Run(ContextRelease, allPassGates(), passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestReleaseGateFailsRedConstituentGate(t *testing.T) {
 	gates := allPassGates()
 	gates["coverage"] = staticRunner{err: errors.New("coverage red")}
 
-	result, err := Run(gates, passEval(t), passUX(), baseline)
+	result, err := Run(ContextRelease, gates, passEval(t), passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestReleaseGateUXFromWebSuite(t *testing.T) {
 		copy(files, requiredUXSuites)
 		return DeriveUX(100, 90, files), nil
 	}
-	result, err := Run(allPassGates(), passEval(t), uxFn, baseline)
+	result, err := Run(ContextRelease, allPassGates(), passEval(t), uxFn, baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
@@ -233,28 +233,49 @@ func writeBaseline(t *testing.T, path string, tools []string) {
 	}
 }
 
-// TestReleaseGateUnverifiedPrivacyIsAWarning pins the platform-robustness
-// contract: a privacy audit that cannot OBSERVE the network layer (macOS /
-// unprivileged local run) degrades to a warning — the Linux CI deny-egress
-// gate does the real verification — while an actual VIOLATED posture still
-// blocks (staticRunner with a plain error, covered above).
-func TestReleaseGateUnverifiedPrivacyIsAWarning(t *testing.T) {
-	dir := t.TempDir()
-	baseline := filepath.Join(dir, "baseline.json")
-	writeBaseline(t, baseline, []string{"search", "analyze"})
+// TestReleaseGateUnverifiedPrivacyBlocksTheReleaseLine pins the behaviour
+// change SW-251 exists to make.
+//
+// Before this story an UNVERIFIED privacy audit — the audit could not create
+// the loopback-only network namespace, so it could not OBSERVE the network
+// layer — degraded to a warning in EVERY context, and the release passed. The
+// justification was that the Linux CI deny-egress gate does the real
+// verification. That justification is an assumption, not SHA-bound evidence
+// for this commit, so on the release line it is no longer accepted. On a pull
+// request it still is, and the run still passes.
+func TestReleaseGateUnverifiedPrivacyBlocksTheReleaseLine(t *testing.T) {
+	for _, tc := range []struct {
+		ctx       Context
+		wantPass  bool
+		wantWarns int
+		wantErrs  int
+	}{
+		{ctx: ContextPR, wantPass: true, wantWarns: 1, wantErrs: 0},
+		{ctx: ContextRelease, wantPass: false, wantWarns: 0, wantErrs: 1},
+	} {
+		t.Run(string(tc.ctx), func(t *testing.T) {
+			dir := t.TempDir()
+			baseline := filepath.Join(dir, "baseline.json")
+			writeBaseline(t, baseline, []string{"search", "analyze"})
 
-	gates := allPassGates()
-	gates["privacy"] = staticRunner{err: &UnverifiedError{Detail: "no netns isolation on this platform"}}
+			gates := allPassGates()
+			gates["privacy"] = staticRunner{err: &UnverifiedError{Detail: "no netns isolation on this platform"}}
 
-	result, err := Run(gates, passEval(t), passUX(), baseline)
-	if err != nil {
-		t.Fatalf("Run: %v", err)
-	}
-	if !result.Pass {
-		t.Fatalf("expected pass with unverified-platform warning, got errors %v", result.Errors)
-	}
-	if len(result.Warnings) != 1 {
-		t.Fatalf("expected one warning, got %v", result.Warnings)
+			result, err := Run(tc.ctx, gates, passEval(t), passUX(), baseline)
+			if err != nil {
+				t.Fatalf("Run: %v", err)
+			}
+			if result.Pass != tc.wantPass {
+				t.Fatalf("Pass = %v, want %v (warnings %v, errors %v)",
+					result.Pass, tc.wantPass, result.Warnings, result.Errors)
+			}
+			if len(result.Warnings) != tc.wantWarns {
+				t.Fatalf("warnings = %v, want %d", result.Warnings, tc.wantWarns)
+			}
+			if len(result.Errors) != tc.wantErrs {
+				t.Fatalf("errors = %v, want %d", result.Errors, tc.wantErrs)
+			}
+		})
 	}
 }
 
@@ -275,7 +296,7 @@ func TestGateDropsStaleCarryWarnings(t *testing.T) {
 		}
 		return r, nil
 	}
-	result, err := Run(allPassGates(), evalFn, passUX(), baseline)
+	result, err := Run(ContextRelease, allPassGates(), evalFn, passUX(), baseline)
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
