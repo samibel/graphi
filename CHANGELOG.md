@@ -26,6 +26,55 @@ file:
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-08-29
+
+**A correction, not an improvement.** 0.12.0's headline feature is an embedded
+privacy attestation, and as shipped that attestation was forgeable in a way the
+binary could have detected and did not. Anyone running a 0.12.0 binary they did
+not build themselves should upgrade.
+
+### Fixed
+
+- **The privacy attestation is now bound to every toolchain fact the binary
+  records about itself.** `graphi privacy-audit` previously cross-checked only the
+  VCS revision and the target platform. Three further claims — `vcs.modified`, the
+  `CGO_ENABLED` setting and the `-tags` build-tag set — were validated for shape
+  and never compared against the values Go had written into the same binary via
+  `debug.ReadBuildInfo()`, even though the code already read that structure for
+  the revision. All five are now compared, and a disagreement yields `UNVERIFIED`,
+  never a PASS.
+
+  Each gap was demonstrated rather than inferred, and each demonstration was
+  reproduced independently at review: a binary built from a genuinely dirty tree
+  claiming `source_modified: false`; a binary linked with `CGO_ENABLED=1` claiming
+  `cgo_enabled: "0"` and printing *"canonical build contract enforced
+  CGO_ENABLED=0"*; and a binary linked with **no** build tags claiming the
+  canonical 21-tag set.
+
+  The third is the one that mattered most. The build-tag set scopes the evidence
+  digest and is the exact input the report tells a sceptical user to feed into
+  `go run ./cmd/canary -tags '<…>'` — so that lie did not merely misreport, it
+  would have sent the verifier to scan a dependency graph the binary was never
+  built from, and the reproduction would have agreed.
+
+  `EvidenceDigest` remains the one field with no in-binary ground truth; that is
+  inherent — checking it requires the source tree — and is stated in the report
+  rather than implied away.
+
+- **The 0.12.0 release notes above have been restored** to describe what 0.12.0
+  actually shipped. The fix commit had edited that section to describe the
+  corrected behaviour, which left the notes for a published release claiming more
+  than its binaries do.
+
+### Note on what this does and does not defend against
+
+The official 0.12.0 binaries are honest: they were built by the canonical path and
+their attestations are true. The defect is not that released binaries lie. It is
+that the attestation exists precisely so a user can trust a binary they did not
+build — and until this fix, a third party could ship a forged one that
+`graphi privacy-audit` would vouch for. An attestation that cannot distinguish
+itself from a forgery does not do the job it was added for.
+
 ## [0.12.0] - 2026-08-29
 
 Privacy evidence now describes the shipped binary instead of accidentally
@@ -48,14 +97,18 @@ source scan and build.
   deterministic evidence digest can be embedded; a failed, unavailable or
   incomplete measurement stops the release build instead of producing an
   assertion. `graphi privacy-audit` binds that record to the running binary by
-  cross-checking every claim the Go toolchain independently recorded into the
-  same binary — VCS revision, `vcs.modified` source state, the `CGO_ENABLED`
-  setting and the `-tags` build-tag set it was linked with, and the target
-  platform. A record that disagrees with any of them yields `UNVERIFIED`, never
-  a PASS, so a hand-forged ldflag payload cannot make a dirty-tree, CGo-enabled
-  or differently-flavored binary describe itself as clean, CGo-free and scanned.
-  The report also prints the binary digest needed to check published
-  provenance.
+  cross-checking the VCS revision and the target platform against what the Go
+  toolchain independently recorded into the same binary. The report also prints
+  the binary digest needed to check published provenance.
+
+  **Corrected after release — see 0.12.1.** As shipped, 0.12.0 cross-checked only
+  two of the record's five toolchain-observable claims. `vcs.modified`, the
+  `CGO_ENABLED` setting and the `-tags` build-tag set were validated for shape
+  only and never compared against the values Go had recorded into the same
+  binary, so a hand-forged ldflag payload could make a dirty-tree, CGo-enabled or
+  differently-flavored binary describe itself as clean, CGo-free and scanned.
+  This paragraph originally described the fixed behaviour; it has been restored
+  to what 0.12.0 actually does.
 
 - **An unavailable source scan is no longer rendered as a toolchain failure.** A
   non-canonical developer binary run outside the graphi module now reports the
