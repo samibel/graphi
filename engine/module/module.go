@@ -59,7 +59,11 @@
 // a built-in contributor:
 //
 //   - operations → engine/opcatalog. The engine.operations module contributes
-//     the shadow catalog's specs.
+//     the shadow catalog's specs — all but the ones a handler-bearing module
+//     claims. Since SW-255 (AX-15) a contribution may also carry a HANDLER
+//     (AddOperationContribution: spec + Bind over typed Ports), and exactly
+//     one built-in does: engine.deadcode. The handler table is frozen into the
+//     Composition beside the catalog and reachable only by lookup.
 //   - parsers    → core/parse. The core.parse module contributes
 //     parse.DefaultParsers(), one at a time.
 //   - analyzers  → engine/analysis. The engine.analysis module contributes
@@ -88,6 +92,8 @@
 package module
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -98,6 +104,7 @@ import (
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/opcatalog"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/typeresolve"
 )
 
@@ -146,6 +153,54 @@ type Inputs struct {
 	// WatchProvider is the daemon's read-only watcher-status provider. Nil
 	// everywhere else, which is the honest "not active" state.
 	WatchProvider analysis.WatchStatusProvider
+
+	// GraphQuery is the opcatalog.PortGraphQuery port: engine/query's
+	// structural read service over this session's store (SW-255 / AX-15). A
+	// handler-bearing module whose spec declares the port receives THIS value,
+	// and Build fails closed if the spec declares it and it is nil.
+	GraphQuery *query.Service
+	// GraphSearch is the opcatalog.PortGraphSearch port: engine/search's
+	// lexical/symbol read service over this session's store. Same rule.
+	GraphSearch *search.Service
+}
+
+// OperationHandler runs one catalog operation in engine: it takes the caller's
+// context and the operation's raw JSON arguments, decodes them fail-closed into
+// the operation's own params type, and returns the canonical result bytes the
+// operation's serializer produces (SW-255 / AX-15).
+//
+// It is the type the composition root hands to surfaces/client's executor,
+// which prefers a module handler over its legacy adapter when the composition
+// has one. Surfaces keep knowing only an operation id, request arguments and
+// result bytes — the handler's params type never crosses into them.
+type OperationHandler func(ctx context.Context, arguments json.RawMessage) ([]byte, error)
+
+// Ports are the typed runtime dependencies a handler-bearing module receives.
+//
+// The builder fills EXACTLY the ports the module's spec declares, from Inputs,
+// and leaves every other field nil: a module cannot reach a service its
+// catalog entry does not name. One field per opcatalog.Port the builder can
+// supply; a spec declaring a port with no field here fails Build
+// (registry.ErrMissingDependency) rather than being handed nil.
+type Ports struct {
+	// GraphQuery is opcatalog.PortGraphQuery.
+	GraphQuery *query.Service
+	// GraphSearch is opcatalog.PortGraphSearch.
+	GraphSearch *search.Service
+}
+
+// OperationContribution is the contribution form that carries a spec AND a
+// handler (SW-255 / AX-15). It claims the same Operation:<id> slot
+// AddOperation claims, so a spec-only and a handler-bearing registration of
+// one id collide under the builder's first-wins policy like any other pair.
+type OperationContribution struct {
+	// Spec is the catalog entry — identity, version, tier, ports.
+	Spec opcatalog.OperationSpec
+	// Bind receives the ports Spec declares — and only those — and returns
+	// the handler bound to them. It runs once, inside Build, after every
+	// declared port has been checked non-nil; it never runs over a missing
+	// dependency.
+	Bind func(Ports) (OperationHandler, error)
 }
 
 // Set is the module set: an unordered collection of manifests that Build turns
@@ -356,6 +411,11 @@ type Builder struct {
 	analyzers *analysis.Registry
 	resolvers *typeresolve.Registry
 
+	// handlers holds the operation handlers contributed so far, keyed by
+	// operation id. It is moved into the Composition by finish and never
+	// handed out as a map.
+	handlers map[string]OperationHandler
+
 	// owners maps "<kind>:<key>" to the module that contributed it, so a
 	// collision names BOTH offenders rather than only the second one.
 	owners map[string]string
@@ -378,6 +438,7 @@ func newBuilder(in Inputs) *Builder {
 		parsers:   parse.NewRegistry(),
 		analyzers: analysis.NewRegistry(),
 		resolvers: resolvers,
+		handlers:  map[string]OperationHandler{},
 		owners:    map[string]string{},
 	}
 	for _, r := range resolvers.Resolvers() {
@@ -419,6 +480,71 @@ func (b *Builder) AddOperation(spec opcatalog.OperationSpec) error {
 		return err
 	}
 	return b.catalog.Add(spec)
+}
+
+// AddOperationContribution contributes one operation spec AND its engine-side
+// handler (SW-255 / AX-15).
+//
+// The order is deliberate: the slot is claimed first (so a duplicate is
+// reported before any port is resolved), the declared ports are resolved and
+// checked non-nil (so Bind never runs over a missing dependency), the handler
+// is bound, and only then is the spec added to the catalog — a contribution
+// that fails at any step leaves neither half behind.
+func (b *Builder) AddOperationContribution(c OperationContribution) error {
+	if err := b.claim("Operation", c.Spec.ID); err != nil {
+		return err
+	}
+	if c.Bind == nil {
+		return fmt.Errorf("%s: module %q contributed operation %q with no Bind: a contribution carries a handler or it is AddOperation",
+			registryName, b.current, c.Spec.ID)
+	}
+	ports, err := b.portsFor(c.Spec)
+	if err != nil {
+		return err
+	}
+	handler, err := c.Bind(ports)
+	if err != nil {
+		return fmt.Errorf("%s: module %q: bind operation %q: %w", registryName, b.current, c.Spec.ID, err)
+	}
+	if handler == nil {
+		return fmt.Errorf("%s: module %q: bind operation %q returned a nil handler", registryName, b.current, c.Spec.ID)
+	}
+	if err := b.catalog.Add(c.Spec); err != nil {
+		return err
+	}
+	b.handlers[c.Spec.ID] = handler
+	return nil
+}
+
+// portsFor resolves the ports spec declares from the builder's Inputs. It fills
+// only the declared ones, fails closed on a declared port that is nil, and
+// fails closed on a declared port this builder has no supply for — the module
+// asked for something the composition root did not (or cannot yet) provide,
+// and handing it nil would be the degradation AC-3 forbids.
+func (b *Builder) portsFor(spec opcatalog.OperationSpec) (Ports, error) {
+	var ports Ports
+	missing := func(port opcatalog.Port, why string) error {
+		return registry.Errorf(registry.ErrMissingDependency, registryName, "AddOperationContribution", spec.ID,
+			"%s: module %q: operation %q declares port %q, which %s",
+			registryName, b.current, spec.ID, string(port), why)
+	}
+	for _, port := range spec.Ports {
+		switch port {
+		case opcatalog.PortGraphQuery:
+			if b.inputs.GraphQuery == nil {
+				return Ports{}, missing(port, "is nil in the composition inputs")
+			}
+			ports.GraphQuery = b.inputs.GraphQuery
+		case opcatalog.PortGraphSearch:
+			if b.inputs.GraphSearch == nil {
+				return Ports{}, missing(port, "is nil in the composition inputs")
+			}
+			ports.GraphSearch = b.inputs.GraphSearch
+		default:
+			return Ports{}, missing(port, "this builder has no typed supply for (add a Ports field and an Inputs field in the same change)")
+		}
+	}
+	return ports, nil
 }
 
 // AddParser contributes one parser to the runtime parser registry. The parser's
@@ -487,12 +613,15 @@ func (b *Builder) finish(manifests []Manifest) (*Composition, error) {
 	svc = svc.Freeze()
 
 	b.done = true
+	handlers := b.handlers
+	b.handlers = nil // the builder keeps no path to the frozen table
 	return &Composition{
 		manifests: manifests,
 		catalog:   catalog,
 		parsers:   b.parsers,
 		analysis:  svc,
 		resolvers: b.resolvers,
+		handlers:  handlers,
 	}, nil
 }
 
@@ -505,6 +634,28 @@ type Composition struct {
 	parsers   *parse.Registry
 	analysis  *analysis.Service
 	resolvers *typeresolve.Registry
+	// handlers is the frozen operation-handler table (SW-255 / AX-15). It is
+	// reachable only through Handler and Handled, never as a map.
+	handlers map[string]OperationHandler
+}
+
+// Handler returns the engine-side handler for one operation id, if a module
+// contributed one. An operation with a spec but no handler — the 55 the
+// engine.operations module still contributes as specs only — reports false,
+// and the executor serves it through its legacy adapter.
+func (c *Composition) Handler(id string) (OperationHandler, bool) {
+	h, ok := c.handlers[id]
+	return h, ok
+}
+
+// Handled returns the ids that carry a handler, in canonical (sorted) order.
+func (c *Composition) Handled() []string {
+	out := make([]string, 0, len(c.handlers))
+	for id := range c.handlers {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Modules returns the composed manifests in composition order.

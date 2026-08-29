@@ -45,7 +45,7 @@
     {
       "path": "engine/agenttools/deadcode",
       "category": "engine-handler",
-      "reason": "dead-code operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+      "reason": "dead-code operation; an engine-side handler exists since SW-255 (AX-15) but the legacy Direct.DeadCode method is retained under AX-17 and still calls the engine package itself; the edge goes with the AX-17 removal slice"
     },
     {
       "path": "engine/agenttools/explain",

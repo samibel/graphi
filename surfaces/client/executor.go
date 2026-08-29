@@ -45,6 +45,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/samibel/graphi/core/registry"
 	"github.com/samibel/graphi/engine/opcatalog"
@@ -99,6 +100,32 @@ type Arguments interface {
 // and the struct has to know which one it is.
 type argumentsFactory func(operation string) Arguments
 
+// OperationHandler is the surfaces-side view of an ENGINE-SIDE operation
+// handler (SW-255 / AX-15): the caller's context and the raw JSON arguments
+// in, canonical result bytes out. It is the same shape as
+// engine/module.OperationHandler; the composition root converts between the
+// two, because this package may not import the module set.
+//
+// The surfaces learn nothing from it beyond what they already know for a
+// legacy adapter — an operation id, request arguments and result bytes. The
+// handler's params type, its ports and its serializer stay in engine.
+type OperationHandler func(ctx context.Context, arguments json.RawMessage) ([]byte, error)
+
+// OperationHandlerProvider is implemented by a Client that was composed with
+// module handlers — client.Direct, when the composition root installs the
+// module set's handler table into it. NewExecutorWithCatalog probes for it the
+// way the surfaces probe for CapabilityReporter: an optional capability of the
+// composed client, discovered on the value it was handed, never fetched from a
+// global.
+type OperationHandlerProvider interface {
+	// OperationHandler returns the handler for one operation id, if the
+	// composition contributed one.
+	OperationHandler(id string) (OperationHandler, bool)
+	// HandledOperations returns the ids that carry a handler, in canonical
+	// (sorted) order.
+	HandledOperations() []string
+}
+
 // Executor invokes catalog operations by name through the legacy Client.
 //
 // It holds a Client, not a Direct: everything it can do, a surface could already
@@ -112,6 +139,12 @@ type Executor struct {
 	client   Client
 	catalog  *opcatalog.Catalog
 	adapters map[string]argumentsFactory
+	// handlers is the module-handler table (SW-255 / AX-15), taken from the
+	// Client when it is an OperationHandlerProvider. Execute prefers an entry
+	// here over the legacy adapter for the same id; the adapter stays in
+	// adapters regardless (AX-17: nothing transitional is removed until the
+	// removal slice).
+	handlers map[string]OperationHandler
 }
 
 // NewExecutor builds an Executor over the shadow operation catalog.
@@ -154,7 +187,60 @@ func NewExecutorWithCatalog(c Client, catalog *opcatalog.Catalog) (*Executor, er
 				"%s: legacy adapter %q names an operation the catalog does not declare", executorRegistry, id)
 		}
 	}
-	return &Executor{client: c, catalog: catalog, adapters: adapters}, nil
+	handlers, err := moduleHandlers(c, catalog)
+	if err != nil {
+		return nil, err
+	}
+	return &Executor{client: c, catalog: catalog, adapters: adapters, handlers: handlers}, nil
+}
+
+// moduleHandlers copies the module-handler table out of a Client that carries
+// one. Like the adapter table it is checked against the catalog: a handler for
+// an id the catalog does not declare is a second, contradicting list and fails
+// construction. A Client that is not a provider yields an empty table, which is
+// the pre-AX-15 executor exactly.
+func moduleHandlers(c Client, catalog *opcatalog.Catalog) (map[string]OperationHandler, error) {
+	provider, ok := c.(OperationHandlerProvider)
+	if !ok {
+		return map[string]OperationHandler{}, nil
+	}
+	ids := provider.HandledOperations()
+	handlers := make(map[string]OperationHandler, len(ids))
+	for _, id := range ids {
+		if _, declared := catalog.Lookup(id); !declared {
+			return nil, registry.Errorf(registry.ErrMissingDependency, executorRegistry, "New", id,
+				"%s: module handler %q names an operation the catalog does not declare", executorRegistry, id)
+		}
+		h, present := provider.OperationHandler(id)
+		if !present || h == nil {
+			return nil, registry.Errorf(registry.ErrMissingDependency, executorRegistry, "New", id,
+				"%s: the client lists %q as handled but returns no handler for it", executorRegistry, id)
+		}
+		handlers[id] = h
+	}
+	return handlers, nil
+}
+
+// Handled returns the canonical-order ids the executor serves through a MODULE
+// handler rather than a legacy adapter. It is empty on a Client composed
+// without handlers, and holds exactly one id — dead_code — on the shipped
+// composition after SW-255.
+func (e *Executor) Handled() []string {
+	out := make([]string, 0, len(e.handlers))
+	for id := range e.handlers {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// handles reports whether Execute can run the operation at all, by either path.
+func (e *Executor) handles(operation string) bool {
+	if _, ok := e.handlers[operation]; ok {
+		return true
+	}
+	_, ok := e.adapters[operation]
+	return ok
 }
 
 // Catalog returns every operation spec in canonical (id-sorted) order, served
@@ -201,6 +287,14 @@ func (e *Executor) NewRequest(args Arguments) (Request, error) {
 // version the catalog does not declare, and an operation with no legacy adapter
 // (which is a real state in AX-04 — the catalog holds 56 operations and this
 // story adapts a representative subset).
+//
+// SW-255 (AX-15): when the composition contributed a MODULE HANDLER for the
+// operation, Execute hands it the raw arguments and returns its bytes; the
+// handler decodes fail-closed into the operation's own params type in engine.
+// The legacy adapter for the same id is not consulted — that is what makes the
+// kill switch's `active` position a different code path from `legacy` for the
+// first time. Every operation without a handler takes the adapter path exactly
+// as before.
 func (e *Executor) Execute(ctx context.Context, req Request) ([]byte, error) {
 	declared, known := e.catalog.VersionOf(req.Operation)
 	if !known {
@@ -211,6 +305,9 @@ func (e *Executor) Execute(ctx context.Context, req Request) ([]byte, error) {
 		return nil, registry.Errorf(registry.ErrMissingDependency, executorRegistry, "Execute", req.Operation,
 			"%s: operation %q has no version %q (the catalog declares version %q)",
 			executorRegistry, req.Operation, req.Version, declared)
+	}
+	if handler, ok := e.handlers[req.Operation]; ok {
+		return handler(ctx, req.Arguments)
 	}
 	factory, ok := e.adapters[req.Operation]
 	if !ok {

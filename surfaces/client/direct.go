@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -66,11 +67,57 @@ type Direct struct {
 	reviewFetcher forge.ReviewFetcher
 	repoRoot      string
 	gitProvider   githistory.GitProvider
+	// handlers is the module-handler table the composition root installs
+	// (SW-255 / AX-15): the engine-side handlers the module set contributed,
+	// keyed by operation id. Reachable only through OperationHandler and
+	// HandledOperations — never as a map — and copied on install.
+	handlers map[string]OperationHandler
 }
 
 // NewDirect constructs an in-process client.
 func NewDirect(q *query.Service, s *search.Service) *Direct {
 	return &Direct{querySvc: q, searchSvc: s}
+}
+
+// Compile-time proof that Direct can carry the module set's handlers to the
+// executor (SW-255 / AX-15) through the composition root's existing
+// Composition.Client() wiring rather than through a global.
+var _ OperationHandlerProvider = (*Direct)(nil)
+
+// WithOperationHandlers installs the module-handler table the composition
+// root built from engine/module's Composition. The map is COPIED: the caller
+// keeps no path into the client's table, so the runtime it hands to surfaces
+// stays immutable in this respect too.
+//
+// It is a post-open mutator like every other With* here, and it inherits
+// their fate (backlog: retiring the Direct mutators is AX-16b). Nothing else
+// in this package reads the table; NewExecutorWithCatalog discovers it through
+// the OperationHandlerProvider interface.
+func (d *Direct) WithOperationHandlers(handlers map[string]OperationHandler) *Direct {
+	table := make(map[string]OperationHandler, len(handlers))
+	for id, h := range handlers {
+		if h != nil {
+			table[id] = h
+		}
+	}
+	d.handlers = table
+	return d
+}
+
+// OperationHandler implements OperationHandlerProvider.
+func (d *Direct) OperationHandler(id string) (OperationHandler, bool) {
+	h, ok := d.handlers[id]
+	return h, ok
+}
+
+// HandledOperations implements OperationHandlerProvider.
+func (d *Direct) HandledOperations() []string {
+	out := make([]string, 0, len(d.handlers))
+	for id := range d.handlers {
+		out = append(out, id)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Compile-time proof that Direct exposes its optional wiring to capability-

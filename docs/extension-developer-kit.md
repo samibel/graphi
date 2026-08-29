@@ -187,21 +187,45 @@ determinism `deterministic`, ports `[graph.query, graph.search]`, permissions
 it: its MCP descriptor is already projected from its catalog spec (SW-225), and
 its surface dispatch already reaches the generic executor (SW-226).
 
-**The registration**, in full:
+**The registration**, as shipped in `engine/module/builtin.go` since SW-255
+(AX-15) — a spec **and** a handler, bound to typed ports:
 
 ```go
-set := module.NewSet()
-_ = set.Add(module.Module{
-    Manifest: module.Manifest{ID: "example.deadcode", Version: "1"},
-    Register: func(b *module.Builder) error { return b.AddOperation(spec) },
-})
-composition, _ := set.Build(module.Inputs{Reader: reader})
+// engine/module/builtin.go — the engine.deadcode built-in module
+{
+    Manifest: Manifest{ID: IDDeadCode, Version: builtinVersion, Requires: []string{IDParse, IDAnalysis}},
+    Register: func(b *Builder) error {
+        spec, _ := shadow.Lookup(deadcode.Operation) // read from the catalog, not retyped
+        return b.AddOperationContribution(OperationContribution{
+            Spec: spec,
+            Bind: func(p Ports) (OperationHandler, error) {
+                return deadcode.Handler(p.GraphQuery, p.GraphSearch), nil
+            },
+        })
+    },
+},
 ```
 
-That is the whole wiring. The spec is *read from the operation catalog*, not
-retyped — a worked example that restated the operation's metadata would be
-demonstrating a second source of truth, which is the thing the catalog exists to
-remove.
+`Bind` receives **exactly the ports the spec declares** (`graph.query` →
+`*query.Service`, `graph.search` → `*search.Service`) and nothing else; a
+declared port that the composition root left nil fails `Build` with
+`registry.ErrMissingDependency` naming the module, the operation and the port.
+The handler (`engine/agenttools/deadcode/handler.go`) takes the raw JSON
+arguments, decodes them with `DisallowUnknownFields` into the operation's own
+params type (`deadcode.Args`), and ends in the same `Assemble` +
+`contract.Serialize` pair the legacy `Direct.DeadCode` method ends in — there is
+no second serializer and no second defaulting site. The spec is *read from the
+operation catalog*, not retyped — a module that restated the operation's
+metadata would be demonstrating a second source of truth, which is the thing
+the catalog exists to remove.
+
+The spec-only form still exists and still composes: `Builder.AddOperation(spec)`
+is what `engine.operations` uses for the other 55 operations, and the AX-10
+worked-example test (`surfaces/ax10_worked_example_test.go`) still registers
+`dead_code` that way in an isolated set to prove the descriptor/contract
+projection. Both forms claim the same `Operation:<id>` slot, so registering an
+id twice — spec-only and handler-bearing, in either order — is
+`registry.ErrDuplicate`.
 
 **What the test asserts** (`surfaces/ax10_worked_example_test.go`):
 
@@ -219,19 +243,49 @@ Plus the harness itself, run against the **real** MCP and HTTP projections
 rather than stubs — the one place in the tree where that happens, because a
 harness pointed at a re-implementation certifies the re-implementation.
 
-**What is true today** (`main @ 4f14966`, 2026-08-29). `engine/module`'s
-built-in set contributes the whole catalog in one module (`engine.operations`),
-**as specs only** — `Builder.AddOperation` registers an `OperationSpec`, and no
-operation has an engine-side handler; the executor resolves every operation to
-a legacy `Client` adapter that calls the same method the legacy path calls. So
-a *first-party* operation is not one module each. That split was not done by
-SW-228 (which shipped the per-operation canary switch) or SW-232 (which was
-resliced into the durable divergence record and SW-238's Stable-migration
-preconditions). The first built-in module to carry a Spec **and** a Handler is
-SW-255 (AX-15), gated on the fan-out ratchet of SW-253. What AC-4 of this story
-established, and what still holds, is that the seam supports it: the
-registration above is the entire delta, and nothing in
-`surfaces/mcp/toolcalls.go` or `surfaces/mcp/descriptors.go` had to move.
+**What is true today** (SW-255 / AX-15, 2026-08-29). Exactly **one** built-in
+operation has an engine-side handler: `dead_code`, contributed by the
+`engine.deadcode` module above. `engine.operations` still contributes the other
+55 as specs only, and the executor still resolves those to a legacy `Client`
+adapter that calls the same method the legacy path calls. For `dead_code` the
+executor **prefers the module handler** when the composed client carries one
+(`surfaces/client.Executor.Execute`; the composition root installs the table
+through `client.Direct.WithOperationHandlers`), and falls back to the adapter
+otherwise — so the kill switch's `legacy` position serves the untouched
+`Direct.DeadCode` method, `active` serves the engine handler, and `shadow`
+compares the two. That is the first place on the seam where the two positions
+are **not the same code**, and the byte-parity evidence for it
+(`surfaces/client/executor_handler_test.go`) is correspondingly the first that
+is not tautological. The legacy adapter, the `Direct.DeadCode` method and the
+`engine.operations` module all stay (AX-17); the compiled-in position is still
+`shadow`, and no operation is `active` by default.
+
+**What a new read-only Labs operation needs now, and what it still needs.**
+Needs — in `engine`:
+
+1. a **catalog spec** (`engine/opcatalog`, with its ports, tier, determinism);
+2. a **handler** (`func(context.Context, json.RawMessage) ([]byte, error)`,
+   decoding fail-closed into the operation's own params type and returning the
+   operation's canonical serializer's bytes);
+3. a **module registration** (`AddOperationContribution{Spec, Bind}` in
+   `engine/module/builtin.go`, plus a line in that package's allowed-import test
+   and the `handlerBearing` list so `engine.operations` stops contributing the
+   spec);
+4. a **coverage-matrix row** (`docs/coverage-matrix.yaml`, `cmd/coverage`).
+
+Still needs — in the surfaces, because they are **not yet free of per-operation
+code**:
+
+5. an **argument-mapping row** in `surfaces/mcp/toolcalls.go:migratedTools`
+   (MCP tool arguments → executor arguments), and the operation's id in
+   `surfaces/client/canary.go:migratedOperations` with its parity and fidelity
+   cases;
+6. for HTTP, a **query-parameter mapping arm** in `surfaces/http/handlers.go`.
+
+The surfaces know only an operation id, request arguments and canonical result
+bytes; what they still own is the *translation* from each transport's argument
+vocabulary into the executor's. Removing that (AX-16b) is deferred until the
+Spec+Handler pattern has been proven on more than one operation.
 
 ---
 
