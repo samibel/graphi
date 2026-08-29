@@ -361,10 +361,12 @@ Tier C (a trusted subprocess, SW-231 / AX-11) was spiked, built, measured, and
 **declined** for this phase:
 [decisions/2026-08-process-extension-go-no-go.md](decisions/2026-08-process-extension-go-no-go.md).
 Four of the five go/no-go criteria were met; *"a real user case justifies the
-added complexity"* was not, and it is a conjunction member. The spike
-([`engine/exthost`](../engine/exthost), `extensions/example-analyzer`) is
-retained **unwired** as the evidence for the record and is not in the
-`cmd/graphi` import closure. Tier D (WASM) was never shipped (ADR 0013 N5).
+added complexity"* was not, and it is a conjunction member. The spike — its
+host package and the example extension, at the paths the decision record
+names — is retained **unwired** as the evidence for the record and is not in
+the `cmd/graphi` import closure; the spike's own isolation test forbids any
+file outside it from naming those paths, which is why this section does not.
+Tier D (WASM) was never shipped (ADR 0013 N5).
 Reopening either requires a new ADR, not a design review.
 
 ### 6.9 Current defaults and the rollback path

@@ -42,7 +42,7 @@ built".
 |---|---|---|---|
 | **A — Declarative packs** | **implemented** | SW-229 (rule packs, AX-09); SW-230 (developer kit + conformance harness, AX-10); SW-246 (`graphi extension` verbs) | [`engine/extpack`](../../engine/extpack), [`../extension-developer-kit.md`](../extension-developer-kit.md) |
 | **B — Static first-party modules** | **implemented** | SW-222 (registry lifecycle, AX-02); SW-223 (operation catalog, AX-03); SW-224 (generic executor, AX-04); SW-225 (MCP/HTTP projections, AX-05); SW-226 / SW-228 (canary, per-operation switch, AX-06/AX-08); SW-227 (module kernel + composition root, AX-07); SW-232 (durable divergence record); SW-244 / SW-245 / SW-248 (shadow default, off-critical-path comparison, reachability gate) | [`engine/module`](../../engine/module), [`core/registry`](../../core/registry), [`engine/opcatalog`](../../engine/opcatalog), [`surfaces/client/executor.go`](../../surfaces/client/executor.go), [`surfaces/client/canary.go`](../../surfaces/client/canary.go) |
-| **C — Trusted subprocess extensions** | **spiked and decided NO-GO** for phase 1 | SW-231 (AX-11) | [`../decisions/2026-08-process-extension-go-no-go.md`](../decisions/2026-08-process-extension-go-no-go.md); spike retained unwired in [`engine/exthost`](../../engine/exthost) |
+| **C — Trusted subprocess extensions** | **spiked and decided NO-GO** for phase 1 | SW-231 (AX-11) | [`../decisions/2026-08-process-extension-go-no-go.md`](../decisions/2026-08-process-extension-go-no-go.md); the spike is retained unwired as evidence, at the paths the decision record names |
 | **D — WASM** | **not shipped** (N5 unchanged; no revisit trigger has fired) | — | — |
 
 What the tier-B implementation does *not* yet contain, so this addendum cannot
