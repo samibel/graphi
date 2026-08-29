@@ -60,7 +60,11 @@ The default command reports evidence about the binary being executed:
 The embedded record carries the source commit, whether the source was modified,
 and a deterministic digest of the dependency names, `go.mod`/`go.sum`, and
 non-test Go sources inspected by the static gate. At runtime the command also
-hashes its own executable. It states explicitly that this embedded record is
+hashes its own executable. Every field in that record which the Go toolchain
+independently recorded into the same binary — the source revision, the
+`vcs.modified` source state, the `CGO_ENABLED` setting and the target platform —
+is cross-checked against `debug.ReadBuildInfo()`; any disagreement downgrades
+the static claims to `UNVERIFIED` rather than accepting the record's own word. It states explicitly that this embedded record is
 not an independent signature: a sceptical user checks `binary_sha256` against
 the release's `SHA256SUMS` and published build provenance, or reproduces the
 source scan from the named commit.

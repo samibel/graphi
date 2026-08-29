@@ -207,16 +207,20 @@ func unavailableStaticChecks(reason string) []Check {
 }
 
 type binaryBinding struct {
-	Revision string
-	Modified bool
-	SHA256   string
-	Arch     string
+	Revision   string
+	Modified   bool
+	CGOEnabled string
+	SHA256     string
+	Arch       string
 }
 
 func runningBinaryBinding() (binaryBinding, error) {
 	info := releaseinfo.New()
 	if info.Commit() == "" {
 		return binaryBinding{}, fmt.Errorf("running binary has no VCS revision")
+	}
+	if info.CGOEnabled() == "" {
+		return binaryBinding{}, fmt.Errorf("running binary has no CGO_ENABLED build setting")
 	}
 	path, err := os.Executable()
 	if err != nil {
@@ -232,10 +236,11 @@ func runningBinaryBinding() (binaryBinding, error) {
 		return binaryBinding{}, fmt.Errorf("hash running binary: %w", err)
 	}
 	return binaryBinding{
-		Revision: info.Commit(),
-		Modified: info.Modified(),
-		SHA256:   hex.EncodeToString(h.Sum(nil)),
-		Arch:     info.Arch(),
+		Revision:   info.Commit(),
+		Modified:   info.Modified(),
+		CGOEnabled: info.CGOEnabled(),
+		SHA256:     hex.EncodeToString(h.Sum(nil)),
+		Arch:       info.Arch(),
 	}, nil
 }
 
@@ -244,11 +249,26 @@ func attestedStaticChecks(att buildattest.Privacy) []Check {
 	if err != nil {
 		return unavailableStaticChecks("embedded build evidence could not be bound to the running binary: " + err.Error())
 	}
+	return attestedStaticChecksFor(binding, att)
+}
+
+// attestedStaticChecksFor is the pure half of attestedStaticChecks: every claim
+// the attestation makes that the Go toolchain independently recorded into the
+// same binary must agree with that recording, or no privacy conclusion is
+// accepted. Split from the I/O half so each mismatch is directly testable
+// without depending on how the test binary itself was built.
+func attestedStaticChecksFor(binding binaryBinding, att buildattest.Privacy) []Check {
 	if binding.Revision != att.SourceRevision {
 		return unavailableStaticChecks("embedded build evidence names a different source revision than the running binary; no privacy conclusion was accepted")
 	}
 	if binding.Arch != att.GOOS+"/"+att.GOARCH {
 		return unavailableStaticChecks("embedded build evidence names a different target platform than the running binary; no privacy conclusion was accepted")
+	}
+	if binding.Modified != att.SourceModified {
+		return unavailableStaticChecks("embedded build evidence names a different source state than the running binary's recorded vcs.modified; no privacy conclusion was accepted")
+	}
+	if binding.CGOEnabled != att.CGOEnabled {
+		return unavailableStaticChecks("embedded build evidence names a different CGO_ENABLED setting than the one the running binary was linked with; no privacy conclusion was accepted")
 	}
 	state := "clean"
 	if att.SourceModified {

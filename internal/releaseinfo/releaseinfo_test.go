@@ -1,6 +1,9 @@
 package releaseinfo
 
-import "testing"
+import (
+	"runtime/debug"
+	"testing"
+)
 
 func TestNewNoNetwork(t *testing.T) {
 	info := New()
@@ -50,4 +53,24 @@ func contains(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// CGOEnabled must mirror the CGO_ENABLED build setting the Go toolchain
+// recorded into this binary — it is the ground truth internal/audit compares a
+// build attestation's cgo_enabled claim against.
+func TestCGOEnabledMirrorsBuildSetting(t *testing.T) {
+	want := ""
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range bi.Settings {
+			if s.Key == "CGO_ENABLED" {
+				want = s.Value
+			}
+		}
+	}
+	if got := New().CGOEnabled(); got != want {
+		t.Fatalf("CGOEnabled() = %q, want the recorded build setting %q", got, want)
+	}
+	if want == "" {
+		t.Fatal("this test binary carries no CGO_ENABLED build setting; the ground truth this asserts on is missing")
+	}
 }
