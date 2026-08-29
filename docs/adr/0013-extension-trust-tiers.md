@@ -1,8 +1,12 @@
 # ADR 0013 — Extension trust tiers: four tiers, a trusted-local-code honesty statement, and the non-goals that bound them
 
 - **Status:** Accepted (design decision of record for the Extension Platform
-  Kernel; **nothing is implemented** — this ADR precedes all extension code and
-  changes no runtime behavior)
+  Kernel). The original text read *"nothing is implemented — this ADR precedes
+  all extension code and changes no runtime behavior"*; that was true on
+  2026-08-26 and is no longer. See **Implementation status (addendum,
+  2026-08-29)** below for what has shipped per tier. The Context, Decisions,
+  Threat model, Rollback, Consequences and "does not decide" sections are
+  unchanged.
 - **Date:** 2026-08-26
 - **Story:** SW-221 — AX-01: ADR for extension trust tiers
 - **Spec / Gate:** the Extension Platform Kernel spec §"Boundaries (whole-slice)"
@@ -25,6 +29,35 @@
 - **Feeds:** SW-222 (registry lifecycle), SW-229 (rule packs — the first tier-A
   product), SW-230 (extension developer kit), SW-231 (the tier-C spike and its
   go/no-go), SW-232 (Stable internal migration)
+
+## Implementation status (addendum, 2026-08-29)
+
+Added by SW-252 (AX-13). This block records what shipped against each tier at
+`main @ 4f14966`; it decides nothing and changes no text below it. The as-built
+description lives in
+[`../architecture-plan.md`](../architecture-plan.md) §6 "The extension kernel as
+built".
+
+| Tier | Status | Stories | Where |
+|---|---|---|---|
+| **A — Declarative packs** | **implemented** | SW-229 (rule packs, AX-09); SW-230 (developer kit + conformance harness, AX-10); SW-246 (`graphi extension` verbs) | [`engine/extpack`](../../engine/extpack), [`../extension-developer-kit.md`](../extension-developer-kit.md) |
+| **B — Static first-party modules** | **implemented** | SW-222 (registry lifecycle, AX-02); SW-223 (operation catalog, AX-03); SW-224 (generic executor, AX-04); SW-225 (MCP/HTTP projections, AX-05); SW-226 / SW-228 (canary, per-operation switch, AX-06/AX-08); SW-227 (module kernel + composition root, AX-07); SW-232 (durable divergence record); SW-244 / SW-245 / SW-248 (shadow default, off-critical-path comparison, reachability gate) | [`engine/module`](../../engine/module), [`core/registry`](../../core/registry), [`engine/opcatalog`](../../engine/opcatalog), [`surfaces/client/executor.go`](../../surfaces/client/executor.go), [`surfaces/client/canary.go`](../../surfaces/client/canary.go) |
+| **C — Trusted subprocess extensions** | **spiked and decided NO-GO** for phase 1 | SW-231 (AX-11) | [`../decisions/2026-08-process-extension-go-no-go.md`](../decisions/2026-08-process-extension-go-no-go.md); the spike is retained unwired as evidence, at the paths the decision record names |
+| **D — WASM** | **not shipped** (N5 unchanged; no revisit trigger has fired) | — | — |
+
+What the tier-B implementation does *not* yet contain, so this addendum cannot
+be read as more than it is: no operation has an engine-side handler
+(`module.Builder.AddOperation` registers a spec only), the executor's "new path"
+resolves a legacy adapter that calls the same `Client` method as the legacy
+path, and zero operations are on the `active` canary position. The legacy
+adapters, the shadow comparison, the canary code and the dual
+descriptor/contract sources are all still present and are **transitional**
+under the AX-17 rule (architecture-plan.md §6). The two `Feeds:` items above
+that were resliced: SW-228 shipped the per-operation switch without splitting
+the built-in operations module, and SW-232's "Stable internal migration" became
+SW-232 (durable divergence record) plus SW-238 (Stable migration
+preconditions), which waits on evidence that the default profile cannot yet
+produce (SW-247, SW-248).
 
 ## Context
 
