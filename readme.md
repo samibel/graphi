@@ -376,9 +376,9 @@ flowchart TD
     CMD & SURF -.-> CORE
 ```
 
-- **One engine, many surfaces.** Every surface (CLI, daemon, MCP stdio, HTTP/SSE)
-  shares the same `surfaces/client.Client` — no surface holds query logic of its
-  own, so they cannot diverge.
+- **One engine, many surfaces, one extension seam.** Every surface shares the same
+  `surfaces/client.Client`; a frozen static module registry adds spec + handler pairs
+  without surface dispatch edits (`dead_code` and `compound` today), with legacy rollback.
 - **Layered by direction** (CI-enforced): lower layers never depend on higher
   ones; `core/parse` and `core/graphstore` are pure leaves.
 - **Exec at the boundary.** `surfaces/gitlog` is the only component that runs

@@ -223,8 +223,8 @@ func moduleHandlers(c Client, catalog *opcatalog.Catalog) (map[string]OperationH
 
 // Handled returns the canonical-order ids the executor serves through a MODULE
 // handler rather than a legacy adapter. It is empty on a Client composed
-// without handlers, and holds exactly one id — dead_code — on the shipped
-// composition after SW-255.
+// without handlers; the shipped composition currently carries compound and
+// dead_code.
 func (e *Executor) Handled() []string {
 	out := make([]string, 0, len(e.handlers))
 	for id := range e.handlers {

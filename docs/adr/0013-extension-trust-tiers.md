@@ -32,9 +32,9 @@
 
 ## Implementation status (addendum, 2026-08-29)
 
-Added by SW-252 (AX-13). This block records what shipped against each tier at
-`main @ 4f14966`; it decides nothing and changes no text below it. The as-built
-description lives in
+Added by SW-252 (AX-13) and maintained as the implementation evolves. This
+block records what is shipped against each tier; it decides nothing and changes
+no text below it. The fuller as-built description lives in
 [`../architecture-plan.md`](../architecture-plan.md) §6 "The extension kernel as
 built".
 
@@ -45,11 +45,11 @@ built".
 | **C — Trusted subprocess extensions** | **spiked and decided NO-GO** for phase 1 | SW-231 (AX-11) | [`../decisions/2026-08-process-extension-go-no-go.md`](../decisions/2026-08-process-extension-go-no-go.md); the spike is retained unwired as evidence, at the paths the decision record names |
 | **D — WASM** | **not shipped** (N5 unchanged; no revisit trigger has fired) | — | — |
 
-What the tier-B implementation does *not* yet contain, so this addendum cannot
-be read as more than it is: no operation has an engine-side handler
-(`module.Builder.AddOperation` registers a spec only), the executor's "new path"
-resolves a legacy adapter that calls the same `Client` method as the legacy
-path, and zero operations are on the `active` canary position. The legacy
+The tier-B implementation now contains two real engine-side handlers:
+`dead_code` and `compound`. Each is registered as a spec plus a handler bound to
+typed ports; the executor prefers that handler when present and falls back to a
+legacy adapter for the other 54 operations. Zero operations are on the `active`
+canary position. The legacy
 adapters, the shadow comparison, the canary code and the dual
 descriptor/contract sources are all still present and are **transitional**
 under the AX-17 rule (architecture-plan.md §6). The two `Feeds:` items above

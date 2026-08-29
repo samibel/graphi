@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/engine/module"
 	"github.com/samibel/graphi/engine/opcatalog"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/query/compound"
 	"github.com/samibel/graphi/engine/search"
 )
 
@@ -288,16 +289,15 @@ func TestAX15_HandlerSlotIsFrozenAfterBuild(t *testing.T) {
 	}
 }
 
-// AC-5: the built-in set now carries engine.deadcode beside the three AX-07
-// modules; engine.operations contributes the other 55 specs; the catalog is
-// unchanged at 56 and byte-for-byte the shadow catalog's id set.
-func TestAX15_BuiltinsCarryTheDeadCodeModule(t *testing.T) {
+// The built-in set carries two handler-bearing operation modules beside the
+// three AX-07 modules. The catalog remains byte-for-byte the shadow catalog.
+func TestBuiltinsCarryTheHandlerModules(t *testing.T) {
 	store := graphstore.NewMemStore()
 	comp, err := module.BuildBuiltins(portedInputs(store))
 	if err != nil {
 		t.Fatalf("BuildBuiltins: %v", err)
 	}
-	want := []string{module.IDParse, module.IDAnalysis, module.IDDeadCode, module.IDOperations}
+	want := []string{module.IDParse, module.IDAnalysis, module.IDCompound, module.IDDeadCode, module.IDOperations}
 	if got := comp.ModuleIDs(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("built-in composition order = %v, want %v", got, want)
 	}
@@ -311,8 +311,16 @@ func TestAX15_BuiltinsCarryTheDeadCodeModule(t *testing.T) {
 	if got, wantIDs := comp.Operations().IDs(), shadow.IDs(); !reflect.DeepEqual(got, wantIDs) {
 		t.Fatalf("operation ids diverged from the shadow catalog\n  module set: %v\n  shadow:     %v", got, wantIDs)
 	}
-	if got := comp.Handled(); !reflect.DeepEqual(got, []string{deadcode.Operation}) {
-		t.Fatalf("exactly one built-in operation carries a handler after AX-15; Handled() = %v", got)
+	if got := comp.Handled(); !reflect.DeepEqual(got, []string{compound.Operation, deadcode.Operation}) {
+		t.Fatalf("Handled() = %v, want compound and dead_code", got)
+	}
+	compoundHandler, ok := comp.Handler(compound.Operation)
+	if !ok {
+		t.Fatalf("no handler for %q", compound.Operation)
+	}
+	compoundRaw, err := compoundHandler(context.Background(), json.RawMessage(`{"query":"SEED no.such.symbol\nHOP out calls\n"}`))
+	if err != nil || len(compoundRaw) == 0 {
+		t.Fatalf("compound handler over a missing seed = %s (%v), want canonical result bytes", compoundRaw, err)
 	}
 	handler, ok := comp.Handler(deadcode.Operation)
 	if !ok {

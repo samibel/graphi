@@ -180,7 +180,7 @@ failing certifies nothing.
 directory, one registration and harness tests*, with **zero manual dispatch or
 descriptor edits**.
 
-**The operation:** `dead_code`. It was chosen because it satisfies the harness's
+**The first worked operation:** `dead_code`. It was chosen because it satisfies the harness's
 own criteria rather than needing an exemption from them — catalog tier `labs`,
 determinism `deterministic`, ports `[graph.query, graph.search]`, permissions
 `[graph.read]` only — and because both halves of the claim are *observable* for
@@ -220,7 +220,9 @@ metadata would be demonstrating a second source of truth, which is the thing
 the catalog exists to remove.
 
 The spec-only form still exists and still composes: `Builder.AddOperation(spec)`
-is what `engine.operations` uses for the other 55 operations, and the AX-10
+is what `engine.operations` uses for the other 54 operations. The shipped
+composition now has a second handler-bearing module, `engine.compound`, whose
+`compound` handler is bound only to its declared `graph.query` port. The AX-10
 worked-example test (`surfaces/ax10_worked_example_test.go`) still registers
 `dead_code` that way in an isolated set to prove the descriptor/contract
 projection. Both forms claim the same `Operation:<id>` slot, so registering an

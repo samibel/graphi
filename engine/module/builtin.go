@@ -7,6 +7,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/opcatalog"
+	"github.com/samibel/graphi/engine/query/compound"
 )
 
 // Built-in module ids. They are stable identifiers: a module id appears in the
@@ -17,11 +18,14 @@ const (
 	IDParse = "core.parse"
 	// IDAnalysis contributes the built-in analyzer set.
 	IDAnalysis = "engine.analysis"
+	// IDCompound contributes the compound operation — spec and handler — over
+	// the read-only graph.query port.
+	IDCompound = "engine.compound"
 	// IDDeadCode contributes the dead_code operation — spec AND handler — the
 	// first built-in module whose operation runs in engine (SW-255 / AX-15).
 	IDDeadCode = "engine.deadcode"
 	// IDOperations contributes the operation catalog: every spec no
-	// handler-bearing module claims (55 of 56 after AX-15).
+	// handler-bearing module claims (54 of 56 after compound moved).
 	IDOperations = "engine.operations"
 )
 
@@ -31,6 +35,7 @@ const (
 // reason surfaces/client's migratedOperations is: moving an operation into
 // its own module is a deliberate act that brings its own parity evidence.
 var handlerBearing = map[string]string{
+	compound.Operation: IDCompound,
 	deadcode.Operation: IDDeadCode,
 }
 
@@ -42,20 +47,19 @@ const builtinVersion = "1"
 
 // Builtins returns graphi's built-in module set, already added and validated.
 //
-// Four modules today, and the dependency edges are real rather than
+// Five modules today, and the dependency edges are real rather than
 // decorative: the operation catalog is ordered LAST because it is the inventory
 // of what the capability modules registered. Composing it before the parsers and
 // analyzers exist would mean advertising operations over registries that had not
 // been populated yet — the ordering states that dependency instead of leaving it
 // to the order somebody happened to write the calls in.
 //
-// engine.deadcode (SW-255 / AX-15) is the first module that contributes a spec
-// TOGETHER WITH its handler. It requires the same two capability modules the
-// catalog module requires, for the same reason, and composes before
-// engine.operations by the lexicographic tie-break — which also means that if
-// engine.operations ever stopped skipping dead_code, Build would fail with
-// registry.ErrDuplicate naming both modules rather than silently double-
-// registering the spec.
+// engine.deadcode (SW-255 / AX-15) was the first module that contributes a spec
+// TOGETHER WITH its handler; engine.compound is the second. Both require the
+// same two capability modules the catalog module requires, for the same reason,
+// and compose before engine.operations by the lexicographic tie-break. If
+// engine.operations ever stops skipping either operation, Build fails with
+// registry.ErrDuplicate rather than silently double-registering the spec.
 func Builtins() (*Set, error) {
 	s := NewSet()
 	for _, m := range []Module{
@@ -80,6 +84,25 @@ func Builtins() (*Set, error) {
 					}
 				}
 				return nil
+			},
+		},
+		{
+			Manifest: Manifest{ID: IDCompound, Version: builtinVersion, Requires: []string{IDParse, IDAnalysis}},
+			Register: func(b *Builder) error {
+				shadow, err := opcatalog.Shadow()
+				if err != nil {
+					return err
+				}
+				spec, ok := shadow.Lookup(compound.Operation)
+				if !ok {
+					return fmt.Errorf("%s: the operation catalog does not declare %q", registryName, compound.Operation)
+				}
+				return b.AddOperationContribution(OperationContribution{
+					Spec: spec,
+					Bind: func(p Ports) (OperationHandler, error) {
+						return compound.Handler(p.GraphQuery.Reader()), nil
+					},
+				})
 			},
 		},
 		{
