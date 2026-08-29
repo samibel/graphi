@@ -14,6 +14,15 @@
 # the declarer's claim, recorded with its sha per the evidence-index honesty rule
 # (docs/rc/evidence-index.yaml) so it can be audited.
 #
+# KNOWN LIMITATION of a declared run (c4, c6): the tool checks that the sha is a
+# commit the checkout knows and nothing more. It does NOT check that no later run
+# of the same workflow went red, nor how far the tree has moved past the sha. A
+# green run declared here therefore stays PASS until a human edits this file —
+# a stale or superseded green is not detected. Declaring a run is a statement
+# that the declarer has looked at every later run of that workflow; a criterion
+# whose gate has since recorded a FAIL, or whose signal the project's own record
+# holds UNKNOWN, must not be declared (see c4 below).
+#
 # The divergence record (c2) and the kill switch (c6, code half) are observed
 # directly; the only c2 input here is `explained_mismatches`, each needing a
 # positive count and a reason. Stable operations appear nowhere in this file: the
@@ -48,21 +57,43 @@ operations:
         tests:
           - {file: surfaces/client/executor_argument_fidelity_test.go, symbol: TestExecutor_ArgumentMutationsMoveTheParity}
           - {file: surfaces/client/executor_argument_fidelity_test.go, symbol: TestExecutor_EveryArgumentFieldHasMutationCoverage}
-      # c4 — the AX-06 latency gate (surfaces/client/canary_latency_test.go,
+      # c4 — DELIBERATELY NOT DECLARED; the row reads UNKNOWN for every
+      # operation, and that is the honest answer today.
+      #
+      # The performance budget is the AX-06 latency gate
+      # (surfaces/client/canary_latency_test.go,
       # TestAX06_ExecutorSeamLatencyWithinThreshold and the SW-244/SW-245
-      # accounting) runs inside the full-suite `test-gate` workflow. A GREEN
-      # test-gate verdict means nothing failed AND nothing reported UNVERIFIED,
-      # which is what "the gate's last green run" has to mean for a measurement
-      # that can abstain. Last green on main at declaration time: run 33241953723
-      # at 4f14966 (2026-08-29). The run at 91ee698 was UNVERIFIED (tail not
-      # judgeable on the runner) and is deliberately not declared.
-      c4: &performance_budget
-        workflow: test-gate
-        run_id: "33241953723"
-        sha: 4f149663a62fec2bba3862b4b9845446c6a72651
-      # c5 — byte parity of the adapter path against legacy over the AX-04
-      # fixture (provenance tiers are part of the bytes), plus the
-      # capability-unavailable shape preserved exactly.
+      # accounting) inside the full-suite `test-gate` workflow. The project's own
+      # record holds this precondition UNKNOWN and blocking:
+      # stories/SW-238/preconditions.md §(d) — "Performance (executor seam):
+      # UNKNOWN -> blocks" — because the gate's signal cannot currently tell a
+      # regression from a contended runner and its red is routinely re-run
+      # until green; "a gate whose red is routinely dismissed cannot certify a
+      # green". A declared green run id here would render that recorded UNKNOWN
+      # as PASS, which is the laundering this tool exists to make impossible.
+      #
+      # The specific runs, for the audit trail: `test-gate` run 33241953723 at
+      # 4f14966 (2026-08-29) was GREEN. The later `test-gate` run 33251197800
+      # at 91ee698 — this branch's base — concluded FAILURE: its round 1
+      # recorded an UNWITHDRAWN FAIL, "executor p95 - legacy p95 = 540.23µs
+      # exceeds the 303.201µs budget AND exceeds 3x the same-run A/A control
+      # (94.941µs)", and its later rounds abstained (tail_control_above_ceiling).
+      # A green at 4f14966 followed by an unwithdrawn p95 FAIL at 91ee698 is not
+      # "last green"; it is a superseded green, and the tool cannot see the
+      # supersession (limitation above). c4 becomes declarable when the
+      # contention-aware calibration backlog.md:1043 proposes lands and a
+      # test-gate run at or after that change is green with the AX-06 assertion
+      # having executed.
+      #
+      # c5 — capability/provenance parity, covered by two tests neither of which
+      # is named for it: TestExecutor_AdapterByteParity is whole-response byte
+      # equality of the adapter path against legacy over the AX-04 fixture,
+      # which carries provenance (StoreMemoryWithProvenance) — so provenance
+      # parity is covered AS PART OF THE COMPARED BYTES, not by a dedicated
+      # provenance assertion; TestExecutor_CapabilityUnavailableIsPreservedExactly
+      # is the capability half (the capability-unavailable shape preserved
+      # exactly). A reader wanting a separately named provenance assertion will
+      # not find one in the tree.
       c5: &parity
         tests:
           - {file: surfaces/client/executor_parity_test.go, symbol: TestExecutor_AdapterByteParity}
@@ -76,20 +107,20 @@ operations:
         sha: 91ee698fbda1cfd69b3bf2e17ed5f96d60956d74
 
   - operation: architecture_violations
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: compound
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: dead_code
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: find_clones
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: framework_map
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: repo_overview
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: search_ast
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: search_hybrid
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: test_impact
-    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c4: *performance_budget, c5: *parity, c6: *rollback}
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}

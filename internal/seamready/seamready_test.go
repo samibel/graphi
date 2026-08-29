@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -692,8 +693,64 @@ operations:
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Evaluate(d, baseSources()); err == nil {
+	_, err = Evaluate(d, baseSources())
+	if err == nil {
 		t.Fatal("a declaration naming an operation that is not on the seam was accepted")
+	}
+	// The message is what a declaration author debugs against: it must name
+	// the flag the file came in through, not the default path — which may
+	// not be the file they edited.
+	if !strings.Contains(err.Error(), "-declaration") || strings.Contains(err.Error(), DeclarationPath) {
+		t.Fatalf("off-seam rejection should name the -declaration flag, not %s: %v", DeclarationPath, err)
+	}
+}
+
+// TestAX14_UnhandledCriterionReadsUnknownNotBlank: a criterion id with no
+// evaluator reads UNKNOWN with a reason, never a blank state. Checked once on
+// the dispatcher directly and once end-to-end with Criteria widened by a
+// seventh entry, so the text render is seen to say why.
+func TestAX14_UnhandledCriterionReadsUnknownNotBlank(t *testing.T) {
+	src := baseSources()
+	r := evalCriterion(Criterion{ID: "c9", Name: "unhandled"}, "dead_code", nil, Artifact{}, divergence.OperationView{}, src)
+	if r.State != StateUnknown || r.Reason == "" {
+		t.Fatalf("unhandled criterion = %q (%q), want UNKNOWN with a reason", r.State, r.Reason)
+	}
+
+	saved := Criteria
+	Criteria = append(append([]Criterion{}, saved...), Criterion{ID: "c9", Name: "unhandled"})
+	defer func() { Criteria = saved }()
+	src.Record.Operations[0].Observations = 30
+	src.Record.Operations[0].State = divergence.StateAgreed
+	a := evalDecl(t, fullDecl, src) // every c1..c6 PASS for dead_code
+	row := rowOf(t, a, "dead_code", "c9")
+	if row.State != StateUnknown || !strings.Contains(row.Reason, "no evaluator") {
+		t.Fatalf("c9 = %q (%q), want UNKNOWN / no evaluator", row.State, row.Reason)
+	}
+	if got := verdictOf(t, a, "dead_code"); got != VerdictUnknown {
+		t.Fatalf("verdict with an unhandled criterion = %s, want UNKNOWN", got)
+	}
+	if !strings.Contains(a.Text(), "c9  unhandled") || !strings.Contains(a.Text(), "UNKNOWN  — no evaluator for criterion c9") {
+		t.Fatalf("text does not render the unhandled row as UNKNOWN with its reason:\n%s", a.Text())
+	}
+}
+
+// TestAX14_RuleOfThreeBelowThreeBoundsNothing: 3/K is a probability, so for
+// K < 3 the sentence must not print a rate above 100 %% as if it were one.
+func TestAX14_RuleOfThreeBelowThreeBoundsNothing(t *testing.T) {
+	for _, k := range []int{1, 2} {
+		s := RuleOfThree(k)
+		if !strings.Contains(s, "3/"+strconv.Itoa(k)) || !strings.Contains(s, "bounds nothing") {
+			t.Errorf("RuleOfThree(%d) = %q, want the 3/K form and a no-bound note", k, s)
+		}
+		if strings.Contains(s, "300.0%") || strings.Contains(s, "150.0%") {
+			t.Errorf("RuleOfThree(%d) prints a rate above 100%%: %q", k, s)
+		}
+	}
+	if s := RuleOfThree(3); !strings.Contains(s, "3/3 = 100.0%") {
+		t.Errorf("RuleOfThree(3) = %q", s)
+	}
+	if s := RuleOfThree(30); !strings.Contains(s, "3/30 = 10.0%") {
+		t.Errorf("RuleOfThree(30) = %q", s)
 	}
 }
 
@@ -782,6 +839,25 @@ func TestAX14_TodayEveryOperationIsUnknown(t *testing.T) {
 	}
 	if !strings.Contains(a.Text(), "K unset — owner decision 1 not taken") {
 		t.Errorf("text does not carry the AC-4 sentence:\n%s", a.Text())
+	}
+}
+
+// TestAX14_ShippedC4IsUndeclaredWhilePreconditionDIsUnknown pins the
+// round-2 correction: the performance budget is on record as UNKNOWN and
+// blocking (stories/SW-238/preconditions.md §(d)), so the shipped declaration
+// carries no run for c4 and every c4 row reads UNKNOWN. Declaring one again
+// means editing this test deliberately, the way a flip story edits its pin.
+func TestAX14_ShippedC4IsUndeclaredWhilePreconditionDIsUnknown(t *testing.T) {
+	d, a := shippedAssessment(t)
+	for _, o := range d.Operations {
+		if art, declared := o.Criteria["c4"]; declared && (art.Workflow != "" || art.RunID != "" || art.SHA != "") {
+			t.Errorf("%s declares a c4 run (%s %s @ %s) while precondition (d) is on record as UNKNOWN", o.Operation, art.Workflow, art.RunID, art.SHA)
+		}
+	}
+	for _, o := range a.Operations {
+		if r := rowOf(t, a, o.Operation, "c4"); r.State != StateUnknown || r.Reason != "no CI run declared" {
+			t.Errorf("%s c4 = %s (%q), want UNKNOWN / no CI run declared", o.Operation, r.State, r.Reason)
+		}
 	}
 }
 

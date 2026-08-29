@@ -8,8 +8,13 @@ import (
 
 // RuleOfThree is the sentence printed beside a set K (AC-4): with K clean
 // observations, the residual divergence rate is bounded at about 3/K with 95%
-// confidence, so lowering K is legible as widening that bound.
+// confidence, so lowering K is legible as widening that bound. Below K=3 the
+// bound is >= 100% — i.e. no bound at all — and the sentence says so rather
+// than printing a rate above 100%.
 func RuleOfThree(k int) string {
+	if k < 3 {
+		return fmt.Sprintf("rule of three: residual divergence rate <= 3/%d, which is >= 100%% — K below 3 bounds nothing at 95%% confidence", k)
+	}
 	return fmt.Sprintf("rule of three: residual divergence rate <= 3/%d = %.1f%% at 95%% confidence", k, 300.0/float64(k))
 }
 

@@ -42,6 +42,19 @@
 // sha it ran at, and the tool checks the sha is a commit the checkout knows,
 // never that the run exists. The day it prints READY for an operation, the
 // flip is its own story.
+//
+// # Known limitation: a declared run is not checked for supersession
+//
+// For c4 and c6 the tool confirms only that the declared sha is a commit the
+// checkout knows. It does not check that no later run of the same workflow
+// went red, nor how far HEAD has moved past the sha — doing so would need the
+// run history, which lives behind the network the tool never touches. A green
+// run declared in docs/rc/seam-readiness.yaml therefore stays PASS until a
+// human edits the file: a stale or superseded green is not detected. The
+// declarer's obligation is correspondingly stated in the yaml — declare a run
+// only after looking at every later run of that workflow, and never for a
+// gate the project's own record holds UNKNOWN (which is why c4 ships
+// undeclared: stories/SW-238/preconditions.md §(d)).
 package seamready
 
 import (
@@ -230,8 +243,8 @@ func Evaluate(d Declaration, src Sources) (Assessment, error) {
 	declared := make(map[string]OperationDeclaration, len(d.Operations))
 	for _, o := range d.Operations {
 		if !onSeam[o.Operation] {
-			return Assessment{}, fmt.Errorf("seamready: %s declares %q, which is not on the executor seam (migrated: %v)",
-				DeclarationPath, o.Operation, src.Migrated)
+			return Assessment{}, fmt.Errorf("seamready: the declaration (-declaration) names %q, which is not on the executor seam (migrated: %v)",
+				o.Operation, src.Migrated)
 		}
 		declared[o.Operation] = o
 	}
@@ -254,20 +267,7 @@ func Evaluate(d Declaration, src Sources) (Assessment, error) {
 		}
 		oa := OperationAssessment{Operation: op, Criteria: make([]Row, 0, len(Criteria))}
 		for _, c := range Criteria {
-			art := decl.Criteria[c.ID]
-			var row Row
-			switch c.ID {
-			case "c1":
-				row = evalReleaseLine(op, art, src.Git)
-			case "c2":
-				row = evalDivergence(d.K, view, art, src.RecordErr)
-			case "c3", "c5":
-				row = evalSymbols(art, src.Symbols)
-			case "c4":
-				row = evalDeclaredRun(art, src.Git)
-			case "c6":
-				row = evalRollback(op, art, src)
-			}
+			row := evalCriterion(c, op, d.K, decl.Criteria[c.ID], view, src)
 			row.ID, row.Name = c.ID, c.Name
 			oa.Criteria = append(oa.Criteria, row)
 		}
@@ -275,6 +275,28 @@ func Evaluate(d Declaration, src Sources) (Assessment, error) {
 		a.Operations = append(a.Operations, oa)
 	}
 	return a, nil
+}
+
+// evalCriterion dispatches one criterion to its evaluator. A criterion id
+// with no evaluator — a Criteria entry added without its case here — reads
+// UNKNOWN with a reason that says so, never a blank state: the closed set
+// describes its own gaps instead of relying on the two lists being kept in
+// step by hand.
+func evalCriterion(c Criterion, op string, k *int, art Artifact, view divergence.OperationView, src Sources) Row {
+	switch c.ID {
+	case "c1":
+		return evalReleaseLine(op, art, src.Git)
+	case "c2":
+		return evalDivergence(k, view, art, src.RecordErr)
+	case "c3", "c5":
+		return evalSymbols(art, src.Symbols)
+	case "c4":
+		return evalDeclaredRun(art, src.Git)
+	case "c6":
+		return evalRollback(op, art, src)
+	default:
+		return Row{State: StateUnknown, Reason: fmt.Sprintf("no evaluator for criterion %s", c.ID)}
+	}
 }
 
 func summarize(src Sources) RecordSummary {
@@ -444,6 +466,10 @@ func evalSymbols(art Artifact, look SymbolLookup) Row {
 // declaration points at a real commit, and the honesty rule's other half — that
 // the run id exists — is the declarer's, recorded with the sha so it can be
 // audited.
+//
+// Not checked (see the package doc): whether a later run of the same workflow
+// went red, or how far HEAD is past the sha. A declared green is PASS until
+// the declaration is edited.
 func evalDeclaredRun(art Artifact, git Git) Row {
 	if art.Workflow == "" && art.RunID == "" && art.SHA == "" {
 		return Row{State: StateUnknown, Reason: "no CI run declared"}

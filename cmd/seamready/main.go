@@ -15,6 +15,12 @@
 //	                                             # (for the future flip story's CI)
 //
 // Exit codes: 0 rendered, 1 -require-ready not met, 2 usage or I/O error.
+//
+// Known limitation: a CI run declared for c4 or c6 is confirmed only as far as
+// "the sha is a commit this checkout knows". The tool makes no network call, so
+// it cannot see whether a later run of the same workflow went red; a declared
+// green stays PASS until docs/rc/seam-readiness.yaml is edited. Declare a run
+// only after looking at every later run of that workflow.
 package main
 
 import (
@@ -42,7 +48,7 @@ func main() {
 	}
 	decl, err := seamready.ParseDeclaration(raw)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "seamready: %v\n", err)
+		fmt.Fprintln(os.Stderr, err) // already prefixed "seamready:"
 		os.Exit(2)
 	}
 	// The kill-switch variable name belongs to the composition root, which
@@ -51,7 +57,7 @@ func main() {
 	src := seamready.LiveSources(*repo, *stateDir).WithRuntime(runtime.EnvCanaryModeFor)
 	a, err := seamready.Evaluate(decl, src)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "seamready: %v\n", err)
+		fmt.Fprintln(os.Stderr, err) // already prefixed "seamready:"
 		os.Exit(2)
 	}
 

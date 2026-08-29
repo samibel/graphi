@@ -37,8 +37,10 @@ file:
   on; `-json` emits a `seam-readiness-v1` document. `READY` iff all six PASS,
   `NOT_READY` iff any FAIL, otherwise `UNKNOWN` — and UNKNOWN is never PASS or
   READY. Declared evidence lives in `docs/rc/seam-readiness.yaml`, which ships
-  with `k: null` (owner decision 1 not taken), so today every operation reads
-  `UNKNOWN`. The tool is unranked (`internal/seamready`, absent from the shipped
+  with `k: null` (owner decision 1 not taken) and no run declared for the
+  performance budget (on record as UNKNOWN, SW-238 preconditions §(d)), so today
+  every operation reads `UNKNOWN`. A declared CI run is confirmed only as a known
+  sha — supersession by a later red run is not detected. The tool is unranked (`internal/seamready`, absent from the shipped
   binary's closure) and flips nothing: `TestAX14_NoMigratedOperationIsActiveByDefault`
   pins that no compiled-in position is `active`. See
   `docs/executor-seam-rollback.md` §9.

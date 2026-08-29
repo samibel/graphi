@@ -476,7 +476,13 @@ Three things to read it by:
 * **`UNKNOWN` is not "not yet".** It is the absence of an artifact — an unset
   `K`, a record with no observations, a declared test that is not in the tree —
   and it never counts as PASS. Today every operation reads `UNKNOWN` because `K`
-  is unset (owner decision 1) and the record holds zero observations (§5, and
-  SW-248's reachability finding).
+  is unset (owner decision 1), the record holds zero observations (§5, and
+  SW-248's reachability finding), **and** the performance budget (`c4`) is on
+  record as UNKNOWN and blocking (SW-238 preconditions §(d): the AX-06 latency
+  gate's red is routinely dismissed as runner noise, and the `test-gate` run at
+  `91ee698` recorded an unwithdrawn p95 FAIL) — so no run is declared for it.
+  A CI run the yaml *does* declare is checked only as "the sha is a known
+  commit"; the tool cannot see a later red run of the same workflow, so a
+  declared green is PASS until the yaml is edited.
 * **Stable operations appear nowhere in it.** The tool evaluates
   `MigratedOperations()` and rejects a declaration that names anything else.
