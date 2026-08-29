@@ -28,6 +28,20 @@ file:
 
 ### Added
 
+- **Executor-seam cutover readiness is computed, not argued (SW-254, AX-14).**
+  `go run ./cmd/seamready` prints, for every operation on the executor seam, one
+  verdict — `READY`, `NOT_READY` or `UNKNOWN` — over the six cutover criteria
+  (tagged shadow release line, divergence record against `K` with zero
+  unexplained mismatches, argument fidelity, performance budget,
+  capability/provenance parity, rollback), each row naming the artifact it rests
+  on; `-json` emits a `seam-readiness-v1` document. `READY` iff all six PASS,
+  `NOT_READY` iff any FAIL, otherwise `UNKNOWN` — and UNKNOWN is never PASS or
+  READY. Declared evidence lives in `docs/rc/seam-readiness.yaml`, which ships
+  with `k: null` (owner decision 1 not taken), so today every operation reads
+  `UNKNOWN`. The tool is unranked (`internal/seamready`, absent from the shipped
+  binary's closure) and flips nothing: `TestAX14_NoMigratedOperationIsActiveByDefault`
+  pins that no compiled-in position is `active`. See
+  `docs/executor-seam-rollback.md` §9.
 - **`surfaces/client` import fan-out is now a ratchet, not only a metric (SW-253,
   AX-16a).** `go test ./internal/importfanout` fails when the façade's direct
   internal fan-out rises above the declared ceiling (**44**), when any import is

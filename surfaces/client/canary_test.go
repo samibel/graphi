@@ -691,3 +691,34 @@ func TestCanary_ActiveFailsClosedWhenTheExecutorCannotBeBuilt(t *testing.T) {
 		t.Fatal("active mode silently degraded to the legacy path")
 	}
 }
+
+// TestAX14_NoMigratedOperationIsActiveByDefault is SW-254's pin (AC-5): the
+// readiness assessment flips nothing. No compiled-in position on the seam is
+// `active`, and the shipped default is not `active` either.
+//
+// A future flip story edits THIS test deliberately, the way SW-244 edited
+// TestSW244_ShippedDefaultIsShadow — with `go run ./cmd/seamready` printing
+// READY for the operation it moves, which is the precondition that story is
+// gated on. Until then a position of `active` reaching the compiled-in default
+// is a defect, whatever else changed.
+func TestAX14_NoMigratedOperationIsActiveByDefault(t *testing.T) {
+	ResetCanaryModes()
+	t.Cleanup(ResetCanaryModes)
+
+	if canaryModeDefault == CanaryModeActive {
+		t.Fatalf("the compiled-in canary position is %q — a flip needs its own story, gated on "+
+			"`go run ./cmd/seamready` printing READY for the operation it moves", canaryModeDefault)
+	}
+	positions := CanaryPositions()
+	if len(positions) != len(MigratedOperations()) {
+		t.Fatalf("%d positions for %d migrated operations", len(positions), len(MigratedOperations()))
+	}
+	for _, p := range positions {
+		if p.Overridden {
+			t.Errorf("%s reports an override on a clean process", p.Operation)
+		}
+		if p.Mode == CanaryModeActive {
+			t.Errorf("%s is compiled in as %q; no operation has a READY verdict", p.Operation, p.Mode)
+		}
+	}
+}
