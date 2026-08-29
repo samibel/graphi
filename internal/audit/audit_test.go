@@ -368,4 +368,65 @@ func TestRunningBinaryBindingRefusesIncompleteGroundTruth(t *testing.T) {
 	if b.Modified != info.Modified() {
 		t.Fatalf("binding modified = %v, want the recorded %v", b.Modified, info.Modified())
 	}
+	if b.BuildTags != info.BuildTags() {
+		t.Fatalf("binding build tags = %q, want the recorded %q", b.BuildTags, info.BuildTags())
+	}
+}
+
+// Forgery 3, found while auditing the remaining self-reported fields: an
+// attestation that is honest about revision, source state, CGO_ENABLED and
+// platform but lies about the build-tag set. The tag set scopes the evidence
+// digest and is the input the report tells a sceptic to feed back into
+// `go run ./cmd/canary -tags ...`, so a binary linked with a different tag set
+// than the gate scanned must not be accepted.
+func TestAttestedStaticChecksRejectBuildTagMismatch(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.BuildTags = "" // toolchain ground truth: linked with no build tags
+	att := honestAttestation(rev)
+	att.BuildTags = []string{"grammar_subset", "grammar_subset_python"} // the forged claim
+
+	checks := attestedStaticChecksFor(binding, att)
+	if len(checks) != 2 {
+		t.Fatalf("build-tag mismatch produced %d checks, want the 2 unavailable rows", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("build-tag mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+		if !strings.Contains(check.Evidence, "build-tag set") {
+			t.Fatalf("build-tag mismatch did not name the condition: %q", check.Evidence)
+		}
+	}
+	// A subset of the attested tags is still a different graph, not agreement.
+	binding.BuildTags = "grammar_subset"
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusUnverified {
+			t.Fatalf("build-tag subset became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+	}
+}
+
+// The `-tags` build setting preserves command-line order while an attestation's
+// BuildTags are sorted; the same set in a different order is agreement, and must
+// not downgrade an honest canonical build.
+func TestAttestedStaticChecksAcceptReorderedBuildTags(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.BuildTags = "grammar_subset,grammar_subset_typescript,grammar_subset_c"
+	att := honestAttestation(rev)
+	att.BuildTags = []string{"grammar_subset", "grammar_subset_c", "grammar_subset_typescript"}
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusPass {
+			t.Fatalf("reordered but identical tag set became %s, want PASS: %+v", check.Status, check)
+		}
+	}
+	// No tags on either side is also agreement.
+	binding.BuildTags = ""
+	att.BuildTags = nil
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusPass {
+			t.Fatalf("empty tag set on both sides became %s, want PASS: %+v", check.Status, check)
+		}
+	}
 }

@@ -50,11 +50,12 @@ source scan and build.
   assertion. `graphi privacy-audit` binds that record to the running binary by
   cross-checking every claim the Go toolchain independently recorded into the
   same binary — VCS revision, `vcs.modified` source state, the `CGO_ENABLED`
-  setting it was linked with, and the target platform. A record that disagrees
-  with any of them yields `UNVERIFIED`, never a PASS, so a hand-forged ldflag
-  payload cannot make a dirty-tree or CGo-enabled binary describe itself as
-  clean and CGo-free. The report also prints the binary digest needed to check
-  published provenance.
+  setting and the `-tags` build-tag set it was linked with, and the target
+  platform. A record that disagrees with any of them yields `UNVERIFIED`, never
+  a PASS, so a hand-forged ldflag payload cannot make a dirty-tree, CGo-enabled
+  or differently-flavored binary describe itself as clean, CGo-free and scanned.
+  The report also prints the binary digest needed to check published
+  provenance.
 
 - **An unavailable source scan is no longer rendered as a toolchain failure.** A
   non-canonical developer binary run outside the graphi module now reports the

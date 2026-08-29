@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/samibel/graphi/internal/buildattest"
@@ -198,6 +199,28 @@ func staticPrivacyChecks(ctx context.Context, target string, forceSource bool, g
 	return []Check{cgo, telemetry}
 }
 
+// normalizeBuildTags puts a tag list into the one comparable shape: trimmed,
+// empties dropped, deduplicated, sorted. The `-tags` build setting preserves
+// command-line order while an attestation's BuildTags are sorted and unique, so
+// the two are only comparable as sets.
+func normalizeBuildTags(tags []string) []string {
+	out := make([]string, 0, len(tags))
+	seen := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		if _, dup := seen[tag]; dup {
+			continue
+		}
+		seen[tag] = struct{}{}
+		out = append(out, tag)
+	}
+	slices.Sort(out)
+	return out
+}
+
 func unavailableStaticChecks(reason string) []Check {
 	scope := "static build property unavailable"
 	return []Check{
@@ -210,6 +233,7 @@ type binaryBinding struct {
 	Revision   string
 	Modified   bool
 	CGOEnabled string
+	BuildTags  string
 	SHA256     string
 	Arch       string
 }
@@ -239,6 +263,7 @@ func runningBinaryBinding() (binaryBinding, error) {
 		Revision:   info.Commit(),
 		Modified:   info.Modified(),
 		CGOEnabled: info.CGOEnabled(),
+		BuildTags:  info.BuildTags(),
 		SHA256:     hex.EncodeToString(h.Sum(nil)),
 		Arch:       info.Arch(),
 	}, nil
@@ -269,6 +294,9 @@ func attestedStaticChecksFor(binding binaryBinding, att buildattest.Privacy) []C
 	}
 	if binding.CGOEnabled != att.CGOEnabled {
 		return unavailableStaticChecks("embedded build evidence names a different CGO_ENABLED setting than the one the running binary was linked with; no privacy conclusion was accepted")
+	}
+	if !slices.Equal(normalizeBuildTags(strings.Split(binding.BuildTags, ",")), normalizeBuildTags(att.BuildTags)) {
+		return unavailableStaticChecks("embedded build evidence names a different build-tag set than the one the running binary was linked with; no privacy conclusion was accepted")
 	}
 	state := "clean"
 	if att.SourceModified {

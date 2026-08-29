@@ -74,3 +74,19 @@ func TestCGOEnabledMirrorsBuildSetting(t *testing.T) {
 		t.Fatal("this test binary carries no CGO_ENABLED build setting; the ground truth this asserts on is missing")
 	}
 }
+
+// BuildTags must mirror the raw `-tags` build setting — the ground truth
+// internal/audit compares a build attestation's build_tags claim against.
+func TestBuildTagsMirrorsBuildSetting(t *testing.T) {
+	want := ""
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range bi.Settings {
+			if s.Key == "-tags" {
+				want = s.Value
+			}
+		}
+	}
+	if got := New().BuildTags(); got != want {
+		t.Fatalf("BuildTags() = %q, want the recorded build setting %q", got, want)
+	}
+}
