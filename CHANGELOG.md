@@ -28,6 +28,7 @@ file:
 
 ### Added
 
+- **The shipped binary now states its own position on the tier-C process-extension spike (SW-256, AX-18).** `cmd/graphi/exthost_closure_test.go` fails if the NO-GO spike host, any sub-package of it, or any package under `extensions/` enters `go list -deps ./cmd/graphi`, and if any package outside the spike imports the host — the same shape and rationale as `binary_weight_test.go`, asserting absence so it survives the spike's eventual removal. The four AX-18 facts (closure, dependency, capability, binary size) were re-verified at `84d3cdd` and recorded as a dated addendum on `docs/decisions/2026-08-process-extension-go-no-go.md`; the decision remains **NO-GO**, nothing was removed or wired, and the cleanup is a separate backlog slice.
 - **The first operation handler lives in `engine` (SW-255, AX-15).**
   `engine/module` gained a contribution form that carries a spec **and** a
   handler — `Builder.AddOperationContribution(OperationContribution{Spec, Bind})`
