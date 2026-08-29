@@ -447,3 +447,42 @@ and then runs it again with a deliberately introduced violation — an operation
 `shadow` that no shipped profile advertises — asserting it exits **non-zero**. A
 gate nobody has watched fail is a claim about a gate, and this one exists because
 an absent check let exactly that defect ship.
+
+## 9. Readiness — when an operation may leave `shadow`
+
+Whether any operation on this seam may be moved to `active` is **computed, not
+argued**:
+
+```sh
+go run ./cmd/seamready          # one verdict per operation, six criterion rows each
+go run ./cmd/seamready -json    # the same as a `seam-readiness-v1` document
+```
+
+For every operation in §1 it prints `READY`, `NOT_READY` or `UNKNOWN` over the
+six cutover criteria — a tagged release line in `shadow`, the divergence record
+(§5) against the observation threshold `K` with zero unexplained mismatches,
+argument fidelity, the performance budget, capability/provenance parity, and
+this page's rollback — each row naming the artifact it rests on. Its rules are
+the amended precondition (a) and its siblings in the SW-238 precondition
+checklist, not a new vocabulary; the declared half of its evidence lives in
+`docs/rc/seam-readiness.yaml`.
+
+Three things to read it by:
+
+* **`READY` is the precondition for a flip story.** The tool never moves a
+  switch. An operation that prints `READY` may be flipped by a story of its own,
+  which edits `TestAX14_NoMigratedOperationIsActiveByDefault` deliberately;
+  nothing else changes a compiled-in position.
+* **`UNKNOWN` is not "not yet".** It is the absence of an artifact — an unset
+  `K`, a record with no observations, a declared test that is not in the tree —
+  and it never counts as PASS. Today every operation reads `UNKNOWN` because `K`
+  is unset (owner decision 1), the record holds zero observations (§5, and
+  SW-248's reachability finding), **and** the performance budget (`c4`) is on
+  record as UNKNOWN and blocking (SW-238 preconditions §(d): the AX-06 latency
+  gate's red is routinely dismissed as runner noise, and the `test-gate` run at
+  `91ee698` recorded an unwithdrawn p95 FAIL) — so no run is declared for it.
+  A CI run the yaml *does* declare is checked only as "the sha is a known
+  commit"; the tool cannot see a later red run of the same workflow, so a
+  declared green is PASS until the yaml is edited.
+* **Stable operations appear nowhere in it.** The tool evaluates
+  `MigratedOperations()` and rejects a declaration that names anything else.

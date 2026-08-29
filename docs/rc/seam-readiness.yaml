@@ -1,0 +1,126 @@
+# graphi — executor-seam cutover readiness: DECLARED artifacts (SW-254, AX-14)
+#
+# Read by:   go run ./cmd/seamready            (text)      | -json (machine form)
+# Rules:     internal/seamready — READY iff all six criteria PASS; NOT_READY iff
+#            any FAIL; otherwise UNKNOWN. UNKNOWN is never PASS and never READY.
+#
+# This file carries what the tool cannot observe itself: the release tags an
+# operation shipped in shadow at, the test symbols that prove argument fidelity
+# and parity, and the CI legs' last green run ids with the sha they ran at. The
+# tool confirms each declaration against the checkout (tag exists and the
+# operation was on the seam in shadow at that tag; symbol exists in the tree; sha
+# is a known commit) — a declaration it cannot confirm reads UNKNOWN. What it does
+# NOT do is fetch a run id: the tool makes no network call, so a run id here is
+# the declarer's claim, recorded with its sha per the evidence-index honesty rule
+# (docs/rc/evidence-index.yaml) so it can be audited.
+#
+# KNOWN LIMITATION of a declared run (c4, c6): the tool checks that the sha is a
+# commit the checkout knows and nothing more. It does NOT check that no later run
+# of the same workflow went red, nor how far the tree has moved past the sha. A
+# green run declared here therefore stays PASS until a human edits this file —
+# a stale or superseded green is not detected. Declaring a run is a statement
+# that the declarer has looked at every later run of that workflow; a criterion
+# whose gate has since recorded a FAIL, or whose signal the project's own record
+# holds UNKNOWN, must not be declared (see c4 below).
+#
+# The divergence record (c2) and the kill switch (c6, code half) are observed
+# directly; the only c2 input here is `explained_mismatches`, each needing a
+# positive count and a reason. Stable operations appear nowhere in this file: the
+# tool rejects a declaration naming an operation that is not on the seam.
+
+schema: seam-readiness-v1
+
+# K — the observation threshold precondition (a) needs: at least K recorded
+# dual-run observations per operation with zero unexplained mismatches
+# (stories/SW-238/preconditions.md, "Amendment record (SW-247)", §(a) clause a.2).
+#
+# It is `null` because OWNER DECISION 1 in stories/SW-238/preconditions.md has not
+# been taken. While it is null every c2 row reads UNKNOWN and no verdict can be
+# READY. Setting it is Samibel's decision, not a builder's; when set, the tool
+# prints the rule-of-three bound 3/K beside it so lowering K is legible as
+# widening the residual divergence rate the flip would accept.
+k: null
+
+operations:
+  - operation: architecture
+    criteria:
+      # c1 — the operation was in `shadow` at each of these tags. Confirmed by
+      # the tool from surfaces/client/canary.go at the tag, not taken on faith.
+      c1: &release_line
+        release_tags: [v0.11.0, v0.11.1, v0.12.0, v0.12.1]
+      # c2 — nothing to explain: the record holds zero mismatches.
+      c2: &divergence
+        explained_mismatches: []
+      # c3 — the argument-fidelity suite covers every migrated operation's
+      # argument struct by mutation (SW-228 / SW-226).
+      c3: &argument_fidelity
+        tests:
+          - {file: surfaces/client/executor_argument_fidelity_test.go, symbol: TestExecutor_ArgumentMutationsMoveTheParity}
+          - {file: surfaces/client/executor_argument_fidelity_test.go, symbol: TestExecutor_EveryArgumentFieldHasMutationCoverage}
+      # c4 — DELIBERATELY NOT DECLARED; the row reads UNKNOWN for every
+      # operation, and that is the honest answer today.
+      #
+      # The performance budget is the AX-06 latency gate
+      # (surfaces/client/canary_latency_test.go,
+      # TestAX06_ExecutorSeamLatencyWithinThreshold and the SW-244/SW-245
+      # accounting) inside the full-suite `test-gate` workflow. The project's own
+      # record holds this precondition UNKNOWN and blocking:
+      # stories/SW-238/preconditions.md §(d) — "Performance (executor seam):
+      # UNKNOWN -> blocks" — because the gate's signal cannot currently tell a
+      # regression from a contended runner and its red is routinely re-run
+      # until green; "a gate whose red is routinely dismissed cannot certify a
+      # green". A declared green run id here would render that recorded UNKNOWN
+      # as PASS, which is the laundering this tool exists to make impossible.
+      #
+      # The specific runs, for the audit trail: `test-gate` run 33241953723 at
+      # 4f14966 (2026-08-29) was GREEN. The later `test-gate` run 33251197800
+      # at 91ee698 — this branch's base — concluded FAILURE: its round 1
+      # recorded an UNWITHDRAWN FAIL, "executor p95 - legacy p95 = 540.23µs
+      # exceeds the 303.201µs budget AND exceeds 3x the same-run A/A control
+      # (94.941µs)", and its later rounds abstained (tail_control_above_ceiling).
+      # A green at 4f14966 followed by an unwithdrawn p95 FAIL at 91ee698 is not
+      # "last green"; it is a superseded green, and the tool cannot see the
+      # supersession (limitation above). c4 becomes declarable when the
+      # contention-aware calibration backlog.md:1043 proposes lands and a
+      # test-gate run at or after that change is green with the AX-06 assertion
+      # having executed.
+      #
+      # c5 — capability/provenance parity, covered by two tests neither of which
+      # is named for it: TestExecutor_AdapterByteParity is whole-response byte
+      # equality of the adapter path against legacy over the AX-04 fixture,
+      # which carries provenance (StoreMemoryWithProvenance) — so provenance
+      # parity is covered AS PART OF THE COMPARED BYTES, not by a dedicated
+      # provenance assertion; TestExecutor_CapabilityUnavailableIsPreservedExactly
+      # is the capability half (the capability-unavailable shape preserved
+      # exactly). A reader wanting a separately named provenance assertion will
+      # not find one in the tree.
+      c5: &parity
+        tests:
+          - {file: surfaces/client/executor_parity_test.go, symbol: TestExecutor_AdapterByteParity}
+          - {file: surfaces/client/executor_parity_test.go, symbol: TestExecutor_CapabilityUnavailableIsPreservedExactly}
+      # c6 — the rollback CI leg (.github/workflows/executor-rollback.yml) last
+      # green on main: run 33251197877 at 91ee698 (2026-08-29). The code half
+      # (ParseCanaryMode("legacy"), the env variable name) is observed by the tool.
+      c6: &rollback
+        workflow: executor-rollback
+        run_id: "33251197877"
+        sha: 91ee698fbda1cfd69b3bf2e17ed5f96d60956d74
+
+  - operation: architecture_violations
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: compound
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: dead_code
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: find_clones
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: framework_map
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: repo_overview
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: search_ast
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: search_hybrid
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: test_impact
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
