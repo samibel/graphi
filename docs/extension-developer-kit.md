@@ -219,12 +219,19 @@ Plus the harness itself, run against the **real** MCP and HTTP projections
 rather than stubs — the one place in the tree where that happens, because a
 harness pointed at a re-implementation certifies the re-implementation.
 
-**What is not yet true.** `engine/module`'s built-in set still contributes the
-whole catalog in one module (`engine.operations`), so a *first-party* operation
-is not yet one module each. Splitting that is SW-228 and SW-232 work. What AC-4
-establishes is that the seam supports it: the registration above is the entire
-delta, and nothing in `surfaces/mcp/toolcalls.go` or
-`surfaces/mcp/descriptors.go` had to move.
+**What is true today** (`main @ 4f14966`, 2026-08-29). `engine/module`'s
+built-in set contributes the whole catalog in one module (`engine.operations`),
+**as specs only** — `Builder.AddOperation` registers an `OperationSpec`, and no
+operation has an engine-side handler; the executor resolves every operation to
+a legacy `Client` adapter that calls the same method the legacy path calls. So
+a *first-party* operation is not one module each. That split was not done by
+SW-228 (which shipped the per-operation canary switch) or SW-232 (which was
+resliced into the durable divergence record and SW-238's Stable-migration
+preconditions). The first built-in module to carry a Spec **and** a Handler is
+SW-255 (AX-15), gated on the fan-out ratchet of SW-253. What AC-4 of this story
+established, and what still holds, is that the seam supports it: the
+registration above is the entire delta, and nothing in
+`surfaces/mcp/toolcalls.go` or `surfaces/mcp/descriptors.go` had to move.
 
 ---
 

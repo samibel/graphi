@@ -26,7 +26,7 @@ which, so the difference stays visible.
 
 | Doc | What it is |
 |---|---|
-| [architecture-plan.md](architecture-plan.md) | The single design entry point: layers, data flow, CI gates |
+| [architecture-plan.md](architecture-plan.md) | The single design entry point: layers, data flow, CI gates, and §6 "The extension kernel as built" — module kernel, registry lifecycle, operation catalog, executor seam, canary positions, rule packs, the tier-C NO-GO, and the measured seam facts |
 | [external-nodes.md](external-nodes.md) | **Canonical** WP-03 contract: what external (stdlib/third-party) nodes are and why structural queries exclude them |
 | [graphi-broad.md](graphi-broad.md) | The opt-in CGO grammar flavor |
 | [extension-developer-kit.md](extension-developer-kit.md) | **Labs.** Building a graphi extension: rule packs (`init`/`lint`/`conform`/`validate`/`install`), the conformance harness, and the `dead_code` worked example |
