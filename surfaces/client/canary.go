@@ -590,7 +590,11 @@ func contributionFor(c Client, catalog *opcatalog.Catalog, operation string) (Co
 	if err != nil {
 		return Contribution{}, err
 	}
-	if _, handled := executor.adapters[operation]; !handled {
+	// "Handler" here means either path the executor can run: a module handler
+	// (SW-255 / AX-15) or a legacy adapter. Both exist for dead_code today —
+	// the adapter is retained under AX-17 — so this check would pass on
+	// either alone, and a future removal slice sees it hold without editing.
+	if !executor.handles(operation) {
 		return Contribution{}, registry.Errorf(registry.ErrMissingDependency, canaryRegistry, "Contribution", operation,
 			"%s: %q has a catalog spec but no executor handler", canaryRegistry, operation)
 	}

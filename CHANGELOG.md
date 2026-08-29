@@ -28,6 +28,31 @@ file:
 
 ### Added
 
+- **The first operation handler lives in `engine` (SW-255, AX-15).**
+  `engine/module` gained a contribution form that carries a spec **and** a
+  handler — `Builder.AddOperationContribution(OperationContribution{Spec, Bind})`
+  — with runtime dependencies handed in as typed ports (`module.Ports`:
+  `graph.query` → `*query.Service`, `graph.search` → `*search.Service`) filled
+  from `module.Inputs` strictly per the spec's declared ports; a declared port
+  that is nil at `Build` is `registry.ErrMissingDependency` naming the module,
+  the operation and the port, and the handler table is frozen with the rest of
+  the composition (`Composition.Handler(id)`, `Composition.Handled()`). Exactly
+  one built-in operation uses it: `dead_code`, now contributed by its own
+  `engine.deadcode` module (`engine/agenttools/deadcode.Handler`, decoding
+  fail-closed into `deadcode.Args` and ending in the same `Assemble` +
+  `contract.Serialize` the legacy method uses); `engine.operations` contributes
+  the other 55 specs, and the catalog is unchanged at 56. The composition root
+  installs the table into the surface client (`client.Direct.WithOperationHandlers`),
+  and `surfaces/client.Executor.Execute` **prefers a module handler** over the
+  legacy adapter for the same id — so, for the first time, the kill switch's
+  `legacy` and `active` positions are different code, and the byte-parity
+  evidence for `dead_code` (`surfaces/client/executor_handler_test.go`) is not
+  tautological. Nothing transitional is removed (AX-17): the legacy adapter,
+  `Direct.DeadCode` and `engine.operations` stay; the compiled-in position is
+  still `shadow`; `surfaces/client`'s direct fan-out is unchanged at 44; MCP
+  and HTTP are untouched. `docs/extension-developer-kit.md` §3 now shows the
+  shipped registration and lists what a new Labs operation needs and still
+  needs on the surfaces.
 - **Executor-seam cutover readiness is computed, not argued (SW-254, AX-14).**
   `go run ./cmd/seamready` prints, for every operation on the executor seam, one
   verdict — `READY`, `NOT_READY` or `UNKNOWN` — over the six cutover criteria

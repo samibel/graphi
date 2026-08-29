@@ -188,12 +188,15 @@ zero operations are `active`, so every trigger is unmet by construction.
   ([module.go](../engine/module/module.go)). It is ADR 0013 tier B and
   nothing else: statically compiled first-party Go, no runtime loading, no
   ABI, no discovery.
-- **Three built-in modules**, declared in
+- **Four built-in modules**, declared in
   [`engine/module/builtin.go`](../engine/module/builtin.go): `core.parse`
-  (the CGo-free parser set), `engine.analysis` (the analyzer set) and
-  `engine.operations` (requires the other two; contributes **the whole
-  operation catalog as specs** — see §6.3). No built-in module contributes a
-  resolver; `engine/ingest` still constructs that registry itself.
+  (the CGo-free parser set), `engine.analysis` (the analyzer set),
+  `engine.deadcode` (SW-255 / AX-15: the `dead_code` spec **together with its
+  engine-side handler**, bound to typed `graph.query` / `graph.search` ports —
+  the only built-in with a handler) and `engine.operations` (requires the
+  first two; contributes **the other 55 operations as specs** — see §6.3). No
+  built-in module contributes a resolver; `engine/ingest` still constructs
+  that registry itself.
 - **`cmd/internal/runtime` is the only composition root.**
   [`cmd/internal/runtime/builder.go`](../cmd/internal/runtime/builder.go)
   (`runtime.NewBuilder(store) → With* → Build()`) calls

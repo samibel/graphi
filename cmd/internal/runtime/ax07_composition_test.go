@@ -97,11 +97,13 @@ func TestAX07_BothEntryPointsComposeThroughTheBuilder(t *testing.T) {
 			if comp == nil {
 				t.Fatal("no composition: this entry point did not go through the builder")
 			}
-			if got, want := comp.Modules(), 3; len(got) != want {
+			// Four since SW-255 (AX-15): engine.deadcode joined the three
+			// AX-07 modules, ordered before engine.operations.
+			if got, want := comp.Modules(), 4; len(got) != want {
 				t.Fatalf("composed %d modules, want %d", len(got), want)
 			}
 			ids := comp.Contributions().ModuleIDs()
-			for i, want := range []string{module.IDParse, module.IDAnalysis, module.IDOperations} {
+			for i, want := range []string{module.IDParse, module.IDAnalysis, module.IDDeadCode, module.IDOperations} {
 				if ids[i] != want {
 					t.Fatalf("module order = %v, want the deterministic built-in order", ids)
 				}

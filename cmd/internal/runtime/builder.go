@@ -35,6 +35,7 @@ import (
 	"github.com/samibel/graphi/engine/module"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/review"
+	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/gitlog"
 )
@@ -97,10 +98,23 @@ func (b *Builder) Build() (*Composition, error) {
 	if b.built {
 		return nil, fmt.Errorf("runtime: Build called twice on one builder")
 	}
+	// SW-255 (AX-15): the typed ports a handler-bearing module receives. The
+	// graph.query port is the SAME query service the surface client is composed
+	// over (see Client), so the module handler and the legacy method read one
+	// service, not two equal ones. Both constructors take the store whatever it
+	// is, including nil, exactly as the pre-AX-15 client wiring did. The
+	// graph.search port is the lexical read service over the store; the
+	// client's search service is composed later, in Client, because its
+	// optional semantic layer reloads the vector sidecar and that reload must
+	// stay where it is — after the session ingest.
+	graphQuery := query.New(b.store)
+	graphSearch := search.New(b.store)
 	contributions, err := module.BuildBuiltins(module.Inputs{
 		Reader:        b.reader(),
 		GitProvider:   b.gitProvider,
 		WatchProvider: b.watchProvider,
+		GraphQuery:    graphQuery,
+		GraphSearch:   graphSearch,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("runtime: compose modules: %w", err)
@@ -112,6 +126,7 @@ func (b *Builder) Build() (*Composition, error) {
 		metaDir:       b.metaDir,
 		repoRoot:      b.repoRoot,
 		gitProvider:   b.gitProvider,
+		graphQuery:    graphQuery,
 	}, nil
 }
 
@@ -137,6 +152,9 @@ type Composition struct {
 	metaDir       string
 	repoRoot      string
 	gitProvider   githistory.GitProvider
+	// graphQuery is the graph.query port handed to the module set, reused as
+	// the surface client's query service so the two are one value.
+	graphQuery *query.Service
 
 	clientOnce sync.Once
 	client     *client.Direct
@@ -174,9 +192,10 @@ func (c *Composition) Frozen() bool { return c.contributions.Frozen() }
 func (c *Composition) Client() *client.Direct {
 	c.clientOnce.Do(func() {
 		asvc := c.contributions.Analysis()
-		d := client.NewDirect(c.querySvc(), NewSearchService(c.store, c.metaDir)).
+		d := client.NewDirect(c.graphQuery, NewSearchService(c.store, c.metaDir)).
 			WithAnalysis(asvc).
-			WithReview(review.NewService(asvc))
+			WithReview(review.NewService(asvc)).
+			WithOperationHandlers(c.operationHandlers())
 		if c.repoRoot != "" {
 			d = d.WithRepoRoot(c.repoRoot).WithGitProvider(c.gitProvider)
 		}
@@ -185,8 +204,21 @@ func (c *Composition) Client() *client.Direct {
 	return c.client
 }
 
-// querySvc mirrors the pre-AX-07 wiring exactly: query.New is called with the
-// store whatever it is, including nil, because client.Direct treats a nil query
-// service as "this capability is unavailable" and the capability report depends
-// on that distinction.
-func (c *Composition) querySvc() *query.Service { return query.New(c.store) }
+// operationHandlers converts the module set's frozen handler table into the
+// surface client's view of it (SW-255 / AX-15). The two types are the same
+// function shape; the conversion exists because surfaces/client may not import
+// engine/module, and this file is the one place that holds both. The handlers
+// reach the executor through the client the surfaces already receive — no
+// global, no second composition.
+func (c *Composition) operationHandlers() map[string]client.OperationHandler {
+	handled := c.contributions.Handled()
+	out := make(map[string]client.OperationHandler, len(handled))
+	for _, id := range handled {
+		h, ok := c.contributions.Handler(id)
+		if !ok {
+			continue // Handled and Handler read one frozen table; unreachable
+		}
+		out[id] = client.OperationHandler(h)
+	}
+	return out
+}

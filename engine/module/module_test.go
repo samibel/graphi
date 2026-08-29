@@ -295,7 +295,7 @@ func TestAX07_Build_FreezesEveryRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Builtins: %v", err)
 	}
-	comp, err := s.Build(module.Inputs{Reader: store})
+	comp, err := s.Build(portedInputs(store))
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
@@ -317,7 +317,7 @@ func TestAX07_Build_FreezesEveryRegistry(t *testing.T) {
 	if err := s.Add(noopModule("late")); !errors.Is(err, registry.ErrFrozen) {
 		t.Errorf("the module set accepted a post-build Add: %v", err)
 	}
-	if _, err := s.Build(module.Inputs{Reader: store}); err == nil {
+	if _, err := s.Build(portedInputs(store)); err == nil {
 		t.Error("a second Build succeeded; composition must happen once")
 	}
 }
@@ -327,12 +327,12 @@ func TestAX07_Build_FreezesEveryRegistry(t *testing.T) {
 // asserted at the registry level rather than inferred from the surface bytes.
 func TestAX07_Builtins_ComposeTheSameCapabilitiesAsTheLegacyConstructors(t *testing.T) {
 	store := graphstore.NewMemStore()
-	comp, err := module.BuildBuiltins(module.Inputs{Reader: store})
+	comp, err := module.BuildBuiltins(portedInputs(store))
 	if err != nil {
 		t.Fatalf("BuildBuiltins: %v", err)
 	}
 
-	if got, want := comp.ModuleIDs(), []string{module.IDParse, module.IDAnalysis, module.IDOperations}; !reflect.DeepEqual(got, want) {
+	if got, want := comp.ModuleIDs(), []string{module.IDParse, module.IDAnalysis, module.IDDeadCode, module.IDOperations}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("built-in composition order = %v, want %v", got, want)
 	}
 
@@ -370,7 +370,7 @@ func TestAX07_Builtins_ReproduceTheConditionalAnalyzerRegistrations(t *testing.T
 		{"memstore", graphstore.NewMemStore()},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			comp, err := module.BuildBuiltins(module.Inputs{Reader: tc.reader})
+			comp, err := module.BuildBuiltins(portedInputs(tc.reader))
 			if err != nil {
 				t.Fatalf("BuildBuiltins: %v", err)
 			}
@@ -381,7 +381,7 @@ func TestAX07_Builtins_ReproduceTheConditionalAnalyzerRegistrations(t *testing.T
 	}
 
 	// A reader that is not a graphstore at all still has to agree.
-	comp, err := module.BuildBuiltins(module.Inputs{Reader: nil})
+	comp, err := module.BuildBuiltins(portedInputs(nil))
 	if err != nil {
 		t.Fatalf("BuildBuiltins(nil reader): %v", err)
 	}
