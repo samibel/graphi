@@ -225,3 +225,208 @@ func failingNames(r Report) []string {
 	}
 	return out
 }
+
+// honestBinding is the toolchain ground truth for a binary that was genuinely
+// built the canonical way: a clean tree at rev, linked with CGO_ENABLED=0.
+func honestBinding(rev string) binaryBinding {
+	return binaryBinding{
+		Revision:   rev,
+		Modified:   false,
+		CGOEnabled: "0",
+		SHA256:     strings.Repeat("c", 64),
+		Arch:       "darwin/arm64",
+	}
+}
+
+// honestAttestation is the payload the canonical builder would emit for
+// honestBinding. Mutating one field at a time isolates a single lie.
+func honestAttestation(rev string) buildattest.Privacy {
+	return buildattest.Privacy{
+		SchemaVersion:  buildattest.PrivacySchemaVersion,
+		Status:         "PASS",
+		GateID:         buildattest.PrivacyGateID,
+		Scope:          buildattest.PrivacyScope,
+		SourceRevision: rev,
+		SourceModified: false,
+		EvidenceDigest: strings.Repeat("a", 64),
+		CGOEnabled:     "0",
+		GOOS:           "darwin",
+		GOARCH:         "arm64",
+	}
+}
+
+// Control for the mismatch tests below: an attestation that agrees with the
+// binding on every cross-checkable field still reaches the attested PASS rows,
+// so a mismatch test failing UNVERIFIED is proof of the specific check and not
+// of a blanket downgrade.
+func TestAttestedStaticChecksAcceptAnAgreeingBinding(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	checks := attestedStaticChecksFor(honestBinding(rev), honestAttestation(rev))
+	if len(checks) != 3 {
+		t.Fatalf("agreeing binding produced %d checks, want 3", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusPass || check.Scope != "build-time attestation for this binary" {
+			t.Fatalf("agreeing binding did not produce an attested PASS: %+v", check)
+		}
+	}
+}
+
+// Forgery 1 from the PR-179 review: a binary built from a genuinely dirty tree
+// (the toolchain recorded vcs.modified=true) carrying a hand-forged payload that
+// claims source_modified=false. Before the SourceModified cross-check this
+// rendered "source_state=clean" and three PASS rows.
+func TestAttestedStaticChecksRejectSourceModifiedMismatch(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.Modified = true // toolchain ground truth: the tree was dirty
+	att := honestAttestation(rev)
+	att.SourceModified = false // the forged claim
+
+	checks := attestedStaticChecksFor(binding, att)
+	if len(checks) != 2 {
+		t.Fatalf("source-state mismatch produced %d checks, want the 2 unavailable rows", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("source-state mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+		if !strings.Contains(check.Evidence, "source state") {
+			t.Fatalf("source-state mismatch did not name the condition: %q", check.Evidence)
+		}
+	}
+	// The inverse lie (claiming modified while the binary is clean) is also a
+	// disagreement and must not be accepted either.
+	binding.Modified = false
+	att.SourceModified = true
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusUnverified {
+			t.Fatalf("inverse source-state mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+	}
+}
+
+// Forgery 2 from the PR-179 review: a binary genuinely linked with
+// CGO_ENABLED=1 carrying a payload that claims cgo_enabled="0". Before the
+// CGOEnabled cross-check this printed "CGo-free build [PASS] ... canonical
+// build contract enforced CGO_ENABLED=0" — a false statement about itself.
+func TestAttestedStaticChecksRejectCGOEnabledMismatch(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.CGOEnabled = "1" // toolchain ground truth: cgo was on
+	att := honestAttestation(rev)
+	att.CGOEnabled = "0" // the forged claim
+
+	checks := attestedStaticChecksFor(binding, att)
+	if len(checks) != 2 {
+		t.Fatalf("cgo mismatch produced %d checks, want the 2 unavailable rows", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("cgo mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+		if !strings.Contains(check.Evidence, "CGO_ENABLED") {
+			t.Fatalf("cgo mismatch did not name the condition: %q", check.Evidence)
+		}
+		if check.Name == "CGo-free build" && strings.Contains(check.Evidence, "canonical build contract enforced") {
+			t.Fatalf("cgo mismatch still claims the canonical contract: %q", check.Evidence)
+		}
+	}
+}
+
+// A binary whose build settings carry no CGO_ENABLED entry has no ground truth
+// to compare against, so it must not be treated as agreement.
+func TestAttestedStaticChecksRejectMissingCGOGroundTruth(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.CGOEnabled = ""
+	for _, check := range attestedStaticChecksFor(binding, honestAttestation(rev)) {
+		if check.Status != StatusUnverified {
+			t.Fatalf("absent CGO_ENABLED ground truth became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+	}
+}
+
+// runningBinaryBinding must refuse to bind unless BOTH toolchain facts it
+// cross-checks are actually available, and must carry them through unchanged.
+// It asserts in either world, so it never silently skips.
+func TestRunningBinaryBindingRefusesIncompleteGroundTruth(t *testing.T) {
+	info := releaseinfo.New()
+	b, err := runningBinaryBinding()
+	if info.Commit() == "" || info.CGOEnabled() == "" {
+		if err == nil {
+			t.Fatalf("binding succeeded with incomplete ground truth (commit=%q cgo=%q)", info.Commit(), info.CGOEnabled())
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("binding failed with complete ground truth: %v", err)
+	}
+	if b.CGOEnabled != info.CGOEnabled() {
+		t.Fatalf("binding cgo = %q, want the recorded %q", b.CGOEnabled, info.CGOEnabled())
+	}
+	if b.Modified != info.Modified() {
+		t.Fatalf("binding modified = %v, want the recorded %v", b.Modified, info.Modified())
+	}
+	if b.BuildTags != info.BuildTags() {
+		t.Fatalf("binding build tags = %q, want the recorded %q", b.BuildTags, info.BuildTags())
+	}
+}
+
+// Forgery 3, found while auditing the remaining self-reported fields: an
+// attestation that is honest about revision, source state, CGO_ENABLED and
+// platform but lies about the build-tag set. The tag set scopes the evidence
+// digest and is the input the report tells a sceptic to feed back into
+// `go run ./cmd/canary -tags ...`, so a binary linked with a different tag set
+// than the gate scanned must not be accepted.
+func TestAttestedStaticChecksRejectBuildTagMismatch(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.BuildTags = "" // toolchain ground truth: linked with no build tags
+	att := honestAttestation(rev)
+	att.BuildTags = []string{"grammar_subset", "grammar_subset_python"} // the forged claim
+
+	checks := attestedStaticChecksFor(binding, att)
+	if len(checks) != 2 {
+		t.Fatalf("build-tag mismatch produced %d checks, want the 2 unavailable rows", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("build-tag mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+		if !strings.Contains(check.Evidence, "build-tag set") {
+			t.Fatalf("build-tag mismatch did not name the condition: %q", check.Evidence)
+		}
+	}
+	// A subset of the attested tags is still a different graph, not agreement.
+	binding.BuildTags = "grammar_subset"
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusUnverified {
+			t.Fatalf("build-tag subset became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+	}
+}
+
+// The `-tags` build setting preserves command-line order while an attestation's
+// BuildTags are sorted; the same set in a different order is agreement, and must
+// not downgrade an honest canonical build.
+func TestAttestedStaticChecksAcceptReorderedBuildTags(t *testing.T) {
+	rev := strings.Repeat("d", 40)
+	binding := honestBinding(rev)
+	binding.BuildTags = "grammar_subset,grammar_subset_typescript,grammar_subset_c"
+	att := honestAttestation(rev)
+	att.BuildTags = []string{"grammar_subset", "grammar_subset_c", "grammar_subset_typescript"}
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusPass {
+			t.Fatalf("reordered but identical tag set became %s, want PASS: %+v", check.Status, check)
+		}
+	}
+	// No tags on either side is also agreement.
+	binding.BuildTags = ""
+	att.BuildTags = nil
+	for _, check := range attestedStaticChecksFor(binding, att) {
+		if check.Status != StatusPass {
+			t.Fatalf("empty tag set on both sides became %s, want PASS: %+v", check.Status, check)
+		}
+	}
+}

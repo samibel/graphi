@@ -23,13 +23,15 @@ type Info struct {
 	date      string
 	arch      string
 	modified  bool
+	cgo       string
+	buildTags string
 	isRelease bool
 }
 
 // New returns release metadata for the running binary.
 // It performs no I/O and no network calls.
 func New() Info {
-	commit, date := "", ""
+	commit, date, cgo, tags := "", "", "", ""
 	modified := false
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, s := range info.Settings {
@@ -40,6 +42,10 @@ func New() Info {
 				date = s.Value
 			case "vcs.modified":
 				modified = s.Value == "true"
+			case "CGO_ENABLED":
+				cgo = s.Value
+			case "-tags":
+				tags = s.Value
 			}
 		}
 	}
@@ -49,6 +55,8 @@ func New() Info {
 		date:      date,
 		arch:      fmt.Sprintf("%s/%s", runtimeGOOS(), runtimeGOARCH()),
 		modified:  modified,
+		cgo:       cgo,
+		buildTags: tags,
 		isRelease: version.Version != "dev" && version.Version != "",
 	}
 }
@@ -59,6 +67,19 @@ func (i Info) Commit() string  { return i.commit }
 func (i Info) Date() string    { return i.date }
 func (i Info) Arch() string    { return i.arch }
 func (i Info) Modified() bool  { return i.modified }
+
+// CGOEnabled returns the CGO_ENABLED build setting the Go toolchain recorded
+// into this binary, or "" when the build settings are unavailable. It is
+// toolchain ground truth about the running binary, not a self-reported claim.
+func (i Info) CGOEnabled() string { return i.cgo }
+
+// BuildTags returns the raw `-tags` build setting the Go toolchain recorded
+// into this binary, or "" when the binary was linked with no build tags. Like
+// CGOEnabled it is toolchain ground truth, not a self-reported claim; callers
+// normalise it before comparing, since the setting preserves the order the tags
+// were passed in.
+func (i Info) BuildTags() string { return i.buildTags }
+
 func (i Info) IsRelease() bool { return i.version != "dev" && i.version != "" }
 func (i Info) ReleaseMarker() string {
 	if i.IsRelease() {

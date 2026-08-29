@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/samibel/graphi/internal/buildattest"
@@ -198,6 +199,28 @@ func staticPrivacyChecks(ctx context.Context, target string, forceSource bool, g
 	return []Check{cgo, telemetry}
 }
 
+// normalizeBuildTags puts a tag list into the one comparable shape: trimmed,
+// empties dropped, deduplicated, sorted. The `-tags` build setting preserves
+// command-line order while an attestation's BuildTags are sorted and unique, so
+// the two are only comparable as sets.
+func normalizeBuildTags(tags []string) []string {
+	out := make([]string, 0, len(tags))
+	seen := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			continue
+		}
+		if _, dup := seen[tag]; dup {
+			continue
+		}
+		seen[tag] = struct{}{}
+		out = append(out, tag)
+	}
+	slices.Sort(out)
+	return out
+}
+
 func unavailableStaticChecks(reason string) []Check {
 	scope := "static build property unavailable"
 	return []Check{
@@ -207,16 +230,21 @@ func unavailableStaticChecks(reason string) []Check {
 }
 
 type binaryBinding struct {
-	Revision string
-	Modified bool
-	SHA256   string
-	Arch     string
+	Revision   string
+	Modified   bool
+	CGOEnabled string
+	BuildTags  string
+	SHA256     string
+	Arch       string
 }
 
 func runningBinaryBinding() (binaryBinding, error) {
 	info := releaseinfo.New()
 	if info.Commit() == "" {
 		return binaryBinding{}, fmt.Errorf("running binary has no VCS revision")
+	}
+	if info.CGOEnabled() == "" {
+		return binaryBinding{}, fmt.Errorf("running binary has no CGO_ENABLED build setting")
 	}
 	path, err := os.Executable()
 	if err != nil {
@@ -232,10 +260,12 @@ func runningBinaryBinding() (binaryBinding, error) {
 		return binaryBinding{}, fmt.Errorf("hash running binary: %w", err)
 	}
 	return binaryBinding{
-		Revision: info.Commit(),
-		Modified: info.Modified(),
-		SHA256:   hex.EncodeToString(h.Sum(nil)),
-		Arch:     info.Arch(),
+		Revision:   info.Commit(),
+		Modified:   info.Modified(),
+		CGOEnabled: info.CGOEnabled(),
+		BuildTags:  info.BuildTags(),
+		SHA256:     hex.EncodeToString(h.Sum(nil)),
+		Arch:       info.Arch(),
 	}, nil
 }
 
@@ -244,11 +274,29 @@ func attestedStaticChecks(att buildattest.Privacy) []Check {
 	if err != nil {
 		return unavailableStaticChecks("embedded build evidence could not be bound to the running binary: " + err.Error())
 	}
+	return attestedStaticChecksFor(binding, att)
+}
+
+// attestedStaticChecksFor is the pure half of attestedStaticChecks: every claim
+// the attestation makes that the Go toolchain independently recorded into the
+// same binary must agree with that recording, or no privacy conclusion is
+// accepted. Split from the I/O half so each mismatch is directly testable
+// without depending on how the test binary itself was built.
+func attestedStaticChecksFor(binding binaryBinding, att buildattest.Privacy) []Check {
 	if binding.Revision != att.SourceRevision {
 		return unavailableStaticChecks("embedded build evidence names a different source revision than the running binary; no privacy conclusion was accepted")
 	}
 	if binding.Arch != att.GOOS+"/"+att.GOARCH {
 		return unavailableStaticChecks("embedded build evidence names a different target platform than the running binary; no privacy conclusion was accepted")
+	}
+	if binding.Modified != att.SourceModified {
+		return unavailableStaticChecks("embedded build evidence names a different source state than the running binary's recorded vcs.modified; no privacy conclusion was accepted")
+	}
+	if binding.CGOEnabled != att.CGOEnabled {
+		return unavailableStaticChecks("embedded build evidence names a different CGO_ENABLED setting than the one the running binary was linked with; no privacy conclusion was accepted")
+	}
+	if !slices.Equal(normalizeBuildTags(strings.Split(binding.BuildTags, ",")), normalizeBuildTags(att.BuildTags)) {
+		return unavailableStaticChecks("embedded build evidence names a different build-tag set than the one the running binary was linked with; no privacy conclusion was accepted")
 	}
 	state := "clean"
 	if att.SourceModified {
