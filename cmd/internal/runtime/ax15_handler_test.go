@@ -7,18 +7,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/samibel/graphi/engine/agenttools/deadcode"
 	"github.com/samibel/graphi/engine/module"
+	"github.com/samibel/graphi/engine/query/compound"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
 // TestAX15_TheCompositionClientCarriesTheModuleHandler is AC-5 and AC-6 at the
-// composition root: the built-in set lists engine.deadcode, the catalog is
-// still 56 operations, the client the runtime hands out is an
-// OperationHandlerProvider for exactly dead_code, and the handler it carries
-// answers byte-for-byte what the legacy method answers over the same session.
+// composition root: the catalog is still 56 operations, the client carries
+// both engine-side handlers, and each answers byte-for-byte what the legacy
+// method answers over the same session.
 func TestAX15_TheCompositionClientCarriesTheModuleHandler(t *testing.T) {
 	withCompositionMode(t, CompositionBuilder)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
@@ -38,25 +39,26 @@ func TestAX15_TheCompositionClientCarriesTheModuleHandler(t *testing.T) {
 	if got := contributions.Operations().Len(); got != 56 {
 		t.Fatalf("catalog holds %d operations, want 56 unchanged", got)
 	}
-	found := false
+	found := map[string]bool{}
 	for _, m := range comp.Modules() {
-		if m.ID == module.IDDeadCode {
-			found = true
+		found[m.ID] = true
+	}
+	for _, id := range []string{module.IDCompound, module.IDDeadCode} {
+		if !found[id] {
+			t.Fatalf("Modules() does not list %s: %v", id, contributions.ModuleIDs())
 		}
 	}
-	if !found {
-		t.Fatalf("Modules() does not list %s: %v", module.IDDeadCode, contributions.ModuleIDs())
-	}
-	if got := contributions.Handled(); len(got) != 1 || got[0] != deadcode.Operation {
-		t.Fatalf("Handled() = %v, want exactly [%s]", got, deadcode.Operation)
+	wantHandled := []string{compound.Operation, deadcode.Operation}
+	if got := contributions.Handled(); !reflect.DeepEqual(got, wantHandled) {
+		t.Fatalf("Handled() = %v, want %v", got, wantHandled)
 	}
 
 	provider, ok := rt.Client.(client.OperationHandlerProvider)
 	if !ok {
 		t.Fatal("the runtime's client does not carry the module handlers")
 	}
-	if got := provider.HandledOperations(); len(got) != 1 || got[0] != deadcode.Operation {
-		t.Fatalf("client.HandledOperations() = %v, want [%s]", got, deadcode.Operation)
+	if got := provider.HandledOperations(); !reflect.DeepEqual(got, wantHandled) {
+		t.Fatalf("client.HandledOperations() = %v, want %v", got, wantHandled)
 	}
 	handler, ok := provider.OperationHandler(deadcode.Operation)
 	if !ok {
@@ -80,13 +82,30 @@ func TestAX15_TheCompositionClientCarriesTheModuleHandler(t *testing.T) {
 		t.Fatal("the comparison produced no bytes and proves nothing")
 	}
 
+	compoundHandler, ok := provider.OperationHandler(compound.Operation)
+	if !ok {
+		t.Fatalf("the client has no handler for %s", compound.Operation)
+	}
+	const queryText = "SEED no.such.symbol\nHOP out calls\n"
+	wantCompound, err := rt.Client.Compound(context.Background(), queryText)
+	if err != nil {
+		t.Fatalf("legacy Compound: %v", err)
+	}
+	gotCompound, err := compoundHandler(context.Background(), json.RawMessage(`{"query":"SEED no.such.symbol\nHOP out calls\n"}`))
+	if err != nil {
+		t.Fatalf("compound module handler: %v", err)
+	}
+	if !bytes.Equal(gotCompound, wantCompound) {
+		t.Fatalf("compound handler and legacy method disagree\n  handler: %s\n  legacy:  %s", gotCompound, wantCompound)
+	}
+
 	// The attach path composes the same handler over the same store.
 	attached, err := Attach(rt.DBPath, "", rt.MetaDir)
 	if err != nil {
 		t.Fatalf("Attach: %v", err)
 	}
 	defer attached.Close()
-	if got := attached.Composition().Contributions().Handled(); len(got) != 1 || got[0] != deadcode.Operation {
+	if got := attached.Composition().Contributions().Handled(); !reflect.DeepEqual(got, wantHandled) {
 		t.Fatalf("attach composition Handled() = %v", got)
 	}
 }

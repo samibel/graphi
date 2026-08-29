@@ -34,6 +34,9 @@ import (
 // The bound guarantees termination and keeps result size / token cost predictable.
 const MaxCompoundDepth = 5
 
+// Operation is the catalog id implemented by this package.
+const Operation = "compound"
+
 // Direction is the closed vocabulary for a traversal step's orientation relative
 // to the current frontier node. The zero value is invalid and rejected at parse /
 // validate time so an under-specified step is unrepresentable.
@@ -112,7 +115,6 @@ func Validate(q Query) error {
 // an error — matching the fixed operations' semantics. A malformed query yields
 // a wrapped ErrInvalidQuery. Real infrastructure failures are returned as errors.
 func Execute(ctx context.Context, r query.Reader, q Query) (query.Result, error) {
-	const op = "compound"
 	if err := Validate(q); err != nil {
 		return query.Result{}, err
 	}
@@ -120,7 +122,7 @@ func Execute(ctx context.Context, r query.Reader, q Query) (query.Result, error)
 	seed, err := r.GetNode(ctx, q.Seed)
 	if err != nil {
 		if errors.Is(err, graphstore.ErrNotFound) {
-			return query.Result{Operation: op, Symbol: q.Seed, Outcome: query.OutcomeNotFound, Nodes: []query.ResultNode{}, Edges: []query.ResultEdge{}}, nil
+			return query.Result{Operation: Operation, Symbol: q.Seed, Outcome: query.OutcomeNotFound, Nodes: []query.ResultNode{}, Edges: []query.ResultEdge{}}, nil
 		}
 		return query.Result{}, err
 	}
@@ -213,7 +215,7 @@ func Execute(ctx context.Context, r query.Reader, q Query) (query.Result, error)
 		outcome = query.OutcomeEmpty
 	}
 	return query.Result{
-		Operation: op,
+		Operation: Operation,
 		Symbol:    q.Seed,
 		Outcome:   outcome,
 		Depth:     &eff,

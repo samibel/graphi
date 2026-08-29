@@ -91,12 +91,12 @@ func TestAX07_ModuleSet_DependsOnlyOnEngineRankCapabilityPackages(t *testing.T) 
 		modulePath + "/engine/analysis/githistory": "the git-provider input type",
 		modulePath + "/engine/opcatalog":           "the operation contribution kind",
 		modulePath + "/engine/query":               "the graph-reader input type and the graph.query port type",
+		modulePath + "/engine/query/compound":      "the engine.compound built-in module's handler",
 		modulePath + "/engine/typeresolve":         "the resolver contribution kind",
 		// SW-255 (AX-15): the first handler-bearing built-in module and the
 		// second typed port. engine/search is a PORT type (Inputs.GraphSearch,
-		// Ports.GraphSearch), not a contribution kind; engine/agenttools/deadcode
-		// is the one built-in whose handler lives in engine. A second
-		// handler-bearing module adds its own line here in the same change.
+		// Ports.GraphSearch), not a contribution kind; the handler packages below
+		// implement the two built-in operations that execute in engine.
 		modulePath + "/engine/search":              "the graph.search port type",
 		modulePath + "/engine/agenttools/deadcode": "the engine.deadcode built-in module's handler",
 	}

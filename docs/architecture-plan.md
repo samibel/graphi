@@ -157,12 +157,9 @@ it all real?"* — the closing piece of the project's end-to-end traceability st
 
 ## 6. The extension kernel as built
 
-> As of `main @ 4f14966` (2026-08-29, SW-252 / AX-13). This section describes
-> what the Extension Platform Kernel (SW-220..SW-232, SW-238..SW-248) actually
-> shipped — not the plan it was built from. Every path below exists at that
-> commit; every number names the command that produced it. The measured facts
-> in §6.10 are a snapshot and go stale the moment a seam moves; re-run the
-> command before quoting one.
+> This is the maintained as-built description of the Extension Platform Kernel,
+> not the plan it was built from. The measured facts in §6.10 are snapshots and
+> go stale the moment a seam moves; re-run the named command before quoting one.
 
 Four labelled parts of this section are **Transitional — scheduled for removal
 only under the AX-17 rule**: the legacy adapter table (§6.4), the shadow
@@ -188,13 +185,15 @@ zero operations are `active`, so every trigger is unmet by construction.
   ([module.go](../engine/module/module.go)). It is ADR 0013 tier B and
   nothing else: statically compiled first-party Go, no runtime loading, no
   ABI, no discovery.
-- **Four built-in modules**, declared in
+- **Five built-in modules**, declared in
   [`engine/module/builtin.go`](../engine/module/builtin.go): `core.parse`
   (the CGo-free parser set), `engine.analysis` (the analyzer set),
+  `engine.compound` (the `compound` spec and engine-side handler over the typed
+  `graph.query` port),
   `engine.deadcode` (SW-255 / AX-15: the `dead_code` spec **together with its
   engine-side handler**, bound to typed `graph.query` / `graph.search` ports —
-  the only built-in with a handler) and `engine.operations` (requires the
-  first two; contributes **the other 55 operations as specs** — see §6.3). No
+  the first built-in with a handler) and `engine.operations` (requires the
+  first two; contributes **the other 54 operations as specs** — see §6.3). No
   built-in module contributes a resolver; `engine/ingest` still constructs
   that registry itself.
 - **`cmd/internal/runtime` is the only composition root.**
@@ -274,14 +273,14 @@ zero operations are `active`, so every trigger is unmet by construction.
   (`legacyAdapters()`) maps every adapted id to a typed `Arguments` whose
   `invoke(ctx, c Client)` calls the legacy `Client` method. It is built once
   per `Executor` under `PolicyFirstWins` and never handed out.
-- **What "the executor path" means today, stated without hedging:** the
-  executor transports canonical bytes, it never makes them. `Execute`
-  resolves the request against the catalog, picks the adapter, and returns
-  `args.invoke(ctx, e.client)` — **the same `Client` method the legacy path
-  calls**, returning that method's bytes unchanged. No operation has an
-  engine-side handler; `module.Builder.AddOperation` registers a *spec* only.
-  Legacy-vs-executor byte parity is therefore exact by construction and, for
-  now, tautological. The first real engine-side handler is AX-15 (SW-255).
+- **What "the executor path" means today:** `Execute` resolves the request
+  against the catalog and prefers a frozen module-handler table. `dead_code`
+  and `compound` have real engine-side handlers registered as spec + handler;
+  their parity tests compare distinct routing paths that share only their
+  canonical engine implementation and serializer. The other 54 operations
+  still fall back to `args.invoke(ctx, e.client)` in the legacy adapter table,
+  so parity for those operations remains structural. Both adapters are retained
+  for rollback, and zero operations are enabled as `active` by default.
 - Surfaces reach the seam through `client.DispatchOperation`
   ([canary.go](../surfaces/client/canary.go)), which consults the canary
   position (§6.6) before choosing a path.
@@ -388,7 +387,7 @@ without a release; the composition and projection switches are source-level
 because exposing a knob with no client-visible consequence would advertise a
 choice that does not exist while inviting untested combinations.
 
-### 6.10 Measured seam facts at `4f14966`
+### 6.10 Measured seam facts (re-run before quoting)
 
 | Fact | Value | Command |
 |---|---|---|

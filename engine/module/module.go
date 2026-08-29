@@ -62,7 +62,7 @@
 //     the shadow catalog's specs — all but the ones a handler-bearing module
 //     claims. Since SW-255 (AX-15) a contribution may also carry a HANDLER
 //     (AddOperationContribution: spec + Bind over typed Ports), and exactly
-//     one built-in does: engine.deadcode. The handler table is frozen into the
+//     two built-ins do: engine.compound and engine.deadcode. The handler table is frozen into the
 //     Composition beside the catalog and reachable only by lookup.
 //   - parsers    → core/parse. The core.parse module contributes
 //     parse.DefaultParsers(), one at a time.
@@ -640,7 +640,7 @@ type Composition struct {
 }
 
 // Handler returns the engine-side handler for one operation id, if a module
-// contributed one. An operation with a spec but no handler — the 55 the
+// contributed one. An operation with a spec but no handler — the 54 the
 // engine.operations module still contributes as specs only — reports false,
 // and the executor serves it through its legacy adapter.
 func (c *Composition) Handler(id string) (OperationHandler, bool) {

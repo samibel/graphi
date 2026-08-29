@@ -332,7 +332,7 @@ func TestAX07_Builtins_ComposeTheSameCapabilitiesAsTheLegacyConstructors(t *test
 		t.Fatalf("BuildBuiltins: %v", err)
 	}
 
-	if got, want := comp.ModuleIDs(), []string{module.IDParse, module.IDAnalysis, module.IDDeadCode, module.IDOperations}; !reflect.DeepEqual(got, want) {
+	if got, want := comp.ModuleIDs(), []string{module.IDParse, module.IDAnalysis, module.IDCompound, module.IDDeadCode, module.IDOperations}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("built-in composition order = %v, want %v", got, want)
 	}
 
