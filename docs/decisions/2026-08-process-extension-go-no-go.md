@@ -359,3 +359,38 @@ cmp /tmp/spike /tmp/base   # silence = byte-identical
 go test ./engine/exthost -count=1
 go test -race ./engine/exthost -count=1
 ```
+
+---
+
+## Addendum — Re-verified 2026-08-29 at `84d3cdd` (SW-256, AX-18)
+
+The four facts this record rests on were re-measured at `main @ 84d3cdd`
+(v0.12.1 + 5), from the product side rather than from inside the spike. The
+original text above is unchanged. Every line is the command that was run.
+
+| # | Finding | Result | Command |
+|---|---|---|---|
+| 1 | **Closure** — neither `engine/exthost` nor any package under `extensions/` is in the shipped import closure | `0` | `go list -deps ./cmd/graphi \| grep -c 'exthost\|extensions/'` |
+| 2 | **Dependency** — nothing under `core/`, `engine/` (other than the host), `surfaces/` or `cmd/` imports `engine/exthost`; the only importer in the module is `extensions/example-analyzer`, the host's own client and a separate executable | one importer, the example | `go list -f '{{.ImportPath}} {{.Imports}}' ./... \| grep exthost` |
+| 3 | **Capability** — no capability surface references the spike: `docs/coverage-matrix.yaml`, `docs/capability-manifest.json`, `engine/opcatalog/shadow.json` (the `Port` vocabulary in `engine/opcatalog/spec.go` has no process-extension port), and the `graphi extension` verbs in `cmd/graphi` | empty (grep exit 1) | `grep -rn -i 'exthost\|process-extension\|example-analyzer' docs/coverage-matrix.yaml docs/capability-manifest.json engine/opcatalog/shadow.json cmd/graphi/` |
+| 4 | **Binary size** — a package outside the shipped closure contributes zero bytes (the `cmd/graphi/binary_weight_test.go` rationale), so the SW-243 `binary_size_bytes` baseline is unaffected **by construction** | not measured here, unaffected by construction | finding 1 is the mechanism; the measured pair in §2.3 stands as the last direct measurement |
+
+**What changed with this re-verification:** until now the closure invariant was
+asserted only INSIDE the spike (`TestSW231_AC4_SpikeIsNotInTheShippedImportClosure`),
+so archiving the spike would have archived the product's only objection to
+being wired. `cmd/graphi/exthost_closure_test.go` now carries the same
+assertion beside `binary_weight_test.go`, with the same shape and the same
+rationale (assert the named cause locally, not the size remotely), and it
+asserts **absence** — it stays true, and stays meaningful, after the cleanup
+slice removes the spike. It assembles the spike's import path from its
+components rather than writing it as one literal, so that
+`TestSW231_AC6_SpikeIsConfinedToItsOwnDirectories` (§6) keeps finding
+references only where deletion removes them; that choice is recorded in the
+SW-256 ticket as a reviewed one.
+
+**Decision remains **NO-GO**. No activation, no product CLI, no automatic
+discovery.** Nothing was removed, moved or wired: `engine/exthost` and
+`extensions/example-analyzer` stay present and unwired as this record's
+evidence. Their disposal is a separately reviewable cleanup slice in the
+backlog (own PR, never bundled with module, executor or Stable work; the two
+in-spike tests of §6 prove the removal complete; the product-side guard stays).
