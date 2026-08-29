@@ -10,10 +10,19 @@
 // in, is what makes "the executor reduced coupling" a measurement instead of an
 // impression.
 //
-// It is explicitly a METRIC, NOT A RATCHET. Nothing here fails a build when the
-// number moves. Turning it into a gate is a separate, deliberate decision (the
-// SW-220 story puts that out of scope on purpose): a ratchet adopted before
-// anyone knows the healthy range mostly teaches people to route around it.
+// The AX-00 report (Measure/Compare/Diff against docs/rc/ax00-import-fanout.json)
+// is explicitly a METRIC, NOT A RATCHET: nothing in it fails a build when the
+// number moves, and the SW-220 story put a gate out of scope on purpose — a
+// ratchet adopted before anyone knows the healthy range mostly teaches people
+// to route around it.
+//
+// That deliberate decision was taken in SW-253 (AX-16a), once the number had
+// risen 41 → 44 with nothing to stop the next story adding a fifth seam. The
+// ratchet lives in ratchet.go against its OWN declaration,
+// docs/rc/ax16-import-fanout-ceiling.json: a ceiling, every allowed edge with a
+// category and a reason, and the targets recorded beside it as intent. The
+// AX-00 baseline file is history and stays untouched; the two artifacts answer
+// different questions ("what was it?" vs "what may it be?").
 //
 // # Why go/ast and not `go list`
 //
