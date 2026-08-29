@@ -185,6 +185,17 @@ knows about. Test files are excluded: a test importing a helper is not productio
 At the baseline the two methods agree exactly (`go list -deps=false` over `./surfaces/client`
 also reports 41 internal imports).
 
+**Addendum (SW-253, AX-16a, 2026-08-29) — the separate, deliberate decision has been taken.**
+Since v0.11.0 the number stood at **44** (+`core/registry`, `engine/extpack`, `engine/opcatalog`),
+so `go test ./internal/importfanout` now also runs a **ratchet** against its own declaration,
+[`ax16-import-fanout-ceiling.json`](ax16-import-fanout-ceiling.json): ceiling **44**, every one
+of the 44 edges declared with a category and a reason, and the targets **≤ 30** (intermediate)
+and **< 20** (final) recorded beside it as intent — the build fails when the direct fan-out rises,
+when an undeclared edge appears (even at an unchanged count), or when the count falls without
+the ceiling being lowered with it; the transitive internal closure is measured and logged on the
+same line (`direct 44 (ceiling 44) · transitive N`) as the anti-gaming instrument but is not
+gated. The baseline file above is history and is unchanged.
+
 ---
 
 ## 5. What this story deliberately did not do

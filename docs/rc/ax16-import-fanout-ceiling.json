@@ -1,0 +1,231 @@
+{
+  "package": "surfaces/client",
+  "ceiling": 44,
+  "allowed_imports": [
+    {
+      "path": "core/graphstore",
+      "category": "port",
+      "reason": "Graphstore read port and OpenSQLiteReadOnly for the trust-report/abstention read path; ErrNotFound mapped to the wire"
+    },
+    {
+      "path": "core/model",
+      "category": "port",
+      "reason": "NodeId type crossing the operation boundary; type-only"
+    },
+    {
+      "path": "core/parse",
+      "category": "port",
+      "reason": "parser registry (NewDefaultRegistry, ExtractsSymbols) queried for the trust document's per-language capability grades"
+    },
+    {
+      "path": "core/registry",
+      "category": "compat-adapter",
+      "reason": "registry error vocabulary (ErrMissingDependency, Errorf) and duplicate/first-wins policies used by the executor seam and canary switch; goes when the seam is composed in engine (AX-15/AX-16b)"
+    },
+    {
+      "path": "engine/agenttools/archintel",
+      "category": "engine-handler",
+      "reason": "architecture-intel operation (arch rules, layer map) — Direct.archRules feeds it extpack rules; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/brief",
+      "category": "engine-handler",
+      "reason": "repo brief operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/changeimpact",
+      "category": "engine-handler",
+      "reason": "change-impact / blast-radius operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/contract",
+      "category": "engine-handler",
+      "reason": "contract (public surface) operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/deadcode",
+      "category": "engine-handler",
+      "reason": "dead-code operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/explain",
+      "category": "engine-handler",
+      "reason": "explain-symbol operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/frameworkmap",
+      "category": "engine-handler",
+      "reason": "framework-map operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/hotspots",
+      "category": "engine-handler",
+      "reason": "hotspots operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/hybridsearch",
+      "category": "engine-handler",
+      "reason": "hybrid (lexical+semantic) search operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/overview",
+      "category": "engine-handler",
+      "reason": "repo overview operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/related",
+      "category": "engine-handler",
+      "reason": "related-symbols operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/resolve",
+      "category": "engine-handler",
+      "reason": "symbol resolve operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/risk",
+      "category": "engine-handler",
+      "reason": "change-risk operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/symbolcontext",
+      "category": "engine-handler",
+      "reason": "symbol-context operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/taskctx",
+      "category": "engine-handler",
+      "reason": "task-context operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/agenttools/testimpact",
+      "category": "engine-handler",
+      "reason": "test-impact operation; the Direct client calls the engine package itself because no engine-side handler exists yet"
+    },
+    {
+      "path": "engine/analysis",
+      "category": "engine-handler",
+      "reason": "analysis.Service invoked directly for triage/review/conflict PR operations; no engine-side handler yet"
+    },
+    {
+      "path": "engine/analysis/githistory",
+      "category": "port",
+      "reason": "githistory.GitProvider interface handed through to analysis; type-only"
+    },
+    {
+      "path": "engine/context",
+      "category": "engine-handler",
+      "reason": "rooted context Reader for task/symbol context assembly"
+    },
+    {
+      "path": "engine/diagnostic",
+      "category": "engine-handler",
+      "reason": "DiagnoseWithOptions + Marshal for the diagnose operation"
+    },
+    {
+      "path": "engine/distill",
+      "category": "engine-handler",
+      "reason": "session Distiller (WithDistill) for the distill operation"
+    },
+    {
+      "path": "engine/edit",
+      "category": "engine-handler",
+      "reason": "refactor/inline/safe-delete ops, Applier and ChangeRecorder (WithEditor) for the edit operations"
+    },
+    {
+      "path": "engine/extpack",
+      "category": "engine-handler",
+      "reason": "extpack.Load of the repo's declarative rule packs (tier A) to feed archintel ArchRules; kernel seam added beside the façade by SW-229"
+    },
+    {
+      "path": "engine/ingest",
+      "category": "engine-handler",
+      "reason": "read-only Ingester and trust-evidence errors for the trust-report/abstention path"
+    },
+    {
+      "path": "engine/ledger",
+      "category": "engine-handler",
+      "reason": "savings Ledger (WithLedger) and Readout marshalling for the savings operation"
+    },
+    {
+      "path": "engine/link",
+      "category": "engine-handler",
+      "reason": "link.New().Languages() queried for the trust document's cross-file-linked capability grade"
+    },
+    {
+      "path": "engine/memory",
+      "category": "engine-handler",
+      "reason": "memory Store, Query and provenance types (WithMemory) for the memory operations"
+    },
+    {
+      "path": "engine/opcatalog",
+      "category": "compat-adapter",
+      "reason": "operation catalog (Shadow, OperationSpec, ports, permissions, determinism) consulted by the executor seam and canary contribution checks; kernel seam added beside the façade by SW-224"
+    },
+    {
+      "path": "engine/query",
+      "category": "engine-handler",
+      "reason": "query.Service and Result/Marshal for the Stable graph-query operations (callers, callees, clones, ...)"
+    },
+    {
+      "path": "engine/query/compound",
+      "category": "engine-handler",
+      "reason": "compound.Parse/Execute for the compound query operation"
+    },
+    {
+      "path": "engine/review",
+      "category": "engine-handler",
+      "reason": "review.Service, HostFromEnv and PublishOptions for the review-publish operations"
+    },
+    {
+      "path": "engine/search",
+      "category": "engine-handler",
+      "reason": "search.Service and semantic response marshalling for the search operations"
+    },
+    {
+      "path": "engine/semantic",
+      "category": "engine-handler",
+      "reason": "semantic.Languages() queried for the trust document's type-checked capability grade"
+    },
+    {
+      "path": "engine/skillgen",
+      "category": "engine-handler",
+      "reason": "skill Generator (WithSkillGen) for the skill-generation operation"
+    },
+    {
+      "path": "engine/trust",
+      "category": "engine-handler",
+      "reason": "trust document types, verdicts, scope facts and marshalling shared by every trust surface (CLI/HTTP/direct); the contract-§2 wire shape"
+    },
+    {
+      "path": "internal/freshness",
+      "category": "tooling",
+      "reason": "freshness.Report consumed by the trust document (ADR 0006: trust consumes, never mints, freshness facts)"
+    },
+    {
+      "path": "internal/freshness/probe",
+      "category": "tooling",
+      "reason": "probe.Compute for the trust-report freshness facts"
+    },
+    {
+      "path": "internal/releaseinfo",
+      "category": "tooling",
+      "reason": "releaseinfo.New().Commit() stamped into the trust document's binary provenance"
+    },
+    {
+      "path": "internal/state",
+      "category": "tooling",
+      "reason": "state.Resolve for the per-repo store location on the trust/abstention read path"
+    },
+    {
+      "path": "surfaces/forge",
+      "category": "transport",
+      "reason": "forge Enumerator / ReviewFetcher ports and ListOpenPRs over the forge HTTP transport for the PR-list and review operations"
+    }
+  ],
+  "targets": {
+    "intermediate": 30,
+    "final": 20
+  },
+  "raised_by": null
+}

@@ -26,6 +26,23 @@ file:
 
 ## [Unreleased]
 
+### Added
+
+- **`surfaces/client` import fan-out is now a ratchet, not only a metric (SW-253,
+  AX-16a).** `go test ./internal/importfanout` fails when the façade's direct
+  internal fan-out rises above the declared ceiling (**44**), when any import is
+  not declared in `docs/rc/ax16-import-fanout-ceiling.json` with a category and
+  a reason — an exchanged edge at an unchanged count is a new dependency, not a
+  free move — or when the count falls without the ceiling being lowered with it
+  (gains are locked in). Raising the ceiling is a reviewed edit that names its
+  story in `raised_by`; `GRAPHI_UPDATE_GOLDEN=1` re-pins the set but leaves empty
+  reasons and an empty `raised_by` placeholder that fail until a human writes
+  them. The transitive internal closure is measured with the same `go/ast` walk
+  and logged beside the direct number (`direct 44 (ceiling 44) · transitive N`)
+  so moving an import one hop into a collector package is visible; it is
+  reported, not gated. The AX-00 baseline (`docs/rc/ax00-import-fanout.json`,
+  41) is untouched history; the targets ≤ 30 / < 20 are recorded as intent.
+
 ## [0.12.1] - 2026-08-29
 
 **A correction, not an improvement.** 0.12.0's headline feature is an embedded
