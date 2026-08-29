@@ -72,7 +72,7 @@ operation is **Preview**, not GA. `graphi help` marks the same split at runtime.
 | `graphi claude` | labs | Wire graphi into Claude Code (MCP) — the single-client shortcut for `setup`. |
 | `graphi upgrade [-print]` | labs | Update to the latest release (user-initiated; never automatic). |
 | `graphi help [<subcommand>]` | labs | Usage overview, or detailed help for one subcommand. |
-| `graphi privacy-audit [--target ./...]` | labs | Print the local-first proof (real CGo scan + canary egress guard); non-zero on violation. |
+| `graphi privacy-audit [--source [--target ./...]]` | labs | Report the running binary's embedded, source-bound build evidence plus the live egress check. `--source` instead scans a developer checkout and labels that scope explicitly. Non-zero on violation or unverified evidence. |
 | `graphi savings -ledger <path>` | labs | Print the session token-savings readout from a ledger a prior MCP/daemon session wrote. |
 | `graphi version` | labs | Print the version / commit / build date stamped into the binary. |
 

@@ -393,15 +393,12 @@ func buildBinary(ctx context.Context, target, out, cgo, modRoot string, tags []s
 	if cgo != "0" {
 		return nil, fmt.Errorf("bench: canonical release build requires CGO_ENABLED=0, got %q", cgo)
 	}
-	args := release.CanonicalBuildArgs(release.BuildConfig{
+	err := release.BuildInModule(ctx, release.BuildConfig{
 		Target:  target,
 		Version: "dev",
 		Tags:    tags,
-	}, out)
-	cmd := exec.CommandContext(ctx, "go", args...)
-	cmd.Env = withCgo(os.Environ(), cgo)
-	cmd.Dir = modRoot
-	return cmd.CombinedOutput()
+	}, out, modRoot)
+	return nil, err
 }
 
 type binaryBuildProvenance struct {

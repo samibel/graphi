@@ -273,15 +273,35 @@ func runSetupEmbedder(args []string) int {
 // on any violation (SW-044). Offline; reuses internal/cgoconformance +
 // internal/canary.
 //
-//	graphi privacy-audit [--target ./...]
+//	graphi privacy-audit [--source [--target ./...]]
 func runPrivacyAudit(args []string) int {
 	fs := flag.NewFlagSet("privacy-audit", flag.ContinueOnError)
-	target := fs.String("target", "./...", "build target to scan for CGo imports")
+	source := fs.Bool("source", false, "scan the current graphi source checkout instead of reporting this binary's embedded build evidence")
+	target := fs.String("target", "./...", "source build target to scan for CGo imports (requires --source)")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: privacy-audit: %v\n", err)
 		return 1
 	}
-	rep := audit.Run(context.Background(), *target)
+	if fs.NArg() != 0 {
+		fmt.Fprintf(os.Stderr, "graphi: privacy-audit: unexpected arguments: %v\n", fs.Args())
+		return 1
+	}
+	targetSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "target" {
+			targetSet = true
+		}
+	})
+	if targetSet && !*source {
+		fmt.Fprintln(os.Stderr, "graphi: privacy-audit: --target requires --source; a source scan describes the checkout, not the running binary")
+		return 1
+	}
+	var rep audit.Report
+	if *source {
+		rep = audit.RunSource(context.Background(), *target)
+	} else {
+		rep = audit.Run(context.Background(), *target)
+	}
 	rep.Render(os.Stdout)
 	return rep.ExitCode()
 }

@@ -287,8 +287,8 @@ var subcommandHelp = map[string]subHelp{
 		"graphi setup-embedder ollama",
 	},
 	"privacy-audit": {
-		"print the local-first proof (CGo scan + canary egress guard); non-zero on violation",
-		"graphi privacy-audit [--target ./...]",
+		"report this binary's build-time privacy evidence + live egress check; --source scans a developer checkout instead; non-zero on violation or unverified evidence",
+		"graphi privacy-audit [--source [--target ./...]]",
 		"graphi privacy-audit",
 	},
 	"upgrade": {

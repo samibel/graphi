@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/internal/buildattest"
 	"github.com/samibel/graphi/internal/canary"
+	"github.com/samibel/graphi/internal/releaseinfo"
 )
 
 // fakeIsolator lets tests drive the isolation-available branch without root.
@@ -132,6 +134,76 @@ func TestRender_NonEmpty(t *testing.T) {
 	txt := RenderText(r)
 	if !strings.Contains(txt, "privacy-audit") || !strings.Contains(txt, "CGo-free") {
 		t.Fatalf("rendered report missing expected sections:\n%s", txt)
+	}
+}
+
+func TestAttestedStaticChecksDescribeAndBindTheRunningBinary(t *testing.T) {
+	info := releaseinfo.New()
+	if info.Commit() == "" {
+		t.Skip("go test binary has no VCS revision")
+	}
+	checks := attestedStaticChecks(buildattest.Privacy{
+		SchemaVersion:  buildattest.PrivacySchemaVersion,
+		Status:         "PASS",
+		GateID:         buildattest.PrivacyGateID,
+		Scope:          buildattest.PrivacyScope,
+		SourceRevision: info.Commit(),
+		EvidenceDigest: strings.Repeat("a", 64),
+		CGOEnabled:     "0",
+		GOOS:           strings.Split(info.Arch(), "/")[0],
+		GOARCH:         strings.Split(info.Arch(), "/")[1],
+	})
+	if len(checks) != 3 {
+		t.Fatalf("attested checks = %d, want 3", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusPass || check.Scope != "build-time attestation for this binary" {
+			t.Fatalf("attested check is not a scoped PASS: %+v", check)
+		}
+	}
+	binding := find(Report{Checks: checks}, "Build evidence binding")
+	for _, want := range []string{"binary_sha256=", "source_commit=" + info.Commit(), "not an independent signature"} {
+		if !strings.Contains(binding.Evidence, want) {
+			t.Fatalf("attested binding missing %q: %s", want, binding.Evidence)
+		}
+	}
+}
+
+func TestAttestedStaticChecksRejectRevisionMismatch(t *testing.T) {
+	checks := attestedStaticChecks(buildattest.Privacy{
+		SchemaVersion:  buildattest.PrivacySchemaVersion,
+		Status:         "PASS",
+		GateID:         buildattest.PrivacyGateID,
+		Scope:          buildattest.PrivacyScope,
+		SourceRevision: strings.Repeat("f", 40),
+		EvidenceDigest: strings.Repeat("a", 64),
+		CGOEnabled:     "0",
+		GOOS:           "invalid",
+		GOARCH:         "invalid",
+	})
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("revision mismatch became %s, want UNVERIFIED: %+v", check.Status, check)
+		}
+	}
+}
+
+func TestSourceUnavailableMessageNamesTheConditionNotTheToolchainExit(t *testing.T) {
+	t.Chdir(t.TempDir())
+	checks := staticPrivacyChecks(context.Background(), "./...", true, nil)
+	if len(checks) != 2 {
+		t.Fatalf("static checks = %d, want 2", len(checks))
+	}
+	for _, check := range checks {
+		if check.Status != StatusUnverified {
+			t.Fatalf("source-unavailable check = %s, want UNVERIFIED", check.Status)
+		}
+		if !strings.Contains(check.Evidence, "graphi source module is not available") {
+			t.Fatalf("message does not name the real condition: %s", check.Evidence)
+		}
+		if strings.Contains(check.Evidence, "go list") || strings.Contains(check.Evidence, "exit status") {
+			t.Fatalf("message leaked a raw toolchain failure: %s", check.Evidence)
+		}
 	}
 }
 

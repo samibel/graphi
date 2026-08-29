@@ -18,6 +18,8 @@
 package canary
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -27,9 +29,16 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/internal/buildattest"
 )
+
+// StaticPrivacyGateID versions the source inputs and decision logic whose
+// digest is emitted by RunGate and embedded into canonical release binaries.
+const StaticPrivacyGateID = buildattest.PrivacyGateID
 
 // TelemetryFinding names an import path that the gate has rejected.
 type TelemetryFinding struct {
@@ -150,6 +159,10 @@ var httpClientEgressMethods = map[string]bool{
 // module root (detected via `go env GOMOD` when empty).
 type GateConfig struct {
 	ModuleDir string
+	// BuildTags selects the exact dependency graph linked into the candidate.
+	BuildTags []string
+	GOOS      string
+	GOARCH    string
 	// GraphCommand returns the default-graph dependency list. Defaults to
 	// `go list -deps -test=false ./...` under CGO_ENABLED=0; injectable for
 	// hermetic tests.
@@ -158,33 +171,49 @@ type GateConfig struct {
 
 // GateResult is the static-gate verdict.
 type GateResult struct {
-	Verdict  string             `json:"verdict"` // "pass" | "fail"
-	Findings []TelemetryFinding `json:"findings"`
+	Verdict        string             `json:"verdict"` // "pass" | "fail"
+	Findings       []TelemetryFinding `json:"findings"`
+	EvidenceDigest string             `json:"evidence_digest"`
+	BuildTags      []string           `json:"build_tags,omitempty"`
+	GOOS           string             `json:"goos"`
+	GOARCH         string             `json:"goarch"`
 }
 
 // RunGate executes the static zero-telemetry gate over the default graph.
 func RunGate(cfg GateConfig) (GateResult, error) {
-	if cfg.GraphCommand == nil {
-		cfg.GraphCommand = defaultGraphDeps
+	if cfg.GOOS == "" {
+		cfg.GOOS = runtime.GOOS
 	}
-	if cfg.ModuleDir == "" {
-		dir, err := os.Executable()
-		if err == nil {
-			cfg.ModuleDir = filepath.Dir(dir)
+	if cfg.GOARCH == "" {
+		cfg.GOARCH = runtime.GOARCH
+	}
+	defaultCommand := cfg.GraphCommand == nil
+	if cfg.GraphCommand == nil {
+		cfg.GraphCommand = func(dir string) ([]string, error) {
+			return graphDeps(dir, cfg.BuildTags, cfg.GOOS, cfg.GOARCH)
 		}
-		if root, rerr := exec.Command("go", "env", "GOMOD").Output(); rerr == nil {
-			gomod := strings.TrimSpace(string(root))
-			if gomod != "" {
-				cfg.ModuleDir = filepath.Dir(gomod)
-			}
+	}
+	if defaultCommand {
+		root, err := ResolveModuleDir(cfg.ModuleDir)
+		if err != nil {
+			return GateResult{Verdict: "pass"}, err
 		}
+		cfg.ModuleDir = root
+	} else if cfg.ModuleDir == "" {
+		cfg.ModuleDir = "."
 	}
 
-	res := GateResult{Verdict: "pass"}
+	tags := append([]string(nil), cfg.BuildTags...)
+	sort.Strings(tags)
+	res := GateResult{Verdict: "pass", BuildTags: tags, GOOS: cfg.GOOS, GOARCH: cfg.GOARCH}
 
 	deps, err := cfg.GraphCommand(cfg.ModuleDir)
 	if err != nil {
 		return res, fmt.Errorf("canary gate: resolve default graph: %w", err)
+	}
+	res.EvidenceDigest, err = staticEvidenceDigest(cfg.ModuleDir, deps, tags, cfg.GOOS, cfg.GOARCH)
+	if err != nil {
+		return res, fmt.Errorf("canary gate: digest static evidence: %w", err)
 	}
 
 	// (1) Telemetry-import scan.
@@ -211,6 +240,41 @@ func RunGate(cfg GateConfig) (GateResult, error) {
 	return res, nil
 }
 
+// ResolveModuleDir returns the graphi source root required by the static gate.
+// It rejects arbitrary Go modules: a PASS about a different checkout would not
+// describe graphi and is more dangerous than an explicit unavailable result.
+func ResolveModuleDir(dir string) (string, error) {
+	if dir == "" {
+		out, err := exec.Command("go", "env", "GOMOD").Output()
+		if err != nil {
+			return "", fmt.Errorf("source scan unavailable: the Go toolchain and the graphi source module are required")
+		}
+		gomod := strings.TrimSpace(string(out))
+		if gomod == "" || gomod == os.DevNull || gomod == "/dev/null" {
+			return "", fmt.Errorf("source scan unavailable: run from the graphi source module or select an official build attestation")
+		}
+		dir = filepath.Dir(gomod)
+	}
+	gomodPath := filepath.Join(dir, "go.mod")
+	raw, err := os.ReadFile(gomodPath)
+	if err != nil {
+		return "", fmt.Errorf("source scan unavailable: %s is not the graphi source module", dir)
+	}
+	const want = "module github.com/samibel/graphi"
+	found := false
+	for _, line := range strings.Split(string(raw), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "module ") {
+			found = line == want
+			break
+		}
+	}
+	if !found {
+		return "", fmt.Errorf("source scan unavailable: %s is not module github.com/samibel/graphi", dir)
+	}
+	return filepath.Clean(dir), nil
+}
+
 // matchTelemetryImport returns a finding if dep matches the denylist.
 func matchTelemetryImport(dep string) *TelemetryFinding {
 	for _, prefix := range telemetryImportDenylist {
@@ -228,9 +292,18 @@ func matchTelemetryImport(dep string) *TelemetryFinding {
 // defaultGraphDeps returns the default-graph dependency list under
 // CGO_ENABLED=0.
 func defaultGraphDeps(dir string) ([]string, error) {
-	cmd := exec.Command("go", "list", "-deps", "-test=false", "./...")
+	return graphDeps(dir, nil, runtime.GOOS, runtime.GOARCH)
+}
+
+func graphDeps(dir string, buildTags []string, goos, goarch string) ([]string, error) {
+	args := []string{"list", "-deps", "-test=false"}
+	if len(buildTags) > 0 {
+		args = append(args, "-tags", strings.Join(buildTags, ","))
+	}
+	args = append(args, "./...")
+	cmd := exec.Command("go", args...)
 	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("go list -deps: %w", err)
@@ -242,6 +315,51 @@ func defaultGraphDeps(dir string) ([]string, error) {
 		}
 	}
 	return deps, nil
+}
+
+// staticEvidenceDigest binds the result to the dependency names, module files,
+// and non-test Go source the gate inspected. It is deterministic across
+// checkouts and gives a sceptical user a value they can reproduce from the
+// attested source revision without trusting the running binary's prose.
+func staticEvidenceDigest(root string, deps, buildTags []string, goos, goarch string) (string, error) {
+	h := sha256.New()
+	fmt.Fprintf(h, "gate\x00%s\n", StaticPrivacyGateID)
+	fmt.Fprintf(h, "target\x00%s/%s\n", goos, goarch)
+	sortedTags := append([]string(nil), buildTags...)
+	sort.Strings(sortedTags)
+	for _, tag := range sortedTags {
+		fmt.Fprintf(h, "tag\x00%s\n", tag)
+	}
+	sortedDeps := append([]string(nil), deps...)
+	sort.Strings(sortedDeps)
+	for _, dep := range sortedDeps {
+		fmt.Fprintf(h, "dep\x00%s\n", dep)
+	}
+
+	files, err := graphiSourceFiles(root)
+	if err != nil {
+		return "", err
+	}
+	for _, name := range []string{"go.mod", "go.sum"} {
+		path := filepath.Join(root, name)
+		if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+			files = append(files, path)
+		}
+	}
+	sort.Strings(files)
+	for _, path := range files {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return "", fmt.Errorf("read %s: %w", path, err)
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return "", fmt.Errorf("relative path for %s: %w", path, err)
+		}
+		sum := sha256.Sum256(raw)
+		fmt.Fprintf(h, "file\x00%s\x00%s\n", filepath.ToSlash(rel), hex.EncodeToString(sum[:]))
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // scanOutboundDials walks .go files (non-test) under root, type-checks each
@@ -406,7 +524,22 @@ func isHTTPClientType(t types.Type) bool {
 // .go files of graphi's own packages (excluding vendor/.git/node_modules and
 // the canary's own build output).
 func graphiPackageDirs(root string) ([]string, error) {
+	files, err := graphiSourceFiles(root)
+	if err != nil {
+		return nil, err
+	}
 	var dirs []string
+	for _, path := range files {
+		d := filepath.Dir(path)
+		if !contains(dirs, d) {
+			dirs = append(dirs, d)
+		}
+	}
+	return dirs, nil
+}
+
+func graphiSourceFiles(root string) ([]string, error) {
+	var files []string
 	err := filepath.Walk(root, func(path string, fi os.FileInfo, werr error) error {
 		if werr != nil {
 			return nil
@@ -421,13 +554,11 @@ func graphiPackageDirs(root string) ([]string, error) {
 		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-		d := filepath.Dir(path)
-		if !contains(dirs, d) {
-			dirs = append(dirs, d)
-		}
+		files = append(files, path)
 		return nil
 	})
-	return dirs, err
+	sort.Strings(files)
+	return files, err
 }
 
 // dirToPkgPath returns the module-relative package path for a directory.

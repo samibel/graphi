@@ -3,6 +3,7 @@ package audit
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/internal/canary"
@@ -53,10 +54,13 @@ func TestCheckNoTelemetry_RealScan_FailsOnFinding(t *testing.T) {
 // yields a false PASS — it degrades to UNVERIFIED (AC-6 false-green prevention).
 func TestCheckNoTelemetry_GateError_Unverified(t *testing.T) {
 	c := checkNoTelemetryWithGate(func() (canary.GateResult, error) {
-		return canary.GateResult{}, errors.New("go list failed")
+		return canary.GateResult{}, errors.New("go list -deps: exit status 1")
 	})
 	if c.Status != StatusUnverified {
 		t.Fatalf("gate error should be UNVERIFIED (never a false PASS), got %s", c.Status)
+	}
+	if strings.Contains(c.Evidence, "go list") || strings.Contains(c.Evidence, "exit status") {
+		t.Fatalf("UNVERIFIED leaked the raw toolchain error: %s", c.Evidence)
 	}
 }
 

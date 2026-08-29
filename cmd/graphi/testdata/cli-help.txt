@@ -92,7 +92,7 @@ known subcommands:
   memory             [labs] agent memory operations
   parse              [labs] parse a single file through the registry (the original default)
   pr-comment         [labs] sticky PR review comment + optional risk-threshold merge gate
-  privacy-audit      [labs] print the local-first proof (CGo scan + canary egress guard); non-zero on violation
+  privacy-audit      [labs] report this binary's build-time privacy evidence + live egress check; --source scans a developer checkout instead; non-zero on violation or unverified evidence
   query              structural query over the graph (callers|callees|references|definition|neighborhood)
   query-strict       [labs] run a stable query, then exclude result edges below a confidence tier; excluded counts stay visible (filtered emptiness is never bare emptiness), optional fail-closed policy preflight
   rebuild            re-index the repo from scratch (cold full pass — for a damaged index, after an upgrade, or when doctor recommends it)
@@ -385,8 +385,8 @@ usage:   graphi analyze <analyzer> -symbol <node-id> [-direction forward|reverse
 example: graphi analyze impact -symbol a1b2c3d4 -direction reverse -db graph.db
 
 --- graphi help privacy-audit ---
-graphi privacy-audit — [labs] print the local-first proof (CGo scan + canary egress guard); non-zero on violation
-usage:   graphi privacy-audit [--target ./...]
+graphi privacy-audit — [labs] report this binary's build-time privacy evidence + live egress check; --source scans a developer checkout instead; non-zero on violation or unverified evidence
+usage:   graphi privacy-audit [--source [--target ./...]]
 example: graphi privacy-audit
 
 --- graphi help query ---

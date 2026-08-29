@@ -22,6 +22,7 @@ type Info struct {
 	commit    string
 	date      string
 	arch      string
+	modified  bool
 	isRelease bool
 }
 
@@ -29,6 +30,7 @@ type Info struct {
 // It performs no I/O and no network calls.
 func New() Info {
 	commit, date := "", ""
+	modified := false
 	if info, ok := debug.ReadBuildInfo(); ok {
 		for _, s := range info.Settings {
 			switch s.Key {
@@ -36,6 +38,8 @@ func New() Info {
 				commit = s.Value
 			case "vcs.time":
 				date = s.Value
+			case "vcs.modified":
+				modified = s.Value == "true"
 			}
 		}
 	}
@@ -44,6 +48,7 @@ func New() Info {
 		commit:    commit,
 		date:      date,
 		arch:      fmt.Sprintf("%s/%s", runtimeGOOS(), runtimeGOARCH()),
+		modified:  modified,
 		isRelease: version.Version != "dev" && version.Version != "",
 	}
 }
@@ -53,6 +58,7 @@ func (i Info) Version() string { return i.version }
 func (i Info) Commit() string  { return i.commit }
 func (i Info) Date() string    { return i.date }
 func (i Info) Arch() string    { return i.arch }
+func (i Info) Modified() bool  { return i.modified }
 func (i Info) IsRelease() bool { return i.version != "dev" && i.version != "" }
 func (i Info) ReleaseMarker() string {
 	if i.IsRelease() {

@@ -95,13 +95,16 @@ flowchart LR
 
 ## Reproducibility recipe
 
-```
-CGO_ENABLED=0 go build -trimpath -buildvcs=true \
-  -ldflags "-X github.com/samibel/graphi/internal/version.Version=<version>" \
-  -o graphi ./cmd/graphi/
+```sh
+go run ./cmd/release -version <version> -verify-only
+go run ./cmd/release -version <version> -out graphi
 ```
 
-Two such builds of the same clean revision produce sha256-identical binaries.
+`internal/release.CanonicalBuildArgs/v2` runs the exact target/tag/platform
+static privacy gate before linking and embeds its validated PASS record through
+an additional ldflag. A direct `go build` deliberately carries no attestation
+and is not a release artifact. Two canonical builds of the same clean revision
+produce sha256-identical binaries.
 The `date` is the VCS commit time (`vcs.time`), not wall-clock, so it is stable
 across builds.
 
@@ -129,7 +132,8 @@ authorize a tag. Scanner, registry, or advisory lookup failure blocks release.
 
 ## Out of scope
 
-- Runtime egress/telemetry, the CGo-free gate, benchmarks, ledger audit, and
-  token-parity eval (see the other docs in `docs/ci/`) — these *consume* this
-  release binary rather than build it.
+- The live runtime egress exercise, benchmarks, ledger audit, and token-parity
+  eval (see the other docs in `docs/ci/`). Static CGo/no-telemetry evidence is
+  now a prerequisite and output of this build, while the live egress check
+  still consumes the resulting binary.
 - The opt-in `graphi-broad` CGO flavor packaging (separate track).

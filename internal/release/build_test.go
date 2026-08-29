@@ -3,19 +3,25 @@ package release
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/internal/buildattest"
+	"github.com/samibel/graphi/internal/canary"
 )
 
 func TestCanonicalBuildArgsPinsReleaseContract(t *testing.T) {
-	if CanonicalBuildContract != "internal/release.CanonicalBuildArgs/v1" {
+	if CanonicalBuildContract != "internal/release.CanonicalBuildArgs/v2" {
 		t.Fatalf("unexpected canonical build contract %q", CanonicalBuildContract)
 	}
 	args := CanonicalBuildArgs(BuildConfig{
-		Target:  "./cmd/graphi/",
-		Version: "bench",
-		Tags:    []string{"grammar_subset", "grammar_subset_typescript"},
+		Target:             "./cmd/graphi/",
+		Version:            "bench",
+		Tags:               []string{"grammar_subset", "grammar_subset_typescript"},
+		privacyAttestation: "encoded-proof",
 	}, "out/graphi")
 
 	want := []string{
@@ -25,13 +31,51 @@ func TestCanonicalBuildArgsPinsReleaseContract(t *testing.T) {
 		"-tags",
 		"grammar_subset grammar_subset_typescript",
 		"-ldflags",
-		"-X " + VersionVar + "=bench",
+		"-X " + VersionVar + "=bench -X " + PrivacyAttestationVar + "=encoded-proof",
 		"-o",
 		"out/graphi",
 		"./cmd/graphi/",
 	}
 	if !slices.Equal(args, want) {
 		t.Fatalf("canonical build args = %q, want exact contract %q", args, want)
+	}
+}
+
+func TestPrivacyAttestationCannotLaunderFailOrMissingEvidence(t *testing.T) {
+	revision := strings.Repeat("a", 40)
+	for _, tc := range []struct {
+		name string
+		res  canary.GateResult
+	}{
+		{name: "measured violation", res: canary.GateResult{Verdict: "fail", EvidenceDigest: strings.Repeat("b", 64)}},
+		{name: "missing evidence", res: canary.GateResult{Verdict: "pass"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := privacyAttestationFromResult(tc.res, revision, false); err == nil {
+				t.Fatal("canonical builder produced an attestation without a complete measured PASS")
+			}
+		})
+	}
+}
+
+func TestPrivacyAttestationCarriesExactBuildGraph(t *testing.T) {
+	res := canary.GateResult{
+		Verdict:        "pass",
+		EvidenceDigest: strings.Repeat("b", 64),
+		BuildTags:      []string{"grammar_subset", "webui_embed"},
+		GOOS:           "linux",
+		GOARCH:         "arm64",
+	}
+	encoded, err := privacyAttestationFromResult(res, strings.Repeat("a", 40), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	att, err := buildattest.Decode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if att.GOOS != "linux" || att.GOARCH != "arm64" || !slices.Equal(att.BuildTags, res.BuildTags) {
+		t.Fatalf("attestation lost the exact build graph: %+v", att)
 	}
 }
 
@@ -128,6 +172,28 @@ func TestBuild_ProducesCGoFreeVersionStampedBinary(t *testing.T) {
 	}
 	if bi.Version != "0.0.0-test" {
 		t.Errorf("Version = %q, want 0.0.0-test (ldflags stamping)", bi.Version)
+	}
+
+	// The static claims must remain verifiable when the shipped binary is run
+	// from a directory with no go.mod and no source checkout. The live egress
+	// check may still be UNVERIFIED on an unprivileged host, so inspect its
+	// output independently of the aggregate exit code.
+	cmd := exec.Command(bin, "privacy-audit")
+	cmd.Dir = t.TempDir()
+	out, _ := cmd.CombinedOutput()
+	text := string(out)
+	for _, want := range []string{
+		"CGo-free build [PASS] (build-time attestation for this binary)",
+		"No telemetry [PASS] (build-time attestation for this binary)",
+		"binary_sha256=",
+		"embedded build evidence is not an independent signature",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("privacy-audit outside the module missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "go list") || strings.Contains(text, "exit status") {
+		t.Fatalf("packaged audit leaked a source-toolchain failure outside the module:\n%s", text)
 	}
 }
 

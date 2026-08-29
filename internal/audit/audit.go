@@ -1,28 +1,34 @@
-// Package audit assembles graphi's local-first privacy proof from REAL build
-// facts — not hardcoded strings. It backs `graphi privacy-audit` (SW-044).
+// Package audit assembles graphi's local-first privacy report from scoped,
+// checkable evidence rather than hardcoded strings. It backs
+// `graphi privacy-audit` (SW-044).
 //
 // It checks:
-//   - CGo-free build: a real scan of the build graph for CGo imports via
-//     internal/cgoconformance (the same engine the CI gate uses).
+//   - CGo-free build and no telemetry: canonical release binaries report the
+//     source-bound evidence embedded after the build gate passed; developer
+//     builds fall back to an explicitly labeled checkout scan.
 //   - Zero-outbound network: references the real egress contract enforced by
 //     internal/canary's dial-attempt guard (loopback-only policy) and asserts the
 //     canary surface union exists and covers the surfaces; the full hermetic
 //     runtime check runs in CI (`graphi canary`).
-//   - No telemetry / no accounts / no required external services: emitted as
-//     explicit statements, each labeled "verified" (backed by a check) or
-//     "declared" (posture statement), honestly.
+//   - No accounts / no required external services: explicit posture
+//     declarations, labeled "declared" honestly.
 //
 // It makes zero network calls and exits non-zero on any failed check.
 package audit
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
+	"github.com/samibel/graphi/internal/buildattest"
 	"github.com/samibel/graphi/internal/canary"
 	"github.com/samibel/graphi/internal/cgoconformance"
+	"github.com/samibel/graphi/internal/releaseinfo"
 )
 
 // Status of a single audit check.
@@ -42,6 +48,7 @@ const (
 type Check struct {
 	Name      string   // short invariant name
 	Status    Status   // PASS / FAIL / UNVERIFIED
+	Scope     string   // what the evidence describes (binary build or source checkout)
 	Evidence  string   // why (names the real guard/scan, not a hardcoded "OK")
 	Offenders []string // concrete failures (e.g. CGo packages), empty on PASS
 }
@@ -108,7 +115,11 @@ func (r Report) Render(w io.Writer) {
 		case StatusUnverified:
 			mark = "?"
 		}
-		fmt.Fprintf(w, "%s %s [%s] — %s\n", mark, c.Name, c.Status, c.Evidence)
+		scope := ""
+		if c.Scope != "" {
+			scope = " (" + c.Scope + ")"
+		}
+		fmt.Fprintf(w, "%s %s [%s]%s — %s\n", mark, c.Name, c.Status, scope, c.Evidence)
 		for _, off := range c.Offenders {
 			fmt.Fprintf(w, "    · %s\n", off)
 		}
@@ -119,7 +130,7 @@ func (r Report) Render(w io.Writer) {
 	case "VIOLATED":
 		fmt.Fprintln(w, "\nlocal-first posture: VIOLATED (see failed checks above)")
 	default:
-		fmt.Fprintln(w, "\nlocal-first posture: UNVERIFIED (a check could not be observed; not a pass — run under the CI deny-egress harness)")
+		fmt.Fprintln(w, "\nlocal-first posture: UNVERIFIED (one or more checks could not be verified; not a pass — see each check's remediation)")
 	}
 }
 
@@ -127,20 +138,30 @@ func (r Report) Render(w io.Writer) {
 // (default "./..."). It is fully offline. The zero-outbound check runs a
 // representative graphi operation under the platform's default network isolator.
 func Run(ctx context.Context, target string) Report {
-	return RunWithIsolator(ctx, target, canary.DefaultIsolator(), nil)
+	return run(ctx, target, canary.DefaultIsolator(), nil, false, nil)
+}
+
+// RunSource forces the developer source-scan view even when the binary carries
+// build-time evidence. Its PASS describes the selected checkout, never the
+// running binary.
+func RunSource(ctx context.Context, target string) Report {
+	return run(ctx, target, canary.DefaultIsolator(), nil, true, nil)
 }
 
 // RunWithIsolator is Run with an injectable isolator + driver, so the live
 // isolated exercise's PASS / FAIL / UNVERIFIED branches are unit-testable
 // without root/netns. A nil driver uses the default in-process surface driver.
 func RunWithIsolator(ctx context.Context, target string, iso canary.Isolator, drv canary.SurfaceDriver) Report {
+	return run(ctx, target, iso, drv, true, nil)
+}
+
+func run(ctx context.Context, target string, iso canary.Isolator, drv canary.SurfaceDriver, forceSource bool, gate func() (canary.GateResult, error)) Report {
 	if target == "" {
 		target = "./..."
 	}
 	var checks []Check
-	checks = append(checks, checkCgoFree(ctx, target))
+	checks = append(checks, staticPrivacyChecks(ctx, target, forceSource, gate)...)
 	checks = append(checks, checkZeroOutbound(ctx, iso, drv))
-	checks = append(checks, checkNoTelemetry())
 	checks = append(checks, checkNoAccounts())
 	checks = append(checks, checkNoExternalServices())
 	return Report{Checks: checks}
@@ -150,16 +171,115 @@ func RunWithIsolator(ctx context.Context, target string, iso canary.Isolator, dr
 // no-telemetry check's PASS/FAIL branches are unit-testable without shelling out
 // to `go list`. A nil gate uses the real canary.RunGate scan.
 func RunWithGate(ctx context.Context, target string, iso canary.Isolator, drv canary.SurfaceDriver, gate func() (canary.GateResult, error)) Report {
-	if target == "" {
-		target = "./..."
+	return run(ctx, target, iso, drv, true, gate)
+}
+
+func staticPrivacyChecks(ctx context.Context, target string, forceSource bool, gate func() (canary.GateResult, error)) []Check {
+	if !forceSource {
+		att, present, err := buildattest.Embedded()
+		switch {
+		case err != nil:
+			return unavailableStaticChecks("embedded build attestation is invalid; no static privacy conclusion can be made for this binary")
+		case present:
+			return attestedStaticChecks(att)
+		}
 	}
-	var checks []Check
-	checks = append(checks, checkCgoFree(ctx, target))
-	checks = append(checks, checkZeroOutbound(ctx, iso, drv))
-	checks = append(checks, checkNoTelemetryWithGate(gate))
-	checks = append(checks, checkNoAccounts())
-	checks = append(checks, checkNoExternalServices())
-	return Report{Checks: checks}
+
+	root, err := canary.ResolveModuleDir("")
+	if err != nil {
+		return unavailableStaticChecks(
+			"no embedded build attestation is present and the graphi source module is not available; " +
+				"use an official release and verify its SHA256SUMS/build provenance, or run `graphi privacy-audit --source` from a graphi checkout")
+	}
+	cgo := checkCgoFree(ctx, target)
+	cgo.Scope = "developer source scan of " + root + "; not the running binary"
+	telemetry := checkNoTelemetryWithGate(gate)
+	telemetry.Scope = "developer source scan of " + root + "; not the running binary"
+	return []Check{cgo, telemetry}
+}
+
+func unavailableStaticChecks(reason string) []Check {
+	scope := "static build property unavailable"
+	return []Check{
+		{Name: "CGo-free build", Status: StatusUnverified, Scope: scope, Evidence: reason},
+		{Name: "No telemetry", Status: StatusUnverified, Scope: scope, Evidence: reason},
+	}
+}
+
+type binaryBinding struct {
+	Revision string
+	Modified bool
+	SHA256   string
+	Arch     string
+}
+
+func runningBinaryBinding() (binaryBinding, error) {
+	info := releaseinfo.New()
+	if info.Commit() == "" {
+		return binaryBinding{}, fmt.Errorf("running binary has no VCS revision")
+	}
+	path, err := os.Executable()
+	if err != nil {
+		return binaryBinding{}, fmt.Errorf("resolve running binary: %w", err)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return binaryBinding{}, fmt.Errorf("open running binary: %w", err)
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return binaryBinding{}, fmt.Errorf("hash running binary: %w", err)
+	}
+	return binaryBinding{
+		Revision: info.Commit(),
+		Modified: info.Modified(),
+		SHA256:   hex.EncodeToString(h.Sum(nil)),
+		Arch:     info.Arch(),
+	}, nil
+}
+
+func attestedStaticChecks(att buildattest.Privacy) []Check {
+	binding, err := runningBinaryBinding()
+	if err != nil {
+		return unavailableStaticChecks("embedded build evidence could not be bound to the running binary: " + err.Error())
+	}
+	if binding.Revision != att.SourceRevision {
+		return unavailableStaticChecks("embedded build evidence names a different source revision than the running binary; no privacy conclusion was accepted")
+	}
+	if binding.Arch != att.GOOS+"/"+att.GOARCH {
+		return unavailableStaticChecks("embedded build evidence names a different target platform than the running binary; no privacy conclusion was accepted")
+	}
+	state := "clean"
+	if att.SourceModified {
+		state = "modified"
+	}
+	common := fmt.Sprintf(
+		"source_commit=%s source_state=%s target=%s/%s build_tags=%s evidence_sha256=%s binary_sha256=%s; "+
+			"embedded build evidence is not an independent signature — compare binary_sha256 with the published SHA256SUMS/build provenance or reproduce the source scan",
+		att.SourceRevision, state, att.GOOS, att.GOARCH, strings.Join(att.BuildTags, ","), att.EvidenceDigest, binding.SHA256)
+	scope := "build-time attestation for this binary"
+	return []Check{
+		{
+			Name:     "Build evidence binding",
+			Status:   StatusPass,
+			Scope:    scope,
+			Evidence: common,
+		},
+		{
+			Name:     "CGo-free build",
+			Status:   StatusPass,
+			Scope:    scope,
+			Evidence: "canonical build contract enforced CGO_ENABLED=0; subject is bound by the Build evidence binding row",
+		},
+		{
+			Name:   "No telemetry",
+			Status: StatusPass,
+			Scope:  scope,
+			Evidence: fmt.Sprintf("%s reported PASS for %s; subject is bound by the Build evidence binding row",
+				att.GateID, att.Scope),
+		},
+	}
 }
 
 // checkCgoFree performs a REAL scan of the build graph for CGo imports. It is
@@ -168,8 +288,8 @@ func checkCgoFree(ctx context.Context, target string) Check {
 	c := Check{Name: "CGo-free build", Evidence: "internal/cgoconformance.CgoUsingPackages scan of " + target}
 	pkgs, err := cgoconformance.CgoUsingPackages(ctx, target, "0")
 	if err != nil {
-		c.Status = StatusFail
-		c.Evidence = "cgo scan error: " + err.Error()
+		c.Status = StatusUnverified
+		c.Evidence = "source CGo scan could not run; the Go toolchain and the graphi source module are required, and no conclusion was reached"
 		return c
 	}
 	if len(pkgs) > 0 {
@@ -274,7 +394,7 @@ func checkNoTelemetryWithGate(gate func() (canary.GateResult, error)) Check {
 	res, err := gate()
 	if err != nil {
 		c.Status = StatusUnverified
-		c.Evidence = "telemetry gate could not run (not a pass): " + err.Error()
+		c.Evidence = "source telemetry scan could not run; the Go toolchain and the graphi source module are required, and no conclusion was reached"
 		return c
 	}
 	if res.Verdict != "pass" {
@@ -290,7 +410,10 @@ func checkNoTelemetryWithGate(gate func() (canary.GateResult, error)) Check {
 		return c
 	}
 	c.Status = StatusPass
-	c.Evidence = "verified: internal/canary static gate (telemetry-import denylist + type-checked outbound-dial scan) found zero telemetry SDKs and zero unsanctioned dials in the default graph"
+	c.Evidence = "verified by developer source scan: internal/canary static gate (telemetry-import denylist + type-checked outbound-dial scan) found zero telemetry SDKs and zero unsanctioned dials in the default graph"
+	if res.EvidenceDigest != "" {
+		c.Evidence += "; evidence_sha256=" + res.EvidenceDigest
+	}
 	return c
 }
 
