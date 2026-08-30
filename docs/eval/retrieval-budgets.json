@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-30",
+  "immutable_until": "SW-266",
+  "notes": "SW-258 retrieval performance budgets (spec open question 5), derived from the measured baselines: per fixture size class, the cold index time, the worst query p95 across the indexed baselines (the oracle builds no index and is excluded) and the process peak RSS, each with the measurement it came from and the budget = measured x headroom_factor. A class with no measured report reads UNKNOWN with the reason, never a number. Budgets are only comparable within one runner class. Immutable until the story named in immutable_until.",
+  "headroom_factor": 2,
+  "fixtures": {
+    "large": {
+      "status": "UNKNOWN",
+      "reason": "no report was measured for this size class in this run"
+    },
+    "medium": {
+      "status": "measured",
+      "repo": "cobra",
+      "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+      "files": 58,
+      "nodes": 938,
+      "runner_class": "local",
+      "derived_from": {
+        "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
+        "sha256": "93f79e7a3c5c29465f4398190c60f5eb32d801a91b320b3b8bcacd23786a725d",
+        "repo": "cobra",
+        "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+        "dataset": "cobra-v1",
+        "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
+        "candidate_sha": "c302d9c5b68e99e98eb517ee75b59b6f629dd22c+dirty",
+        "runner_class": "local"
+      },
+      "index_ms": {
+        "measured": 187,
+        "measured_baseline": "lexical",
+        "unit": "ms",
+        "budget": 374
+      },
+      "query_p95_us": {
+        "measured": 4392,
+        "measured_baseline": "hybrid_v1",
+        "unit": "us",
+        "budget": 8784
+      },
+      "peak_rss_mb": {
+        "measured": 315.0625,
+        "measured_baseline": "oracle_upper_bound",
+        "unit": "MB",
+        "budget": 631
+      }
+    },
+    "small": {
+      "status": "measured",
+      "repo": "fixture",
+      "files": 11,
+      "nodes": 92,
+      "runner_class": "local",
+      "derived_from": {
+        "report": "docs/eval/retrieval/runs/2026-08-30-local/fixture-v1-report.json",
+        "sha256": "9e2cf2cfde5077f829c27f8fa6297049baa319e38dfa7c9eaccc4d6c7ec0b6d6",
+        "repo": "fixture",
+        "dataset": "fixture-v1",
+        "dataset_sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
+        "candidate_sha": "c302d9c5b68e99e98eb517ee75b59b6f629dd22c+dirty",
+        "runner_class": "local"
+      },
+      "index_ms": {
+        "measured": 11,
+        "measured_baseline": "lexical",
+        "unit": "ms",
+        "budget": 22
+      },
+      "query_p95_us": {
+        "measured": 2383,
+        "measured_baseline": "hybrid_v1",
+        "unit": "us",
+        "budget": 4766
+      },
+      "peak_rss_mb": {
+        "measured": 109.140625,
+        "measured_baseline": "oracle_upper_bound",
+        "unit": "MB",
+        "budget": 219
+      }
+    }
+  }
+}

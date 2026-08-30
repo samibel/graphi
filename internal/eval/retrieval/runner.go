@@ -1,0 +1,583 @@
+package retrieval
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/embed"
+	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/eval"
+)
+
+// Baseline names one ranking method the runner can execute (AC-3).
+type Baseline string
+
+// The four baselines. They are executed by name and in this order.
+const (
+	// BaselineLexical is engine/search.Service.Search: the store's FTS5
+	// (SQLite) ranking over qualified names.
+	BaselineLexical Baseline = "lexical"
+	// BaselineHybridV1 is search_hybrid/1 (engine/agenttools/hybridsearch):
+	// lexical retrieval plus identifier, path and degree signals, no vectors.
+	BaselineHybridV1 Baseline = "hybrid_v1"
+	// BaselineSemanticNameOnly is engine/search.Service.SemanticSearch over the
+	// name-only documents; on the default build it is the typed unavailable
+	// response (AC-6).
+	BaselineSemanticNameOnly Baseline = "semantic_name_only"
+	// BaselineOracle ranks the judged spans themselves by grade: the ceiling
+	// the metric code can reach, which proves the scorer rather than a
+	// retriever.
+	BaselineOracle Baseline = "oracle_upper_bound"
+)
+
+// AllBaselines in report order.
+var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle}
+
+// ParseBaselines resolves names to baselines, refusing an unknown one.
+func ParseBaselines(names []string) ([]Baseline, error) {
+	if len(names) == 0 {
+		return append([]Baseline(nil), AllBaselines...), nil
+	}
+	known := map[Baseline]bool{}
+	for _, b := range AllBaselines {
+		known[b] = true
+	}
+	var out []Baseline
+	seen := map[Baseline]bool{}
+	for _, n := range names {
+		b := Baseline(strings.TrimSpace(n))
+		if !known[b] {
+			return nil, fmt.Errorf("retrieval: unknown baseline %q (have %s)", n, baselineNames())
+		}
+		if !seen[b] {
+			seen[b] = true
+			out = append(out, b)
+		}
+	}
+	return out, nil
+}
+
+func baselineNames() string {
+	names := make([]string, 0, len(AllBaselines))
+	for _, b := range AllBaselines {
+		names = append(names, string(b))
+	}
+	return strings.Join(names, ", ")
+}
+
+// DefaultRepeats is how many timed executions each query gets per baseline;
+// the ranking is taken from the last one and every execution must agree.
+const DefaultRepeats = 3
+
+// Options is one run.
+type Options struct {
+	// RepoRoot is the checkout to index; RepoName and RepoSHA are what the
+	// report says it was (the caller verifies the pin — see cmd/retrieval-eval).
+	RepoRoot string
+	RepoName string
+	RepoSHA  string
+
+	Dataset   *Loaded
+	Baselines []Baseline
+
+	RunnerClass  string
+	CandidateSHA string
+
+	// Repeats is the timed executions per query (DefaultRepeats when 0).
+	Repeats int
+	// WorkDir holds the SQLite store; a temp dir removed afterwards when empty.
+	WorkDir string
+	// Now supplies the environment timestamp; time.Now when nil.
+	Now func() time.Time
+	// Log receives progress lines; io.Discard when nil.
+	Log io.Writer
+}
+
+// Result is a finished run: the report and the raw samples it derives from.
+type Result struct {
+	Report *Report
+	Raw    *RawSamples
+}
+
+// RawSamples are the per-baseline measurements the report is recomputed
+// from: the hits (the scorer's input) and the latency samples (the
+// percentiles' input). They carry nothing derived.
+type RawSamples struct {
+	Hits    map[Baseline]RawHitSet
+	Latency map[Baseline]RawLatencySet
+}
+
+// Raw series names.
+const (
+	RawSeriesHits    = "hits"
+	RawSeriesLatency = "latency"
+)
+
+// RawHitSet is one baseline's rankings, query by query.
+type RawHitSet struct {
+	FormatVersion  int            `json:"format_version"`
+	HarnessVersion string         `json:"harness_version"`
+	Series         string         `json:"series"`
+	Baseline       Baseline       `json:"baseline"`
+	Collected      bool           `json:"collected"`
+	Samples        int            `json:"samples"`
+	Queries        []RawQueryHits `json:"queries"`
+}
+
+// RawQueryHits is one query's ranking.
+type RawQueryHits struct {
+	ID   string `json:"id"`
+	Hits []Hit  `json:"hits"`
+}
+
+// RawLatencySet is one baseline's timings plus the single-sample index
+// figures, which the aggregate compares for equality.
+type RawLatencySet struct {
+	FormatVersion  int               `json:"format_version"`
+	HarnessVersion string            `json:"harness_version"`
+	Series         string            `json:"series"`
+	Baseline       Baseline          `json:"baseline"`
+	Collected      bool              `json:"collected"`
+	Samples        int               `json:"samples"`
+	Queries        []RawQueryLatency `json:"queries"`
+	IndexMS        *float64          `json:"index_ms,omitempty"`
+	PeakRSSMB      *float64          `json:"peak_rss_mb,omitempty"`
+}
+
+// RawQueryLatency is one query's timed executions in microseconds.
+type RawQueryLatency struct {
+	ID        string  `json:"id"`
+	SamplesUS []int64 `json:"samples_us"`
+}
+
+// Run indexes the repository once, executes every requested baseline over
+// every dataset query, and returns the report with its raw samples. It fails
+// closed: an unresolved judgement, a baseline that cannot execute, or a
+// ranking that differs between repeated executions is an error.
+func Run(ctx context.Context, o Options) (*Result, error) {
+	if o.Dataset == nil || o.Dataset.Dataset == nil {
+		return nil, fmt.Errorf("retrieval: no dataset")
+	}
+	if strings.TrimSpace(o.RepoRoot) == "" {
+		return nil, fmt.Errorf("retrieval: no repository root")
+	}
+	if o.Repeats <= 0 {
+		o.Repeats = DefaultRepeats
+	}
+	if len(o.Baselines) == 0 {
+		o.Baselines = append([]Baseline(nil), AllBaselines...)
+	}
+	if o.Now == nil {
+		o.Now = time.Now
+	}
+	if o.Log == nil {
+		o.Log = io.Discard
+	}
+	ds := o.Dataset.Dataset
+
+	// AC-9 inside the run as well as in the test: a judgement that does not
+	// resolve makes the run an error, not a zero.
+	if err := CheckSpanCoverage(o.RepoRoot, ds); err != nil {
+		return nil, err
+	}
+
+	workDir := o.WorkDir
+	if workDir == "" {
+		dir, err := os.MkdirTemp("", "graphi-retrieval-eval")
+		if err != nil {
+			return nil, fmt.Errorf("retrieval: workdir: %w", err)
+		}
+		defer os.RemoveAll(dir)
+		workDir = dir
+	}
+
+	idx, err := buildIndex(ctx, o.RepoRoot, workDir, o.Log)
+	if err != nil {
+		return nil, err
+	}
+	defer idx.store.Close()
+
+	tokens := newTokenCounter(o.RepoRoot)
+	minGrade := ds.MinGrade()
+	report := &Report{
+		FormatVersion:  FormatVersion,
+		HarnessVersion: HarnessVersion,
+		ScorerVersion:  ScorerVersion,
+		Reproducible: Reproducible{
+			CandidateSHA: o.CandidateSHA,
+			RunnerClass:  o.RunnerClass,
+			Repo:         RepoRef{Name: o.RepoName, SHA: o.RepoSHA, Nodes: idx.nodes, Edges: idx.edges, Files: idx.files},
+			Dataset: DatasetRef{
+				ID: ds.ID, File: filepath.Base(o.Dataset.Path), SHA256: o.Dataset.SHA256,
+				EvidenceClass: ds.EvidenceClass, Queries: len(ds.Queries),
+			},
+			TokenizerID:           TokenizerID,
+			TopK:                  TopK,
+			TokenBudgets:          append([]int(nil), TokenBudgets...),
+			HitContextWindowLines: HitContextWindowLines,
+			RelevantMinGrade:      minGrade,
+			MatchingRule:          MatchingRule,
+		},
+		Environment: Environment{
+			GeneratedAt: o.Now().UTC().Format(time.RFC3339),
+			OS:          runtime.GOOS,
+			Arch:        runtime.GOARCH,
+			GoVersion:   runtime.Version(),
+			CPUCount:    runtime.NumCPU(),
+			Notes: "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; " +
+				"index_ms is the one cold IngestAll shared by every indexed baseline",
+		},
+	}
+	for _, q := range ds.Queries {
+		if q.Split == SplitHoldout {
+			report.Reproducible.Dataset.Holdout++
+		} else {
+			report.Reproducible.Dataset.Dev++
+		}
+	}
+	raw := &RawSamples{Hits: map[Baseline]RawHitSet{}, Latency: map[Baseline]RawLatencySet{}}
+
+	deps := resolve.Deps{Query: query.New(idx.store), Search: idx.search}
+	for _, b := range o.Baselines {
+		fmt.Fprintf(o.Log, "retrieval-eval: baseline %s over %d queries\n", b, len(ds.Queries))
+		exec, method, err := executorFor(b, deps, idx, ds, minGrade)
+		if err != nil {
+			return nil, err
+		}
+		res, perf, hits, lat, err := runBaseline(ctx, b, method, exec, ds, o.Repeats, tokens)
+		if err != nil {
+			return nil, err
+		}
+		if res.Status != BaselineStatusOK {
+			// AC-6: nothing ran, so nothing was measured. Every figure reads
+			// UNKNOWN with the typed reason, and the raw side says it did not
+			// collect rather than carrying zero samples.
+			perf = unavailablePerformance(b, res.Reason)
+			hits.Collected, lat.Collected = false, false
+		} else {
+			switch b {
+			case BaselineOracle:
+				perf.IndexMS = NotApplicable("the oracle ranks the judged spans and builds no index")
+				perf.VectorSidecarBytes = NotApplicable("the oracle ranks the judged spans and builds no index")
+			default:
+				perf.IndexMS = Measured(idx.indexMS, "ms")
+				lat.IndexMS = &idx.indexMS
+				perf.VectorSidecarBytes = NotApplicable("no vector sidecar: this baseline ranks without vectors")
+			}
+			if rss, ok := peakRSSMB(); ok {
+				perf.PeakRSSMB = Measured(rss, "MB")
+				lat.PeakRSSMB = &rss
+			} else {
+				perf.PeakRSSMB = Unknown("getrusage is not available on " + runtime.GOOS)
+			}
+		}
+		report.Reproducible.Baselines = append(report.Reproducible.Baselines, res)
+		report.Performance = append(report.Performance, perf)
+		raw.Hits[b] = hits
+		raw.Latency[b] = lat
+	}
+	return &Result{Report: report, Raw: raw}, nil
+}
+
+// index is the one graph every indexed baseline shares.
+type index struct {
+	store   *graphstore.SQLiteStore
+	search  *search.Service
+	indexMS float64
+	nodes   int
+	edges   int
+	files   int
+}
+
+// buildIndex ingests root into a fresh SQLite store the way cmd/eval's full
+// run does (engine/ingest over parse.NewDefaultRegistry, IngestAll timed),
+// then wires the search service with the DEFAULT embedder registry — which on
+// the default build registers nothing, so SemanticSearch is the typed
+// unavailable response.
+func buildIndex(ctx context.Context, root, workDir string, log io.Writer) (*index, error) {
+	dbPath := filepath.Join(workDir, "retrieval-eval.db")
+	metaDir := filepath.Join(workDir, "retrieval-eval-meta")
+	store, err := graphstore.OpenSQLite(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("retrieval: open store: %w", err)
+	}
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
+	if err != nil {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: ingest.New: %w", err)
+	}
+	fmt.Fprintf(log, "retrieval-eval: indexing %s\n", root)
+	start := time.Now()
+	err = ing.IngestAll(ctx, root)
+	elapsed := time.Since(start)
+	closeErr := ing.Close()
+	if err != nil {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: index %s: %w", root, err)
+	}
+	if closeErr != nil {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: close ingester: %w", closeErr)
+	}
+	agg, ok := any(store).(graphstore.BriefAggregatePort)
+	if !ok {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: store has no BriefAggregatePort")
+	}
+	stats, err := agg.BriefStats(ctx, 0)
+	if err != nil {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: inventory: %w", err)
+	}
+	if stats.TotalNodes == 0 {
+		store.Close()
+		return nil, fmt.Errorf("retrieval: index of %s produced no nodes", root)
+	}
+	svc := search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	fmt.Fprintf(log, "retrieval-eval: indexed %d nodes, %d edges, %d files in %dms\n", stats.TotalNodes, stats.TotalEdges, len(stats.Files), elapsed.Milliseconds())
+	return &index{
+		store: store, search: svc,
+		indexMS: float64(elapsed.Milliseconds()),
+		nodes:   stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
+	}, nil
+}
+
+// rawHit is what an executor returns before tokens are charged.
+type rawHit struct {
+	path, nodeID, kind, qn string
+	line                   int
+}
+
+// executor runs one query. unavailable is the typed reason when the baseline
+// cannot run on this build; it ends the baseline rather than yielding zeros.
+type executor func(ctx context.Context, q Query) (hits []rawHit, unavailable string, err error)
+
+func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrade int) (executor, string, error) {
+	switch b {
+	case BaselineLexical:
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			resp, err := idx.search.Search(ctx, q.Text, TopK)
+			if err != nil {
+				return nil, "", err
+			}
+			out := make([]rawHit, 0, len(resp.Matches))
+			for _, m := range resp.Matches {
+				out = append(out, rawHit{path: m.SourcePath, line: m.Line, nodeID: m.NodeID, kind: m.Kind, qn: m.QualifiedName})
+			}
+			return out, "", nil
+		}, "engine/search.Service.Search (sqlite fts5 bm25)", nil
+	case BaselineHybridV1:
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			res, err := hybridsearch.Search(ctx, hybridsearch.Params{Query: q.Text, MaxItems: TopK, Deps: deps})
+			if err != nil {
+				return nil, "", err
+			}
+			if res.Outcome == contract.OutcomeUnavailable {
+				return nil, res.Summary, nil
+			}
+			evidence := map[string]contract.Evidence{}
+			for _, ev := range res.Evidence {
+				evidence[ev.RefID] = ev
+			}
+			out := make([]rawHit, 0, len(res.Items))
+			for _, it := range res.Items {
+				if len(it.EvidenceRefIDs) == 0 {
+					return nil, "", fmt.Errorf("retrieval: search_hybrid item %s cites no evidence", it.RefID)
+				}
+				ev, ok := evidence[it.EvidenceRefIDs[0]]
+				if !ok {
+					return nil, "", fmt.Errorf("retrieval: search_hybrid item %s cites unknown evidence %s", it.RefID, it.EvidenceRefIDs[0])
+				}
+				h := rawHit{path: ev.Path, line: ev.Line, nodeID: it.RefID}
+				if n, gerr := idx.store.GetNode(ctx, model.NodeId(it.RefID)); gerr == nil {
+					h.kind, h.qn = n.Kind(), n.QualifiedName()
+				}
+				out = append(out, h)
+			}
+			return out, "", nil
+		}, hybridsearch.MethodVersion + " (engine/agenttools/hybridsearch, weights " + hybridsearch.WeightsHash() + ")", nil
+	case BaselineSemanticNameOnly:
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			resp, err := idx.search.SemanticSearch(ctx, q.Text, TopK)
+			if err != nil {
+				return nil, "", err
+			}
+			if !resp.Available {
+				return nil, resp.Reason, nil
+			}
+			out := make([]rawHit, 0, len(resp.Hits))
+			for _, h := range resp.Hits {
+				out = append(out, rawHit{path: h.SourcePath, line: h.Line, nodeID: h.NodeID, kind: h.Kind, qn: h.QualifiedName})
+			}
+			return out, "", nil
+		}, "engine/search.Service.SemanticSearch (name-only documents)", nil
+	case BaselineOracle:
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			spans := append([]Judgement(nil), q.Judgements...)
+			sort.SliceStable(spans, func(i, j int) bool {
+				if spans[i].Grade != spans[j].Grade {
+					return spans[i].Grade > spans[j].Grade
+				}
+				if spans[i].Path != spans[j].Path {
+					return spans[i].Path < spans[j].Path
+				}
+				return spans[i].StartLine < spans[j].StartLine
+			})
+			var out []rawHit
+			for _, s := range spans {
+				if s.Grade < 1 || len(out) >= TopK {
+					break
+				}
+				out = append(out, rawHit{path: s.Path, line: s.StartLine, kind: "span",
+					qn: fmt.Sprintf("%s:%d-%d", s.Path, s.StartLine, s.EndLine)})
+			}
+			return out, "", nil
+		}, "judged spans with grade >= 1 ranked by grade (the scorer's ceiling)", nil
+	}
+	return nil, "", fmt.Errorf("retrieval: unknown baseline %q", b)
+}
+
+// runBaseline executes every query Repeats times, checks the ranking is the
+// same every time, scores it, and aggregates.
+func runBaseline(ctx context.Context, b Baseline, method string, exec executor, ds *Dataset, repeats int, tokens *tokenCounter) (BaselineResult, BaselinePerformance, RawHitSet, RawLatencySet, error) {
+	res := BaselineResult{Name: b, Status: BaselineStatusOK, Method: method, Queries: []QueryResult{},
+		Strata: map[string]AggregateMetrics{}, Splits: map[string]AggregateMetrics{}}
+	perf := BaselinePerformance{Baseline: b}
+	hitSet := RawHitSet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesHits, Baseline: b, Collected: true, Queries: []RawQueryHits{}}
+	latSet := RawLatencySet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesLatency, Baseline: b, Collected: true, Queries: []RawQueryLatency{}}
+	minGrade := ds.MinGrade()
+
+	var allSamples []int64
+	for _, q := range ds.Queries {
+		var (
+			ranking []rawHit
+			samples = make([]int64, 0, repeats)
+		)
+		for i := 0; i < repeats; i++ {
+			start := time.Now()
+			hits, unavailable, err := exec(ctx, q)
+			elapsed := time.Since(start)
+			if err != nil {
+				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: %w", b, q.ID, err)
+			}
+			if unavailable != "" {
+				return unavailableBaseline(b, method, unavailable), perf, hitSet, latSet, nil
+			}
+			if i > 0 && !sameRanking(ranking, hits) {
+				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: ranking differs between executions %d and %d", b, q.ID, i, i+1)
+			}
+			ranking = hits
+			samples = append(samples, elapsed.Microseconds())
+		}
+		scored := make([]Hit, 0, len(ranking))
+		for i, h := range ranking {
+			n, err := tokens.count(h.path, h.line)
+			if err != nil {
+				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s hit %d: %w", b, q.ID, i+1, err)
+			}
+			scored = append(scored, Hit{Rank: i + 1, Path: h.path, Line: h.line, NodeID: h.nodeID, Kind: h.kind, QualifiedName: h.qn, Tokens: n})
+		}
+		res.Queries = append(res.Queries, QueryResult{ID: q.ID, Stratum: q.Stratum, Split: q.Split, Hits: scored,
+			Metrics: Evaluate(scored, q, minGrade, TokenBudgets)})
+		hitSet.Queries = append(hitSet.Queries, RawQueryHits{ID: q.ID, Hits: scored})
+		hitSet.Samples += len(scored)
+		latSet.Queries = append(latSet.Queries, RawQueryLatency{ID: q.ID, SamplesUS: samples})
+		latSet.Samples += len(samples)
+		allSamples = append(allSamples, samples...)
+	}
+	res.Overall, res.Strata, res.Splits = AggregateAll(res.Queries, TokenBudgets)
+	perf.LatencySamples = len(allSamples)
+	if len(allSamples) > 0 {
+		perf.QueryP50US = Measured(float64(PercentileInt64(allSamples, 50)), "us")
+		perf.QueryP95US = Measured(float64(PercentileInt64(allSamples, 95)), "us")
+	} else {
+		perf.QueryP50US = Unknown("no timed executions")
+		perf.QueryP95US = Unknown("no timed executions")
+	}
+	return res, perf, hitSet, latSet, nil
+}
+
+// AggregateAll computes the overall, per-stratum and per-split aggregates.
+// Every stratum and split is present so a reader sees an empty one as
+// UNKNOWN rather than as missing.
+func AggregateAll(results []QueryResult, budgets []int) (overall AggregateMetrics, strata, splits map[string]AggregateMetrics) {
+	strata = map[string]AggregateMetrics{}
+	splits = map[string]AggregateMetrics{}
+	byStratum := map[string][]QueryResult{}
+	bySplit := map[string][]QueryResult{}
+	for _, r := range results {
+		byStratum[r.Stratum] = append(byStratum[r.Stratum], r)
+		bySplit[r.Split] = append(bySplit[r.Split], r)
+	}
+	for _, s := range Strata {
+		strata[s] = Aggregate(byStratum[s], budgets)
+	}
+	for _, s := range []string{SplitDev, SplitHoldout} {
+		splits[s] = Aggregate(bySplit[s], budgets)
+	}
+	return Aggregate(results, budgets), strata, splits
+}
+
+func unavailablePerformance(b Baseline, reason string) BaselinePerformance {
+	u := Unknown("baseline unavailable: " + reason)
+	return BaselinePerformance{Baseline: b, IndexMS: u, QueryP50US: u, QueryP95US: u, PeakRSSMB: u, VectorSidecarBytes: u}
+}
+
+func unavailableBaseline(b Baseline, method, reason string) BaselineResult {
+	res := BaselineResult{Name: b, Status: BaselineStatusUnavailable, Reason: reason, Method: method, Queries: []QueryResult{}}
+	res.Overall, res.Strata, res.Splits = AggregateAll(nil, TokenBudgets)
+	return res
+}
+
+func sameRanking(a, b []rawHit) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// tokenCounter charges a hit the whitespace tokens of its read window
+// (HitContextWindowLines from the hit's line), with the file cached.
+type tokenCounter struct {
+	root  string
+	files map[string][]string
+}
+
+func newTokenCounter(root string) *tokenCounter {
+	return &tokenCounter{root: root, files: map[string][]string{}}
+}
+
+func (t *tokenCounter) count(rel string, line int) (int, error) {
+	lines, err := fileLines(t.root, t.files, rel)
+	if err != nil {
+		return 0, err
+	}
+	if line < 1 {
+		line = 1
+	}
+	if line > len(lines) {
+		return 0, fmt.Errorf("%s: hit line %d beyond %d lines", rel, line, len(lines))
+	}
+	end := min(line-1+HitContextWindowLines, len(lines))
+	return eval.CountTokens(strings.Join(lines[line-1:end], "\n")), nil
+}
