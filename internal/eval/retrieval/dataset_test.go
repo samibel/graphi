@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/engine/trust"
 )
 
 // validDataset is the smallest dataset that passes Validate; the table tests
@@ -62,6 +64,12 @@ func TestDataset_ValidateRejectsEachBrokenRule(t *testing.T) {
 		{"absolute path", func(d *Dataset) { d.Queries[0].Judgements[0].Path = "/etc/passwd" }, "path"},
 		{"parent path", func(d *Dataset) { d.Queries[0].Judgements[0].Path = "../x.go" }, "path"},
 		{"backslash path", func(d *Dataset) { d.Queries[0].Judgements[0].Path = `auth\token.go` }, "path"},
+		{"path over the artifact bound", func(d *Dataset) {
+			d.Queries[0].Judgements[0].Path = strings.Repeat("a", trust.MaxPathLength) + ".go"
+		}, "bound"},
+		{"path carrying the truncation marker", func(d *Dataset) {
+			d.Queries[0].Judgements[0].Path = "auth/" + TruncationMarker + ".go"
+		}, "marker"},
 		{"start line zero", func(d *Dataset) { d.Queries[0].Judgements[0].StartLine = 0 }, "start_line"},
 		{"end before start", func(d *Dataset) { d.Queries[0].Judgements[0].EndLine = 3 }, "end_line"},
 		{"grade too high", func(d *Dataset) { d.Queries[0].Judgements[0].Grade = 4 }, "grade"},

@@ -15,20 +15,39 @@ const (
 	// dataset states the same value and TestDatasets_CobraDatasetShape
 	// checks they agree.
 	cobraPinnedSHA = "a0a6ae020bb3899ff0276067863e50523f897370"
+
+	// grpcGoDataset is the PERFORMANCE-ONLY dataset over the large size
+	// class (AC-8); grpcGoPinnedSHA is corpus/manifest.json's pin for grpc-go
+	// v1.60.1.
+	grpcGoDataset   = "testdata/datasets/grpc-go-perf-v1.json"
+	grpcGoPinnedSHA = "dbbcf59957fec0bd58063224cbf105b3b3698d4e"
 )
 
-// cobraCheckout is where a read-only pinned clone is expected locally. The
-// PR path never clones (AC-10); when the clone is absent the span-coverage
-// test SKIPS with a message that says how to get one.
-func cobraCheckout() string {
-	if p := os.Getenv("GRAPHI_CORPUS_COBRA"); p != "" {
-		return p
+// pinnedCheckout locates a read-only clone of a pinned corpus repository —
+// $<envVar>, else $HOME/.cache/graphi/corpus/<name> — and SKIPS, visibly,
+// when it is absent, not a git checkout, or not at the pinned sha. The PR
+// path never clones (AC-10).
+func pinnedCheckout(t *testing.T, envVar, name, upstream, sentinel, pinned, dataset string) string {
+	t.Helper()
+	root := os.Getenv(envVar)
+	if root == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			t.Skipf("SKIP: no home directory to locate the %s clone under", name)
+		}
+		root = filepath.Join(home, ".cache", "graphi", "corpus", name)
 	}
-	home, err := os.UserHomeDir()
+	if _, err := os.Stat(filepath.Join(root, sentinel)); err != nil {
+		t.Skipf("SKIP: %s clone absent at %s (set %s or place a read-only clone of %s at %s there); the span-coverage check for %s did not run", name, root, envVar, upstream, pinned, dataset)
+	}
+	head, err := CheckoutHEAD(context.Background(), root)
 	if err != nil {
-		return ""
+		t.Skipf("SKIP: %s is not a git checkout (%v); cannot verify the pin", root, err)
 	}
-	return filepath.Join(home, ".cache", "graphi", "corpus", "cobra")
+	if !strings.EqualFold(head, pinned) {
+		t.Skipf("SKIP: %s clone at %s is at %s, not the pinned %s; judgements are only valid at the pin", name, root, head, pinned)
+	}
+	return root
 }
 
 // AC-9 over the hermetic fixture: always runs.
@@ -87,21 +106,66 @@ func TestDatasets_CobraDatasetShape(t *testing.T) {
 // AC-9 over the pinned public repository: runs only against a local clone at
 // the pinned sha, and SKIPS — visibly — otherwise. A stale judgement fails.
 func TestDatasets_CobraSpansResolveAtPinnedSHA(t *testing.T) {
-	root := cobraCheckout()
-	if root == "" {
-		t.Skip("SKIP: no home directory to locate the cobra clone under")
-	}
-	if _, err := os.Stat(filepath.Join(root, "command.go")); err != nil {
-		t.Skipf("SKIP: cobra clone absent at %s (set GRAPHI_CORPUS_COBRA or place a read-only clone of spf13/cobra at %s there); the span-coverage check for cobra-v1.json did not run", root, cobraPinnedSHA)
-	}
-	head, err := CheckoutHEAD(context.Background(), root)
-	if err != nil {
-		t.Skipf("SKIP: %s is not a git checkout (%v); cannot verify the pin", root, err)
-	}
-	if !strings.EqualFold(head, cobraPinnedSHA) {
-		t.Skipf("SKIP: cobra clone at %s is at %s, not the pinned %s; judgements are only valid at the pin", root, head, cobraPinnedSHA)
-	}
+	root := pinnedCheckout(t, "GRAPHI_CORPUS_COBRA", "cobra", "spf13/cobra", "command.go", cobraPinnedSHA, "cobra-v1.json")
 	ds, err := LoadDataset(cobraDataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckSpanCoverage(root, ds.Dataset); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// AC-8's large-class dataset is performance-only: a property of the JSON
+// alone, checked without the clone. It must say so, stay small, and stay
+// inside the cheap-to-judge strata so nobody mistakes it for a quality set
+// or derives a target from it.
+func TestDatasets_GrpcGoDatasetShape(t *testing.T) {
+	ds, err := LoadDataset(grpcGoDataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := ds.Dataset
+	if d.Repo != "grpc-go" || d.RepoSHA != grpcGoPinnedSHA || d.Language != "go" {
+		t.Errorf("grpc-go dataset header = repo %q sha %q language %q", d.Repo, d.RepoSHA, d.Language)
+	}
+	if d.EvidenceClass != EvidenceClassAgentHumanReviewed {
+		t.Errorf("evidence_class = %q", d.EvidenceClass)
+	}
+	if !strings.Contains(d.Notes, "PERFORMANCE-ONLY") || !strings.Contains(d.Notes, "NOT a quality dataset") {
+		t.Errorf("notes must state that the dataset measures the large size class and is not a quality dataset; got %q", d.Notes)
+	}
+	if n := len(d.Queries); n < 6 || n > 8 {
+		t.Errorf("%d queries; a performance-only dataset carries 6..8", n)
+	}
+	cheap := map[string]bool{StratumExactIdentifier: true, StratumExactPath: true, StratumNoHit: true}
+	seen := map[string]bool{}
+	for _, q := range d.Queries {
+		if !cheap[q.Stratum] {
+			t.Errorf("%s: stratum %s is not one of the cheap-to-judge strata a performance-only dataset is confined to", q.ID, q.Stratum)
+		}
+		seen[q.Stratum] = true
+		if q.Language != "en" {
+			t.Errorf("%s: language %q, the validated query contract is English", q.ID, q.Language)
+		}
+		for i, j := range q.Judgements {
+			if j.Annotator != "claude-delegate (SW-258 rework)" || j.Reviewer != "orchestrator" {
+				t.Errorf("%s judgement %d: annotator/reviewer = %q/%q", q.ID, i, j.Annotator, j.Reviewer)
+			}
+		}
+	}
+	for _, s := range []string{StratumExactIdentifier, StratumExactPath, StratumNoHit} {
+		if !seen[s] {
+			t.Errorf("stratum %s has no query", s)
+		}
+	}
+}
+
+// AC-9 over the large-class repository: the same span-coverage check as
+// cobra, against a local clone at the pinned sha, SKIPPING otherwise.
+func TestDatasets_GrpcGoSpansResolveAtPinnedSHA(t *testing.T) {
+	root := pinnedCheckout(t, "GRAPHI_CORPUS_GRPC_GO", "grpc-go", "grpc/grpc-go", "clientconn.go", grpcGoPinnedSHA, "grpc-go-perf-v1.json")
+	ds, err := LoadDataset(grpcGoDataset)
 	if err != nil {
 		t.Fatal(err)
 	}

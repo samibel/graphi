@@ -1,0 +1,1771 @@
+{
+  "format_version": 1,
+  "harness_version": "retrieval-eval/1",
+  "scorer_version": "retrieval-aggregate/1",
+  "reproducible": {
+    "candidate_sha": "37fbdac76a249ba6dc1a1e8e23306c4a7e7e8111+dirty",
+    "runner_class": "local",
+    "repo": {
+      "name": "grpc-go",
+      "sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "nodes": 14920,
+      "edges": 82942,
+      "files": 919
+    },
+    "dataset": {
+      "id": "grpc-go-perf-v1",
+      "file": "grpc-go-perf-v1.json",
+      "sha256": "bdac5107251b7c40bf85fa9fc9eaaed75ad642ef4005ce846850976b893381aa",
+      "evidence_class": "agent-annotated, human-reviewed",
+      "queries": 8,
+      "dev_queries": 5,
+      "holdout_queries": 3
+    },
+    "tokenizer_id": "whitespace-fields-v1",
+    "top_k": 10,
+    "token_budgets": [
+      600,
+      1200,
+      2000
+    ],
+    "hit_context_window_lines": 40,
+    "relevant_min_grade": 2,
+    "matching_rule": "a hit matches a judged span when hit.path == span.path and span.start_line <= hit.line <= span.end_line; hit.line is the node's declaration line as the engine reports it (the oracle uses the span's start_line); each judged span is credited once per ranking for recall and DCG",
+    "baselines": [
+      {
+        "name": "lexical",
+        "status": "ok",
+        "method": "engine/search.Service.Search (sqlite fts5 bm25)",
+        "queries": [
+          {
+            "id": "gp-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "security/advancedtls/advancedtls.go",
+                "line": 590,
+                "node_id": "b88f652801f2c3c1",
+                "kind": "function",
+                "qualified_name": "advancedtls.NewServerCreds",
+                "tokens": 42
+              },
+              {
+                "rank": 2,
+                "path": "credentials/alts/alts.go",
+                "line": 148,
+                "node_id": "d7ecb76b8a3c5852",
+                "kind": "function",
+                "qualified_name": "alts.NewServerCreds",
+                "tokens": 146
+              },
+              {
+                "rank": 3,
+                "path": "credentials/tls.go",
+                "line": 225,
+                "node_id": "082c02ee90cd8723",
+                "kind": "function",
+                "qualified_name": "credentials.NewServerTLSFromCert",
+                "tokens": 106
+              },
+              {
+                "rank": 4,
+                "path": "credentials/tls.go",
+                "line": 231,
+                "node_id": "d62c03543eff4b18",
+                "kind": "function",
+                "qualified_name": "credentials.NewServerTLSFromFile",
+                "tokens": 81
+              },
+              {
+                "rank": 5,
+                "path": "xds/internal/test/e2e/e2e.go",
+                "line": 140,
+                "node_id": "dfe8759e7b1f8508",
+                "kind": "function",
+                "qualified_name": "e2e.newServers",
+                "tokens": 100
+              },
+              {
+                "rank": 6,
+                "path": "internal/testutils/fakegrpclb/server.go",
+                "line": 81,
+                "node_id": "c7c91b90d83260a5",
+                "kind": "function",
+                "qualified_name": "fakegrpclb.NewServer",
+                "tokens": 153
+              },
+              {
+                "rank": 7,
+                "path": "internal/testutils/xds/fakeserver/server.go",
+                "line": 148,
+                "node_id": "e8126db8f5b537f9",
+                "kind": "function",
+                "qualified_name": "fakeserver.NewServer",
+                "tokens": 116
+              },
+              {
+                "rank": 8,
+                "path": "server.go",
+                "line": 637,
+                "node_id": "837de04f9f45c4a4",
+                "kind": "function",
+                "qualified_name": "grpc.NewServer",
+                "tokens": 118
+              },
+              {
+                "rank": 9,
+                "path": "credentials/alts/internal/handshaker/handshaker.go",
+                "line": 145,
+                "node_id": "ce9787b41a47d473",
+                "kind": "function",
+                "qualified_name": "handshaker.NewServerHandshaker",
+                "tokens": 166
+              },
+              {
+                "rank": 10,
+                "path": "health/server.go",
+                "line": 46,
+                "node_id": "23cb752e1fccd6b6",
+                "kind": "function",
+                "qualified_name": "health.NewServer",
+                "tokens": 144
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 1,
+              "mrr_at_10": 0.125,
+              "ndcg_at_10": 0.28938205550465,
+              "first_relevant_rank": 8,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 0
+              },
+              "hit_grades": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "gp-02",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "clientconn.go",
+                "line": 210,
+                "node_id": "6407c3f06e07f4a7",
+                "kind": "function",
+                "qualified_name": "grpc.DialContext",
+                "tokens": 212
+              },
+              {
+                "rank": 2,
+                "path": "test/bufconn/bufconn.go",
+                "line": 96,
+                "node_id": "4c81ec59ae91918d",
+                "kind": "method",
+                "qualified_name": "bufconn.Listener.DialContext",
+                "tokens": 158
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 0.5,
+              "recall_at_10": 0.5,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.787154602990972,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.5,
+                "2000": 0.5,
+                "600": 0.5
+              },
+              "hit_grades": [
+                3,
+                0
+              ]
+            }
+          },
+          {
+            "id": "gp-03",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "dialoptions.go",
+                "line": 360,
+                "node_id": "f4eef5aa81476c63",
+                "kind": "function",
+                "qualified_name": "grpc.WithTransportCredentials",
+                "tokens": 172
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.9173194127129571,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-04",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "interceptor.go",
+                "line": 1,
+                "node_id": "13bfa9b91c63dd1a",
+                "kind": "file",
+                "qualified_name": "interceptor.go",
+                "tokens": 264
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-05",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "call.go",
+                "line": 1,
+                "node_id": "7af95b35c84e794c",
+                "kind": "file",
+                "qualified_name": "call.go",
+                "tokens": 212
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-06",
+            "stratum": "exact_path",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "preloader.go",
+                "line": 1,
+                "node_id": "97d4104f3f5d6d75",
+                "kind": "file",
+                "qualified_name": "preloader.go",
+                "tokens": 182
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "gp-08",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          }
+        ],
+        "overall": {
+          "queries": 8,
+          "scored": 6,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 1,
+            "first_relevant_rank_mean": 2.1666666666666665,
+            "mrr@10": 0.8541666666666666,
+            "ndcg@10": 0.83230934520143,
+            "negative_hit_rate@5": 0,
+            "recall@10": 0.9166666666666666,
+            "recall@1200tok": 0.9166666666666666,
+            "recall@2000tok": 0.9166666666666666,
+            "recall@5": 0.75,
+            "recall@600tok": 0.75,
+            "top1": 0.8333333333333334
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "architecture_flow": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "config_docs": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_identifier": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 3.3333333333333335,
+              "mrr@10": 0.7083333333333334,
+              "ndcg@10": 0.6646186904028597,
+              "recall@10": 0.8333333333333334,
+              "recall@1200tok": 0.8333333333333334,
+              "recall@2000tok": 0.8333333333333334,
+              "recall@5": 0.5,
+              "recall@600tok": 0.5,
+              "top1": 0.6666666666666666
+            }
+          },
+          "exact_path": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 5,
+            "scored": 4,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 2.75,
+              "mrr@10": 0.78125,
+              "ndcg@10": 0.7691341646239055,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.875,
+              "recall@1200tok": 0.875,
+              "recall@2000tok": 0.875,
+              "recall@5": 0.625,
+              "recall@600tok": 0.625,
+              "top1": 0.75
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.9586597063564786,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          }
+        }
+      },
+      {
+        "name": "hybrid_v1",
+        "status": "ok",
+        "method": "search_hybrid/1 (engine/agenttools/hybridsearch, weights c15c28bb)",
+        "queries": [
+          {
+            "id": "gp-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "server.go",
+                "line": 637,
+                "node_id": "837de04f9f45c4a4",
+                "kind": "function",
+                "qualified_name": "grpc.NewServer",
+                "tokens": 118
+              },
+              {
+                "rank": 2,
+                "path": "credentials/tls.go",
+                "line": 231,
+                "node_id": "d62c03543eff4b18",
+                "kind": "function",
+                "qualified_name": "credentials.NewServerTLSFromFile",
+                "tokens": 81
+              },
+              {
+                "rank": 3,
+                "path": "orca/server_metrics.go",
+                "line": 152,
+                "node_id": "7efeae2f2c06a2a9",
+                "kind": "function",
+                "qualified_name": "orca.NewServerMetricsRecorder",
+                "tokens": 92
+              },
+              {
+                "rank": 4,
+                "path": "credentials/alts/alts.go",
+                "line": 148,
+                "node_id": "d7ecb76b8a3c5852",
+                "kind": "function",
+                "qualified_name": "alts.NewServerCreds",
+                "tokens": 146
+              },
+              {
+                "rank": 5,
+                "path": "health/server.go",
+                "line": 46,
+                "node_id": "23cb752e1fccd6b6",
+                "kind": "function",
+                "qualified_name": "health.NewServer",
+                "tokens": 144
+              },
+              {
+                "rank": 6,
+                "path": "security/advancedtls/advancedtls.go",
+                "line": 590,
+                "node_id": "b88f652801f2c3c1",
+                "kind": "function",
+                "qualified_name": "advancedtls.NewServerCreds",
+                "tokens": 42
+              },
+              {
+                "rank": 7,
+                "path": "reflection/serverreflection.go",
+                "line": 154,
+                "node_id": "139dd49ccb6b4fc7",
+                "kind": "function",
+                "qualified_name": "reflection.NewServerV1",
+                "tokens": 146
+              },
+              {
+                "rank": 8,
+                "path": "orca/server_metrics.go",
+                "line": 156,
+                "node_id": "718217c47e341537",
+                "kind": "function",
+                "qualified_name": "orca.newServerMetricsRecorder",
+                "tokens": 98
+              },
+              {
+                "rank": 9,
+                "path": "internal/testutils/fakegrpclb/server.go",
+                "line": 81,
+                "node_id": "c7c91b90d83260a5",
+                "kind": "function",
+                "qualified_name": "fakegrpclb.NewServer",
+                "tokens": 153
+              },
+              {
+                "rank": 10,
+                "path": "credentials/alts/internal/handshaker/handshaker.go",
+                "line": 145,
+                "node_id": "ce9787b41a47d473",
+                "kind": "function",
+                "qualified_name": "handshaker.NewServerHandshaker",
+                "tokens": 166
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.9173194127129571,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "gp-02",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "clientconn.go",
+                "line": 210,
+                "node_id": "6407c3f06e07f4a7",
+                "kind": "function",
+                "qualified_name": "grpc.DialContext",
+                "tokens": 212
+              },
+              {
+                "rank": 2,
+                "path": "test/bufconn/bufconn.go",
+                "line": 96,
+                "node_id": "4c81ec59ae91918d",
+                "kind": "method",
+                "qualified_name": "bufconn.Listener.DialContext",
+                "tokens": 158
+              },
+              {
+                "rank": 3,
+                "path": "clientconn_test.go",
+                "line": 517,
+                "node_id": "4bee897ac1f9c204",
+                "kind": "method",
+                "qualified_name": "grpc.s.TestDialContextFailFast",
+                "tokens": 148
+              },
+              {
+                "rank": 4,
+                "path": "clientconn_test.go",
+                "line": 504,
+                "node_id": "9b7d0bac942dd716",
+                "kind": "method",
+                "qualified_name": "grpc.s.TestDialContextCancel",
+                "tokens": 140
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 0.5,
+              "recall_at_10": 0.5,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.787154602990972,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.5,
+                "2000": 0.5,
+                "600": 0.5
+              },
+              "hit_grades": [
+                3,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "gp-03",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "dialoptions.go",
+                "line": 360,
+                "node_id": "f4eef5aa81476c63",
+                "kind": "function",
+                "qualified_name": "grpc.WithTransportCredentials",
+                "tokens": 172
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.9173194127129571,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-04",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "interceptor.go",
+                "line": 1,
+                "node_id": "13bfa9b91c63dd1a",
+                "kind": "file",
+                "qualified_name": "interceptor.go",
+                "tokens": 264
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-05",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "call.go",
+                "line": 1,
+                "node_id": "7af95b35c84e794c",
+                "kind": "file",
+                "qualified_name": "call.go",
+                "tokens": 212
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-06",
+            "stratum": "exact_path",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "preloader.go",
+                "line": 1,
+                "node_id": "97d4104f3f5d6d75",
+                "kind": "file",
+                "qualified_name": "preloader.go",
+                "tokens": 182
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 25,
+                "node_id": "0fb37e75e038af5d",
+                "kind": "type",
+                "qualified_name": "weightedroundrobin.scheduler",
+                "tokens": 176
+              },
+              {
+                "rank": 2,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 1,
+                "node_id": "e1e4f86baa34c7c6",
+                "kind": "file",
+                "qualified_name": "balancer/weightedroundrobin/scheduler.go",
+                "tokens": 199
+              },
+              {
+                "rank": 3,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 89,
+                "node_id": "6a73721c149b7b5c",
+                "kind": "type",
+                "qualified_name": "weightedroundrobin.edfScheduler",
+                "tokens": 231
+              },
+              {
+                "rank": 4,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 130,
+                "node_id": "cdb70b118351faff",
+                "kind": "type",
+                "qualified_name": "weightedroundrobin.rrScheduler",
+                "tokens": 24
+              },
+              {
+                "rank": 5,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 34,
+                "node_id": "c3b804e35265b19a",
+                "kind": "function",
+                "qualified_name": "weightedroundrobin.newScheduler",
+                "tokens": 144
+              },
+              {
+                "rank": 6,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 135,
+                "node_id": "2ef50b75b0897ed7",
+                "kind": "method",
+                "qualified_name": "weightedroundrobin.rrScheduler.nextIndex",
+                "tokens": 14
+              },
+              {
+                "rank": 7,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 95,
+                "node_id": "4915c1743a67f607",
+                "kind": "method",
+                "qualified_name": "weightedroundrobin.edfScheduler.nextIndex",
+                "tokens": 223
+              },
+              {
+                "rank": 8,
+                "path": "balancer/weightedroundrobin/scheduler.go",
+                "line": 84,
+                "node_id": "b47caea75165d297",
+                "kind": "constant",
+                "qualified_name": "weightedroundrobin.maxWeight",
+                "tokens": 217
+              }
+            ],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "gp-08",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "resolver/resolver.go",
+                "line": 86,
+                "node_id": "01b10ecc70be0f00",
+                "kind": "type",
+                "qualified_name": "resolver.Address",
+                "tokens": 262
+              },
+              {
+                "rank": 2,
+                "path": "resolver/resolver.go",
+                "line": 304,
+                "node_id": "0430243d7a5b3c5f",
+                "kind": "type",
+                "qualified_name": "resolver.ResolveNowOptions",
+                "tokens": 71
+              },
+              {
+                "rank": 3,
+                "path": "resolver/manual/manual.go",
+                "line": 1,
+                "node_id": "064a1c8bf88dc9cb",
+                "kind": "file",
+                "qualified_name": "resolver/manual/manual.go",
+                "tokens": 183
+              },
+              {
+                "rank": 4,
+                "path": "resolver/resolver.go",
+                "line": 221,
+                "node_id": "0cebf4ed2a7e93d3",
+                "kind": "type",
+                "qualified_name": "resolver.ClientConn",
+                "tokens": 321
+              },
+              {
+                "rank": 5,
+                "path": "resolver/resolver.go",
+                "line": 258,
+                "node_id": "137a9afd2380aa1e",
+                "kind": "type",
+                "qualified_name": "resolver.Target",
+                "tokens": 271
+              },
+              {
+                "rank": 6,
+                "path": "resolver/resolver.go",
+                "line": 185,
+                "node_id": "1dba681540f197d9",
+                "kind": "type",
+                "qualified_name": "resolver.State",
+                "tokens": 269
+              },
+              {
+                "rank": 7,
+                "path": "resolver/resolver.go",
+                "line": 290,
+                "node_id": "5aab08128062efa7",
+                "kind": "type",
+                "qualified_name": "resolver.Builder",
+                "tokens": 159
+              },
+              {
+                "rank": 8,
+                "path": "resolver/resolver.go",
+                "line": 308,
+                "node_id": "751769cff3386989",
+                "kind": "type",
+                "qualified_name": "resolver.Resolver",
+                "tokens": 49
+              },
+              {
+                "rank": 9,
+                "path": "resolver/resolver.go",
+                "line": 1,
+                "node_id": "ff9c9e01f1000c66",
+                "kind": "file",
+                "qualified_name": "resolver/resolver.go",
+                "tokens": 157
+              },
+              {
+                "rank": 10,
+                "path": "resolver/resolver.go",
+                "line": 149,
+                "node_id": "519a7a048fdd19a9",
+                "kind": "type",
+                "qualified_name": "resolver.BuildOptions",
+                "tokens": 292
+              }
+            ],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        ],
+        "overall": {
+          "queries": 8,
+          "scored": 6,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 1,
+            "first_relevant_rank_mean": 1,
+            "mrr@10": 1,
+            "ndcg@10": 0.9369655714028143,
+            "negative_hit_rate@5": 0,
+            "recall@10": 0.9166666666666666,
+            "recall@1200tok": 0.9166666666666666,
+            "recall@2000tok": 0.9166666666666666,
+            "recall@5": 0.9166666666666666,
+            "recall@600tok": 0.9166666666666666,
+            "top1": 1
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "architecture_flow": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "config_docs": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_identifier": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.8739311428056288,
+              "recall@10": 0.8333333333333334,
+              "recall@1200tok": 0.8333333333333334,
+              "recall@2000tok": 0.8333333333333334,
+              "recall@5": 0.8333333333333334,
+              "recall@600tok": 0.8333333333333334,
+              "top1": 1
+            }
+          },
+          "exact_path": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 5,
+            "scored": 4,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.9261185039259823,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.875,
+              "recall@1200tok": 0.875,
+              "recall@2000tok": 0.875,
+              "recall@5": 0.875,
+              "recall@600tok": 0.875,
+              "top1": 1
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.9586597063564786,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          }
+        }
+      },
+      {
+        "name": "semantic_name_only",
+        "status": "unavailable",
+        "reason": "no embedder configured; run `graphi setup-embedder ...`",
+        "method": "engine/search.Service.SemanticSearch (name-only documents)",
+        "queries": [],
+        "overall": {
+          "queries": 0,
+          "scored": 0,
+          "status": "UNKNOWN"
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "architecture_flow": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "config_docs": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_identifier": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_path": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "nl_behaviour": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "no_hit": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "holdout": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          }
+        }
+      },
+      {
+        "name": "oracle_upper_bound",
+        "status": "ok",
+        "method": "judged spans with grade >= 1 ranked by grade (the scorer's ceiling)",
+        "queries": [
+          {
+            "id": "gp-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "server.go",
+                "line": 637,
+                "kind": "span",
+                "qualified_name": "server.go:637-669",
+                "tokens": 118
+              },
+              {
+                "rank": 2,
+                "path": "server.go",
+                "line": 703,
+                "kind": "span",
+                "qualified_name": "server.go:703-712",
+                "tokens": 143
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                1
+              ]
+            }
+          },
+          {
+            "id": "gp-02",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "clientconn.go",
+                "line": 210,
+                "kind": "span",
+                "qualified_name": "clientconn.go:210-289",
+                "tokens": 212
+              },
+              {
+                "rank": 2,
+                "path": "clientconn.go",
+                "line": 105,
+                "kind": "span",
+                "qualified_name": "clientconn.go:105-107",
+                "tokens": 113
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2
+              ]
+            }
+          },
+          {
+            "id": "gp-03",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "dialoptions.go",
+                "line": 360,
+                "kind": "span",
+                "qualified_name": "dialoptions.go:360-364",
+                "tokens": 172
+              },
+              {
+                "rank": 2,
+                "path": "dialoptions.go",
+                "line": 338,
+                "kind": "span",
+                "qualified_name": "dialoptions.go:338-342",
+                "tokens": 166
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                1
+              ]
+            }
+          },
+          {
+            "id": "gp-04",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "interceptor.go",
+                "line": 1,
+                "kind": "span",
+                "qualified_name": "interceptor.go:1-104",
+                "tokens": 264
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-05",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "call.go",
+                "line": 1,
+                "kind": "span",
+                "qualified_name": "call.go:1-74",
+                "tokens": 212
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-06",
+            "stratum": "exact_path",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "preloader.go",
+                "line": 1,
+                "kind": "span",
+                "qualified_name": "preloader.go:1-67",
+                "tokens": 182
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "gp-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "gp-08",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          }
+        ],
+        "overall": {
+          "queries": 8,
+          "scored": 6,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 1,
+            "first_relevant_rank_mean": 1,
+            "mrr@10": 1,
+            "ndcg@10": 1,
+            "negative_hit_rate@5": 0,
+            "recall@10": 1,
+            "recall@1200tok": 1,
+            "recall@2000tok": 1,
+            "recall@5": 1,
+            "recall@600tok": 1,
+            "top1": 1
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "architecture_flow": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "config_docs": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_identifier": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "exact_path": {
+            "queries": 3,
+            "scored": 3,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 5,
+            "scored": 4,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  "performance": [
+    {
+      "baseline": "lexical",
+      "index_ms": {
+        "status": "measured",
+        "value": 10123,
+        "unit": "ms"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 139,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 974,
+        "unit": "us"
+      },
+      "latency_samples": 24,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 631.703125,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "no vector sidecar: this baseline ranks without vectors"
+      }
+    },
+    {
+      "baseline": "hybrid_v1",
+      "index_ms": {
+        "status": "measured",
+        "value": 10123,
+        "unit": "ms"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 1995,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 3678,
+        "unit": "us"
+      },
+      "latency_samples": 24,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 639.546875,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "no vector sidecar: this baseline ranks without vectors"
+      }
+    },
+    {
+      "baseline": "semantic_name_only",
+      "index_ms": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "query_p50_us": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "query_p95_us": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "latency_samples": 0,
+      "peak_rss_mb": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "vector_sidecar_bytes": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      }
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "index_ms": {
+        "status": "not_applicable",
+        "reason": "the oracle ranks the judged spans and builds no index"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 0,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 0,
+        "unit": "us"
+      },
+      "latency_samples": 24,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 639.546875,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "the oracle ranks the judged spans and builds no index"
+      }
+    }
+  ],
+  "environment": {
+    "generated_at": "2026-08-30T09:27:27Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  }
+}

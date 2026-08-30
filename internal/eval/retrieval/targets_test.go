@@ -196,6 +196,26 @@ func TestDeriveBudgets(t *testing.T) {
 			t.Errorf("%s = %+v, want UNKNOWN with a reason", class, f)
 		}
 	}
+	t.Run("every size class is measured when every class has a report (AC-8)", func(t *testing.T) {
+		all := []FixtureMeasurement{
+			{Class: FixtureSmall, Report: r, DerivedFrom: DerivedFrom{Report: "small.json", SHA256: "aa"}},
+			{Class: FixtureMedium, Report: r, DerivedFrom: DerivedFrom{Report: "medium.json", SHA256: "bb"}},
+			{Class: FixtureLarge, Report: r, DerivedFrom: DerivedFrom{Report: "large.json", SHA256: "cc"}},
+		}
+		b3, err := DeriveBudgets(all, "2026-08-30")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, class := range FixtureClasses {
+			f := b3.Fixtures[class]
+			if f.Status != StatusMeasured || f.IndexMS == nil || f.P95LatencyUS == nil || f.PeakRSSMB == nil || f.DerivedFrom == nil {
+				t.Errorf("%s = %+v, want measured with all three budget lines and a citation", class, f)
+			}
+		}
+		if b3.Fixtures[FixtureLarge].DerivedFrom.SHA256 != "cc" {
+			t.Errorf("large derived_from = %+v", b3.Fixtures[FixtureLarge].DerivedFrom)
+		}
+	})
 	t.Run("an unknown fixture class is refused", func(t *testing.T) {
 		if _, err := DeriveBudgets([]FixtureMeasurement{{Class: "huge", Report: r}}, "2026-08-30"); err == nil {
 			t.Error("DeriveBudgets(huge) = nil error")

@@ -161,24 +161,27 @@ type Environment struct {
 	Notes       string `json:"notes,omitempty"`
 }
 
-// RequiredEnvironmentFields are what an aggregate needs present before a
-// report is publishable.
-var RequiredEnvironmentFields = []string{"generated_at", "os", "arch", "go_version"}
+// requiredEnvironment lists the environment fields an aggregate needs
+// present before a report is publishable, in report order. Missing is driven
+// by this table, so the list and the check cannot drift apart.
+var requiredEnvironment = []struct {
+	name string
+	get  func(Environment) string
+}{
+	{"generated_at", func(e Environment) string { return e.GeneratedAt }},
+	{"os", func(e Environment) string { return e.OS }},
+	{"arch", func(e Environment) string { return e.Arch }},
+	{"go_version", func(e Environment) string { return e.GoVersion }},
+}
 
-// Missing lists the required environment fields that are empty.
+// Missing lists the required environment fields that are empty, in
+// requiredEnvironment order.
 func (e Environment) Missing() []string {
 	var out []string
-	if e.GeneratedAt == "" {
-		out = append(out, "generated_at")
-	}
-	if e.OS == "" {
-		out = append(out, "os")
-	}
-	if e.Arch == "" {
-		out = append(out, "arch")
-	}
-	if e.GoVersion == "" {
-		out = append(out, "go_version")
+	for _, f := range requiredEnvironment {
+		if f.get(e) == "" {
+			out = append(out, f.name)
+		}
 	}
 	return out
 }

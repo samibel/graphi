@@ -128,13 +128,16 @@ const (
 	RawSeriesLatency = "latency"
 )
 
-// RawHitSet is one baseline's rankings, query by query.
+// RawHitSet is one baseline's rankings, query by query. Reason carries the
+// typed reason when the baseline did not collect (AC-6); it is the only
+// record that can justify a published `unavailable`.
 type RawHitSet struct {
 	FormatVersion  int            `json:"format_version"`
 	HarnessVersion string         `json:"harness_version"`
 	Series         string         `json:"series"`
 	Baseline       Baseline       `json:"baseline"`
 	Collected      bool           `json:"collected"`
+	Reason         string         `json:"reason,omitempty"`
 	Samples        int            `json:"samples"`
 	Queries        []RawQueryHits `json:"queries"`
 }
@@ -145,18 +148,25 @@ type RawQueryHits struct {
 	Hits []Hit  `json:"hits"`
 }
 
-// RawLatencySet is one baseline's timings plus the single-sample index
-// figures, which the aggregate compares for equality.
+// RawLatencySet is one baseline's timings plus the single-sample measures
+// (index time, peak RSS, vector-sidecar size) exactly as the run recorded
+// them: the value when it was taken, the typed UNKNOWN / not_applicable
+// status with its reason when it was not — so the aggregate checks an
+// untaken measure against the record rather than against itself. Reason
+// carries the typed reason when the baseline did not collect (AC-6).
 type RawLatencySet struct {
 	FormatVersion  int               `json:"format_version"`
 	HarnessVersion string            `json:"harness_version"`
 	Series         string            `json:"series"`
 	Baseline       Baseline          `json:"baseline"`
 	Collected      bool              `json:"collected"`
+	Reason         string            `json:"reason,omitempty"`
 	Samples        int               `json:"samples"`
 	Queries        []RawQueryLatency `json:"queries"`
-	IndexMS        *float64          `json:"index_ms,omitempty"`
-	PeakRSSMB      *float64          `json:"peak_rss_mb,omitempty"`
+
+	IndexMS            Measure `json:"index_ms"`
+	PeakRSSMB          Measure `json:"peak_rss_mb"`
+	VectorSidecarBytes Measure `json:"vector_sidecar_bytes"`
 }
 
 // RawQueryLatency is one query's timed executions in microseconds.
@@ -259,35 +269,36 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 		if err != nil {
 			return nil, err
 		}
-		res, perf, hits, lat, err := runBaseline(ctx, b, method, exec, ds, o.Repeats, tokens)
+		res, hits, lat, err := runBaseline(ctx, b, method, exec, ds, o.Repeats, tokens)
 		if err != nil {
 			return nil, err
 		}
 		if res.Status != BaselineStatusOK {
-			// AC-6: nothing ran, so nothing was measured. Every figure reads
-			// UNKNOWN with the typed reason, and the raw side says it did not
-			// collect rather than carrying zero samples.
-			perf = unavailablePerformance(b, res.Reason)
+			// AC-6: nothing ran, so nothing was measured. The raw records say
+			// so (collected: false) and carry the typed reason; the published
+			// performance block is derived from that record alone, so every
+			// figure reads UNKNOWN with the reason, never zero.
 			hits.Collected, lat.Collected = false, false
+			hits.Reason, lat.Reason = res.Reason, res.Reason
+			u := Unknown("baseline unavailable: " + res.Reason)
+			lat.IndexMS, lat.PeakRSSMB, lat.VectorSidecarBytes = u, u, u
 		} else {
 			switch b {
 			case BaselineOracle:
-				perf.IndexMS = NotApplicable("the oracle ranks the judged spans and builds no index")
-				perf.VectorSidecarBytes = NotApplicable("the oracle ranks the judged spans and builds no index")
+				lat.IndexMS = NotApplicable("the oracle ranks the judged spans and builds no index")
+				lat.VectorSidecarBytes = NotApplicable("the oracle ranks the judged spans and builds no index")
 			default:
-				perf.IndexMS = Measured(idx.indexMS, "ms")
-				lat.IndexMS = &idx.indexMS
-				perf.VectorSidecarBytes = NotApplicable("no vector sidecar: this baseline ranks without vectors")
+				lat.IndexMS = Measured(idx.indexMS, "ms")
+				lat.VectorSidecarBytes = NotApplicable("no vector sidecar: this baseline ranks without vectors")
 			}
 			if rss, ok := peakRSSMB(); ok {
-				perf.PeakRSSMB = Measured(rss, "MB")
-				lat.PeakRSSMB = &rss
+				lat.PeakRSSMB = Measured(rss, "MB")
 			} else {
-				perf.PeakRSSMB = Unknown("getrusage is not available on " + runtime.GOOS)
+				lat.PeakRSSMB = Unknown("getrusage is not available on " + runtime.GOOS)
 			}
 		}
 		report.Reproducible.Baselines = append(report.Reproducible.Baselines, res)
-		report.Performance = append(report.Performance, perf)
+		report.Performance = append(report.Performance, PerformanceFromRaw(b, lat))
 		raw.Hits[b] = hits
 		raw.Latency[b] = lat
 	}
@@ -453,16 +464,15 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 }
 
 // runBaseline executes every query Repeats times, checks the ranking is the
-// same every time, scores it, and aggregates.
-func runBaseline(ctx context.Context, b Baseline, method string, exec executor, ds *Dataset, repeats int, tokens *tokenCounter) (BaselineResult, BaselinePerformance, RawHitSet, RawLatencySet, error) {
+// same every time, scores it, and aggregates. Scoring runs over the canonical
+// hits; the report and the raw record publish the bounded ones (boundHit).
+func runBaseline(ctx context.Context, b Baseline, method string, exec executor, ds *Dataset, repeats int, tokens *tokenCounter) (BaselineResult, RawHitSet, RawLatencySet, error) {
 	res := BaselineResult{Name: b, Status: BaselineStatusOK, Method: method, Queries: []QueryResult{},
 		Strata: map[string]AggregateMetrics{}, Splits: map[string]AggregateMetrics{}}
-	perf := BaselinePerformance{Baseline: b}
 	hitSet := RawHitSet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesHits, Baseline: b, Collected: true, Queries: []RawQueryHits{}}
 	latSet := RawLatencySet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesLatency, Baseline: b, Collected: true, Queries: []RawQueryLatency{}}
 	minGrade := ds.MinGrade()
 
-	var allSamples []int64
 	for _, q := range ds.Queries {
 		var (
 			ranking []rawHit
@@ -473,13 +483,13 @@ func runBaseline(ctx context.Context, b Baseline, method string, exec executor, 
 			hits, unavailable, err := exec(ctx, q)
 			elapsed := time.Since(start)
 			if err != nil {
-				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: %w", b, q.ID, err)
+				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: %w", b, q.ID, err)
 			}
 			if unavailable != "" {
-				return unavailableBaseline(b, method, unavailable), perf, hitSet, latSet, nil
+				return unavailableBaseline(b, method, unavailable), hitSet, latSet, nil
 			}
 			if i > 0 && !sameRanking(ranking, hits) {
-				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: ranking differs between executions %d and %d", b, q.ID, i, i+1)
+				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: ranking differs between executions %d and %d", b, q.ID, i, i+1)
 			}
 			ranking = hits
 			samples = append(samples, elapsed.Microseconds())
@@ -488,28 +498,50 @@ func runBaseline(ctx context.Context, b Baseline, method string, exec executor, 
 		for i, h := range ranking {
 			n, err := tokens.count(h.path, h.line)
 			if err != nil {
-				return res, perf, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s hit %d: %w", b, q.ID, i+1, err)
+				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s hit %d: %w", b, q.ID, i+1, err)
 			}
 			scored = append(scored, Hit{Rank: i + 1, Path: h.path, Line: h.line, NodeID: h.nodeID, Kind: h.kind, QualifiedName: h.qn, Tokens: n})
 		}
-		res.Queries = append(res.Queries, QueryResult{ID: q.ID, Stratum: q.Stratum, Split: q.Split, Hits: scored,
+		published := make([]Hit, 0, len(scored))
+		for _, h := range scored {
+			published = append(published, boundHit(h))
+		}
+		res.Queries = append(res.Queries, QueryResult{ID: q.ID, Stratum: q.Stratum, Split: q.Split, Hits: published,
 			Metrics: Evaluate(scored, q, minGrade, TokenBudgets)})
-		hitSet.Queries = append(hitSet.Queries, RawQueryHits{ID: q.ID, Hits: scored})
-		hitSet.Samples += len(scored)
+		hitSet.Queries = append(hitSet.Queries, RawQueryHits{ID: q.ID, Hits: published})
+		hitSet.Samples += len(published)
 		latSet.Queries = append(latSet.Queries, RawQueryLatency{ID: q.ID, SamplesUS: samples})
 		latSet.Samples += len(samples)
-		allSamples = append(allSamples, samples...)
 	}
 	res.Overall, res.Strata, res.Splits = AggregateAll(res.Queries, TokenBudgets)
-	perf.LatencySamples = len(allSamples)
-	if len(allSamples) > 0 {
-		perf.QueryP50US = Measured(float64(PercentileInt64(allSamples, 50)), "us")
-		perf.QueryP95US = Measured(float64(PercentileInt64(allSamples, 95)), "us")
-	} else {
-		perf.QueryP50US = Unknown("no timed executions")
-		perf.QueryP95US = Unknown("no timed executions")
+	return res, hitSet, latSet, nil
+}
+
+// PerformanceFromRaw is THE derivation of a baseline's performance block
+// (AC-4) from its raw latency record: the runner publishes what it returns
+// and the aggregate recomputes the block through the same function. A record
+// that did not collect yields UNKNOWN with the typed reason for every
+// measure; otherwise the percentiles are nearest-rank over every timed
+// execution and index_ms / peak_rss_mb / vector_sidecar_bytes are the
+// record's own measures, status and reason included.
+func PerformanceFromRaw(b Baseline, lat RawLatencySet) BaselinePerformance {
+	if !lat.Collected {
+		return unavailablePerformance(b, lat.Reason)
 	}
-	return res, perf, hitSet, latSet, nil
+	var samples []int64
+	for _, q := range lat.Queries {
+		samples = append(samples, q.SamplesUS...)
+	}
+	out := BaselinePerformance{Baseline: b, IndexMS: lat.IndexMS, LatencySamples: len(samples),
+		PeakRSSMB: lat.PeakRSSMB, VectorSidecarBytes: lat.VectorSidecarBytes}
+	if len(samples) > 0 {
+		out.QueryP50US = Measured(float64(PercentileInt64(samples, 50)), "us")
+		out.QueryP95US = Measured(float64(PercentileInt64(samples, 95)), "us")
+	} else {
+		out.QueryP50US = Unknown("no timed executions")
+		out.QueryP95US = Unknown("no timed executions")
+	}
+	return out
 }
 
 // AggregateAll computes the overall, per-stratum and per-split aggregates.

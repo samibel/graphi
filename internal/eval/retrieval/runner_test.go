@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/engine/trust"
 )
 
 const (
@@ -175,6 +177,10 @@ func TestRun_FixtureRepoAllBaselines(t *testing.T) {
 		if res.Raw.Hits[BaselineSemanticNameOnly].Collected || res.Raw.Latency[BaselineSemanticNameOnly].Collected {
 			t.Error("an unavailable baseline must not claim collected raw samples")
 		}
+		if res.Raw.Hits[BaselineSemanticNameOnly].Reason != sem.Reason || res.Raw.Latency[BaselineSemanticNameOnly].Reason != sem.Reason {
+			t.Errorf("raw records carry reason %q/%q, want the published %q (the raw record is what justifies `unavailable`)",
+				res.Raw.Hits[BaselineSemanticNameOnly].Reason, res.Raw.Latency[BaselineSemanticNameOnly].Reason, sem.Reason)
+		}
 		if sem.Overall.Status != StatusUnknown || len(sem.Overall.Metrics) != 0 {
 			t.Errorf("unavailable aggregate = %+v, want UNKNOWN with no numbers", sem.Overall)
 		}
@@ -227,8 +233,11 @@ func TestRun_FixtureRepoAllBaselines(t *testing.T) {
 			t.Errorf("raw hits = %+v", hits)
 		}
 		lat := res.Raw.Latency[BaselineLexical]
-		if lat.Samples != fixtureQueries*2 || lat.IndexMS == nil || lat.PeakRSSMB == nil {
-			t.Errorf("raw latency = samples %d index %v rss %v", lat.Samples, lat.IndexMS, lat.PeakRSSMB)
+		if lat.Samples != fixtureQueries*2 || lat.IndexMS.Status != StatusMeasured || lat.PeakRSSMB.Status != StatusMeasured || lat.VectorSidecarBytes.Status != StatusNotApplicable {
+			t.Errorf("raw latency = samples %d index %+v rss %+v sidecar %+v", lat.Samples, lat.IndexMS, lat.PeakRSSMB, lat.VectorSidecarBytes)
+		}
+		if got := PerformanceFromRaw(BaselineLexical, lat); !reflect.DeepEqual(got, performance(t, r, BaselineLexical)) {
+			t.Errorf("the published performance block is not PerformanceFromRaw over the raw record:\n%+v\n%+v", performance(t, r, BaselineLexical), got)
 		}
 		b, _ := json.Marshal(hits)
 		for _, derived := range []string{"recall", "mrr", "ndcg"} {
@@ -276,6 +285,57 @@ func TestRun_ReproducibleSectionIsByteIdenticalAcrossRuns(t *testing.T) {
 	if !bytes.HasSuffix(full, []byte("\n")) || !json.Valid(full) {
 		t.Error("MarshalReport must emit valid JSON with a trailing newline")
 	}
+}
+
+// Repository-controlled text (paths, node ids, qualified names) is bounded
+// before it enters an artifact (context/standards.md, trust.MaxPathLength)
+// with a visible marker; scoring still runs over the canonical value.
+func TestRun_RepositoryControlledTextIsBounded(t *testing.T) {
+	long := strings.Repeat("d/", trust.MaxPathLength) + "f.go"
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"short text is unchanged", "auth/token.go", "auth/token.go"},
+		{"text at the bound is unchanged", strings.Repeat("a", trust.MaxPathLength), strings.Repeat("a", trust.MaxPathLength)},
+		{"text over the bound is cut and marked", long, long[:trust.MaxPathLength-len(TruncationMarker)] + TruncationMarker},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := BoundArtifactText(tc.in)
+			if got != tc.want || len(got) > trust.MaxPathLength {
+				t.Errorf("BoundArtifactText = %q (%d bytes), want %q", got, len(got), tc.want)
+			}
+		})
+	}
+	t.Run("a bounded hit scores exactly like its canonical value", func(t *testing.T) {
+		q := Query{ID: "q", Stratum: StratumExactIdentifier, Judgements: []Judgement{span("auth/token.go", 40, 55, 3)}}
+		canonical := []Hit{hit(1, long, 45, 10), hit(2, "auth/token.go", 45, 10)}
+		bounded := []Hit{boundHit(canonical[0]), boundHit(canonical[1])}
+		if bounded[0].Path == long || !strings.HasSuffix(bounded[0].Path, TruncationMarker) || bounded[1] != canonical[1] {
+			t.Fatalf("boundHit = %+v", bounded)
+		}
+		a := Evaluate(canonical, q, DefaultRelevantMinGrade, TokenBudgets)
+		b := Evaluate(bounded, q, DefaultRelevantMinGrade, TokenBudgets)
+		if !reflect.DeepEqual(normalizeMetrics(a), normalizeMetrics(b)) {
+			t.Errorf("canonical scored %+v, bounded %+v", a, b)
+		}
+	})
+	t.Run("every published hit field is within the bound", func(t *testing.T) {
+		res := runFixture(t, BaselineLexical, BaselineHybridV1, BaselineOracle)
+		for _, b := range res.Report.Reproducible.Baselines {
+			for _, q := range b.Queries {
+				for _, h := range q.Hits {
+					for field, v := range map[string]string{"path": h.Path, "node_id": h.NodeID, "qualified_name": h.QualifiedName} {
+						if len(v) > trust.MaxPathLength {
+							t.Errorf("%s %s hit %d: %s is %d bytes, over the %d bound", b.Name, q.ID, h.Rank, field, len(v), trust.MaxPathLength)
+						}
+					}
+				}
+			}
+		}
+	})
 }
 
 func TestRun_FailsClosed(t *testing.T) {

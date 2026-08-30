@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // Aggregator exit codes.
@@ -78,158 +79,54 @@ type AggregateReport struct {
 }
 
 // AggregateMethod states the arithmetic inline.
-const AggregateMethod = "Every per-query metric in report.reproducible is recomputed from raw/hits-<baseline>.json and dataset.json " +
-	"through the same Evaluate the run used, every aggregate through the same Aggregate, and every latency percentile " +
-	"from raw/latency-<baseline>.json through the same nearest-rank PercentileInt64; each is compared EXACTLY. The hit " +
-	"lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did " +
-	"not publish. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN " +
-	"and is never counted as reproduced."
+const AggregateMethod = "For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, " +
+	"with raw/hits-<baseline>.json and raw/latency-<baseline>.json: an omitted or extra query on any side is a discrepancy. Every " +
+	"per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; " +
+	"every aggregate through the same Aggregate over the RAW hit set in dataset order (not over the report's query list); every " +
+	"performance block through the same PerformanceFromRaw (nearest-rank PercentileInt64 over the timed executions; index_ms, " +
+	"peak_rss_mb and vector_sidecar_bytes from the record's own measures), each compared EXACTLY, status and reason included. The " +
+	"hit lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did not " +
+	"publish. A baseline may read `unavailable` only when its raw records say collected: false, and then its reason, empty query " +
+	"list, UNKNOWN aggregates and UNKNOWN measures are all checked against that record; a collected record makes any other status " +
+	"a discrepancy. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN and " +
+	"is never counted as reproduced."
 
 // Reproduce recomputes every published statistic in a run directory.
 func Reproduce(run *RunDir) AggregateReport {
 	rep := run.Report.Reproducible
-	out := AggregateReport{
-		FormatVersion:  FormatVersion,
-		HarnessVersion: HarnessVersion,
-		ScorerVersion:  ScorerVersion,
-		Repo:           rep.Repo.Name,
-		RunnerClass:    rep.RunnerClass,
-		Environment:    run.Report.Environment,
-		MissingRaw:     append([]string(nil), run.MissingRaw...),
-		Method:         AggregateMethod,
+	r := &reproducer{
+		run: run,
+		out: AggregateReport{
+			FormatVersion:  FormatVersion,
+			HarnessVersion: HarnessVersion,
+			ScorerVersion:  ScorerVersion,
+			Repo:           rep.Repo.Name,
+			RunnerClass:    rep.RunnerClass,
+			Environment:    run.Report.Environment,
+			MissingRaw:     append([]string(nil), run.MissingRaw...),
+			Method:         AggregateMethod,
+		},
+		byID:     map[string]Query{},
+		minGrade: run.Dataset.Dataset.MinGrade(),
+		budgets:  rep.TokenBudgets,
+		perf:     map[Baseline]BaselinePerformance{},
 	}
-	out.MissingEnvironment = run.Report.Environment.Missing()
-	out.EnvironmentComplete = len(out.MissingEnvironment) == 0
-
-	byID := map[string]Query{}
+	r.out.MissingEnvironment = run.Report.Environment.Missing()
+	r.out.EnvironmentComplete = len(r.out.MissingEnvironment) == 0
 	for _, q := range run.Dataset.Dataset.Queries {
-		byID[q.ID] = q
+		r.byID[q.ID] = q
+		r.datasetOrder = append(r.datasetOrder, q.ID)
 	}
-	minGrade := run.Dataset.Dataset.MinGrade()
-	budgets := rep.TokenBudgets
-
-	add := func(c MetricCheck) {
-		out.Metrics = append(out.Metrics, c)
-		out.Checked++
-		switch c.Status {
-		case CheckReproduced:
-			out.Reproduced++
-		case CheckDiscrepant:
-			out.Discrepant++
-			out.Discrepancies = append(out.Discrepancies, fmt.Sprintf("%s %s: published %s, recomputed %s", c.Baseline, c.Metric, c.Published, c.Recomputed))
-		default:
-			out.Unknown++
-		}
-	}
-	exact := func(b Baseline, metric string, published, recomputed any) {
-		c := MetricCheck{Baseline: b, Metric: metric, Published: render(published), Recomputed: render(recomputed), Status: CheckReproduced}
-		if !reflect.DeepEqual(published, recomputed) {
-			c.Status = CheckDiscrepant
-		}
-		add(c)
-	}
-	unknown := func(b Baseline, metric string, published any, reason string) {
-		add(MetricCheck{Baseline: b, Metric: metric, Published: render(published), Status: CheckUnknown, Reason: reason})
-	}
-
-	perf := map[Baseline]BaselinePerformance{}
+	r.datasetIDs = sortedIDs(r.datasetOrder)
 	for _, p := range run.Report.Performance {
-		perf[p.Baseline] = p
+		r.perf[p.Baseline] = p
 	}
 
 	for _, b := range rep.Baselines {
-		if b.Status != BaselineStatusOK {
-			// An unavailable baseline publishes no numbers; the one claim it
-			// makes is that nothing was measured, which the raw side must agree
-			// with.
-			if hits, ok := run.Hits[b.Name]; ok && hits.Samples > 0 {
-				exact(b.Name, "status", b.Status, "unavailable baseline with raw hits")
-			} else {
-				exact(b.Name, "status", b.Status, b.Status)
-			}
-			continue
-		}
-		hits, haveHits := run.Hits[b.Name]
-		rawByID := map[string][]Hit{}
-		if haveHits {
-			for _, q := range hits.Queries {
-				rawByID[q.ID] = q.Hits
-			}
-		}
-		recomputed := make([]QueryResult, 0, len(b.Queries))
-		for _, q := range b.Queries {
-			if !haveHits {
-				unknown(b.Name, "query."+q.ID+".hits", len(q.Hits), "no raw hit file for this baseline")
-				continue
-			}
-			raw, ok := rawByID[q.ID]
-			if !ok {
-				unknown(b.Name, "query."+q.ID+".hits", len(q.Hits), "query absent from the raw hit file")
-				continue
-			}
-			exact(b.Name, "query."+q.ID+".hits", normalizeHits(q.Hits), normalizeHits(raw))
-			dq, ok := byID[q.ID]
-			if !ok {
-				unknown(b.Name, "query."+q.ID+".metrics", q.Metrics, "query absent from dataset.json")
-				continue
-			}
-			rm := Evaluate(raw, dq, minGrade, budgets)
-			exact(b.Name, "query."+q.ID+".metrics", normalizeMetrics(q.Metrics), normalizeMetrics(rm))
-			recomputed = append(recomputed, QueryResult{ID: q.ID, Stratum: dq.Stratum, Split: dq.Split, Hits: raw, Metrics: rm})
-		}
-		if haveHits && len(recomputed) == len(b.Queries) {
-			overall, strata, splits := AggregateAll(recomputed, budgets)
-			exact(b.Name, "overall", normalizeAgg(b.Overall), normalizeAgg(overall))
-			for _, s := range Strata {
-				exact(b.Name, "strata."+s, normalizeAgg(b.Strata[s]), normalizeAgg(strata[s]))
-			}
-			for _, s := range []string{SplitDev, SplitHoldout} {
-				exact(b.Name, "splits."+s, normalizeAgg(b.Splits[s]), normalizeAgg(splits[s]))
-			}
-		} else {
-			unknown(b.Name, "overall", b.Overall.Status, "aggregates cannot be recomputed without every query's raw hits")
-		}
-
-		p, havePerf := perf[b.Name]
-		lat, haveLat := run.Latency[b.Name]
-		if !havePerf {
-			unknown(b.Name, "performance", "absent", "no performance block for this baseline")
-			continue
-		}
-		var samples []int64
-		if haveLat {
-			for _, q := range lat.Queries {
-				samples = append(samples, q.SamplesUS...)
-			}
-		}
-		checkMeasure := func(metric string, m Measure, raw *float64, haveRaw bool, reason string) {
-			switch {
-			case m.Status != StatusMeasured:
-				// Nothing published; the raw side must have nothing either.
-				if haveRaw && raw != nil {
-					exact(b.Name, metric, m.Status, "raw sample present for a "+m.Status+" measure")
-				} else {
-					exact(b.Name, metric, m.Status, m.Status)
-				}
-			case !haveRaw || raw == nil:
-				unknown(b.Name, metric, *m.Value, reason)
-			default:
-				exact(b.Name, metric, *m.Value, *raw)
-			}
-		}
-		var p50, p95 *float64
-		if len(samples) > 0 {
-			v50 := float64(PercentileInt64(samples, 50))
-			v95 := float64(PercentileInt64(samples, 95))
-			p50, p95 = &v50, &v95
-		}
-		checkMeasure("query_p50_us", p.QueryP50US, p50, haveLat, "no raw latency file for this baseline")
-		checkMeasure("query_p95_us", p.QueryP95US, p95, haveLat, "no raw latency file for this baseline")
-		exact(b.Name, "latency_samples", p.LatencySamples, len(samples))
-		checkMeasure("index_ms", p.IndexMS, lat.IndexMS, haveLat, "no raw latency file for this baseline")
-		checkMeasure("peak_rss_mb", p.PeakRSSMB, lat.PeakRSSMB, haveLat, "no raw latency file for this baseline")
+		r.checkBaseline(b)
 	}
 
+	out := r.out
 	out.Complete = out.Unknown == 0 && len(out.MissingRaw) == 0
 	out.Publishable = out.Complete && out.Discrepant == 0 && out.EnvironmentComplete
 	switch {
@@ -253,6 +150,248 @@ func (a AggregateReport) ExitCode() int {
 		return ExitIncomplete
 	}
 	return ExitReproduced
+}
+
+// reproducer is one reproduction in progress: the run directory, the dataset
+// index and the checks recorded so far.
+type reproducer struct {
+	run *RunDir
+	out AggregateReport
+
+	byID map[string]Query
+	// datasetOrder is the dataset's query order, which the aggregate sums
+	// follow so the floating-point result is reproduced bit for bit;
+	// datasetIDs is the same set sorted, for set equality.
+	datasetOrder []string
+	datasetIDs   []string
+	minGrade     int
+	budgets      []int
+	perf         map[Baseline]BaselinePerformance
+}
+
+func (r *reproducer) add(c MetricCheck) {
+	r.out.Metrics = append(r.out.Metrics, c)
+	r.out.Checked++
+	switch c.Status {
+	case CheckReproduced:
+		r.out.Reproduced++
+	case CheckDiscrepant:
+		r.out.Discrepant++
+		r.out.Discrepancies = append(r.out.Discrepancies, fmt.Sprintf("%s %s: published %s, recomputed %s", c.Baseline, c.Metric, c.Published, c.Recomputed))
+	default:
+		r.out.Unknown++
+	}
+}
+
+// exact records a check that passes only when published and recomputed are
+// deeply equal — no tolerance, no coercion.
+func (r *reproducer) exact(b Baseline, metric string, published, recomputed any) {
+	c := MetricCheck{Baseline: b, Metric: metric, Published: render(published), Recomputed: render(recomputed), Status: CheckReproduced}
+	if !reflect.DeepEqual(published, recomputed) {
+		c.Status = CheckDiscrepant
+	}
+	r.add(c)
+}
+
+func (r *reproducer) unknown(b Baseline, metric string, published any, reason string) {
+	r.add(MetricCheck{Baseline: b, Metric: metric, Published: render(published), Status: CheckUnknown, Reason: reason})
+}
+
+// checkBaseline checks one published baseline. The raw records decide what
+// status it may carry: collected records make it ok, uncollected ones
+// unavailable, and a report that says otherwise is a discrepancy. The rest
+// of the shape follows from the status the raw side allows.
+func (r *reproducer) checkBaseline(b BaselineResult) {
+	hits, haveHits := r.run.Hits[b.Name]
+	lat, haveLat := r.run.Latency[b.Name]
+	switch {
+	case haveHits && haveLat:
+		r.exact(b.Name, "status", b.Status, rawStatus(hits.Collected, lat.Collected))
+	case haveHits:
+		r.exact(b.Name, "status", b.Status, rawStatus(hits.Collected, hits.Collected))
+	case haveLat:
+		r.exact(b.Name, "status", b.Status, rawStatus(lat.Collected, lat.Collected))
+	default:
+		r.unknown(b.Name, "status", b.Status, "no raw file for this baseline")
+	}
+	if b.Status == BaselineStatusOK {
+		r.checkOK(b, hits, haveHits, lat, haveLat)
+	} else {
+		r.checkUnavailable(b, hits, haveHits)
+	}
+	r.checkPerformance(b.Name, lat, haveLat)
+}
+
+// rawStatus is the only status the raw records permit.
+func rawStatus(hitsCollected, latencyCollected bool) string {
+	switch {
+	case hitsCollected && latencyCollected:
+		return BaselineStatusOK
+	case !hitsCollected && !latencyCollected:
+		return BaselineStatusUnavailable
+	}
+	return "inconsistent raw records (hits collected: " + strconv.FormatBool(hitsCollected) +
+		", latency collected: " + strconv.FormatBool(latencyCollected) + ")"
+}
+
+// checkOK checks a baseline that ran: query-set equality on every side, each
+// published hit list and score against the raw hits, and the aggregates
+// recomputed from the RAW hit set over the dataset's queries — not from the
+// report's query list — so a report that omits a query and re-averages the
+// rest still disagrees.
+func (r *reproducer) checkOK(b BaselineResult, hits RawHitSet, haveHits bool, lat RawLatencySet, haveLat bool) {
+	r.exact(b.Name, "query_set", queryIDs(b.Queries), r.datasetIDs)
+	if haveHits {
+		r.exact(b.Name, "raw.hits.query_set", rawHitIDs(hits.Queries), r.datasetIDs)
+	}
+	if haveLat {
+		r.exact(b.Name, "raw.latency.query_set", rawLatencyIDs(lat.Queries), r.datasetIDs)
+	}
+
+	rawByID := map[string][]Hit{}
+	if haveHits {
+		for _, q := range hits.Queries {
+			rawByID[q.ID] = q.Hits
+		}
+	}
+	for _, q := range b.Queries {
+		if !haveHits {
+			r.unknown(b.Name, "query."+q.ID+".hits", len(q.Hits), "no raw hit file for this baseline")
+			continue
+		}
+		raw, ok := rawByID[q.ID]
+		if !ok {
+			r.unknown(b.Name, "query."+q.ID+".hits", len(q.Hits), "query absent from the raw hit file")
+			continue
+		}
+		r.exact(b.Name, "query."+q.ID+".hits", normalizeHits(q.Hits), normalizeHits(raw))
+		dq, ok := r.byID[q.ID]
+		if !ok {
+			r.unknown(b.Name, "query."+q.ID+".metrics", q.Metrics, "query absent from dataset.json")
+			continue
+		}
+		r.exact(b.Name, "query."+q.ID+".metrics", normalizeMetrics(q.Metrics), normalizeMetrics(Evaluate(raw, dq, r.minGrade, r.budgets)))
+	}
+
+	if !haveHits {
+		r.unknown(b.Name, "overall", b.Overall.Status, "no raw hit file for this baseline")
+		return
+	}
+	recomputed := make([]QueryResult, 0, len(r.datasetOrder))
+	for _, id := range r.datasetOrder {
+		raw, ok := rawByID[id]
+		if !ok {
+			r.unknown(b.Name, "overall", b.Overall.Status, "aggregates cannot be recomputed without every dataset query's raw hits ("+id+" is absent)")
+			return
+		}
+		dq := r.byID[id]
+		recomputed = append(recomputed, QueryResult{ID: id, Stratum: dq.Stratum, Split: dq.Split, Hits: raw, Metrics: Evaluate(raw, dq, r.minGrade, r.budgets)})
+	}
+	overall, strata, splits := AggregateAll(recomputed, r.budgets)
+	r.checkAggregates(b, overall, strata, splits)
+}
+
+// checkUnavailable checks the complete shape of an unavailable baseline
+// (AC-6) against its raw hit record: the typed reason, no queries, and
+// UNKNOWN aggregates. Only a record that says collected: false can justify
+// the status (checkBaseline); everything the report says beyond that must
+// follow from the record's reason alone.
+func (r *reproducer) checkUnavailable(b BaselineResult, hits RawHitSet, haveHits bool) {
+	if !haveHits {
+		r.unknown(b.Name, "reason", b.Reason, "no raw hit file for this baseline")
+		r.unknown(b.Name, "overall", b.Overall.Status, "no raw hit file for this baseline")
+		return
+	}
+	reason := hits.Reason
+	if reason == "" {
+		reason = "(the raw hit record carries no reason)"
+	}
+	want := unavailableBaseline(b.Name, b.Method, reason)
+	r.exact(b.Name, "reason", b.Reason, want.Reason)
+	r.exact(b.Name, "query_set", queryIDs(b.Queries), []string{})
+	r.exact(b.Name, "raw.hits.query_set", rawHitIDs(hits.Queries), []string{})
+	r.exact(b.Name, "raw.hits.samples", hits.Samples, 0)
+	r.checkAggregates(b, want.Overall, want.Strata, want.Splits)
+}
+
+func (r *reproducer) checkAggregates(b BaselineResult, overall AggregateMetrics, strata, splits map[string]AggregateMetrics) {
+	r.exact(b.Name, "overall", normalizeAgg(b.Overall), normalizeAgg(overall))
+	for _, s := range Strata {
+		r.exact(b.Name, "strata."+s, normalizeAgg(b.Strata[s]), normalizeAgg(strata[s]))
+	}
+	for _, s := range []string{SplitDev, SplitHoldout} {
+		r.exact(b.Name, "splits."+s, normalizeAgg(b.Splits[s]), normalizeAgg(splits[s]))
+	}
+}
+
+// performanceMeasures names AC-4's per-baseline measures in report order;
+// every one of them is checked, an untaken one against the raw record's
+// status and reason rather than against itself.
+var performanceMeasures = []struct {
+	name string
+	get  func(BaselinePerformance) Measure
+}{
+	{"index_ms", func(p BaselinePerformance) Measure { return p.IndexMS }},
+	{"query_p50_us", func(p BaselinePerformance) Measure { return p.QueryP50US }},
+	{"query_p95_us", func(p BaselinePerformance) Measure { return p.QueryP95US }},
+	{"peak_rss_mb", func(p BaselinePerformance) Measure { return p.PeakRSSMB }},
+	{"vector_sidecar_bytes", func(p BaselinePerformance) Measure { return p.VectorSidecarBytes }},
+}
+
+// checkPerformance recomputes the performance block through the same
+// PerformanceFromRaw the runner published it with and compares every
+// measure exactly — status, value, unit and reason.
+func (r *reproducer) checkPerformance(name Baseline, lat RawLatencySet, haveLat bool) {
+	p, ok := r.perf[name]
+	if !ok {
+		r.unknown(name, "performance", "absent", "no performance block for this baseline")
+		return
+	}
+	if !haveLat {
+		for _, m := range performanceMeasures {
+			r.unknown(name, m.name, m.get(p), "no raw latency file for this baseline")
+		}
+		r.unknown(name, "latency_samples", p.LatencySamples, "no raw latency file for this baseline")
+		return
+	}
+	want := PerformanceFromRaw(name, lat)
+	for _, m := range performanceMeasures {
+		r.exact(name, m.name, m.get(p), m.get(want))
+	}
+	r.exact(name, "latency_samples", p.LatencySamples, want.LatencySamples)
+}
+
+// Query-id sets. Every helper returns a sorted, non-nil slice so two empty
+// sets compare equal and order never counts as a difference.
+func sortedIDs(ids []string) []string {
+	out := make([]string, 0, len(ids))
+	out = append(out, ids...)
+	sort.Strings(out)
+	return out
+}
+
+func queryIDs(qs []QueryResult) []string {
+	ids := make([]string, 0, len(qs))
+	for _, q := range qs {
+		ids = append(ids, q.ID)
+	}
+	return sortedIDs(ids)
+}
+
+func rawHitIDs(qs []RawQueryHits) []string {
+	ids := make([]string, 0, len(qs))
+	for _, q := range qs {
+		ids = append(ids, q.ID)
+	}
+	return sortedIDs(ids)
+}
+
+func rawLatencyIDs(qs []RawQueryLatency) []string {
+	ids := make([]string, 0, len(qs))
+	for _, q := range qs {
+		ids = append(ids, q.ID)
+	}
+	return sortedIDs(ids)
 }
 
 // normalizeHits strips nothing but makes nil and empty compare equal.
@@ -297,8 +436,23 @@ func render(v any) string {
 		return strconv.FormatFloat(x, 'g', -1, 64)
 	case int:
 		return strconv.Itoa(x)
+	case bool:
+		return strconv.FormatBool(x)
 	case string:
 		return x
+	case []string:
+		if len(x) == 0 {
+			return "(no queries)"
+		}
+		return strings.Join(x, ",")
+	case Measure:
+		if x.Status == StatusMeasured && x.Value != nil {
+			return strconv.FormatFloat(*x.Value, 'g', -1, 64) + x.Unit
+		}
+		if x.Reason != "" {
+			return x.Status + " (" + x.Reason + ")"
+		}
+		return x.Status
 	case []Hit:
 		return fmt.Sprintf("%d hit(s)", len(x))
 	case QueryMetrics:

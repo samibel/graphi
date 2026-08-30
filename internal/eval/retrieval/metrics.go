@@ -4,6 +4,8 @@ import (
 	"math"
 	"sort"
 	"strconv"
+
+	"github.com/samibel/graphi/engine/trust"
 )
 
 // TopK is the ranking depth every baseline is asked for and the @k depth of
@@ -13,6 +15,8 @@ const TopK = 10
 // Hit is one ranked result as the scorer sees it: where it points (path +
 // line, the two fields the matching rule reads), what it was (node identity,
 // for the reader) and what it costs (whitespace tokens of its read window).
+// Path, NodeID and QualifiedName are repository-controlled text and are
+// bounded by BoundArtifactText before they are published.
 type Hit struct {
 	Rank          int    `json:"rank"`
 	Path          string `json:"path"`
@@ -21,6 +25,36 @@ type Hit struct {
 	Kind          string `json:"kind,omitempty"`
 	QualifiedName string `json:"qualified_name,omitempty"`
 	Tokens        int    `json:"tokens"`
+}
+
+// TruncationMarker ends a repository-controlled string that was cut at
+// trust.MaxPathLength. It is engine/trust's marker: visible, and never
+// produced by graphi itself, so a shortened value is never mistaken for a
+// real one.
+const TruncationMarker = "…[truncated]"
+
+// BoundArtifactText bounds one repository-controlled string (a path, a node
+// id, a qualified name) before it enters a report or raw artifact, the way
+// trust.MaxPathLength bounds an emitted path (context/standards.md): a value
+// within the bound is returned unchanged; a longer one is cut and marked.
+// The runner scores the canonical value and publishes the bounded one; since
+// a judged span path is itself validated to be within the bound and never to
+// carry the marker, a bounded path matches exactly the spans its canonical
+// value matches (none), so the two never score differently.
+func BoundArtifactText(s string) string {
+	if len(s) <= trust.MaxPathLength {
+		return s
+	}
+	return s[:trust.MaxPathLength-len(TruncationMarker)] + TruncationMarker
+}
+
+// boundHit is the hit as it is published: every repository-controlled string
+// bounded, everything else as scored.
+func boundHit(h Hit) Hit {
+	h.Path = BoundArtifactText(h.Path)
+	h.NodeID = BoundArtifactText(h.NodeID)
+	h.QualifiedName = BoundArtifactText(h.QualifiedName)
+	return h
 }
 
 // SpanMatches is THE matching rule, defined once: a hit matches a judged span

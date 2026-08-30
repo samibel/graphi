@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 )
 
 // Run directory layout. The published report sits beside the raw samples it
@@ -53,7 +52,8 @@ type RunIndex struct {
 // RunIndexNotes explains the directory to a reader who has only the files.
 const RunIndexNotes = "SW-258 retrieval-eval run directory: report.json is the published artifact, dataset.json the exact judged " +
 	"bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and " +
-	"raw/latency-<baseline>.json every timed execution plus the single-sample index figures. " +
+	"raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) " +
+	"with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. " +
 	"`go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
 
 // RawFileName names a series file for a baseline.
@@ -239,16 +239,3 @@ func ReadRunDir(dir string) (*RunDir, error) {
 	sort.Strings(out.MissingRaw)
 	return &out, nil
 }
-
-// OrderedBaselines lists the baselines a run directory published, in report
-// order.
-func (r *RunDir) OrderedBaselines() []Baseline {
-	var out []Baseline
-	for _, b := range r.Report.Reproducible.Baselines {
-		out = append(out, b.Name)
-	}
-	return out
-}
-
-// joinNames is a small helper for error text.
-func joinNames(names []string) string { return strings.Join(names, ", ") }

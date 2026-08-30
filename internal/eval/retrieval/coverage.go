@@ -69,18 +69,6 @@ func fileLines(root string, cache map[string][]string, rel string) ([]string, er
 	return lines, nil
 }
 
-// ReadSpan returns the text of lines [start, end] of a repo-relative file.
-func ReadSpan(root, rel string, start, end int) (string, error) {
-	lines, err := fileLines(root, map[string][]string{}, rel)
-	if err != nil {
-		return "", err
-	}
-	if start < 1 || end < start || end > len(lines) {
-		return "", fmt.Errorf("%s: span %d-%d outside 1-%d", rel, start, end, len(lines))
-	}
-	return strings.Join(lines[start-1:end], "\n"), nil
-}
-
 // CheckoutHEAD returns the HEAD commit of the Git checkout at root. It runs
 // the local git binary only; no network.
 func CheckoutHEAD(ctx context.Context, root string) (string, error) {

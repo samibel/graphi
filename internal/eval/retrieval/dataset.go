@@ -9,6 +9,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/samibel/graphi/engine/trust"
 )
 
 // SchemaVersion is the dataset schema this package reads. A file stating any
@@ -254,7 +256,9 @@ func (j Judgement) validate() error {
 
 // validateSpanPath accepts only a clean, repo-relative POSIX path: what the
 // ingest walk emits for a node's SourcePath, so the matching rule compares
-// like with like.
+// like with like. It must also fit the artifact bound a published hit path
+// is cut at (BoundArtifactText) and never carry the truncation marker, so a
+// bounded hit path can only ever match the spans its canonical value does.
 func validateSpanPath(p string) error {
 	switch {
 	case strings.TrimSpace(p) == "":
@@ -263,6 +267,10 @@ func validateSpanPath(p string) error {
 		return fmt.Errorf("path %q must be a repo-relative POSIX path", p)
 	case p != path.Clean(p), p == ".", strings.HasPrefix(p, "../"), p == "..":
 		return fmt.Errorf("path %q must be clean and inside the repository", p)
+	case len(p) > trust.MaxPathLength:
+		return fmt.Errorf("path is %d bytes, over the %d-byte artifact bound (trust.MaxPathLength)", len(p), trust.MaxPathLength)
+	case strings.Contains(p, TruncationMarker):
+		return fmt.Errorf("path %q carries the truncation marker %q", p, TruncationMarker)
 	}
 	return nil
 }

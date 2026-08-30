@@ -6,8 +6,40 @@
   "headroom_factor": 2,
   "fixtures": {
     "large": {
-      "status": "UNKNOWN",
-      "reason": "no report was measured for this size class in this run"
+      "status": "measured",
+      "repo": "grpc-go",
+      "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+      "files": 919,
+      "nodes": 14920,
+      "runner_class": "local",
+      "derived_from": {
+        "report": "docs/eval/retrieval/runs/2026-08-30-local/grpc-go-perf-v1-report.json",
+        "sha256": "e359e7194c0fcdec7c746861a3cbf9c139f9268298d38f4416d96961506022cf",
+        "repo": "grpc-go",
+        "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+        "dataset": "grpc-go-perf-v1",
+        "dataset_sha256": "bdac5107251b7c40bf85fa9fc9eaaed75ad642ef4005ce846850976b893381aa",
+        "candidate_sha": "37fbdac76a249ba6dc1a1e8e23306c4a7e7e8111+dirty",
+        "runner_class": "local"
+      },
+      "index_ms": {
+        "measured": 10123,
+        "measured_baseline": "lexical",
+        "unit": "ms",
+        "budget": 20246
+      },
+      "query_p95_us": {
+        "measured": 3678,
+        "measured_baseline": "hybrid_v1",
+        "unit": "us",
+        "budget": 7356
+      },
+      "peak_rss_mb": {
+        "measured": 639.546875,
+        "measured_baseline": "hybrid_v1",
+        "unit": "MB",
+        "budget": 1280
+      }
     },
     "medium": {
       "status": "measured",

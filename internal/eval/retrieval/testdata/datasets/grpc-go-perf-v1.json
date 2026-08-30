@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "id": "grpc-go-perf-v1",
+  "repo": "grpc-go",
+  "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
+  "language": "go",
+  "evidence_class": "agent-annotated, human-reviewed",
+  "notes": "SW-258 PERFORMANCE-ONLY dataset over grpc/grpc-go v1.60.1 (corpus/manifest.json pin, the large size class: 831 Go files over 277 directories). It exists so docs/eval/retrieval-budgets.json can carry a measured large-class index-time / query-p95 / peak-RSS budget (AC-8); it is NOT a quality dataset - 8 queries confined to the cheap-to-judge strata (exact_identifier, exact_path, no_hit), too few to set or check any retrieval target, and no target is derived from it. Every span was read from a local read-only clone at the pinned sha; TestDatasets_GrpcGoSpansResolveAtPinnedSHA re-verifies file, line range and anchor whenever that clone is present and SKIPS otherwise. Grades: 3 exact answer span, 2 directly relevant, 1 marginal, 0 negative example.",
+  "queries": [
+    {
+      "id": "gp-01",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "NewServer",
+      "judgements": [
+        {"path": "server.go", "start_line": 637, "end_line": 669, "anchor": "func NewServer(", "grade": 3, "reason": "The declaration of NewServer itself.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"},
+        {"path": "server.go", "start_line": 703, "end_line": 712, "anchor": "func (s *Server) RegisterService(", "grade": 1, "reason": "The first method a NewServer caller invokes on the result; related, not the identifier asked for.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-02",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "DialContext",
+      "judgements": [
+        {"path": "clientconn.go", "start_line": 210, "end_line": 289, "anchor": "func DialContext(", "grade": 3, "reason": "The declaration of DialContext itself.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"},
+        {"path": "clientconn.go", "start_line": 105, "end_line": 107, "anchor": "func Dial(", "grade": 2, "reason": "Dial is the one-line wrapper that delegates to DialContext with a background context.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-03",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "WithTransportCredentials",
+      "judgements": [
+        {"path": "dialoptions.go", "start_line": 360, "end_line": 364, "anchor": "func WithTransportCredentials(", "grade": 3, "reason": "The declaration of WithTransportCredentials itself.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"},
+        {"path": "dialoptions.go", "start_line": 338, "end_line": 342, "anchor": "func WithInsecure(", "grade": 1, "reason": "The deprecated sibling option that sets the same TransportCredentials field; its doc comment points at WithTransportCredentials.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-04",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "interceptor.go",
+      "judgements": [
+        {"path": "interceptor.go", "start_line": 1, "end_line": 104, "anchor": "package grpc", "grade": 3, "reason": "The file named by the query; any symbol in it answers a path query.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-05",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "call.go",
+      "judgements": [
+        {"path": "call.go", "start_line": 1, "end_line": 74, "anchor": "package grpc", "grade": 3, "reason": "The file named by the query.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-06",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "preloader.go",
+      "judgements": [
+        {"path": "preloader.go", "start_line": 1, "end_line": 67, "anchor": "package grpc", "grade": 3, "reason": "The file named by the query.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-07",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "dev",
+      "query": "kubernetes pod scheduler",
+      "judgements": [
+        {"path": "server.go", "start_line": 637, "end_line": 669, "anchor": "func NewServer(", "grade": 0, "reason": "Negative example: the gRPC server constructor has nothing to do with kubernetes scheduling; surfacing it is a false positive.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "gp-08",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "holdout",
+      "query": "graphql schema resolver",
+      "judgements": [
+        {"path": "call.go", "start_line": 29, "end_line": 38, "anchor": "func (cc *ClientConn) Invoke(", "grade": 0, "reason": "Negative example: the unary RPC invoker is not a GraphQL resolver; surfacing it is a false positive.", "annotator": "claude-delegate (SW-258 rework)", "reviewer": "orchestrator"}
+      ]
+    }
+  ]
+}

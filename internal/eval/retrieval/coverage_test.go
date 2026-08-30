@@ -68,15 +68,3 @@ func TestCheckSpanCoverage(t *testing.T) {
 		}
 	})
 }
-
-func TestReadSpan_ReturnsTheJudgedLines(t *testing.T) {
-	root := t.TempDir()
-	writeFixtureFile(t, root, "f.go", "l1\nl2\nl3\nl4\n")
-	text, err := ReadSpan(root, "f.go", 2, 3)
-	if err != nil || text != "l2\nl3" {
-		t.Errorf("ReadSpan = %q, %v", text, err)
-	}
-	if _, err := ReadSpan(root, "f.go", 3, 9); err == nil {
-		t.Error("a range past EOF must be an error")
-	}
-}

@@ -93,14 +93,23 @@ Datasets live under `internal/eval/retrieval/testdata/datasets/`:
 |---|---|---|---|
 | `fixture-v1.json` | `testdata/fixture-repo` (in-tree, buildable Go module) | 7 dev + 3 holdout, every stratum | always |
 | `cobra-v1.json` | `cobra` @ `a0a6ae02…` (v1.8.0, `corpus/manifest.json`) | 30 dev (≥3 per stratum) + 10 holdout | shape always; span coverage only when a clone at the pin is present, else `SKIP` |
+| `grpc-go-perf-v1.json` | `grpc-go` @ `dbbcf599…` (v1.60.1, `corpus/manifest.json`) | 5 dev + 3 holdout, **performance-only** (exact_identifier / exact_path / no_hit) | shape always; span coverage only when a clone at the pin is present, else `SKIP` |
+
+`grpc-go-perf-v1.json` exists to measure the **large** size class for the budgets file (AC-8). It
+is not a quality dataset: eight cheap-to-judge queries, no target is derived from it, and
+`TestDatasets_GrpcGoDatasetShape` keeps it that way.
+
+Judged span paths are validated to fit the artifact bound (`trust.MaxPathLength`, 240 bytes) and
+never to carry the truncation marker, so a bounded hit path (below) can only match the spans its
+canonical value matches.
 
 ## Span coverage is a test (AC-9)
 
-`TestDatasets_FixtureSpansResolve` always runs. `TestDatasets_CobraSpansResolveAtPinnedSHA` looks
-for a read-only clone at `$GRAPHI_CORPUS_COBRA` or `$HOME/.cache/graphi/corpus/cobra`, verifies
-`git rev-parse HEAD` equals the pin, and then checks every judgement: regular file, line range
-inside the file, anchor inside the range. A stale judgement fails `go test ./internal/eval/retrieval`.
-The PR path never clones.
+`TestDatasets_FixtureSpansResolve` always runs. `TestDatasets_CobraSpansResolveAtPinnedSHA` and
+`TestDatasets_GrpcGoSpansResolveAtPinnedSHA` look for a read-only clone at `$GRAPHI_CORPUS_COBRA` /
+`$GRAPHI_CORPUS_GRPC_GO` or `$HOME/.cache/graphi/corpus/<repo>`, verify `git rev-parse HEAD` equals
+the pin, and then check every judgement: regular file, line range inside the file, anchor inside
+the range. A stale judgement fails `go test ./internal/eval/retrieval`. The PR path never clones.
 
 ## Running
 
@@ -118,9 +127,14 @@ go run ./cmd/retrieval-eval -manifest corpus/manifest.json -repo cobra \
 # 2 unreadable / 3 incomplete)
 go run ./cmd/retrieval-eval -aggregate docs/eval/retrieval/runs/<date>-<runner-class>-cobra
 
+# Large size class for the budgets file: the performance-only grpc-go dataset (same dispatch)
+go run ./cmd/retrieval-eval -manifest corpus/manifest.json -repo grpc-go \
+  -dataset internal/eval/retrieval/testdata/datasets/grpc-go-perf-v1.json \
+  -out retrieval-grpc-go.json -export-raw <dir>
+
 # Regenerate the frozen files (only from reports checked in beside them; immutable until SW-266)
 go run ./cmd/retrieval-eval -derive -targets-report <cobra-report.json> \
-  -budget-small <fixture-report.json> -budget-medium <cobra-report.json> \
+  -budget-small <fixture-report.json> -budget-medium <cobra-report.json> -budget-large <grpc-go-report.json> \
   -targets-out docs/eval/retrieval-targets.json -budgets-out docs/eval/retrieval-budgets.json
 ```
 
@@ -136,23 +150,39 @@ cloned: the checkout must exist locally at the pinned sha or the run fails close
   (`status`, `reason`, `method`, per-query `hits` + `metrics`, `overall`, `strata`, `splits`).
   **Byte-identical across two runs over the same inputs** (`TestRun_ReproducibleSectionIsByteIdenticalAcrossRuns`).
 - `performance` — per baseline `index_ms`, `query_p50_us`, `query_p95_us`, `latency_samples`,
-  `peak_rss_mb`, `vector_sidecar_bytes`; recomputed exactly from `raw/latency-*.json`.
+  `peak_rss_mb`, `vector_sidecar_bytes`; the block is `PerformanceFromRaw` over
+  `raw/latency-<baseline>.json` and is recomputed exactly — status, value, unit and reason — so an
+  `UNKNOWN` or `not_applicable` figure is checked against the raw record, not against itself.
 - `environment` — `generated_at`, `os`, `arch`, `go_version`, `cpu_count`; checked for presence only.
+
+Hit fields under repository control (`path`, `node_id`, `qualified_name`) are bounded at
+`trust.MaxPathLength` (240 bytes) with a visible `…[truncated]` marker before they enter the report
+or the raw files (`context/standards.md`); scoring runs over the canonical value.
 
 Run directory (`-export-raw`): `run.json` (index with per-file sha256), `report.json`,
 `dataset.json` (the exact judged bytes), `raw/hits-<baseline>.json` (every ranking, nothing
-derived), `raw/latency-<baseline>.json` (every timed execution + the single-sample index figures).
-`-aggregate` recomputes every per-query metric through the same `Evaluate`, every aggregate through
-the same `Aggregate`, every percentile through the same nearest-rank `PercentileInt64`, compares
-the report's hit lists to the raw hit lists, and compares **exactly**.
+derived), `raw/latency-<baseline>.json` (every timed execution + the single-sample measures
+`index_ms` / `peak_rss_mb` / `vector_sidecar_bytes` with their status and reason). An unavailable
+baseline's raw records say `collected: false` and carry the typed `reason` — the only thing that can
+justify `unavailable` in the report.
+
+`-aggregate` checks, per baseline, **exact query-id set equality** between the report, the dataset
+copy and each raw series (an omitted or extra query on any side is a discrepancy, whether or not
+the aggregates were re-averaged); recomputes every per-query metric through the same `Evaluate`,
+every aggregate through the same `Aggregate` over the *raw* hit set in dataset order, every
+performance block through the same `PerformanceFromRaw`; compares the report's hit lists to the raw
+hit lists; and checks the complete shape of an `unavailable` baseline (status only when raw says
+`collected: false`, the `reason`, zero queries, `UNKNOWN` aggregates, `UNKNOWN` measures). Every
+comparison is `reflect.DeepEqual` — no tolerances.
 
 ## Targets and budgets
 
 `docs/eval/retrieval-targets.json` (AC-7): per stratum, the best single-baseline value of every
 metric over the dev split, the oracle ceiling, a `fusion_target` on `nl_behaviour` and
 `architecture_flow` (best `ndcg@10` + 0.10, capped at the ceiling) and the Top-1 `no_regression`
-floor on `exact_identifier`. `docs/eval/retrieval-budgets.json` (AC-8): per fixture size class,
-index time, worst indexed-baseline query p95 and peak RSS with the measurement each came from and
+floor on `exact_identifier`. `docs/eval/retrieval-budgets.json` (AC-8): per fixture size class —
+small = the in-tree fixture, medium = cobra, large = grpc-go (performance-only dataset) — index
+time, worst indexed-baseline query p95 and peak RSS with the measurement each came from and
 budget = measured × 2.0; a class with no measurement reads `UNKNOWN`. Both carry `date`,
 `derived_from` (report path + sha256) and `immutable_until: "SW-266"`. The reports they were derived
 from are checked in under `docs/eval/retrieval/runs/`.
