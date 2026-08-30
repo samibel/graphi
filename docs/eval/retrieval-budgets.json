@@ -14,31 +14,31 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/grpc-go-perf-v1-report.json",
-        "sha256": "9d7ef0c6991483e70fab6452e4277a3577b68eb8a857b1b78780d1f5b020f587",
+        "sha256": "e8df2c0720c5bb5a854deceb19013eb3099f669e531f7c767dadc393e940f93c",
         "repo": "grpc-go",
         "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
         "dataset": "grpc-go-perf-v1",
         "dataset_sha256": "bdac5107251b7c40bf85fa9fc9eaaed75ad642ef4005ce846850976b893381aa",
-        "candidate_sha": "69b730cc8e07bdb79cd56fd2beb05e7a46c59de0+dirty",
+        "candidate_sha": "60dd3c849d22cc43ccb0bbd675155313eb5d9a11",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 16202,
+        "measured": 11415,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 32404
+        "budget": 22830
       },
       "query_p95_us": {
-        "measured": 6704,
+        "measured": 4127,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 13408
+        "budget": 8254
       },
       "peak_rss_mb": {
-        "measured": 671.828125,
+        "measured": 659.78125,
         "measured_baseline": "lexical",
         "unit": "MB",
-        "budget": 1344
+        "budget": 1320
       }
     },
     "medium": {
@@ -50,31 +50,31 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
-        "sha256": "b9855e646e140277ca4a310f0055f909e7da73b4ba4b01c45cca6d5133ff69c6",
+        "sha256": "89d4290ad5a26d33a641a0abb7409eca40d08fbb0976ca765d358671ff251be6",
         "repo": "cobra",
         "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
         "dataset": "cobra-v1",
         "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
-        "candidate_sha": "69b730cc8e07bdb79cd56fd2beb05e7a46c59de0+dirty",
+        "candidate_sha": "60dd3c849d22cc43ccb0bbd675155313eb5d9a11",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 356,
+        "measured": 190,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 712
+        "budget": 380
       },
       "query_p95_us": {
-        "measured": 9142,
+        "measured": 4692,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 18284
+        "budget": 9384
       },
       "peak_rss_mb": {
-        "measured": 351.203125,
+        "measured": 355.828125,
         "measured_baseline": "oracle_upper_bound",
         "unit": "MB",
-        "budget": 703
+        "budget": 712
       }
     },
     "small": {
@@ -85,30 +85,30 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/fixture-v1-report.json",
-        "sha256": "ff2c0b7ceba146613e8bfc7ed8c900542ab0548f0dea87f194f04b1f7ed72bcc",
+        "sha256": "6194eed03a8ae5dc677dea00fe7cd460260bbcaadbf56f1a301009b7392cd5cd",
         "repo": "fixture",
         "dataset": "fixture-v1",
         "dataset_sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
-        "candidate_sha": "69b730cc8e07bdb79cd56fd2beb05e7a46c59de0+dirty",
+        "candidate_sha": "60dd3c849d22cc43ccb0bbd675155313eb5d9a11",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 21,
+        "measured": 11,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 42
+        "budget": 22
       },
       "query_p95_us": {
-        "measured": 4243,
+        "measured": 2613,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 8486
+        "budget": 5226
       },
       "peak_rss_mb": {
-        "measured": 112.671875,
+        "measured": 108.625,
         "measured_baseline": "oracle_upper_bound",
         "unit": "MB",
-        "budget": 226
+        "budget": 218
       }
     }
   }
