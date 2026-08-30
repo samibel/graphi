@@ -67,12 +67,15 @@ func artifactDir() string {
 //     followed silently — a symlink at a pinned path is a misconfigured
 //     artifact and must Fail, not Skip.
 //
-// This is the single source of truth used by artifactPresent,
-// loadPinnedModel and the absence-aware tests; TestArtifactClassifier
-// table-tests its five observable outcomes.
+// This is the single source of truth behind all three fail-closed gates —
+// requireArtifact, loadPinnedModel and the egress canary's inline check;
+// TestArtifactClassifier table-tests its five observable outcomes.
 func classifyArtifact(dir string) (bool, error) {
 	if dir == "" {
-		return false, nil
+		// An unresolvable $HOME is a misconfigured environment, not an absent
+		// artifact: reporting "absent" here would skip the suite green for a
+		// reason that has nothing to do with the artifact.
+		return false, errors.New("cannot resolve the artifact directory: $HOME is unset (see PINNED.md)")
 	}
 	names := make([]string, 0, len(pinnedSHA256))
 	for name := range pinnedSHA256 {
@@ -128,9 +131,14 @@ func classifyArtifact(dir string) (bool, error) {
 	return true, nil
 }
 
-// requireArtifact is the ONE fail-closed gate every artifact-dependent test
-// goes through (SW-259 review round 3). It skips only when classifyArtifact
-// reports genuine absence, and FAILS on every "present but unusable" outcome —
+// requireArtifact is the fail-closed gate for tests that need the artifact
+// directory but not a loaded model (SW-259 review round 3). Two siblings share
+// its contract over the same classifyArtifact: loadPinnedModel, for tests that
+// need the model itself, and the egress canary's inline check, which keeps a
+// conditional shape because it also exercises the synthetic model. All three
+// fail on "present but unusable"; none of them can skip past it. It skips only
+// when classifyArtifact reports genuine absence, and FAILS on every
+// "present but unusable" outcome —
 // partial absence, permission denied, IO error, symlink or directory at a
 // pinned path. The earlier boolean form let those collapse to "absent", so a
 // misconfigured artifact skipped the suite green; there is deliberately no

@@ -121,8 +121,10 @@ comparison was the same code against itself; and the production path is consiste
 of the two, not the slower. The spread across runs (23k–54k texts/s for `EmbedEach`) is
 run-to-run variance on this runner, not a semantic cost — a review re-run on this same tree
 measured `EmbedEach` at 53,862 texts/s (warm 54,416) against the reference path's 27,621. Read the
-two rows as "both are fast enough by a wide margin, and the reference path pays for its ~2.9×
-pooled tokens"; anything finer needs a quiet machine and more runs than a spike warrants. For
+two rows as "both are fast enough by a wide margin", and note only the measured fact that the
+reference path pools ~2.9× more tokens (490,000 / 169,987) — whether that is what costs it the
+difference is not established here. Anything finer needs a quiet machine and more runs than a
+spike warrants. For
 scale: cobra (938 nodes) embeds through `EmbedEach` in roughly 20–40 ms here, a 50k-node
 repository in about one to two seconds.
 
@@ -170,7 +172,7 @@ explicitly, taken from `retrieval-targets.json`'s `best_single_baseline` (which 
 is not a drop-in `hybrid_v1` column either). Regenerating per-stratum dev baselines is SW-263's
 business, not this spike's.
 
-| stratum (dev queries) | lexical (all 40) | hybrid_v1 (all 40) | spike name_only (dev) | spike body+doc (dev) | fusion target (`docs/eval/retrieval-targets.json`, dev) |
+| stratum (count = **dev** queries, matching the spike columns; the baseline columns aggregate that stratum's **40**-query set) | lexical (all 40) | hybrid_v1 (all 40) | spike name_only (dev) | spike body+doc (dev) | fusion target (`docs/eval/retrieval-targets.json`, dev) |
 |---|---|---|---|---|---|
 | exact_identifier (4) | 0.731 / 0.667 / 0.867 | 0.732 / 0.667 / 0.917 | **0.9624 / 1.000 / 1.000** | 0.7585 / 0.875 / 0.875 | top1 floor 0.75 (spike name_only 1.00, body+doc 0.75) |
 | exact_path (3) | 0.979 / 1.000 / 1.000 | 0.979 / 1.000 / 1.000 | **1.000 / 1.000 / 1.000** | **1.000 / 1.000 / 1.000** | — |
@@ -250,7 +252,7 @@ Removal is `rm -r internal/spike` plus this file.
 | Dev-subset quality vs `semantic_name_only` and `lexical` | acceptable, numbers quoted | cobra dev (EmbedEach): spike name_only ndcg@10 **0.5856** (recall@10 0.6062, mrr@10 0.6922, top1 0.6296) vs lexical 0.247 / hybrid_v1 0.468; `semantic_name_only` unavailable in SW-258 — the spike is its first measurement; body+doc ndcg@10 **0.6109**; `nl_behaviour` clears its fusion target alone (0.4450 / 0.6387 vs must_reach 0.4058); `architecture_flow` does not (0.2879 / 0.3167 vs must_reach 0.3286) — that gap is the next step (SW-263 fusion), not a flag on the embedder; fixture-v1 mirrors the shape. | **yes** |
 | CGo-free | `CGO_ENABLED=0` build of the package and of the tree | green; stdlib-only closure; go.mod unchanged | **yes** |
 | Zero runtime egress | no dial during `Embed`; no net packages | static closure clean; sentinel-dialer test clean | **yes** |
-| Load / memory / throughput (AC-4, recorded not gated) | — | load **65–81 ms**; **86 MiB RSS** after load, **93–95 MiB after 10k texts**; production path `EmbedEach` **23–39k texts/s** single-threaded (per-text `Encode` cost is dominant); reference path `Embed` BatchLongest padded **15k texts/s** with **490k pooled tokens incl. 320k pad rows**; 32 MiB artifact | recorded |
+| Load / memory / throughput (AC-4, recorded not gated) | — | load **65–81 ms**; **86 MiB RSS** after load, **93–95 MiB after 10k texts**; production path `EmbedEach` **23–54k texts/s** single-threaded across runs (§3: the spread is run-to-run variance on this runner, and no cause is claimed); reference path `Embed` BatchLongest padded **15–28k texts/s** with **490k pooled tokens incl. 320k pad rows**; 32 MiB artifact | recorded |
 
 All four conjunction members hold, from measurements taken through the public API. Three things go
 to SW-262 as **requirements, not doubts**: adopt `EmbedEach` (batch-invariant) semantics and pin
