@@ -443,8 +443,9 @@ Therefore, at the candidate:
     the JVM declared-type *resolver* against `go/types`-style ground truth (edges, not search);
   - `engine/link/clausebydir_test.go`, `engine/ingest/parseerror_test.go` — "recall" in the
     sense of edge/file coverage after a linker or parse-error fix;
-  - `engine/memory/{memory,ledger,memory_test}.go`, `surfaces/client/direct.go`,
-    `surfaces/parity_test.go` — the `RecallMemory` / `memory recall` verb, not a metric.
+  - `engine/memory/{memory,ledger,memory_test,provenance_test}.go`,
+    `surfaces/client/direct.go`, `surfaces/parity_test.go` — the `RecallMemory` /
+    `memory recall` verb and its ledger hook, not a metric.
   None runs a query through `search`, `search_hybrid` or `search_semantic` and scores the
   ranked hits against judged spans; that harness is SW-258.
 - There is no `internal/eval/retrieval` package and no `docs/eval/retrieval-budgets.json`;
