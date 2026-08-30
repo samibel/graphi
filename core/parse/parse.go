@@ -68,6 +68,13 @@ type ParseResult struct {
 	// Imports lists the import declarations of this file (alias + path), used by
 	// the linker to map a selector alias to its package.
 	Imports []ImportSpec
+	// Spans is the OPTIONAL, NON-identity source-span sidecar (SW-260): the
+	// byte/line extent of each symbol node's declaration, keyed by NodeId. It
+	// never enters node identity and is consumed only by the `--semantic`
+	// document builder (engine/embed). nil when the parser emits no exact
+	// spans; consumers then apply DeriveWindowSpans. The default ingest path
+	// neither reads it nor persists it.
+	Spans map[model.NodeId]SourceSpan
 }
 
 // PendingRef is a single reference (call or non-call use) that the parse leaf

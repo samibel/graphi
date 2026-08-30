@@ -18,10 +18,13 @@ type Vector struct {
 }
 
 // VectorTable is the durable persistence seam for node vectors (the "durable
-// table" of the plan). It is deliberately minimal: an Upsert/Load pair keyed by
-// NodeId. graphstore is NOT extended with a vectors column (architect A1); a
-// dedicated sidecar implementation satisfies this interface. MemVectorTable is the
-// pure-Go in-memory reference used by tests and the default path.
+// table" of the plan). It is deliberately minimal: Upsert/Load keyed by NodeId
+// plus a DeleteExcept entry point that enforces the SW-260 replace-set
+// contract (the persisted set for an embedder must equal the set of documents
+// just embedded). graphstore is NOT extended with a vectors column (architect
+// A1); a dedicated sidecar implementation satisfies this interface.
+// MemVectorTable is the pure-Go in-memory reference used by tests and the
+// default path.
 //
 // Embedding is gated behind explicit opt-in + `graphi index --semantic`; nothing
 // here is touched on the default ingest path.
@@ -30,6 +33,16 @@ type VectorTable interface {
 	Upsert(ctx context.Context, v Vector) error
 	// Load returns every stored vector, in canonical NodeId order.
 	Load(ctx context.Context) ([]Vector, error)
+	// DeleteExcept removes every row whose NodeID is not in keep, scoped to
+	// the active embedder identity (the implementation enforces that scope —
+	// see SQLiteVectorTable.DeleteExcept). It is the SW-260 replace-set seam:
+	// after a successful generation pass the persisted set for that embedder
+	// MUST equal the set of documents just embedded, so a re-index over an
+	// existing v1 sidecar cannot serve an excluded node. Keep = nil deletes
+	// every row in scope. DeleteExcept is independent of Upsert/Load and is
+	// invoked once per generation pass, so implementations may issue a single
+	// bulk delete rather than a per-id round-trip.
+	DeleteExcept(ctx context.Context, keep []model.NodeId) error
 }
 
 // MemVectorTable is an in-memory VectorTable (pure Go, no heavy deps). It is the
@@ -67,6 +80,23 @@ func (t *MemVectorTable) Load(_ context.Context) ([]Vector, error) {
 	t.mu.RUnlock()
 	sort.Slice(out, func(i, j int) bool { return out[i].NodeID < out[j].NodeID })
 	return out, nil
+}
+
+// DeleteExcept implements VectorTable. It deletes every row whose NodeID is not
+// in keep; keep = nil deletes every row (the empty-table reset path).
+func (t *MemVectorTable) DeleteExcept(_ context.Context, keep []model.NodeId) error {
+	set := make(map[model.NodeId]struct{}, len(keep))
+	for _, id := range keep {
+		set[id] = struct{}{}
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for id := range t.m {
+		if _, ok := set[id]; !ok {
+			delete(t.m, id)
+		}
+	}
+	return nil
 }
 
 // Index is a brute-force cosine-similarity index over an in-memory

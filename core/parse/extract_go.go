@@ -61,7 +61,13 @@ const (
 // are returned as PendingRefs for the engine/link linker pass; the parse leaf
 // fabricates no endpoint and emits no cross-file edge, preserving its pure-leaf
 // boundary and the byte-identical full-vs-incremental invariant.
-func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]model.Node, []model.Edge, []PendingRef, error) {
+//
+// SW-260: alongside the nodes it returns the NON-identity SourceSpan sidecar
+// (keyed by NodeId) of every declared symbol: the full declaration including its
+// leading doc comment group. The file node carries no span (it is not a
+// declaration). Spans are read off the FileSet the parser already holds — no
+// source bytes are touched — and never enter node identity.
+func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]model.Node, []model.Edge, []PendingRef, map[model.NodeId]SourceSpan, error) {
 	ex := &goExtractor{
 		filename:    filename,
 		pkg:         pkg,
@@ -70,11 +76,12 @@ func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]mod
 		symbols:     map[string]model.NodeId{},
 		edgeSeen:    map[model.EdgeId]struct{}{},
 		aliasToPath: goAliasToPath(file),
+		spans:       map[model.NodeId]SourceSpan{},
 	}
 
 	fileNode, err := model.NewNode(goKindFile, filename, filename, 1, 1)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("extract: file node: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("extract: file node: %w", err)
 	}
 	ex.fileID = fileNode.ID()
 	ex.nodes = append(ex.nodes, fileNode)
@@ -83,7 +90,7 @@ func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]mod
 	// resolve regardless of declaration order (forward references included).
 	for _, decl := range file.Decls {
 		if err := ex.declare(decl); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	}
 
@@ -100,11 +107,11 @@ func extractGo(filename, pkg string, fset *token.FileSet, file *ast.File) ([]mod
 		}
 		fromQN := ex.qnByDecl[fn]
 		if err := ex.resolveBody(from, fromQN, fn); err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 	}
 
-	return ex.nodes, ex.edges, ex.pending, nil
+	return ex.nodes, ex.edges, ex.pending, ex.spans, nil
 }
 
 // goExtractor accumulates the nodes/edges and the per-file symbol tables used to
@@ -147,12 +154,65 @@ type goExtractor struct {
 	// the linker performs the final sorted-union evidence merge.
 	pending     []PendingRef
 	pendingSeen map[string]struct{}
+
+	// spans is the SW-260 NON-identity span sidecar: NodeId → declaration
+	// extent. Populated by declare; never consulted for identity or edges.
+	spans map[model.NodeId]SourceSpan
 }
 
 // pos returns the 1-based line/column for an AST position.
 func (e *goExtractor) pos(p token.Pos) (int, int) {
 	pp := e.fset.Position(p)
 	return pp.Line, pp.Column
+}
+
+// setSpan records the exact ast span [start, end) for node id: byte offsets and
+// lines come from the FileSet positions the parser already resolved.
+func (e *goExtractor) setSpan(id model.NodeId, start, end token.Pos) {
+	if !start.IsValid() || !end.IsValid() {
+		return
+	}
+	s, en := e.fset.Position(start), e.fset.Position(end)
+	e.spans[id] = SourceSpan{
+		StartByte: s.Offset,
+		EndByte:   en.Offset,
+		StartLine: s.Line,
+		EndLine:   en.Line,
+		Method:    SpanMethodAST,
+	}
+}
+
+// specSpanStart returns where a GenDecl spec's span begins: the GenDecl's own
+// doc group (and keyword) when the decl holds exactly one spec — the doc and
+// `type`/`var`/`const` keyword belong to that one declaration — otherwise the
+// spec's own doc group when present, else the spec itself.
+func specSpanStart(d *ast.GenDecl, specDoc *ast.CommentGroup, spec ast.Spec) token.Pos {
+	if len(d.Specs) == 1 {
+		if d.Doc != nil {
+			return d.Doc.Pos()
+		}
+		return d.Pos()
+	}
+	if specDoc != nil {
+		return specDoc.Pos()
+	}
+	return spec.Pos()
+}
+
+// genDeclSpecEnd returns the end position of a GenDecl spec's span. When the
+// parenthesised GenDecl holds exactly one spec (`var (\n X int\n)` /
+// `type (\n T struct{}\n)`) the closing paren is part of THAT declaration, so
+// the span runs to d.End(); for multi-spec declarations the closing paren is
+// shared across siblings and each spec keeps its own s.End(). The single-spec
+// case was the SW-260 review-round-1 finding — using s.End() for
+// `var ( X int )` produced a span that stopped at "X int" and omitted the
+// closing paren, leaving the document builder's truncation intact but the
+// span bytes no longer matching the visible declaration.
+func genDeclSpecEnd(d *ast.GenDecl, spec ast.Spec) token.Pos {
+	if len(d.Specs) == 1 {
+		return d.End()
+	}
+	return spec.End()
 }
 
 // evidence renders a stable "file:line" citation for provenance.
@@ -176,6 +236,11 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 		if err != nil {
 			return err
 		}
+		start := d.Pos()
+		if d.Doc != nil {
+			start = d.Doc.Pos()
+		}
+		e.setSpan(id, start, d.End())
 		if e.funcByDecl == nil {
 			e.funcByDecl = map[*ast.FuncDecl]model.NodeId{}
 		}
@@ -197,6 +262,7 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 				if err != nil {
 					return err
 				}
+				e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
 				e.symbols[s.Name.Name] = id
 				// Class-hierarchy extraction (EP-011 G2): scan the declared type for
 				// embedded interfaces (→ implements) and embedded concrete types in a
@@ -220,6 +286,8 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 					if err != nil {
 						return err
 					}
+					// Names of one spec (`var a, b int`) share the spec's span.
+					e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
 					e.symbols[name.Name] = id
 				}
 			}

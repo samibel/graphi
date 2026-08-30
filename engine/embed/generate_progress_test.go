@@ -4,11 +4,80 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/embed"
 )
+
+// docSource is a DocumentSource over a prebuilt document set (what
+// `graphi index --semantic` supplies from re-parsed source files).
+type docSource map[model.NodeId]embed.SemanticDocument
+
+func (s docSource) Document(n model.Node) (embed.SemanticDocument, bool) {
+	d, ok := s[n.ID()]
+	return d, ok
+}
+
+// TestGenerateAndPersist_EmbedsV2DocumentText pins SW-260 AC-8: the
+// generation pass embeds SemanticDocument.text (body + doc + path), not the
+// v1 NodeText, and a node without a document is skipped and counted rather
+// than embedded as a name-only stand-in.
+func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
+	ctx := context.Background()
+	const src = "package shop\n\n// Price computes the price.\nfunc Price(n int) int { return n * 7 }\n"
+	res, err := parse.NewDefaultRegistry().Parse(ctx, "shop/price.go", []byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, _ := embed.BuildDocuments(embed.FileSource{
+		Source: embed.Source{Language: res.Meta.Language, Bytes: []byte(src)},
+		Path:   res.Meta.Path, Nodes: res.Nodes, Spans: res.Spans,
+	})
+	source := docSource{}
+	for _, d := range docs {
+		source[d.NodeID] = d
+	}
+
+	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8)}
+	reg := embed.NewRegistry()
+	reg.Register(rec)
+	table := embed.NewMemVectorTable()
+	got, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, source, embed.NewIndex(), table)
+	if err != nil {
+		t.Fatalf("GenerateAndPersist: %v", err)
+	}
+	// The file node has no document: skipped, not embedded.
+	if got.Embedded != 1 || got.Skipped != 1 {
+		t.Fatalf("result = %+v, want Embedded=1 Skipped=1 (file node has no document)", got)
+	}
+	if len(rec.calls) != 1 || len(rec.calls[0]) != 1 {
+		t.Fatalf("embed calls = %v", rec.calls)
+	}
+	text := rec.calls[0][0]
+	if !strings.Contains(text, "// Price computes the price.") || !strings.Contains(text, "return n * 7") {
+		t.Errorf("embedded text is not the v2 document: %q", text)
+	}
+	for _, n := range res.Nodes {
+		if text == embed.NodeText(n) {
+			t.Errorf("embedded text is the deprecated v1 NodeText %q", text)
+		}
+	}
+	rows, _ := table.Load(ctx)
+	if len(rows) != 1 || rows[0].NodeID != docs[0].NodeID {
+		t.Errorf("persisted rows = %+v", rows)
+	}
+	// A nil source with a configured embedder is an error, never a silent v1 fallback.
+	if _, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, nil, embed.NewIndex(), table); err == nil {
+		t.Error("nil DocumentSource must be an error")
+	}
+	// The graceful skip still precedes everything: no embedder, no source needed.
+	if r, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), res.Nodes, nil, embed.NewIndex(), table); err != nil || r.Configured {
+		t.Errorf("graceful skip = %+v, %v", r, err)
+	}
+}
 
 // recordingEmbedder wraps the deterministic mock and records every Embed
 // call's input size; failOnCall (1-based) makes that call error, so tests can
@@ -58,7 +127,7 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 
 	var steps [][2]int
 	table := embed.NewMemVectorTable()
-	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.NewIndex(), table, func(done, total int) {
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table, func(done, total int) {
 		steps = append(steps, [2]int{done, total})
 	})
 	if err != nil {
@@ -108,7 +177,7 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	reg2 := embed.NewRegistry()
 	reg2.Register(embed.NewMockEmbedder(8))
 	table2 := embed.NewMemVectorTable()
-	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.NewIndex(), table2); err != nil {
+	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table2); err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	got, err := table.Load(ctx)
@@ -146,7 +215,7 @@ func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
 
 	var steps int
 	table := embed.NewMemVectorTable()
-	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.NewIndex(), table, func(done, total int) { steps++ })
+	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table, func(done, total int) { steps++ })
 	if err == nil {
 		t.Fatal("want the injected chunk failure to propagate")
 	}

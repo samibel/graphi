@@ -102,6 +102,29 @@ type SymbolExtractor interface {
 	Extract(filename string, root any) (nodes []model.Node, edges []model.Edge, pending []PendingRef, err error)
 }
 
+// SpanExtractor is the OPTIONAL extension of SymbolExtractor for backends that
+// can also emit exact SourceSpans (SW-260). It is an additive capability, not a
+// replacement: a parser type-asserts its extractor to SpanExtractor and falls
+// back to Extract (Spans nil) otherwise, so the SymbolExtractor contract and
+// every existing extractor are untouched. Spans are keyed by the IDs of the
+// returned nodes and never influence those IDs.
+type SpanExtractor interface {
+	SymbolExtractor
+	// ExtractWithSpans is Extract plus the span sidecar. Same determinism and
+	// purity contract as Extract; spans is nil only when nothing was spanned.
+	ExtractWithSpans(filename string, root any) (nodes []model.Node, edges []model.Edge, pending []PendingRef, spans map[model.NodeId]SourceSpan, err error)
+}
+
+// extractWithOptionalSpans runs ExtractWithSpans when ex supports it, else
+// Extract with a nil span sidecar. Shared by the parsers that wire the seam.
+func extractWithOptionalSpans(ex SymbolExtractor, filename string, root any) ([]model.Node, []model.Edge, []PendingRef, map[model.NodeId]SourceSpan, error) {
+	if se, ok := ex.(SpanExtractor); ok {
+		return se.ExtractWithSpans(filename, root)
+	}
+	nodes, edges, pending, err := ex.Extract(filename, root)
+	return nodes, edges, pending, nil, err
+}
+
 // goSymbolExtractor is the reference SymbolExtractor: it adapts the existing,
 // battle-tested Go extraction (extractGo over go/ast) to the language-neutral seam.
 // It carries no mutable state and is safe for concurrent use.
@@ -120,10 +143,17 @@ func (goSymbolExtractor) Language() string { return "go" }
 // derives the package name from file.Name.Name, and delegates to extractGo. A
 // nil/wrong-typed root is a programmer error and returns a descriptive error rather
 // than panicking.
-func (goSymbolExtractor) Extract(filename string, root any) ([]model.Node, []model.Edge, []PendingRef, error) {
+func (e goSymbolExtractor) Extract(filename string, root any) ([]model.Node, []model.Edge, []PendingRef, error) {
+	nodes, edges, pending, _, err := e.ExtractWithSpans(filename, root)
+	return nodes, edges, pending, err
+}
+
+// ExtractWithSpans implements SpanExtractor for the Go path: Extract plus the
+// exact go/ast declaration spans (SW-260 AC-2).
+func (goSymbolExtractor) ExtractWithSpans(filename string, root any) ([]model.Node, []model.Edge, []PendingRef, map[model.NodeId]SourceSpan, error) {
 	g, ok := root.(*goAST)
 	if !ok || g == nil || g.File == nil || g.FileSet == nil {
-		return nil, nil, nil, fmt.Errorf("parse: go extractor: expected non-nil *goAST root for %q, got %T", filename, root)
+		return nil, nil, nil, nil, fmt.Errorf("parse: go extractor: expected non-nil *goAST root for %q, got %T", filename, root)
 	}
 	return extractGo(filename, g.File.Name.Name, g.FileSet, g.File)
 }

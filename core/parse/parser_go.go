@@ -94,7 +94,7 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 	if extractor == nil {
 		extractor = goSymbolExtractor{}
 	}
-	nodes, edges, pending, xerr := extractor.Extract(filename, root)
+	nodes, edges, pending, spans, xerr := extractWithOptionalSpans(extractor, filename, root)
 	if xerr != nil {
 		return nil, fmt.Errorf("parse: go extraction in %q: %w", filename, xerr)
 	}
@@ -121,6 +121,7 @@ func (g *GoParser) Parse(ctx context.Context, filename string, src []byte) (res 
 		PendingRefs: pending,
 		Imports:     imports,
 		References:  refs,
+		Spans:       spans,
 	}, nil
 }
 

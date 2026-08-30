@@ -221,6 +221,11 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 		return nil, err
 	}
 	defer idx.store.Close()
+	// SW-260 AC-9: measured from the indexed files, not assumed.
+	spanShare, err := spanMethodShare(ctx, o.RepoRoot, idx.filePaths)
+	if err != nil {
+		return nil, fmt.Errorf("retrieval: span method share: %w", err)
+	}
 
 	tokens := newTokenCounter(o.RepoRoot)
 	minGrade := ds.MinGrade()
@@ -239,6 +244,7 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 			HitContextWindowLines: HitContextWindowLines,
 			RelevantMinGrade:      minGrade,
 			MatchingRule:          MatchingRule,
+			SpanMethodShare:       spanShare,
 		},
 		Environment: Environment{
 			GeneratedAt: o.Now().UTC().Format(time.RFC3339),
@@ -303,6 +309,8 @@ type index struct {
 	nodes   int
 	edges   int
 	files   int
+	// filePaths are the indexed files (path order), the span-share input.
+	filePaths []string
 }
 
 // buildIndex ingests root into a fresh SQLite store the way cmd/eval's full
@@ -351,10 +359,15 @@ func buildIndex(ctx context.Context, root, workDir string, log io.Writer) (*inde
 	}
 	svc := search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
 	fmt.Fprintf(log, "retrieval-eval: indexed %d nodes, %d edges, %d files in %dms\n", stats.TotalNodes, stats.TotalEdges, len(stats.Files), elapsed.Milliseconds())
+	filePaths := make([]string, 0, len(stats.Files))
+	for _, f := range stats.Files {
+		filePaths = append(filePaths, f.Path)
+	}
 	return &index{
 		store: store, search: svc,
 		indexMS: float64(elapsed.Milliseconds()),
 		nodes:   stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
+		filePaths: filePaths,
 	}, nil
 }
 

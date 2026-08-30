@@ -49,13 +49,75 @@ graphi index --semantic -root ./my-repo -db ~/.graphi/graph.db -meta ~/.graphi/m
 graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta
 ```
 
-`graphi index --semantic` embeds every node (keyed by `node_id`) and persists the
-vectors to a durable `vectors` table in the `-meta` sidecar, tagged with the
-embedder identity + dimension. `graphi search -semantic` then reloads those vectors
-from that sidecar on startup — a pure local read, **no re-embedding and no embedder
-dial** — and returns cosine-ranked hits. With **no** embedder configured,
-`graphi index --semantic` reports `unavailable — no embedder configured` (no error,
-no network) and lexical indexing/search is unaffected.
+`graphi index --semantic` embeds the eligible symbol nodes of the graph
+(keyed by `node_id`) and persists the vectors to a durable `vectors` table in
+the `-meta` sidecar, tagged with the embedder identity + dimension. The set
+of eligible nodes is exactly the set the v2 builder produces (see "Document
+schema (v2)" below); generated paths and the file/package/external artefact
+nodes are deliberately excluded so the durable set cannot serve a vector for
+a node the rest of the engine treats as unsearchable. `graphi search -semantic`
+then reloads those vectors from that sidecar on startup — a pure local read,
+**no re-embedding and no embedder dial** — and returns cosine-ranked hits.
+With **no** embedder configured, `graphi index --semantic` reports
+`unavailable — no embedder configured` (no error, no network) and lexical
+indexing/search is unaffected.
+
+## Document schema (v2)
+
+`graphi index --semantic` no longer embeds the name-only v1 text (`Kind + " " +
+QualifiedName`, `engine/embed.NodeText`, now deprecated and kept only for the SW-261
+migration comparison). It embeds one **`SemanticDocument` v2** per symbol node
+(`engine/embed.BuildDocument`), cut from the parser's **`SourceSpan`** — a non-identity
+sidecar on `core/parse.ParseResult.Spans` keyed by node id. Node identity, the graph and
+every default-path byte are unchanged; **only the `--semantic` path consumes spans.**
+
+Fields: `document_id` (xxhash64 over `node_id + text_hash + document_schema`), `node_id`,
+`language`, `kind`, `qualified_name`, `path`, `start_byte`/`end_byte` (0-based, end
+exclusive), `start_line`/`end_line` (1-based, inclusive), `span_method`, `text_hash`
+(xxhash64 of `text`), `document_schema` (`"v2"`), `text`, `truncated`, `bound` (one of
+`tokens`, `bytes`, `none` — which bound closed the gap, see Bounds below).
+
+`text` is assembled in a fixed order so identical source yields byte-identical documents:
+
+1. `kind qualified_name`
+2. the path split on `/` and joined by spaces (`internal greet hello.go`)
+3. the node's annotations (decorator/annotation names from node metadata), when any
+4. the body: the span's bytes — the full declaration **including its leading doc comment
+   and attached decorators**, trailing whitespace trimmed
+
+Bounds: `MaxDocumentTokens` = 512 tokens of the active embedder's tokenizer
+when the embedder exposes one (`embed.TokenizingEmbedder`); when it does not,
+the byte cap alone runs (no whitespace-token approximation), and the document
+records which bound closed the gap in its `bound` field (`tokens`, `bytes`,
+`none`). A hard `MaxDocumentBytes` = 16 KiB cap always runs. A cut sets
+`truncated: true`; a large declaration stays **one** document (multi-chunk is
+backlog until an eval gap is measured).
+
+Span methods:
+
+- `ast` — exact. Go (`go/ast`: `Doc.Pos()` … `End()`; a multi-spec `var (...)`/`const (...)`
+  block yields per-spec spans with each spec's own doc) and TypeScript (tree-sitter node
+  bounds widened to the enclosing `export_statement`, preceding sibling decorators and an
+  adjacent leading doc comment).
+- `window` — the fallback for every other parser: from the node's line, at most
+  `SpanWindowMaxLines` (40) lines, clipped at the next declaration's start line and at end
+  of file. **Same-line clipping** — when the next declaration shares the line, the
+  predecessor's window is also clipped at the successor's start BYTE (column →
+  byte), validated against THAT LINE'S start/end boundary so a column past the
+  line's end cannot slip through. **Fail-closed absence** — when the same-line
+  ordering cannot be established (the predecessor's column is unknown, the
+  successor's column is unknown, or the successor's column lies past its own
+  line's end), the predecessor emits NO window rather than an unverifiable one
+  that would silently leak the successor's body. Window is a labelled heuristic,
+  never presented as an AST fact; its share is reported per run
+  (`span_method_share` in the SW-258 retrieval report and on the
+  `graphi index --semantic` summary line).
+
+Excluded from documents (counted by reason, never embedded as a name-only stand-in):
+paths matching the shared vendor/generated classification (`engine/classify.IsGeneratedPath`
+— the one classifier), `file`, `package` and `external` artefact nodes, and nodes for which no
+span could be established (`no_span`) — the fail-closed absence above means such a node gets no
+document and therefore no vector, rather than a guessed window.
 
 ## Safety guarantees that hold regardless of configuration
 

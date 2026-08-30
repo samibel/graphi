@@ -264,6 +264,33 @@ func TestRun_FixtureRepoAllBaselines(t *testing.T) {
 	})
 }
 
+// SW-260 AC-9: every report carries the span-method share of the documents
+// the `--semantic` path would build over the indexed files, both keys
+// present, measured (the Go fixture is all exact `ast` spans) and inside the
+// reproducible section.
+func TestRun_ReportsSpanMethodShare(t *testing.T) {
+	r := runFixture(t, BaselineOracle).Report
+	share := r.Reproducible.SpanMethodShare
+	if len(share) != 2 {
+		t.Fatalf("span_method_share = %v, want exactly the ast and window keys", share)
+	}
+	ast, okA := share["ast"]
+	window, okW := share["window"]
+	if !okA || !okW {
+		t.Fatalf("span_method_share = %v, want both ast and window", share)
+	}
+	if ast != 1 || window != 0 {
+		t.Errorf("share over an all-Go fixture = ast %v window %v, want 1/0 (Go has exact spans)", ast, window)
+	}
+	rep, err := ReproducibleBytes(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(rep, []byte(`"span_method_share"`)) {
+		t.Error("span_method_share must be part of the reproducible section")
+	}
+}
+
 // Determinism: the same fixture + dataset must produce byte-identical
 // reproducible bytes across two runs (test notes; AC-5/AC-10).
 func TestRun_ReproducibleSectionIsByteIdenticalAcrossRuns(t *testing.T) {

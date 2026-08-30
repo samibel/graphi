@@ -27,6 +27,19 @@ import (
 // with the same embedder replaces in place and a second embedder's vectors coexist
 // durably without clobbering the first.
 //
+// Replace-set semantics (SW-260): DeleteExcept implements the
+// "persisted set == documents just embedded" contract on this table. A successful
+// `--semantic` generation pass calls DeleteExcept with the NodeIds it actually
+// embedded; any row in this embedder's scope that is NOT in that set — including
+// every vector written for an excluded node by a pre-SW-260 v1 pass — is removed
+// in a single bulk DELETE. The deletion is strictly scoped to this table's
+// embedder_id, so coexisting embedders in the same sidecar are untouched. The
+// generation pass therefore serves only what it just embedded; an excluded
+// (file / package / external / generated) node carries no durable vector after
+// the pass, contradicting the old "every node gets a vector" behaviour. This
+// stays within SW-260's scope; SW-261 layers fingerprinting and a generation
+// model on top, and is expected to supersede this per-pass delete.
+//
 // The table lives in the ingest meta sidecar (the -meta DB), the same DB that
 // already holds file_content_cache / reverse_deps / dirty_units / edit_provenance.
 // It is created idempotently (CREATE TABLE IF NOT EXISTS) and uses only the
@@ -104,6 +117,124 @@ ON CONFLICT(embedder_id, node_id) DO UPDATE SET
 	}
 	return nil
 }
+
+// DeleteExcept implements VectorTable. It removes every row in this table's
+// embedder_id scope whose node_id is not in keep, in a single bulk operation
+// (scoped deletion avoids a per-id round-trip and keeps the SW-260
+// replace-set contract atomic from the caller's view). keep = nil deletes
+// every row in scope (the empty-table reset). The deletion is restricted to
+// this table's embedder_id: rows for any other embedder — including a
+// different active one that may share the table — are untouched.
+//
+// SW-260 review round 2 (MAJOR 2): the keep set is materialised into a
+// TEMP table (vectors_keep) in batches well below SQLite's
+// SQLITE_MAX_VARIABLE_NUMBER (32,766 in the pinned modernc.org/sqlite build;
+// see generated SQLite config). The previous implementation built one SQL
+// parameter per kept node plus one for embedder_id, so a real repository
+// with ≥32,765 embedded nodes — Kubernetes already has 15,718 Go files and
+// grpc-go already indexes 14,920 nodes — would fail AFTER every Upsert had
+// committed, which is the worst possible moment. The new path is wrapped
+// in a single transaction so a partial failure (mid-batch insert, batched
+// insert error, drop error) rolls back the whole prune rather than leaving
+// the table half-pruned; the keep TEMP table lives inside the transaction
+// and is dropped on commit or rolled back on abort.
+//
+// Note (SW-260 boundary): the durable sidecar here is keyed by
+// (embedder_id, node_id) and serves as the v2 storage. SW-261 introduces a
+// fingerprint/generation model that supersedes this delete-on-every-pass
+// approach; until then, the bounded-prune pass on the active embedder scope
+// is the replace-set contract.
+func (t *SQLiteVectorTable) DeleteExcept(ctx context.Context, keep []model.NodeId) error {
+	tx, err := t.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("embed: delete-except begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }() // no-op once Commit has succeeded
+
+	if len(keep) == 0 {
+		// Trivial empty-keep path: nothing to materialise, one scoped DELETE.
+		if _, err := tx.ExecContext(ctx,
+			"DELETE FROM vectors WHERE embedder_id = ?", t.embedderID); err != nil {
+			return fmt.Errorf("embed: clear vectors: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("embed: clear vectors commit: %w", err)
+		}
+		return nil
+	}
+
+	// Materialise the keep set into a TEMP table inside the transaction.
+	// The TEMP namespace is per-connection: a previous DeleteExcept call on
+	// the same connection may have left a vectors_keep table around, so we
+	// DROP + CREATE to guarantee a clean slate for THIS prune. Both DDLs
+	// run inside the tx; the deferred Rollback drops them on abort and the
+	// explicit DROP before Commit clears them on success, so the temp
+	// table does not leak across calls.
+	if _, err := tx.ExecContext(ctx,
+		"DROP TABLE IF EXISTS vectors_keep"); err != nil {
+		return fmt.Errorf("embed: delete-except drop prior keep: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		"CREATE TEMP TABLE vectors_keep (node_id TEXT PRIMARY KEY)"); err != nil {
+		return fmt.Errorf("embed: delete-except create keep: %w", err)
+	}
+	// Insert in batches of deleteExceptBatchSize (≤ SQLITE_MAX_VARIABLE_NUMBER).
+	// Each row binds a single placeholder; the batch is well under the cap.
+	for start := 0; start < len(keep); start += deleteExceptBatchSize {
+		end := start + deleteExceptBatchSize
+		if end > len(keep) {
+			end = len(keep)
+		}
+		chunk := keep[start:end]
+		// Per-row INSERT (one bind per row) keeps the SQL inside one
+		// prepared statement per chunk and avoids building a giant
+		// multi-VALUES placeholder list. The batch is bounded; the loop
+		// covers arbitrarily large keep sets.
+		stmt, err := tx.PrepareContext(ctx, "INSERT OR IGNORE INTO vectors_keep(node_id) VALUES(?)")
+		if err != nil {
+			return fmt.Errorf("embed: delete-except prepare keep insert: %w", err)
+		}
+		for _, id := range chunk {
+			if _, err := stmt.ExecContext(ctx, string(id)); err != nil {
+				_ = stmt.Close()
+				return fmt.Errorf("embed: delete-except insert keep %s: %w", id, err)
+			}
+		}
+		if err := stmt.Close(); err != nil {
+			return fmt.Errorf("embed: delete-except close keep insert: %w", err)
+		}
+	}
+	// One scoped DELETE: every row not in the keep set for this embedder.
+	// The keep set is now a single SQL relation, not a long IN-list, so
+	// SQLite's variable cap is irrelevant.
+	if _, err := tx.ExecContext(ctx,
+		"DELETE FROM vectors WHERE embedder_id = ? AND node_id NOT IN (SELECT node_id FROM vectors_keep)",
+		t.embedderID); err != nil {
+		return fmt.Errorf("embed: delete-except delete: %w", err)
+	}
+	// Drop the TEMP keep table before commit so it does not leak across
+	// calls on the same connection. After Commit the tx handle is done,
+	// so the drop MUST run inside the tx — a deferred ExecContext on a
+	// committed tx would fail with sql.ErrTxDone.
+	if _, err := tx.ExecContext(ctx,
+		"DROP TABLE vectors_keep"); err != nil {
+		return fmt.Errorf("embed: delete-except drop keep: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("embed: delete-except commit: %w", err)
+	}
+	return nil
+}
+
+// deleteExceptBatchSize bounds the per-statement bind count for the keep-set
+// materialisation. SQLite's SQLITE_MAX_VARIABLE_NUMBER is 32,766 in the
+// pinned modernc.org/sqlite build; each INSERT here binds a single variable
+// so the batch can be anywhere up to that cap. A conservative 8,192 leaves
+// headroom (the cap minus one for embedder_id is irrelevant here, but
+// keeping a wide margin lets the same batch size work on engines with a
+// lower cap without changes). The value is package-private; tests can
+// observe the chunking indirectly through fixtures that exceed the cap.
+const deleteExceptBatchSize = 8192
 
 // Load implements VectorTable. It returns every stored vector FOR THIS EMBEDDING
 // SPACE (embedder_id + dim), in canonical NodeId order. Rows produced by a
