@@ -24,11 +24,14 @@ import (
 const DocumentSchema = "v2"
 
 // MaxDocumentTokens bounds a document's text in tokens of the active
-// embedder's tokenizer when one is known, else whitespace tokens (AC-6). 512
-// matches the truncation length of the model pinned for the production static
-// embedder (SW-259 PINNED.md on the sw-259 branch); a longer document would be
-// silently cut by the model anyway, so the bound is stated here where it can
-// be reported as `truncated` instead.
+// embedder's tokenizer when one is known (AC-6). When no tokenizer is known,
+// the byte cap alone runs — the SW-260 review-round-1 finding removed an
+// invented "whitespace tokens" approximation, so a missing tokenizer no
+// longer pretends to know tokens. 512 matches the truncation length of the
+// model pinned for the production static embedder (SW-259 PINNED.md on the
+// sw-259 branch); a longer document would be silently cut by the model
+// anyway, so the bound is stated here where it can be reported as
+// `truncated` instead, with `bound` recording which bound closed the gap.
 const MaxDocumentTokens = 512
 
 // MaxDocumentBytes is the hard byte cap applied after the token bound: a
@@ -63,7 +66,11 @@ type SemanticDocument struct {
 // DocumentTokenizer is the OPTIONAL capability through which the active
 // embedder's own tokenizer bounds documents (AC-6). Truncate returns text cut
 // to at most maxTokens of the embedder's tokens and whether it cut anything.
-// When no tokenizer is known the builder counts whitespace tokens instead.
+// When no tokenizer is known the builder applies the byte cap alone; the
+// per-document `bound` field records which bound closed the gap so the
+// eval harness can see whether the tokenizer or the byte cap carried the
+// weight (an unknown tokenizer is not approximated by a whitespace-token
+// fallback — that approximation was removed in SW-260 review round 1).
 type DocumentTokenizer interface {
 	Truncate(text string, maxTokens int) (string, bool)
 }

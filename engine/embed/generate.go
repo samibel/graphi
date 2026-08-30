@@ -154,7 +154,23 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	if docs == nil {
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
 	}
+	// SW-260 MAJOR (review round 2): a configured embedder with zero nodes
+	// is NOT a graceful skip — it is a successful pass over an EMPTY graph.
+	// The replace-set contract demands that "the persisted set equals the
+	// documents just embedded"; with zero documents just embedded, the
+	// persisted set must be EMPTY for this embedder. So we still call
+	// table.DeleteExcept(ctx, nil) below (the empty-scope reset path) so a
+	// prior v1 vector for any node — or any drift the generator previously
+	// embedded for this embedder — does not survive a re-index over an
+	// emptied graph. The nil-source guard above ensures this case cannot
+	// silently no-op behind the caller's back; the unconfigured-registry
+	// graceful skip above remains first.
 	if len(nodes) == 0 {
+		if table != nil {
+			if err := table.DeleteExcept(ctx, nil); err != nil {
+				return GenerateResult{}, err
+			}
+		}
 		return res, nil
 	}
 

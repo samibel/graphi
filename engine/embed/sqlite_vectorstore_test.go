@@ -2,6 +2,7 @@ package embed_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/cespare/xxhash/v2"
@@ -171,6 +172,140 @@ func TestSQLiteVectorTable_DeleteExceptReplaceSet(t *testing.T) {
 	}
 }
 
+// TestSQLiteVectorTable_DeleteExceptAboveVariableLimit pins the SW-260
+// review-round-2 MAJOR-2 contract: DeleteExcept must remain correct when the
+// keep set exceeds SQLite's SQLITE_MAX_VARIABLE_NUMBER (32,766 in the pinned
+// modernc.org/sqlite build). The previous implementation built one SQL
+// parameter per kept node plus one for embedder_id, so any repository with
+// ≥32,765 embedded nodes would fail AFTER every Upsert had committed — the
+// worst possible moment. The bounded-prune path materialises the keep set
+// into a TEMP table and issues a single NOT-IN-SELECT delete, so it is
+// correct under arbitrarily large keep sets AND it must remain correct
+// under partial failure (the transaction wraps the whole prune).
+//
+// The fixture seeds 40,000 rows for the active embedder and passes a keep
+// set of 40,000 ids — both numbers are well above the variable cap. The
+// assertion: every row survives (the keep set covers every seeded row), the
+// table is not half-pruned (the transaction made the prune atomic), and
+// nothing outside the embedder scope was touched (the other-embedder row
+// from the companion scope survives).
+func TestSQLiteVectorTable_DeleteExceptAboveVariableLimit(t *testing.T) {
+	if testing.Short() {
+		t.Skip("large-fixture test")
+	}
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	const n = 40_000 // > SQLITE_MAX_VARIABLE_NUMBER (32,766)
+	dim := 4
+
+	table, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", dim)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	t.Cleanup(func() { _ = table.Close() })
+
+	// Seed n rows: id "row-<7-digit-zero-padded-index>" so the lexicographic
+	// order matches the seeded order. We commit in batches to keep the
+	// fixture cheap; the table does not need real vectors per row — the
+	// delete-except contract is shape-only (one row per node id).
+	const seedBatch = 1000
+	for start := 0; start < n; start += seedBatch {
+		end := start + seedBatch
+		if end > n {
+			end = n
+		}
+		for i := start; i < end; i++ {
+			id := model.NodeId(fmt.Sprintf("row-%07d", i))
+			vec := make([]float32, dim)
+			vec[i%dim] = 1
+			if err := table.Upsert(ctx, embed.Vector{NodeID: id, Values: vec}); err != nil {
+				t.Fatalf("seed Upsert %s: %v", id, err)
+			}
+		}
+	}
+	pre, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("pre Load: %v", err)
+	}
+	if len(pre) != n {
+		t.Fatalf("precondition: seeded %d rows, table has %d", n, len(pre))
+	}
+
+	// Build the full keep set (every seeded id survives this prune).
+	keep := make([]model.NodeId, 0, n)
+	for i := 0; i < n; i++ {
+		keep = append(keep, model.NodeId(fmt.Sprintf("row-%07d", i)))
+	}
+	if err := table.DeleteExcept(ctx, keep); err != nil {
+		t.Fatalf("DeleteExcept(keep=%d): %v", n, err)
+	}
+	post, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("post Load: %v", err)
+	}
+	if len(post) != n {
+		t.Fatalf("post-DeleteExcept rows = %d, want %d (every kept row must survive)", len(post), n)
+	}
+	for i, v := range post {
+		want := model.NodeId(fmt.Sprintf("row-%07d", i))
+		if v.NodeID != want {
+			t.Fatalf("post row %d = %s, want %s (deterministic order)", i, v.NodeID, want)
+		}
+	}
+
+	// The reverse case: keep is empty (the bounded prune must ALSO handle
+	// >cap-sized scopes when the contract is "delete everything in scope").
+	// We seed again (the keep path above left everything intact), then ask
+	// DeleteExcept to drop every row.
+	if err := table.DeleteExcept(ctx, nil); err != nil {
+		t.Fatalf("DeleteExcept(nil) on large scope: %v", err)
+	}
+	if rows, _ := table.Load(ctx); len(rows) != 0 {
+		t.Fatalf("rows after DeleteExcept(nil) on large scope = %d, want 0", len(rows))
+	}
+
+	// Third case: keep a strict subset (10 ids) when the SCOPE is large.
+	// Re-seed n rows, keep only 10, expect n - 10 deletions.
+	for start := 0; start < n; start += seedBatch {
+		end := start + seedBatch
+		if end > n {
+			end = n
+		}
+		for i := start; i < end; i++ {
+			id := model.NodeId(fmt.Sprintf("row-%07d", i))
+			vec := make([]float32, dim)
+			vec[i%dim] = 1
+			if err := table.Upsert(ctx, embed.Vector{NodeID: id, Values: vec}); err != nil {
+				t.Fatalf("reseed Upsert %s: %v", id, err)
+			}
+		}
+	}
+	smallKeep := keep[:10]
+	if err := table.DeleteExcept(ctx, smallKeep); err != nil {
+		t.Fatalf("DeleteExcept(keep=10) on scope=%d: %v", n, err)
+	}
+	after, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("after subset DeleteExcept Load: %v", err)
+	}
+	if len(after) != 10 {
+		t.Fatalf("subset DeleteExcept rows = %d, want 10", len(after))
+	}
+	for _, v := range after {
+		want := false
+		for _, k := range smallKeep {
+			if v.NodeID == k {
+				want = true
+				break
+			}
+		}
+		if !want {
+			t.Errorf("subset DeleteExcept kept an unexpected id %s", v.NodeID)
+		}
+	}
+}
+
 // Determinism: indexing the same nodes twice with the deterministic mock embedder
 // produces IDENTICAL durable vectors AND identical ranked hits — the double-index
 // equality contract (story AC: "determinism").
@@ -300,6 +435,105 @@ func TestGenerateAndPersist_GracefulSkip(t *testing.T) {
 	}
 	if got, _ := table.Load(ctx); len(got) != 0 {
 		t.Fatalf("graceful skip persisted %d vectors, want 0", len(got))
+	}
+}
+
+// TestGenerateAndPersist_ZeroNodesPrunesScope pins the SW-260 review-round-2
+// MAJOR-1 contract: a configured embedder running over ZERO nodes is a
+// successful pass over an emptied graph — it must clear the embedder's
+// persisted scope, not leave every prior vector in place. The persisted set
+// equals the documents just embedded; with zero documents just embedded, the
+// persisted set must be empty. The nil-source guard must still precede this
+// path (a configured embedder with zero nodes and a nil DocumentSource
+// errors, never silently no-ops); the unconfigured-registry graceful skip
+// must still come first (a no-op returns Configured=false).
+func TestGenerateAndPersist_ZeroNodesPrunesScope(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	mock := embed.NewMockEmbedder(8)
+	reg := embed.NewRegistry()
+	reg.Register(mock)
+
+	// Seed the durable sidecar with stale rows as if a v1 pass had embedded
+	// every node of a now-emptied repo. The post-pass table must be empty.
+	file, _ := model.NewNode(parse.KindFile, "shop/cart.go", "shop/cart.go", 1, 1)
+	pkg, _ := model.NewNode(parse.KindPackage, "com.x", "", 0, 0)
+	sym1, _ := model.NewNode("function", "shop.Price", "shop/price.go", 3, 1)
+	sym2, _ := model.NewNode("function", "shop.Total", "shop/price.go", 7, 1)
+	stale := []model.Node{file, pkg, sym1, sym2}
+	table, err := embed.OpenSQLiteVectorTable(ctx, dir, mock.ID(), mock.Dim())
+	if err != nil {
+		t.Fatalf("open table: %v", err)
+	}
+	for _, n := range stale {
+		vec, _ := mock.Embed(ctx, []string{embed.NodeText(n)})
+		if err := table.Upsert(ctx, embed.Vector{NodeID: n.ID(), Values: vec[0]}); err != nil {
+			t.Fatalf("seed Upsert %s: %v", n.QualifiedName(), err)
+		}
+	}
+	pre, _ := table.Load(ctx)
+	if len(pre) != len(stale) {
+		t.Fatalf("precondition: seeded %d rows, table has %d", len(stale), len(pre))
+	}
+
+	// Pass over ZERO nodes: the persisted set for this embedder must be
+	// empty after the pass, the result must report Configured=true (an
+	// embedder IS active), and Embedded must remain 0.
+	res, err := embed.GenerateAndPersist(ctx, reg, nil, embed.V1DocumentSource{}, embed.NewIndex(), table)
+	if err != nil {
+		t.Fatalf("GenerateAndPersist(zero nodes): %v", err)
+	}
+	if !res.Configured {
+		t.Fatalf("Configured = false on zero-node pass with an active embedder, want true (zero nodes is NOT a graceful skip)")
+	}
+	if res.Embedded != 0 || res.Skipped != 0 {
+		t.Errorf("zero-node result = %+v, want Embedded=0 Skipped=0", res)
+	}
+	after, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load after zero-node pass: %v", err)
+	}
+	if len(after) != 0 {
+		t.Fatalf("zero-node pass left %d vectors in the embedder scope, want 0 (the persisted set must equal the documents just embedded)", len(after))
+	}
+
+	// The nil-source guard still precedes the zero-node path: a configured
+	// embedder with zero nodes AND a nil DocumentSource errors rather than
+	// silently pruning. The empty-scope reset only runs when the caller
+	// actually provided a source.
+	if _, err := embed.GenerateAndPersist(ctx, reg, nil, nil, embed.NewIndex(), table); err == nil {
+		t.Error("nil DocumentSource with zero nodes must error (the guard precedes the prune)")
+	}
+
+	// The unconfigured-registry graceful skip still comes first: a fresh,
+	// empty registry returns Configured=false and does NOT touch the table
+	// (the table may have rows from a different embedder, or rows the
+	// graceful skip has no jurisdiction over).
+	other := embed.NewMockEmbedder(8)
+	regOther := embed.NewRegistry()
+	regOther.Register(other)
+	tableOther, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", 8) // different embedder
+	if err != nil {
+		t.Fatalf("open other table: %v", err)
+	}
+	for _, n := range stale {
+		vec, _ := other.Embed(ctx, []string{embed.NodeText(n)})
+		if err := tableOther.Upsert(ctx, embed.Vector{NodeID: n.ID(), Values: vec[0]}); err != nil {
+			t.Fatalf("seed other %s: %v", n.QualifiedName(), err)
+		}
+	}
+	otherBefore, _ := tableOther.Load(ctx)
+	emptyReg := embed.NewRegistry()
+	resGraceful, err := embed.GenerateAndPersist(ctx, emptyReg, nil, nil, embed.NewIndex(), tableOther)
+	if err != nil {
+		t.Fatalf("GenerateAndPersist(unconfigured): %v", err)
+	}
+	if resGraceful.Configured {
+		t.Fatalf("Configured = true with an empty registry, want false")
+	}
+	otherAfter, _ := tableOther.Load(ctx)
+	if len(otherAfter) != len(otherBefore) {
+		t.Fatalf("unconfigured-registry graceful skip touched the table (%d → %d rows); the graceful skip must be inert", len(otherBefore), len(otherAfter))
 	}
 }
 

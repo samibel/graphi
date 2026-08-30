@@ -337,8 +337,27 @@ func TestDeriveWindowSpans(t *testing.T) {
 			t.Errorf("%s: window exceeds bound: %d lines", n.QualifiedName(), sp.EndLine-sp.StartLine+1)
 		}
 		text := src[sp.StartByte:sp.EndByte]
-		if !strings.HasPrefix(text, "line ") {
-			t.Errorf("%s: window does not start at a line start: %q", n.QualifiedName(), text[:min(len(text), 12)])
+		// SW-260 review round 2 (MAJOR 3): a window that has a known-column
+		// predecessor on the same line starts at the predecessor's EndByte,
+		// NOT at the line's start, so two genuine same-line declarations do
+		// not overlap. The "starts at line" prefix check only applies when
+		// the window has no same-line predecessor.
+		if n.Column() > 0 {
+			hasSameLinePred := false
+			for _, other := range []model.Node{early, mid, midSame, late} {
+				if other.ID() == n.ID() {
+					continue
+				}
+				if other.Line() == n.Line() && other.Column() > 0 && other.Column() < n.Column() {
+					hasSameLinePred = true
+					break
+				}
+			}
+			if !hasSameLinePred {
+				if !strings.HasPrefix(text, "line ") {
+					t.Errorf("%s: window does not start at a line start: %q", n.QualifiedName(), text[:min(len(text), 12)])
+				}
+			}
 		}
 		if strings.HasSuffix(text, "\n") {
 			t.Errorf("%s: window must end before the trailing newline", n.QualifiedName())
@@ -411,6 +430,136 @@ func TestDeriveWindowSpans_UnverifiableSameLineFailsClosed(t *testing.T) {
 	// The successor still gets its window (no successor of its own).
 	if _, has := spans[suc.ID()]; !has {
 		t.Errorf("successor with no same-line follower must still get a window")
+	}
+}
+
+// TestDeriveWindowSpans_MultilineFileColumnPastLineEnd pins the SW-260
+// review-round-2 MAJOR-3 fix: a same-line successor whose declared column
+// lies past ITS OWN line's end (but still somewhere inside a multi-line
+// source) must be treated as unverifiable — the predecessor emits no
+// window, NOT a window that clips inside later content. The previous
+// byteOffsetAtCol validated against the whole file, so a (line=2, col=9000)
+// of a 17-byte line 2 still passed because the absolute offset was inside
+// src; the byteOffsetAtCol fix checks the column lies inside THAT LINE'S
+// inclusive end.
+func TestDeriveWindowSpans_MultilineFileColumnPastLineEnd(t *testing.T) {
+	// Two lines: line 1 is 12 bytes, line 2 is 17 bytes. The successor sits
+	// on line 2 with column 9000 — the absolute offset is inside src (a
+	// future concatenation would lie past the file) but the column is far
+	// past line 2's end. Without the line-bounded check the predecessor
+	// would emit a window whose EndByte sits inside line 3+ (which doesn't
+	// exist here, but in a real file would silently clip later content).
+	src := "line one\nline two content\n"
+	mk := func(kind, qn string, line, col int) model.Node {
+		n, err := model.NewNode(kind, qn, "p/f.py", line, col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	// pre is on line 1 col 1. suc is on line 2 col 1 — the byte offset is
+	// well-defined (line 2's start, just after the newline). With a
+	// verified same-line successor this would NOT trigger the bug because
+	// suc is on a later line; the bug requires suc to be on the SAME line
+	// as pre. So we put pre and suc both on line 2 with suc's column past
+	// line 2's end.
+	pre := mk(KindFunction, "p.pre", 2, 1)
+	suc := mk(KindVariable, "p.suc", 2, 9000) // past line 2's end (17 bytes)
+
+	spans := DeriveWindowSpans([]model.Node{pre, suc}, []byte(src))
+	if _, has := spans[pre.ID()]; has {
+		t.Errorf("predecessor with a same-line successor whose column lies past the line's end must emit no window; got %+v", spans[pre.ID()])
+	}
+	// The successor still gets its window (no successor of its own).
+	if _, has := spans[suc.ID()]; !has {
+		t.Errorf("successor with no same-line follower must still get a window")
+	}
+}
+
+// TestDeriveWindowSpans_ColumnZeroSuccessorFailsClosed pins the SW-260
+// review-round-2 MAJOR-3 fix: a same-line successor with column 0 (the
+// model.Node sentinel for "no column known") must be treated as
+// unverifiable — we cannot say where the successor's declaration begins, so
+// any predecessor window that included it would silently leak the
+// successor's body. The predecessor emits no window.
+//
+// The previous implementation sorted column 0 BEFORE known columns and
+// then treated the first same-line candidate as the bound, so a column-0
+// successor's byte offset was either the line start (column 1 equivalent)
+// or undefined; either way the bound was fabricated and the no-leak
+// invariant broke.
+func TestDeriveWindowSpans_ColumnZeroSuccessorFailsClosed(t *testing.T) {
+	src := "alpha beta gamma\n"
+	mk := func(kind, qn string, line, col int) model.Node {
+		n, err := model.NewNode(kind, qn, "p/f.py", line, col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	pre := mk(KindFunction, "p.pre", 1, 1)
+	// Same-line successor at column 0: the model.Node sentinel. The
+	// predecessor must emit no window because the successor's byte offset
+	// cannot be derived.
+	suc := mk(KindVariable, "p.suc", 1, 0)
+
+	spans := DeriveWindowSpans([]model.Node{pre, suc}, []byte(src))
+	if _, has := spans[pre.ID()]; has {
+		t.Errorf("predecessor with a column-0 successor must emit no window; got %+v", spans[pre.ID()])
+	}
+	// The successor still gets its window (no successor of its own — its
+	// own column-0 nature does not disqualify it as a predecessor).
+	if _, has := spans[suc.ID()]; !has {
+		t.Errorf("column-0 successor with no same-line follower must still get a window")
+	}
+}
+
+// TestDeriveWindowSpans_GenuineSameLineDeclarations pins the SW-260
+// review-round-2 sanity check: two declarations on the SAME line, both at
+// known columns, do NOT trigger the fail-closed path. Their windows must
+// be byte-bounded to each other's start, NOT overlapping. This is the
+// happy path the fail-closed rules must not regress.
+func TestDeriveWindowSpans_GenuineSameLineDeclarations(t *testing.T) {
+	src := "func alpha() {} ; func beta() {}\n"
+	mk := func(kind, qn string, line, col int) model.Node {
+		n, err := model.NewNode(kind, qn, "p/f.py", line, col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	alpha := mk(KindFunction, "p.alpha", 1, 1)
+	beta := mk(KindFunction, "p.beta", 1, 19)
+
+	spans := DeriveWindowSpans([]model.Node{alpha, beta}, []byte(src))
+	aSp, ok := spans[alpha.ID()]
+	if !ok {
+		t.Fatalf("alpha: no window span")
+	}
+	bSp, ok := spans[beta.ID()]
+	if !ok {
+		t.Fatalf("beta: no window span")
+	}
+	// alpha's EndByte must NOT exceed beta's StartByte: the windows do
+	// not overlap.
+	if aSp.EndByte > bSp.StartByte {
+		t.Errorf("alpha window overlaps beta: alpha end=%d, beta start=%d", aSp.EndByte, bSp.StartByte)
+	}
+	// And the byte run is bounded: alpha's EndByte equals beta's StartByte
+	// (the byte where beta's declaration starts).
+	if aSp.EndByte != bSp.StartByte {
+		t.Errorf("alpha EndByte = %d, want %d (beta's start byte)", aSp.EndByte, bSp.StartByte)
+	}
+	// The text of each window does not leak the other's body.
+	starts := lineStartsForTest([]byte(src))
+	alphaStart := starts[0]
+	alphaText := src[alphaStart:aSp.EndByte]
+	betaText := src[bSp.StartByte:bSp.EndByte]
+	if strings.Contains(alphaText, "beta") {
+		t.Errorf("alpha window leaked beta: %q", alphaText)
+	}
+	if strings.Contains(betaText, "alpha") {
+		t.Errorf("beta window leaked alpha: %q", betaText)
 	}
 }
 

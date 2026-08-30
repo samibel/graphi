@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/samibel/graphi/core/model"
@@ -45,16 +46,34 @@ type SourceSpan struct {
 // lines. The span is bounded on the right by the NEXT declaration's start
 // byte: for a successor on a later line the bound is the start of that line;
 // for a SAME-LINE successor the bound is that successor's byte offset
-// (column -> byte). When the next declaration's byte offset cannot be
-// determined (column absent or out of source bounds) the predecessor emits
-// no window span rather than an unverifiable one — an unverifiable window
+// (column -> byte), validated against THAT LINE'S start/end boundary so a
+// column that lands inside a different line does not pass. When the next
+// declaration's byte offset cannot be determined (column 0 / unknown column,
+// column past the addressed line's end, etc.) the predecessor emits no
+// window span rather than an unverifiable one — an unverifiable window
 // would silently leak the successor's body into the predecessor, which
-// breaks AC-3/AC-7's no-leak invariant. The byte run is from the start of the
-// node's first line to the position of the bound (or the end of the bound's
-// line for line-bounded spans). A node whose line lies beyond the source, or
-// an empty source, yields no span. All nodes are assumed to belong to src
-// (one parsed file); the result is a pure function of (nodes, src) and
-// byte-reproducible.
+// breaks AC-3/AC-7's no-leak invariant. The byte run is from the start of
+// the node's first line to the position of the bound (or the end of the
+// bound's line for line-bounded spans). A node whose line lies beyond the
+// source, or an empty source, yields no span. All nodes are assumed to
+// belong to src (one parsed file); the result is a pure function of
+// (nodes, src) and byte-reproducible.
+//
+// SW-260 review round 2 (MAJOR 3): the same-line clip is now validated
+// against THAT LINE'S start/end, not against the whole file — the previous
+// check accepted a successor at (line=10, col=9000) of a 17-byte file
+// because the absolute offset fit inside the file; the column of the
+// SUCCESSOR's own line is what bounds the predecessor. Column 0 ("unknown
+// column" — model.Node carries Column==0 as the sentinel for "no column
+// known") is treated as unverifiable: a predecessor whose only same-line
+// successor has column 0 cannot determine where the successor begins, so
+// it emits no window. The sort key still uses line then column then ID; the
+// column-0 successor sorts BEFORE known columns, but the bounds loop skips
+// it (column <= n.Column() for any non-zero n) or treats it as unverifiable
+// (column 0 falls into the no-known-column branch). The two-line boundary
+// check (`off` lies between the line's start and the line's end) closes
+// the multi-line leak the prior round-1 test (column 9999 of a 17-byte
+// line) missed.
 func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSpan {
 	starts := lineStarts(src)
 	total := len(starts)
@@ -76,7 +95,18 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 		if a.Line() != b.Line() {
 			return a.Line() < b.Line()
 		}
+		// Column 0 ("unknown") sorts AFTER non-zero columns so a known
+		// successor bounds the window when one exists; the bounds loop
+		// below still treats column 0 as unverifiable when it is the
+		// predecessor's own column (so the predecessor does not silently
+		// emit an order-uncertain window).
 		if a.Column() != b.Column() {
+			if a.Column() == 0 {
+				return false
+			}
+			if b.Column() == 0 {
+				return true
+			}
 			return a.Column() < b.Column()
 		}
 		return a.ID() < b.ID()
@@ -106,23 +136,48 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 		// Compute the same-line successor's byte offset (column -> byte).
 		// A same-line successor at a higher column bounds the window at its
 		// start byte; the span's EndByte is that byte position and EndLine is
-		// the successor's line (which equals start here). When the byte offset
-		// cannot be derived (column absent or out of bounds), the node emits
-		// NO window span — better empty than an unverifiable leak.
+		// the successor's line (which equals start here). Three conditions
+		// make the same-line ordering unverifiable and the predecessor must
+		// emit NO window — the SW-260 review-round-2 fail-closed rules:
+		//   (a) the predecessor's own column is unknown (column 0) so we
+		//       cannot say whether any successor is strictly to its right
+		//       on the same line;
+		//   (b) the successor's column is unknown (column 0) so we cannot
+		//       say where its declaration starts on the line;
+		//   (c) the successor's column lies past that line's end so its
+		//       byte offset is undefined (and the previous round-1 test
+		//       accepted a (line=1, col=9999) of a 17-byte file because
+		//       the absolute offset was inside src — that was the bug
+		//       MAJOR 3 closed).
 		sameLineBound := -1
 		var sameLineNode model.Node
+		predecessorColumnUnknown := n.Column() == 0
+		var unverifiableReason string
 		for j := i + 1; j < len(cands); j++ {
 			next := cands[j]
 			if next.Line() != start {
 				break
 			}
-			if next.Column() <= n.Column() {
+			if next.Column() <= 0 || next.Column() <= n.Column() {
+				// Column 0 ("unknown") or a column not strictly to the
+				// right of the predecessor cannot bound the window. If
+				// we encounter a column-0 successor on the same line, we
+				// cannot establish ordering: the successor's byte offset
+				// is unknown (column 0 means "no column known"), so we
+				// cannot say where its declaration begins. Fail closed.
+				if next.Column() == 0 {
+					unverifiableReason = fmt.Sprintf("successor %s has unknown column on line %d", next.QualifiedName(), next.Line())
+					break
+				}
+				// A successor at column <= predecessor's column is not
+				// strictly to the right; it cannot bound the window.
 				continue
 			}
 			off, ok := byteOffsetAtCol(starts, src, next.Line(), next.Column())
 			if !ok {
-				sameLineNode = next
-				sameLineBound = -1
+				// The successor's column lies past its own line's end
+				// (the MAJOR-3 case): the byte offset cannot be trusted.
+				unverifiableReason = fmt.Sprintf("successor column %d lies past line %d end", next.Column(), next.Line())
 				break
 			}
 			if sameLineBound == -1 || off < sameLineBound {
@@ -134,11 +189,34 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 			// successor would be farther right and so is not a tighter bound.
 			break
 		}
-		if sameLineNode.ID() != "" && sameLineBound == -1 {
-			// Unverifiable same-line successor: refuse to emit a window span
-			// for this node rather than serve a window that silently contains
-			// the successor's body. AC-3/AC-7 no-leak fails closed here.
+		if unverifiableReason != "" {
+			// AC-3/AC-7 no-leak fails closed here: a window whose
+			// same-line ordering cannot be established is silently
+			// guaranteed to leak the successor's body, so we refuse to
+			// emit one.
+			_ = unverifiableReason // reserved for a future debug surface
 			continue
+		}
+		if predecessorColumnUnknown {
+			// Even with no verifiable same-line successor found, a
+			// predecessor whose own column is unknown cannot establish
+			// ordering on its line: any candidate on the same line with
+			// column 0 cannot have been captured above (the loop is
+			// already broken on the first col-0 successor), but the
+			// predecessor ITSELF does not know where it begins on the
+			// line. Fail closed: any same-line candidate (regardless of
+			// its column) makes the window unverifiable for this
+			// predecessor.
+			hasSameLineCand := false
+			for j := i + 1; j < len(cands); j++ {
+				if cands[j].Line() == start {
+					hasSameLineCand = true
+					break
+				}
+			}
+			if hasSameLineCand {
+				continue
+			}
 		}
 		// Choose the tighter of the line bound and the same-line byte bound.
 		endByte := lineEnd(src, starts, end)
@@ -147,8 +225,37 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 			endByte = sameLineBound
 			endLine = sameLineNode.Line()
 		}
+		// Bound the StartByte: when a same-line predecessor exists (a known
+		// column strictly to the left of this node on the same line), this
+		// node's window starts at the predecessor's EndByte, NOT at the
+		// line's start. Without this, two genuine same-line declarations
+		// would each open a window from the line's start and overlap —
+		// the predecessor's body would leak into the successor's window.
+		// The predecessor whose EndByte we are referencing here was
+		// already emitted (i = predecessor index, i < this index, and the
+		// sort is stable on line then column then ID), so its EndByte is
+		// available. A predecessor with column 0 cannot establish a
+		// ordering so we keep the line-start default.
+		startByte := starts[start-1]
+		if !predecessorColumnUnknown && n.Column() > 0 {
+			for j := i - 1; j >= 0; j-- {
+				pred := cands[j]
+				if pred.Line() != start {
+					break
+				}
+				if pred.Column() == 0 || pred.Column() >= n.Column() {
+					continue
+				}
+				if psp, ok := out[pred.ID()]; ok {
+					if psp.EndByte > startByte {
+						startByte = psp.EndByte
+					}
+				}
+				break
+			}
+		}
 		out[n.ID()] = SourceSpan{
-			StartByte: starts[start-1],
+			StartByte: startByte,
 			EndByte:   endByte,
 			StartLine: start,
 			EndLine:   endLine,
@@ -161,7 +268,13 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 // byteOffsetAtCol converts a 1-based (line, column) pair to a 0-based byte
 // offset within src. columns are byte columns (the contract of
 // token.FileSet.Position, which every parser emits). Returns ok=false when
-// the pair lies outside src (no fabricated offset).
+// the pair cannot be trusted: line out of range, column out of range
+// (column 0 means "no column known" — the model.Node sentinel), or the
+// computed offset lies past THAT LINE'S exclusive end (the SW-260
+// review-round-2 MAJOR-3 fix — the previous check only verified the
+// absolute offset was inside src, so a (line=1, col=9000) of a 17-byte
+// file was accepted and the derivation thought the successor's byte was
+// inside the multi-line source rather than past its own line's end).
 func byteOffsetAtCol(starts []int, src []byte, line, col int) (int, bool) {
 	if line < 1 || line > len(starts) {
 		return 0, false
@@ -170,8 +283,24 @@ func byteOffsetAtCol(starts []int, src []byte, line, col int) (int, bool) {
 		return 0, false
 	}
 	lineStart := starts[line-1]
+	lineEndExclusive := len(src)
+	if line < len(starts) {
+		// The byte position of the next line's start; the current line
+		// ends at that position minus the newline itself, but for the
+		// purpose of "is the column inside THIS line" we use the
+		// inclusive end-of-line (next-line-start minus one) as the
+		// upper bound; a column whose absolute offset equals the
+		// next-line-start is technically the first column of the next
+		// line and is rejected.
+		next := starts[line]
+		if next > 0 && src[next-1] == '\n' {
+			lineEndExclusive = next - 1
+		} else {
+			lineEndExclusive = next
+		}
+	}
 	off := lineStart + (col - 1)
-	if off > len(src) {
+	if off < lineStart || off >= lineEndExclusive {
 		return 0, false
 	}
 	return off, true

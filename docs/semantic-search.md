@@ -74,7 +74,8 @@ every default-path byte are unchanged; **only the `--semantic` path consumes spa
 Fields: `document_id` (xxhash64 over `node_id + text_hash + document_schema`), `node_id`,
 `language`, `kind`, `qualified_name`, `path`, `start_byte`/`end_byte` (0-based, end
 exclusive), `start_line`/`end_line` (1-based, inclusive), `span_method`, `text_hash`
-(xxhash64 of `text`), `document_schema` (`"v2"`), `text`, `truncated`.
+(xxhash64 of `text`), `document_schema` (`"v2"`), `text`, `truncated`, `bound` (one of
+`tokens`, `bytes`, `none` — which bound closed the gap, see Bounds below).
 
 `text` is assembled in a fixed order so identical source yields byte-identical documents:
 
@@ -100,8 +101,16 @@ Span methods:
   adjacent leading doc comment).
 - `window` — the fallback for every other parser: from the node's line, at most
   `SpanWindowMaxLines` (40) lines, clipped at the next declaration's start line and at end
-  of file. It is a labelled heuristic, never presented as an AST fact; its share is
-  reported per run (`span_method_share` in the SW-258 retrieval report and on the
+  of file. **Same-line clipping** — when the next declaration shares the line, the
+  predecessor's window is also clipped at the successor's start BYTE (column →
+  byte), validated against THAT LINE'S start/end boundary so a column past the
+  line's end cannot slip through. **Fail-closed absence** — when the same-line
+  ordering cannot be established (the predecessor's column is unknown, the
+  successor's column is unknown, or the successor's column lies past its own
+  line's end), the predecessor emits NO window rather than an unverifiable one
+  that would silently leak the successor's body. Window is a labelled heuristic,
+  never presented as an AST fact; its share is reported per run
+  (`span_method_share` in the SW-258 retrieval report and on the
   `graphi index --semantic` summary line).
 
 Excluded from documents (counted by reason, never embedded as a name-only stand-in):
