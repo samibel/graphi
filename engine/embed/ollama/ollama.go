@@ -85,6 +85,56 @@ func (e *Embedder) ID() string { return Scheme + ":" + e.model }
 // recent successful Embed; 0 before the first call.
 func (e *Embedder) Dim() int { return e.dim }
 
+// DimProbeText is the text the embedder sends to learn its dim before any
+// real work. It is a single ASCII string so the request shape mirrors the
+// production path exactly; Ollama's /api/embeddings returns the dim
+// regardless of the input text, so the value is meaningless.
+const DimProbeText = "graphi-dim-probe"
+
+// ProbeDim forces the embedder to send ONE request to the loopback
+// endpoint so the dim field is populated from the response. Ollama
+// reports dim only after a successful call; without this probe, the
+// fingerprint's dim field is 0 until the first real Embed call — and a
+// fingerprint built with dim=0 cannot detect a real dim change
+// (SW-261 review round 2 MAJOR 5). The probe uses the same /api/
+// embeddings endpoint, the same model, and the same loopback
+// validation as a real call. A probe failure surfaces the error verbatim
+// so the build fails closed rather than silently fingerprinting with
+// dim=0.
+//
+// The probe is concurrency-safe (Embed's per-call logic is already
+// serialized through the http.Client transport).
+func (e *Embedder) ProbeDim(ctx context.Context) error {
+	body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Prompt: DimProbeText})
+	if err != nil {
+		return fmt.Errorf("ollama: probe marshal: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+e.endpoint+"/api/embeddings", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("ollama: probe build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := e.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("ollama: probe request to %s failed: %w", e.endpoint, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ollama: probe endpoint returned status %d", resp.StatusCode)
+	}
+	var decoded ollamaEmbedResponse
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return fmt.Errorf("ollama: probe decode response: %w", err)
+	}
+	if len(decoded.Embedding) == 0 {
+		return fmt.Errorf("ollama: probe returned empty embedding")
+	}
+	if e.dim == 0 {
+		e.dim = len(decoded.Embedding)
+	}
+	return nil
+}
+
 // ollamaEmbedRequest / ollamaEmbedResponse model the Ollama /api/embeddings shape.
 type ollamaEmbedRequest struct {
 	Model  string `json:"model"`

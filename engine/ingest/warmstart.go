@@ -230,8 +230,32 @@ func (i *Ingester) beginFullPass(ctx context.Context) (string, error) {
 // stored with the graph and removes the in-progress marker. It is called only
 // after every graph batch, the main sidecar transaction, graph metadata writes,
 // and the final SQLite checkpoint have completed.
+//
+// SW-261 review round 2 (CRITICAL 2a): the graph identity advance MUST be
+// durable BEFORE the marker clears, otherwise a failed SetMetadata leaves
+// the counter stale while the marker (and the dirty state in the
+// incremental path) has already been cleared — a later reload would
+// classify stale vectors `ready`. The order is therefore:
+//
+//  1. bump the graphstore's commit_generation so the runtime's reload path
+//     sees the new identity;
+//  2. only on a successful bump, clear the sidecar marker.
+//
+// A failed bump leaves the marker open so the next session forces a
+// rebuild. The graphstore's writeMu serialises the bump against any
+// concurrent graph mutation in this process; cross-process safety comes
+// from the ingest lock held across the whole pass.
 func (i *Ingester) finishFullPass(ctx context.Context, generation string) error {
-	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
+	// Step 1: advance the graph identity. A failed bump means the marker
+	// stays open (we never reach step 2) so the next session rebuilds
+	// rather than warm-starting against stale vectors.
+	if err := bumpCommitGenerationOnStore(ctx, i.store); err != nil {
+		return fmt.Errorf("ingest: advance graph identity before marker clear: %w", err)
+	}
+	// Step 2: certify the sidecar at this generation and remove the
+	// in-progress marker. A failure here leaves the marker open (the
+	// sidecar transaction rolls back); a future session will rebuild.
+	return i.metaTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx,
 			"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
 			fullPassGenerationKey, generation); err != nil {
@@ -251,17 +275,7 @@ func (i *Ingester) finishFullPass(ctx context.Context, generation string) error 
 			return fmt.Errorf("ingest: full-pass marker changed before certification")
 		}
 		return nil
-	}); err != nil {
-		return err
-	}
-	// Bump the graphstore's commit_generation counter after the sidecar
-	// transaction commits so the runtime's reload path sees the new value.
-	// Without this bump, the SW-261 fingerprint's graph_generation field
-	// would only advance via beginFullPass's write to
-	// graphFullPassGenerationKey, which happens BEFORE the graph batch —
-	// an incremental pass after a full pass would leave vectors
-	// classified ready even though the graph has since changed.
-	return bumpCommitGenerationOnStore(ctx, i.store)
+	})
 }
 
 // FullPassInProgress reports whether an unfinished full pass left its

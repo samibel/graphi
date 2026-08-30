@@ -47,6 +47,13 @@ func (m *MockEmbedder) Embed(_ context.Context, texts []string) ([][]float32, er
 	return out, nil
 }
 
+// ProbeDim implements DimDiscoverer. The mock embedder's dim is fixed at
+// construction time, so the probe is a no-op that returns the current
+// Dim(). It exists so the runtime's pre-fingerprint probe call is a valid
+// Embedder method on every backend (Ollama dials, mock is instant) and
+// so the test path stays consistent.
+func (m *MockEmbedder) ProbeDim(_ context.Context) error { return nil }
+
 // vector derives the deterministic unit vector for a single text.
 func (m *MockEmbedder) vector(text string) []float32 {
 	v := make([]float32, m.dim)

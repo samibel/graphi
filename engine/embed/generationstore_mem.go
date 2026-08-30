@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -107,6 +108,24 @@ func (b *memBuild) Commit(_ context.Context) error {
 	if !ok {
 		return &ValidationFailedError{Reason: "staging generation vanished before Commit"}
 	}
+	// SW-261 review round 2 (MAJOR 3): validate every row BEFORE the
+	// pointer moves. The pre-fix shape validated in Active, after the
+	// pointer had moved, so a wrong-dim row could land and serve as
+	// ready until the next Active call discovered it. The validate-
+	// then-publish contract is what AC-6 / AC-7 require.
+	fp := gen.fingerprint
+	if fp.Dim > 0 && len(gen.rows) > 0 {
+		for id, r := range gen.rows {
+			if len(r.Vector) != fp.Dim {
+				return &ValidationFailedError{Reason: fmt.Sprintf("vector dim drift at node %s: persisted=%d expected=%d", id, len(r.Vector), fp.Dim)}
+			}
+		}
+	}
+	for id := range gen.rows {
+		if id == "" {
+			return &ValidationFailedError{Reason: "row has empty NodeID"}
+		}
+	}
 	// A zero-row build is a legitimate state (a reindex over an emptied
 	// graph). The prior active generation's rows are kept in the map for
 	// diagnostics; the new active id takes over.
@@ -195,9 +214,10 @@ func (s *MemGenerationStore) Load(_ context.Context, id GenerationID) ([]Row, er
 	return out, nil
 }
 
-// LoadRow implements the RowLoader point-lookup seam. ok=false when the
-// (generation, node id) pair is absent. The vector is defensively copied
-// so a caller cannot mutate the store's row through the returned Row.
+// LoadRow implements the GenerationStore point-lookup seam (AC-4
+// carry-forward). ok=false when the (generation, node id) pair is
+// absent. The vector is defensively copied so a caller cannot mutate
+// the store's row through the returned Row.
 func (s *MemGenerationStore) LoadRow(_ context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -770,17 +770,26 @@ func OpenStore(dbPath string) (graphstore.Graphstore, error) {
 // opened and asked for the active generation's typed state, so the search
 // service can serve nothing from a non-ready generation (SW-261 AC-10).
 func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Service {
-	svc := search.New(store)
 	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
 	if err != nil {
 		// Fail-closed (e.g. a non-loopback Ollama host): report and keep semantic
 		// search OFF rather than constructing an unsafe embedder.
 		fmt.Fprintf(os.Stderr, "graphi: embedder disabled: %v\n", err)
-		return svc
+		return search.New(store)
 	}
 	if emb == nil {
-		return svc // graceful skip: nothing configured
+		return search.New(store) // graceful skip: nothing configured
 	}
+	return NewSearchServiceWithEmbedder(store, metaDir, emb)
+}
+
+// NewSearchServiceWithEmbedder is NewSearchService with the embedder supplied
+// directly. Production callers go through NewSearchService (which reads
+// GRAPHI_EMBEDDER); tests use this to exercise the configured-but-no-meta path
+// (CRITICAL 1, SW-261 review round 2) without depending on the env or on a
+// registered scheme constructor.
+func NewSearchServiceWithEmbedder(store graphstore.Graphstore, metaDir string, emb embed.Embedder) *search.Service {
+	svc := search.New(store)
 	reg := embed.NewRegistry()
 	if err := reg.Register(emb); err != nil {
 		// Unreachable on a fresh registry; reported rather than dropped so a
@@ -827,7 +836,26 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 		}
 		return svc.WithSemantic(reg, index, store).WithSemanticState(semanticState)
 	}
-	return svc.WithSemantic(reg, index, store)
+	// metaDir == "" — the configured-but-no-store path (CRITICAL 1, SW-261
+	// review round 2). A configured embedder with no meta directory is
+	// semantically MISSING, not ready: the production runtime ALWAYS opens
+	// the meta sidecar, so this branch is reached only by Attach-mode tests
+	// and the explicit -db/-meta CLI paths. Returning a service with no
+	// plumbed state would let StateUnset slip through IsZero() and serve
+	// vectors over an empty index — exactly the fail-open AC-7 forbids. We
+	// instead synthesise a StateMissing SemanticState with the missing
+	// reason so SemanticSearch answers unavailable.
+	missingFP := embed.Fingerprint{
+		ModelID:        emb.ID(),
+		Dim:            emb.Dim(),
+		DocumentSchema: embed.DocumentSchema,
+	}
+	return svc.WithSemantic(reg, index, store).
+		WithSemanticState(search.SemanticState{
+			State:     embed.StateMissing,
+			Requested: missingFP,
+			Reason:    search.ReasonUnavailable,
+		})
 }
 
 // loadSemanticState computes the fingerprint the runtime would build
@@ -882,16 +910,6 @@ func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir
 		Requested: fp,
 		Reason:    search.ReasonForState(state),
 	}
-}
-
-// GraphGenerationFromStore is the exported form of graphGenerationFromStore,
-// used by callers that need the current-graph identity the fingerprint
-// embeds (in particular the build path, so build and reload consume the
-// same value). It returns ("", nil) when the store has no committed graph
-// yet; callers that need a non-empty value substitute the documented
-// placeholder themselves.
-func GraphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) (string, error) {
-	return graphGenerationFromStore(ctx, store)
 }
 
 // graphGenerationFromStore reads the graphstore's "index.commit_generation"
@@ -1054,9 +1072,9 @@ func syncRepoLocked(ctx context.Context, ing *ingest.Ingester, store graphstore.
 func BuildSemanticGeneration(
 	ctx context.Context,
 	ing *ingest.Ingester,
-	store graphstore.Graphstore,
+	graphStore graphstore.Graphstore,
 	reg *embed.Registry,
-	store2 embed.GenerationStore,
+	generationStore embed.GenerationStore,
 	nodes []model.Node,
 	docs embed.DocumentSource,
 	index embed.VectorIndex,
@@ -1065,19 +1083,41 @@ func BuildSemanticGeneration(
 	if ing == nil {
 		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil ingester")
 	}
+	if reg == nil || !reg.Configured() {
+		// Graceful skip mirrors the unconfigured-registry path of
+		// GenerateAndPersist. The build does nothing; the active
+		// pointer is unchanged. A lock acquisition is unnecessary
+		// here — the unconfigured path does no work that another
+		// indexing caller could race with.
+		return embed.GenerateResult{Configured: false}, nil
+	}
+	if generationStore == nil {
+		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil generation store")
+	}
+	// Take the lock BEFORE the snapshot (CRITICAL 2b). The caller's
+	// nodes slice was built outside the lock — re-snapshot here, under
+	// the lock, so the embedded set is consistent with the
+	// graph_generation this run will fingerprint. A concurrent ingest
+	// between the call-site snapshot and the lock acquisition would
+	// otherwise produce a generation holding the OLD node set
+	// fingerprinted as the NEW graph.
 	release, err := acquireIngestLock(ctx, ing.MetaDir(), nil)
 	if err != nil {
 		return embed.GenerateResult{}, fmt.Errorf("acquire ingest lock for semantic: %w", err)
 	}
 	defer release()
-	if reg == nil || !reg.Configured() {
-		// Graceful skip mirrors the unconfigured-registry path of
-		// GenerateAndPersist. The build does nothing; the active
-		// pointer is unchanged.
-		return embed.GenerateResult{Configured: false}, nil
+	snap, err := graphStore.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: snapshot under lock: %w", err)
 	}
-	if store2 == nil {
-		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil generation store")
+	nodes = snap
+	if len(nodes) > 0 {
+		sort.SliceStable(nodes, func(i, j int) bool {
+			if a, b := nodes[i].SourcePath(), nodes[j].SourcePath(); a != b {
+				return a < b
+			}
+			return nodes[i].ID() < nodes[j].ID()
+		})
 	}
 	// Source the fingerprint's graph_generation field from the same
 	// graphstore key the reload path reads (index.commit_generation).
@@ -1085,8 +1125,8 @@ func BuildSemanticGeneration(
 	// generation reloads as StateReady unless the graph has moved in
 	// the meantime (in which case the counter has advanced and the
 	// next reload reads StateStale).
-	graphGen, _ := GraphGenerationFromStore(ctx, store)
-	return embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store2, progress, graphGen)
+	graphGen, _ := graphGenerationFromStore(ctx, graphStore)
+	return embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, generationStore, progress, graphGen)
 }
 
 // RebuildRepo is the canonical full re-index pass behind `graphi rebuild` and

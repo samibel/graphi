@@ -929,12 +929,23 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// fingerprint's graph_generation from this key so a freshly built
 	// semantic generation becomes stale after any subsequent graph
 	// change — which is the property AC-7 / AC-4 require for the
-	// fingerprint field to do its job. The graphstore bump is loud-
-	// failure on error: a failed bump leaves the counter stale, which
-	// is acceptable (the next mutation will bump it again); a silent
-	// skip would leave vectors stale.
+	// fingerprint field to do its job.
+	//
+	// SW-261 review round 2 (CRITICAL 2a): the bump MUST happen AFTER
+	// the metaTx above commits and BEFORE we return success, otherwise a
+	// failed bump leaves the counter stale while the dirty state has
+	// already been cleared inside the metaTx — a later reload would
+	// classify stale vectors `ready`. The graphstore's writeMu
+	// serialises this SetMetadata against any concurrent graph mutation
+	// in this process; cross-process safety is guaranteed by the
+	// ingest lock held across the whole pass. A failed bump is a loud
+	// error: the caller returns it, the metaTx has already committed,
+	// and the next session detects the divergence via CanWarmStart's
+	// "full-pass generation moved but counter didn't" check (the
+	// sidecar's full-pass marker is closed but the graphstore's
+	// commit_generation is older than what the rebuild reads).
 	if err := bumpCommitGenerationOnStore(ctx, i.store); err != nil {
-		return err
+		return fmt.Errorf("ingest: advance graph identity after incremental mutation: %w", err)
 	}
 	// P1 trust snapshot: rebind after every successful incremental mutation
 	// (post-commit, same three keys, current live generation) so the snapshot

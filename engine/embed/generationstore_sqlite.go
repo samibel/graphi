@@ -314,8 +314,15 @@ func (b *sqliteBuild) Commit(ctx context.Context) error {
 		return fmt.Errorf("embed: commit begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	// Re-count the rows in the staging generation; the persisted
-	// row_count must match what we are about to publish.
+	// SW-261 review round 2 (MAJOR 3): validate every row BEFORE the
+	// pointer moves. The pre-fix shape counted rows in Commit and
+	// validated per-row dimensions / NodeID resolution later in Active,
+	// after the pointer had moved. That violated AC-6 / AC-7's "the
+	// active pointer shall never point at an unvalidated generation"
+	// contract. The validation now runs as part of Commit, on the
+	// staging rows, and only on a complete pass does the demote /
+	// promote transaction proceed. A single failed row rolls the whole
+	// transaction back — the prior active generation stays intact.
 	var n int
 	if err := tx.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM generation_rows WHERE generation_id = ?`,
@@ -327,6 +334,61 @@ func (b *sqliteBuild) Commit(ctx context.Context) error {
 		// emptied graph). The prior active generation's row_count is
 		// preserved by the demote; we just commit a new zero-row
 		// generation. The fingerprint canonical stays consistent.
+	}
+	// Per-row dimension validation.
+	// write time, but a hand-tampered sidecar (or a future migration
+	// path) could land a wrong-dim row; the Commit-time pass catches
+	// it before the pointer moves. fp.Dim == 0 means "unknown" — a
+	// dim-zero embedder (Ollama until its first request) is now
+	// promoted to a learned dim via the dim-discovery contract in
+	// generate.go (MAJOR 5); the validate-here pass is a defense-in-
+	// depth check, gated on a known dim to skip the dim-zero case.
+	if b.fp.Dim > 0 && n > 0 {
+		dimRows, err := tx.QueryContext(ctx, `
+            SELECT node_id, vector FROM generation_rows
+            WHERE generation_id = ?
+            ORDER BY node_id`,
+			string(b.id))
+		if err != nil {
+			return &ValidationFailedError{Reason: fmt.Sprintf("stream rows for dim validation: %v", err)}
+		}
+		for dimRows.Next() {
+			var (
+				nid  string
+				blob []byte
+			)
+			if err := dimRows.Scan(&nid, &blob); err != nil {
+				dimRows.Close()
+				return &ValidationFailedError{Reason: fmt.Sprintf("scan row for dim validation: %v", err)}
+			}
+			if len(blob) != b.fp.Dim*4 {
+				dimRows.Close()
+				return &ValidationFailedError{Reason: fmt.Sprintf("vector dim drift at node %s: persisted=%d expected=%d", nid, len(blob)/4, b.fp.Dim)}
+			}
+		}
+		if err := dimRows.Err(); err != nil {
+			dimRows.Close()
+			return &ValidationFailedError{Reason: fmt.Sprintf("dim validation iteration: %v", err)}
+		}
+		dimRows.Close()
+	}
+	// NodeID non-empty validation. Upsert already rejects empty NodeID,
+	// but the Commit-time pass defends against a hand-tampered sidecar.
+	// A NodeReferencer-backed referencability check happens in Active
+	// because the graphstore is not part of the Build's transactional
+	// surface — only the durable sidecar is — so a referenced-node
+	// check belongs to the Active call where the graphstore handle is
+	// available.
+	if n > 0 {
+		var emptyCount int
+		if err := tx.QueryRowContext(ctx,
+			`SELECT COUNT(*) FROM generation_rows WHERE generation_id = ? AND (node_id = '' OR node_id IS NULL)`,
+			string(b.id)).Scan(&emptyCount); err != nil {
+			return &ValidationFailedError{Reason: fmt.Sprintf("check empty NodeID: %v", err)}
+		}
+		if emptyCount > 0 {
+			return &ValidationFailedError{Reason: fmt.Sprintf("%d rows have empty NodeID", emptyCount)}
+		}
 	}
 	// Atomically: demote the prior active row (one row, globally) and
 	// promote the staging row. The at-most-one-active invariant is
@@ -574,10 +636,10 @@ func (s *SQLiteGenerationStore) Load(ctx context.Context, id GenerationID) ([]Ro
 	return out, nil
 }
 
-// LoadRow implements the RowLoader point-lookup seam. It issues an indexed
-// point probe (PK is (generation_id, node_id)) so AC-4 carry-forward
-// reuses one prior row at a time without materialising the whole
-// generation. ok=false when the row is absent.
+// LoadRow implements the GenerationStore point-lookup seam. It issues
+// an indexed point probe (PK is (generation_id, node_id)) so AC-4
+// carry-forward reuses one prior row at a time without materialising
+// the whole generation. ok=false when the row is absent.
 func (s *SQLiteGenerationStore) LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
 	var (
 		docID, nID, hash, path, span string
@@ -622,6 +684,16 @@ func (s *SQLiteGenerationStore) DeleteStagingForTest(ctx context.Context) (int64
 	}
 	n, _ := res.RowsAffected()
 	return n, nil
+}
+
+// DBForTest returns the underlying *sql.DB handle. The test-only name
+// flags the seam: production code must NOT depend on the handle (the
+// store's public surface is the GenerationStore interface). The
+// seam exists for the MAJOR 3 Commit-time-validation test, which
+// hand-injects a wrong-dim row into the staging generation to assert
+// Commit refuses BEFORE the pointer moves.
+func (s *SQLiteGenerationStore) DBForTest(_ context.Context) *sql.DB {
+	return s.db
 }
 
 // Close releases the DB handle when this store opened it. When constructed

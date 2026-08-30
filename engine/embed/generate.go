@@ -157,13 +157,13 @@ const embedChunkSize = 64
 //
 // SW-261 carry-forward: the pass inspects Active(ctx, fp, nil) before
 // embedding. When the active fingerprint matches the requested one, prior
-// rows are looked up by NodeID via the RowLoader point-probe (no whole-
-// generation materialisation, per the working-set rule); a node whose
-// text_hash matches is carried forward (the prior row's Vector is upserted
-// unchanged — no re-embed). Nodes whose text_hash differs are
-// re-embedded. Nodes not in the graph at all are counted as Purged. The
-// test in generationstore_conformance_test.go asserts the embedder call
-// count.
+// rows are looked up by NodeID via the GenerationStore.LoadRow
+// point-probe (no whole-generation materialisation, per the working-set
+// rule); a node whose text_hash matches is carried forward (the prior
+// row's Vector is upserted unchanged — no re-embed). Nodes whose
+// text_hash differs are re-embedded. Nodes not in the graph at all are
+// counted as Purged. The test in
+// generationstore_conformance_test.go asserts the embedder call count.
 //
 // graphGeneration is the current-graph identity the fingerprint embeds.
 // Empty substitutes the placeholder so in-process tests stay
@@ -183,6 +183,20 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// unconfigured-registry graceful skip still comes first.
 	if docs == nil {
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
+	}
+	// SW-261 review round 2 (MAJOR 5): Ollama reports dim 0 until its
+	// first call. If we fingerprint with dim=0, a real dim change is
+	// neither fingerprinted nor validated (the SQLite check is gated
+	// on fp.Dim > 0). Learn the real dim BEFORE fingerprinting: an
+	// embedder that implements DimDiscoverer (Ollama) is probed once
+	// here; an embedder that does not (Mock, fixed-dim ONNX) keeps its
+	// declared dim. A probe failure surfaces the error verbatim so
+	// the build fails closed rather than silently fingerprinting with
+	// dim=0.
+	if dd, ok := emb.(DimDiscoverer); ok {
+		if err := dd.ProbeDim(ctx); err != nil {
+			return GenerateResult{}, fmt.Errorf("embed: probe dim before fingerprint: %w", err)
+		}
 	}
 	// Fingerprint the build with the embedder's identity, dimension,
 	// schema and graph generation. The graph_generation field is filled
@@ -213,14 +227,13 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// embedding-space mixing this story exists to prevent).
 	//
 	// Streaming: the prior rows are looked up by NodeID via the
-	// RowLoader point-lookup seam, not materialised into a
-	// whole-generation map (context/standards.md:225-229 working-set
-	// rule). A node whose text_hash does NOT match the prior row
-	// triggers an embed call; a node whose text_hash DOES match carries
-	// the prior row's vector forward unchanged. A store that does not
-	// implement RowLoader falls back to a single Load (the test-only
-	// mem adapter always implements it; the SQLite adapter does too via
-	// an indexed point probe).
+	// GenerationStore.LoadRow point-lookup seam (AC-4), not
+	// materialised into a whole-generation map
+	// (context/standards.md:225-229 working-set rule). A node whose
+	// text_hash does NOT match the prior row triggers an embed call;
+	// a node whose text_hash DOES match carries the prior row's vector
+	// forward unchanged. Both adapters satisfy the seam: SQLite via
+	// an indexed point probe, mem via a map lookup.
 	var (
 		priorID    GenerationID
 		hasPrior   bool
@@ -255,11 +268,13 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// Track the NodeIds the pass actually wrote — a node whose document
 	// was skipped or absent does not enter the new generation, so the
 	// Build's Commit-time validate sees a row set equal to (Embedded +
-	// Reused). The Purged count is `priorTotal - reused` because every
-	// prior row not in the new generation's row set represents a node
-	// that no longer exists in the graph.
-	wantIDs := make(map[model.NodeId]struct{}, len(nodes))
-
+	// Reused). The Purged count is computed AFTER the loop, using the
+	// actual write set the Build saw (Embedded + Reused), so a row
+	// that was correctly re-embedded (Embedded, not Reused) is NOT
+	// counted as purged — that was the pre-fix MINOR 7 arithmetic,
+	// which the operator found misleading. The wantIDs bookkeeping
+	// was dead code (written but never read); removed in the same
+	// change.
 	chunkNodes := make([]model.Node, 0, embedChunkSize)
 	texts := make([]string, 0, embedChunkSize)
 	// Used for carry-forward inside a chunk: the nodes whose documents
@@ -288,34 +303,32 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 				res.Skipped++
 				continue
 			}
-			wantIDs[n.ID()] = struct{}{}
 			// AC-4 carry-forward: lookup the prior row by NodeID via the
-			// RowLoader point-probe (working-set rule). When the prior
-			// row's text_hash matches the current document's, reuse the
-			// prior row's vector — no embed call. Carry-forward counts
-			// ONLY as Reused (a previous revision double-counted it
-			// under both Embedded and Reused, contradicting the
-			// documented Embedded + Reused + Skipped invariant).
+			// GenerationStore.LoadRow point-probe (working-set rule).
+			// When the prior row's text_hash matches the current
+			// document's, reuse the prior row's vector — no embed
+			// call. Carry-forward counts ONLY as Reused (a previous
+			// revision double-counted it under both Embedded and
+			// Reused, contradicting the documented Embedded + Reused +
+			// Skipped invariant).
 			if hasPrior {
-				if loader, ok := store.(RowLoader); ok {
-					if priorRow, exists, lerr := loader.LoadRow(ctx, priorID, n.ID()); lerr == nil && exists && priorRow.TextHash == d.TextHash {
-						row := Row{
-							DocumentID: d.DocumentID,
-							NodeID:     n.ID(),
-							TextHash:   d.TextHash,
-							Path:       d.Path,
-							StartLine:  d.StartLine,
-							EndLine:    d.EndLine,
-							SpanMethod: d.SpanMethod,
-							Vector:     priorRow.Vector,
-						}
-						carry = append(carry, row)
-						if index != nil {
-							index.Put(n.ID(), row.Vector)
-						}
-						res.Reused++
-						continue
+				if priorRow, exists, lerr := store.LoadRow(ctx, priorID, n.ID()); lerr == nil && exists && priorRow.TextHash == d.TextHash {
+					row := Row{
+						DocumentID: d.DocumentID,
+						NodeID:     n.ID(),
+						TextHash:   d.TextHash,
+						Path:       d.Path,
+						StartLine:  d.StartLine,
+						EndLine:    d.EndLine,
+						SpanMethod: d.SpanMethod,
+						Vector:     priorRow.Vector,
 					}
+					carry = append(carry, row)
+					if index != nil {
+						index.Put(n.ID(), row.Vector)
+					}
+					res.Reused++
+					continue
 				}
 			}
 			chunkNodes = append(chunkNodes, n)
@@ -384,21 +397,23 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// pointer, so its rows are unreachable. The count is reported so the
 	// operator can see what the pass dropped.
 	//
-	// Without a materialised prior map, the exact formula is
-	//
-	//	Purged = priorTotal - reused
-	//
-	// because every carried-forward row corresponds to exactly one prior row
-	// (the node-id lookup is unique), and every prior row whose node is no
-	// longer in the current pass is either reused or purged — not embedded
-	// or skipped (embedded rows are nodes that DID change, which is
-	// orthogonal to whether the prior generation covered them; skipped rows
-	// are nodes with no document, also orthogonal).
+	// SW-261 review round 2 (MINOR 7): the previous formula
+	// `Purged = priorTotal - Reused` was wrong because a row whose
+	// text changed is counted under Embedded (not Reused), so the
+	// formula miscounted re-embedded rows as purged. The correct
+	// formula subtracts the row set the new generation actually holds
+	// (Embedded + Reused) from the prior generation's row count, so
+	// the re-embedded row contributes to the new generation rather
+	// than to Purged. The prior id's rows for nodes that are no
+	// longer in the graph at all are also counted as Purged — they
+	// are unreachable, like the re-embedded case, and the operator
+	// sees them as dropped.
 	if hasPrior && priorTotal > 0 {
-		res.Purged = priorTotal - res.Reused
-		if res.Purged < 0 {
-			res.Purged = 0
+		purged := priorTotal - (res.Embedded + res.Reused)
+		if purged < 0 {
+			purged = 0
 		}
+		res.Purged = purged
 	}
 	return res, nil
 }

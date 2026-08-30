@@ -36,9 +36,15 @@ import (
 type State int
 
 const (
-	// StateMissing: no active generation exists. The store has either never
-	// been written or has had every generation pruned. A caller MUST NOT
-	// serve vectors from a missing generation.
+	// StateUnset: the zero value, meaning "no state has been plumbed
+	// through yet". A caller that calls Active() and receives a real
+	// state (e.g. StateMissing) is distinguishable from a caller
+	// that never called Active() at all (StateUnset); the search
+	// service uses State.IsZero() as the explicit "no state plumbed"
+	// check so an unrun Active cannot be confused with a missing
+	// generation. SW-261 review round 2 (CRITICAL 1) closed the
+	// fail-open against this distinction by synthesising StateMissing
+	// for the metaDir == "" production path.
 	StateUnset State = iota
 	// StateMissing: no active generation exists. The store has either
 	// never been written or has had every generation pruned. A caller
@@ -89,7 +95,8 @@ func (s State) IsZero() bool { return s == StateUnset }
 // GenerationID identifies one built generation. It is the GenerationStore's
 // foreign key into the rows table and is derived from a Fingerprint via
 // Fingerprint.ID(). The string is human-readable (a schema prefix plus a
-// short hash) so a debug print is informative.
+// full sha256 hex digest) so a debug print is informative. Two
+// fingerprints that differ in any field produce distinct generation ids.
 type GenerationID string
 
 // Generation is the metadata the Active call returns alongside its state.
@@ -170,16 +177,6 @@ type Build interface {
 	// the active pointer. Safe to call after Commit (no-op) and after a
 	// crash (next Begin does the same discard).
 	Abort(ctx context.Context) error
-}
-
-// RowLoader is the optional streaming read seam used by AC-4 carry-forward.
-// A point lookup lets the generator re-use one prior row at a time rather
-// than materialising the entire generation in memory; see
-// context/standards.md:225-229 (working-set rule). Implementations may
-// return (Row{}, false, nil) when the row is absent. MemGenerationStore
-// and SQLiteGenerationStore both satisfy this seam.
-type RowLoader interface {
-	LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error)
 }
 
 // GenerationStore is the durable seam a vector index persists into. It is

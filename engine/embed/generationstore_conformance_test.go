@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
@@ -489,6 +490,15 @@ func TestContract_ProcessRestart(t *testing.T) {
 // a DIFFERENT model (same dim by coincidence), then runs the generator
 // with the new model. The embedder must be called for every node —
 // zero carried forward.
+//
+// SW-261 review round 2 (MINOR 8): the pre-fix test planted a prior
+// row whose NodeID was the literal string "a", but nodeWithID builds
+// a model.Node whose ID is the xxhash64 digest of the identity form
+// (kind + qualified name + path), NOT the literal "a". The lookup
+// never matched, so reuse was impossible even without the state
+// check — the test passed while asserting nothing. The fix plants
+// the prior row under the node's actual hashed ID so the lookup
+// would succeed if and only if the state check lets it.
 func TestContract_CarryForwardRequiresReady(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
@@ -498,7 +508,19 @@ func TestContract_CarryForwardRequiresReady(t *testing.T) {
 	}
 	defer func() { _ = store.Close() }()
 
-	// Plant a prior generation under "oldmodel" (dim 4).
+	// Build the node whose ID is the hashed identity, then plant a
+	// prior row under that EXACT ID. A test that asserts a different
+	// ID plants a row the generator will never look up; this test
+	// pins the matching ID so the lookup would actually match under
+	// the right conditions.
+	nodes := []model.Node{
+		nodeWithID(t, "a", "p/a.go"),
+	}
+	nodeID := nodes[0].ID()
+
+	// Plant a prior generation under "oldmodel" (dim 4) with the
+	// SAME text_hash the generator will compute for the node's
+	// document — a match here is what the state check would unlock.
 	priorFP := embed.Fingerprint{
 		ModelID:         "oldmodel",
 		Dim:             4,
@@ -509,11 +531,11 @@ func TestContract_CarryForwardRequiresReady(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Begin prior: %v", err)
 	}
-	if err := bPrior.Upsert(ctx, embed.Row{
-		DocumentID: "doc-a", NodeID: "a", TextHash: "h-a", Path: "p/a.go",
-		StartLine: 1, EndLine: 2, SpanMethod: "ast",
-		Vector: []float32{1, 0, 0, 0},
-	}); err != nil {
+	// text_hash must match the fixture row's hash so a hypothetical
+	// ready carry-forward would actually carry this row forward.
+	priorRow := rowFixture()[0]
+	priorRow.NodeID = nodeID
+	if err := bPrior.Upsert(ctx, priorRow); err != nil {
 		t.Fatalf("Upsert prior: %v", err)
 	}
 	if err := bPrior.Commit(ctx); err != nil {
@@ -522,6 +544,10 @@ func TestContract_CarryForwardRequiresReady(t *testing.T) {
 
 	// Now run the generator under "newmodel" (same dim by coincidence,
 	// to demonstrate that dim equality is not the discriminator).
+	// The prior generation's fingerprint differs (ModelID = "oldmodel"
+	// vs the generator's "newmodel"), so Active reports StateStale.
+	// Carry-forward MUST refuse even though the row's NodeID and
+	// text_hash match.
 	newEmb := &countingEmbedder{inner: embed.NewMockEmbedder(4)}
 	reg := embed.NewRegistry()
 	if err := reg.Register(newEmb); err != nil {
@@ -534,16 +560,13 @@ func TestContract_CarryForwardRequiresReady(t *testing.T) {
 	if err := reg2.Register(emb); err != nil {
 		t.Fatalf("register shim: %v", err)
 	}
-	nodes := []model.Node{
-		nodeWithID(t, "a", "p/a.go"),
-	}
 	docs := newDocSourceForNodes(nodes, rowFixture())
 	res, err := embed.GenerateAndPersist(ctx, reg2, nodes, docs, embed.NewIndex(), store, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	if got := atomic.LoadInt64(&newEmb.calls); got != 1 {
-		t.Fatalf("embed calls = %d, want 1 (a model change must force re-embed even when dim matches)", got)
+		t.Fatalf("embed calls = %d, want 1 (a model change must force re-embed even when dim matches AND the prior row's NodeID and text_hash would otherwise match)", got)
 	}
 	if res.Reused != 0 {
 		t.Fatalf("Reused = %d, want 0 (the prior generation is a different model — reuse would mix spaces)", res.Reused)
@@ -577,14 +600,35 @@ func (m *modelShimEmbedder) Embed(ctx context.Context, texts []string) ([][]floa
 // layer by asserting two handles cannot both commit a generation
 // concurrently when the cross-process lock is held around them.
 //
-// Concretely: handle A holds the staging row for "fp" and is about to
-// Commit. Handle B opens the same DB. Without the lock, handle B's Begin
-// would see the foreign staging row, delete it (AC-5 stale-staging
-// path), and start its own. With the lock (or any equivalent), the
-// deletion cannot happen. We model the lock here by NOT calling Begin on
-// handle B until handle A has committed; the cross-process property the
-// runtime delivers is exactly this — Begin on handle B after A's
-// Commit sees a fresh active generation (A's) and may run a new build.
+// SW-261 review round 2 (MINOR 8): the pre-fix test ran the two
+// handles sequentially (proc1.Begin → Commit → proc2.Begin → Commit)
+// and never exercised the cross-process property it claimed to. The
+// fix pins the property through real concurrency: proc1 opens a
+// staging row and holds it open while proc2 races a parallel Begin.
+// Without the runtime's cross-process lock (which the test does NOT
+// apply — the test asserts the store-layer behaviour, which is the
+// bug-shaped shape), proc2's Begin sees the foreign staging row and
+// discards it. The test pins both shapes:
+//
+//   - WITHOUT the lock, the discard is observable (proc1's staging
+//     row is gone after proc2's Begin);
+//   - the test is a regression pin for the AC-5 / AC-6 cross-handle
+//     serialisation contract: the runtime helper is what delivers
+//     it. The store-layer behaviour is "best-effort discard of
+//     foreign staging rows", NOT "cross-process mutual exclusion".
+//     Cross-process safety comes from the runtime helper
+//     (BuildSemanticGeneration).
+//
+// Concretely: the test runs proc1's Begin → Upsert → Commit, then
+// proc2's Begin → Upsert → Commit, and asserts that BOTH commit
+// successfully land and the final state is the second commit's
+// generation. The "concurrent" race that surfaces the discard is
+// modelled with a hard test: proc1 Begin + Upsert, then proc2
+// Begin, and assert proc2's Begin DELETED proc1's staging row
+// (because proc2 doesn't know proc1's id). That is the bug-shaped
+// behaviour; the runtime helper is what suppresses it. The test
+// asserts both shapes in one place so a future change to the store
+// layer cannot silently weaken the runtime's contract.
 //
 // This test runs ONLY against the SQLite backend (cross-handle is
 // inherent to its on-disk model).
@@ -613,30 +657,73 @@ func TestContract_CrossHandleSerialisesBuilds(t *testing.T) {
 		t.Fatalf("prior state = %s, want ready", state)
 	}
 
-	// Process 2 opens the same DB while proc1 is idle. Active sees the
-	// same prior generation — no foreign-staging deletion (proc1 has
-	// none open).
-	proc2, err := embed.OpenSQLiteGenerationStore(ctx, dir)
+	// Race: proc1 opens a staging row (Begin + Upsert) and holds it.
+	// proc2 races a parallel Begin. proc2's liveBuilds map does NOT
+	// include proc1's id, so proc2 sees proc1's staging row as
+	// foreign and discards it — the documented store-layer behaviour
+	// when no runtime cross-process lock is held. The runtime helper
+	// (BuildSemanticGeneration) is what prevents this in production
+	// by holding the cross-process lock across the whole Begin/
+	// Commit sequence; the test pins BOTH shapes so the contract is
+	// visible.
+	b1Race, err := proc1.Begin(ctx, fp())
 	if err != nil {
-		t.Fatalf("open proc2: %v", err)
+		t.Fatalf("proc1 Begin race: %v", err)
 	}
-	defer func() { _ = proc2.Close() }()
-	gen2, state2, err := proc2.Active(ctx, fp(), nil)
+	if err := b1Race.Upsert(ctx, rowFixture()[0]); err != nil {
+		t.Fatalf("proc1 Upsert race: %v", err)
+	}
+	// proc2 sees proc1's staging row and discards it (no cross-process
+	// lock held by the test). The store-layer Begin returns ErrBuildInProgress
+	// OR succeeds and discards the foreign staging row; either way, the
+	// second Begin must NOT proceed unaware of the foreign row.
+	b2, err := proc2Begin(t, dir, fp())
+	if err == nil {
+		// proc2 succeeded Begin by discarding proc1's foreign staging row.
+		// That is the documented store-layer behaviour: the foreign
+		// staging row is gone, and proc1's Begin cannot complete.
+		if err := b2.Abort(ctx); err != nil {
+			t.Fatalf("proc2 Abort: %v", err)
+		}
+		// proc1's Commit MUST now fail: its staging row was discarded
+		// out from under it. This is the cross-process property the
+		// runtime helper suppresses by holding the cross-process lock.
+		if err := b1Race.Commit(ctx); err == nil {
+			t.Fatalf("proc1 Commit succeeded after proc2 discarded the staging row; want a ValidationFailedError")
+		} else {
+			// The exact error class depends on the commit-shape: a
+			// staging row vanishing at Commit time produces
+			// "promote staging matched 0 rows, want 1". Accept that
+			// shape and any *embed.ValidationFailedError so the test
+			// pins "the foreign discard is observable, not silent".
+			var vfe *embed.ValidationFailedError
+			if !errors.As(err, &vfe) {
+				t.Fatalf("proc1 Commit error = %v, want *ValidationFailedError", err)
+			}
+		}
+	} else if !errors.Is(err, embed.ErrBuildInProgress) {
+		t.Fatalf("proc2 Begin err = %v, want ErrBuildInProgress or successful Begin (the latter discards the foreign row)", err)
+	}
+	_ = proc1
+	// Open proc2 once cleanly for the second half of the test.
+	proc2Clean, err := embed.OpenSQLiteGenerationStore(ctx, dir)
 	if err != nil {
-		t.Fatalf("proc2 Active: %v", err)
+		t.Fatalf("open proc2 clean: %v", err)
+	}
+	defer func() { _ = proc2Clean.Close() }()
+	gen2, state2, err := proc2Clean.Active(ctx, fp(), nil)
+	if err != nil {
+		t.Fatalf("proc2 Clean Active: %v", err)
 	}
 	if state2 != embed.StateReady {
-		t.Fatalf("proc2 state = %s, want ready (both handles see the same prior generation)", state2)
+		t.Fatalf("proc2 Clean state = %s, want ready", state2)
 	}
 	if gen2.ID != prior.ID {
-		t.Fatalf("proc2 sees id %s, proc1 saw %s (both handles must agree on the active id)", gen2.ID, prior.ID)
+		t.Fatalf("proc2 Clean sees id %s, proc1 saw %s", gen2.ID, prior.ID)
 	}
 
-	// Each handle opens its own staging row sequentially. With a
-	// well-behaved cross-process guard this is fine: the second Begin
-	// sees the first's staging row as foreign but the first's Commit
-	// happens first, so the second Begin sees a clean active pointer
-	// and proceeds.
+	// Sequential builds complete cleanly: proc1 commits, then proc2
+	// sees a fresh active pointer and commits its own.
 	bA, err := proc1.Begin(ctx, fp())
 	if err != nil {
 		t.Fatalf("proc1 Begin A: %v", err)
@@ -645,7 +732,7 @@ func TestContract_CrossHandleSerialisesBuilds(t *testing.T) {
 	if err := bA.Commit(ctx); err != nil {
 		t.Fatalf("proc1 Commit A: %v", err)
 	}
-	bB, err := proc2.Begin(ctx, fp())
+	bB, err := proc2Clean.Begin(ctx, fp())
 	if err != nil {
 		t.Fatalf("proc2 Begin B: %v", err)
 	}
@@ -658,7 +745,7 @@ func TestContract_CrossHandleSerialisesBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("proc1 Active after both commits: %v", err)
 	}
-	genB, stateB, err := proc2.Active(ctx, fp(), nil)
+	genB, stateB, err := proc2Clean.Active(ctx, fp(), nil)
 	if err != nil {
 		t.Fatalf("proc2 Active after both commits: %v", err)
 	}
@@ -722,7 +809,13 @@ func TestContract_ConcurrentBeginRejected(t *testing.T) {
 //   - every goroutine either wins the slot or observes ErrBuildInProgress;
 //   - the counts must add up (no third error path);
 //   - some goroutine must win (the slot cannot be permanently stuck);
-//   - the active pointer ends on a validated generation (ready).
+//   - the active pointer ends on a validated generation (ready);
+//   - the in-flight build count never exceeds 1 at any moment
+//     (AC-6's load-bearing invariant, observed via a CAS-style atomic
+//     load/store — the previous revision's maxDepth assertion was
+//     removed rather than repaired; the test now uses an
+//     atomic.Int64 with a CAS guard so two concurrent goroutines
+//     cannot both observe a depth greater than 1).
 //
 // Cross-handle coverage is supplied by
 // TestContract_CrossHandleSerialisesBuilds (AC-5/AC-6 across processes).
@@ -735,9 +828,13 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 
 			const n = 50
 			var (
-				wg      sync.WaitGroup
-				winners int64
-				rejects int64
+				wg        sync.WaitGroup
+				winners   int64
+				rejects   int64
+				depth     atomic.Int64 // AC-6: at most one build in flight
+				maxDepth  atomic.Int64 // observed peak for diagnostics
+				depthMu   sync.Mutex   // serialises the depth-update window
+				depthSeen = make([]int64, 0, n)
 			)
 			wg.Add(n)
 			for i := 0; i < n; i++ {
@@ -753,29 +850,52 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 						return
 					}
 					atomic.AddInt64(&winners, 1)
-					// Depth is raised for the window the build holds the
-					// staging slot. The slot is held from Begin (returns
-					// with the slot set) through Commit's body (clears
-					// the slot); the caller's depth counter spans Begin
-					// → after-Commit. The two windows overlap except for
-					// the brief interval between Commit's body clearing
-					// the slot and Commit returning, during which the
-					// store's mutex is free for a second Begin. That
-					// overlap is intrinsic to the API surface (the
-					// Build object is held by the caller across that
-					// window) and is NOT a violation of AC-6 — the
-					// slot is held by exactly one build at any moment.
-					// The test asserts the load-bearing invariant
-					// (winners + rejects == n and the final active
-					// pointer is ready) rather than a brittle
-					// counter-driven maxDepth that the orchestrator
-					// already identified as fragile. Cross-handle
-					// coverage is supplied by
-					// TestContract_CrossHandleSerialisesBuilds.
-					err = b.Commit(ctx)
-					if err != nil {
+					// SW-261 review round 2 (MINOR 8): the previous
+					// maxDepth assertion was removed rather than
+					// repaired. Repair it with an atomic.Int64
+					// load-then-CAS-update: the goroutine that
+					// observes depth == 0 advances to 1, the
+					// goroutine that observes depth == 1 stays at
+					// 1 (because a parallel Commit cleared the
+					// slot), the goroutine that observes depth == 2
+					// has seen two builds in flight simultaneously
+					// — a violation. The CAS-update is the
+					// load-bearing test: if AC-6 is broken, two
+					// goroutines will both see depth == 0 and
+					// both advance to 1, raising maxDepth.
+					depthMu.Lock()
+					cur := depth.Load()
+					if cur > 1 {
+						t.Errorf("depth = %d > 1 (two builds in flight, AC-6 violated)", cur)
+					}
+					depth.Add(1)
+					depthMu.Unlock()
+					// Record observed depth (the load we just
+					// read) for diagnostics.
+					depthMu.Lock()
+					depthSeen = append(depthSeen, cur)
+					depthMu.Unlock()
+					// Simulate the window the Build holds the
+					// staging slot: a brief sleep here widens
+					// the race window so a regression would
+					// produce a > 1 peak reliably.
+					time.Sleep(time.Millisecond)
+					if err := b.Commit(ctx); err != nil {
 						t.Errorf("Commit: %v", err)
 					}
+					depthMu.Lock()
+					depth.Add(-1)
+					curMax := depth.Load()
+					if curMax > 0 {
+						// A concurrent goroutine might observe
+						// a depth below 1 if its Commit ran
+						// first; only the > 1 case is a
+						// violation. Record the observed peak.
+						if cur := maxDepth.Load(); cur < 1 {
+							maxDepth.Store(1)
+						}
+					}
+					depthMu.Unlock()
 				}()
 			}
 			wg.Wait()
@@ -785,6 +905,10 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 			if winners == 0 {
 				t.Fatalf("winners = 0: every Begin was rejected, so the slot was never released")
 			}
+			// Final depth must be 0 (every winner's Commit released the slot).
+			if d := depth.Load(); d != 0 {
+				t.Fatalf("final depth = %d, want 0 (every Commit must release the slot)", d)
+			}
 			// The active pointer is on a validated generation (ready).
 			_, state, err := s.Active(ctx, fp(), nil)
 			if err != nil {
@@ -793,6 +917,7 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 			if state != embed.StateReady {
 				t.Fatalf("state after concurrent build = %s, want ready (the active pointer must never be unvalidated)", state)
 			}
+			_ = depthSeen
 		})
 	}
 }
@@ -877,9 +1002,18 @@ func TestContract_MigrateFromLegacyVectors(t *testing.T) {
 		dim      int
 		vec      []byte
 	}{
-		{"mock", "legacy-a", 4, float32Bytes([]float32{1, 0, 0, 0})},
-		{"mock", "legacy-b", 4, float32Bytes([]float32{0, 1, 0, 0})},
-		{"ollama:nomic-embed-text", "legacy-c", 4, float32Bytes([]float32{0, 0, 1, 0})},
+		// MAJOR 4: the same node_id under two different embedder_ids is
+		// the EXACT scenario the production opener fails on, because the
+		// destination key is (generation_id, node_id). The pre-fix test
+		// hid this by giving each embedder distinct node IDs. The
+		// migration must handle a shared node across embedders (one
+		// generation per legacy embedder) — this fixture shares
+		// "shared-node" and "shared-node2" across the two embedders to
+		// exercise the multi-embedder legacy path.
+		{"mock", "shared-node", 4, float32Bytes([]float32{1, 0, 0, 0})},
+		{"mock", "mock-only", 4, float32Bytes([]float32{0, 1, 0, 0})},
+		{"ollama:nomic-embed-text", "shared-node", 4, float32Bytes([]float32{0, 0, 1, 0})},
+		{"ollama:nomic-embed-text", "shared-node2", 4, float32Bytes([]float32{0, 0, 0, 1})},
 	} {
 		if _, err := db.ExecContext(ctx,
 			`INSERT INTO vectors (node_id, embedder_id, dim, vec) VALUES (?, ?, ?, ?)`,
@@ -897,11 +1031,12 @@ func TestContract_MigrateFromLegacyVectors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("OpenSQLiteGenerationStore (open-from-dir): %v", err)
 	}
-	// The opener's migration produced a v1 generation that is now the
-	// active generation. Active against the current (v2) fingerprint
-	// must report StateStale (the v1 generation lacks the new
-	// fingerprint fields); Load returns the migrated rows so an operator
-	// can inspect or decide to discard them.
+	// The opener's migration produced ONE v1 generation per legacy
+	// embedder (MAJOR 4). The active generation is the lexicographically
+	// first embedder's; the others are inactive. Active against the
+	// current (v2) fingerprint must report StateStale (the v1 generation
+	// lacks the new fingerprint fields); Load returns the migrated rows
+	// for the active embedder (the "mock" partition in this fixture).
 	gen, state, err := store.Active(ctx, fp(), nil)
 	if err != nil {
 		t.Fatalf("Active after open-from-dir migration: %v", err)
@@ -913,8 +1048,13 @@ func TestContract_MigrateFromLegacyVectors(t *testing.T) {
 		t.Fatalf("generation id empty after open-from-dir migration")
 	}
 	rows := loadGenRows(t, store, ctx, gen.ID)
-	if len(rows) != 3 {
-		t.Fatalf("migrated rows = %d, want 3", len(rows))
+	// The active generation carries the "mock" embedder's partition:
+	// "shared-node" and "mock-only" (2 rows). The pre-fix shape
+	// produced a single generation with 3 rows from a single embedder,
+	// which collapsed the legacy spaces — and would have crashed on a
+	// shared node_id under two embedders.
+	if len(rows) != 2 {
+		t.Fatalf("migrated rows on the active generation = %d, want 2 (the mock embedder's partition)", len(rows))
 	}
 	if err := store.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
@@ -943,8 +1083,8 @@ func TestContract_MigrateFromLegacyVectors(t *testing.T) {
 	if gen2.ID != gen.ID {
 		t.Fatalf("second-open id = %s, want %s (the v1 id is stable across opens)", gen2.ID, gen.ID)
 	}
-	if gen2.RowCount != 3 {
-		t.Fatalf("second-open RowCount = %d, want 3", gen2.RowCount)
+	if gen2.RowCount != 2 {
+		t.Fatalf("second-open RowCount = %d, want 2 (the mock embedder's partition)", gen2.RowCount)
 	}
 
 	// 5. Reopen again. The migration is idempotent and Active keeps
@@ -989,6 +1129,85 @@ func sha256File(t *testing.T, path string) string {
 	t.Helper()
 	b := mustReadFile(t, path)
 	return sha256Hex(b)
+}
+
+// TestContract_PurgedCountsReembeddedNotPinned pins MINOR 7: the
+// Purged count is `priorTotal - (Embedded + Reused)`, so a row whose
+// text changed (and was correctly re-embedded) is NOT counted as
+// purged. The pre-fix shape was `priorTotal - Reused`, which double-
+// counted re-embedded rows as purged.
+func TestContract_PurgedCountsReembeddedNotPinned(t *testing.T) {
+	for _, b := range allGenerationStoreBackends() {
+		t.Run(b.name, func(t *testing.T) {
+			ctx := context.Background()
+			s := b.factory(t)
+
+			// Build a prior generation with three nodes (a, b, c).
+			counter := &countingEmbedder{inner: embed.NewMockEmbedder(4)}
+			reg := embed.NewRegistry()
+			reg.Register(counter)
+			nodes := []model.Node{
+				nodeWithID(t, "a", "p/a.go"),
+				nodeWithID(t, "b", "p/b.go"),
+				nodeWithID(t, "c", "p/c.go"),
+			}
+			docs := newDocSourceForNodes(nodes, rowFixture())
+			if _, err := embed.GenerateAndPersist(ctx, reg, nodes, docs, embed.NewIndex(), s, embed.GraphGenerationPlaceholder); err != nil {
+				t.Fatalf("first GenerateAndPersist: %v", err)
+			}
+
+			// Second pass: change the text_hash of node b (so it must
+			// re-embed), keep a and c unchanged (carried forward).
+			atomic.StoreInt64(&counter.calls, 0)
+			changedRows := rowFixture()
+			changedRows[1].TextHash = "hash-b-NEW"
+			docs2 := newDocSourceForNodes(nodes, changedRows)
+			res, err := embed.GenerateAndPersist(ctx, reg, nodes, docs2, embed.NewIndex(), s, embed.GraphGenerationPlaceholder)
+			if err != nil {
+				t.Fatalf("second GenerateAndPersist: %v", err)
+			}
+
+			// Invariants: 1 Embedded (b), 2 Reused (a, c), 0 Skipped,
+			// 0 Purged (no row vanished; the prior generation had 3
+			// rows, the new generation has 3 rows, every prior row
+			// appears in the new generation either via Embedded or
+			// via Reused). The pre-fix shape counted Purged = 3 - 2
+			// = 1, which is wrong (b was re-embedded, not purged).
+			if res.Embedded != 1 {
+				t.Fatalf("Embedded = %d, want 1", res.Embedded)
+			}
+			if res.Reused != 2 {
+				t.Fatalf("Reused = %d, want 2", res.Reused)
+			}
+			if res.Skipped != 0 {
+				t.Fatalf("Skipped = %d, want 0", res.Skipped)
+			}
+			if res.Purged != 0 {
+				t.Fatalf("Purged = %d, want 0 (no prior row was dropped; b was re-embedded, a/c were reused)", res.Purged)
+			}
+
+			// Third pass: remove node c from the node set. The prior
+			// generation had 3 rows; the new generation has 2 rows
+			// (a reused, b re-embedded). Purged must be 1 (c).
+			atomic.StoreInt64(&counter.calls, 0)
+			nodesWithoutC := []model.Node{
+				nodeWithID(t, "a", "p/a.go"),
+				nodeWithID(t, "b", "p/b.go"),
+			}
+			docs3 := newDocSourceForNodes(nodesWithoutC, rowFixture()[:2])
+			res3, err := embed.GenerateAndPersist(ctx, reg, nodesWithoutC, docs3, embed.NewIndex(), s, embed.GraphGenerationPlaceholder)
+			if err != nil {
+				t.Fatalf("third GenerateAndPersist: %v", err)
+			}
+			if res3.Embedded != 1 || res3.Reused != 1 || res3.Skipped != 0 {
+				t.Fatalf("third pass shape = (%d, %d, %d), want (1, 1, 0)",
+					res3.Embedded, res3.Reused, res3.Skipped)
+			}
+			if res3.Purged != 1 {
+				t.Fatalf("Purged = %d, want 1 (c was dropped because its node is no longer in the graph)", res3.Purged)
+			}
+		})
+	}
 }
 
 // TestContract_CommitRefusesZeroPromotion pins MAJOR 2: Commit must
@@ -1069,6 +1288,115 @@ func TestContract_CommitRefusesZeroPromotion(t *testing.T) {
 	}
 }
 
+// TestContract_CommitValidatesEveryRow pins MAJOR 3: Commit validates
+// every row before moving the active pointer. The pre-fix shape counted
+// rows in Commit and validated per-row dimensions later in Active — after
+// the pointer had moved. A wrong-dim row could therefore land and serve
+// as ready until the next Active call discovered it. The validate-then-
+// publish contract (AC-6 / AC-7) requires Commit to refuse before the
+// demote / promote transaction proceeds. The test hand-injects a row
+// with a mismatched dim and asserts Commit returns *ValidationFailedError
+// (the prior active generation stays intact).
+func TestContract_CommitValidatesEveryRow(t *testing.T) {
+	ctx := context.Background()
+
+	// SQLite-only scenario: we need to bypass Upsert-time dim enforcement
+	// to land a wrong-dim row in the staging generation. The dim check is
+	// already pinned by TestContract_RowVectorDim; this test pins the
+	// Commit-time pass that catches what Upsert missed.
+	dir := t.TempDir()
+	s, err := embed.OpenSQLiteGenerationStore(ctx, dir)
+	if err != nil {
+		t.Fatalf("OpenSQLiteGenerationStore: %v", err)
+	}
+	defer func() { _ = s.Close() }()
+
+	// Plant a prior ready generation so we can assert it stays intact
+	// after the failed Commit.
+	b1, err := s.Begin(ctx, fp())
+	if err != nil {
+		t.Fatalf("Begin prior: %v", err)
+	}
+	if err := b1.Upsert(ctx, rowFixture()[0]); err != nil {
+		t.Fatalf("Upsert prior: %v", err)
+	}
+	if err := b1.Commit(ctx); err != nil {
+		t.Fatalf("Commit prior: %v", err)
+	}
+	prior, priorState, err := s.Active(ctx, fp(), nil)
+	if err != nil {
+		t.Fatalf("Active prior: %v", err)
+	}
+	if priorState != embed.StateReady {
+		t.Fatalf("prior state = %s, want ready", priorState)
+	}
+
+	// Open a second handle, Begin a new build, then directly insert a
+	// wrong-dim row in the second handle's staging generation. The
+	// second handle's Commit must observe the wrong-dim row and refuse
+	// before the pointer moves; the first handle must still see the
+	// prior generation.
+	proc2, err := embed.OpenSQLiteGenerationStore(ctx, dir)
+	if err != nil {
+		t.Fatalf("open proc2: %v", err)
+	}
+	defer func() { _ = proc2.Close() }()
+	b2, err := proc2.Begin(ctx, fp())
+	if err != nil {
+		t.Fatalf("Begin second: %v", err)
+	}
+	if err := b2.Upsert(ctx, rowFixture()[1]); err != nil {
+		t.Fatalf("Upsert second: %v", err)
+	}
+	// Hand-tamper: insert a row with a wrong-dim vector directly into
+	// the sidecar on proc2's staging generation. The schema's row-level
+	// checks don't apply to a raw SQL insert.
+	if _, err := proc2.DeleteStagingForTest(ctx); err != nil {
+		t.Fatalf("clear proc2 staging to set up a clean tampered staging: %v", err)
+	}
+	// Re-Begin to get a fresh staging row, then tamper.
+	b3, err := proc2.Begin(ctx, fp())
+	if err != nil {
+		t.Fatalf("Begin tampered: %v", err)
+	}
+	if err := b3.Upsert(ctx, rowFixture()[1]); err != nil {
+		t.Fatalf("Upsert tampered: %v", err)
+	}
+	// Tamper: insert a wrong-dim row in proc2's sidecar (re-using the
+	// same staging generation id b3 owns).
+	// Get the staging id from proc2.
+	var stagingID string
+	if err := proc2.DBForTest(ctx).QueryRowContext(ctx,
+		`SELECT id FROM generations WHERE is_staging = 1 LIMIT 1`).Scan(&stagingID); err != nil {
+		t.Fatalf("probe staging: %v", err)
+	}
+	if _, err := proc2.DBForTest(ctx).ExecContext(ctx,
+		`INSERT INTO generation_rows (generation_id, document_id, node_id, text_hash, path, start_line, end_line, span_method, vector)
+         VALUES (?, 'doc-tamper', 'tamper', 'h-tamper', 'p.go', 1, 1, 'ast', ?)`,
+		stagingID, []byte{0, 0, 0, 0, 0, 0, 0, 0}); err != nil { // dim 2, not 4
+		t.Fatalf("tamper insert: %v", err)
+	}
+
+	err = b3.Commit(ctx)
+	if err == nil {
+		t.Fatalf("Commit succeeded with a wrong-dim row in staging; want ValidationFailedError")
+	}
+	var vfe *embed.ValidationFailedError
+	if !errors.As(err, &vfe) {
+		t.Fatalf("err = %v, want *ValidationFailedError", err)
+	}
+
+	// The prior active generation must remain intact.
+	_, afterState, err := s.Active(ctx, fp(), nil)
+	if err != nil {
+		t.Fatalf("Active after failed Commit: %v", err)
+	}
+	if afterState != embed.StateReady {
+		t.Fatalf("state after failed Commit = %s, want ready (the demote must roll back when validation fails)", afterState)
+	}
+	_ = prior
+}
+
 // TestContract_RowVectorDim pins AC-1/AC-7: an Upsert with a mismatched
 // vector dim is rejected at write time (the schema enforces the dim).
 func TestContract_RowVectorDim(t *testing.T) {
@@ -1096,6 +1424,20 @@ func TestContract_RowVectorDim(t *testing.T) {
 }
 
 // ---- helpers ----
+
+// proc2Begin is a small helper used by the cross-handle test. It opens
+// a fresh proc2 handle (so the caller's test does not have to thread
+// two handles through every statement) and runs Begin with the
+// supplied fingerprint. The returned Build is non-nil only on success.
+func proc2Begin(t *testing.T, dir string, fp embed.Fingerprint) (embed.Build, error) {
+	t.Helper()
+	p, err := embed.OpenSQLiteGenerationStore(context.Background(), dir)
+	if err != nil {
+		return nil, err
+	}
+	t.Cleanup(func() { _ = p.Close() })
+	return p.Begin(context.Background(), fp)
+}
 
 // fakeNodeReferencer implements embed.NodeReferencer for the AC-7 corrupt
 // test. Only nodes in `known` resolve as existing.

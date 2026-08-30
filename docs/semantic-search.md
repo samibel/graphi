@@ -194,8 +194,11 @@ go through `graphi index --semantic`** (or the runtime helper). A bare
 independently opened handles, without the runtime helper, will still see
 the cross-process symptom the review caught — by design: the store's
 seam is the persistence boundary; the cross-process serialisation is a
-caller concern (the runtime wires it). Tests assert the property at both
-layers.
+caller concern (the runtime wires it). The conformance suite
+(`TestContract_CrossHandleSerialisesBuilds`) exercises the property
+at the store layer with two concurrently-open handles and pins the
+runtime-helper-driven outcome (the foreign staging row is observable
+to the second handle; the runtime helper is what suppresses it).
 
 ### Carry-forward (AC-4)
 
@@ -210,8 +213,12 @@ exists to prevent.
 
 A reused row counts as `Reused`, not `Embedded`. The summary line on
 `graphi index --semantic` reports both:
-`<n> embedded, <r> reused, <s> skipped`. `Purged = priorRowCount - reused`
-(prior rows whose node disappeared from the graph).
+`<n> embedded, <r> reused, <s> skipped`. `Purged` is the count of
+prior-generation rows that no longer appear in the new generation's
+row set — prior rows whose node disappeared from the graph AND
+prior rows that were re-embedded (not carried forward). The
+arithmetic is `Purged = priorRowCount - (Embedded + Reused)` so a
+correctly re-embedded row is not counted as purged.
 
 ## Safety guarantees that hold regardless of configuration
 

@@ -33,13 +33,15 @@ import (
 //     Empty when the embedder embeds the whole document.
 //   - GraphGeneration: a stable identifier for the graph the vectors were
 //     produced against. graphstore exposes one through
-//     `Metadata(ctx, "index.full_ingest_generation")`; when absent we use the
+//     `Metadata(ctx, "index.commit_generation")`; when absent we use the
 //     placeholder "unknown" and the orchestrator reports this as an open
 //     finding (the call site must surface that decision to its operator — see
 //     `runtime.NewSearchService`).
 //
-// The canonical string is pipe-separated, NOT map-iterated, so it is
-// byte-stable and can serve as an equality / hash key without normalisation.
+// The canonical string is length-prefixed and line-delimited, NOT
+// pipe-separated or map-iterated, so it is byte-stable and can serve
+// as an equality / hash key without normalisation. See
+// `encodeCanonical` for the byte-level encoding.
 type Fingerprint struct {
 	ModelID         string
 	Revision        string
@@ -51,25 +53,11 @@ type Fingerprint struct {
 	GraphGeneration string
 }
 
-// fingerprintFields is the FIXED order Canonical emits. Adding a field here is a
-// generation-breaking change: every prior store becomes stale and re-embeds.
-// Renaming or reordering is also breaking — same reason.
-//
-// The variable is retained for documentation and the conformance test
-// (which asserts every field has a canonical encoding) but is no longer
-// the source of truth: encodeCanonical emits the fields in this fixed
-// order. Removing or renaming a field here without changing
-// encodeCanonical would silently produce a different canonical string.
-var fingerprintFields = []string{
-	"model_id",
-	"revision",
-	"model_sha256",
-	"tokenizer_sha256",
-	"dim",
-	"document_schema",
-	"chunker_config",
-	"graph_generation",
-}
+// fingerprintFields (the FIXED order Canonical emits) is documented in
+// the encodeCanonical call below. The order is inlined at the call site
+// so the encoding's source of truth is one place, not a separate
+// variable that might drift. Renaming or reordering a field is
+// generation-breaking; see Canonical for the precise mapping.
 
 // Canonical returns the canonical string form. Field order is fixed; the
 // encoding is length-prefixed so a `|`-bearing value cannot collide with
@@ -97,18 +85,27 @@ func (f Fingerprint) Canonical() string {
 	return encodeCanonical(parts)
 }
 
-// encodeCanonical serialises an ordered list of field values using a
-// length-prefixed encoding. Each field becomes `<len>:<value>`; the
-// fields are then joined with `\n` so the whole canonical string is one
-// line per field. The encoding is total: any two distinct inputs (in
-// value, length, or field count) produce distinct outputs.
+// encodeCanonical serialises an ordered list of field values using a true
+// length-prefixed encoding. Each field becomes `<len>:<value>`; the fields
+// are then joined with `\n`. The encoding is total: any two distinct
+// inputs (in value, length, or field count) produce distinct outputs.
 //
-// The length is written as base-10 ASCII so a human can read it. A
-// field value containing `\n` would defeat the encoding — the documented
-// contract is that field values are ASCII ids or hex digests, neither of
-// which contain newlines; the conformance test asserts this and the
-// generation_id suffix prevents confusion when a human inspects the
-// canonical.
+// SW-261 review round 2 (MAJOR 6): the previous revision also joined on
+// `\n`, so a value containing a newline character would defeat the
+// decoder (it would split the encoded string at the embedded newline,
+// producing the wrong field count and silently corrupting the typed
+// view). The encoding now uses a true length prefix — the decoder
+// reads exactly the declared number of bytes per field, so any byte
+// sequence is round-trippable, including values containing `|`, `\n`,
+// or arbitrary bytes. The length is written as base-10 ASCII so a
+// human can read it.
+//
+// Field values are still constrained by the Fingerprint's typed shape
+// (ASCII ids, hex digests, an integer dim) — none of which carry
+// embedded newlines today — but the encoder no longer relies on that
+// constraint to round-trip, so a future field that does carry binary
+// data (e.g. a content hash) can be added without breaking the
+// decoder.
 func encodeCanonical(parts []string) string {
 	var b strings.Builder
 	for i, p := range parts {
@@ -122,32 +119,64 @@ func encodeCanonical(parts []string) string {
 	return b.String()
 }
 
-// decodeCanonical is the inverse of encodeCanonical, used by
-// fingerprintFromCanonical in the SQLite adapter to recover the typed
-// Fingerprint from a stored canonical string. It splits on `\n` and
-// verifies the per-field length prefix; an inconsistent input yields a
-// Fingerprint with the truncated/empty fields set to "" (the SQLite
-// path never reads the typed values back for equality — equality is a
-// direct canonical-string compare — but the typed view is convenient
-// for diagnostics).
+// decodeCanonical is the inverse of encodeCanonical. It is a true
+// length-prefixed decoder: it reads the declared length of each field
+// and consumes exactly that many bytes, then advances to the next
+// field. Embedded `\n` characters in a field value are therefore safe
+// (the decoder does not split on them). The previous revision split
+// the canonical on `\n`, which silently corrupted round-trip for any
+// value containing a newline character (SW-261 review round 2
+// MAJOR 6).
+//
+// Malformed input (a missing colon, a negative length, a length that
+// runs past the end of the input, or a non-numeric length) yields a
+// Fingerprint with the affected field truncated to "" — the SQLite
+// path never reads the typed values back for equality (equality is a
+// direct canonical-string compare) but the typed view is convenient
+// for diagnostics. The decoder never panics.
 func decodeCanonical(canonical string) []string {
 	if canonical == "" {
 		return nil
 	}
 	var out []string
-	for _, line := range strings.Split(canonical, "\n") {
-		colon := strings.IndexByte(line, ':')
+	pos := 0
+	for pos < len(canonical) {
+		// Find the colon that closes the length prefix.
+		colon := strings.IndexByte(canonical[pos:], ':')
 		if colon < 0 {
-			// Malformed: append the raw line so the caller can see it.
-			out = append(out, line)
+			// Malformed: no length prefix. Append the rest so the
+			// caller can see it.
+			out = append(out, canonical[pos:])
+			return out
+		}
+		colon += pos
+		// Parse the length. A malformed length yields an empty
+		// field rather than a panic; this preserves the
+		// "degraded, never panic" contract on a hand-tampered
+		// sidecar.
+		n, err := strconv.Atoi(canonical[pos:colon])
+		if err != nil || n < 0 {
+			out = append(out, "")
+			// Skip past the colon to advance.
+			pos = colon + 1
 			continue
 		}
-		n, err := strconv.Atoi(line[:colon])
-		if err != nil || n < 0 || colon+1+n > len(line) {
-			out = append(out, line[colon+1:])
-			continue
+		start := colon + 1
+		end := start + n
+		if end > len(canonical) {
+			// Length declared more bytes than remain. Take
+			// what we have and stop — the canonical is
+			// truncated, the typed view reflects it.
+			out = append(out, canonical[start:])
+			return out
 		}
-		out = append(out, line[colon+1:colon+1+n])
+		out = append(out, canonical[start:end])
+		// Advance past the field's declared bytes; skip the
+		// inter-field newline that follows (if any).
+		pos = end
+		if pos < len(canonical) && canonical[pos] == '\n' {
+			pos++
+		}
 	}
 	return out
 }
