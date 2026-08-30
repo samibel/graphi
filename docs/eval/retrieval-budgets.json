@@ -18,31 +18,31 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
-        "sha256": "93f79e7a3c5c29465f4398190c60f5eb32d801a91b320b3b8bcacd23786a725d",
+        "sha256": "4a85cb55badaeda865795e0059474e22541da55849c1b15b739d9d7b00f61098",
         "repo": "cobra",
         "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
         "dataset": "cobra-v1",
         "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
-        "candidate_sha": "c302d9c5b68e99e98eb517ee75b59b6f629dd22c+dirty",
+        "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 187,
+        "measured": 190,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 374
+        "budget": 380
       },
       "query_p95_us": {
-        "measured": 4392,
+        "measured": 4723,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 8784
+        "budget": 9446
       },
       "peak_rss_mb": {
-        "measured": 315.0625,
+        "measured": 356.265625,
         "measured_baseline": "oracle_upper_bound",
         "unit": "MB",
-        "budget": 631
+        "budget": 713
       }
     },
     "small": {
@@ -53,11 +53,11 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/fixture-v1-report.json",
-        "sha256": "9e2cf2cfde5077f829c27f8fa6297049baa319e38dfa7c9eaccc4d6c7ec0b6d6",
+        "sha256": "8d0adc2f3538fa41979388797d8f60f247dc581215fc8407624bb10f7bbd7919",
         "repo": "fixture",
         "dataset": "fixture-v1",
         "dataset_sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
-        "candidate_sha": "c302d9c5b68e99e98eb517ee75b59b6f629dd22c+dirty",
+        "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
         "runner_class": "local"
       },
       "index_ms": {
@@ -67,16 +67,16 @@
         "budget": 22
       },
       "query_p95_us": {
-        "measured": 2383,
+        "measured": 2574,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 4766
+        "budget": 5148
       },
       "peak_rss_mb": {
-        "measured": 109.140625,
-        "measured_baseline": "oracle_upper_bound",
+        "measured": 110.359375,
+        "measured_baseline": "hybrid_v1",
         "unit": "MB",
-        "budget": 219
+        "budget": 221
       }
     }
   }

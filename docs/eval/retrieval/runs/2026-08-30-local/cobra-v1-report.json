@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "c302d9c5b68e99e98eb517ee75b59b6f629dd22c+dirty",
+    "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
     "runner_class": "local",
     "repo": {
       "name": "cobra",
@@ -7894,23 +7894,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 187,
+        "value": 190,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 182,
+        "value": 239,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 341,
+        "value": 403,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 295.46875,
+        "value": 350.328125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7922,23 +7922,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 187,
+        "value": 190,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 1934,
+        "value": 2085,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4392,
+        "value": 4723,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 315.015625,
+        "value": 356.25,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7989,7 +7989,7 @@
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 315.0625,
+        "value": 356.265625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7999,7 +7999,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T04:20:03Z",
+    "generated_at": "2026-08-30T04:33:21Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
