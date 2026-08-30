@@ -128,30 +128,24 @@ func classifyArtifact(dir string) (bool, error) {
 	return true, nil
 }
 
-// artifactPresent is the boolean form of classifyArtifact, kept so existing
-// callers (`if !artifactPresent(dir) { t.Skip(skipMessage) }`) keep their
-// intent on the page. FAILURE cases (partial, permission, symlink, dir)
-// collapse to false here, so callers that only inspect the bool would skip
-// past a misconfigured artifact — prefer classifyArtifact directly in new
-// code so the error is visible.
-func artifactPresent(dir string) bool {
-	ok, _ := classifyArtifact(dir)
-	return ok
-}
-
-// checkPinnedArtifact is the fail-closed entry point used by every test that
-// needs the artifact. It returns nil when the artifact is usable, no error
-// when every pinned file is missing (the caller should Skip), and a
-// descriptive error for any other failure mode — partial absence, permission
-// denied, IO error, symlink, directory at a pinned path.
-func checkPinnedArtifact(t testing.TB) error {
+// requireArtifact is the ONE fail-closed gate every artifact-dependent test
+// goes through (SW-259 review round 3). It skips only when classifyArtifact
+// reports genuine absence, and FAILS on every "present but unusable" outcome —
+// partial absence, permission denied, IO error, symlink or directory at a
+// pinned path. The earlier boolean form let those collapse to "absent", so a
+// misconfigured artifact skipped the suite green; there is deliberately no
+// boolean variant left to call by mistake.
+func requireArtifact(t testing.TB) string {
 	t.Helper()
 	dir := artifactDir()
-	if dir == "" {
-		return errors.New("artifactDir is empty: cannot resolve $HOME")
+	present, err := classifyArtifact(dir)
+	if err != nil {
+		t.Fatalf("pinned artifact is present but unusable: %v", err)
 	}
-	_, err := classifyArtifact(dir)
-	return err
+	if !present {
+		t.Skip(skipMessage)
+	}
+	return dir
 }
 
 // artifactUnusable is the typed error returned by classifyArtifact when the

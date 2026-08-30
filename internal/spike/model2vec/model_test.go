@@ -159,10 +159,7 @@ func TestEmbedEach_BatchInvariant(t *testing.T) {
 // Without the artifact the divergence is "0 (BatchLongest is a no-op when the
 // tokenizer declares no padding section)" — recorded, not asserted.
 func TestEmbedEach_DivergenceFromEmbedIsPadding(t *testing.T) {
-	dir := artifactDir()
-	if !artifactPresent(dir) {
-		t.Skip(skipMessage)
-	}
+	requireArtifact(t)
 	m := loadPinnedModel(t)
 	enabled, _ := m.Tokenizer().Padding()
 	if !enabled {

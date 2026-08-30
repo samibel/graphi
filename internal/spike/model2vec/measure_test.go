@@ -40,10 +40,7 @@ func measureTexts(n int) []string {
 //
 //	CGO_ENABLED=0 go test ./internal/spike/model2vec -run TestSpikeMeasure -count=1 -v
 func TestSpikeMeasure(t *testing.T) {
-	dir := artifactDir()
-	if !artifactPresent(dir) {
-		t.Skip(skipMessage)
-	}
+	dir := requireArtifact(t)
 	var ms runtime.MemStats
 	runtime.GC()
 	rss0, _ := peakRSSBytes()

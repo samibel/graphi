@@ -68,8 +68,16 @@ func TestSpike_EmbedAttemptsNoDial(t *testing.T) {
 	if dialer.dialed.Load() {
 		t.Fatal("Embed on the synthetic model attempted an outbound dial — zero-egress violated")
 	}
-	if artifactPresent(artifactDir()) {
-		_ = loadPinnedModel(t).Embed(texts)
+	present, err := classifyArtifact(artifactDir())
+	if err != nil {
+		t.Fatalf("pinned artifact is present but unusable: %v", err)
+	}
+	if present {
+		pinned := loadPinnedModel(t)
+		_ = pinned.Embed(texts)
+		// EmbedEach is the production path SW-262 must adopt (record §2.1), so the
+		// canary covers it explicitly rather than relying on the shared embedOne.
+		_ = pinned.EmbedEach(texts)
 		if dialer.dialed.Load() {
 			t.Fatal("Embed on the pinned artifact attempted an outbound dial — zero-egress violated")
 		}

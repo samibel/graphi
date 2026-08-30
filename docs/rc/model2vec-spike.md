@@ -113,13 +113,18 @@ Single-threaded, no SIMD, no allocation tuning. The 32 MiB table is held as bina
 artifact's size) and decoded per lookup; the ~40 MiB above the table is the tokenizer's 63k-entry
 vocabulary map and Go's heap headroom.
 
-The production path is slower than the old per-text-in-a-single-call figure: every text pays
-its own `Tokenizer.Encode` call (no `EncodeBatch` amortisation), and the dominant cost is the
-per-text tokenisation rather than the pooling (which is in noise). The reference path pools
-~2.9× more tokens (the [PAD] rows) but pays only one `EncodeBatch` per 1024-text chunk — that
-is why a single embedding call is cheaper on it. For scale: cobra (938 nodes) embeds through
-`EmbedEach` in ~24 ms on the fastest run, ~43 ms on the slower one; a 50k-node repository in
-1.3–2.2 s on this runner.
+**No causal claim is made about the gap between the two rows.** An earlier draft explained the
+production path as "slower than the old per-text figure" because it pays one `Tokenizer.Encode`
+per text — that explanation was wrong twice over: at `00c8928` the public `Embed` *was* the
+per-text loop, so the "old" 55,140 texts/s figure is itself an `EmbedEach` figure and the
+comparison was the same code against itself; and the production path is consistently the *faster*
+of the two, not the slower. The spread across runs (23k–54k texts/s for `EmbedEach`) is
+run-to-run variance on this runner, not a semantic cost — a review re-run on this same tree
+measured `EmbedEach` at 53,862 texts/s (warm 54,416) against the reference path's 27,621. Read the
+two rows as "both are fast enough by a wide margin, and the reference path pays for its ~2.9×
+pooled tokens"; anything finer needs a quiet machine and more runs than a spike warrants. For
+scale: cobra (938 nodes) embeds through `EmbedEach` in roughly 20–40 ms here, a 50k-node
+repository in about one to two seconds.
 
 ## 4. Quality on the SW-258 development subset (AC-5) — spike numbers
 
@@ -153,31 +158,39 @@ the AC-5 numbers below were produced from.
 | `hybrid_v1` (SW-258) | 0.473 | 0.605 | 0.468 | 0.481 |
 | `semantic_name_only` (SW-258) | unavailable | unavailable | unavailable | unavailable |
 | **spike name_only** (`EmbedEach`) | **0.6062** | **0.6922** | **0.5856** | **0.6296** |
-| **spike body+doc** (`EmbedEach`) | **0.6673** | **0.7405** | **0.6076** | **0.6667** |
+| **spike body+doc** (`EmbedEach`) | **0.6673** | **0.7121** | **0.6109** | **0.6296** |
 | `oracle_upper_bound` | 1.000 | 1.000 | 1.000 | 1.000 |
 
-Per stratum (dev split, ndcg@10 / recall@10 / mrr@10):
+Per stratum, ndcg@10 / recall@10 / mrr@10. **The two spike columns are the dev split; the two
+SW-258 baseline columns are over all 40 queries** — the SW-258 report's `strata` block has no
+per-split breakdown (`cobra-v1-report.json`, the split section carries `overall` metrics only), so a
+per-stratum dev baseline does not exist to quote. The columns are therefore **not** directly
+comparable cell by cell; where the argument below depends on a baseline it names the dev value
+explicitly, taken from `retrieval-targets.json`'s `best_single_baseline` (which is per metric, so it
+is not a drop-in `hybrid_v1` column either). Regenerating per-stratum dev baselines is SW-263's
+business, not this spike's.
 
-| stratum (dev queries) | lexical | hybrid_v1 | spike name_only | spike body+doc | fusion target (`docs/eval/retrieval-targets.json`) |
+| stratum (dev queries) | lexical (all 40) | hybrid_v1 (all 40) | spike name_only (dev) | spike body+doc (dev) | fusion target (`docs/eval/retrieval-targets.json`, dev) |
 |---|---|---|---|---|---|
 | exact_identifier (4) | 0.731 / 0.667 / 0.867 | 0.732 / 0.667 / 0.917 | **0.9624 / 1.000 / 1.000** | 0.7585 / 0.875 / 0.875 | top1 floor 0.75 (spike name_only 1.00, body+doc 0.75) |
 | exact_path (3) | 0.979 / 1.000 / 1.000 | 0.979 / 1.000 / 1.000 | **1.000 / 1.000 / 1.000** | **1.000 / 1.000 / 1.000** | — |
 | nl_behaviour (6) | 0 / 0 / 0 | 0.270 / 0.250 / 0.417 | 0.4450 / 0.3889 / 0.6111 | **0.6387 / 0.6806 / 0.7222** | ndcg 0.4058 (spike clears it: 0.4450 / 0.6387) |
 | architecture_flow (5) | 0 / 0 / 0 | 0.191 / 0.292 / 0.222 | 0.2879 / 0.500 / 0.1821 | **0.3167 / 0.3333 / 0.4286** | ndcg 0.3286 (spike falls short: 0.2879 / 0.3167 — fusion must add the lexical/structural signal SW-263 will bring) |
 | config_docs (5) | 0 / 0 / 0 | 0.358 / 0.389 / 0.600 | 0.6905 / 0.6167 / 1.000 | **0.7150 / 0.8833 / 0.8500** | — |
-| ambiguous (4) | 0.319 / 0.490 / 0.223 | **0.4493 / 0.4625 / 0.5000** | 0.3497 / 0.3625 / 0.5278 | 0.3674 / 0.3375 / 0.5000 | — |
+| ambiguous (4) | 0.319 / 0.490 / 0.223 | **0.5205 / 0.5700 / 0.6000** | 0.3497 / 0.3625 / 0.5278 | 0.3674 / 0.3375 / 0.5000 | — |
 | no_hit (3): negative_hit_rate@5 | 0 | 0 | 0 | 0 | — |
 
 Holdout split (measured, never used for a decision): spike name_only
 recall@10 / mrr@10 / ndcg@10 = 0.5833 / 0.4375 / 0.4827 (top1 0.3750),
-spike body+doc = 0.8542 / 0.7438 / 0.7109 (top1 0.6250).
+spike body+doc = 0.8542 / 0.7396 / 0.7089 (top1 0.6250).
 
 Reading: on the conceptual stratum `nl_behaviour` the semantic-only spike **clears** the SW-258
 fusion target on ndcg@10 alone (name_only 0.4450, body+doc 0.6387 vs `must_reach` 0.4058) —
-**without any lexical signal**. On `architecture_flow` the spike is a *substantial* improvement
-over both baselines (lexical ndcg 0, hybrid_v1 ndcg 0.191) but does not, by itself, reach the
-fusion `must_reach` of 0.3286 (name_only 0.2879, body+doc 0.3167 — short by 0.012 on the best
-variant). That gap is the point of SW-263: a semantic-only embedder cannot replicate the
+**without any lexical signal**. On `architecture_flow` the spike improves on both baselines — against
+the **dev** hybrid_v1 value the target is built from (ndcg 0.2286, `retrieval-targets.json`
+`best_single_baseline`; the table's 0.191 is the all-40-query figure) body+doc gains +0.088, and
+lexical is 0 — but it does not, by itself, reach the fusion `must_reach` of 0.3286 (name_only
+0.2879, body+doc 0.3167 — short by 0.012 on the best variant). That gap is the point of SW-263: a semantic-only embedder cannot replicate the
 degree/path signals hybrid_v1 carries, so fusion is the next step, not a flag on the embedder.
 Exact identifiers stay perfect over name-only documents and drop with body+doc (a long body
 dilutes the name) — the expected argument for SW-263's fusion over a union rather than a
@@ -234,7 +247,7 @@ Removal is `rm -r internal/spike` plus this file.
 | Criterion (story AC-7) | Required | Measured | Met |
 |---|---|---|---|
 | Tokenizer fidelity (AC-3) | token ids exact; vectors \|Δ\| ≤ 1e-5 **through the public API** | ids exact on 15/15 cases; **max \|Δ\| = 0** on 15/15 single-text cases and on the batch of 8 replayed through the public `Embed(texts)` (pad id from `tokenizer.json`, no private helper); clean-float32 variant 2.43e-4 (recorded, not adopted) | **yes** |
-| Dev-subset quality vs `semantic_name_only` and `lexical` | acceptable, numbers quoted | cobra dev (EmbedEach): spike name_only ndcg@10 **0.5856** (recall@10 0.6062, mrr@10 0.6922, top1 0.6296) vs lexical 0.247 / hybrid_v1 0.468; `semantic_name_only` unavailable in SW-258 — the spike is its first measurement; body+doc ndcg@10 **0.6076**; `nl_behaviour` clears its fusion target alone (0.4450 / 0.6387 vs must_reach 0.4058); `architecture_flow` does not (0.2879 / 0.3167 vs must_reach 0.3286) — that gap is the next step (SW-263 fusion), not a flag on the embedder; fixture-v1 mirrors the shape. | **yes** |
+| Dev-subset quality vs `semantic_name_only` and `lexical` | acceptable, numbers quoted | cobra dev (EmbedEach): spike name_only ndcg@10 **0.5856** (recall@10 0.6062, mrr@10 0.6922, top1 0.6296) vs lexical 0.247 / hybrid_v1 0.468; `semantic_name_only` unavailable in SW-258 — the spike is its first measurement; body+doc ndcg@10 **0.6109**; `nl_behaviour` clears its fusion target alone (0.4450 / 0.6387 vs must_reach 0.4058); `architecture_flow` does not (0.2879 / 0.3167 vs must_reach 0.3286) — that gap is the next step (SW-263 fusion), not a flag on the embedder; fixture-v1 mirrors the shape. | **yes** |
 | CGo-free | `CGO_ENABLED=0` build of the package and of the tree | green; stdlib-only closure; go.mod unchanged | **yes** |
 | Zero runtime egress | no dial during `Embed`; no net packages | static closure clean; sentinel-dialer test clean | **yes** |
 | Load / memory / throughput (AC-4, recorded not gated) | — | load **65–81 ms**; **86 MiB RSS** after load, **93–95 MiB after 10k texts**; production path `EmbedEach` **23–39k texts/s** single-threaded (per-text `Encode` cost is dominant); reference path `Embed` BatchLongest padded **15k texts/s** with **490k pooled tokens incl. 320k pad rows**; 32 MiB artifact | recorded |
