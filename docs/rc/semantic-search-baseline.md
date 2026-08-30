@@ -430,11 +430,23 @@ what the right answer to a query is, and it cannot tell a relevant hit from an i
 
 Therefore, at the candidate:
 
-- **No Recall@k, MRR or NDCG number exists** anywhere in the repository. `grep -rn
-  'Recall\|MRR\|NDCG' --include='*.go'` finds only `engine/embed/hnsw_test.go:89`
-  (`TestHNSW_RecallAt10`, a unit test of an ANN index against brute force — not a retrieval
-  quality metric over labelled queries) and `RecallMemory` in `engine/memory` (a verb, not a
-  metric).
+- **No retrieval-quality Recall@k, MRR or NDCG number exists** anywhere in the repository —
+  i.e. no metric over labelled *queries* against ranked *search results*. `grep -rn
+  'Recall\|MRR\|NDCG' --include='*.go'` returns matches in 14 files, and every one is
+  something else:
+  - `engine/embed/hnsw_test.go:89` — `TestHNSW_RecallAt10`, an ANN index checked against
+    brute force on random vectors; no queries, no relevance labels;
+  - `engine/analysis/taint/recall_test.go`, `engine/ingest/taint_vulngo_e2e_test.go` — the
+    taint-flow recall gate over a labelled *flow* corpus (PB-001 §10), a static-analysis
+    detection rate;
+  - `internal/jvmgroundtruth/{groundtruth,capture,groundtruth_test}.go` — precision/recall of
+    the JVM declared-type *resolver* against `go/types`-style ground truth (edges, not search);
+  - `engine/link/clausebydir_test.go`, `engine/ingest/parseerror_test.go` — "recall" in the
+    sense of edge/file coverage after a linker or parse-error fix;
+  - `engine/memory/{memory,ledger,memory_test}.go`, `surfaces/client/direct.go`,
+    `surfaces/parity_test.go` — the `RecallMemory` / `memory recall` verb, not a metric.
+  None runs a query through `search`, `search_hybrid` or `search_semantic` and scores the
+  ranked hits against judged spans; that harness is SW-258.
 - There is no `internal/eval/retrieval` package and no `docs/eval/retrieval-budgets.json`;
   `docs/eval/` holds `hero-budgets.json`, `hero-protocol.md`, `reference-scenario.json`, `p0/`
   and `runs/`.
