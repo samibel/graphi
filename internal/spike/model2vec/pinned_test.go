@@ -3,6 +3,7 @@ package model2vec
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -42,18 +43,74 @@ func artifactDir() string {
 	return filepath.Join(home, ".cache", "graphi", "models", "potion-code-16M-v2@"+pinnedRevision)
 }
 
-// artifactPresent reports whether every pinned file exists in dir.
+// artifactPresent reports whether every pinned file exists in dir as a regular
+// file the test process can read. A missing file returns os.IsNotExist; a
+// permission-denied file or any other I/O error, and a non-regular entry
+// (directory, symlink, device, socket) at any pinned path, are failures
+// surfaced by checkPinnedArtifact below, not silent skips.
 func artifactPresent(dir string) bool {
 	if dir == "" {
 		return false
 	}
 	for name := range pinnedSHA256 {
-		if st, err := os.Stat(filepath.Join(dir, name)); err != nil || !st.Mode().IsRegular() {
+		st, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			return false
+		}
+		if !st.Mode().IsRegular() {
 			return false
 		}
 	}
 	return true
 }
+
+// checkPinnedArtifact is the fail-closed presence check used by every test
+// that needs the artifact. It returns nil when the artifact is usable, and a
+// descriptive error otherwise — the caller decides whether to Skip (only on
+// a clean os.IsNotExist across every pinned path) or Fail (any other error,
+// including a permission denial, a non-regular file, or a present-but-wrong
+// SHA, which loadPinnedModel handles separately).
+func checkPinnedArtifact(t testing.TB) error {
+	t.Helper()
+	dir := artifactDir()
+	if dir == "" {
+		return errors.New("artifactDir is empty: cannot resolve $HOME")
+	}
+	for name := range pinnedSHA256 {
+		path := filepath.Join(dir, name)
+		st, err := os.Stat(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return err
+			}
+			return &artifactUnusable{path: path, err: err}
+		}
+		if !st.Mode().IsRegular() {
+			return &artifactUnusable{path: path, err: errors.New("not a regular file: mode " + st.Mode().String())}
+		}
+		// Open the file to surface a permission denial as an unusable artifact
+		// rather than skipping past it.
+		f, err := os.Open(path)
+		if err != nil {
+			return &artifactUnusable{path: path, err: err}
+		}
+		_ = f.Close()
+	}
+	return nil
+}
+
+// artifactUnusable is the typed error returned by checkPinnedArtifact when the
+// artifact is present but the test process cannot use it.
+type artifactUnusable struct {
+	path string
+	err  error
+}
+
+func (e *artifactUnusable) Error() string {
+	return e.path + ": " + e.err.Error() + " (the artifact is present but not usable; this is a failure, not a skip)"
+}
+
+func (e *artifactUnusable) Unwrap() error { return e.err }
 
 var (
 	pinnedOnce   sync.Once
@@ -61,17 +118,20 @@ var (
 	pinnedErr    error
 )
 
-// loadPinnedModel skips the calling test when the artifact is absent, fails it
-// when a present file does not match its SHA-256 pin (the wrong artifact would
-// make every fidelity number meaningless), and otherwise returns the one
-// shared loaded model.
+// loadPinnedModel skips the calling test when every pinned file is absent
+// (os.IsNotExist), fails it when a present file is unusable (permission
+// denial, non-regular entry) or does not match its SHA-256 pin, and otherwise
+// returns the one shared loaded model.
 func loadPinnedModel(t testing.TB) *Model {
 	t.Helper()
-	dir := artifactDir()
-	if !artifactPresent(dir) {
-		t.Skip(skipMessage)
+	if err := checkPinnedArtifact(t); err != nil {
+		if os.IsNotExist(err) {
+			t.Skip(skipMessage)
+		}
+		t.Fatalf("pinned artifact at %s: %v", artifactDir(), err)
 	}
 	pinnedOnce.Do(func() {
+		dir := artifactDir()
 		for name, want := range pinnedSHA256 {
 			got, err := fileSHA256(filepath.Join(dir, name))
 			if err != nil {
@@ -86,7 +146,7 @@ func loadPinnedModel(t testing.TB) *Model {
 		pinnedModelV, pinnedErr = LoadModel(dir)
 	})
 	if pinnedErr != nil {
-		t.Fatalf("pinned artifact at %s: %v", dir, pinnedErr)
+		t.Fatalf("pinned artifact at %s: %v", artifactDir(), pinnedErr)
 	}
 	return pinnedModelV
 }

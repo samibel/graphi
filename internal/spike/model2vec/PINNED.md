@@ -93,16 +93,21 @@ Mirrored, one for one:
    float16; squares rounded to float16; numpy's pairwise sum tree in float32 → float16; sqrt →
    float16; divide → float16. Empty token list → zero vector.
 
-Not mirrored, on purpose — **the batch padding quirk**: `tokenizer.json` declares
-`padding: BatchLongest, pad_id 0`, `Tokenizer.encode_batch_fast` applies it, and model2vec strips
-only the unk id, so in a batch every text shorter than the longest pools `(longest − own)` copies
-of the `[PAD]` row into its mean. The oracle's `batch` block shows it: only the longest text
-matches its single-text vector; the others differ by up to **1.95e-3** per component.
-`TestOracle_BatchWithinEpsilon` replays the padded arithmetic to within epsilon (the quirk is
-understood exactly) and records the distance, but `Model.Embed` is batch-invariant: a node's
-vector must not depend on which other nodes share its embedding chunk (determinism decision 4 of
-the spec). **SW-262 must decide and document this explicitly** — proposal: batch-invariant, i.e.
-the reference's `encode([text])` semantics.
+Mirrored, and offered as two named entry points — **the batch padding quirk**: `tokenizer.json`
+declares `padding: BatchLongest, pad_id 0`, `Tokenizer.encode_batch_fast` applies it, and model2vec
+strips only the unk id, so in a batch every text shorter than the longest pools `(longest − own)`
+copies of the `[PAD]` row into its mean. Only the longest text matches its single-text vector.
+
+- `Model.Embed(texts)` **is the reference**: it applies `BatchLongest` padding with the pad id read
+  from `tokenizer.json` (never hardcoded). `TestOracle_BatchWithinEpsilon` replays the oracle's
+  batch of 8 through this public API at **max |Δ| = 0**. AC-3 is measured here.
+- `Model.EmbedEach(texts)` is `encode([t])` per text — **batch-invariant**: `EmbedEach(batch)[i]`
+  is bit-identical to `Embed([]string{t_i})[0]` for every `i`, and its distance from
+  `Embed(batch)` is exactly the padding effect (**2.14e-4** on the pinned batch).
+
+**SW-262 requirement:** the production embedder adopts `EmbedEach` semantics — a node's vector must
+not depend on which other nodes share its embedding chunk (determinism decision 4 of the spec) —
+and pins that choice in `Embedder.ID()`, so the index fingerprint keeps describing the vectors.
 
 ## Documented limits (not covered by the oracle)
 

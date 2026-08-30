@@ -7,6 +7,7 @@ import hashlib, json, os, sys, unicodedata
 
 import numpy as np
 import model2vec
+import tokenizers
 from model2vec import StaticModel
 from tokenizers import Tokenizer
 
@@ -94,7 +95,14 @@ doc = {
     "embedding_shape": list(emb.shape),
     "embedding_dtype_in_memory": str(emb.dtype),
     "normalize": bool(getattr(model, "normalize", cfg.get("normalize", True))),
-    "reference": {"model2vec": model2vec.__version__, "numpy": np.__version__, "python": sys.version.split()[0]},
+    # Every library whose version can move a token id or a vector component is recorded
+    # here, so the fixture states its own provenance instead of relying on PINNED.md prose.
+    "reference": {
+        "model2vec": model2vec.__version__,
+        "numpy": np.__version__,
+        "tokenizers": tokenizers.__version__,
+        "python": sys.version.split()[0],
+    },
     "epsilon_note": "vectors compared after L2 normalisation; recommended |delta| <= 1e-5 per component",
     "cases": out_cases,
     "batch": out_batch,

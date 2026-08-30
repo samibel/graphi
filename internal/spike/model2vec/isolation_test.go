@@ -9,6 +9,8 @@ package model2vec
 // own guard.
 
 import (
+	"bytes"
+	"errors"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -42,6 +44,12 @@ func TestSpike_NotInShippedImportClosure(t *testing.T) {
 
 // TestSpike_ConfinedToItsDirectory: every file that names the spike package
 // path lives under internal/spike/ or is the decision record.
+//
+// `git grep` exit codes are interpreted fail-closed: 0 = matches printed
+// below, 1 = no matches (the only acceptable non-zero exit), anything else
+// (including exit 2 on argument or fatal error) fails the test with the
+// captured stderr — a swallowed exit 2 would silently degrade the gate, per
+// standards.md (Fail closed, don't degrade quietly).
 func TestSpike_ConfinedToItsDirectory(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skipf("git unavailable: %v", err)
@@ -52,7 +60,21 @@ func TestSpike_ConfinedToItsDirectory(t *testing.T) {
 	}
 	cmd := exec.Command("git", "grep", "-l", "--untracked", "-e", "internal/spike", "--", ".")
 	cmd.Dir = strings.TrimSpace(string(root))
-	out, _ := cmd.Output() // exit 1 = no matches
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, gerr := cmd.Output()
+	if gerr != nil {
+		var ee *exec.ExitError
+		if errors.As(gerr, &ee) && ee.ExitCode() == 1 {
+			// Exit 1 = no matches: the spike is invisible to grep, which is
+			// exactly the result the gate exists to certify. Pass.
+			return
+		}
+		// Any other failure (exit 2: bad args / fatal grep error; an I/O
+		// failure; a non-zero exit from a wrapper) is a gate breach, not a
+		// pass — fail closed with the captured stderr so the cause is visible.
+		t.Fatalf("git grep internal/spike: %v (stderr: %s); only exit 1 (no matches) is acceptable", gerr, strings.TrimSpace(stderr.String()))
+	}
 	allowedPrefixes := []string{"internal/spike/"}
 	allowedFiles := map[string]bool{"docs/rc/model2vec-spike.md": true}
 	for _, file := range strings.Split(strings.TrimSpace(string(out)), "\n") {
@@ -70,4 +92,12 @@ func TestSpike_ConfinedToItsDirectory(t *testing.T) {
 			t.Errorf("%s refers to internal/spike; the spike must be removable by `rm -r internal/spike` plus its decision record", file)
 		}
 	}
+}
+
+// stderrFromCmd is unused — the gate now reads stderr directly from the
+// buffer it captured. Kept as a no-op so the file's identifier stays
+// consistent if a future revision wants to add another exec.Cmd failure path.
+func stderrFromCmd(cmd *exec.Cmd) string {
+	_ = cmd
+	return ""
 }

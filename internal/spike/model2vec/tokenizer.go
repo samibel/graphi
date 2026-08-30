@@ -5,28 +5,50 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"unicode"
 )
 
-// The HuggingFace tokenizers JSON sections this spike reads. Only the component
-// types the pinned tokenizer.json declares are modelled; LoadTokenizer refuses
-// anything else rather than approximating it.
-type tokenizerFile struct {
-	Version       string          `json:"version"`
-	Truncation    *truncationSpec `json:"truncation"`
-	AddedTokens   []addedToken    `json:"added_tokens"`
-	Normalizer    json.RawMessage `json:"normalizer"`
-	PreTokenizer  json.RawMessage `json:"pre_tokenizer"`
-	PostProcessor json.RawMessage `json:"post_processor"`
-	Model         modelSpec       `json:"model"`
+// tokenizerSections are the top-level keys of a HuggingFace tokenizers JSON
+// file this spike knows. Every encoding-relevant section is parsed with
+// DisallowUnknownFields and validated against the component set the pinned
+// tokenizer.json declares; any other top-level key is refused. "decoder" is
+// the one section that is read but not validated: it configures ids → text
+// rendering, which this spike (and model2vec's encode) never performs, so any
+// decoder is accepted as irrelevant.
+var tokenizerSections = map[string]bool{
+	"version":        true,
+	"truncation":     true,
+	"padding":        true,
+	"added_tokens":   true,
+	"normalizer":     true,
+	"pre_tokenizer":  true,
+	"post_processor": true,
+	"decoder":        true,
+	"model":          true,
 }
+
+// supportedTokenizerVersion is the tokenizers JSON format version of the
+// pinned file.
+const supportedTokenizerVersion = "1.0"
 
 type truncationSpec struct {
 	Direction string `json:"direction"`
 	MaxLength int    `json:"max_length"`
 	Strategy  string `json:"strategy"`
 	Stride    int    `json:"stride"`
+}
+
+// paddingSpec is tokenizers' PaddingParams. strategy is either the string
+// "BatchLongest" or an object {"Fixed": n}; only the former is implemented.
+type paddingSpec struct {
+	Strategy        json.RawMessage `json:"strategy"`
+	Direction       string          `json:"direction"`
+	PadToMultipleOf *int            `json:"pad_to_multiple_of"`
+	PadID           int             `json:"pad_id"`
+	PadTypeID       int             `json:"pad_type_id"`
+	PadToken        string          `json:"pad_token"`
 }
 
 type addedToken struct {
@@ -60,7 +82,8 @@ type modelSpec struct {
 }
 
 // Tokenizer is the BertNormalizer → BertPreTokenizer → WordPiece pipeline of the
-// pinned tokenizer.json, with its added tokens and right truncation.
+// pinned tokenizer.json, with its added tokens, right truncation and (for
+// EncodeBatch) BatchLongest right padding.
 type Tokenizer struct {
 	vocab         map[string]int
 	tokens        []string // id → token string
@@ -68,6 +91,11 @@ type Tokenizer struct {
 	prefix        string
 	maxInputChars int
 	maxLength     int // truncation length; 0 = none
+
+	// padEnabled mirrors a non-null "padding" section: EncodeBatch pads every
+	// encoding on the right with padID up to the longest one in the batch.
+	padEnabled bool
+	padID      int
 
 	cleanText    bool
 	chineseChars bool
@@ -87,58 +115,115 @@ type addedMatch struct {
 	rstrip     bool
 }
 
-// LoadTokenizer parses a tokenizer.json and validates that it uses exactly the
-// components this spike implements.
+// LoadTokenizer parses a tokenizer.json and validates that every
+// encoding-relevant section uses exactly the settings this spike implements.
+// A section or value outside that set is a load error naming the field;
+// nothing is approximated.
 func LoadTokenizer(path string) (*Tokenizer, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var f tokenizerFile
-	if err := json.Unmarshal(raw, &f); err != nil {
+	var sections map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &sections); err != nil {
 		return nil, fmt.Errorf("tokenizer %s: %w", path, err)
 	}
+	fail := func(field, format string, args ...any) error {
+		return fmt.Errorf("tokenizer %s: %s: %s", path, field, fmt.Sprintf(format, args...))
+	}
+	keys := make([]string, 0, len(sections))
+	for k := range sections {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if !tokenizerSections[k] {
+			return nil, fail(k, "unsupported top-level section (value %s); this spike implements only %v", compact(sections[k]), sortedKeys(tokenizerSections))
+		}
+	}
 
+	// version
+	var version string
+	if err := decodeStrict(sections["version"], &version); err != nil {
+		return nil, fail("version", "%v", err)
+	}
+	if version != supportedTokenizerVersion {
+		return nil, fail("version", "%q is not the tokenizers JSON version %q this spike implements", version, supportedTokenizerVersion)
+	}
+
+	// normalizer
+	if isNull(sections["normalizer"]) {
+		return nil, fail("normalizer", "missing; the pinned file declares a BertNormalizer")
+	}
 	var norm bertNormalizerSpec
-	if err := json.Unmarshal(f.Normalizer, &norm); err != nil || norm.Type != "BertNormalizer" {
-		return nil, fmt.Errorf("tokenizer %s: normalizer %s is not the BertNormalizer this spike implements", path, compact(f.Normalizer))
+	if err := decodeStrict(sections["normalizer"], &norm); err != nil {
+		return nil, fail("normalizer", "%v (value %s)", err, compact(sections["normalizer"]))
+	}
+	if norm.Type != "BertNormalizer" {
+		return nil, fail("normalizer.type", "%q is not the BertNormalizer this spike implements", norm.Type)
+	}
+
+	// pre_tokenizer
+	if isNull(sections["pre_tokenizer"]) {
+		return nil, fail("pre_tokenizer", "missing; the pinned file declares a BertPreTokenizer")
 	}
 	var pre typedSpec
-	if err := json.Unmarshal(f.PreTokenizer, &pre); err != nil || pre.Type != "BertPreTokenizer" {
-		return nil, fmt.Errorf("tokenizer %s: pre_tokenizer %s is not the BertPreTokenizer this spike implements", path, compact(f.PreTokenizer))
+	if err := decodeStrict(sections["pre_tokenizer"], &pre); err != nil {
+		return nil, fail("pre_tokenizer", "%v (value %s)", err, compact(sections["pre_tokenizer"]))
 	}
-	if post := compact(f.PostProcessor); post != "" && post != "null" {
-		return nil, fmt.Errorf("tokenizer %s: post_processor %s is not supported; the pinned file has none", path, post)
+	if pre.Type != "BertPreTokenizer" {
+		return nil, fail("pre_tokenizer.type", "%q is not the BertPreTokenizer this spike implements", pre.Type)
 	}
-	if f.Model.Type != "WordPiece" {
-		return nil, fmt.Errorf("tokenizer %s: model type %q is not WordPiece", path, f.Model.Type)
+
+	// post_processor: must be absent — the ids are used raw, without special
+	// tokens, and model2vec encodes with add_special_tokens=False.
+	if !isNull(sections["post_processor"]) {
+		return nil, fail("post_processor", "%s is not supported; the pinned file has none", compact(sections["post_processor"]))
 	}
-	if f.Model.ContinuingSubwordPrefix == "" {
-		return nil, fmt.Errorf("tokenizer %s: WordPiece model has no continuing_subword_prefix", path)
+
+	// decoder: accepted as irrelevant. It describes how ids are rendered back
+	// to text; neither model2vec's encode nor this spike ever decodes, so its
+	// value cannot affect a token id or a vector. It is deliberately not
+	// validated (see tokenizerSections).
+	_ = sections["decoder"]
+
+	// model
+	if isNull(sections["model"]) {
+		return nil, fail("model", "missing")
 	}
-	if f.Model.MaxInputCharsPerWord <= 0 {
-		return nil, fmt.Errorf("tokenizer %s: WordPiece model has no max_input_chars_per_word", path)
+	var model modelSpec
+	if err := decodeStrict(sections["model"], &model); err != nil {
+		return nil, fail("model", "%v", err)
 	}
-	unkID, ok := f.Model.Vocab[f.Model.UnkToken]
+	if model.Type != "WordPiece" {
+		return nil, fail("model.type", "%q is not WordPiece", model.Type)
+	}
+	if model.ContinuingSubwordPrefix == "" {
+		return nil, fail("model.continuing_subword_prefix", "empty; WordPiece continuation pieces need a prefix")
+	}
+	if model.MaxInputCharsPerWord <= 0 {
+		return nil, fail("model.max_input_chars_per_word", "%d is not a positive word length", model.MaxInputCharsPerWord)
+	}
+	unkID, ok := model.Vocab[model.UnkToken]
 	if !ok {
-		return nil, fmt.Errorf("tokenizer %s: unk_token %q is not in the vocabulary", path, f.Model.UnkToken)
+		return nil, fail("model.unk_token", "%q is not in the vocabulary", model.UnkToken)
 	}
-	tokens := make([]string, len(f.Model.Vocab))
-	seen := make([]bool, len(f.Model.Vocab))
-	for tok, id := range f.Model.Vocab {
+	tokens := make([]string, len(model.Vocab))
+	seen := make([]bool, len(model.Vocab))
+	for tok, id := range model.Vocab {
 		if id < 0 || id >= len(tokens) || seen[id] {
-			return nil, fmt.Errorf("tokenizer %s: vocabulary ids are not the contiguous range 0..%d (token %q has id %d)", path, len(tokens)-1, tok, id)
+			return nil, fail("model.vocab", "ids are not the contiguous range 0..%d (token %q has id %d)", len(tokens)-1, tok, id)
 		}
 		seen[id] = true
 		tokens[id] = tok
 	}
 
 	t := &Tokenizer{
-		vocab:         f.Model.Vocab,
+		vocab:         model.Vocab,
 		tokens:        tokens,
 		unkID:         unkID,
-		prefix:        f.Model.ContinuingSubwordPrefix,
-		maxInputChars: f.Model.MaxInputCharsPerWord,
+		prefix:        model.ContinuingSubwordPrefix,
+		maxInputChars: model.MaxInputCharsPerWord,
 		cleanText:     norm.CleanText,
 		chineseChars:  norm.HandleChineseChars,
 		lowercase:     norm.Lowercase,
@@ -149,29 +234,113 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 	} else {
 		t.stripAccents = norm.Lowercase
 	}
-	if f.Truncation != nil {
-		tr := f.Truncation
-		if tr.Strategy != "LongestFirst" || tr.Direction != "Right" || tr.Stride != 0 || tr.MaxLength <= 0 {
-			return nil, fmt.Errorf("tokenizer %s: truncation %+v is not the right/LongestFirst/stride-0 truncation this spike implements", path, *tr)
+
+	// truncation: null means none; otherwise exactly the right/LongestFirst/
+	// stride-0 truncation Encode implements.
+	if !isNull(sections["truncation"]) {
+		var tr truncationSpec
+		if err := decodeStrict(sections["truncation"], &tr); err != nil {
+			return nil, fail("truncation", "%v", err)
+		}
+		if tr.Direction != "Right" {
+			return nil, fail("truncation.direction", "%q is not the Right truncation this spike implements", tr.Direction)
+		}
+		if tr.Strategy != "LongestFirst" {
+			return nil, fail("truncation.strategy", "%q is not the LongestFirst truncation this spike implements", tr.Strategy)
+		}
+		if tr.Stride != 0 {
+			return nil, fail("truncation.stride", "%d; only stride 0 is implemented", tr.Stride)
+		}
+		if tr.MaxLength <= 0 {
+			return nil, fail("truncation.max_length", "%d is not a positive length", tr.MaxLength)
 		}
 		t.maxLength = tr.MaxLength
 	}
-	for _, a := range f.AddedTokens {
-		if id, ok := f.Model.Vocab[a.Content]; !ok || id != a.ID {
-			return nil, fmt.Errorf("tokenizer %s: added token %q (id %d) is not in the vocabulary with that id; out-of-vocabulary added tokens are not implemented", path, a.Content, a.ID)
+
+	// padding: null means none; otherwise exactly the BatchLongest/Right
+	// padding EncodeBatch implements, with a pad id that names its pad token.
+	if !isNull(sections["padding"]) {
+		var pad paddingSpec
+		if err := decodeStrict(sections["padding"], &pad); err != nil {
+			return nil, fail("padding", "%v", err)
 		}
-		m := addedMatch{id: a.ID, singleWord: a.SingleWord, lstrip: a.LStrip, rstrip: a.RStrip}
-		if a.Normalized {
-			// tokenizers normalises the CONTENT of a normalized added token with
-			// the same normalizer before matching it against normalized text.
-			m.content = t.normalize(a.Content)
-			t.normAdded = append(t.normAdded, m)
-		} else {
-			m.content = []rune(a.Content)
-			t.rawAdded = append(t.rawAdded, m)
+		var strategy string
+		if err := json.Unmarshal(pad.Strategy, &strategy); err != nil || strategy != "BatchLongest" {
+			return nil, fail("padding.strategy", "%s is not the BatchLongest padding this spike implements", compact(pad.Strategy))
+		}
+		if pad.Direction != "Right" {
+			return nil, fail("padding.direction", "%q is not the Right padding this spike implements", pad.Direction)
+		}
+		if pad.PadToMultipleOf != nil {
+			return nil, fail("padding.pad_to_multiple_of", "%d; only null (no rounding up) is implemented", *pad.PadToMultipleOf)
+		}
+		if pad.PadTypeID != 0 {
+			return nil, fail("padding.pad_type_id", "%d; only 0 is implemented (type ids are never used)", pad.PadTypeID)
+		}
+		if pad.PadID < 0 || pad.PadID >= len(tokens) {
+			return nil, fail("padding.pad_id", "%d is outside the vocabulary 0..%d", pad.PadID, len(tokens)-1)
+		}
+		if tokens[pad.PadID] != pad.PadToken {
+			return nil, fail("padding.pad_token", "%q is not the vocabulary token of pad_id %d (%q)", pad.PadToken, pad.PadID, tokens[pad.PadID])
+		}
+		t.padEnabled = true
+		t.padID = pad.PadID
+	}
+
+	// added_tokens: each must be a special token already in the vocabulary
+	// with the same id (out-of-vocabulary added tokens would need an id space
+	// the embedding table does not have).
+	if !isNull(sections["added_tokens"]) {
+		var added []addedToken
+		if err := decodeStrict(sections["added_tokens"], &added); err != nil {
+			return nil, fail("added_tokens", "%v", err)
+		}
+		for i, a := range added {
+			field := fmt.Sprintf("added_tokens[%d]", i)
+			if a.Content == "" {
+				return nil, fail(field, "empty content")
+			}
+			if id, ok := model.Vocab[a.Content]; !ok || id != a.ID {
+				return nil, fail(field, "%q (id %d) is not in the vocabulary with that id; out-of-vocabulary added tokens are not implemented", a.Content, a.ID)
+			}
+			if !a.Special {
+				return nil, fail(field, "%q is not special; only special added tokens are implemented", a.Content)
+			}
+			m := addedMatch{id: a.ID, singleWord: a.SingleWord, lstrip: a.LStrip, rstrip: a.RStrip}
+			if a.Normalized {
+				// tokenizers normalises the CONTENT of a normalized added token with
+				// the same normalizer before matching it against normalized text.
+				m.content = t.normalize(a.Content)
+				t.normAdded = append(t.normAdded, m)
+			} else {
+				m.content = []rune(a.Content)
+				t.rawAdded = append(t.rawAdded, m)
+			}
 		}
 	}
 	return t, nil
+}
+
+// decodeStrict unmarshals raw into v, refusing unknown object keys so that a
+// setting this spike does not model cannot pass silently.
+func decodeStrict(raw json.RawMessage, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
+}
+
+// isNull reports whether a section is absent or JSON null.
+func isNull(raw json.RawMessage) bool {
+	return len(raw) == 0 || bytes.Equal(bytes.TrimSpace(raw), []byte("null"))
+}
+
+func sortedKeys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func compact(raw json.RawMessage) string {
@@ -199,10 +368,15 @@ func (t *Tokenizer) UnkID() int { return t.unkID }
 // MaxLength is the truncation length (0 = none).
 func (t *Tokenizer) MaxLength() int { return t.maxLength }
 
+// Padding reports whether tokenizer.json declares a padding section and, if
+// so, the pad id EncodeBatch pads with (read from the file, never assumed).
+func (t *Tokenizer) Padding() (enabled bool, padID int) { return t.padEnabled, t.padID }
+
 // Encode is tokenizers' Tokenizer.encode(text, add_special_tokens=False).ids:
 // added-token extraction → normalisation → pre-tokenisation → WordPiece →
 // right truncation. Unknown words yield the unk id (they are NOT removed
-// here; Model2Vec drops them one stage later, see Model.InferenceIDs).
+// here; Model2Vec drops them one stage later, see Model.InferenceIDs). No
+// padding is applied: a single encoding is its own longest.
 func (t *Tokenizer) Encode(text string) []int {
 	ids := []int{}
 	for _, seg := range splitAdded([]rune(text), t.rawAdded) {
@@ -224,6 +398,29 @@ func (t *Tokenizer) Encode(text string) []int {
 		ids = ids[:t.maxLength]
 	}
 	return ids
+}
+
+// EncodeBatch is tokenizers' Tokenizer.encode_batch_fast(texts,
+// add_special_tokens=False): every text is encoded (and truncated) as by
+// Encode, then — when tokenizer.json declares padding — every encoding is
+// padded on the right with the pad id up to the longest encoding IN THIS
+// BATCH (BatchLongest). Which texts share a batch therefore changes the ids
+// of the shorter ones; see Model.Embed for the consequence.
+func (t *Tokenizer) EncodeBatch(texts []string) [][]int {
+	out := make([][]int, len(texts))
+	longest := 0
+	for i, text := range texts {
+		out[i] = t.Encode(text)
+		longest = max(longest, len(out[i]))
+	}
+	if t.padEnabled {
+		for i := range out {
+			for len(out[i]) < longest {
+				out[i] = append(out[i], t.padID)
+			}
+		}
+	}
+	return out
 }
 
 // Tokens renders ids back to their vocabulary strings (diagnostics only).

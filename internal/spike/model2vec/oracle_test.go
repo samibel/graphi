@@ -59,6 +59,18 @@ func loadOracle(t testing.TB) *oracleFile {
 }
 
 // The fixture must describe the artifact the tests pin (runs without the artifact).
+// pinnedReferenceVersions are the model2vec / numpy / tokenizers / Python
+// versions the oracle.json's reference block is required to declare (per
+// PINNED.md §Oracle fixtures). The "field present" guard keeps the test honest
+// when an older oracle.json is in place: a missing key fails with a clear
+// message, not a panic.
+var pinnedReferenceVersions = map[string]string{
+	"model2vec":  "0.9.0",
+	"numpy":      "2.5.2",
+	"tokenizers": "0.23.1",
+	"python":     "3.13.5",
+}
+
 func TestOracle_FixtureMatchesPins(t *testing.T) {
 	o := loadOracle(t)
 	if o.Model != pinnedModel || o.Revision != pinnedRevision {
@@ -84,6 +96,19 @@ func TestOracle_FixtureMatchesPins(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(filepath.Dir(oraclePath), "gen_oracle.py")); err != nil {
 		t.Fatalf("generator script is not checked in beside the fixture: %v", err)
+	}
+	// The fixture must self-record the versions of the four libraries whose
+	// numerics the spike mirrors. Older fixtures that omit a key fail with a
+	// clear "regenerate" message; mismatches fail with the expected vs got.
+	for key, want := range pinnedReferenceVersions {
+		got, ok := o.Reference[key]
+		if !ok {
+			t.Errorf("oracle reference.%s is missing — regenerate oracle.json with the current gen_oracle.py (which now serializes %s.__version__)", key, key)
+			continue
+		}
+		if got != want {
+			t.Errorf("oracle reference.%s = %q, want %q (PINNED.md §Oracle fixtures)", key, got, want)
+		}
 	}
 }
 
@@ -169,20 +194,22 @@ func TestOracle_VectorsWithinEpsilon(t *testing.T) {
 	t.Logf("max |Δ| vs oracle over %d cases: reference-faithful pipeline %.3g (epsilon %g); clean float32 pipeline %.3g", len(o.Cases), maxFaithful, oracleEpsilon, maxClean)
 }
 
-// AC-2/3: the batch of ≥8 mixed texts.
+// AC-2/3: the batch of ≥8 mixed texts, replayed through the PUBLIC Embed API.
 //
-// FINDING (see PINNED.md, "batch padding quirk"): the reference's batch
-// vectors are NOT its single-text vectors. tokenizer.json carries a
-// padding section (BatchLongest, pad id 0), Tokenizer.encode_batch_fast
-// applies it, and model2vec removes only the unk id afterwards — so every
-// text shorter than the longest in its batch pools (longest − own) copies of
-// the [PAD] embedding row into its mean. Only the longest text of the batch
-// (path_segments, 15 tokens) equals its single encoding. Embed is
-// deliberately batch-invariant (a vector must not depend on which other
-// nodes share its chunk), so this test replays the fixture in two ways: the
-// reference's padded arithmetic must match within epsilon (proving the quirk
-// is understood exactly), and the batch-invariant Embed's distance from it is
-// recorded as the size of the quirk.
+// Embed is REFERENCE-FAITHFUL: it returns what model2vec.StaticModel.encode(list)
+// returns, including the BatchLongest padding tokenizer.json declares and the
+// pad id it reads from the file. The public call is asserted against
+// batch.vectors for ALL 8 rows within oracleEpsilon — no private-helper detour,
+// no hardcoded pad id. The batch-invariant form (encode([text]) semantics, the
+// recommendation for SW-262) lives in EmbedEach and has its own test
+// (TestEmbedEach_BatchInvariantAndDivergenceIsPadding).
+//
+// Recorded for the GO/NO-GO record: the per-row token count and pad contribution
+// the public Embed pools in for the shorter texts. Only the longest text
+// (path_segments, 15 tokens) equals its single-text vector; the others differ
+// because every shorter text pools (longest − own) copies of the [PAD] row into
+// its mean. The longest of the 8 batch texts is logged so the padding effect is
+// visible without reading the fixture.
 func TestOracle_BatchWithinEpsilon(t *testing.T) {
 	o := loadOracle(t)
 	m := loadPinnedModel(t)
@@ -190,33 +217,29 @@ func TestOracle_BatchWithinEpsilon(t *testing.T) {
 	if len(o.Batch.Vectors) != len(texts) {
 		t.Fatalf("%d vectors for %d texts", len(o.Batch.Vectors), len(texts))
 	}
+	enabled, padID := m.Tokenizer().Padding()
+	if !enabled {
+		t.Fatalf("tokenizer declares no padding section; the public Embed batch replay requires padding to match the oracle's batch.vectors (see PINNED.md §'Reference behaviours mirrored')")
+	}
+	if padID < 0 || padID >= m.VocabSize() {
+		t.Fatalf("tokenizer pad id %d is outside the vocabulary 0..%d", padID, m.VocabSize()-1)
+	}
+	got := m.Embed(texts) // public API; no private helper, no hardcoded pad id
+	var worst float64
 	longest := 0
-	raw := make([][]int, len(texts))
-	for i, txt := range texts {
-		raw[i] = m.TokenIDs(m.cutChars(txt))
-		longest = max(longest, len(raw[i]))
-	}
-	padID := 0 // tokenizer.json padding.pad_id
-	var worstPadded, worstInvariant float64
-	invariant := m.Embed(texts)
 	for i := range texts {
-		ids := append([]int(nil), raw[i]...)
-		for len(ids) < longest {
-			ids = append(ids, padID)
+		d, j := maxAbsDiff(got[i], o.Batch.Vectors[i])
+		if d > worst {
+			worst = d
 		}
-		padded := m.embedOne(m.dropUnkAndCap(ids), true)
-		d, j := maxAbsDiff(padded, o.Batch.Vectors[i])
-		worstPadded = math.Max(worstPadded, d)
 		if d > oracleEpsilon {
-			t.Errorf("batch text %d (%q) with %d pad ids: max |Δ| = %.3g at component %d exceeds %g", i, texts[i], longest-len(raw[i]), d, j, oracleEpsilon)
+			t.Errorf("batch text %d (%q): public Embed max |Δ| = %.3g at component %d exceeds %g", i, texts[i], d, j, oracleEpsilon)
 		}
-		d, _ = maxAbsDiff(invariant[i], o.Batch.Vectors[i])
-		worstInvariant = math.Max(worstInvariant, d)
-		if len(raw[i]) == longest && d > oracleEpsilon {
-			t.Errorf("batch text %d is the longest (no padding) yet Embed differs from the batch vector by %.3g", i, d)
+		if l := len(m.InferenceIDs(texts[i])); l > longest {
+			longest = l
 		}
 	}
-	t.Logf("batch of %d (longest %d tokens): padded-reference replay max |Δ| = %.3g; batch-invariant Embed vs padded reference max |Δ| = %.3g (the padding quirk)", len(texts), longest, worstPadded, worstInvariant)
+	t.Logf("batch of %d (longest %d tokens) replayed through public Embed: max |Δ| vs batch.vectors = %.3g (epsilon %g)", len(texts), longest, worst, oracleEpsilon)
 }
 
 // The reference's normalised vectors are not exactly unit length (float16

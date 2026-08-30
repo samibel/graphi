@@ -26,6 +26,13 @@ const (
 	// token cap applied after unk removal, and (× median token length) the
 	// character cap applied before tokenisation.
 	DefaultMaxLength = 512
+
+	// DefaultBatchSize is model2vec's StaticModel.encode(batch_size=1024): the
+	// reference tokenises — and therefore pads — texts in consecutive chunks
+	// of this many, so a text's padding depends only on its own chunk. (The
+	// multiprocessing path above 10,000 texts uses the same chunks and
+	// concatenates in order; it changes nothing numerically.)
+	DefaultBatchSize = 1024
 )
 
 // modelConfig is config.json. Model2Vec reads only "normalize" (default false).
@@ -49,6 +56,7 @@ type Model struct {
 	// model2vec's character-budget multiplier.
 	medianTokenLength int
 	maxLength         int
+	batchSize         int
 }
 
 // LoadModel reads config.json, tokenizer.json and model.safetensors from dir.
@@ -79,6 +87,7 @@ func LoadModel(dir string) (*Model, error) {
 		dim:       dim,
 		table:     table,
 		maxLength: DefaultMaxLength,
+		batchSize: DefaultBatchSize,
 	}
 	if cfg.Normalize != nil {
 		m.normalize = *cfg.Normalize
@@ -134,9 +143,30 @@ func (m *Model) TokenIDs(text string) []int { return m.tok.Encode(text) }
 // InferenceIDs is model2vec's StaticModel.tokenize([text], max_length=512)[0]:
 // the text is cut to max_length × median_token_length CODE POINTS first, then
 // tokenized, then every unk id is dropped, then the list is capped at
-// max_length. These are the ids that get pooled.
+// max_length. These are the ids that get pooled. A single text is its own
+// longest, so BatchLongest padding is a no-op here; InferenceIDsBatch is the
+// multi-text form.
 func (m *Model) InferenceIDs(text string) []int {
 	return m.dropUnkAndCap(m.tok.Encode(m.cutChars(text)))
+}
+
+// InferenceIDsBatch is model2vec's StaticModel.tokenize(texts, max_length=512)
+// over one batch: each text is cut to max_length × median_token_length code
+// points, the batch is encoded with Tokenizer.EncodeBatch (truncation, then
+// BatchLongest padding with the pad id from tokenizer.json), then every unk
+// id is dropped from every list and each list is capped at max_length. Pad
+// ids are NOT dropped — the reference removes only the unk id — which is
+// why a padded text pools the pad row into its mean.
+func (m *Model) InferenceIDsBatch(texts []string) [][]int {
+	cut := make([]string, len(texts))
+	for i, t := range texts {
+		cut[i] = m.cutChars(t)
+	}
+	ids := m.tok.EncodeBatch(cut)
+	for i := range ids {
+		ids[i] = m.dropUnkAndCap(ids[i])
+	}
+	return ids
 }
 
 // cutChars is model2vec's `sentence[:max_length * median_token_length]`.
@@ -162,15 +192,49 @@ func (m *Model) dropUnkAndCap(ids []int) []int {
 	return kept
 }
 
-// Embed returns one vector per text, in input order, reproducing the Python
-// reference (model2vec 0.9.0 + numpy 2.x on a float16 embedding table) to the
-// bit. Each text is independent of the others in the batch. The per-text
-// pipeline (embedOne with mirrorF16 = true) is:
+// pipeline selects the arithmetic embedOne mirrors.
+type pipeline int
+
+const (
+	// pipelineF16 is the reference on a chunk whose texts all have at least
+	// one pooled token: numpy float16 arithmetic throughout (rounding points
+	// 1–5 below).
+	pipelineF16 pipeline = iota
+	// pipelineF16MeanF64Norm is the reference on a chunk in which at least one
+	// text has NO pooled token: that text's row is np.zeros(dim) — float64 —
+	// and np.stack promotes the whole chunk to float64, so every row of the
+	// chunk keeps its float16-rounded mean (step 1) but is normalised in
+	// float64 (steps 2'–5'), then cast to float32 by the caller of the
+	// reference.
+	pipelineF16MeanF64Norm
+	// pipelineF32 is the "clean" float32 pipeline with no float16 rounding
+	// after the table lookup (EmbedFloat32; recorded, not adopted).
+	pipelineF32
+)
+
+// Embed is REFERENCE-FAITHFUL: it returns what
+// model2vec.StaticModel.encode(texts) returns (model2vec 0.9.0 + numpy 2.x on
+// a float16 embedding table, cast to float32), to the bit for every text of
+// the oracle batch. That includes the reference's batch behaviour:
 //
-//  1. mean: sum the binary16 rows in TOKEN-INDEX ORDER into float32
-//     accumulators, divide by the token count in float32, then round to
-//     binary16 (numpy computes a float16 array's mean with float32
-//     intermediates and stores a float16 result);
+//   - texts are processed in consecutive chunks of DefaultBatchSize (1024);
+//   - within a chunk, tokenizer.json's padding (BatchLongest, Right, pad_id
+//     read from the file) pads every text to the chunk's longest encoding
+//     and the pad ids are pooled — so a text's vector depends on the other
+//     texts in its chunk (see PINNED.md and the record §2.1); and
+//   - a chunk containing a text with no pooled token is normalised in float64
+//     (the reference stacks a float64 np.zeros row for it).
+//
+// Batch-INVARIANT vectors — the reference's encode([text]) for each text,
+// which SW-262 is recommended to adopt — are EmbedEach.
+//
+// The per-text pipeline (embedOne with pipelineF16) is:
+//
+//  1. mean: sum the binary16 rows in TOKEN-INDEX ORDER (pad rows last, as
+//     right padding places them) into float32 accumulators, divide by the
+//     token count in float32, then round to binary16 (numpy computes a
+//     float16 array's mean with float32 intermediates and stores a float16
+//     result);
 //  2. squares: each component squared in float32 and rounded to binary16
 //     (numpy float16 multiply);
 //  3. sum of squares: numpy's pairwise summation over the 256 squares with
@@ -180,31 +244,64 @@ func (m *Model) dropUnkAndCap(ids []int) []int {
 //     underflows to zero in float16 and is a no-op;
 //  5. divide: each component by the norm in float32, rounded to binary16.
 //
+// With pipelineF16MeanF64Norm, step 1 is unchanged and steps 2–5 become:
+// 2'. squares in float64 (exact for binary16 values); 3'. numpy's pairwise
+// summation in float64; 4'. float64 sqrt plus 1e-32; 5'. float64 division,
+// then a single round to float32 (the oracle's np.float32 cast).
+//
 // An empty token list yields the zero vector (the reference's np.zeros row,
 // which normalises to zeros through its epsilon). When config.json says
 // normalize is false the mean of step 1 is returned.
 func (m *Model) Embed(texts []string) [][]float32 {
 	out := make([][]float32, len(texts))
+	for start := 0; start < len(texts); start += m.batchSize {
+		end := min(start+m.batchSize, len(texts))
+		ids := m.InferenceIDsBatch(texts[start:end])
+		p := pipelineF16
+		for _, l := range ids {
+			if len(l) == 0 {
+				p = pipelineF16MeanF64Norm
+				break
+			}
+		}
+		for i, l := range ids {
+			out[start+i] = m.embedOne(l, p)
+		}
+	}
+	return out
+}
+
+// EmbedEach is the BATCH-INVARIANT form: EmbedEach(texts)[i] is bit-identical
+// to Embed([]string{texts[i]})[0] — the reference's encode([text]) — for
+// every i, regardless of which texts share the call. A single text is the
+// longest of its own batch, so no pad id is pooled, and it can only be
+// normalised in float16 (or be the zero vector). This is the semantics
+// recommended for SW-262 (spec determinism decision 4: a node's vector must
+// not depend on which other nodes share its embedding chunk); the divergence
+// from Embed is exactly the padding effect and is measured by
+// TestEmbedEach_DivergenceFromEmbedIsPadding.
+func (m *Model) EmbedEach(texts []string) [][]float32 {
+	out := make([][]float32, len(texts))
 	for i, t := range texts {
-		out[i] = m.embedOne(m.InferenceIDs(t), true)
+		out[i] = m.embedOne(m.InferenceIDs(t), pipelineF16)
 	}
 	return out
 }
 
 // EmbedFloat32 is the "clean" pipeline SW-262 would naturally write — the same
 // token-index-ordered float32 mean, then a float32 L2 normalisation with NO
-// binary16 rounding anywhere. It is measured against the oracle for the record
-// (so the cost of NOT mirroring the reference's float16 storage is a number),
-// but it is not what Embed returns.
+// binary16 rounding anywhere, per text (batch-invariant). It is measured
+// against the oracle for the record (so the cost of NOT mirroring the
+// reference's float16 storage is a number), but it is not what Embed returns.
 func (m *Model) EmbedFloat32(texts []string) [][]float32 {
 	out := make([][]float32, len(texts))
 	for i, t := range texts {
-		out[i] = m.embedOne(m.InferenceIDs(t), false)
+		out[i] = m.embedOne(m.InferenceIDs(t), pipelineF32)
 	}
 	return out
 }
 
-func (m *Model) embedOne(ids []int, mirrorF16 bool) []float32 {
+func (m *Model) embedOne(ids []int, p pipeline) []float32 {
 	vec := make([]float32, m.dim)
 	if len(ids) == 0 {
 		return vec
@@ -219,26 +316,37 @@ func (m *Model) embedOne(ids []int, mirrorF16 bool) []float32 {
 	for j := range vec {
 		vec[j] = vec[j] / n
 	}
-	if mirrorF16 {
+	if p != pipelineF32 {
 		for j := range vec {
-			vec[j] = roundF16(vec[j])
+			vec[j] = roundF16(vec[j]) // rounding point 1: the float16 mean
 		}
 	}
 	if !m.normalize {
 		return vec
 	}
-	if mirrorF16 {
+	switch p {
+	case pipelineF16:
 		squares := make([]uint16, m.dim)
 		for j, v := range vec {
-			squares[j] = f32ToF16(float32(v * v))
+			squares[j] = f32ToF16(float32(v * v)) // rounding point 2
 		}
-		sumsq := roundF16(float32(0) + pairwiseSumF16(squares))
-		norm := roundF16(float32(math.Sqrt(float64(sumsq))))
+		sumsq := roundF16(float32(0) + pairwiseSumF16(squares)) // rounding point 3
+		norm := roundF16(float32(math.Sqrt(float64(sumsq))))    // rounding point 4
 		if norm == 0 {
 			return vec
 		}
 		for j := range vec {
-			vec[j] = roundF16(vec[j] / norm)
+			vec[j] = roundF16(vec[j] / norm) // rounding point 5
+		}
+		return vec
+	case pipelineF16MeanF64Norm:
+		squares := make([]float64, m.dim)
+		for j, v := range vec {
+			squares[j] = float64(v) * float64(v) // 2': exact in float64
+		}
+		norm := math.Sqrt(pairwiseSumF64(squares)) + 1e-32 // 3', 4'
+		for j := range vec {
+			vec[j] = float32(float64(vec[j]) / norm) // 5': float64 divide, one round to float32
 		}
 		return vec
 	}
@@ -291,5 +399,40 @@ func pairwiseSumF16(a []uint16) float32 {
 		n2 := n / 2
 		n2 -= n2 % 8
 		return pairwiseSumF16(a[:n2]) + pairwiseSumF16(a[n2:])
+	}
+}
+
+// pairwiseSumF64 is numpy's DOUBLE_pairwise_sum — the same tree as
+// pairwiseSumF16 with float64 accumulators — used by the float64 add.reduce
+// of a chunk the reference promoted to float64 (pipelineF16MeanF64Norm).
+func pairwiseSumF64(a []float64) float64 {
+	n := len(a)
+	switch {
+	case n < 8:
+		var res float64
+		for i := 0; i < n; i++ {
+			res += a[i]
+		}
+		return res
+	case n <= 128:
+		var r [8]float64
+		for j := 0; j < 8; j++ {
+			r[j] = a[j]
+		}
+		i := 8
+		for ; i < n-n%8; i += 8 {
+			for j := 0; j < 8; j++ {
+				r[j] += a[i+j]
+			}
+		}
+		res := ((r[0] + r[1]) + (r[2] + r[3])) + ((r[4] + r[5]) + (r[6] + r[7]))
+		for ; i < n; i++ {
+			res += a[i]
+		}
+		return res
+	default:
+		n2 := n / 2
+		n2 -= n2 % 8
+		return pairwiseSumF64(a[:n2]) + pairwiseSumF64(a[n2:])
 	}
 }

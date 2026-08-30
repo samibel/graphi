@@ -103,26 +103,109 @@ func TestEmbed_PoolingArithmetic(t *testing.T) {
 	}
 }
 
-// A text's vector never depends on the other texts in its batch, and two
-// runs are bit-identical.
-func TestEmbed_BatchInvariantAndDeterministic(t *testing.T) {
+// Embed is REFERENCE-FAITHFUL: a single text's batch vector equals its
+// single-text vector (BatchLongest padding is a no-op for a batch of one);
+// running Embed twice on the same texts is bit-identical. Note that mixing
+// texts whose inference ids are empty with non-empty ones changes the
+// arithmetic for the whole batch (the reference promotes to float64 when
+// np.zeros joins the stack) — this test keeps the texts non-empty so it
+// isolates the BatchLongest effect, which is what we want.
+func TestEmbed_SingleTextBatchMatchesSingleAndDeterministic(t *testing.T) {
 	m := loadSyntheticModel(t)
-	texts := []string{"hello world", "", "unaffable, hello", "認 hellos"}
+	texts := []string{"hello world", "unaffable, hello", "認 hellos", "ValidateToken"}
 	batch := m.Embed(texts)
 	for i, text := range texts {
 		single := m.Embed([]string{text})[0]
 		for j := range single {
 			if single[j] != batch[i][j] {
-				t.Fatalf("text %d component %d: batch %v, single %v", i, j, batch[i][j], single[j])
+				t.Fatalf("text %d component %d: batch %v, single %v (a batch of one must not pool pad ids)", i, j, batch[i][j], single[j])
 			}
 		}
 	}
 	again := m.Embed(texts)
-	for i := range texts {
+	for i := range again {
 		for j := range again[i] {
 			if again[i][j] != batch[i][j] {
 				t.Fatalf("run-to-run difference at text %d component %d", i, j)
 			}
 		}
 	}
+}
+
+// EmbedEach is BATCH-INVARIANT: EmbedEach(texts)[i] is bit-identical to
+// Embed([]string{texts[i]})[0] for every i, regardless of which texts share
+// the call. EmbedEach is the encode([text]) semantics recommended for SW-262.
+func TestEmbedEach_BatchInvariant(t *testing.T) {
+	m := loadSyntheticModel(t)
+	texts := []string{"hello world", "", "unaffable, hello", "認 hellos", "ValidateToken"}
+	batch := m.EmbedEach(texts)
+	for i, text := range texts {
+		single := m.Embed([]string{text})[0]
+		for j := range single {
+			if batch[i][j] != single[j] {
+				t.Fatalf("text %d component %d: EmbedEach(batch)[i] = %v, Embed([text])[0] = %v (must be bit-identical)", i, j, batch[i][j], single[j])
+			}
+		}
+	}
+}
+
+// Embed (reference-faithful, BatchLongest padded) and EmbedEach (batch-invariant)
+// agree on the longest text in a batch (BatchLongest pads the shorter texts
+// only) and diverge on every shorter text by the pad-row contribution to their
+// mean. The synthetic tokenizer.json has padding=null, so on the synthetic
+// model Embed and EmbedEach are bit-identical — that is the correct behaviour
+// for a tokenizer that does not declare padding, and it is the reason this
+// test runs on the PINNED artifact (which declares BatchLongest, pad id 0).
+// Without the artifact the divergence is "0 (BatchLongest is a no-op when the
+// tokenizer declares no padding section)" — recorded, not asserted.
+func TestEmbedEach_DivergenceFromEmbedIsPadding(t *testing.T) {
+	dir := artifactDir()
+	if !artifactPresent(dir) {
+		t.Skip(skipMessage)
+	}
+	m := loadPinnedModel(t)
+	enabled, _ := m.Tokenizer().Padding()
+	if !enabled {
+		t.Skip("pinned tokenizer declares no padding section; Embed == EmbedEach by construction")
+	}
+	// Pick three texts that produce different token counts so the pad
+	// contribution differs row-by-row and the divergence is informative.
+	texts := []string{"hello world", "hello", "認"}
+	batch := m.Embed(texts)
+	each := m.EmbedEach(texts)
+	// Longest text: Embed and EmbedEach must agree (no pad pooled).
+	longest := 0
+	for _, txt := range texts {
+		if l := len(m.InferenceIDs(txt)); l > longest {
+			longest = l
+		}
+	}
+	for i, txt := range texts {
+		if len(m.InferenceIDs(txt)) != longest {
+			continue
+		}
+		for j := range batch[i] {
+			if batch[i][j] != each[i][j] {
+				t.Fatalf("longest text %d (%q) component %d: Embed %v, EmbedEach %v (must agree)", i, txt, j, batch[i][j], each[i][j])
+			}
+		}
+	}
+	var worst float64
+	divergent := 0
+	for i := range texts {
+		if len(m.InferenceIDs(texts[i])) == longest {
+			continue
+		}
+		d, _ := maxAbsDiff(batch[i], each[i])
+		if d > worst {
+			worst = d
+		}
+		if d > 0 {
+			divergent++
+		}
+	}
+	if divergent == 0 {
+		t.Errorf("no shorter text diverged between Embed and EmbedEach; BatchLongest had no effect — a configuration drift")
+	}
+	t.Logf("pinned batch (longest %d tokens): max |Δ| between Embed and EmbedEach over the %d padded rows = %.3g — the padding effect", longest, divergent, worst)
 }
