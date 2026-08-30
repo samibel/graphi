@@ -14,31 +14,31 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/grpc-go-perf-v1-report.json",
-        "sha256": "e359e7194c0fcdec7c746861a3cbf9c139f9268298d38f4416d96961506022cf",
+        "sha256": "7257328ab735ea4e480689dec68130c8c013ab1686cbee00ce8294f651c14363",
         "repo": "grpc-go",
         "repo_sha": "dbbcf59957fec0bd58063224cbf105b3b3698d4e",
         "dataset": "grpc-go-perf-v1",
         "dataset_sha256": "bdac5107251b7c40bf85fa9fc9eaaed75ad642ef4005ce846850976b893381aa",
-        "candidate_sha": "37fbdac76a249ba6dc1a1e8e23306c4a7e7e8111+dirty",
+        "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 10123,
+        "measured": 13435,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 20246
+        "budget": 26870
       },
       "query_p95_us": {
-        "measured": 3678,
+        "measured": 4097,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 7356
+        "budget": 8194
       },
       "peak_rss_mb": {
-        "measured": 639.546875,
-        "measured_baseline": "hybrid_v1",
+        "measured": 692.015625,
+        "measured_baseline": "lexical",
         "unit": "MB",
-        "budget": 1280
+        "budget": 1385
       }
     },
     "medium": {
@@ -50,31 +50,31 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
-        "sha256": "4a85cb55badaeda865795e0059474e22541da55849c1b15b739d9d7b00f61098",
+        "sha256": "fd835470cff2f027b33f2af07fec509961d049acdfafb211157888885ae1467c",
         "repo": "cobra",
         "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
         "dataset": "cobra-v1",
         "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
-        "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
+        "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 190,
+        "measured": 200,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 380
+        "budget": 400
       },
       "query_p95_us": {
-        "measured": 4723,
+        "measured": 5003,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 9446
+        "budget": 10006
       },
       "peak_rss_mb": {
-        "measured": 356.265625,
+        "measured": 309.640625,
         "measured_baseline": "oracle_upper_bound",
         "unit": "MB",
-        "budget": 713
+        "budget": 620
       }
     },
     "small": {
@@ -85,30 +85,30 @@
       "runner_class": "local",
       "derived_from": {
         "report": "docs/eval/retrieval/runs/2026-08-30-local/fixture-v1-report.json",
-        "sha256": "8d0adc2f3538fa41979388797d8f60f247dc581215fc8407624bb10f7bbd7919",
+        "sha256": "c8511c317786f0932261e4212365e935b49cc6c9f233cba7850127980cacae03",
         "repo": "fixture",
         "dataset": "fixture-v1",
         "dataset_sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
-        "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
+        "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
         "runner_class": "local"
       },
       "index_ms": {
-        "measured": 11,
+        "measured": 14,
         "measured_baseline": "lexical",
         "unit": "ms",
-        "budget": 22
+        "budget": 28
       },
       "query_p95_us": {
-        "measured": 2574,
+        "measured": 3152,
         "measured_baseline": "hybrid_v1",
         "unit": "us",
-        "budget": 5148
+        "budget": 6304
       },
       "peak_rss_mb": {
-        "measured": 110.359375,
-        "measured_baseline": "hybrid_v1",
+        "measured": 111.546875,
+        "measured_baseline": "oracle_upper_bound",
         "unit": "MB",
-        "budget": 221
+        "budget": 224
       }
     }
   }

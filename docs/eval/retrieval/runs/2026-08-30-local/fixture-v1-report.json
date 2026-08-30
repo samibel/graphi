@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "472fd92999a3c40eedf238a4240d13405231c816",
+    "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
     "runner_class": "local",
     "repo": {
       "name": "fixture",
@@ -1999,23 +1999,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 11,
+        "value": 14,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 73,
+        "value": 87,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 111,
+        "value": 323,
         "unit": "us"
       },
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 110.296875,
+        "value": 106.796875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2027,23 +2027,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 11,
+        "value": 14,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 286,
+        "value": 319,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 2574,
+        "value": 3152,
         "unit": "us"
       },
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 110.359375,
+        "value": 111.359375,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2094,7 +2094,7 @@
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 110.359375,
+        "value": 111.546875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2104,7 +2104,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T04:33:20Z",
+    "generated_at": "2026-08-30T09:52:01Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
