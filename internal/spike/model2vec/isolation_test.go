@@ -93,11 +93,3 @@ func TestSpike_ConfinedToItsDirectory(t *testing.T) {
 		}
 	}
 }
-
-// stderrFromCmd is unused — the gate now reads stderr directly from the
-// buffer it captured. Kept as a no-op so the file's identifier stays
-// consistent if a future revision wants to add another exec.Cmd failure path.
-func stderrFromCmd(cmd *exec.Cmd) string {
-	_ = cmd
-	return ""
-}

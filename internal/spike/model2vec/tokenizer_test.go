@@ -128,7 +128,7 @@ func TestInferenceIDs_CharacterCutPrecedesTokenisation(t *testing.T) {
 // Every case asserts the error names the offending field; a regression that
 // silently accepts an unsupported setting would fail closed here.
 func TestLoadTokenizer_RefusesUnsupportedComponents(t *testing.T) {
-	base := writeSyntheticModel(t, 4)
+	base := writeSyntheticModel(t, 4, nil)
 	raw, err := os.ReadFile(filepath.Join(base, FileTokenizer))
 	if err != nil {
 		t.Fatal(err)
@@ -178,7 +178,7 @@ func TestLoadTokenizer_RefusesUnsupportedComponents(t *testing.T) {
 // section's offending field changes, and the load error must name the padding
 // field that was mutated.
 func TestLoadTokenizer_RefusesUnsupportedPadding(t *testing.T) {
-	base := writeSyntheticModelWithPadding(t, 4)
+	base := writeSyntheticModel(t, 4, syntheticPaddingBatchLongest)
 	raw, err := os.ReadFile(filepath.Join(base, FileTokenizer))
 	if err != nil {
 		t.Fatal(err)
@@ -234,7 +234,7 @@ func TestLoadTokenizer_RefusesUnsupportedPadding(t *testing.T) {
 // back to text, which neither model2vec nor this spike does); mutate it
 // arbitrarily and assert the load still succeeds.
 func TestLoadTokenizer_AcceptsAnyDecoder(t *testing.T) {
-	base := writeSyntheticModel(t, 4)
+	base := writeSyntheticModel(t, 4, nil)
 	raw, err := os.ReadFile(filepath.Join(base, FileTokenizer))
 	if err != nil {
 		t.Fatal(err)
@@ -255,7 +255,7 @@ func TestLoadTokenizer_AcceptsAnyDecoder(t *testing.T) {
 // An unknown top-level section is refused (it would mean a setting this spike
 // does not model can pass silently through).
 func TestLoadTokenizer_RefusesUnknownTopLevelSection(t *testing.T) {
-	base := writeSyntheticModel(t, 4)
+	base := writeSyntheticModel(t, 4, nil)
 	raw, err := os.ReadFile(filepath.Join(base, FileTokenizer))
 	if err != nil {
 		t.Fatal(err)

@@ -103,7 +103,12 @@ func runDevSubset(t *testing.T, root, datasetPath string) {
 		for i, n := range nodes {
 			texts[i] = v.text(n)
 		}
-		docVecs := m.Embed(texts)
+		// AC-5 records the SW-262 production-path semantics (record §2.1):
+		// EmbedEach is batch-invariant, so a node's vector does not depend on
+		// which other nodes share its embedding chunk. Embed (BatchLongest
+		// padded) is the reference-faithful comparison path and is recorded
+		// separately by TestEmbedEach_DivergenceFromEmbedIsPadding.
+		docVecs := m.EmbedEach(texts)
 		var results []retrieval.QueryResult
 		for _, q := range ds.Dataset.Queries {
 			hits := rank(m, q.Text, nodes, docVecs, retrieval.TopK)
@@ -288,7 +293,9 @@ func bodyDocTexts(t *testing.T, root string, nodes []model.Node) (map[string]str
 // accumulated in float64) and returns the top-k as scorer hits; ties break on
 // (path, line, id) so the ranking is deterministic.
 func rank(m *Model, query string, nodes []model.Node, docVecs [][]float32, k int) []retrieval.Hit {
-	qv := m.Embed([]string{query})[0]
+	// Match the production-path embedding (EmbedEach) used to build docVecs
+	// so query and document vectors live in the same batch-invariant space.
+	qv := m.EmbedEach([]string{query})[0]
 	type scored struct {
 		i     int
 		score float64

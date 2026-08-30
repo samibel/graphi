@@ -23,7 +23,7 @@ func TestLoadModel_Synthetic(t *testing.T) {
 }
 
 func TestLoadModel_RowCountMustMatchVocabulary(t *testing.T) {
-	dir := writeSyntheticModel(t, 4)
+	dir := writeSyntheticModel(t, 4, nil)
 	raw, err := os.ReadFile(filepath.Join(dir, FileTokenizer))
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +41,7 @@ func TestLoadModel_RowCountMustMatchVocabulary(t *testing.T) {
 }
 
 func TestLoadModel_RejectsWrongDtype(t *testing.T) {
-	dir := writeSyntheticModel(t, 4)
+	dir := writeSyntheticModel(t, 4, nil)
 	p := filepath.Join(dir, FileSafetensors)
 	raw, err := os.ReadFile(p)
 	if err != nil {

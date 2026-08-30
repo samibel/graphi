@@ -5,8 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"sync"
 	"testing"
 )
@@ -43,63 +46,115 @@ func artifactDir() string {
 	return filepath.Join(home, ".cache", "graphi", "models", "potion-code-16M-v2@"+pinnedRevision)
 }
 
-// artifactPresent reports whether every pinned file exists in dir as a regular
-// file the test process can read. A missing file returns os.IsNotExist; a
-// permission-denied file or any other I/O error, and a non-regular entry
-// (directory, symlink, device, socket) at any pinned path, are failures
-// surfaced by checkPinnedArtifact below, not silent skips.
-func artifactPresent(dir string) bool {
+// classifyArtifact is the ONE deterministic classifier for the pinned
+// artifact at dir. It returns
+//
+//   - (true, nil)  — every pinned file exists, is a regular file (NOT a
+//     symlink, directory, device or socket) and is readable by the test
+//     process. The artifact can be loaded.
+//   - (false, nil) — every pinned file is genuinely absent (Lstat returns
+//     fs.ErrNotExist for every path). Caller should Skip.
+//   - (false, err) — partial absence, a permission denial, an IO failure,
+//     a symlink, or a directory where a regular file should be. Caller
+//     should Fail with the error.
+//
+// Three determinism guarantees:
+//
+//  1. Files are inspected in sorted name order (Go map iteration is
+//     randomised; this classifier is not).
+//  2. ALL pinned files are inspected before a decision is returned.
+//  3. os.Lstat + os.Open are used so symlinks are detected as such and not
+//     followed silently — a symlink at a pinned path is a misconfigured
+//     artifact and must Fail, not Skip.
+//
+// This is the single source of truth used by artifactPresent,
+// loadPinnedModel and the absence-aware tests; TestArtifactClassifier
+// table-tests its five observable outcomes.
+func classifyArtifact(dir string) (bool, error) {
 	if dir == "" {
-		return false
+		return false, nil
 	}
+	names := make([]string, 0, len(pinnedSHA256))
 	for name := range pinnedSHA256 {
-		st, err := os.Stat(filepath.Join(dir, name))
-		if err != nil {
-			return false
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var notExist int
+	var firstErr error
+	for _, name := range names {
+		path := filepath.Join(dir, name)
+		st, lerr := os.Lstat(path)
+		if lerr != nil {
+			if errors.Is(lerr, fs.ErrNotExist) {
+				notExist++
+				continue
+			}
+			if firstErr == nil {
+				firstErr = &artifactUnusable{path: path, err: lerr}
+			}
+			continue
+		}
+		if st.Mode()&os.ModeSymlink != 0 {
+			if firstErr == nil {
+				firstErr = &artifactUnusable{path: path, err: errors.New("is a symlink; the pinned artifact must be a regular file, not a link")}
+			}
+			continue
 		}
 		if !st.Mode().IsRegular() {
-			return false
+			if firstErr == nil {
+				firstErr = &artifactUnusable{path: path, err: errors.New("not a regular file: mode " + st.Mode().String())}
+			}
+			continue
 		}
+		f, oerr := os.Open(path)
+		if oerr != nil {
+			if firstErr == nil {
+				firstErr = &artifactUnusable{path: path, err: oerr}
+			}
+			continue
+		}
+		_ = f.Close()
 	}
-	return true
+	if firstErr != nil {
+		return false, firstErr
+	}
+	if notExist == len(pinnedSHA256) {
+		return false, nil
+	}
+	if notExist > 0 {
+		return false, errors.New("pinned artifact is partial: " + strconv.Itoa(notExist) + " of " + strconv.Itoa(len(pinnedSHA256)) + " pinned files are absent at " + dir)
+	}
+	return true, nil
 }
 
-// checkPinnedArtifact is the fail-closed presence check used by every test
-// that needs the artifact. It returns nil when the artifact is usable, and a
-// descriptive error otherwise — the caller decides whether to Skip (only on
-// a clean os.IsNotExist across every pinned path) or Fail (any other error,
-// including a permission denial, a non-regular file, or a present-but-wrong
-// SHA, which loadPinnedModel handles separately).
+// artifactPresent is the boolean form of classifyArtifact, kept so existing
+// callers (`if !artifactPresent(dir) { t.Skip(skipMessage) }`) keep their
+// intent on the page. FAILURE cases (partial, permission, symlink, dir)
+// collapse to false here, so callers that only inspect the bool would skip
+// past a misconfigured artifact — prefer classifyArtifact directly in new
+// code so the error is visible.
+func artifactPresent(dir string) bool {
+	ok, _ := classifyArtifact(dir)
+	return ok
+}
+
+// checkPinnedArtifact is the fail-closed entry point used by every test that
+// needs the artifact. It returns nil when the artifact is usable, no error
+// when every pinned file is missing (the caller should Skip), and a
+// descriptive error for any other failure mode — partial absence, permission
+// denied, IO error, symlink, directory at a pinned path.
 func checkPinnedArtifact(t testing.TB) error {
 	t.Helper()
 	dir := artifactDir()
 	if dir == "" {
 		return errors.New("artifactDir is empty: cannot resolve $HOME")
 	}
-	for name := range pinnedSHA256 {
-		path := filepath.Join(dir, name)
-		st, err := os.Stat(path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return err
-			}
-			return &artifactUnusable{path: path, err: err}
-		}
-		if !st.Mode().IsRegular() {
-			return &artifactUnusable{path: path, err: errors.New("not a regular file: mode " + st.Mode().String())}
-		}
-		// Open the file to surface a permission denial as an unusable artifact
-		// rather than skipping past it.
-		f, err := os.Open(path)
-		if err != nil {
-			return &artifactUnusable{path: path, err: err}
-		}
-		_ = f.Close()
-	}
-	return nil
+	_, err := classifyArtifact(dir)
+	return err
 }
 
-// artifactUnusable is the typed error returned by checkPinnedArtifact when the
+// artifactUnusable is the typed error returned by classifyArtifact when the
 // artifact is present but the test process cannot use it.
 type artifactUnusable struct {
 	path string
@@ -112,6 +167,142 @@ func (e *artifactUnusable) Error() string {
 
 func (e *artifactUnusable) Unwrap() error { return e.err }
 
+// TestArtifactClassifier pins classifyArtifact's five observable outcomes
+// (absent / partial / permission / directory / symlink). Each case builds a
+// temp dir, populates it to express the failure mode under test, and
+// compares the classifier's (present, errorKind) tuple to the expected one.
+//
+// "permission" is skipped when the test process is effectively root (chmod
+// 000 is not enforced for the file owner who is root); the classifier's
+// permission-denied path is exercised in CI by a non-root user.
+func TestArtifactClassifier(t *testing.T) {
+	allNames := allPinnedNames()
+	cases := []struct {
+		name        string
+		setup       func(t *testing.T, dir string)
+		wantPresent bool
+		wantKind    errorKind
+	}{
+		{
+			name: "absent",
+			setup: func(t *testing.T, dir string) {
+				// Nothing written — every pinned path is missing.
+			},
+			wantPresent: false,
+			wantKind:    errNone,
+		},
+		{
+			name: "partial",
+			setup: func(t *testing.T, dir string) {
+				// Only the first pinned name (config.json in sorted order)
+				// is present; the other three are missing.
+				if err := os.WriteFile(filepath.Join(dir, allNames[0]), []byte("{}"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantPresent: false,
+			wantKind:    errPartial,
+		},
+		{
+			name: "directory",
+			setup: func(t *testing.T, dir string) {
+				for _, name := range allNames {
+					if err := os.Mkdir(filepath.Join(dir, name), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			wantPresent: false,
+			wantKind:    errUnusable,
+		},
+		{
+			name: "symlink",
+			setup: func(t *testing.T, dir string) {
+				for _, name := range allNames {
+					// A symlink whose target is itself (the path) makes
+					// Lstat report a symlink regardless of whether the loop
+					// resolves; if a platform refuses, fall back to a link
+					// to "." which is also a symlink by Lstat.
+					if err := os.Symlink(filepath.Join(dir, name), filepath.Join(dir, name)); err != nil {
+						if err := os.Symlink(".", filepath.Join(dir, name)); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+			},
+			wantPresent: false,
+			wantKind:    errUnusable,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := t.TempDir()
+			c.setup(t, dir)
+			present, err := classifyArtifact(dir)
+			gotPresent, gotKind := present, kindOf(err)
+			if gotPresent != c.wantPresent || gotKind != c.wantKind {
+				t.Fatalf("classifyArtifact(%s) = (%v, %v), want (%v, %v); err = %v",
+					c.name, gotPresent, gotKind, c.wantPresent, c.wantKind, err)
+			}
+		})
+	}
+
+	t.Run("permission", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("chmod 000 is not enforced for root; permission-denied path is exercised in CI as a non-root user")
+		}
+		dir := t.TempDir()
+		for _, name := range allNames {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte("x"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := os.Chmod(filepath.Join(dir, allNames[0]), 0o000); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(filepath.Join(dir, allNames[0]), 0o644) })
+		present, err := classifyArtifact(dir)
+		if present || kindOf(err) != errUnusable {
+			t.Fatalf("classifyArtifact(permission) = (%v, %v); want (false, errUnusable)", present, err)
+		}
+	})
+}
+
+// allPinnedNames returns the pinned file names in a deterministic order.
+func allPinnedNames() []string {
+	names := make([]string, 0, len(pinnedSHA256))
+	for name := range pinnedSHA256 {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+type errorKind int
+
+const (
+	errNone     errorKind = iota
+	errUnusable           // *artifactUnusable or wrapped os.Open/os.Lstat error
+	errPartial            // "pinned artifact is partial: ..."
+)
+
+// kindOf maps an error returned by classifyArtifact to one of the three
+// observable kinds the table test cares about. nil → errNone.
+func kindOf(err error) errorKind {
+	if err == nil {
+		return errNone
+	}
+	var u *artifactUnusable
+	if errors.As(err, &u) {
+		return errUnusable
+	}
+	const partialPrefix = "pinned artifact is partial:"
+	if msg := err.Error(); len(msg) >= len(partialPrefix) && msg[:len(partialPrefix)] == partialPrefix {
+		return errPartial
+	}
+	return errUnusable
+}
+
 var (
 	pinnedOnce   sync.Once
 	pinnedModelV *Model
@@ -119,16 +310,23 @@ var (
 )
 
 // loadPinnedModel skips the calling test when every pinned file is absent
-// (os.IsNotExist), fails it when a present file is unusable (permission
-// denial, non-regular entry) or does not match its SHA-256 pin, and otherwise
-// returns the one shared loaded model.
+// (clean absence across every pinned path), fails it when a present file is
+// unusable (permission denial, non-regular entry, symlink, partial absence)
+// or does not match its SHA-256 pin, and otherwise returns the one shared
+// loaded model.
 func loadPinnedModel(t testing.TB) *Model {
 	t.Helper()
-	if err := checkPinnedArtifact(t); err != nil {
-		if os.IsNotExist(err) {
-			t.Skip(skipMessage)
-		}
+	present, err := classifyArtifact(artifactDir())
+	if err != nil {
+		// partial / permission / symlink / dir / IO → fail with the
+		// classifier's own error so the cause is visible.
 		t.Fatalf("pinned artifact at %s: %v", artifactDir(), err)
+	}
+	if !present {
+		// classifier said absent (every pinned file Lstat returned
+		// fs.ErrNotExist). Skip — the developer is expected to fetch the
+		// artifact per PINNED.md.
+		t.Skip(skipMessage)
 	}
 	pinnedOnce.Do(func() {
 		dir := artifactDir()

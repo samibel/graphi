@@ -89,21 +89,37 @@ root:xnu-12377.161.14~5/RELEASE_ARM64_T6020 arm64` (hostname redacted); `go1.26.
 `system_profiler SPHardwareDataType`). Same runner class as the SW-258 `2026-08-30-local`
 reports (`darwin/arm64`, 12 CPUs, go1.26.6).
 
+The HEADLINE throughput / load / RSS figures are the production path
+`EmbedEach` (batch-invariant, no pad rows pooled, see §2.1): each text is
+tokenised alone and pooled against its own ids, exactly as SW-262 is
+required to embed. The reference-batch throughput is recorded separately
+with its pad rows counted — it is the path the oracle batch fixture
+requires for max |Δ| = 0 (`oracle_test.go::TestOracle_BatchWithinEpsilon`),
+**not** the production path.
+
 | Measure | Run 1 | Run 2 |
 |---|---|---|
 | Artifact size | 33,514,749 bytes (31.96 MiB) | same |
-| Model load (read + parse tokenizer.json + decode safetensors header + table) | 59.9 ms | 59.8 ms |
-| Peak RSS (getrusage MAXRSS) before load / after load | 14.1 → 84.7 MiB | 14.1 → 84.8 MiB |
-| Go heap after load (HeapSys / Sys / HeapAlloc) | 79.4 / 86.1 / 70.0 MiB | 83.4 / 90.4 / 70.0 MiB |
-| 10,000-text batch (169,987 pooled tokens, 17.0 per text) | 181.4 ms → **55,140 texts/s** (18.1 µs/text) | 183.2 ms → **54,600 texts/s** (18.3 µs/text) |
-| Warm repeat of the batch | 54,968 texts/s | 54,334 texts/s |
-| Peak RSS after the batch | 92.2 MiB | 92.5 MiB |
-| Go heap after the batch (HeapSys / Sys / HeapAlloc) | 83.5 / 91.4 / 65.5 MiB | 83.4 / 92.2 / 65.3 MiB |
+| Model load (read + parse tokenizer.json + decode safetensors header + table) | 80.7 ms | 64.6 ms |
+| Peak RSS (getrusage MAXRSS) before load / after load | 14.0 → 86.2 MiB | 14.5 → 86.7 MiB |
+| Go heap after load (HeapSys / Sys / HeapAlloc) | 79.6 / 85.3 / 70.0 MiB | 79.5 / 86.2 / 70.0 MiB |
+| **Production path** (`EmbedEach`, 10,000 texts, **169,987 pooled tokens = 17.0 per text**, no pad rows) | 255.7 ms → **39,113 texts/s** (25.6 µs/text) | 428.7 ms → **23,329 texts/s** (42.9 µs/text) |
+| Warm repeat of the production batch | 31,084 texts/s | 42,827 texts/s |
+| **Reference path** (`Embed` BatchLongest padded, 10,000 texts, **490,000 pooled tokens incl. 320,013 pad rows (32.0 per text)**, pad id read from `tokenizer.json`) | 651.9 ms → **15,340 texts/s** — reference-comparison path, NOT the production path | 666.6 ms → **15,002 texts/s** — same |
+| Peak RSS after the batch | 92.8 MiB | 95.2 MiB |
+| Go heap after the batch (HeapSys / Sys / HeapAlloc) | 83.6 / 91.1 / 64.7 MiB | 83.5 / 91.7 / 63.1 MiB |
 
 Single-threaded, no SIMD, no allocation tuning. The 32 MiB table is held as binary16 (the
 artifact's size) and decoded per lookup; the ~40 MiB above the table is the tokenizer's 63k-entry
-vocabulary map and Go's heap headroom. For scale: cobra (938 nodes) embeds in under 20 ms; a
-50k-node repository in about one second.
+vocabulary map and Go's heap headroom.
+
+The production path is slower than the old per-text-in-a-single-call figure: every text pays
+its own `Tokenizer.Encode` call (no `EncodeBatch` amortisation), and the dominant cost is the
+per-text tokenisation rather than the pooling (which is in noise). The reference path pools
+~2.9× more tokens (the [PAD] rows) but pays only one `EncodeBatch` per 1024-text chunk — that
+is why a single embedding call is cheaper on it. For scale: cobra (938 nodes) embeds through
+`EmbedEach` in ~24 ms on the fastest run, ~43 ms on the slower one; a 50k-node repository in
+1.3–2.2 s on this runner.
 
 ## 4. Quality on the SW-258 development subset (AC-5) — spike numbers
 
@@ -125,62 +141,81 @@ the spike's name_only run is its first measurement of that shape.
 
 Checkout `$HOME/.cache/graphi/corpus/cobra` at `a0a6ae02…` (the dataset pin); 938 nodes
 indexed (the SW-258 report indexed the same 938); body+doc text available for 636 nodes.
+**Embeddings go through `EmbedEach`** (record §2.1, SW-262 production path):
+batch-invariant, a node's vector does not depend on its chunk companions.
+The reference-faithful `Embed` (BatchLongest padded) is the comparison path
+measured by `TestEmbedEach_DivergenceFromEmbedIsPadding` and is **not** what
+the AC-5 numbers below were produced from.
 
 | dev split, all strata | recall@10 | mrr@10 | ndcg@10 | top1 |
 |---|---|---|---|---|
 | `lexical` (SW-258) | 0.264 | 0.252 | 0.247 | 0.222 |
 | `hybrid_v1` (SW-258) | 0.473 | 0.605 | 0.468 | 0.481 |
 | `semantic_name_only` (SW-258) | unavailable | unavailable | unavailable | unavailable |
-| **spike name_only** | **0.606** | **0.692** | **0.586** | **0.630** |
-| **spike body+doc** | **0.667** | **0.712** | **0.611** | **0.630** |
+| **spike name_only** (`EmbedEach`) | **0.6062** | **0.6922** | **0.5856** | **0.6296** |
+| **spike body+doc** (`EmbedEach`) | **0.6673** | **0.7405** | **0.6076** | **0.6667** |
 | `oracle_upper_bound` | 1.000 | 1.000 | 1.000 | 1.000 |
 
 Per stratum (dev split, ndcg@10 / recall@10 / mrr@10):
 
-| stratum (dev queries) | lexical | hybrid_v1 | spike name_only | spike body+doc | fusion target (targets.json) |
+| stratum (dev queries) | lexical | hybrid_v1 | spike name_only | spike body+doc | fusion target (`docs/eval/retrieval-targets.json`) |
 |---|---|---|---|---|---|
-| exact_identifier (4) | 0.731 / 0.667 / 0.867 | 0.732 / 0.667 / 0.917 | **0.962 / 1.000 / 1.000** | 0.759 / 0.875 / 0.875 | top1 floor 0.75 (spike name_only 1.00, body+doc 0.75) |
+| exact_identifier (4) | 0.731 / 0.667 / 0.867 | 0.732 / 0.667 / 0.917 | **0.9624 / 1.000 / 1.000** | 0.7585 / 0.875 / 0.875 | top1 floor 0.75 (spike name_only 1.00, body+doc 0.75) |
 | exact_path (3) | 0.979 / 1.000 / 1.000 | 0.979 / 1.000 / 1.000 | **1.000 / 1.000 / 1.000** | **1.000 / 1.000 / 1.000** | — |
-| nl_behaviour (6) | 0 / 0 / 0 | 0.270 / 0.250 / 0.417 | 0.445 / 0.389 / 0.611 | **0.639 / 0.681 / 0.722** | ndcg 0.370 |
-| architecture_flow (5) | 0 / 0 / 0 | 0.191 / 0.292 / 0.222 | 0.288 / 0.500 / 0.182 | **0.317 / 0.333 / 0.429** | ndcg 0.291 |
-| config_docs (5) | 0 / 0 / 0 | 0.358 / 0.389 / 0.600 | 0.691 / 0.617 / 1.000 | **0.715 / 0.883 / 0.850** | — |
-| ambiguous (4) | 0.319 / 0.490 / 0.223 | **0.521 / 0.570 / 0.600** | 0.350 / 0.363 / 0.528 | 0.367 / 0.338 / 0.500 | — |
+| nl_behaviour (6) | 0 / 0 / 0 | 0.270 / 0.250 / 0.417 | 0.4450 / 0.3889 / 0.6111 | **0.6387 / 0.6806 / 0.7222** | ndcg 0.4058 (spike clears it: 0.4450 / 0.6387) |
+| architecture_flow (5) | 0 / 0 / 0 | 0.191 / 0.292 / 0.222 | 0.2879 / 0.500 / 0.1821 | **0.3167 / 0.3333 / 0.4286** | ndcg 0.3286 (spike falls short: 0.2879 / 0.3167 — fusion must add the lexical/structural signal SW-263 will bring) |
+| config_docs (5) | 0 / 0 / 0 | 0.358 / 0.389 / 0.600 | 0.6905 / 0.6167 / 1.000 | **0.7150 / 0.8833 / 0.8500** | — |
+| ambiguous (4) | 0.319 / 0.490 / 0.223 | **0.4493 / 0.4625 / 0.5000** | 0.3497 / 0.3625 / 0.5278 | 0.3674 / 0.3375 / 0.5000 | — |
 | no_hit (3): negative_hit_rate@5 | 0 | 0 | 0 | 0 | — |
 
-Holdout split (measured, never used for a decision): spike name_only 0.583 / 0.438 / 0.483,
-body+doc 0.854 / 0.740 / 0.709 (recall@10 / mrr@10 / ndcg@10).
+Holdout split (measured, never used for a decision): spike name_only
+recall@10 / mrr@10 / ndcg@10 = 0.5833 / 0.4375 / 0.4827 (top1 0.3750),
+spike body+doc = 0.8542 / 0.7438 / 0.7109 (top1 0.6250).
 
-Reading: on the two conceptual strata the semantic-only spike already clears the SW-258 fusion
-targets (nl_behaviour ndcg 0.445 and 0.639 vs target 0.370; architecture_flow 0.288/0.317 vs
-0.291 — body+doc clears it, name_only is 0.003 short) **without any lexical signal**. Exact
-identifiers stay perfect over name-only documents and drop with body+doc (a long body dilutes
-the name) — the expected argument for SW-263's fusion over a union rather than a replacement.
-`ambiguous` is where hybrid_v1's degree/path signals still win. Body+doc lifts every prose
-stratum, which is the spec's "what is embedded is the problem" diagnosis confirmed on real data.
+Reading: on the conceptual stratum `nl_behaviour` the semantic-only spike **clears** the SW-258
+fusion target on ndcg@10 alone (name_only 0.4450, body+doc 0.6387 vs `must_reach` 0.4058) —
+**without any lexical signal**. On `architecture_flow` the spike is a *substantial* improvement
+over both baselines (lexical ndcg 0, hybrid_v1 ndcg 0.191) but does not, by itself, reach the
+fusion `must_reach` of 0.3286 (name_only 0.2879, body+doc 0.3167 — short by 0.012 on the best
+variant). That gap is the point of SW-263: a semantic-only embedder cannot replicate the
+degree/path signals hybrid_v1 carries, so fusion is the next step, not a flag on the embedder.
+Exact identifiers stay perfect over name-only documents and drop with body+doc (a long body
+dilutes the name) — the expected argument for SW-263's fusion over a union rather than a
+replacement. `ambiguous` is where hybrid_v1's degree/path signals still win. Body+doc lifts
+every prose stratum over name_only, which is the spec's "what is embedded is the problem"
+diagnosis confirmed on real data.
+
+The dev-split numbers are reproducible to 4 decimal places by re-running
+`CGO_ENABLED=0 go test ./internal/spike/model2vec -run TestSpikeDevSubset_Cobra -count=1 -v`;
+the holdout split is reproducible by the same command (its rows are logged but never used for
+the decision).
 
 ### 4.2 fixture-v1 (the hermetic PR-time set: 7 dev + 3 holdout), dev split
 
 92 nodes; body+doc for 46. Small enough that one query moves a stratum by 100%: read it as a
-smoke result.
+smoke result. Embeddings go through `EmbedEach` (same as §4.1).
 
 | dev split | recall@10 | mrr@10 | ndcg@10 | top1 | negative_hit_rate@5 |
 |---|---|---|---|---|---|
 | `lexical` (SW-258) | 0.500 | 0.500 | 0.457 | 0.500 | 0 |
 | `hybrid_v1` (SW-258) | 0.639 | 0.833 | 0.659 | 0.833 | 0 |
-| **spike name_only** | **0.833** | 0.778 | **0.695** | 0.667 | 0 |
-| **spike body+doc** | 0.778 | 0.639 | 0.540 | 0.333 | 1.0 (the one no_hit dev query surfaces its negative example) |
+| **spike name_only** (`EmbedEach`) | **0.8333** | **0.7778** | **0.6951** | **0.6667** | 0 |
+| **spike body+doc** (`EmbedEach`) | 0.7778 | 0.6389 | 0.5395 | 0.3333 | 1.0 (the one no_hit dev query surfaces its negative example) |
 
 The fixture's no_hit result is the one warning sign in the numbers: a semantic-only ranking
 always returns *something*, and over body+doc text a "kubernetes pod scheduler" query lands on
 `config.TestLoad`. That is a property of semantic-only retrieval, not of this embedder, and it
-is exactly what SW-263's exact-vs-NL rule and the abstention envelope exist for; on cobra's five
-no_hit queries neither document variant surfaced a negative example.
+is exactly what SW-263's exact-vs-NL rule and the abstention envelope exist for; on cobra's
+three no_hit dev queries neither document variant surfaced a negative example.
+
+The dev-split numbers are reproducible to 4 decimal places by re-running
+`CGO_ENABLED=0 go test ./internal/spike/model2vec -run TestSpikeDevSubset_Fixture -count=1 -v`.
 
 ## 5. CGo-free and zero egress (AC-6)
 
 | Check | Evidence |
 |---|---|
-| `CGO_ENABLED=0 go test ./internal/spike/...` | green: 30 tests + 84 subtests, 0 skipped (the oracle replay RUNS against the local artifact; without it the artifact-dependent tests SKIP with `SKIP: model artifact absent; see PINNED.md` and the synthetic-model, float16, isolation and egress tests still run) |
+| `CGO_ENABLED=0 go test ./internal/spike/...` | green: **36 tests + 104 subtests**, 0 skipped (the oracle replay RUNS against the local artifact; without it the artifact-dependent tests SKIP with `SKIP: model artifact absent; see PINNED.md` and the synthetic-model, float16, isolation and egress tests still run) |
 | `CGO_ENABLED=0 go build ./...` | green; the package is pure Go, stdlib-only |
 | `go run ./cmd/layerguard` | PASS (the spike sits under `internal/`, imports `core/*`, `engine/embed`, `engine/ingest`, `internal/eval/retrieval` from tests only; nothing from `surfaces/` or `cmd/`) |
 | Static egress | `TestSpike_ImportClosureHasNoNetwork`: `go list -deps` of the package contains none of `net`, `net/http`, `net/url`, `os/exec`, `crypto/tls`, `syscall/js` (control: `encoding/json` present) |
@@ -199,10 +234,10 @@ Removal is `rm -r internal/spike` plus this file.
 | Criterion (story AC-7) | Required | Measured | Met |
 |---|---|---|---|
 | Tokenizer fidelity (AC-3) | token ids exact; vectors \|Δ\| ≤ 1e-5 **through the public API** | ids exact on 15/15 cases; **max \|Δ\| = 0** on 15/15 single-text cases and on the batch of 8 replayed through the public `Embed(texts)` (pad id from `tokenizer.json`, no private helper); clean-float32 variant 2.43e-4 (recorded, not adopted) | **yes** |
-| Dev-subset quality vs `semantic_name_only` and `lexical` | acceptable, numbers quoted | cobra dev: spike name_only ndcg@10 **0.586** (recall@10 0.606, mrr@10 0.692) vs lexical 0.247 / hybrid_v1 0.468; `semantic_name_only` unavailable in SW-258 — the spike is its first measurement; body+doc **0.611**; conceptual strata clear the fusion targets (nl_behaviour 0.445 / 0.639 vs 0.370) | **yes** |
+| Dev-subset quality vs `semantic_name_only` and `lexical` | acceptable, numbers quoted | cobra dev (EmbedEach): spike name_only ndcg@10 **0.5856** (recall@10 0.6062, mrr@10 0.6922, top1 0.6296) vs lexical 0.247 / hybrid_v1 0.468; `semantic_name_only` unavailable in SW-258 — the spike is its first measurement; body+doc ndcg@10 **0.6076**; `nl_behaviour` clears its fusion target alone (0.4450 / 0.6387 vs must_reach 0.4058); `architecture_flow` does not (0.2879 / 0.3167 vs must_reach 0.3286) — that gap is the next step (SW-263 fusion), not a flag on the embedder; fixture-v1 mirrors the shape. | **yes** |
 | CGo-free | `CGO_ENABLED=0` build of the package and of the tree | green; stdlib-only closure; go.mod unchanged | **yes** |
 | Zero runtime egress | no dial during `Embed`; no net packages | static closure clean; sentinel-dialer test clean | **yes** |
-| Load / memory / throughput (AC-4, recorded not gated) | — | 60 ms load; 85 MiB RSS after load, 92 MiB after 10k texts; ~55k texts/s single-threaded; 32 MiB artifact | recorded |
+| Load / memory / throughput (AC-4, recorded not gated) | — | load **65–81 ms**; **86 MiB RSS** after load, **93–95 MiB after 10k texts**; production path `EmbedEach` **23–39k texts/s** single-threaded (per-text `Encode` cost is dominant); reference path `Embed` BatchLongest padded **15k texts/s** with **490k pooled tokens incl. 320k pad rows**; 32 MiB artifact | recorded |
 
 All four conjunction members hold, from measurements taken through the public API. Three things go
 to SW-262 as **requirements, not doubts**: adopt `EmbedEach` (batch-invariant) semantics and pin
@@ -215,6 +250,11 @@ Review history: round 1 (codex, read-only) returned `changes-needed` on exactly 
 public `Embed` was batch-invariant while the oracle batch used `BatchLongest` padding, so AC-3 was
 not met *by the public API* even though the arithmetic was understood. The rework made `Embed` the
 reference and moved batch-invariance into `EmbedEach`; the criterion above is now measured through
-the API a caller actually uses.
+the API a caller actually uses. Round 2 (same reviewer) returned `changes-needed` again because
+the AC-4 / AC-5 tests still called the now-padded `Embed`, so the recorded §3/§4 numbers belonged
+to the behaviour now named `EmbedEach`, while the tests exercised the padded path. This rework
+switches both tests to `EmbedEach`, splits the throughput table so the headline figures name the
+production path (with the tokens that path pools) and the reference path is reported separately
+(labeled, with its pad rows counted), and re-evaluates the §7 prose against the measured numbers.
 
 DECISION: GO
