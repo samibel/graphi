@@ -5,12 +5,12 @@
   "notes": "SW-258 retrieval targets, written ONCE from measured baselines before any fusion exists. Per stratum: the best single-baseline value of every aggregate metric over the DEV split (holdout is never used to set a target), the oracle ceiling the scorer can reach, a fusion_target on the conceptual strata (best + min_delta on the target metric, capped at the ceiling), and the Top-1 no-regression floor on exact_identifier. Immutable until the story named in immutable_until; regenerate only from a report checked in beside it (derived_from names the report and its sha256).",
   "derived_from": {
     "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
-    "sha256": "66988d27150dac06846863ace4295ae270735fc9b3ce35a865cde5edc8742090",
+    "sha256": "c4023fcfa683d1ce937b8bc9e604563944858cb5ce8cbdc0fa82b2c20a65e43f",
     "repo": "cobra",
     "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
     "dataset": "cobra-v1",
     "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
-    "candidate_sha": "b82f0aebe7744a50fd36281917a551945f51020d+dirty",
+    "candidate_sha": "8f1d1111739e0b86fc513f9b6a58802c5817bb91",
     "runner_class": "local"
   },
   "target_metric": "ndcg@10",

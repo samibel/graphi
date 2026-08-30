@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "b82f0aebe7744a50fd36281917a551945f51020d+dirty",
+    "candidate_sha": "8f1d1111739e0b86fc513f9b6a58802c5817bb91",
     "runner_class": "local",
     "repo": {
       "name": "fixture",
@@ -2011,23 +2011,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 15,
+        "value": 20,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 76,
+        "value": 79,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 117,
+        "value": 125,
         "unit": "us"
       },
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 106.328125,
+        "value": 104.078125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2039,23 +2039,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 15,
+        "value": 20,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 310,
+        "value": 316,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 2721,
+        "value": 5329,
         "unit": "us"
       },
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 110.875,
+        "value": 108.625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2100,13 +2100,13 @@
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 1,
+        "value": 2,
         "unit": "us"
       },
       "latency_samples": 30,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 111.046875,
+        "value": 108.875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -2116,7 +2116,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T15:08:21Z",
+    "generated_at": "2026-08-30T15:23:28Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
