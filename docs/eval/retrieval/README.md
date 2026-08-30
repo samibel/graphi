@@ -141,7 +141,14 @@ go run ./cmd/retrieval-eval -derive -targets-report <cobra-report.json> \
 `-repo fixture` selects the in-tree fixture without a manifest entry. A URL-pinned entry is never
 cloned: the checkout must exist locally at the pinned sha or the run fails closed.
 
-## Report layout (`format_version: 1`, `harness_version: retrieval-eval/1`)
+## Report layout (`format_version: 2`, `harness_version: retrieval-eval/1`)
+
+> **Why 2.** Version 2 added `dataset.query_ids` to the report citation, and `-aggregate` compares
+> that citation against the dataset rebuilt from its own bytes — the check that catches a query
+> removed coherently from dataset, report and raw. A version-1 report carries no such field, so it
+> is **refused** rather than read under a gate written for the stronger shape
+> (`TestAggregate_DetectsDrift/a report from the previous format version is refused…`).
+> `harness_version` did not move: what a hit is, how it is charged and which seams run are unchanged.
 
 - `reproducible` — a pure function of candidate SHA, repository at its SHA, dataset bytes and
   harness/scorer version: header (`candidate_sha`, `runner_class`, `repo` with node/edge/file
@@ -165,6 +172,13 @@ derived), `raw/latency-<baseline>.json` (every timed execution + the single-samp
 `index_ms` / `peak_rss_mb` / `vector_sidecar_bytes` with their status and reason). An unavailable
 baseline's raw records say `collected: false` and carry the typed `reason` — the only thing that can
 justify `unavailable` in the report.
+
+Every raw file is read **twice-identified**: `run.json` says which series and baseline a file is,
+and the file says the same about itself (`format_version`, `harness_version`, `series`, `baseline`,
+`collected`, `samples`). `ReadRunDir` requires the two to agree. The per-file sha256 proves the
+bytes were not edited after the run; it does *not* prove the index and the payload mean the same
+thing by them — swapping two raw files and re-stamping the index leaves both digests valid, and
+only this check refuses it.
 
 `-aggregate` is closed-world first: the report's `dataset` citation (`id`, `sha256`,
 `evidence_class`, counts, sorted `query_ids`) must equal the same citation rebuilt from

@@ -1,9 +1,9 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "60dd3c849d22cc43ccb0bbd675155313eb5d9a11",
+    "candidate_sha": "b82f0aebe7744a50fd36281917a551945f51020d+dirty",
     "runner_class": "local",
     "repo": {
       "name": "cobra",
@@ -7936,23 +7936,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 190,
+        "value": 222,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 195,
+        "value": 208,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 362,
+        "value": 401,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 351.515625,
+        "value": 318.3125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7964,23 +7964,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 190,
+        "value": 222,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2080,
+        "value": 2330,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4692,
+        "value": 4906,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 355.78125,
+        "value": 331.171875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -8031,7 +8031,7 @@
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 355.828125,
+        "value": 331.359375,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -8041,7 +8041,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T14:48:09Z",
+    "generated_at": "2026-08-30T15:08:23Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

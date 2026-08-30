@@ -29,6 +29,51 @@ type RawFileRef struct {
 	Samples   int      `json:"samples"`
 }
 
+// rawIdentity is the self-description a raw payload carries. Every field of it is
+// also in the RawFileRef that points at the payload, and checkRefPayload requires
+// the two to agree.
+type rawIdentity struct {
+	formatVersion  int
+	harnessVersion string
+	series         string
+	baseline       Baseline
+	collected      bool
+	samples        int
+}
+
+// checkRefPayload closes the gap between "the file the index points at" and "the
+// file that says what it is" (SW-258 review round 3). The digest proves the bytes
+// were not edited after the run; it does NOT prove the index and the payload agree
+// about which baseline and series those bytes are. Without this check a payload that
+// calls itself hybrid_v1 can be stored and read under the lexical ref — the index
+// key wins and the payload's own claim is never consulted — so a run directory
+// re-stamped after swapping two files would reproduce cleanly. Fail closed on every
+// field both sides carry.
+func checkRefPayload(ref RawFileRef, got rawIdentity) error {
+	mismatch := func(field string, want, have any) error {
+		return fmt.Errorf("retrieval: %s: the run index calls it %s %v but the file says %v; the index and its payload disagree", ref.File, field, want, have)
+	}
+	if got.formatVersion != FormatVersion {
+		return fmt.Errorf("retrieval: %s has format_version %d, not the supported %d", ref.File, got.formatVersion, FormatVersion)
+	}
+	if got.harnessVersion != HarnessVersion {
+		return fmt.Errorf("retrieval: %s was produced by harness %q, not %q", ref.File, got.harnessVersion, HarnessVersion)
+	}
+	if got.series != ref.Series {
+		return mismatch("series", ref.Series, got.series)
+	}
+	if got.baseline != ref.Baseline {
+		return mismatch("baseline", ref.Baseline, got.baseline)
+	}
+	if got.collected != ref.Collected {
+		return mismatch("collected", ref.Collected, got.collected)
+	}
+	if got.samples != ref.Samples {
+		return mismatch("samples", ref.Samples, got.samples)
+	}
+	return nil
+}
+
 // RunIndex is the run directory's table of contents.
 type RunIndex struct {
 	FormatVersion  int    `json:"format_version"`
@@ -219,8 +264,15 @@ func ReadRunDir(dir string) (*RunDir, error) {
 			if err := json.Unmarshal(b, &set); err != nil {
 				return nil, fmt.Errorf("retrieval: parse %s: %w", ref.File, err)
 			}
-			if set.HarnessVersion != HarnessVersion {
-				return nil, fmt.Errorf("retrieval: %s was produced by harness %q, not %q", ref.File, set.HarnessVersion, HarnessVersion)
+			if err := checkRefPayload(ref, rawIdentity{
+				formatVersion:  set.FormatVersion,
+				harnessVersion: set.HarnessVersion,
+				series:         set.Series,
+				baseline:       set.Baseline,
+				collected:      set.Collected,
+				samples:        set.Samples,
+			}); err != nil {
+				return nil, err
 			}
 			out.Hits[ref.Baseline] = set
 		case RawSeriesLatency:
@@ -228,8 +280,15 @@ func ReadRunDir(dir string) (*RunDir, error) {
 			if err := json.Unmarshal(b, &set); err != nil {
 				return nil, fmt.Errorf("retrieval: parse %s: %w", ref.File, err)
 			}
-			if set.HarnessVersion != HarnessVersion {
-				return nil, fmt.Errorf("retrieval: %s was produced by harness %q, not %q", ref.File, set.HarnessVersion, HarnessVersion)
+			if err := checkRefPayload(ref, rawIdentity{
+				formatVersion:  set.FormatVersion,
+				harnessVersion: set.HarnessVersion,
+				series:         set.Series,
+				baseline:       set.Baseline,
+				collected:      set.Collected,
+				samples:        set.Samples,
+			}); err != nil {
+				return nil, err
 			}
 			out.Latency[ref.Baseline] = set
 		default:

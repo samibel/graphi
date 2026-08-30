@@ -195,6 +195,31 @@ func rewriteRawLatency(t *testing.T, dir string, b Baseline, mut func(*RawLatenc
 	restampRaw(t, dir, name, SHA256Hex(out), set.Collected, set.Samples)
 }
 
+// rawDigest is the on-disk sha256 of a raw file, for tests that need to restamp the
+// index with a value the payload does NOT agree with.
+func rawDigest(t *testing.T, dir, file string) string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(file)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return SHA256Hex(b)
+}
+
+// rawSamples reads the sample count a raw hits payload declares.
+func rawSamples(t *testing.T, dir string, series string, b Baseline) int {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(RawFileName(series, b))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var set RawHitSet
+	if err := json.Unmarshal(raw, &set); err != nil {
+		t.Fatal(err)
+	}
+	return set.Samples
+}
+
 func restampRaw(t *testing.T, dir, file, digest string, collected bool, samples int) {
 	t.Helper()
 	restampIndex(t, dir, func(idx *RunIndex) {
@@ -606,6 +631,59 @@ func TestAggregate_DetectsDrift(t *testing.T) {
 				restampIndex(t, dir, func(idx *RunIndex) { idx.HarnessVersion = "retrieval-eval/0" })
 			},
 			wantReadErr: "retrieval-eval/0",
+		},
+		// SW-258 review round 3: the digest proves the bytes were not edited after
+		// the run; it does not prove the index and the payload agree about WHICH
+		// baseline and series those bytes are. Swapping two raw files and restamping
+		// the index used to reproduce cleanly, because the index key won and the
+		// payload's own claim was never read.
+		{
+			// FormatVersion 2 added dataset.query_ids, and Reproduce compares it
+			// against the dataset rebuilt from bytes. A v1 report carries no such
+			// field, so reading it under a v2 gate would silently skip that check.
+			name: "a report from the previous format version is refused, not read as if it had the new invariant",
+			tamper: func(t *testing.T, dir string) {
+				rewriteReport(t, dir, func(r *Report) { r.FormatVersion = FormatVersion - 1 })
+			},
+			wantReadErr: "format_version",
+		},
+		{
+			name: "a raw hits payload that calls itself another baseline is refused",
+			tamper: func(t *testing.T, dir string) {
+				rewriteRawHits(t, dir, BaselineLexical, func(set *RawHitSet) { set.Baseline = BaselineHybridV1 })
+			},
+			wantReadErr: "baseline",
+		},
+		{
+			name: "a raw latency payload that calls itself another baseline is refused",
+			tamper: func(t *testing.T, dir string) {
+				rewriteRawLatency(t, dir, BaselineLexical, func(set *RawLatencySet) { set.Baseline = BaselineHybridV1 })
+			},
+			wantReadErr: "baseline",
+		},
+		{
+			name: "a raw payload that calls itself another series is refused",
+			tamper: func(t *testing.T, dir string) {
+				rewriteRawHits(t, dir, BaselineLexical, func(set *RawHitSet) { set.Series = RawSeriesLatency })
+			},
+			wantReadErr: "series",
+		},
+		{
+			name: "a raw payload from an older format version is refused",
+			tamper: func(t *testing.T, dir string) {
+				rewriteRawHits(t, dir, BaselineLexical, func(set *RawHitSet) { set.FormatVersion = FormatVersion - 1 })
+			},
+			wantReadErr: "format_version",
+		},
+		{
+			name: "a raw payload whose collected flag disagrees with the index is refused",
+			tamper: func(t *testing.T, dir string) {
+				// Mutate the payload only: restampRaw would otherwise carry the new
+				// value into the ref and hide the disagreement.
+				rewriteRawHits(t, dir, BaselineLexical, func(set *RawHitSet) { set.Collected = false })
+				restampRaw(t, dir, RawFileName(RawSeriesHits, BaselineLexical), rawDigest(t, dir, RawFileName(RawSeriesHits, BaselineLexical)), true, rawSamples(t, dir, RawSeriesHits, BaselineLexical))
+			},
+			wantReadErr: "collected",
 		},
 		{
 			name: "a missing raw file is INCOMPLETE (exit 3), deliberately not a discrepancy",

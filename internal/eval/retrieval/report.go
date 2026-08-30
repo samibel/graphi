@@ -12,8 +12,14 @@ import (
 // the arithmetic (Evaluate/Aggregate/PercentileInt64). They move
 // independently, as in internal/evalreport, and a reader refuses a version it
 // does not know rather than half-reading it.
+// FormatVersion 2 added `dataset.query_ids` to the report citation (SW-258 review
+// round 3). The field is load-bearing — `Reproduce` compares it against the dataset
+// rebuilt from bytes, and that check is what catches a query removed coherently from
+// dataset, report and raw. A v1 report has no such invariant to check, so it is
+// REFUSED rather than read as if it did: accepting it would let the older, weaker
+// shape pass a gate written for the stronger one.
 const (
-	FormatVersion  = 1
+	FormatVersion  = 2
 	HarnessVersion = "retrieval-eval/1"
 	ScorerVersion  = "retrieval-aggregate/1"
 )
