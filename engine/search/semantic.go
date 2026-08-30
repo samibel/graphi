@@ -42,9 +42,14 @@ const ReasonCorrupt = "semantic index corrupt: run `graphi index --semantic`"
 // ReasonForState renders the closed-vocabulary reason for a typed state.
 // The state is the SW-261 GenerationStore state; the reason is the
 // user-visible message the typed Unavailable response carries. The
-// mapping is total — every State has a defined reason.
+// mapping is total — every State has a defined reason, including the
+// StateUnset sentinel which returns the unconfigured-embedder reason so a
+// caller that forgot to plumb state never silently serves a missing
+// generation as ready.
 func ReasonForState(state embed.State) string {
 	switch state {
+	case embed.StateUnset:
+		return UnavailableReason
 	case embed.StateMissing:
 		return ReasonUnavailable
 	case embed.StateStale:
@@ -108,7 +113,7 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 		// Graceful skip: no embedder, no network, no error.
 		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
 	}
-	if s.semanticState.State != 0 && s.semanticState.State != embed.StateReady {
+	if !s.semanticState.State.IsZero() && s.semanticState.State != embed.StateReady {
 		// Configured embedder, but the generation store is non-ready
 		// (missing / stale / corrupt). The configured path is NOT
 		// consulted: the user-visible reason names the state so an

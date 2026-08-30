@@ -195,6 +195,26 @@ func (s *MemGenerationStore) Load(_ context.Context, id GenerationID) ([]Row, er
 	return out, nil
 }
 
+// LoadRow implements the RowLoader point-lookup seam. ok=false when the
+// (generation, node id) pair is absent. The vector is defensively copied
+// so a caller cannot mutate the store's row through the returned Row.
+func (s *MemGenerationStore) LoadRow(_ context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	gen, ok := s.generations[id]
+	if !ok {
+		return Row{}, false, nil
+	}
+	r, ok := gen.rows[nodeID]
+	if !ok {
+		return Row{}, false, nil
+	}
+	cp := make([]float32, len(r.Vector))
+	copy(cp, r.Vector)
+	r.Vector = cp
+	return r, true, nil
+}
+
 // genRows returns the dim of every row in gen (so validateRows can confirm
 // the row-level dim matches the fingerprint). For the in-memory adapter the
 // dim is fixed at upsert time and is therefore always consistent, but the

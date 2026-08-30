@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/samibel/graphi/core/model"
@@ -123,6 +122,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS generations_one_staging
 // NewSQLiteGenerationStoreDB constructs the durable store over an EXISTING
 // meta DB handle (e.g. the ingester's MetaDB()). The caller owns the
 // handle's lifecycle; this store's Close is a no-op.
+//
+// AC-8: opening a store whose sidecar contains the legacy `vectors`
+// table migrates it idempotently into a v1 generation marked stale. The
+// migration runs as part of open (after the new schema is in place) so
+// a first `graphi index --semantic` on a migrated store re-embeds
+// rather than mixing spaces. Running the migration twice is a no-op;
+// the legacy DDL is idempotent.
 func NewSQLiteGenerationStoreDB(ctx context.Context, db *sql.DB) (*SQLiteGenerationStore, error) {
 	if db == nil {
 		return nil, fmt.Errorf("embed: nil meta db")
@@ -131,6 +137,9 @@ func NewSQLiteGenerationStoreDB(ctx context.Context, db *sql.DB) (*SQLiteGenerat
 		if _, err := db.ExecContext(ctx, ddl); err != nil {
 			return nil, fmt.Errorf("embed: init generations schema: %w", err)
 		}
+	}
+	if _, err := MigrateFromLegacyVectors(ctx, db); err != nil {
+		return nil, fmt.Errorf("embed: legacy migration: %w", err)
 	}
 	return &SQLiteGenerationStore{
 		db:         db,
@@ -143,6 +152,11 @@ func NewSQLiteGenerationStoreDB(ctx context.Context, db *sql.DB) (*SQLiteGenerat
 // (the ingest-meta sidecar dir), opening its OWN read handle on the same
 // database. Close releases the handle. Used by tests and by callers that
 // do not already hold a meta DB handle.
+//
+// AC-8: as NewSQLiteGenerationStoreDB, the legacy migration runs as
+// part of open so a first `graphi index --semantic` on a store that
+// contains the legacy `vectors` table re-embeds rather than mixing
+// spaces. The migration is idempotent; running it twice is a no-op.
 func OpenSQLiteGenerationStore(ctx context.Context, metaDir string) (*SQLiteGenerationStore, error) {
 	if metaDir == "" {
 		return nil, fmt.Errorf("embed: empty meta dir")
@@ -157,6 +171,10 @@ func OpenSQLiteGenerationStore(ctx context.Context, metaDir string) (*SQLiteGene
 			_ = db.Close()
 			return nil, fmt.Errorf("embed: init generations schema: %w", err)
 		}
+	}
+	if _, err := MigrateFromLegacyVectors(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("embed: legacy migration: %w", err)
 	}
 	return &SQLiteGenerationStore{
 		db:         db,
@@ -317,10 +335,28 @@ func (b *sqliteBuild) Commit(ctx context.Context) error {
 		`UPDATE generations SET is_active = 0 WHERE is_active = 1`); err != nil {
 		return fmt.Errorf("embed: demote prior active: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx,
+	// Promote the staging row. RowsAffected must be exactly 1: zero
+	// means the staging id vanished (a concurrent process or a manual
+	// delete — neither is recoverable here), two would mean a duplicate
+	// id (the schema prevents it, but a race could in principle produce
+	// it). Either way, demoting the prior active without promoting a
+	// successor would leave the sidecar with NO active generation —
+	// AC-6 ("the active pointer shall never point at an unvalidated
+	// generation") is also AC-7 ("Active returns StateMissing"). We
+	// detect the failure INSIDE the transaction so the demote is rolled
+	// back along with the failed promotion.
+	promoteRes, err := tx.ExecContext(ctx,
 		`UPDATE generations SET is_active = 1, is_staging = 0, row_count = ? WHERE id = ? AND is_staging = 1`,
-		n, string(b.id)); err != nil {
+		n, string(b.id))
+	if err != nil {
 		return fmt.Errorf("embed: promote staging: %w", err)
+	}
+	promoted, perr := promoteRes.RowsAffected()
+	if perr != nil {
+		return fmt.Errorf("embed: count promoted staging: %w", perr)
+	}
+	if promoted != 1 {
+		return &ValidationFailedError{Reason: fmt.Sprintf("promote staging matched %d rows, want 1: the staging id vanished or duplicated; demote rolled back", promoted)}
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("embed: commit generation: %w", err)
@@ -402,30 +438,51 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
 			&ValidationFailedError{Reason: fmt.Sprintf("row count drift: metadata=%d persisted=%d", rowCount, counted)}
 	}
 	// Dimensional check: every persisted row's vector must equal fp.Dim
-	// (when known). A single sample is enough — the schema enforces the
-	// dim at Upsert time, so a mismatch means the sidecar is corrupt.
+	// (when known). The previous revision sampled a single row, which
+	// let drift in any non-sampled row pass — the mem adapter validates
+	// every row, so the SQLite adapter must too. The check is streamed
+	// (one row at a time, by NodeId in canonical order) so peak memory
+	// is bounded.
 	//
 	// An EMPTY generation is legitimate, not corrupt: a repository whose
 	// nodes are all excluded (generated paths, artefact kinds, no
 	// establishable span) embeds nothing, and that is a valid published
-	// state. Sampling a row there returns sql.ErrNoRows and leaves blob
-	// nil, so the length comparison below would read as "dim drift 0 vs N"
-	// and mark a correct index corrupt. Skip the check when there is
-	// nothing to sample; the row-count check above already proved the
-	// metadata and the table agree that it is empty.
+	// state. When there is nothing to validate, the row-count check
+	// above already proved the metadata and the table agree that it is
+	// empty.
 	if fp.Dim > 0 && counted > 0 {
-		var blob []byte
-		if err := s.db.QueryRowContext(ctx,
-			`SELECT vector FROM generation_rows WHERE generation_id = ? LIMIT 1`,
-			id).Scan(&blob); err != nil {
+		rows, err := s.db.QueryContext(ctx, `
+            SELECT node_id, vector FROM generation_rows
+            WHERE generation_id = ?
+            ORDER BY node_id`,
+			id)
+		if err != nil {
 			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
-				StateCorrupt, fmt.Errorf("embed: sample row: %w", err)
+				StateCorrupt, fmt.Errorf("embed: stream rows for dim check: %w", err)
 		}
-		if len(blob) != fp.Dim*4 {
+		for rows.Next() {
+			var (
+				nid  string
+				blob []byte
+			)
+			if err := rows.Scan(&nid, &blob); err != nil {
+				rows.Close()
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+					StateCorrupt, fmt.Errorf("embed: scan row for dim check: %w", err)
+			}
+			if len(blob) != fp.Dim*4 {
+				rows.Close()
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+					StateCorrupt,
+					&ValidationFailedError{Reason: fmt.Sprintf("vector dim drift at node %s: persisted=%d expected=%d", nid, len(blob)/4, fp.Dim)}
+			}
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
 			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
-				StateCorrupt,
-				&ValidationFailedError{Reason: fmt.Sprintf("vector dim drift: persisted=%d expected=%d", len(blob)/4, fp.Dim)}
+				StateCorrupt, fmt.Errorf("embed: dim-check row iteration: %w", err)
 		}
+		rows.Close()
 	}
 	if nodes != nil {
 		// Every NodeID must resolve. Stream in canonical order so a
@@ -517,6 +574,56 @@ func (s *SQLiteGenerationStore) Load(ctx context.Context, id GenerationID) ([]Ro
 	return out, nil
 }
 
+// LoadRow implements the RowLoader point-lookup seam. It issues an indexed
+// point probe (PK is (generation_id, node_id)) so AC-4 carry-forward
+// reuses one prior row at a time without materialising the whole
+// generation. ok=false when the row is absent.
+func (s *SQLiteGenerationStore) LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
+	var (
+		docID, nID, hash, path, span string
+		startLine, endLine           int
+		blob                         []byte
+	)
+	err := s.db.QueryRowContext(ctx, `
+        SELECT document_id, node_id, text_hash, path, start_line, end_line, span_method, vector
+        FROM generation_rows
+        WHERE generation_id = ? AND node_id = ?
+        LIMIT 1`,
+		string(id), string(nodeID)).Scan(&docID, &nID, &hash, &path, &startLine, &endLine, &span, &blob)
+	if err == sql.ErrNoRows {
+		return Row{}, false, nil
+	}
+	if err != nil {
+		return Row{}, false, fmt.Errorf("embed: load row: %w", err)
+	}
+	return Row{
+		GenerationID: id,
+		DocumentID:   docID,
+		NodeID:       model.NodeId(nID),
+		TextHash:     hash,
+		Path:         path,
+		StartLine:    startLine,
+		EndLine:      endLine,
+		SpanMethod:   span,
+		Vector:       decodeFloat32Blob(blob),
+	}, true, nil
+}
+
+// DeleteStagingForTest is a test-only helper that deletes the current
+// staging generation row. Used by AC-6's RowsAffected-on-promote
+// conformance test to simulate the staging row vanishing out from
+// under a build (the test pins the promote-must-succeed-or-rollback
+// invariant). The test-only name is the call-site convention: nothing
+// in the production path uses it.
+func (s *SQLiteGenerationStore) DeleteStagingForTest(ctx context.Context) (int64, error) {
+	res, err := s.db.ExecContext(ctx, "DELETE FROM generations WHERE is_staging = 1")
+	if err != nil {
+		return 0, err
+	}
+	n, _ := res.RowsAffected()
+	return n, nil
+}
+
 // Close releases the DB handle when this store opened it. When constructed
 // over a borrowed handle it is a no-op.
 func (s *SQLiteGenerationStore) Close() error {
@@ -529,14 +636,15 @@ func (s *SQLiteGenerationStore) Close() error {
 // fingerprintFromCanonical rebuilds a Fingerprint from its canonical string
 // plus the stored dim and schema. The typed Fingerprint is only used to
 // render diagnostics — Active's decision is a direct canonical-string
-// compare (which sees every field). The canonical is split on '|' so the
-// returned Fingerprint reflects the eight-field shape.
+// compare (which sees every field). The canonical is decoded with the
+// inverse of encodeCanonical so the returned Fingerprint reflects the
+// eight-field shape.
 func fingerprintFromCanonical(canonical string, dim int, schema string) Fingerprint {
 	fp := Fingerprint{DocumentSchema: schema, Dim: dim}
 	if canonical == "" {
 		return fp
 	}
-	parts := strings.Split(canonical, "|")
+	parts := decodeCanonical(canonical)
 	if len(parts) >= 1 {
 		fp.ModelID = parts[0]
 	}
@@ -585,10 +693,6 @@ func decodeFloat32Blob(b []byte) []float32 {
 	}
 	return out
 }
-
-// MarshalBinary is a placeholder used only by tests to assert the
-// generation store's wire shape. The real round-trip is via Load.
-var _ = model.NodeId("")
 
 // (intentionally unused — kept so `go vet` does not flag the rand import
 // when the build tag for tests is removed.)

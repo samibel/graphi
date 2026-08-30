@@ -81,7 +81,45 @@ const (
 	fullPassInProgressKey      = "full_pass_in_progress"
 	fullPassGenerationKey      = "full_pass_generation"
 	graphFullPassGenerationKey = "index.full_ingest_generation"
+	// graphCommitGenerationKey is the monotonic identity advanced on EVERY
+	// committed graph mutation (full pass AND incremental). It exists so
+	// SW-261's vector fingerprint can carry a graph identity that
+	// actually moves on every graph change — the existing
+	// graphFullPassGenerationKey only advances on full passes, which
+	// leaves the fingerprint inert across incremental mutations.
+	graphCommitGenerationKey = "index.commit_generation"
 )
+
+// mintCommitGeneration returns a fresh commit-generation value. The
+// value is a UUID hex so a monotonic-counter race between two
+// processes cannot collide; one process wins on the SQL-level INSERT,
+// the loser sees a fresh distinct value (the counter still advanced).
+func mintCommitGeneration() (string, error) {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", fmt.Errorf("ingest: mint commit generation: %w", err)
+	}
+	return hex.EncodeToString(raw[:]), nil
+}
+
+// bumpCommitGenerationOnStore writes a fresh commit_generation value to
+// the graphstore's metadata. Called at the end of every committed graph
+// mutation (full pass and incremental) so the counter advances exactly
+// once per durable graph change. It uses the graphstore's kv_meta
+// rather than the sidecar's ingest_semantics so the runtime can read
+// the value with the graphstore handle it already holds (the same
+// path `index.full_ingest_generation` uses), keeping the build and
+// reload paths symmetric: both call Metadata on the graphstore.
+func bumpCommitGenerationOnStore(ctx context.Context, store graphstore.Graphstore) error {
+	next, err := mintCommitGeneration()
+	if err != nil {
+		return err
+	}
+	if err := store.SetMetadata(ctx, graphCommitGenerationKey, next); err != nil {
+		return fmt.Errorf("ingest: bump commit generation: %w", err)
+	}
+	return nil
+}
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
@@ -193,7 +231,7 @@ func (i *Ingester) beginFullPass(ctx context.Context) (string, error) {
 // after every graph batch, the main sidecar transaction, graph metadata writes,
 // and the final SQLite checkpoint have completed.
 func (i *Ingester) finishFullPass(ctx context.Context, generation string) error {
-	return i.metaTx(ctx, func(tx *sql.Tx) error {
+	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx,
 			"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
 			fullPassGenerationKey, generation); err != nil {
@@ -213,7 +251,17 @@ func (i *Ingester) finishFullPass(ctx context.Context, generation string) error 
 			return fmt.Errorf("ingest: full-pass marker changed before certification")
 		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	// Bump the graphstore's commit_generation counter after the sidecar
+	// transaction commits so the runtime's reload path sees the new value.
+	// Without this bump, the SW-261 fingerprint's graph_generation field
+	// would only advance via beginFullPass's write to
+	// graphFullPassGenerationKey, which happens BEFORE the graph batch —
+	// an incremental pass after a full pass would leave vectors
+	// classified ready even though the graph has since changed.
+	return bumpCommitGenerationOnStore(ctx, i.store)
 }
 
 // FullPassInProgress reports whether an unfinished full pass left its

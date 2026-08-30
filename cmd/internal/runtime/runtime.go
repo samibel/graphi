@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/embed"
@@ -834,6 +835,14 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 // durable GenerationStore for the typed active-generation state. The
 // function is split out so tests can drive it without spinning up the
 // runtime. It is a pure helper — it does not log.
+//
+// LoadSemanticStateForTest is the exported form used by the runtime's
+// semantic-state conformance tests. It calls loadSemanticState directly
+// so the test exercises the production code path.
+func LoadSemanticStateForTest(ctx context.Context, store graphstore.Graphstore, metaDir string, emb embed.Embedder) search.SemanticState {
+	return loadSemanticState(ctx, store, metaDir, emb)
+}
+
 func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir string, emb embed.Embedder) search.SemanticState {
 	fp := embed.Fingerprint{
 		ModelID:        emb.ID(),
@@ -875,15 +884,49 @@ func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir
 	}
 }
 
-// graphGenerationFromStore reads the graphstore's "index.full_ingest_generation"
-// metadata key. The ingest pipeline writes this key as part of the full
-// pass stamp; the embed layer treats it as the canonical graph identity.
+// GraphGenerationFromStore is the exported form of graphGenerationFromStore,
+// used by callers that need the current-graph identity the fingerprint
+// embeds (in particular the build path, so build and reload consume the
+// same value). It returns ("", nil) when the store has no committed graph
+// yet; callers that need a non-empty value substitute the documented
+// placeholder themselves.
+func GraphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) (string, error) {
+	return graphGenerationFromStore(ctx, store)
+}
+
+// graphGenerationFromStore reads the graphstore's "index.commit_generation"
+// metadata key. The ingest pipeline writes this key as part of every
+// committed graph mutation (full pass and incremental), so it is the
+// stable current-graph identity the SW-261 fingerprint embeds. The
+// historical "index.full_ingest_generation" key only advances on full
+// passes — it would leave vectors classified ready after an incremental
+// mutation even though the graph had moved, which is precisely the
+// embedding-space mixing the story exists to prevent. This key is the
+// fix; the fingerprint's graph_generation field is now load-bearing on
+// every graph change.
+//
+// Fallback: a store that has never seen a graphi pass (no full pass, no
+// incremental) does not yet have an index.commit_generation entry. We
+// fall through to the historical full-pass generation key so a fresh
+// store does not silently read as ready, and finally to the documented
+// placeholder so a still-fresh store is visibly flagged. The orchestrator
+// surfaces this in the report.
 func graphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) (string, error) {
-	v, err := store.Metadata(ctx, "index.full_ingest_generation")
-	if err != nil {
+	v, err := store.Metadata(ctx, "index.commit_generation")
+	if err == nil && v != "" {
+		return v, nil
+	}
+	if err != nil && !errors.Is(err, graphstore.ErrNotFound) {
 		return "", err
 	}
-	return v, nil
+	v, err = store.Metadata(ctx, "index.full_ingest_generation")
+	if err == nil && v != "" {
+		return v, nil
+	}
+	if err != nil && !errors.Is(err, graphstore.ErrNotFound) {
+		return "", err
+	}
+	return "", nil
 }
 
 // SyncStats describes what a warm-or-full ingest actually did, for the
@@ -987,6 +1030,63 @@ func syncRepoLocked(ctx context.Context, ing *ingest.Ingester, store graphstore.
 		return stats, err
 	}
 	return stats, nil
+}
+
+// BuildSemanticGeneration runs the SW-261 semantic-generation pass under
+// the cross-process ingest lock. The lock spans the entire
+// Begin → Upsert → Commit/Abort sequence, which is the AC-5/AC-6 cross-
+// process guarantee the SW-261 review demanded: a second graphi
+// process on the same meta directory cannot observe a live foreign
+// staging row and delete it as a stale leftover, because the lock is
+// held until the winner commits. The lock is the same SQLite lock the
+// canonical SyncRepo / RebuildRepo take, so semantic generation
+// serialises against every other indexing caller (it must not run
+// concurrently with a full pass, which would race the
+// commit_generation bump).
+//
+// The function takes the ingester only for its MetaDir() (the lock's
+// identity); the actual ingest work has already happened in the
+// caller's prior SyncRepo / RebuildRepo call. The embed.Registry and
+// embed.GenerationStore are supplied so the helper can drive the
+// Begin/Commit lifecycle; a nil store or unconfigured registry is a
+// programming error (the caller has the precondition for an explicit
+// --semantic opt-in).
+func BuildSemanticGeneration(
+	ctx context.Context,
+	ing *ingest.Ingester,
+	store graphstore.Graphstore,
+	reg *embed.Registry,
+	store2 embed.GenerationStore,
+	nodes []model.Node,
+	docs embed.DocumentSource,
+	index embed.VectorIndex,
+	progress func(done, total int),
+) (embed.GenerateResult, error) {
+	if ing == nil {
+		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil ingester")
+	}
+	release, err := acquireIngestLock(ctx, ing.MetaDir(), nil)
+	if err != nil {
+		return embed.GenerateResult{}, fmt.Errorf("acquire ingest lock for semantic: %w", err)
+	}
+	defer release()
+	if reg == nil || !reg.Configured() {
+		// Graceful skip mirrors the unconfigured-registry path of
+		// GenerateAndPersist. The build does nothing; the active
+		// pointer is unchanged.
+		return embed.GenerateResult{Configured: false}, nil
+	}
+	if store2 == nil {
+		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil generation store")
+	}
+	// Source the fingerprint's graph_generation field from the same
+	// graphstore key the reload path reads (index.commit_generation).
+	// Build and reload now consume the same value, so a freshly built
+	// generation reloads as StateReady unless the graph has moved in
+	// the meantime (in which case the counter has advanced and the
+	// next reload reads StateStale).
+	graphGen, _ := GraphGenerationFromStore(ctx, store)
+	return embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store2, progress, graphGen)
 }
 
 // RebuildRepo is the canonical full re-index pass behind `graphi rebuild` and

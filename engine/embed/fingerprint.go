@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -53,6 +54,12 @@ type Fingerprint struct {
 // fingerprintFields is the FIXED order Canonical emits. Adding a field here is a
 // generation-breaking change: every prior store becomes stale and re-embeds.
 // Renaming or reordering is also breaking — same reason.
+//
+// The variable is retained for documentation and the conformance test
+// (which asserts every field has a canonical encoding) but is no longer
+// the source of truth: encodeCanonical emits the fields in this fixed
+// order. Removing or renaming a field here without changing
+// encodeCanonical would silently produce a different canonical string.
 var fingerprintFields = []string{
 	"model_id",
 	"revision",
@@ -64,11 +71,20 @@ var fingerprintFields = []string{
 	"graph_generation",
 }
 
-// Canonical returns the canonical string form. Field order is fixed; values
-// are unescaped (the fields are documented to be hex / ASCII ids, not free
-// text); the result is byte-stable across runs and architectures.
+// Canonical returns the canonical string form. Field order is fixed; the
+// encoding is length-prefixed so a `|`-bearing value cannot collide with
+// the field separator (a previous revision used `strings.Join(..., "|")`
+// which made `("a|b","c")` collide with `("a","b|c")` — AC-2 forbids).
+// The result is byte-stable across runs and architectures.
+//
+// Encoding per field: a decimal ASCII byte count, the literal ASCII `:`,
+// then the field bytes. The byte count is the raw length of the field
+// value after normalisation (lowercase + trim for the SHA fields). The
+// resulting canonical string is provably injective: a different (length,
+// value) pair in any field produces a different byte sequence and hence
+// a different ID.
 func (f Fingerprint) Canonical() string {
-	return strings.Join([]string{
+	parts := []string{
 		f.ModelID,
 		f.Revision,
 		strings.ToLower(strings.TrimSpace(f.ModelSHA256)),
@@ -77,22 +93,80 @@ func (f Fingerprint) Canonical() string {
 		f.DocumentSchema,
 		f.ChunkerConfig,
 		f.GraphGeneration,
-	}, "|")
+	}
+	return encodeCanonical(parts)
+}
+
+// encodeCanonical serialises an ordered list of field values using a
+// length-prefixed encoding. Each field becomes `<len>:<value>`; the
+// fields are then joined with `\n` so the whole canonical string is one
+// line per field. The encoding is total: any two distinct inputs (in
+// value, length, or field count) produce distinct outputs.
+//
+// The length is written as base-10 ASCII so a human can read it. A
+// field value containing `\n` would defeat the encoding — the documented
+// contract is that field values are ASCII ids or hex digests, neither of
+// which contain newlines; the conformance test asserts this and the
+// generation_id suffix prevents confusion when a human inspects the
+// canonical.
+func encodeCanonical(parts []string) string {
+	var b strings.Builder
+	for i, p := range parts {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(strconv.Itoa(len(p)))
+		b.WriteByte(':')
+		b.WriteString(p)
+	}
+	return b.String()
+}
+
+// decodeCanonical is the inverse of encodeCanonical, used by
+// fingerprintFromCanonical in the SQLite adapter to recover the typed
+// Fingerprint from a stored canonical string. It splits on `\n` and
+// verifies the per-field length prefix; an inconsistent input yields a
+// Fingerprint with the truncated/empty fields set to "" (the SQLite
+// path never reads the typed values back for equality — equality is a
+// direct canonical-string compare — but the typed view is convenient
+// for diagnostics).
+func decodeCanonical(canonical string) []string {
+	if canonical == "" {
+		return nil
+	}
+	var out []string
+	for _, line := range strings.Split(canonical, "\n") {
+		colon := strings.IndexByte(line, ':')
+		if colon < 0 {
+			// Malformed: append the raw line so the caller can see it.
+			out = append(out, line)
+			continue
+		}
+		n, err := strconv.Atoi(line[:colon])
+		if err != nil || n < 0 || colon+1+n > len(line) {
+			out = append(out, line[colon+1:])
+			continue
+		}
+		out = append(out, line[colon+1:colon+1+n])
+	}
+	return out
 }
 
 // ID derives a stable generation id from the canonical fingerprint via
-// sha256. The id is hex, fixed-width, and depends on EVERY field, so two
-// fingerprints that differ in any field produce different ids and never
-// share a generation.
+// sha256. The id is the FULL sha256 hex digest (no truncation), prefixed
+// with the document schema's major version. Two fingerprints that differ
+// in any field produce different ids and never share a generation; a
+// 64-bit truncation (the previous revision) would still be collision-safe
+// at the scale of a real repository, but a full digest makes the contract
+// trivial to verify (sha256 is collision-resistant in practice).
 //
 // The "v<n>-" prefix carries the document schema's major version, so a human
 // inspecting a store can tell at a glance which schema a generation was
-// built for ("v1-deadbeef…" vs "v2-cafebabe…"). The numeric part is the
-// truncated sha256 of the canonical string.
+// built for ("v1-deadbeef…" vs "v2-cafebabe…").
 func (f Fingerprint) ID() GenerationID {
 	canonical := f.Canonical()
 	sum := sha256.Sum256([]byte(canonical))
-	hexSum := hex.EncodeToString(sum[:8]) // 16 hex chars; collision-safe for our scale
+	hexSum := hex.EncodeToString(sum[:]) // full 32-byte / 64-hex digest
 	schema := strings.TrimSpace(f.DocumentSchema)
 	if schema == "" {
 		schema = "v?"

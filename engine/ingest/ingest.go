@@ -922,6 +922,20 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	if err := i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults); err != nil {
 		return err
 	}
+	// SW-261 graph identity: advance index.commit_generation on every
+	// successful incremental mutation so the runtime's reload path sees
+	// a fresh value. The counter advances exactly once per committed
+	// graph mutation (full OR incremental); the runtime sources its
+	// fingerprint's graph_generation from this key so a freshly built
+	// semantic generation becomes stale after any subsequent graph
+	// change — which is the property AC-7 / AC-4 require for the
+	// fingerprint field to do its job. The graphstore bump is loud-
+	// failure on error: a failed bump leaves the counter stale, which
+	// is acceptable (the next mutation will bump it again); a silent
+	// skip would leave vectors stale.
+	if err := bumpCommitGenerationOnStore(ctx, i.store); err != nil {
+		return err
+	}
 	// P1 trust snapshot: rebind after every successful incremental mutation
 	// (post-commit, same three keys, current live generation) so the snapshot
 	// tracks every graph the readers can see — not only full passes. Same

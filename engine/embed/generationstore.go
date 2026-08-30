@@ -39,7 +39,11 @@ const (
 	// StateMissing: no active generation exists. The store has either never
 	// been written or has had every generation pruned. A caller MUST NOT
 	// serve vectors from a missing generation.
-	StateMissing State = iota
+	StateUnset State = iota
+	// StateMissing: no active generation exists. The store has either
+	// never been written or has had every generation pruned. A caller
+	// MUST NOT serve vectors from a missing generation. AC-7.
+	StateMissing
 	// StateStale: an active generation exists, but its fingerprint does NOT
 	// match the requested one. The active generation was built under a
 	// different model / schema / chunker / graph generation, so its vectors
@@ -62,6 +66,8 @@ const (
 // verbatim in the typed unavailable response).
 func (s State) String() string {
 	switch s {
+	case StateUnset:
+		return "unset"
 	case StateMissing:
 		return "missing"
 	case StateStale:
@@ -74,6 +80,11 @@ func (s State) String() string {
 		return fmt.Sprintf("State(%d)", int(s))
 	}
 }
+
+// IsZero reports whether the state is the StateUnset sentinel. It is the
+// presence check the search service uses to decide whether to apply the
+// state-driven unavailable envelope (only set states short-circuit).
+func (s State) IsZero() bool { return s == StateUnset }
 
 // GenerationID identifies one built generation. It is the GenerationStore's
 // foreign key into the rows table and is derived from a Fingerprint via
@@ -128,18 +139,6 @@ func (e *ValidationFailedError) Error() string {
 	return "embed: generation validation failed: " + e.Reason
 }
 
-// StagingGenerationDiscardedError is returned when Begin discards a
-// stale staging generation (AC-5): a previous Begin's Upsert phase
-// crashed (or was aborted by the operator) before Commit. The previous
-// active generation is untouched and continues to be served.
-type StagingGenerationDiscardedError struct {
-	StagingID GenerationID
-}
-
-func (e *StagingGenerationDiscardedError) Error() string {
-	return "embed: discarded stale staging generation " + string(e.StagingID)
-}
-
 // NodeReferencer is the narrow interface Active consults during the
 // "referenced node exists" validation step (AC-7 `corrupt` case). When
 // nil, Active cannot perform that validation and treats a missing
@@ -171,6 +170,16 @@ type Build interface {
 	// the active pointer. Safe to call after Commit (no-op) and after a
 	// crash (next Begin does the same discard).
 	Abort(ctx context.Context) error
+}
+
+// RowLoader is the optional streaming read seam used by AC-4 carry-forward.
+// A point lookup lets the generator re-use one prior row at a time rather
+// than materialising the entire generation in memory; see
+// context/standards.md:225-229 (working-set rule). Implementations may
+// return (Row{}, false, nil) when the row is absent. MemGenerationStore
+// and SQLiteGenerationStore both satisfy this seam.
+type RowLoader interface {
+	LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error)
 }
 
 // GenerationStore is the durable seam a vector index persists into. It is
@@ -209,4 +218,12 @@ type GenerationStore interface {
 	// (node_id, document_id) order. An unknown id returns an empty slice
 	// and no error.
 	Load(ctx context.Context, id GenerationID) ([]Row, error)
+
+	// LoadRow returns one row by (generation, node id). ok=false means the
+	// row is absent. This is the point-lookup seam AC-4 carry-forward
+	// uses so the generator does not materialise a whole-generation map
+	// (context/standards.md working-set rule). Both MemGenerationStore
+	// and SQLiteGenerationStore satisfy it; callers that hold a
+	// GenerationStore but not a RowLoader fall back to Load.
+	LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error)
 }

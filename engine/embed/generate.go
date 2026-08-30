@@ -66,13 +66,20 @@ type GenerateResult struct {
 	// EmbedderID is the active embedder's ID (empty on the graceful-skip path).
 	EmbedderID string
 	// Embedded is the number of node vectors generated and persisted.
+	// A node whose prior row is carried forward increments Reused ONLY
+	// — not Embedded — so the documented invariant holds:
+	// Embedded + Reused + Skipped == len(nodes). A previous revision
+	// double-counted carried rows; the test that pinned the wrong count
+	// is fixed in the same change.
 	Embedded int
 	// Skipped is the number of nodes the DocumentSource had no document for
 	// (excluded artefacts, generated paths, unreadable sources). They get no
 	// vector rather than a name-only stand-in.
 	Skipped int
 	// Reused is the number of nodes whose prior vector was carried forward
-	// without re-embedding (AC-4). The total of Embedded + Reused + Skipped
+	// without re-embedding (AC-4). Carried-forward rows do NOT increment
+	// Embedded — a previous revision double-counted them, contradicting
+	// the documented invariant. The total of Embedded + Reused + Skipped
 	// equals the number of nodes visited.
 	Reused int
 	// Purged is the number of prior-generation rows dropped because their
@@ -112,8 +119,15 @@ type GenerateResult struct {
 // nil for a persist-only caller; a nil index skips the live Put. The
 // store is non-nil on the real `--semantic` path; a nil store skips the
 // whole Build/Commit flow (in-memory only).
-func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore) (GenerateResult, error) {
-	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store, nil)
+//
+// graphGeneration is the current-graph identity the fingerprint embeds
+// (SW-261). Callers should source it from the graphstore's
+// `index.commit_generation` key so the build path and the reload path
+// consume the same value. An empty value substitutes the documented
+// placeholder so in-process tests that bypass the runtime stay
+// fingerprint-compatible.
+func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, graphGeneration string) (GenerateResult, error) {
+	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store, nil, graphGeneration)
 }
 
 // embedChunkSize bounds how many node texts each Embed call carries. It sets
@@ -143,12 +157,18 @@ const embedChunkSize = 64
 //
 // SW-261 carry-forward: the pass inspects Active(ctx, fp, nil) before
 // embedding. When the active fingerprint matches the requested one, prior
-// rows are loaded and indexed by NodeID; a node whose text_hash matches is
-// carried forward (the prior row's Vector is upserted unchanged — no
-// re-embed). Nodes whose text_hash differs are re-embedded. Nodes not in
-// the graph at all are counted as Purged. The test in
-// generationstore_conformance_test.go asserts the embedder call count.
-func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, onProgress func(done, total int)) (GenerateResult, error) {
+// rows are looked up by NodeID via the RowLoader point-probe (no whole-
+// generation materialisation, per the working-set rule); a node whose
+// text_hash matches is carried forward (the prior row's Vector is upserted
+// unchanged — no re-embed). Nodes whose text_hash differs are
+// re-embedded. Nodes not in the graph at all are counted as Purged. The
+// test in generationstore_conformance_test.go asserts the embedder call
+// count.
+//
+// graphGeneration is the current-graph identity the fingerprint embeds.
+// Empty substitutes the placeholder so in-process tests stay
+// fingerprint-compatible.
+func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, onProgress func(done, total int), graphGeneration string) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
 	}
@@ -165,37 +185,52 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
 	}
 	// Fingerprint the build with the embedder's identity, dimension,
-	// schema and graph generation. In-process callers (tests) leave
-	// graph_generation at the documented placeholder; the production
-	// runtime fills the real value via `loadSemanticState` before the
-	// store's Active sees it. The placeholder keeps an in-process test
-	// and a real run fingerprint-compatible when the graphstore is not
-	// yet wired.
+	// schema and graph generation. The graph_generation field is filled
+	// in by the caller — the production runtime sources it from the
+	// graphstore's `index.commit_generation` key (advanced on every
+	// committed graph mutation, full pass and incremental), so build and
+	// reload consume the same value. An empty graphGeneration (in-process
+	// tests) substitutes the documented placeholder so a test and a real
+	// run stay fingerprint-compatible when the graphstore is not wired.
+	if graphGeneration == "" {
+		graphGeneration = GraphGenerationPlaceholder
+	}
 	fp := Fingerprint{
 		ModelID:         emb.ID(),
 		Dim:             emb.Dim(),
 		DocumentSchema:  DocumentSchema,
-		GraphGeneration: GraphGenerationPlaceholder,
+		GraphGeneration: graphGeneration,
 	}
 
-	// AC-4 carry-forward: when the store holds a ready generation under
-	// the same fingerprint, load its rows and reuse unchanged rows.
-	var prior map[model.NodeId]Row
+	// AC-4 carry-forward: when the store holds a READY generation under
+	// the SAME embedding-space fingerprint, lookup each prior row by
+	// NodeID and reuse the row whose text_hash matches the current
+	// document. The state MUST be StateReady — a stale / corrupt / missing
+	// generation cannot vouch for the prior row's vectors, so the only
+	// safe action is to re-embed (the precise failure mode CRITICAL 2 of
+	// the SW-261 review caught: a previous revision loaded stale rows
+	// and republished them under the new fingerprint, which is the
+	// embedding-space mixing this story exists to prevent).
+	//
+	// Streaming: the prior rows are looked up by NodeID via the
+	// RowLoader point-lookup seam, not materialised into a
+	// whole-generation map (context/standards.md:225-229 working-set
+	// rule). A node whose text_hash does NOT match the prior row
+	// triggers an embed call; a node whose text_hash DOES match carries
+	// the prior row's vector forward unchanged. A store that does not
+	// implement RowLoader falls back to a single Load (the test-only
+	// mem adapter always implements it; the SQLite adapter does too via
+	// an indexed point probe).
+	var (
+		priorID    GenerationID
+		hasPrior   bool
+		priorTotal int
+	)
 	if store != nil {
-		// The fingerprint's graph_generation is filled in by the runtime;
-		// for in-process tests that bypass the runtime we still build a
-		// stable id. GenerateAndPersist uses only ModelID/Dim/Schema to
-		// drive carry-forward here; a different graph_generation would
-		// push the Active state to Stale and skip carry-forward. The
-		// runtime path always supplies a real graph_generation.
-		priorGen, _, err := store.Active(ctx, fp, nil)
-		if err == nil && priorGen.ID != "" {
-			if rows, lerr := store.Load(ctx, priorGen.ID); lerr == nil {
-				prior = make(map[model.NodeId]Row, len(rows))
-				for _, r := range rows {
-					prior[r.NodeID] = r
-				}
-			}
+		if priorGen, priorState, err := store.Active(ctx, fp, nil); err == nil && priorState == StateReady && priorGen.ID != "" {
+			priorID = priorGen.ID
+			hasPrior = true
+			priorTotal = priorGen.RowCount
 		}
 	}
 
@@ -220,7 +255,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// Track the NodeIds the pass actually wrote — a node whose document
 	// was skipped or absent does not enter the new generation, so the
 	// Build's Commit-time validate sees a row set equal to (Embedded +
-	// Reused). The Purged count is `len(prior) - reused` because every
+	// Reused). The Purged count is `priorTotal - reused` because every
 	// prior row not in the new generation's row set represents a node
 	// that no longer exists in the graph.
 	wantIDs := make(map[model.NodeId]struct{}, len(nodes))
@@ -254,29 +289,34 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 				continue
 			}
 			wantIDs[n.ID()] = struct{}{}
-			if priorRow, exists := prior[n.ID()]; exists && priorRow.TextHash == d.TextHash {
-				// Carry forward: same node, same text_hash, prior row
-				// is already in the embedding space. Upsert the prior
-				// row's vector unchanged — NO embed call.
-				row := Row{
-					// GenerationID left blank so the build assigns its
-					// own id (the prior generation has a different id).
-					DocumentID: d.DocumentID,
-					NodeID:     n.ID(),
-					TextHash:   d.TextHash,
-					Path:       d.Path,
-					StartLine:  d.StartLine,
-					EndLine:    d.EndLine,
-					SpanMethod: d.SpanMethod,
-					Vector:     priorRow.Vector,
+			// AC-4 carry-forward: lookup the prior row by NodeID via the
+			// RowLoader point-probe (working-set rule). When the prior
+			// row's text_hash matches the current document's, reuse the
+			// prior row's vector — no embed call. Carry-forward counts
+			// ONLY as Reused (a previous revision double-counted it
+			// under both Embedded and Reused, contradicting the
+			// documented Embedded + Reused + Skipped invariant).
+			if hasPrior {
+				if loader, ok := store.(RowLoader); ok {
+					if priorRow, exists, lerr := loader.LoadRow(ctx, priorID, n.ID()); lerr == nil && exists && priorRow.TextHash == d.TextHash {
+						row := Row{
+							DocumentID: d.DocumentID,
+							NodeID:     n.ID(),
+							TextHash:   d.TextHash,
+							Path:       d.Path,
+							StartLine:  d.StartLine,
+							EndLine:    d.EndLine,
+							SpanMethod: d.SpanMethod,
+							Vector:     priorRow.Vector,
+						}
+						carry = append(carry, row)
+						if index != nil {
+							index.Put(n.ID(), row.Vector)
+						}
+						res.Reused++
+						continue
+					}
 				}
-				carry = append(carry, row)
-				if index != nil {
-					index.Put(n.ID(), row.Vector)
-				}
-				res.Reused++
-				res.Embedded++
-				continue
 			}
 			chunkNodes = append(chunkNodes, n)
 			texts = append(texts, d.Text)
@@ -343,11 +383,21 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// the prior one); the prior id is simply no longer the active
 	// pointer, so its rows are unreachable. The count is reported so the
 	// operator can see what the pass dropped.
-	if prior != nil {
-		for id := range prior {
-			if _, kept := wantIDs[id]; !kept {
-				res.Purged++
-			}
+	//
+	// Without a materialised prior map, the exact formula is
+	//
+	//	Purged = priorTotal - reused
+	//
+	// because every carried-forward row corresponds to exactly one prior row
+	// (the node-id lookup is unique), and every prior row whose node is no
+	// longer in the current pass is either reused or purged — not embedded
+	// or skipped (embedded rows are nodes that DID change, which is
+	// orthogonal to whether the prior generation covered them; skipped rows
+	// are nodes with no document, also orthogonal).
+	if hasPrior && priorTotal > 0 {
+		res.Purged = priorTotal - res.Reused
+		if res.Purged < 0 {
+			res.Purged = 0
 		}
 	}
 	return res, nil

@@ -343,16 +343,27 @@ func runIndexAt(cwd string, args []string) int {
 	// the repository, so nodes are visited in path order.
 	sortNodesByPath(nodes)
 	docs := newFileDocumentSource(ctx, target.root, emb)
-	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, embed.NewIndex(), table, eprog.Handle)
+	// SW-261 cross-process guarantee: hold the cross-process ingest lock
+	// across the entire semantic Begin/Commit sequence so a second
+	// graphi process on the same meta directory cannot observe a live
+	// foreign staging row and delete it as a stale leftover. The runtime
+	// helper owns the lock acquisition so the AC-5/AC-6 contract has one
+	// authoritative owner; the embed layer's buildMu still serialises
+	// goroutines within a single process.
+	res, err := rtime.BuildSemanticGeneration(ctx, ing, store, reg, table, nodes, docs, embed.NewIndex(), eprog.Handle)
 	eprog.Finish()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: index --semantic: %v\n", err)
 		return 1
 	}
-	fmt.Printf("graphi index --semantic: embedded %d nodes via %s\n", res.Embedded, res.EmbedderID)
+	// res.Embedded is the count of nodes that were freshly embedded (the
+	// prior row's text_hash differed). Carried-forward rows show up in
+	// res.Reused, NOT in res.Embedded — the previous revision double-
+	// counted them and reported reused rows as freshly embedded.
+	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
 	share := docs.stats.SpanMethodShare()
-	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
-		embed.DocumentSchema, res.Embedded, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
+	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
+		embed.DocumentSchema, res.Embedded, res.Reused, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
 	return 0
 }
 

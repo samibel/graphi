@@ -42,12 +42,13 @@ type Reader interface {
 
 // SemanticState carries the typed GenerationStore state into the search
 // service (SW-261 AC-10). The state drives the configured-but-not-ready
-// graceful skip: when the state is non-ready, SemanticSearch returns the
-// typed Unavailable response with Reason naming the state instead of
-// consulting the embedder. The default build (no embedder) leaves this
-// zero-valued; StateReady is treated as "no state plumbed" by SemanticSearch
-// (the zero of embed.State is StateMissing, which the function compares
-// against StateReady explicitly).
+// graceful skip: when the state is non-zero and non-Ready, SemanticSearch
+// returns the typed Unavailable response with Reason naming the state
+// instead of consulting the embedder. The default build (no embedder)
+// leaves the State field at the StateUnset sentinel (the zero value);
+// SemanticSearch uses State.IsZero() as the explicit "no state plumbed"
+// check so a runtime that did call Active() and got back a StateMissing
+// cannot be confused with one that never called Active() at all.
 type SemanticState struct {
 	// State is the GenerationStore state. embed.StateReady means the
 	// service may serve from the configured embedder + index; any other
@@ -83,9 +84,9 @@ type Service struct {
 	index      embed.VectorIndex
 	nodeReader NodeReader
 	// semanticState carries the typed GenerationStore state (SW-261).
-	// The zero value (State = StateMissing) is treated as "no state
+	// The zero value (State = StateUnset) is treated as "no state
 	// plumbed" by SemanticSearch, which only consults the field when
-	// State is non-zero AND non-Ready.
+	// State is non-zero (i.e. a runtime has actually called Active()).
 	semanticState SemanticState
 }
 
@@ -112,12 +113,14 @@ func (s *Service) WithSemantic(reg *embed.Registry, index embed.VectorIndex, nod
 }
 
 // WithSemanticState plumbs the typed GenerationStore state into the search
-// service (SW-261 AC-10). When state is non-ready, SemanticSearch returns the
-// typed Unavailable response with Reason naming the state instead of
+// service (SW-261 AC-10). When state is non-ready, SemanticSearch returns
+// the typed Unavailable response with Reason naming the state instead of
 // consulting the embedder. The default build (no embedder, no state) leaves
-// the field zero-valued; a zero State (StateMissing) is treated as "no state
-// plumbed" and does NOT short-circuit SemanticSearch — only a state that has
-// been explicitly set to a non-ready value does.
+// the field at StateUnset (zero); SemanticSearch uses State.IsZero() as
+// the explicit "no state plumbed" check so a runtime that called Active()
+// and got back StateMissing cannot be confused with one that never called
+// Active() at all (a previous revision conflated the two and read an
+// empty index as ready, fail-open against AC-7).
 func (s *Service) WithSemanticState(state SemanticState) *Service {
 	s.semanticState = state
 	return s

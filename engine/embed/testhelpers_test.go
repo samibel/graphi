@@ -13,22 +13,14 @@ import (
 // test-helper functions used by the conformance suite. Kept in a separate
 // file so the conformance test body focuses on contract assertions.
 
-// sqlDBHandle is a thin alias so the migration test can use it without
-// importing database/sql directly. It closes the underlying *sql.DB.
-type sqlDBHandle = sql.DB
-
 // openSQLiteForTest opens a pure-Go SQLite database at path with the
 // standard pragmas (WAL, busy_timeout) the production code uses.
 func openSQLiteForTest(path string) (*sql.DB, error) {
 	return sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)")
 }
 
-// writeBytes writes data to path atomically (mkdir + write).
-func writeBytes(path string, data []byte) error {
-	return os.WriteFile(path, data, 0o600)
-}
-
-// readBytes reads a file's bytes.
+// readBytes reads a file's bytes. Used by the AC-8 migration test to
+// sha256 the real graph.db file after the migration.
 func readBytes(path string) ([]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {

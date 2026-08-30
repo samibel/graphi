@@ -80,7 +80,7 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 	reg := embed.NewRegistry()
 	reg.Register(rec)
 	store := embed.NewMemGenerationStore()
-	got, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, source, embed.NewIndex(), store)
+	got, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, source, embed.NewIndex(), store, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
@@ -105,11 +105,11 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 		t.Errorf("persisted rows = %+v", rows)
 	}
 	// A nil source with a configured embedder is an error, never a silent v1 fallback.
-	if _, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, nil, embed.NewIndex(), store); err == nil {
+	if _, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, nil, embed.NewIndex(), store, embed.GraphGenerationPlaceholder); err == nil {
 		t.Error("nil DocumentSource must be an error")
 	}
 	// The graceful skip still precedes everything: no embedder, no source needed.
-	if r, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), res.Nodes, nil, embed.NewIndex(), store); err != nil || r.Configured {
+	if r, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), res.Nodes, nil, embed.NewIndex(), store, embed.GraphGenerationPlaceholder); err != nil || r.Configured {
 		t.Errorf("graceful skip = %+v, %v", r, err)
 	}
 }
@@ -164,7 +164,7 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	store := embed.NewMemGenerationStore()
 	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) {
 		steps = append(steps, [2]int{done, total})
-	})
+	}, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersistWithProgress: %v", err)
 	}
@@ -212,7 +212,7 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	reg2 := embed.NewRegistry()
 	reg2.Register(embed.NewMockEmbedder(8))
 	store2 := embed.NewMemGenerationStore()
-	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store2); err != nil {
+	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store2, embed.GraphGenerationPlaceholder); err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	got := loadRows(t, store, fpFor(rec))
@@ -244,7 +244,7 @@ func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
 
 	var steps int
 	store := embed.NewMemGenerationStore()
-	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) { steps++ })
+	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) { steps++ }, embed.GraphGenerationPlaceholder)
 	if err == nil {
 		t.Fatal("want the injected chunk failure to propagate")
 	}
