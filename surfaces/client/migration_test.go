@@ -400,3 +400,10 @@ func TestAX08_ExcludedOperationsAreRejectedByName(t *testing.T) {
 		})
 	}
 }
+
+// TestSW257_SearchSemanticIsNotMigrated: SW-257 pins search_semantic outside the migrated set; SW-265 owns the migration decision.
+func TestSW257_SearchSemanticIsNotMigrated(t *testing.T) {
+	if isMigratedOperation("search_semantic") {
+		t.Fatalf("search_semantic dispatches through the executor, but its migration is SW-265's decision, gated on deterministic configured|unavailable|stale|corrupt fixtures")
+	}
+}

@@ -44,11 +44,16 @@ package client
 //     slices and the executor transports only the canonical one; migrating it
 //     would silently drop the Markdown rendering the MCP surface concatenates
 //     today (see BriefArgs in executor_adapters.go).
-//   - memory and search_semantic have no argument-fidelity evidence in the AX-04
-//     fixture: with no memory store wired, Direct.Memory short-circuits before it
-//     reads its arguments, so a parity pass there proves the sentinel and not the
-//     arguments. That gap is filed in the backlog and must close before either
+//   - memory has no argument-fidelity evidence in the AX-04 fixture: with no
+//     memory store wired, Direct.Memory short-circuits before it reads its
+//     arguments, so a parity pass there proves the sentinel and not the
+//     arguments. That gap is filed in the backlog and must close before it
 //     migrates.
+//   - search_semantic HAS argument-fidelity fixtures since SW-239 (`query` and
+//     `limit`, executor_argument_fidelity_test.go, over the mock embedder). Its
+//     migration is deferred until deterministic fixtures exist for all four of
+//     its states — configured, unavailable, stale and corrupt — which is SW-265's
+//     decision; SW-257 records the baseline it will be measured against.
 //
 // # What the three kill-switch positions mean
 //
@@ -265,8 +270,11 @@ const CanaryOperation = "dead_code"
 //     two apart, which is a change to Stable dispatch made for a Labs reason.
 //     They are the natural first batch for AX-12, when that path is being
 //     opened anyway;
-//   - memory and search_semantic — no argument-fidelity evidence on the AX-04
-//     fixture (backlog, SW-226 review);
+//   - memory — no argument-fidelity evidence on the AX-04 fixture (backlog,
+//     SW-226 review);
+//   - search_semantic — argument-fidelity fixtures exist since SW-239 (`query`
+//     and `limit`); migration is deferred until deterministic
+//     configured|unavailable|stale|corrupt fixtures exist (SW-265's decision);
 //   - agent_brief — Client.Brief returns two byte slices and the executor
 //     transports one; migrating it would silently drop the Markdown the MCP
 //     surface concatenates (BriefArgs in executor_adapters.go);
