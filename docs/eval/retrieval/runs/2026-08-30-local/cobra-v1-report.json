@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
+    "candidate_sha": "69b730cc8e07bdb79cd56fd2beb05e7a46c59de0+dirty",
     "runner_class": "local",
     "repo": {
       "name": "cobra",
@@ -19,7 +19,49 @@
       "evidence_class": "agent-annotated, human-reviewed",
       "queries": 40,
       "dev_queries": 30,
-      "holdout_queries": 10
+      "holdout_queries": 10,
+      "query_ids": [
+        "cb-01",
+        "cb-02",
+        "cb-03",
+        "cb-04",
+        "cb-05",
+        "cb-06",
+        "cb-07",
+        "cb-08",
+        "cb-09",
+        "cb-10",
+        "cb-11",
+        "cb-12",
+        "cb-13",
+        "cb-14",
+        "cb-15",
+        "cb-16",
+        "cb-17",
+        "cb-18",
+        "cb-19",
+        "cb-20",
+        "cb-21",
+        "cb-22",
+        "cb-23",
+        "cb-24",
+        "cb-25",
+        "cb-26",
+        "cb-27",
+        "cb-28",
+        "cb-29",
+        "cb-30",
+        "cb-31",
+        "cb-32",
+        "cb-33",
+        "cb-34",
+        "cb-35",
+        "cb-36",
+        "cb-37",
+        "cb-38",
+        "cb-39",
+        "cb-40"
+      ]
     },
     "tokenizer_id": "whitespace-fields-v1",
     "top_k": 10,
@@ -7894,23 +7936,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 200,
+        "value": 356,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 205,
+        "value": 209,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 378,
+        "value": 390,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 307.59375,
+        "value": 339.921875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7922,23 +7964,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 200,
+        "value": 356,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2222,
+        "value": 2404,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 5003,
+        "value": 9142,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 309.609375,
+        "value": 351.03125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7989,7 +8031,7 @@
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 309.640625,
+        "value": 351.203125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -7999,7 +8041,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T09:52:01Z",
+    "generated_at": "2026-08-30T14:27:16Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

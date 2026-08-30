@@ -145,7 +145,7 @@ cloned: the checkout must exist locally at the pinned sha or the run fails close
 
 - `reproducible` — a pure function of candidate SHA, repository at its SHA, dataset bytes and
   harness/scorer version: header (`candidate_sha`, `runner_class`, `repo` with node/edge/file
-  counts, `dataset` with `sha256`, `tokenizer_id`, `top_k`, `token_budgets`,
+  counts, `dataset` with `sha256` and sorted `query_ids`, `tokenizer_id`, `top_k`, `token_budgets`,
   `hit_context_window_lines`, `relevant_min_grade`, `matching_rule`) and the per-baseline results
   (`status`, `reason`, `method`, per-query `hits` + `metrics`, `overall`, `strata`, `splits`).
   **Byte-identical across two runs over the same inputs** (`TestRun_ReproducibleSectionIsByteIdenticalAcrossRuns`).
@@ -166,14 +166,25 @@ derived), `raw/latency-<baseline>.json` (every timed execution + the single-samp
 baseline's raw records say `collected: false` and carry the typed `reason` — the only thing that can
 justify `unavailable` in the report.
 
-`-aggregate` checks, per baseline, **exact query-id set equality** between the report, the dataset
+`-aggregate` is closed-world first: the report's `dataset` citation (`id`, `sha256`,
+`evidence_class`, counts, sorted `query_ids`) must equal the same citation rebuilt from
+`dataset.json` — whose sha256 is recomputed from its bytes, never read from `run.json` — and the
+baseline universe on every side (report results, performance blocks, raw hits series, raw latency
+series listed in `run.json`) must equal the harness constant of four baselines. A query removed
+coherently from the dataset copy, the report and every raw series is therefore caught by the
+citation the report still carries; a tamperer who also rewrites that citation has produced a
+different report, and the `derived_from.sha256` in the targets/budgets files no longer matches it —
+that provenance layer, not the aggregate, binds a checked-in artifact to its report.
+
+It then checks, per baseline, **exact query-id set equality** between the report, the dataset
 copy and each raw series (an omitted or extra query on any side is a discrepancy, whether or not
 the aggregates were re-averaged); recomputes every per-query metric through the same `Evaluate`,
 every aggregate through the same `Aggregate` over the *raw* hit set in dataset order, every
 performance block through the same `PerformanceFromRaw`; compares the report's hit lists to the raw
-hit lists; and checks the complete shape of an `unavailable` baseline (status only when raw says
-`collected: false`, the `reason`, zero queries, `UNKNOWN` aggregates, `UNKNOWN` measures). Every
-comparison is `reflect.DeepEqual` — no tolerances.
+hit lists; and checks the complete shape of an `unavailable` baseline against **both** raw records
+(status only when both say `collected: false`; report reason == hits reason == latency reason;
+zero samples and an empty query set in both records; zero queries, `UNKNOWN` aggregates and
+`UNKNOWN` measures in the report). Every comparison is `reflect.DeepEqual` — no tolerances.
 
 ## Targets and budgets
 

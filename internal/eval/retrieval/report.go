@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 )
 
 // Versions. FormatVersion pins the JSON shape; HarnessVersion the measurement
@@ -79,15 +80,39 @@ type RepoRef struct {
 	Files int    `json:"files"`
 }
 
-// DatasetRef identifies the dataset by content, not by path.
+// DatasetRef identifies the dataset by content, not by path: its sha256
+// (recomputed from the bytes by LoadDataset, never copied from an index), its
+// counts and the sorted list of every query id it carries.
 type DatasetRef struct {
-	ID            string `json:"id"`
-	File          string `json:"file"`
-	SHA256        string `json:"sha256"`
-	EvidenceClass string `json:"evidence_class"`
-	Queries       int    `json:"queries"`
-	Dev           int    `json:"dev_queries"`
-	Holdout       int    `json:"holdout_queries"`
+	ID            string   `json:"id"`
+	File          string   `json:"file"`
+	SHA256        string   `json:"sha256"`
+	EvidenceClass string   `json:"evidence_class"`
+	Queries       int      `json:"queries"`
+	Dev           int      `json:"dev_queries"`
+	Holdout       int      `json:"holdout_queries"`
+	QueryIDs      []string `json:"query_ids"`
+}
+
+// DatasetRefOf is THE dataset citation a report carries. The runner publishes
+// it and the aggregate rebuilds it from the run directory's dataset copy and
+// compares it exactly, so a report cannot cite one dataset and be scored
+// against another. File is the label the run was given (the dataset's file
+// name at run time) and is carried, not compared.
+func DatasetRefOf(ds *Loaded, file string) DatasetRef {
+	d := ds.Dataset
+	ref := DatasetRef{ID: d.ID, File: file, SHA256: ds.SHA256, EvidenceClass: d.EvidenceClass,
+		Queries: len(d.Queries), QueryIDs: make([]string, 0, len(d.Queries))}
+	for _, q := range d.Queries {
+		ref.QueryIDs = append(ref.QueryIDs, q.ID)
+		if q.Split == SplitHoldout {
+			ref.Holdout++
+		} else {
+			ref.Dev++
+		}
+	}
+	sort.Strings(ref.QueryIDs)
+	return ref
 }
 
 // Baseline statuses.

@@ -62,12 +62,24 @@ func TestAggregate_RoundTripReproducesEveryPublishedNumber(t *testing.T) {
 			t.Errorf("metric %s was not checked for lexical", want)
 		}
 	}
-	// The unavailable baseline's whole shape is checked, not skipped.
-	for _, want := range []string{"status", "reason", "query_set", "raw.hits.query_set", "overall", "strata.no_hit", "splits.dev",
+	// The unavailable baseline's whole shape is checked against BOTH raw
+	// records, not skipped.
+	for _, want := range []string{"status", "reason", "raw.latency.reason", "query_set", "raw.hits.query_set", "raw.hits.samples",
+		"raw.latency.query_set", "raw.latency.samples", "overall", "strata.no_hit", "splits.dev",
 		"index_ms", "query_p50_us", "query_p95_us", "peak_rss_mb", "vector_sidecar_bytes", "latency_samples"} {
 		if !names[want][BaselineSemanticNameOnly] {
 			t.Errorf("metric %s was not checked for the unavailable semantic_name_only baseline", want)
 		}
+	}
+	// The closed-world checks: dataset citation and the baseline universe on
+	// every side.
+	for _, want := range []string{"dataset", "baseline_set", "performance_set", "raw.hits.series_set", "raw.latency.series_set"} {
+		if !names[want][runLevel] {
+			t.Errorf("run-level check %s was not made", want)
+		}
+	}
+	if got := run.Report.Reproducible.Dataset; len(got.QueryIDs) != fixtureQueries || got.SHA256 != run.Dataset.SHA256 {
+		t.Errorf("dataset citation = %+v, want %d sorted query ids and the recomputed sha256 %s", got, fixtureQueries, run.Dataset.SHA256)
 	}
 }
 
@@ -135,6 +147,138 @@ func rewriteDataset(t *testing.T, dir string, mut func(*Dataset)) {
 		t.Fatal(err)
 	}
 	restampIndex(t, dir, func(idx *RunIndex) { idx.DatasetSHA256 = SHA256Hex(out) })
+}
+
+// rewriteRawHits / rewriteRawLatency edit one raw series file in place and
+// re-stamp its digest, sample count and collected flag in the run index.
+func rewriteRawHits(t *testing.T, dir string, b Baseline, mut func(*RawHitSet)) {
+	t.Helper()
+	name := RawFileName(RawSeriesHits, b)
+	raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var set RawHitSet
+	if err := json.Unmarshal(raw, &set); err != nil {
+		t.Fatal(err)
+	}
+	mut(&set)
+	out, err := marshalStable(set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), out, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	restampRaw(t, dir, name, SHA256Hex(out), set.Collected, set.Samples)
+}
+
+func rewriteRawLatency(t *testing.T, dir string, b Baseline, mut func(*RawLatencySet)) {
+	t.Helper()
+	name := RawFileName(RawSeriesLatency, b)
+	raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var set RawLatencySet
+	if err := json.Unmarshal(raw, &set); err != nil {
+		t.Fatal(err)
+	}
+	mut(&set)
+	out, err := marshalStable(set)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(name)), out, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	restampRaw(t, dir, name, SHA256Hex(out), set.Collected, set.Samples)
+}
+
+func restampRaw(t *testing.T, dir, file, digest string, collected bool, samples int) {
+	t.Helper()
+	restampIndex(t, dir, func(idx *RunIndex) {
+		for i := range idx.Raw {
+			if idx.Raw[i].File == file {
+				idx.Raw[i].Digest, idx.Raw[i].Collected, idx.Raw[i].Samples = digest, collected, samples
+			}
+		}
+	})
+}
+
+// readRawLatency reads one raw latency series back from the run directory.
+func readRawLatency(t *testing.T, dir string, b Baseline) RawLatencySet {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(RawFileName(RawSeriesLatency, b))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var set RawLatencySet
+	if err := json.Unmarshal(raw, &set); err != nil {
+		t.Fatal(err)
+	}
+	return set
+}
+
+// removeQueryEverywhere is the coordinated tamper: one query dropped from
+// the dataset copy, from every raw series and from every ok baseline of the
+// report, with every statistic and performance block recomputed through the
+// production functions and every digest re-stamped. Only the dataset
+// citation the report still carries can catch it.
+func removeQueryEverywhere(t *testing.T, dir, id string) {
+	t.Helper()
+	rewriteDataset(t, dir, func(d *Dataset) {
+		kept := d.Queries[:0]
+		for _, q := range d.Queries {
+			if q.ID != id {
+				kept = append(kept, q)
+			}
+		}
+		d.Queries = kept
+	})
+	for _, b := range AllBaselines {
+		rewriteRawHits(t, dir, b, func(s *RawHitSet) {
+			kept := s.Queries[:0]
+			s.Samples = 0
+			for _, q := range s.Queries {
+				if q.ID != id {
+					kept = append(kept, q)
+					s.Samples += len(q.Hits)
+				}
+			}
+			s.Queries = kept
+		})
+		rewriteRawLatency(t, dir, b, func(s *RawLatencySet) {
+			kept := s.Queries[:0]
+			s.Samples = 0
+			for _, q := range s.Queries {
+				if q.ID != id {
+					kept = append(kept, q)
+					s.Samples += len(q.SamplesUS)
+				}
+			}
+			s.Queries = kept
+		})
+	}
+	rewriteReport(t, dir, func(r *Report) {
+		for i := range r.Reproducible.Baselines {
+			b := &r.Reproducible.Baselines[i]
+			if b.Status != BaselineStatusOK {
+				continue
+			}
+			kept := b.Queries[:0]
+			for _, q := range b.Queries {
+				if q.ID != id {
+					kept = append(kept, q)
+				}
+			}
+			b.Queries = kept
+			b.Overall, b.Strata, b.Splits = AggregateAll(b.Queries, r.Reproducible.TokenBudgets)
+		}
+		for i := range r.Performance {
+			r.Performance[i] = PerformanceFromRaw(r.Performance[i].Baseline, readRawLatency(t, dir, r.Performance[i].Baseline))
+		}
+	})
 }
 
 func findBaseline(t *testing.T, r *Report, name Baseline) *BaselineResult {
@@ -349,6 +493,98 @@ func TestAggregate_DetectsDrift(t *testing.T) {
 			},
 			wantExit:          ExitDiscrepancy,
 			wantDiscrepancies: []string{"lexical query_set", "lexical raw.hits.query_set", "lexical raw.latency.query_set", "oracle_upper_bound query_set"},
+		},
+		{
+			name: "a query removed coherently from dataset, report and every raw series (statistics recomputed) is caught by the dataset citation",
+			tamper: func(t *testing.T, dir string) {
+				removeQueryEverywhere(t, dir, "fx-10")
+			},
+			wantExit:          ExitDiscrepancy,
+			wantDiscrepancies: []string{"run dataset"},
+			check: func(t *testing.T, agg AggregateReport) {
+				if agg.Discrepant != 1 {
+					t.Errorf("discrepancies = %v, want exactly the dataset citation (everything else was made consistent)", agg.Discrepancies)
+				}
+			},
+		},
+		{
+			name: "a baseline removed from the report, its performance block and the raw index is a discrepancy on every side",
+			tamper: func(t *testing.T, dir string) {
+				rewriteReport(t, dir, func(r *Report) {
+					var bs []BaselineResult
+					for _, b := range r.Reproducible.Baselines {
+						if b.Name != BaselineHybridV1 {
+							bs = append(bs, b)
+						}
+					}
+					r.Reproducible.Baselines = bs
+					var ps []BaselinePerformance
+					for _, p := range r.Performance {
+						if p.Baseline != BaselineHybridV1 {
+							ps = append(ps, p)
+						}
+					}
+					r.Performance = ps
+				})
+				restampIndex(t, dir, func(idx *RunIndex) {
+					var refs []RawFileRef
+					for _, ref := range idx.Raw {
+						if ref.Baseline != BaselineHybridV1 {
+							refs = append(refs, ref)
+						}
+					}
+					idx.Raw = refs
+				})
+				for _, series := range []string{RawSeriesHits, RawSeriesLatency} {
+					if err := os.Remove(filepath.Join(dir, filepath.FromSlash(RawFileName(series, BaselineHybridV1)))); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			wantExit:          ExitDiscrepancy,
+			wantDiscrepancies: []string{"run baseline_set", "run performance_set", "run raw.hits.series_set", "run raw.latency.series_set"},
+		},
+		{
+			name: "an extra performance block is a discrepancy",
+			tamper: func(t *testing.T, dir string) {
+				rewriteReport(t, dir, func(r *Report) {
+					r.Performance = append(r.Performance, unavailablePerformance("bm42", "never ran"))
+				})
+			},
+			wantExit:          ExitDiscrepancy,
+			wantDiscrepancies: []string{"run performance_set"},
+		},
+		{
+			name: "an unavailable latency record that carries samples is a discrepancy",
+			tamper: func(t *testing.T, dir string) {
+				rewriteRawLatency(t, dir, BaselineSemanticNameOnly, func(s *RawLatencySet) {
+					s.Queries = []RawQueryLatency{{ID: "fx-01", SamplesUS: []int64{1, 2, 3}}}
+					s.Samples = 3
+				})
+			},
+			wantExit:          ExitDiscrepancy,
+			wantDiscrepancies: []string{"semantic_name_only raw.latency.query_set", "semantic_name_only raw.latency.samples", "semantic_name_only latency_samples"},
+		},
+		{
+			name: "an unavailable latency reason that differs from the hit record's (performance reasons edited to match) is a discrepancy",
+			tamper: func(t *testing.T, dir string) {
+				const other = "embedder disabled by policy"
+				rewriteRawLatency(t, dir, BaselineSemanticNameOnly, func(s *RawLatencySet) {
+					s.Reason = other
+					u := Unknown("baseline unavailable: " + other)
+					s.IndexMS, s.PeakRSSMB, s.VectorSidecarBytes = u, u, u
+				})
+				rewriteReport(t, dir, func(r *Report) {
+					*findPerformance(t, r, BaselineSemanticNameOnly) = unavailablePerformance(BaselineSemanticNameOnly, other)
+				})
+			},
+			wantExit:          ExitDiscrepancy,
+			wantDiscrepancies: []string{"semantic_name_only raw.latency.reason"},
+			check: func(t *testing.T, agg AggregateReport) {
+				if agg.Discrepant != 1 {
+					t.Errorf("discrepancies = %v, want exactly the reason parity (the performance block was made consistent with the edited record)", agg.Discrepancies)
+				}
+			},
 		},
 		{
 			name: "an edited raw file is refused by digest before any arithmetic",

@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/1",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "9ef05a39245566bf5ff58db033aa25d7c42b2cab",
+    "candidate_sha": "69b730cc8e07bdb79cd56fd2beb05e7a46c59de0+dirty",
     "runner_class": "local",
     "repo": {
       "name": "grpc-go",
@@ -19,7 +19,17 @@
       "evidence_class": "agent-annotated, human-reviewed",
       "queries": 8,
       "dev_queries": 5,
-      "holdout_queries": 3
+      "holdout_queries": 3,
+      "query_ids": [
+        "gp-01",
+        "gp-02",
+        "gp-03",
+        "gp-04",
+        "gp-05",
+        "gp-06",
+        "gp-07",
+        "gp-08"
+      ]
     },
     "tokenizer_id": "whitespace-fields-v1",
     "top_k": 10,
@@ -1656,23 +1666,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 13435,
+        "value": 16202,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 149,
+        "value": 159,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 1073,
+        "value": 1176,
         "unit": "us"
       },
       "latency_samples": 24,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 692.015625,
+        "value": 671.828125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -1684,23 +1694,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 13435,
+        "value": 16202,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2234,
+        "value": 2508,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4097,
+        "value": 6704,
         "unit": "us"
       },
       "latency_samples": 24,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 692.015625,
+        "value": 671.828125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -1751,7 +1761,7 @@
       "latency_samples": 24,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 692.015625,
+        "value": 671.828125,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -1761,7 +1771,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-30T09:52:00Z",
+    "generated_at": "2026-08-30T14:27:34Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

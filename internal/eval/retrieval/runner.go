@@ -229,13 +229,10 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 		HarnessVersion: HarnessVersion,
 		ScorerVersion:  ScorerVersion,
 		Reproducible: Reproducible{
-			CandidateSHA: o.CandidateSHA,
-			RunnerClass:  o.RunnerClass,
-			Repo:         RepoRef{Name: o.RepoName, SHA: o.RepoSHA, Nodes: idx.nodes, Edges: idx.edges, Files: idx.files},
-			Dataset: DatasetRef{
-				ID: ds.ID, File: filepath.Base(o.Dataset.Path), SHA256: o.Dataset.SHA256,
-				EvidenceClass: ds.EvidenceClass, Queries: len(ds.Queries),
-			},
+			CandidateSHA:          o.CandidateSHA,
+			RunnerClass:           o.RunnerClass,
+			Repo:                  RepoRef{Name: o.RepoName, SHA: o.RepoSHA, Nodes: idx.nodes, Edges: idx.edges, Files: idx.files},
+			Dataset:               DatasetRefOf(o.Dataset, filepath.Base(o.Dataset.Path)),
 			TokenizerID:           TokenizerID,
 			TopK:                  TopK,
 			TokenBudgets:          append([]int(nil), TokenBudgets...),
@@ -252,13 +249,6 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 			Notes: "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; " +
 				"index_ms is the one cold IngestAll shared by every indexed baseline",
 		},
-	}
-	for _, q := range ds.Queries {
-		if q.Split == SplitHoldout {
-			report.Reproducible.Dataset.Holdout++
-		} else {
-			report.Reproducible.Dataset.Dev++
-		}
 	}
 	raw := &RawSamples{Hits: map[Baseline]RawHitSet{}, Latency: map[Baseline]RawLatencySet{}}
 
@@ -523,14 +513,19 @@ func runBaseline(ctx context.Context, b Baseline, method string, exec executor, 
 // that did not collect yields UNKNOWN with the typed reason for every
 // measure; otherwise the percentiles are nearest-rank over every timed
 // execution and index_ms / peak_rss_mb / vector_sidecar_bytes are the
-// record's own measures, status and reason included.
+// record's own measures, status and reason included. LatencySamples is
+// always the count of timed executions the record carries, collected or
+// not, so an uncollected record that nevertheless holds samples yields a
+// block that no honest unavailable report (latency_samples 0) can match.
 func PerformanceFromRaw(b Baseline, lat RawLatencySet) BaselinePerformance {
-	if !lat.Collected {
-		return unavailablePerformance(b, lat.Reason)
-	}
 	var samples []int64
 	for _, q := range lat.Queries {
 		samples = append(samples, q.SamplesUS...)
+	}
+	if !lat.Collected {
+		out := unavailablePerformance(b, lat.Reason)
+		out.LatencySamples = len(samples)
+		return out
 	}
 	out := BaselinePerformance{Baseline: b, IndexMS: lat.IndexMS, LatencySamples: len(samples),
 		PeakRSSMB: lat.PeakRSSMB, VectorSidecarBytes: lat.VectorSidecarBytes}

@@ -79,17 +79,26 @@ type AggregateReport struct {
 }
 
 // AggregateMethod states the arithmetic inline.
-const AggregateMethod = "For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, " +
+const AggregateMethod = "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared " +
+	"EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); " +
+	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, oracle_upper_bound) and the report's " +
+	"baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. " +
+	"So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report " +
+	"still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that " +
+	"docs/eval/retrieval-targets.json and -budgets.json record in derived_from no longer matches it - that provenance layer, not " +
+	"this aggregate, is what binds a checked-in artifact to the report it came from. " +
+	"For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, " +
 	"with raw/hits-<baseline>.json and raw/latency-<baseline>.json: an omitted or extra query on any side is a discrepancy. Every " +
 	"per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; " +
 	"every aggregate through the same Aggregate over the RAW hit set in dataset order (not over the report's query list); every " +
 	"performance block through the same PerformanceFromRaw (nearest-rank PercentileInt64 over the timed executions; index_ms, " +
 	"peak_rss_mb and vector_sidecar_bytes from the record's own measures), each compared EXACTLY, status and reason included. The " +
 	"hit lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did not " +
-	"publish. A baseline may read `unavailable` only when its raw records say collected: false, and then its reason, empty query " +
-	"list, UNKNOWN aggregates and UNKNOWN measures are all checked against that record; a collected record makes any other status " +
-	"a discrepancy. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN and " +
-	"is never counted as reproduced."
+	"publish. A baseline may read `unavailable` only when BOTH its raw records say collected: false; then the report's reason, the " +
+	"hit record's reason and the latency record's reason must agree, both records must carry zero samples and an empty query set, " +
+	"and the report's empty query list, UNKNOWN aggregates and UNKNOWN measures are all checked against that; a collected record " +
+	"makes any other status a discrepancy. The environment block is checked for presence only. A metric whose raw samples are " +
+	"absent reads UNKNOWN and is never counted as reproduced."
 
 // Reproduce recomputes every published statistic in a run directory.
 func Reproduce(run *RunDir) AggregateReport {
@@ -122,6 +131,7 @@ func Reproduce(run *RunDir) AggregateReport {
 		r.perf[p.Baseline] = p
 	}
 
+	r.checkRun()
 	for _, b := range rep.Baselines {
 		r.checkBaseline(b)
 	}
@@ -197,6 +207,43 @@ func (r *reproducer) unknown(b Baseline, metric string, published any, reason st
 	r.add(MetricCheck{Baseline: b, Metric: metric, Published: render(published), Status: CheckUnknown, Reason: reason})
 }
 
+// runLevel labels the checks that belong to the run as a whole rather than
+// to one baseline.
+const runLevel Baseline = "run"
+
+// checkRun is the closed-world check: the report's dataset citation must be
+// the run directory's dataset, and the baseline universe on every side must
+// be the harness constant — not whatever the report happens to list.
+func (r *reproducer) checkRun() {
+	published := r.run.Report.Reproducible.Dataset
+	// Rebuilt from the dataset copy; its SHA256 was recomputed from the bytes
+	// by LoadDataset. File is carried from the report, not compared.
+	r.exact(runLevel, "dataset", normalizeDatasetRef(published), normalizeDatasetRef(DatasetRefOf(r.run.Dataset, published.File)))
+
+	universe := baselineSet(AllBaselines)
+	var results, blocks []Baseline
+	for _, b := range r.run.Report.Reproducible.Baselines {
+		results = append(results, b.Name)
+	}
+	for _, p := range r.run.Report.Performance {
+		blocks = append(blocks, p.Baseline)
+	}
+	r.exact(runLevel, "baseline_set", baselineSet(results), universe)
+	r.exact(runLevel, "performance_set", baselineSet(blocks), universe)
+	// The raw side is what the run index LISTS: a listed file that is absent
+	// is INCOMPLETE (MissingRaw), a series the index never had is a
+	// discrepancy.
+	for _, series := range []string{RawSeriesHits, RawSeriesLatency} {
+		var listed []Baseline
+		for _, ref := range r.run.Index.Raw {
+			if ref.Series == series {
+				listed = append(listed, ref.Baseline)
+			}
+		}
+		r.exact(runLevel, "raw."+series+".series_set", baselineSet(listed), universe)
+	}
+}
+
 // checkBaseline checks one published baseline. The raw records decide what
 // status it may carry: collected records make it ok, uncollected ones
 // unavailable, and a report that says otherwise is a discrepancy. The rest
@@ -217,7 +264,7 @@ func (r *reproducer) checkBaseline(b BaselineResult) {
 	if b.Status == BaselineStatusOK {
 		r.checkOK(b, hits, haveHits, lat, haveLat)
 	} else {
-		r.checkUnavailable(b, hits, haveHits)
+		r.checkUnavailable(b, hits, haveHits, lat, haveLat)
 	}
 	r.checkPerformance(b.Name, lat, haveLat)
 }
@@ -292,26 +339,37 @@ func (r *reproducer) checkOK(b BaselineResult, hits RawHitSet, haveHits bool, la
 }
 
 // checkUnavailable checks the complete shape of an unavailable baseline
-// (AC-6) against its raw hit record: the typed reason, no queries, and
-// UNKNOWN aggregates. Only a record that says collected: false can justify
-// the status (checkBaseline); everything the report says beyond that must
-// follow from the record's reason alone.
-func (r *reproducer) checkUnavailable(b BaselineResult, hits RawHitSet, haveHits bool) {
+// (AC-6) against BOTH its raw records: the typed reason (report == hit
+// record == latency record), no queries and zero samples on every side, and
+// UNKNOWN aggregates. Only records that say collected: false can justify the
+// status (checkBaseline); everything the report says beyond that must follow
+// from the records' reason alone.
+func (r *reproducer) checkUnavailable(b BaselineResult, hits RawHitSet, haveHits bool, lat RawLatencySet, haveLat bool) {
+	if haveLat {
+		r.exact(b.Name, "raw.latency.reason", b.Reason, rawReason(lat.Reason, "latency"))
+		r.exact(b.Name, "raw.latency.query_set", rawLatencyIDs(lat.Queries), []string{})
+		r.exact(b.Name, "raw.latency.samples", lat.Samples, 0)
+	}
 	if !haveHits {
 		r.unknown(b.Name, "reason", b.Reason, "no raw hit file for this baseline")
 		r.unknown(b.Name, "overall", b.Overall.Status, "no raw hit file for this baseline")
 		return
 	}
-	reason := hits.Reason
-	if reason == "" {
-		reason = "(the raw hit record carries no reason)"
-	}
-	want := unavailableBaseline(b.Name, b.Method, reason)
+	want := unavailableBaseline(b.Name, b.Method, rawReason(hits.Reason, "hit"))
 	r.exact(b.Name, "reason", b.Reason, want.Reason)
 	r.exact(b.Name, "query_set", queryIDs(b.Queries), []string{})
 	r.exact(b.Name, "raw.hits.query_set", rawHitIDs(hits.Queries), []string{})
 	r.exact(b.Name, "raw.hits.samples", hits.Samples, 0)
 	r.checkAggregates(b, want.Overall, want.Strata, want.Splits)
+}
+
+// rawReason is a raw record's reason, or a sentinel no report can match when
+// the record carries none.
+func rawReason(reason, record string) string {
+	if reason == "" {
+		return "(the raw " + record + " record carries no reason)"
+	}
+	return reason
 }
 
 func (r *reproducer) checkAggregates(b BaselineResult, overall AggregateMetrics, strata, splits map[string]AggregateMetrics) {
@@ -359,6 +417,24 @@ func (r *reproducer) checkPerformance(name Baseline, lat RawLatencySet, haveLat 
 		r.exact(name, m.name, m.get(p), m.get(want))
 	}
 	r.exact(name, "latency_samples", p.LatencySamples, want.LatencySamples)
+}
+
+// baselineSet renders a baseline list as a sorted, non-nil string slice for
+// exact set comparison; a duplicate entry stays duplicated and so differs.
+func baselineSet(names []Baseline) []string {
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		out = append(out, string(n))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// normalizeDatasetRef makes a JSON round-tripped citation comparable with a
+// rebuilt one: a missing query_ids list reads as empty, never as nil.
+func normalizeDatasetRef(d DatasetRef) DatasetRef {
+	d.QueryIDs = sortedIDs(d.QueryIDs)
+	return d
 }
 
 // Query-id sets. Every helper returns a sorted, non-nil slice so two empty
@@ -453,6 +529,9 @@ func render(v any) string {
 			return x.Status + " (" + x.Reason + ")"
 		}
 		return x.Status
+	case DatasetRef:
+		return fmt.Sprintf("%s sha256=%s evidence=%q queries=%d dev=%d holdout=%d ids=%s",
+			x.ID, x.SHA256, x.EvidenceClass, x.Queries, x.Dev, x.Holdout, render(x.QueryIDs))
 	case []Hit:
 		return fmt.Sprintf("%d hit(s)", len(x))
 	case QueryMetrics:

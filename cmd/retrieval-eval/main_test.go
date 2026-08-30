@@ -105,6 +105,22 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 		}
 	})
 
+	t.Run("aggregate exits 1 on a query removed coherently from dataset, report and raw", func(t *testing.T) {
+		dir := filepath.Join(t.TempDir(), "raw")
+		if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", fixtureDataset,
+			"-out", filepath.Join(filepath.Dir(dir), "r.json"), "-export-raw", dir, "-repeats", "1"}, &bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
+			t.Fatal("export run failed")
+		}
+		removeQueryEverywhere(t, dir, "fx-10")
+		var w bytes.Buffer
+		if code := run([]string{"-aggregate", dir}, &bytes.Buffer{}, &w); code != retrieval.ExitDiscrepancy {
+			t.Errorf("aggregate exit %d, want %d\n%s", code, retrieval.ExitDiscrepancy, w.String())
+		}
+		if !strings.Contains(w.String(), "run dataset: published") {
+			t.Errorf("the dataset citation must be what catches a coordinated removal:\n%s", w.String())
+		}
+	})
+
 	t.Run("derive writes targets and budgets citing the report", func(t *testing.T) {
 		targets := filepath.Join(dir, "targets.json")
 		budgets := filepath.Join(dir, "budgets.json")
@@ -136,6 +152,118 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 			t.Errorf("budgets = %+v", bg.Fixtures)
 		}
 	})
+}
+
+// readJSON / writeJSON are the run-directory file helpers the tamper below
+// needs; every write goes through the same stable encoder the harness uses.
+func readJSON(t *testing.T, path string, v any) {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, v); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeJSON(t *testing.T, path string, v any) []byte {
+	t.Helper()
+	out, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out = append(out, '\n')
+	if err := os.WriteFile(path, out, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// removeQueryEverywhere is the coordinated structural tamper through the
+// public API: one query dropped from the dataset copy, every raw series and
+// every ok baseline, every statistic and performance block recomputed with
+// the production functions, every digest re-stamped in run.json — so that
+// only the dataset citation the report still carries can catch it.
+func removeQueryEverywhere(t *testing.T, dir, id string) {
+	t.Helper()
+	var idx retrieval.RunIndex
+	readJSON(t, filepath.Join(dir, retrieval.RunIndexFile), &idx)
+
+	var ds retrieval.Dataset
+	readJSON(t, filepath.Join(dir, idx.Dataset), &ds)
+	kept := ds.Queries[:0]
+	for _, q := range ds.Queries {
+		if q.ID != id {
+			kept = append(kept, q)
+		}
+	}
+	ds.Queries = kept
+	idx.DatasetSHA256 = retrieval.SHA256Hex(writeJSON(t, filepath.Join(dir, idx.Dataset), &ds))
+
+	latency := map[retrieval.Baseline]retrieval.RawLatencySet{}
+	for i := range idx.Raw {
+		ref := &idx.Raw[i]
+		p := filepath.Join(dir, filepath.FromSlash(ref.File))
+		switch ref.Series {
+		case retrieval.RawSeriesHits:
+			var set retrieval.RawHitSet
+			readJSON(t, p, &set)
+			set.Samples = 0
+			qs := set.Queries[:0]
+			for _, q := range set.Queries {
+				if q.ID != id {
+					qs = append(qs, q)
+					set.Samples += len(q.Hits)
+				}
+			}
+			set.Queries = qs
+			ref.Digest, ref.Samples = retrieval.SHA256Hex(writeJSON(t, p, &set)), set.Samples
+		case retrieval.RawSeriesLatency:
+			var set retrieval.RawLatencySet
+			readJSON(t, p, &set)
+			set.Samples = 0
+			qs := set.Queries[:0]
+			for _, q := range set.Queries {
+				if q.ID != id {
+					qs = append(qs, q)
+					set.Samples += len(q.SamplesUS)
+				}
+			}
+			set.Queries = qs
+			ref.Digest, ref.Samples = retrieval.SHA256Hex(writeJSON(t, p, &set)), set.Samples
+			latency[ref.Baseline] = set
+		}
+	}
+
+	var r retrieval.Report
+	readJSON(t, filepath.Join(dir, idx.Report), &r)
+	for i := range r.Reproducible.Baselines {
+		b := &r.Reproducible.Baselines[i]
+		if b.Status != retrieval.BaselineStatusOK {
+			continue
+		}
+		qs := b.Queries[:0]
+		for _, q := range b.Queries {
+			if q.ID != id {
+				qs = append(qs, q)
+			}
+		}
+		b.Queries = qs
+		b.Overall, b.Strata, b.Splits = retrieval.AggregateAll(b.Queries, r.Reproducible.TokenBudgets)
+	}
+	for i := range r.Performance {
+		r.Performance[i] = retrieval.PerformanceFromRaw(r.Performance[i].Baseline, latency[r.Performance[i].Baseline])
+	}
+	rb, err := retrieval.MarshalReport(&r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, idx.Report), rb, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	idx.ReportSHA256 = retrieval.SHA256Hex(rb)
+	writeJSON(t, filepath.Join(dir, retrieval.RunIndexFile), &idx)
 }
 
 func TestRetrievalEval_UsageErrors(t *testing.T) {
