@@ -16,9 +16,18 @@ import (
 // identically (Search returns []Hit ordered score-desc, NodeId-asc), so the search
 // service and the generate path are oblivious to which backend is wired — this is
 // the seam invariant that lets a caller opt into HNSW without code changes (AC6).
+//
+// Rebuild takes a []Vector (loaded from a GenerationStore) rather than a
+// VectorTable, mirroring the SW-261 seam replacement: the index is a
+// pure-function of the row set, the persistence seam no longer leaks into
+// the in-memory contract. GenerationStore.Load returns rows in canonical
+// (node_id, document_id) order; callers convert to []Vector before
+// rebuilding.
 type VectorIndex interface {
-	// Rebuild replaces the index contents from the durable VectorTable.
-	Rebuild(ctx context.Context, table VectorTable) error
+	// Rebuild replaces the index contents from the given rows. The rows
+	// may be in any order; the index sorts internally for deterministic
+	// ranking.
+	Rebuild(ctx context.Context, rows []Vector) error
 	// Put inserts/updates a single vector (incremental embed path).
 	Put(id model.NodeId, values []float32)
 	// Search returns up to limit hits ranked by cosine similarity, score
@@ -188,18 +197,14 @@ func NewHNSWIndex(p HNSWParams) *HNSWIndex {
 	}
 }
 
-// Rebuild replaces the graph from the durable table. Vectors arrive in canonical
-// NodeId order (VectorTable.Load guarantees it); inserting in that order keeps the
-// build a pure function of the vector set.
-func (h *HNSWIndex) Rebuild(ctx context.Context, table VectorTable) error {
-	vecs, err := table.Load(ctx)
-	if err != nil {
-		return err
-	}
-	h.nodes = make(map[model.NodeId]*hnswNode, len(vecs))
+// Rebuild replaces the graph from the given rows. Vectors are loaded from a
+// GenerationStore at the call site; the index itself does not touch the
+// store, so this method is a pure function of the input.
+func (h *HNSWIndex) Rebuild(_ context.Context, rows []Vector) error {
+	h.nodes = make(map[model.NodeId]*hnswNode, len(rows))
 	h.order = h.order[:0]
 	h.entry, h.hasEnt = "", false
-	for _, v := range vecs {
+	for _, v := range rows {
 		h.insert(v.NodeID, v.Values)
 	}
 	return nil

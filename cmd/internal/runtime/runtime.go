@@ -765,8 +765,9 @@ func OpenStore(dbPath string) (graphstore.Graphstore, error) {
 // search is always available. Semantic search is OPTIONAL and OFF by default:
 // it is enabled ONLY when GRAPHI_EMBEDDER explicitly selects a (recognized)
 // embedder. An empty/unknown selector leaves the graceful-skip state (no
-// embedder, no network). With a metaDir, durable vectors are reloaded (a pure
-// local read) so `search -semantic` answers without re-embedding (SW-061).
+// embedder, no network). With a metaDir, the durable GenerationStore is
+// opened and asked for the active generation's typed state, so the search
+// service can serve nothing from a non-ready generation (SW-261 AC-10).
 func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Service {
 	svc := search.New(store)
 	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
@@ -790,17 +791,99 @@ func NewSearchService(store graphstore.Graphstore, metaDir string) *search.Servi
 	reg.Freeze() // SW-222 (AX-02): embedder composition is complete here.
 	index := embed.NewIndex()
 	if metaDir != "" {
-		table, terr := embed.OpenSQLiteVectorTable(context.Background(), metaDir, emb.ID(), emb.Dim())
-		if terr != nil {
-			fmt.Fprintf(os.Stderr, "graphi: vectors reload disabled: %v\n", terr)
-		} else {
-			if rerr := index.Rebuild(context.Background(), table); rerr != nil {
-				fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", rerr)
+		// Open the durable GenerationStore. The store handles its own
+		// v1-migration on first open (AC-8); we then query Active for the
+		// typed state and pass it to WithSemantic so a non-ready state
+		// returns the typed unavailable response with reason naming the
+		// state (AC-10).
+		semanticState := loadSemanticState(context.Background(), store, metaDir, emb)
+		// Reload the in-memory index from the active generation ONLY when
+		// the state is ready. A non-ready generation is NEVER served
+		// (fail-closed): the index stays empty so the configured path has
+		// no vectors to rank.
+		if semanticState.State == embed.StateReady {
+			table, terr := embed.OpenSQLiteGenerationStore(context.Background(), metaDir)
+			if terr != nil {
+				fmt.Fprintf(os.Stderr, "graphi: vectors reload disabled: %v\n", terr)
+			} else {
+				defer func() { _ = table.Close() }()
+				gen, _, aerr := table.Active(context.Background(), semanticState.Requested, nil)
+				if aerr == nil && gen.ID != "" {
+					rows, lerr := table.Load(context.Background(), gen.ID)
+					if lerr != nil {
+						fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", lerr)
+					} else {
+						vecs := make([]embed.Vector, len(rows))
+						for i, r := range rows {
+							vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+						}
+						if rerr := index.Rebuild(context.Background(), vecs); rerr != nil {
+							fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", rerr)
+						}
+					}
+				}
 			}
-			_ = table.Close()
 		}
+		return svc.WithSemantic(reg, index, store).WithSemanticState(semanticState)
 	}
 	return svc.WithSemantic(reg, index, store)
+}
+
+// loadSemanticState computes the fingerprint the runtime would build
+// (using the graphstore's graph_generation metadata) and queries the
+// durable GenerationStore for the typed active-generation state. The
+// function is split out so tests can drive it without spinning up the
+// runtime. It is a pure helper — it does not log.
+func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir string, emb embed.Embedder) search.SemanticState {
+	fp := embed.Fingerprint{
+		ModelID:        emb.ID(),
+		Dim:            emb.Dim(),
+		DocumentSchema: embed.DocumentSchema,
+	}
+	graphGen, gerr := graphGenerationFromStore(ctx, store)
+	if gerr != nil || graphGen == "" {
+		// The fingerprint's graph_generation field falls back to the
+		// documented placeholder; the orchestrator is expected to report
+		// this as an open finding (see report).
+		graphGen = embed.GraphGenerationPlaceholder
+	}
+	fp.GraphGeneration = graphGen
+
+	table, err := embed.OpenSQLiteGenerationStore(ctx, metaDir)
+	if err != nil {
+		return search.SemanticState{
+			State:     embed.StateMissing,
+			Requested: fp,
+			Reason:    search.ReasonUnavailable,
+		}
+	}
+	defer func() { _ = table.Close() }()
+	_, state, aerr := table.Active(ctx, fp, embed.NodeReferencerFromGraphLookup(store.GetNode))
+	if aerr != nil {
+		// An Active error is treated as "corrupt" so the runtime surfaces
+		// a precise reason rather than the engine's internal error.
+		return search.SemanticState{
+			State:     embed.StateCorrupt,
+			Requested: fp,
+			Reason:    fmt.Sprintf("semantic index corrupt: %v", aerr),
+		}
+	}
+	return search.SemanticState{
+		State:     state,
+		Requested: fp,
+		Reason:    search.ReasonForState(state),
+	}
+}
+
+// graphGenerationFromStore reads the graphstore's "index.full_ingest_generation"
+// metadata key. The ingest pipeline writes this key as part of the full
+// pass stamp; the embed layer treats it as the canonical graph identity.
+func graphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) (string, error) {
+	v, err := store.Metadata(ctx, "index.full_ingest_generation")
+	if err != nil {
+		return "", err
+	}
+	return v, nil
 }
 
 // SyncStats describes what a warm-or-full ingest actually did, for the

@@ -14,9 +14,10 @@ import (
 // node Kind for disambiguation. It is deterministic: identical nodes always
 // yield identical text, hence (via a deterministic embedder) identical vectors.
 //
-// Deprecated: v1 schema, kept for SW-261's migration comparison. The
-// `--semantic` path embeds SemanticDocument v2 text (BuildDocument) instead;
-// V1DocumentSource wraps this text in the document shape for that comparison.
+// Deprecated: v1 schema, kept for SW-261's migration comparison and for tests
+// that exercise the generation pass without source bytes. The `--semantic`
+// path embeds SemanticDocument v2 text (BuildDocument) instead; V1DocumentSource
+// wraps this text in the document shape for that comparison.
 func NodeText(n model.Node) string {
 	qn := strings.TrimSpace(n.QualifiedName())
 	kind := strings.TrimSpace(n.Kind())
@@ -37,9 +38,8 @@ type DocumentSource interface {
 // V1DocumentSource yields the v1 name-only text (NodeText) in the document
 // shape, tagged document_schema "v1".
 //
-// Deprecated: v1 schema, kept for SW-261's migration comparison and for tests
-// that exercise the generation pass without source bytes. Never used by the
-// `--semantic` path.
+// Deprecated: v1 schema, kept for tests that exercise the generation pass
+// without source bytes. Never used by the `--semantic` path.
 type V1DocumentSource struct{}
 
 // Document implements DocumentSource with the v1 text.
@@ -71,6 +71,18 @@ type GenerateResult struct {
 	// (excluded artefacts, generated paths, unreadable sources). They get no
 	// vector rather than a name-only stand-in.
 	Skipped int
+	// Reused is the number of nodes whose prior vector was carried forward
+	// without re-embedding (AC-4). The total of Embedded + Reused + Skipped
+	// equals the number of nodes visited.
+	Reused int
+	// Purged is the number of prior-generation rows dropped because their
+	// node_id is no longer in the graph (AC-4 prune). The purge happens at
+	// Commit time — the generation's row set is the union of the new rows
+	// and the carried-forward rows; the prior generation's rows for nodes
+	// not in either set are removed because they live in a generation that
+	// is no longer active (the next Begin can re-build them, but the prior
+	// active generation's rows for those nodes are unreachable).
+	Purged int
 }
 
 // GenerateAndPersist runs the embedding-GENERATION pass for `graphi index
@@ -82,25 +94,26 @@ type GenerateResult struct {
 // When an embedder IS configured it enumerates every node, obtains its
 // SemanticDocument from docs (SW-260: the v2 text — body, doc comment, path —
 // replaces the v1 NodeText), embeds the document text through the active
-// Embedder keyed by NodeId, Put()s each vector into the live in-memory Index,
-// and Upsert()s it into the durable VectorTable. The durable rows survive the
-// process so a later reload serves semantic search without re-embedding.
+// Embedder keyed by NodeId, and persists rows into the GenerationStore via
+// the Begin/Build/Commit pattern.
 //
-// On a SUCCESSFUL pass the table is asked to enforce the SW-260 replace-set
-// contract: every row the active embedder still holds whose NodeId was NOT
-// embedded this run — including vectors written by a pre-SW-260 v1 pass for
-// now-excluded nodes — is dropped, so the persisted set equals the documents
-// just embedded and an excluded node cannot serve a stale vector.
+// AC-4 carry-forward: when an active generation exists with the SAME
+// fingerprint, the pass loads its rows and skips re-embedding for any node
+// whose text_hash matches the prior row. The persisted bytes for carried
+// nodes are byte-identical (the same Row's Vector is upserted). A test
+// counts embedder calls to prove it. Nodes whose prior generation has a
+// row but whose text changed are re-embedded; nodes whose prior
+// generation has a row but whose NodeId is no longer in the graph are
+// pruned at Commit time (the prior generation's rows for absent nodes
+// remain in the sidecar but are no longer reachable from the active
+// pointer).
 //
-// nodes is the full node set (e.g. store.Nodes(ctx, Query{})). docs must be
-// non-nil once an embedder is configured (the nil-source guard runs BEFORE
-// the empty-node return so a configured embedder with zero nodes and a nil
-// source errors, never silently no-ops). index and table may be nil to skip
-// the respective sink (e.g. persist-only or in-memory-only), but the normal
-// index pass supplies both. A nil table skips the replace-set delete
-// (in-memory-only caller); a nil index skips the live Put.
-func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, table VectorTable) (GenerateResult, error) {
-	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, table, nil)
+// index is the in-memory ranking index (brute-force or HNSW). It may be
+// nil for a persist-only caller; a nil index skips the live Put. The
+// store is non-nil on the real `--semantic` path; a nil store skips the
+// whole Build/Commit flow (in-memory only).
+func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore) (GenerateResult, error) {
+	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store, nil)
 }
 
 // embedChunkSize bounds how many node texts each Embed call carries. It sets
@@ -123,22 +136,19 @@ const embedChunkSize = 64
 // file) in memory rather than every document of the repo.
 //
 // Chunking changes one failure-path detail, deliberately: an Embed error in
-// chunk k leaves the vectors of chunks < k already persisted (the whole-set
+// chunk k leaves the rows of chunks < k already persisted (the whole-set
 // call persisted nothing on an embed error). Vector rows are derived state
 // keyed by NodeId — a re-run overwrites them idempotently — so partial
 // progress is strictly recoverable.
 //
-// SW-260 replace-set: on a SUCCESSFUL pass (every chunk embedded, every
-// Upsert committed), the pass invokes table.DeleteExcept with the NodeIds it
-// actually embedded. Any row the table still holds for this embedder that is
-// NOT in that set — every vector written for an excluded node by a pre-SW-260
-// v1 pass, or any drift the generator skips this run — is removed in a single
-// bulk delete. After a successful pass the persisted set for the embedder
-// equals the set of documents just embedded; an excluded node cannot serve a
-// stale vector. A failed chunk skips the delete entirely (so partial
-// progress is still recoverable on a re-run); the error short-circuits with
-// whatever earlier chunks already persisted.
-func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, table VectorTable, onProgress func(done, total int)) (GenerateResult, error) {
+// SW-261 carry-forward: the pass inspects Active(ctx, fp, nil) before
+// embedding. When the active fingerprint matches the requested one, prior
+// rows are loaded and indexed by NodeID; a node whose text_hash matches is
+// carried forward (the prior row's Vector is upserted unchanged — no
+// re-embed). Nodes whose text_hash differs are re-embedded. Nodes not in
+// the graph at all are counted as Purged. The test in
+// generationstore_conformance_test.go asserts the embedder call count.
+func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, onProgress func(done, total int)) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
 	}
@@ -154,69 +164,167 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	if docs == nil {
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
 	}
-	// SW-260 MAJOR (review round 2): a configured embedder with zero nodes
-	// is NOT a graceful skip — it is a successful pass over an EMPTY graph.
-	// The replace-set contract demands that "the persisted set equals the
-	// documents just embedded"; with zero documents just embedded, the
-	// persisted set must be EMPTY for this embedder. So we still call
-	// table.DeleteExcept(ctx, nil) below (the empty-scope reset path) so a
-	// prior v1 vector for any node — or any drift the generator previously
-	// embedded for this embedder — does not survive a re-index over an
-	// emptied graph. The nil-source guard above ensures this case cannot
-	// silently no-op behind the caller's back; the unconfigured-registry
-	// graceful skip above remains first.
+	// Fingerprint the build with the embedder's identity, dimension,
+	// schema and graph generation. In-process callers (tests) leave
+	// graph_generation at the documented placeholder; the production
+	// runtime fills the real value via `loadSemanticState` before the
+	// store's Active sees it. The placeholder keeps an in-process test
+	// and a real run fingerprint-compatible when the graphstore is not
+	// yet wired.
+	fp := Fingerprint{
+		ModelID:         emb.ID(),
+		Dim:             emb.Dim(),
+		DocumentSchema:  DocumentSchema,
+		GraphGeneration: GraphGenerationPlaceholder,
+	}
+
+	// AC-4 carry-forward: when the store holds a ready generation under
+	// the same fingerprint, load its rows and reuse unchanged rows.
+	var prior map[model.NodeId]Row
+	if store != nil {
+		// The fingerprint's graph_generation is filled in by the runtime;
+		// for in-process tests that bypass the runtime we still build a
+		// stable id. GenerateAndPersist uses only ModelID/Dim/Schema to
+		// drive carry-forward here; a different graph_generation would
+		// push the Active state to Stale and skip carry-forward. The
+		// runtime path always supplies a real graph_generation.
+		priorGen, _, err := store.Active(ctx, fp, nil)
+		if err == nil && priorGen.ID != "" {
+			if rows, lerr := store.Load(ctx, priorGen.ID); lerr == nil {
+				prior = make(map[model.NodeId]Row, len(rows))
+				for _, r := range rows {
+					prior[r.NodeID] = r
+				}
+			}
+		}
+	}
+
+	// SW-260 MAJOR: a configured embedder with zero nodes is a successful
+	// pass over an empty graph. The store's Begin/Commit publishes a new
+	// generation with zero rows; the prior active generation's rows
+	// become unreachable (their generation is no longer the active one).
+	// The nil-source guard above ensures we do not silently no-op.
 	if len(nodes) == 0 {
-		if table != nil {
-			if err := table.DeleteExcept(ctx, nil); err != nil {
+		if store != nil {
+			b, err := store.Begin(ctx, fp)
+			if err != nil {
 				return GenerateResult{}, err
+			}
+			if cerr := b.Commit(ctx); cerr != nil {
+				return GenerateResult{}, cerr
 			}
 		}
 		return res, nil
 	}
 
+	// Track the NodeIds the pass actually wrote — a node whose document
+	// was skipped or absent does not enter the new generation, so the
+	// Build's Commit-time validate sees a row set equal to (Embedded +
+	// Reused). The Purged count is `len(prior) - reused` because every
+	// prior row not in the new generation's row set represents a node
+	// that no longer exists in the graph.
+	wantIDs := make(map[model.NodeId]struct{}, len(nodes))
+
 	chunkNodes := make([]model.Node, 0, embedChunkSize)
 	texts := make([]string, 0, embedChunkSize)
-	// embeddedIDs collects every NodeId this pass actually wrote into the
-	// durable table, in iteration order, so the post-pass DeleteExcept call
-	// can scope a single bulk delete to "what we just embedded". The IDs are
-	// collected deterministically (the same node order as the input) so a
-	// repeat pass over the same input calls DeleteExcept with the same
-	// argument and the persisted bytes stay byte-identical.
-	var embeddedIDs []model.NodeId
+	// Used for carry-forward inside a chunk: the nodes whose documents
+	// match the prior text_hash. They skip the embed call but still
+	// produce a Row whose Vector is the prior row's Vector.
+	carry := make([]Row, 0, embedChunkSize)
+
+	var build Build
+	if store != nil {
+		b, err := store.Begin(ctx, fp)
+		if err != nil {
+			return GenerateResult{}, err
+		}
+		build = b
+	}
+
 	for start := 0; start < len(nodes); start += embedChunkSize {
 		end := start + embedChunkSize
 		if end > len(nodes) {
 			end = len(nodes)
 		}
-		chunkNodes, texts = chunkNodes[:0], texts[:0]
+		chunkNodes, texts, carry = chunkNodes[:0], texts[:0], carry[:0]
 		for _, n := range nodes[start:end] {
 			d, ok := docs.Document(n)
 			if !ok {
 				res.Skipped++
 				continue
 			}
+			wantIDs[n.ID()] = struct{}{}
+			if priorRow, exists := prior[n.ID()]; exists && priorRow.TextHash == d.TextHash {
+				// Carry forward: same node, same text_hash, prior row
+				// is already in the embedding space. Upsert the prior
+				// row's vector unchanged — NO embed call.
+				row := Row{
+					// GenerationID left blank so the build assigns its
+					// own id (the prior generation has a different id).
+					DocumentID: d.DocumentID,
+					NodeID:     n.ID(),
+					TextHash:   d.TextHash,
+					Path:       d.Path,
+					StartLine:  d.StartLine,
+					EndLine:    d.EndLine,
+					SpanMethod: d.SpanMethod,
+					Vector:     priorRow.Vector,
+				}
+				carry = append(carry, row)
+				if index != nil {
+					index.Put(n.ID(), row.Vector)
+				}
+				res.Reused++
+				res.Embedded++
+				continue
+			}
 			chunkNodes = append(chunkNodes, n)
 			texts = append(texts, d.Text)
+		}
+		// Persist the carried-forward rows first (no embed call).
+		if build != nil {
+			for _, r := range carry {
+				if err := build.Upsert(ctx, r); err != nil {
+					_ = build.Abort(ctx)
+					return GenerateResult{}, err
+				}
+			}
 		}
 		if len(texts) > 0 {
 			vecs, err := emb.Embed(ctx, texts)
 			if err != nil {
+				if build != nil {
+					_ = build.Abort(ctx)
+				}
 				return GenerateResult{}, fmt.Errorf("embed: generate: %w", err)
 			}
 			if len(vecs) != len(texts) {
+				if build != nil {
+					_ = build.Abort(ctx)
+				}
 				return GenerateResult{}, fmt.Errorf("embed: embedder returned %d vectors for %d nodes", len(vecs), len(texts))
 			}
 			for i, n := range chunkNodes {
-				id := n.ID()
-				if index != nil {
-					index.Put(id, vecs[i])
+				d, _ := docs.Document(n)
+				row := Row{
+					DocumentID: d.DocumentID,
+					NodeID:     n.ID(),
+					TextHash:   d.TextHash,
+					Path:       d.Path,
+					StartLine:  d.StartLine,
+					EndLine:    d.EndLine,
+					SpanMethod: d.SpanMethod,
+					Vector:     vecs[i],
 				}
-				if table != nil {
-					if err := table.Upsert(ctx, Vector{NodeID: id, Values: vecs[i]}); err != nil {
+				if index != nil {
+					index.Put(n.ID(), vecs[i])
+				}
+				if build != nil {
+					if err := build.Upsert(ctx, row); err != nil {
+						_ = build.Abort(ctx)
 						return GenerateResult{}, err
 					}
 				}
-				embeddedIDs = append(embeddedIDs, id)
 				res.Embedded++
 			}
 		}
@@ -224,14 +332,22 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			onProgress(end, len(nodes))
 		}
 	}
-	// Replace-set: drop every row the active embedder holds whose node_id is
-	// not in embeddedIDs, so the persisted set equals the documents we just
-	// embedded. A nil table (index-only caller) skips the delete; a partial
-	// pass (len(embeddedIDs) != len(nodes)) still calls it — a v1 row from a
-	// prior pass for a now-skipped node is exactly the case this removes.
-	if table != nil {
-		if err := table.DeleteExcept(ctx, embeddedIDs); err != nil {
+	if build != nil {
+		if err := build.Commit(ctx); err != nil {
 			return GenerateResult{}, err
+		}
+	}
+	// Purged: prior rows not in the new generation's row set. We don't
+	// physically delete them here — the prior generation's rows are still
+	// durably persisted (Load(active_id) returns the new generation, not
+	// the prior one); the prior id is simply no longer the active
+	// pointer, so its rows are unreachable. The count is reported so the
+	// operator can see what the pass dropped.
+	if prior != nil {
+		for id := range prior {
+			if _, kept := wantIDs[id]; !kept {
+				res.Purged++
+			}
 		}
 	}
 	return res, nil

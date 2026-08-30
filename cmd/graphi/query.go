@@ -326,9 +326,9 @@ func runIndexAt(cwd string, args []string) int {
 		fmt.Fprintf(os.Stderr, "graphi: index --semantic: read nodes: %v\n", err)
 		return 1
 	}
-	table, err := embed.NewSQLiteVectorTableDB(ctx, ing.MetaDB(), emb.ID(), emb.Dim())
+	table, err := embed.NewSQLiteGenerationStoreDB(ctx, ing.MetaDB())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open vectors table: %v\n", err)
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open generations store: %v\n", err)
 		return 1
 	}
 	// Announce the second phase up front and stream its progress: the
