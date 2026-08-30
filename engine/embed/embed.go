@@ -50,6 +50,21 @@ type Embedder interface {
 	Embed(ctx context.Context, texts []string) ([][]float32, error)
 }
 
+// TokenizingEmbedder is the OPTIONAL capability an Embedder may expose so the
+// document builder can bound texts in the active embedder's OWN tokenizer
+// rather than falling back to a whitespace-token approximation (SW-260 AC-6).
+// An embedder that does NOT implement this returns nil from Tokenizer; the
+// builder then applies the byte cap only and records which bound was applied
+// on the document. The interface is intentionally separate from Embedder so
+// the Embedder contract stays minimal and every existing implementation
+// (mock, ollama, onnx) remains a valid Embedder unchanged.
+type TokenizingEmbedder interface {
+	// Tokenizer returns the active tokenizer, or nil if the embedder does not
+	// expose one (the byte-cap-only path). The returned tokenizer must be
+	// safe for concurrent use across the embedding pass.
+	Tokenizer() DocumentTokenizer
+}
+
 // Registry is the open/closed selection point for the embed boundary, mirroring
 // core/parse.Registry. It maps a lowercase embedder ID to its Embedder and tracks
 // which one is Active.

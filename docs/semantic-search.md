@@ -49,13 +49,18 @@ graphi index --semantic -root ./my-repo -db ~/.graphi/graph.db -meta ~/.graphi/m
 graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta
 ```
 
-`graphi index --semantic` embeds every node (keyed by `node_id`) and persists the
-vectors to a durable `vectors` table in the `-meta` sidecar, tagged with the
-embedder identity + dimension. `graphi search -semantic` then reloads those vectors
-from that sidecar on startup — a pure local read, **no re-embedding and no embedder
-dial** — and returns cosine-ranked hits. With **no** embedder configured,
-`graphi index --semantic` reports `unavailable — no embedder configured` (no error,
-no network) and lexical indexing/search is unaffected.
+`graphi index --semantic` embeds the eligible symbol nodes of the graph
+(keyed by `node_id`) and persists the vectors to a durable `vectors` table in
+the `-meta` sidecar, tagged with the embedder identity + dimension. The set
+of eligible nodes is exactly the set the v2 builder produces (see "Document
+schema (v2)" below); generated paths and the file/package/external artefact
+nodes are deliberately excluded so the durable set cannot serve a vector for
+a node the rest of the engine treats as unsearchable. `graphi search -semantic`
+then reloads those vectors from that sidecar on startup — a pure local read,
+**no re-embedding and no embedder dial** — and returns cosine-ranked hits.
+With **no** embedder configured, `graphi index --semantic` reports
+`unavailable — no embedder configured` (no error, no network) and lexical
+indexing/search is unaffected.
 
 ## Document schema (v2)
 
@@ -79,10 +84,13 @@ exclusive), `start_line`/`end_line` (1-based, inclusive), `span_method`, `text_h
 4. the body: the span's bytes — the full declaration **including its leading doc comment
    and attached decorators**, trailing whitespace trimmed
 
-Bounds: `MaxDocumentTokens` = 512 tokens of the active embedder's tokenizer when it
-declares one (`embed.DocumentTokenizer`), else whitespace tokens; then a hard
-`MaxDocumentBytes` = 16 KiB cap. A cut sets `truncated: true`; a large declaration stays
-**one** document (multi-chunk is backlog until an eval gap is measured).
+Bounds: `MaxDocumentTokens` = 512 tokens of the active embedder's tokenizer
+when the embedder exposes one (`embed.TokenizingEmbedder`); when it does not,
+the byte cap alone runs (no whitespace-token approximation), and the document
+records which bound closed the gap in its `bound` field (`tokens`, `bytes`,
+`none`). A hard `MaxDocumentBytes` = 16 KiB cap always runs. A cut sets
+`truncated: true`; a large declaration stays **one** document (multi-chunk is
+backlog until an eval gap is measured).
 
 Span methods:
 

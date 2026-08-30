@@ -17,8 +17,9 @@ import (
 
 // goSpanFixture exercises: a doc-commented function, a method, a nested func
 // literal, two same-line declarations, a single-spec and a multi-spec GenDecl
-// with per-spec docs, and a trailing declaration that must not be leaked into
-// its predecessor's span.
+// with per-spec docs, a parenthesised single-spec GenDecl (SW-260 review
+// finding), and a trailing declaration that must not be leaked into its
+// predecessor's span.
 const goSpanFixture = `package shop
 
 import "fmt"
@@ -32,6 +33,12 @@ var (
 	total int
 	// count counts.
 	count int
+)
+
+// solo is a parenthesised single-spec var.
+var (
+	// solo accumulates.
+	solo int
 )
 
 // Cart holds items.
@@ -49,7 +56,7 @@ func outer() int {
 func a() int { return 1 }; func b() int { return 2 }
 
 // last is the final declaration.
-func last() { fmt.Println(total, count) }
+func last() { fmt.Println(total, count, solo) }
 `
 
 func parseGoSpanFixture(t *testing.T) *ParseResult {
@@ -111,12 +118,16 @@ func TestExtractGo_Spans(t *testing.T) {
 		{"shop.TaxRate", 5, 6, "// TaxRate is the flat tax.\nconst TaxRate = 7", "TaxRate = 7", []string{"Block"}},
 		{"shop.total", 10, 11, "// total accumulates.\n\ttotal int", "total int", []string{"count", "Block"}},
 		{"shop.count", 12, 13, "// count counts.\n\tcount int", "count int", []string{"total"}},
-		{"shop.Cart", 16, 17, "// Cart holds items.\ntype Cart struct{ items int }", "}", []string{"Add"}},
-		{"shop.Cart.Add", 19, 20, "// Add appends an item.\nfunc (c *Cart) Add()", "}", []string{"outer"}},
-		{"shop.outer", 22, 26, "// outer wraps a nested func literal.\nfunc outer() int {", "}", []string{"func a()", "func b()"}},
-		{"shop.a", 28, 28, "func a() int { return 1 }", "}", []string{"func b"}},
-		{"shop.b", 28, 28, "func b() int { return 2 }", "}", []string{"func a"}},
-		{"shop.last", 30, 31, "// last is the final declaration.\nfunc last()", "}", nil},
+		// shop.solo: parenthesised single-spec var. The span MUST run through the
+		// closing paren on line 17 (the SW-260 review-round-1 finding — using
+		// s.End() for `var ( X int )` stopped at "X int" and dropped the paren).
+		{"shop.solo", 16, 20, "// solo is a parenthesised single-spec var.\nvar (\n\t// solo accumulates.\n\tsolo int\n)", ")", []string{"Cart"}},
+		{"shop.Cart", 22, 23, "// Cart holds items.\ntype Cart struct{ items int }", "}", []string{"Add"}},
+		{"shop.Cart.Add", 25, 26, "// Add appends an item.\nfunc (c *Cart) Add()", "}", []string{"outer"}},
+		{"shop.outer", 28, 32, "// outer wraps a nested func literal.\nfunc outer() int {", "}", []string{"func a()", "func b()"}},
+		{"shop.a", 34, 34, "func a() int { return 1 }", "}", []string{"func b"}},
+		{"shop.b", 34, 34, "func b() int { return 2 }", "}", []string{"func a"}},
+		{"shop.last", 36, 37, "// last is the final declaration.\nfunc last()", "}", nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.qn, func(t *testing.T) {
@@ -273,9 +284,12 @@ func TestParse_OtherParsersLeaveSpansNil(t *testing.T) {
 }
 
 // TestDeriveWindowSpans pins AC-3: a window starts at the node's line, spans
-// at most SpanWindowMaxLines lines, never crosses the next node's start line
-// (same-line declarations excepted, which share a window), is clipped at EOF,
-// and is labelled window.
+// at most SpanWindowMaxLines lines, never crosses the next node's start line,
+// is clipped at EOF, and is labelled window. A same-line successor (a
+// declaration sharing the line but at a higher column) bounds the window at
+// its byte offset instead of leaking into the predecessor's text — the SW-260
+// review-round-1 finding that closes AC-3/AC-7's no-leak invariant on the
+// fallback path.
 func TestDeriveWindowSpans(t *testing.T) {
 	var b strings.Builder
 	for i := 1; i <= 100; i++ {
@@ -293,8 +307,8 @@ func TestDeriveWindowSpans(t *testing.T) {
 	}
 	file := mk(KindFile, "p/f.py", 1, 1)
 	early := mk(KindFunction, "p.early", 3, 1)   // clipped by mid at 10
-	mid := mk(KindType, "p.mid", 10, 1)          // 40-line bound: 10..49
-	midSame := mk(KindVariable, "p.midv", 10, 8) // same line as mid: shares the window start
+	mid := mk(KindType, "p.mid", 10, 1)          // clipped at midSame's byte (line 10 col 8): the SW-260 finding
+	midSame := mk(KindVariable, "p.midv", 10, 8) // first same-line successor of mid: gets the 40-line bound
 	late := mk(KindFunction, "p.late", 90, 1)    // clipped at EOF (100)
 	pkg, _ := model.NewNode(KindPackage, "com.x", "", 0, 0)
 
@@ -334,9 +348,23 @@ func TestDeriveWindowSpans(t *testing.T) {
 		}
 	}
 	check(early, 3, 9)
-	check(mid, 10, 49)
-	check(midSame, 10, 49)
+	check(mid, 10, 10)     // SW-260 fix: midSame at col 8 bounds mid's window at its byte
+	check(midSame, 10, 49) // midSame has no later-col same-line successor; 40-line bound
 	check(late, 90, 100)
+
+	// The clip is byte-precise: mid's EndByte equals the byte offset of
+	// midSame's start (line 10, column 8). Without the clip mid would still
+	// extend to line 49 and silently contain midSame's body.
+	midSp := spans[mid.ID()]
+	lineStarts := lineStartsForTest([]byte(src))
+	wantEnd := lineStarts[9] + 7 // line 10, col 8 -> lineStart[9] + (col-1)
+	if midSp.EndByte != wantEnd {
+		t.Errorf("mid EndByte = %d, want %d (midSame's start byte)", midSp.EndByte, wantEnd)
+	}
+	midText := src[midSp.StartByte:midSp.EndByte]
+	if strings.Contains(midText, "midSame") || strings.Contains(midText, "p.midv") {
+		t.Errorf("mid window leaked midSame text: %q", midText)
+	}
 
 	// An empty source or a node beyond EOF yields no span rather than a bogus one.
 	if got := DeriveWindowSpans([]model.Node{mid}, nil); len(got) != 0 {
@@ -353,4 +381,52 @@ func TestDeriveWindowSpans(t *testing.T) {
 			t.Errorf("window span %s differs across runs", id)
 		}
 	}
+}
+
+// TestDeriveWindowSpans_UnverifiableSameLineFailsClosed pins the SW-260
+// review-round-1 fail-closed rule: a predecessor whose only same-line
+// successor has an UNCOMPUTABLE byte offset (column out of source bounds)
+// emits no window span at all rather than serving a window that silently
+// leaks the successor's body. AC-3/AC-7 no-leak fails closed here.
+func TestDeriveWindowSpans_UnverifiableSameLineFailsClosed(t *testing.T) {
+	const src = "alpha beta gamma\n"
+	mk := func(kind, qn string, line, col int) model.Node {
+		n, err := model.NewNode(kind, qn, "p/f.py", line, col)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	pre := mk(KindFunction, "p.pre", 1, 1)
+	// Same line as pre, but a column that lies FAR past the source end
+	// (~col 9999 of a ~17-byte line). The byte offset is unverifiable; the
+	// predecessor must emit no span rather than a window that swallows the
+	// successor.
+	suc := mk(KindVariable, "p.suc", 1, 9999)
+
+	spans := DeriveWindowSpans([]model.Node{pre, suc}, []byte(src))
+	if _, has := spans[pre.ID()]; has {
+		t.Errorf("predecessor with an unverifiable same-line successor must emit no window, got %+v", spans[pre.ID()])
+	}
+	// The successor still gets its window (no successor of its own).
+	if _, has := spans[suc.ID()]; !has {
+		t.Errorf("successor with no same-line follower must still get a window")
+	}
+}
+
+// lineStartsForTest exposes lineStarts to the test package without leaking it
+// from the package API. The production seam is internal to DeriveWindowSpans;
+// this helper exists only to recompute line-start bytes for assertions in the
+// same-line clip test.
+func lineStartsForTest(src []byte) []int {
+	if len(src) == 0 {
+		return nil
+	}
+	starts := []int{0}
+	for i, b := range src {
+		if b == '\n' && i+1 < len(src) {
+			starts = append(starts, i+1)
+		}
+	}
+	return starts
 }

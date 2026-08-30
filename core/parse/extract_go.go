@@ -199,6 +199,22 @@ func specSpanStart(d *ast.GenDecl, specDoc *ast.CommentGroup, spec ast.Spec) tok
 	return spec.Pos()
 }
 
+// genDeclSpecEnd returns the end position of a GenDecl spec's span. When the
+// parenthesised GenDecl holds exactly one spec (`var (\n X int\n)` /
+// `type (\n T struct{}\n)`) the closing paren is part of THAT declaration, so
+// the span runs to d.End(); for multi-spec declarations the closing paren is
+// shared across siblings and each spec keeps its own s.End(). The single-spec
+// case was the SW-260 review-round-1 finding — using s.End() for
+// `var ( X int )` produced a span that stopped at "X int" and omitted the
+// closing paren, leaving the document builder's truncation intact but the
+// span bytes no longer matching the visible declaration.
+func genDeclSpecEnd(d *ast.GenDecl, spec ast.Spec) token.Pos {
+	if len(d.Specs) == 1 {
+		return d.End()
+	}
+	return spec.End()
+}
+
 // evidence renders a stable "file:line" citation for provenance.
 func (e *goExtractor) evidence(line int) string {
 	return fmt.Sprintf("%s:%d", e.filename, line)
@@ -246,7 +262,7 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 				if err != nil {
 					return err
 				}
-				e.setSpan(id, specSpanStart(d, s.Doc, s), s.End())
+				e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
 				e.symbols[s.Name.Name] = id
 				// Class-hierarchy extraction (EP-011 G2): scan the declared type for
 				// embedded interfaces (→ implements) and embedded concrete types in a
@@ -271,7 +287,7 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 						return err
 					}
 					// Names of one spec (`var a, b int`) share the spec's span.
-					e.setSpan(id, specSpanStart(d, s.Doc, s), s.End())
+					e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
 					e.symbols[name.Name] = id
 				}
 			}

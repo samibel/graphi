@@ -86,10 +86,19 @@ type GenerateResult struct {
 // and Upsert()s it into the durable VectorTable. The durable rows survive the
 // process so a later reload serves semantic search without re-embedding.
 //
+// On a SUCCESSFUL pass the table is asked to enforce the SW-260 replace-set
+// contract: every row the active embedder still holds whose NodeId was NOT
+// embedded this run — including vectors written by a pre-SW-260 v1 pass for
+// now-excluded nodes — is dropped, so the persisted set equals the documents
+// just embedded and an excluded node cannot serve a stale vector.
+//
 // nodes is the full node set (e.g. store.Nodes(ctx, Query{})). docs must be
-// non-nil once an embedder is configured. index and table may be nil to skip
+// non-nil once an embedder is configured (the nil-source guard runs BEFORE
+// the empty-node return so a configured embedder with zero nodes and a nil
+// source errors, never silently no-ops). index and table may be nil to skip
 // the respective sink (e.g. persist-only or in-memory-only), but the normal
-// index pass supplies both.
+// index pass supplies both. A nil table skips the replace-set delete
+// (in-memory-only caller); a nil index skips the live Put.
 func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, table VectorTable) (GenerateResult, error) {
 	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, table, nil)
 }
@@ -118,6 +127,17 @@ const embedChunkSize = 64
 // call persisted nothing on an embed error). Vector rows are derived state
 // keyed by NodeId — a re-run overwrites them idempotently — so partial
 // progress is strictly recoverable.
+//
+// SW-260 replace-set: on a SUCCESSFUL pass (every chunk embedded, every
+// Upsert committed), the pass invokes table.DeleteExcept with the NodeIds it
+// actually embedded. Any row the table still holds for this embedder that is
+// NOT in that set — every vector written for an excluded node by a pre-SW-260
+// v1 pass, or any drift the generator skips this run — is removed in a single
+// bulk delete. After a successful pass the persisted set for the embedder
+// equals the set of documents just embedded; an excluded node cannot serve a
+// stale vector. A failed chunk skips the delete entirely (so partial
+// progress is still recoverable on a re-run); the error short-circuits with
+// whatever earlier chunks already persisted.
 func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, table VectorTable, onProgress func(done, total int)) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
@@ -127,15 +147,26 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		return GenerateResult{Configured: false}, nil
 	}
 	res := GenerateResult{Configured: true, EmbedderID: emb.ID()}
-	if len(nodes) == 0 {
-		return res, nil
-	}
+	// SW-260 minor (review round 1): the nil-source guard precedes the
+	// empty-node return so a configured embedder with zero nodes and a nil
+	// DocumentSource errors rather than silently returning a zero result; the
+	// unconfigured-registry graceful skip still comes first.
 	if docs == nil {
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
+	}
+	if len(nodes) == 0 {
+		return res, nil
 	}
 
 	chunkNodes := make([]model.Node, 0, embedChunkSize)
 	texts := make([]string, 0, embedChunkSize)
+	// embeddedIDs collects every NodeId this pass actually wrote into the
+	// durable table, in iteration order, so the post-pass DeleteExcept call
+	// can scope a single bulk delete to "what we just embedded". The IDs are
+	// collected deterministically (the same node order as the input) so a
+	// repeat pass over the same input calls DeleteExcept with the same
+	// argument and the persisted bytes stay byte-identical.
+	var embeddedIDs []model.NodeId
 	for start := 0; start < len(nodes); start += embedChunkSize {
 		end := start + embedChunkSize
 		if end > len(nodes) {
@@ -169,11 +200,22 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 						return GenerateResult{}, err
 					}
 				}
+				embeddedIDs = append(embeddedIDs, id)
 				res.Embedded++
 			}
 		}
 		if onProgress != nil {
 			onProgress(end, len(nodes))
+		}
+	}
+	// Replace-set: drop every row the active embedder holds whose node_id is
+	// not in embeddedIDs, so the persisted set equals the documents we just
+	// embedded. A nil table (index-only caller) skips the delete; a partial
+	// pass (len(embeddedIDs) != len(nodes)) still calls it — a v1 row from a
+	// prior pass for a now-skipped node is exactly the case this removes.
+	if table != nil {
+		if err := table.DeleteExcept(ctx, embeddedIDs); err != nil {
+			return GenerateResult{}, err
 		}
 	}
 	return res, nil

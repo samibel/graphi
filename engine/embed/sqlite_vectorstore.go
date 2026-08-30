@@ -27,6 +27,19 @@ import (
 // with the same embedder replaces in place and a second embedder's vectors coexist
 // durably without clobbering the first.
 //
+// Replace-set semantics (SW-260): DeleteExcept implements the
+// "persisted set == documents just embedded" contract on this table. A successful
+// `--semantic` generation pass calls DeleteExcept with the NodeIds it actually
+// embedded; any row in this embedder's scope that is NOT in that set — including
+// every vector written for an excluded node by a pre-SW-260 v1 pass — is removed
+// in a single bulk DELETE. The deletion is strictly scoped to this table's
+// embedder_id, so coexisting embedders in the same sidecar are untouched. The
+// generation pass therefore serves only what it just embedded; an excluded
+// (file / package / external / generated) node carries no durable vector after
+// the pass, contradicting the old "every node gets a vector" behaviour. This
+// stays within SW-260's scope; SW-261 layers fingerprinting and a generation
+// model on top, and is expected to supersede this per-pass delete.
+//
 // The table lives in the ingest meta sidecar (the -meta DB), the same DB that
 // already holds file_content_cache / reverse_deps / dirty_units / edit_provenance.
 // It is created idempotently (CREATE TABLE IF NOT EXISTS) and uses only the
@@ -101,6 +114,45 @@ ON CONFLICT(embedder_id, node_id) DO UPDATE SET
 		string(v.NodeID), t.embedderID, len(v.Values), blob)
 	if err != nil {
 		return fmt.Errorf("embed: upsert vector: %w", err)
+	}
+	return nil
+}
+
+// DeleteExcept implements VectorTable. It removes every row in this table's
+// embedder_id scope whose node_id is not in keep, in a single bulk statement
+// (scoped deletion avoids a per-id round-trip and keeps the SW-260
+// replace-set contract atomic from the caller's view). keep = nil deletes
+// every row in scope (the empty-table reset). The deletion is restricted to
+// this table's embedder_id: rows for any other embedder — including a
+// different active one that may share the table — are untouched.
+//
+// Note (SW-260 boundary): the durable sidecar here is keyed by
+// (embedder_id, node_id) and serves as the v2 storage. SW-261 introduces a
+// fingerprint/generation model that supersedes this delete-on-every-pass
+// approach; until then, the single-statement "delete what we did not write"
+// pass on the active embedder scope is the replace-set contract.
+func (t *SQLiteVectorTable) DeleteExcept(ctx context.Context, keep []model.NodeId) error {
+	if len(keep) == 0 {
+		_, err := t.db.ExecContext(ctx,
+			"DELETE FROM vectors WHERE embedder_id = ?", t.embedderID)
+		if err != nil {
+			return fmt.Errorf("embed: clear vectors: %w", err)
+		}
+		return nil
+	}
+	args := make([]any, 0, len(keep)+1)
+	args = append(args, t.embedderID)
+	placeholders := make([]byte, 0, 2*len(keep))
+	for i, id := range keep {
+		if i > 0 {
+			placeholders = append(placeholders, ',')
+		}
+		placeholders = append(placeholders, '?')
+		args = append(args, string(id))
+	}
+	query := "DELETE FROM vectors WHERE embedder_id = ? AND node_id NOT IN (" + string(placeholders) + ")"
+	if _, err := t.db.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("embed: delete-except vectors: %w", err)
 	}
 	return nil
 }

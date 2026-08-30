@@ -14,7 +14,8 @@
     "text_hash": "50a1ea2058bbd022",
     "document_schema": "v2",
     "text": "function pkg.f\npkg a.ts\n/** doc for f */\nexport function f(a: number): number { return a; }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "dbbf6122789fbe2e",
@@ -31,7 +32,8 @@
     "text_hash": "f3f3d97bbd9e0266",
     "document_schema": "v2",
     "text": "type pkg.A\npkg a.ts\nComponent\n@Component({sel: 'x'})\nexport class A {\n  @Get()\n  run(): void {}\n}",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "b0caf36c08eee8a7",
@@ -48,7 +50,8 @@
     "text_hash": "c340ba1c01fd43aa",
     "document_schema": "v2",
     "text": "method pkg.run\npkg a.ts\nGet\n@Get()\n  run(): void {}",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "68ecac18b50030ce",
@@ -65,6 +68,7 @@
     "text_hash": "9f76c60e1eb49c56",
     "document_schema": "v2",
     "text": "function pkg.g\npkg a.ts\nfunction g(): void {}",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   }
 ]

@@ -38,6 +38,9 @@ const MaxDocumentBytes = 16 << 10
 // SemanticDocument is one node's v2 embedding document. Field names are the
 // wire names (AC-4). Byte offsets/lines describe the span the body was cut
 // from and are unchanged by truncation; `truncated` says the text was bounded.
+// `bound` records which bound closed the gap: "tokens" (the embedder's own
+// tokenizer), "bytes" (only the byte cap ran — no embedder tokenizer was
+// available), or "none" (the document fit every bound).
 type SemanticDocument struct {
 	DocumentID     string       `json:"document_id"`
 	NodeID         model.NodeId `json:"node_id"`
@@ -54,6 +57,7 @@ type SemanticDocument struct {
 	DocumentSchema string       `json:"document_schema"`
 	Text           string       `json:"text"`
 	Truncated      bool         `json:"truncated"`
+	Bound          string       `json:"bound"`
 }
 
 // DocumentTokenizer is the OPTIONAL capability through which the active
@@ -66,7 +70,7 @@ type DocumentTokenizer interface {
 
 // Source is the file-level context a document is cut from: the canonical
 // parser language id (ParseResult.Meta.Language), the file's bytes the span
-// indexes into, and the embedder tokenizer when known (nil = whitespace).
+// indexes into, and the embedder tokenizer when known (nil = byte-cap only).
 type Source struct {
 	Language  string
 	Bytes     []byte
@@ -155,8 +159,10 @@ func (s DocumentStats) SpanMethodShare() map[string]float64 {
 // (docs/annotations — the leading doc comment itself rides at the head of the
 // body because the span starts there), then the body (the span's bytes with
 // trailing whitespace trimmed). The text is then bounded (AC-6): to
-// MaxDocumentTokens of source.Tokenizer when set, else whitespace tokens, and
-// to MaxDocumentBytes; a cut sets Truncated. The document stays ONE document —
+// MaxDocumentTokens of source.Tokenizer when the embedder exposes one, else
+// the byte cap alone (no whitespace-token approximation), and ALWAYS to
+// MaxDocumentBytes. A cut sets Truncated and Bound records which bound closed
+// the gap ("tokens" / "bytes" / "none"). The document stays ONE document —
 // multi-chunk is backlog. A zero span yields a header-only document.
 func BuildDocument(node model.Node, span parse.SourceSpan, source Source) SemanticDocument {
 	var b strings.Builder
@@ -175,7 +181,7 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) Semant
 		b.WriteByte('\n')
 		b.WriteString(body)
 	}
-	text, truncated := boundText(b.String(), source.Tokenizer)
+	text, bound := boundText(b.String(), source.Tokenizer)
 	textHash := model.FormatID(xxhash.Sum64String(text))
 	return SemanticDocument{
 		DocumentID:     documentID(node.ID(), textHash, DocumentSchema),
@@ -192,7 +198,8 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) Semant
 		TextHash:       textHash,
 		DocumentSchema: DocumentSchema,
 		Text:           text,
-		Truncated:      truncated,
+		Truncated:      bound != BoundNone,
+		Bound:          bound,
 	}
 }
 
@@ -295,41 +302,44 @@ func spanBody(sp parse.SourceSpan, src []byte) string {
 	return strings.TrimRight(string(src[start:end]), " \t\r\n")
 }
 
-// boundText applies the token bound (embedder tokenizer or whitespace) and
-// then the byte cap, reporting whether anything was cut.
-func boundText(text string, tok DocumentTokenizer) (string, bool) {
-	var truncated bool
+// Bound names the bound applied to a document's text. Bound = "tokens" means
+// the embedder's own tokenizer cut the text to MaxDocumentTokens; "bytes"
+// means the embedder exposed no tokenizer and ONLY the MaxDocumentBytes cap
+// ran; "none" means the document fit every bound (the SW-260 AC-6 invariant).
+const (
+	BoundNone   = "none"
+	BoundTokens = "tokens"
+	BoundBytes  = "bytes"
+)
+
+// boundText applies the active bound (embedder tokenizer when known, else the
+// byte cap only) and reports which bound closed the gap. The whitespace-token
+// approximation that previously stood in for a missing tokenizer is removed:
+// an unknown tokenizer means the document is bounded by the byte cap alone,
+// and the eval harness can read the per-document "bound" field to see which
+// path the document took. The byte cap is UTF-8-safe (rune-aligned).
+func boundText(text string, tok DocumentTokenizer) (string, string) {
+	bound := BoundNone
 	if tok != nil {
-		text, truncated = tok.Truncate(text, MaxDocumentTokens)
-	} else {
-		text, truncated = truncateWhitespaceTokens(text, MaxDocumentTokens)
+		var cut bool
+		text, cut = tok.Truncate(text, MaxDocumentTokens)
+		if cut {
+			bound = BoundTokens
+		}
 	}
 	if len(text) > MaxDocumentBytes {
 		cut := MaxDocumentBytes
 		for cut > 0 && !utf8.RuneStart(text[cut]) {
 			cut--
 		}
-		text, truncated = strings.TrimRight(text[:cut], " \t\r\n"), true
+		text = strings.TrimRight(text[:cut], " \t\r\n")
+		bound = BoundBytes
 	}
-	return text, truncated
+	return text, bound
 }
 
-// truncateWhitespaceTokens keeps the first max whitespace-separated tokens
-// (the same strings.Fields notion internal/eval's counter uses).
-func truncateWhitespaceTokens(text string, max int) (string, bool) {
-	tokens, inTok := 0, false
-	for i, r := range text {
-		space := r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '\v' || r == '\f'
-		switch {
-		case space && inTok:
-			inTok = false
-			if tokens == max {
-				return text[:i], true
-			}
-		case !space && !inTok:
-			inTok = true
-			tokens++
-		}
-	}
-	return text, false
-}
+// truncateWhitespaceTokens is intentionally REMOVED in SW-260 review round 1:
+// the previous default (whitespace tokens when the embedder exposes no
+// tokenizer) was an invented approximation. The new contract is "bytes only"
+// when no tokenizer is known, so the build harness records the bound it
+// actually applied instead of pretending to know tokens.

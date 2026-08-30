@@ -14,7 +14,8 @@
     "text_hash": "770b0de64b5acaed",
     "document_schema": "v2",
     "text": "constant shop.TaxRate\nshop cart.go\n// TaxRate is the flat tax.\nconst TaxRate = 7",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "099f3d767ac0e048",
@@ -31,7 +32,8 @@
     "text_hash": "03e0029603623928",
     "document_schema": "v2",
     "text": "type shop.Cart\nshop cart.go\n// Cart holds items.\ntype Cart struct{ items int }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "14467f4ba42acabc",
@@ -48,7 +50,8 @@
     "text_hash": "224dca76156969d3",
     "document_schema": "v2",
     "text": "method shop.Cart.Add\nshop cart.go\n// Add appends an item.\nfunc (c *Cart) Add() { c.items++ }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "39cb20f3e4870ea1",
@@ -65,7 +68,8 @@
     "text_hash": "2967c74f67b302f6",
     "document_schema": "v2",
     "text": "function shop.outer\nshop cart.go\n// outer wraps a nested func literal.\nfunc outer() int {\n\tinner := func() int { return TaxRate }\n\treturn inner()\n}",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "324c26b52552eba8",
@@ -82,7 +86,8 @@
     "text_hash": "2d01ba8fc7fccfa0",
     "document_schema": "v2",
     "text": "function shop.a\nshop cart.go\nfunc a() int { return 1 }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "cc21068699d5da26",
@@ -99,7 +104,8 @@
     "text_hash": "74812d273bdddf1e",
     "document_schema": "v2",
     "text": "function shop.b\nshop cart.go\nfunc b() int { return 2 }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   },
   {
     "document_id": "bed548ffe43c3a5f",
@@ -116,6 +122,7 @@
     "text_hash": "6a0504a910915ce4",
     "document_schema": "v2",
     "text": "function shop.last\nshop cart.go\n// last is the final declaration.\nfunc last() { fmt.Println(TaxRate) }",
-    "truncated": false
+    "truncated": false,
+    "bound": "none"
   }
 ]

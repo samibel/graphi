@@ -326,8 +326,12 @@ func (runeTokenizer) Truncate(text string, max int) (string, bool) {
 }
 
 // TestBuildDocument_Truncation pins AC-6: text is bounded to MaxDocumentTokens
-// of the embedder's tokenizer when one is known, else whitespace tokens, plus
-// the hard byte cap; a large declaration stays ONE document marked truncated.
+// of the embedder's tokenizer when one is known, otherwise to MaxDocumentBytes
+// alone (no whitespace-token approximation), and a large declaration stays ONE
+// document marked truncated. SW-260 review round 1: the prior "whitespace
+// tokens" fallback was an invented approximation; the byte-cap-only path
+// records `bound: "bytes"` so the eval harness can see which bound carried
+// the weight.
 func TestBuildDocument_Truncation(t *testing.T) {
 	if embed.MaxDocumentTokens != 512 {
 		t.Fatalf("MaxDocumentTokens = %d, want 512", embed.MaxDocumentTokens)
@@ -336,18 +340,26 @@ func TestBuildDocument_Truncation(t *testing.T) {
 	n, _ := model.NewNode("function", "big.Big", "big/big.go", 3, 1)
 	span := parse.SourceSpan{StartByte: 13, EndByte: len(big) - 1, StartLine: 3, EndLine: 403, Method: parse.SpanMethodAST}
 
-	t.Run("whitespace tokenizer", func(t *testing.T) {
-		d := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(big)})
-		if !d.Truncated {
-			t.Fatal("a 2000+ token declaration must be truncated")
+	t.Run("byte cap only when no tokenizer", func(t *testing.T) {
+		// A declaration larger than MaxDocumentBytes with NO tokenizer: no token
+		// bound runs, only the byte cap. The document is marked truncated
+		// because the byte cap closed the gap; bound must read "bytes" (no
+		// invented tokens). The source is intentionally >16 KiB so the byte
+		// cap is the only bound that can fire.
+		huge := "package big\n\nfunc Big() {\n" + strings.Repeat("\tcall(one, two, three, four)\n", 800) + "}\n"
+		hn, _ := model.NewNode("function", "big.Big", "big/big.go", 3, 1)
+		hs := parse.SourceSpan{StartByte: 13, EndByte: len(huge) - 1, StartLine: 3, EndLine: 803, Method: parse.SpanMethodAST}
+		d := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
+		if !d.Truncated || d.Bound != embed.BoundBytes {
+			t.Fatalf("truncated=%v bound=%q, want truncated=true bound=%q", d.Truncated, d.Bound, embed.BoundBytes)
 		}
-		if got := len(strings.Fields(d.Text)); got != embed.MaxDocumentTokens {
-			t.Errorf("tokens = %d, want exactly %d", got, embed.MaxDocumentTokens)
+		if len(d.Text) > embed.MaxDocumentBytes {
+			t.Errorf("text = %d bytes, want <= %d", len(d.Text), embed.MaxDocumentBytes)
 		}
 		if !strings.HasPrefix(d.Text, "function big.Big\nbig big.go\nfunc Big() {") {
 			t.Errorf("truncation cut the header: %q", d.Text[:min(len(d.Text), 60)])
 		}
-		if d.EndLine != 403 || d.EndByte != len(big)-1 {
+		if d.EndLine != 803 || d.EndByte != len(huge)-1 {
 			t.Errorf("truncation must not rewrite the span: %+v", d)
 		}
 	})
@@ -355,6 +367,9 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		d := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(big), Tokenizer: runeTokenizer{}})
 		if !d.Truncated || len([]rune(d.Text)) != embed.MaxDocumentTokens {
 			t.Errorf("rune-tokenized text = %d runes, truncated=%v", len([]rune(d.Text)), d.Truncated)
+		}
+		if d.Bound != embed.BoundTokens {
+			t.Errorf("bound = %q, want %q (embedder tokenizer closed the gap)", d.Bound, embed.BoundTokens)
 		}
 	})
 	t.Run("byte cap", func(t *testing.T) {
@@ -371,14 +386,34 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		if !strings.ContainsRune(d.Text, 'é') || strings.ContainsRune(d.Text, '�') {
 			t.Errorf("byte cap split a rune")
 		}
+		if d.Bound != embed.BoundBytes {
+			t.Errorf("bound = %q, want %q (the byte cap closed the gap with no tokenizer set)", d.Bound, embed.BoundBytes)
+		}
 	})
 	t.Run("still one document per node", func(t *testing.T) {
+		// Use the >16 KiB fixture so the byte cap actually closes the gap,
+		// pinning the "one document per node, truncated" contract end-to-end.
+		huge := "package big\n\nfunc Big() {\n" + strings.Repeat("\tcall(one, two, three, four)\n", 800) + "}\n"
+		hspan := parse.SourceSpan{StartByte: 13, EndByte: len(huge) - 1, StartLine: 3, EndLine: 803, Method: parse.SpanMethodAST}
 		docs, stats := embed.BuildDocuments(embed.FileSource{
-			Source: embed.Source{Language: "go", Bytes: []byte(big)}, Path: "big/big.go",
-			Nodes: []model.Node{n}, Spans: map[model.NodeId]parse.SourceSpan{n.ID(): span},
+			Source: embed.Source{Language: "go", Bytes: []byte(huge)}, Path: "big/big.go",
+			Nodes: []model.Node{n}, Spans: map[model.NodeId]parse.SourceSpan{n.ID(): hspan},
 		})
 		if len(docs) != 1 || !docs[0].Truncated || stats.Truncated != 1 {
 			t.Errorf("docs = %d, stats = %+v", len(docs), stats)
+		}
+	})
+	t.Run("small document reads bound=none", func(t *testing.T) {
+		small := "package s\n\nfunc S() {}\n"
+		sn, _ := model.NewNode("function", "s.S", "s/s.go", 3, 1)
+		ss := parse.SourceSpan{StartByte: 12, EndByte: len(small) - 1, StartLine: 3, EndLine: 4, Method: parse.SpanMethodAST}
+		dNoTok := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small)})
+		if dNoTok.Truncated || dNoTok.Bound != embed.BoundNone {
+			t.Errorf("no-tokenizer small doc: truncated=%v bound=%q, want false/%q", dNoTok.Truncated, dNoTok.Bound, embed.BoundNone)
+		}
+		dWithTok := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small), Tokenizer: runeTokenizer{}})
+		if dWithTok.Truncated || dWithTok.Bound != embed.BoundNone {
+			t.Errorf("tokenizer small doc: truncated=%v bound=%q, want false/%q", dWithTok.Truncated, dWithTok.Bound, embed.BoundNone)
 		}
 	})
 }

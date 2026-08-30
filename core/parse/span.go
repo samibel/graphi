@@ -42,13 +42,19 @@ type SourceSpan struct {
 // ParseResult.Spans is nil. For every symbol node (file, package and external
 // nodes carry no declaration and get no span) it derives a SpanMethodWindow
 // span starting at the node's line and covering at most SpanWindowMaxLines
-// lines, clipped at the start line of the next node in the same source (nodes
-// are sorted by line; declarations sharing a line share a window) and at end
-// of file. The span's bytes run from the start of its first line to the end of
-// its last line's content (excluding that line's newline). A node whose line
-// lies beyond the source, or an empty source, yields no span rather than a
-// fabricated one. All nodes are assumed to belong to src (one parsed file);
-// the result is a pure function of (nodes, src) and byte-reproducible.
+// lines. The span is bounded on the right by the NEXT declaration's start
+// byte: for a successor on a later line the bound is the start of that line;
+// for a SAME-LINE successor the bound is that successor's byte offset
+// (column -> byte). When the next declaration's byte offset cannot be
+// determined (column absent or out of source bounds) the predecessor emits
+// no window span rather than an unverifiable one — an unverifiable window
+// would silently leak the successor's body into the predecessor, which
+// breaks AC-3/AC-7's no-leak invariant. The byte run is from the start of the
+// node's first line to the position of the bound (or the end of the bound's
+// line for line-bounded spans). A node whose line lies beyond the source, or
+// an empty source, yields no span. All nodes are assumed to belong to src
+// (one parsed file); the result is a pure function of (nodes, src) and
+// byte-reproducible.
 func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSpan {
 	starts := lineStarts(src)
 	total := len(starts)
@@ -78,29 +84,97 @@ func DeriveWindowSpans(nodes []model.Node, src []byte) map[model.NodeId]SourceSp
 	out := make(map[model.NodeId]SourceSpan, len(cands))
 	for i, n := range cands {
 		start := n.Line()
+		// lineEnd is the bound for a successor on a LATER line: at most that
+		// line - 1, then clipped at SpanWindowMaxLines and at EOF. If the
+		// successor's line itself is missing (no successor or successor is
+		// span-ineligible), the bound stays at the original end line.
 		end := start + SpanWindowMaxLines - 1
-		// Clip at the next node that starts on a LATER line (same-line
-		// declarations share the window start and must not clip each other).
+		var lineBoundLine int // -1 when no later-line successor exists
 		for j := i + 1; j < len(cands); j++ {
-			if next := cands[j].Line(); next > start {
-				if next-1 < end {
-					end = next - 1
-				}
+			next := cands[j]
+			if next.Line() > start {
+				lineBoundLine = next.Line() - 1
 				break
 			}
+		}
+		if lineBoundLine > 0 && lineBoundLine < end {
+			end = lineBoundLine
 		}
 		if end > total {
 			end = total
 		}
+		// Compute the same-line successor's byte offset (column -> byte).
+		// A same-line successor at a higher column bounds the window at its
+		// start byte; the span's EndByte is that byte position and EndLine is
+		// the successor's line (which equals start here). When the byte offset
+		// cannot be derived (column absent or out of bounds), the node emits
+		// NO window span — better empty than an unverifiable leak.
+		sameLineBound := -1
+		var sameLineNode model.Node
+		for j := i + 1; j < len(cands); j++ {
+			next := cands[j]
+			if next.Line() != start {
+				break
+			}
+			if next.Column() <= n.Column() {
+				continue
+			}
+			off, ok := byteOffsetAtCol(starts, src, next.Line(), next.Column())
+			if !ok {
+				sameLineNode = next
+				sameLineBound = -1
+				break
+			}
+			if sameLineBound == -1 || off < sameLineBound {
+				sameLineBound = off
+				sameLineNode = next
+			}
+			// The first same-line successor with a later column bounds the
+			// window; the candidate list is sorted by column so any later
+			// successor would be farther right and so is not a tighter bound.
+			break
+		}
+		if sameLineNode.ID() != "" && sameLineBound == -1 {
+			// Unverifiable same-line successor: refuse to emit a window span
+			// for this node rather than serve a window that silently contains
+			// the successor's body. AC-3/AC-7 no-leak fails closed here.
+			continue
+		}
+		// Choose the tighter of the line bound and the same-line byte bound.
+		endByte := lineEnd(src, starts, end)
+		endLine := end
+		if sameLineBound >= 0 && sameLineBound < endByte {
+			endByte = sameLineBound
+			endLine = sameLineNode.Line()
+		}
 		out[n.ID()] = SourceSpan{
 			StartByte: starts[start-1],
-			EndByte:   lineEnd(src, starts, end),
+			EndByte:   endByte,
 			StartLine: start,
-			EndLine:   end,
+			EndLine:   endLine,
 			Method:    SpanMethodWindow,
 		}
 	}
 	return out
+}
+
+// byteOffsetAtCol converts a 1-based (line, column) pair to a 0-based byte
+// offset within src. columns are byte columns (the contract of
+// token.FileSet.Position, which every parser emits). Returns ok=false when
+// the pair lies outside src (no fabricated offset).
+func byteOffsetAtCol(starts []int, src []byte, line, col int) (int, bool) {
+	if line < 1 || line > len(starts) {
+		return 0, false
+	}
+	if col < 1 {
+		return 0, false
+	}
+	lineStart := starts[line-1]
+	off := lineStart + (col - 1)
+	if off > len(src) {
+		return 0, false
+	}
+	return off, true
 }
 
 // spanEligible reports whether n is a declaration-bearing symbol node: file

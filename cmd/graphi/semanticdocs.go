@@ -28,10 +28,11 @@ import (
 // This lives in cmd because it does the one thing engine/embed must not: read
 // repository files.
 type fileDocumentSource struct {
-	ctx    context.Context
-	root   string
-	reg    *parse.Registry
-	bounds parse.ResourceBounds
+	ctx       context.Context
+	root      string
+	reg       *parse.Registry
+	bounds    parse.ResourceBounds
+	tokenizer embed.DocumentTokenizer // active embedder's tokenizer when it exposes one (SW-260 AC-6)
 
 	cur       string
 	curDocs   map[model.NodeId]embed.SemanticDocument
@@ -42,12 +43,22 @@ type fileDocumentSource struct {
 	unreadable int
 }
 
-func newFileDocumentSource(ctx context.Context, root string) *fileDocumentSource {
+func newFileDocumentSource(ctx context.Context, root string, emb embed.Embedder) *fileDocumentSource {
+	// SW-260 AC-6: pass the active embedder's own tokenizer to the builder when
+	// it exposes one. The interface is opt-in (TokenizingEmbedder), so the
+	// mock and the older ollama/onnx embedders stay valid Embedders unchanged
+	// and fall through to the byte-cap-only path. The DocumentTokenizer is
+	// safe for concurrent use across the embedding pass.
+	var tok embed.DocumentTokenizer
+	if te, ok := emb.(embed.TokenizingEmbedder); ok {
+		tok = te.Tokenizer()
+	}
 	return &fileDocumentSource{
-		ctx:    ctx,
-		root:   root,
-		reg:    parse.NewDefaultRegistry(),
-		bounds: parse.DefaultResourceBounds(),
+		ctx:       ctx,
+		root:      root,
+		reg:       parse.NewDefaultRegistry(),
+		bounds:    parse.DefaultResourceBounds(),
+		tokenizer: tok,
 	}
 }
 
@@ -107,7 +118,7 @@ func (s *fileDocumentSource) load(path string) {
 		return
 	}
 	docs, st := embed.BuildDocuments(embed.FileSource{
-		Source: embed.Source{Language: res.Meta.Language, Bytes: src},
+		Source: embed.Source{Language: res.Meta.Language, Bytes: src, Tokenizer: s.tokenizer},
 		Path:   path,
 		Nodes:  res.Nodes,
 		Spans:  res.Spans,

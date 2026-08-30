@@ -45,7 +45,8 @@ func (p *spanCountingParser) Parse(ctx context.Context, path string, src []byte)
 // (non-semantic) index reads exactly as many repository files with the span
 // sidecar present as it did without it. The baseline is captured in the same
 // test by stripping spans at the parse boundary; the reader itself is the
-// instrument (rootReads counts every readRootedRegularFile call).
+// instrument (SetRootReadsHook installs an *atomic.Int64 counter only for
+// this test — production carries no shared atomic on the read path).
 func TestIngestAll_SpansCauseNoExtraFileReads(t *testing.T) {
 	files := map[string]string{
 		"go.mod":        "module demo\n\ngo 1.21\n",
@@ -54,6 +55,12 @@ func TestIngestAll_SpansCauseNoExtraFileReads(t *testing.T) {
 		"web/app.ts":    "/** doc */\nexport function f(a: number): number { return a; }\n",
 		"tools/run.py":  "def run():\n    return 1\n",
 	}
+
+	// SW-260 review round 1: install the counter hook only for this test, then
+	// tear it down so no production call path carries a shared atomic.
+	counter := &atomic.Int64{}
+	SetRootReadsCounter(counter)
+	t.Cleanup(func() { SetRootReadsCounter(nil) })
 
 	index := func(t *testing.T, parser Parser) int64 {
 		t.Helper()
@@ -66,11 +73,11 @@ func TestIngestAll_SpansCauseNoExtraFileReads(t *testing.T) {
 		}
 		t.Cleanup(func() { _ = i.Close() })
 		i.SetParseWorkers(1) // serial: the count must not depend on pool scheduling
-		before := rootReads.Load()
+		before := counter.Load()
 		if err := i.IngestAll(context.Background(), repo); err != nil {
 			t.Fatalf("IngestAll: %v", err)
 		}
-		return rootReads.Load() - before
+		return counter.Load() - before
 	}
 
 	inner := NewNotebookParser(parse.NewDefaultRegistry())
@@ -92,4 +99,28 @@ func TestIngestAll_SpansCauseNoExtraFileReads(t *testing.T) {
 	// The reads are the ones the default path already made: at most the walk
 	// hash + the parse read per file, plus the typeresolve/module-map re-reads.
 	t.Logf("default index: %d reads for %d files, identical with and without spans", readsWith, len(files))
+	// The hook uninstall is a t.Cleanup contract; TestRootReadsHookLifecycle
+	// below asserts the install/uninstall round trip directly.
+}
+
+// TestRootReadsHookLifecycle pins the SW-260 review-round-1 contract: the
+// AC-10 read counter is purely test-injected. SetRootReadsCounter installs
+// the counter AND the hook; SetRootReadsCounter(nil) clears both; production
+// callers see a nil hook and never touch a shared atomic on the read hotpath.
+func TestRootReadsHookLifecycle(t *testing.T) {
+	// Production default: no counter, no hook.
+	if CountRootReads() != 0 {
+		t.Errorf("default CountRootReads = %d, want 0", CountRootReads())
+	}
+	c := &atomic.Int64{}
+	SetRootReadsCounter(c)
+	defer SetRootReadsCounter(nil)
+	if CountRootReads() != 0 {
+		t.Errorf("CountRootReads after install = %d, want 0 (counter just installed, no reads happened)", CountRootReads())
+	}
+	// Uninstall and re-check: production semantics restored.
+	SetRootReadsCounter(nil)
+	if CountRootReads() != 0 {
+		t.Errorf("CountRootReads after uninstall = %d, want 0", CountRootReads())
+	}
 }

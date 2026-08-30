@@ -4,7 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cespare/xxhash/v2"
+
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/embed"
 )
 
@@ -88,6 +91,83 @@ func TestSQLiteVectorTable_EmbedderInvalidatesStale(t *testing.T) {
 	}
 	if len(got) != 0 {
 		t.Fatalf("changed embedder loaded %d stale vectors, want 0", len(got))
+	}
+}
+
+// TestSQLiteVectorTable_DeleteExceptReplaceSet pins the SW-260 replace-set
+// contract on the table seam itself: DeleteExcept removes every row in this
+// embedder's scope whose NodeId is not in keep, leaves every kept row intact,
+// and NEVER touches rows that belong to a different embedder sharing the same
+// sidecar. keep = nil deletes the whole scope.
+func TestSQLiteVectorTable_DeleteExceptReplaceSet(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+
+	write, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", 4)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	// Three rows for the active embedder ("mock"); one for an unrelated
+	// embedder that must survive every delete.
+	for _, id := range []model.NodeId{"a", "b", "c"} {
+		if err := write.Upsert(ctx, embed.Vector{NodeID: id, Values: []float32{1, 0, 0, 0}}); err != nil {
+			t.Fatalf("seed Upsert %s: %v", id, err)
+		}
+	}
+	_ = write.Close()
+
+	// A second embedder sharing the sidecar writes one row, which DeleteExcept
+	// must NEVER touch (the replace-set scope is this table's embedder_id).
+	other, err := embed.OpenSQLiteVectorTable(ctx, dir, "ollama:nomic-embed-text", 4)
+	if err != nil {
+		t.Fatalf("open other: %v", err)
+	}
+	if err := other.Upsert(ctx, embed.Vector{NodeID: model.NodeId("o"), Values: []float32{0, 1, 0, 0}}); err != nil {
+		t.Fatalf("seed other: %v", err)
+	}
+	_ = other.Close()
+
+	mock, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", 4)
+	if err != nil {
+		t.Fatalf("reopen mock: %v", err)
+	}
+	defer mock.Close()
+
+	// Keep "b" only — DeleteExcept must drop "a" and "c" but NEVER "o".
+	if err := mock.DeleteExcept(ctx, []model.NodeId{model.NodeId("b")}); err != nil {
+		t.Fatalf("DeleteExcept: %v", err)
+	}
+	got, err := mock.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(got) != 1 || got[0].NodeID != model.NodeId("b") {
+		t.Fatalf("mock rows after DeleteExcept = %+v, want exactly {b}", got)
+	}
+	// The other embedder's row survives the deletion.
+	otherReload, err := embed.OpenSQLiteVectorTable(ctx, dir, "ollama:nomic-embed-text", 4)
+	if err != nil {
+		t.Fatalf("reload other: %v", err)
+	}
+	defer otherReload.Close()
+	otherRows, err := otherReload.Load(ctx)
+	if err != nil {
+		t.Fatalf("other Load: %v", err)
+	}
+	if len(otherRows) != 1 || otherRows[0].NodeID != model.NodeId("o") {
+		t.Fatalf("other rows after DeleteExcept = %+v, want exactly {o} (replace-set must be embedder-scoped)", otherRows)
+	}
+
+	// A nil keep deletes every row in this scope (the empty-set reset path).
+	if err := mock.DeleteExcept(ctx, nil); err != nil {
+		t.Fatalf("DeleteExcept(nil): %v", err)
+	}
+	if rows, _ := mock.Load(ctx); len(rows) != 0 {
+		t.Fatalf("rows after DeleteExcept(nil) = %d, want 0", len(rows))
+	}
+	otherRows2, _ := otherReload.Load(ctx)
+	if len(otherRows2) != 1 || otherRows2[0].NodeID != model.NodeId("o") {
+		t.Fatalf("other rows after DeleteExcept(nil) = %+v, want exactly {o}", otherRows2)
 	}
 }
 
@@ -221,6 +301,117 @@ func TestGenerateAndPersist_GracefulSkip(t *testing.T) {
 	if got, _ := table.Load(ctx); len(got) != 0 {
 		t.Fatalf("graceful skip persisted %d vectors, want 0", len(got))
 	}
+}
+
+// TestGenerateAndPersist_ReplaceSetDropsExcluded is the SW-260 review-round-1
+// regression: a v1-shaped durable sidecar that holds vectors for a
+// file/package/external/generated node must, after a v2 generation pass that
+// excludes that node, no longer serve a vector for it. The pass replaces the
+// persisted set with the documents it just embedded, so a re-index over an
+// existing v1 sidecar cannot leak an excluded node's stale vector.
+func TestGenerateAndPersist_ReplaceSetDropsExcluded(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	mock := embed.NewMockEmbedder(8)
+	reg := embed.NewRegistry()
+	reg.Register(mock)
+
+	// Build a small node set covering every kind the v2 builder is expected to
+	// exclude: a file node, a package node, an external node, and a generated
+	// node (matches engine/classify.IsGeneratedPath). Two real symbol nodes are
+	// also present so the post-pass persisted set has a non-empty "kept" side.
+	file, _ := model.NewNode(parse.KindFile, "shop/cart.go", "shop/cart.go", 1, 1)
+	pkg, _ := model.NewNode(parse.KindPackage, "com.x", "", 0, 0)
+	ext, _ := model.NewNode(parse.KindExternal, "database/sql.DB.Query", "", 0, 0)
+	gen, _ := model.NewNode("function", "v.Gen", "gen/api.gen.go", 4, 1)
+	sym1, _ := model.NewNode("function", "shop.Price", "shop/price.go", 3, 1)
+	sym2, _ := model.NewNode("function", "shop.Total", "shop/price.go", 7, 1)
+	excluded := []model.Node{file, pkg, ext, gen}
+	kept := []model.Node{sym1, sym2}
+	all := append(append([]model.Node{}, excluded...), kept...)
+
+	// Seed the durable sidecar as if a v1 pass had embedded every node — each
+	// excluded kind is present, and the durable table only knows vectors, not
+	// the v1/v2 shape (the bug surfaces because the v2 Load returns every
+	// row the embedder wrote, regardless of node kind).
+	table, err := embed.OpenSQLiteVectorTable(ctx, dir, mock.ID(), mock.Dim())
+	if err != nil {
+		t.Fatalf("open table: %v", err)
+	}
+	for _, n := range all {
+		vec, _ := mock.Embed(ctx, []string{embed.NodeText(n)})
+		if err := table.Upsert(ctx, embed.Vector{NodeID: n.ID(), Values: vec[0]}); err != nil {
+			t.Fatalf("seed Upsert %s: %v", n.QualifiedName(), err)
+		}
+	}
+	before, _ := table.Load(ctx)
+	if len(before) != len(all) {
+		t.Fatalf("precondition: v1-style seed has %d rows, want %d", len(before), len(all))
+	}
+
+	// v2 DocumentSource: every excluded node returns (zero, false); the real
+	// symbols return their v2 document.
+	docs := keepOnly(kept)
+	if _, err := embed.GenerateAndPersist(ctx, reg, all, docs, embed.NewIndex(), table); err != nil {
+		t.Fatalf("GenerateAndPersist: %v", err)
+	}
+
+	after, err := table.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load after pass: %v", err)
+	}
+	if len(after) != len(kept) {
+		t.Fatalf("post-pass rows = %d, want %d (every excluded node must be removed)", len(after), len(kept))
+	}
+	keptIDs := map[model.NodeId]struct{}{}
+	for _, n := range kept {
+		keptIDs[n.ID()] = struct{}{}
+	}
+	for _, v := range after {
+		if _, ok := keptIDs[v.NodeID]; !ok {
+			t.Errorf("post-pass row for %s must not survive (excluded by the v2 builder)", v.NodeID)
+		}
+	}
+	// And every kept symbol is still in the table (Upsert+DeleteExcept compose
+	// to a no-op on the kept set; we never want a delete-after-upsert to drop
+	// something we did embed).
+	for _, n := range kept {
+		found := false
+		for _, v := range after {
+			if v.NodeID == n.ID() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("kept node %s disappeared after the replace-set pass", n.QualifiedName())
+		}
+	}
+}
+
+// keepOnly returns a DocumentSource that yields a deterministic v2-shaped
+// document for every node in keep and skips everything else. The mock embedder
+// hashes (kind, qualified_name) so identical nodes produce identical vectors
+// across runs; the document text only matters here as the unit the builder
+// cuts from source (the test runs over a MemVectorTable-backed GenerateAndPersist,
+// which does not parse source bytes).
+func keepOnly(keep []model.Node) docSource {
+	out := docSource{}
+	for _, n := range keep {
+		text := embed.NodeText(n) // any non-empty text is enough — bytes are not parsed
+		hash := model.FormatID(xxhash.Sum64String(text))
+		out[n.ID()] = embed.SemanticDocument{
+			DocumentID:     model.FormatID(xxhash.Sum64String(string(n.ID()) + hash + "v2")),
+			NodeID:         n.ID(),
+			Kind:           n.Kind(),
+			QualifiedName:  n.QualifiedName(),
+			Path:           n.SourcePath(),
+			TextHash:       hash,
+			DocumentSchema: "v2",
+			Text:           text,
+		}
+	}
+	return out
 }
 
 func mustNodes(t *testing.T) []model.Node {

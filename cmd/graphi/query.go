@@ -342,7 +342,7 @@ func runIndexAt(cwd string, args []string) int {
 	// instead of the v1 name-only text. Documents are cut file by file from
 	// the repository, so nodes are visited in path order.
 	sortNodesByPath(nodes)
-	docs := newFileDocumentSource(ctx, target.root)
+	docs := newFileDocumentSource(ctx, target.root, emb)
 	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, embed.NewIndex(), table, eprog.Handle)
 	eprog.Finish()
 	if err != nil {
