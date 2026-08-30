@@ -1,0 +1,2126 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/1",
+  "scorer_version": "retrieval-aggregate/1",
+  "reproducible": {
+    "candidate_sha": "8f1d1111739e0b86fc513f9b6a58802c5817bb91",
+    "runner_class": "local",
+    "repo": {
+      "name": "fixture",
+      "nodes": 92,
+      "edges": 167,
+      "files": 11
+    },
+    "dataset": {
+      "id": "fixture-v1",
+      "file": "fixture-v1.json",
+      "sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
+      "evidence_class": "agent-annotated, human-reviewed",
+      "queries": 10,
+      "dev_queries": 7,
+      "holdout_queries": 3,
+      "query_ids": [
+        "fx-01",
+        "fx-02",
+        "fx-03",
+        "fx-04",
+        "fx-05",
+        "fx-06",
+        "fx-07",
+        "fx-08",
+        "fx-09",
+        "fx-10"
+      ]
+    },
+    "tokenizer_id": "whitespace-fields-v1",
+    "top_k": 10,
+    "token_budgets": [
+      600,
+      1200,
+      2000
+    ],
+    "hit_context_window_lines": 40,
+    "relevant_min_grade": 2,
+    "matching_rule": "a hit matches a judged span when hit.path == span.path and span.start_line <= hit.line <= span.end_line; hit.line is the node's declaration line as the engine reports it (the oracle uses the span's start_line); each judged span is credited once per ranking for recall and DCG",
+    "baselines": [
+      {
+        "name": "lexical",
+        "status": "ok",
+        "method": "engine/search.Service.Search (sqlite fts5 bm25)",
+        "queries": [
+          {
+            "id": "fx-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "auth/token.go",
+                "line": 46,
+                "node_id": "0c27a2f9eecaaa22",
+                "kind": "function",
+                "qualified_name": "auth.ValidateToken",
+                "tokens": 147
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.8609101556836468,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-02",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "config/loader.go",
+                "line": 1,
+                "node_id": "2b26194b45376c2c",
+                "kind": "file",
+                "qualified_name": "config/loader.go",
+                "tokens": 157
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-03",
+            "stratum": "nl_behaviour",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-04",
+            "stratum": "architecture_flow",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-05",
+            "stratum": "config_docs",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-06",
+            "stratum": "ambiguous",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/store.go",
+                "line": 12,
+                "node_id": "9e263cfc447c9b13",
+                "kind": "type",
+                "qualified_name": "store.Store",
+                "tokens": 85
+              },
+              {
+                "rank": 2,
+                "path": "store/store.go",
+                "line": 1,
+                "node_id": "3a41284772ac75d8",
+                "kind": "file",
+                "qualified_name": "store/store.go",
+                "tokens": 139
+              },
+              {
+                "rank": 3,
+                "path": "store/store_test.go",
+                "line": 1,
+                "node_id": "a0de498c20984622",
+                "kind": "file",
+                "qualified_name": "store/store_test.go",
+                "tokens": 114
+              },
+              {
+                "rank": 4,
+                "path": "store/store.go",
+                "line": 8,
+                "node_id": "ccb4e5f92867eab8",
+                "kind": "variable",
+                "qualified_name": "store.ErrNotFound",
+                "tokens": 109
+              },
+              {
+                "rank": 5,
+                "path": "store/file.go",
+                "line": 13,
+                "node_id": "95c9f541553d4db1",
+                "kind": "type",
+                "qualified_name": "store.FileStore",
+                "tokens": 138
+              },
+              {
+                "rank": 6,
+                "path": "store/memory.go",
+                "line": 10,
+                "node_id": "fb3e5ae8d891313f",
+                "kind": "type",
+                "qualified_name": "store.MemoryStore",
+                "tokens": 112
+              },
+              {
+                "rank": 7,
+                "path": "store/file.go",
+                "line": 18,
+                "node_id": "413085a0204683f1",
+                "kind": "function",
+                "qualified_name": "store.NewFileStore",
+                "tokens": 139
+              },
+              {
+                "rank": 8,
+                "path": "store/memory.go",
+                "line": 16,
+                "node_id": "1c78e34c116d006f",
+                "kind": "function",
+                "qualified_name": "store.NewMemoryStore",
+                "tokens": 97
+              },
+              {
+                "rank": 9,
+                "path": "store/store.go",
+                "line": 22,
+                "node_id": "b9ac2890e9993dcb",
+                "kind": "function",
+                "qualified_name": "store.Open",
+                "tokens": 29
+              },
+              {
+                "rank": 10,
+                "path": "store/store_test.go",
+                "line": 8,
+                "node_id": "b094d8f9a1f85fc1",
+                "kind": "function",
+                "qualified_name": "store.TestStoreImplementations",
+                "tokens": 107
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 0.6666666666666666,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.8805137040437443,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 0.6666666666666666
+              },
+              "hit_grades": [
+                3,
+                0,
+                0,
+                0,
+                2,
+                2,
+                0,
+                0,
+                1,
+                0
+              ]
+            }
+          },
+          {
+            "id": "fx-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-08",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/file.go",
+                "line": 18,
+                "node_id": "413085a0204683f1",
+                "kind": "function",
+                "qualified_name": "store.NewFileStore",
+                "tokens": 139
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 0.5,
+              "recall_at_10": 0.5,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.787154602990972,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.5,
+                "2000": 0.5,
+                "600": 0.5
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-09",
+            "stratum": "nl_behaviour",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-10",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          }
+        ],
+        "overall": {
+          "queries": 10,
+          "scored": 8,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 0.5,
+            "first_relevant_rank_mean": 1,
+            "mrr@10": 0.5,
+            "ndcg@10": 0.4410723078397954,
+            "negative_hit_rate@5": 0,
+            "recall@10": 0.4375,
+            "recall@1200tok": 0.4375,
+            "recall@2000tok": 0.4375,
+            "recall@5": 0.3958333333333333,
+            "recall@600tok": 0.3958333333333333,
+            "top1": 0.5
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.8805137040437443,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 0.6666666666666666,
+              "recall@600tok": 0.6666666666666666,
+              "top1": 1
+            }
+          },
+          "architecture_flow": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0,
+              "mrr@10": 0,
+              "ndcg@10": 0,
+              "recall@10": 0,
+              "recall@1200tok": 0,
+              "recall@2000tok": 0,
+              "recall@5": 0,
+              "recall@600tok": 0,
+              "top1": 0
+            }
+          },
+          "config_docs": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0,
+              "mrr@10": 0,
+              "ndcg@10": 0,
+              "recall@10": 0,
+              "recall@1200tok": 0,
+              "recall@2000tok": 0,
+              "recall@5": 0,
+              "recall@600tok": 0,
+              "top1": 0
+            }
+          },
+          "exact_identifier": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.8240323793373094,
+              "recall@10": 0.75,
+              "recall@1200tok": 0.75,
+              "recall@2000tok": 0.75,
+              "recall@5": 0.75,
+              "recall@600tok": 0.75,
+              "top1": 1
+            }
+          },
+          "exact_path": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0,
+              "mrr@10": 0,
+              "ndcg@10": 0,
+              "recall@10": 0,
+              "recall@1200tok": 0,
+              "recall@2000tok": 0,
+              "recall@5": 0,
+              "recall@600tok": 0,
+              "top1": 0
+            }
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 7,
+            "scored": 6,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0.5,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 0.5,
+              "ndcg@10": 0.4569039766212319,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.5,
+              "recall@1200tok": 0.5,
+              "recall@2000tok": 0.5,
+              "recall@5": 0.4444444444444444,
+              "recall@600tok": 0.4444444444444444,
+              "top1": 0.5
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0.5,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 0.5,
+              "ndcg@10": 0.393577301495486,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.25,
+              "recall@1200tok": 0.25,
+              "recall@2000tok": 0.25,
+              "recall@5": 0.25,
+              "recall@600tok": 0.25,
+              "top1": 0.5
+            }
+          }
+        }
+      },
+      {
+        "name": "hybrid_v1",
+        "status": "ok",
+        "method": "search_hybrid/1 (engine/agenttools/hybridsearch, weights c15c28bb)",
+        "queries": [
+          {
+            "id": "fx-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "auth/token.go",
+                "line": 46,
+                "node_id": "0c27a2f9eecaaa22",
+                "kind": "function",
+                "qualified_name": "auth.ValidateToken",
+                "tokens": 147
+              },
+              {
+                "rank": 2,
+                "path": "auth/token_test.go",
+                "line": 9,
+                "node_id": "c97d3ead8d831874",
+                "kind": "function",
+                "qualified_name": "auth.TestValidateToken",
+                "tokens": 93
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.938506417451168,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-02",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "config/loader.go",
+                "line": 1,
+                "node_id": "2b26194b45376c2c",
+                "kind": "file",
+                "qualified_name": "config/loader.go",
+                "tokens": 157
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-03",
+            "stratum": "nl_behaviour",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "auth/token.go",
+                "line": 46,
+                "node_id": "0c27a2f9eecaaa22",
+                "kind": "function",
+                "qualified_name": "auth.ValidateToken",
+                "tokens": 147
+              },
+              {
+                "rank": 2,
+                "path": "auth/token.go",
+                "line": 31,
+                "node_id": "9e557d6b6dd54065",
+                "kind": "function",
+                "qualified_name": "auth.ParseToken",
+                "tokens": 219
+              },
+              {
+                "rank": 3,
+                "path": "auth/token_test.go",
+                "line": 9,
+                "node_id": "c97d3ead8d831874",
+                "kind": "function",
+                "qualified_name": "auth.TestValidateToken",
+                "tokens": 93
+              },
+              {
+                "rank": 4,
+                "path": "auth/token.go",
+                "line": 1,
+                "node_id": "d9c8829572fa0c53",
+                "kind": "file",
+                "qualified_name": "auth/token.go",
+                "tokens": 189
+              },
+              {
+                "rank": 5,
+                "path": "auth/token_test.go",
+                "line": 1,
+                "node_id": "5dfb5cb0e65bcbff",
+                "kind": "file",
+                "qualified_name": "auth/token_test.go",
+                "tokens": 101
+              },
+              {
+                "rank": 6,
+                "path": "auth/token.go",
+                "line": 24,
+                "node_id": "827b0ebc6b15f2a2",
+                "kind": "type",
+                "qualified_name": "auth.Claims",
+                "tokens": 199
+              },
+              {
+                "rank": 7,
+                "path": "auth/token.go",
+                "line": 15,
+                "node_id": "b5bbf586653ddf37",
+                "kind": "variable",
+                "qualified_name": "auth.ErrMalformed",
+                "tokens": 202
+              },
+              {
+                "rank": 8,
+                "path": "auth/token.go",
+                "line": 68,
+                "node_id": "b97f4cf59a647458",
+                "kind": "function",
+                "qualified_name": "auth.sign",
+                "tokens": 39
+              },
+              {
+                "rank": 9,
+                "path": "auth/token.go",
+                "line": 21,
+                "node_id": "c2cad4af3508973b",
+                "kind": "variable",
+                "qualified_name": "auth.ErrBadSignature",
+                "tokens": 186
+              },
+              {
+                "rank": 10,
+                "path": "auth/token.go",
+                "line": 18,
+                "node_id": "d82a8bbea7169f5c",
+                "kind": "variable",
+                "qualified_name": "auth.ErrExpired",
+                "tokens": 191
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 0.5,
+              "recall_at_10": 0.5,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.7984848580994977,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.5,
+                "2000": 0.5,
+                "600": 0.5
+              },
+              "hit_grades": [
+                3,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "fx-04",
+            "stratum": "architecture_flow",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/store.go",
+                "line": 12,
+                "node_id": "9e263cfc447c9b13",
+                "kind": "type",
+                "qualified_name": "store.Store",
+                "tokens": 85
+              },
+              {
+                "rank": 2,
+                "path": "store/file.go",
+                "line": 13,
+                "node_id": "95c9f541553d4db1",
+                "kind": "type",
+                "qualified_name": "store.FileStore",
+                "tokens": 138
+              },
+              {
+                "rank": 3,
+                "path": "store/store.go",
+                "line": 8,
+                "node_id": "ccb4e5f92867eab8",
+                "kind": "variable",
+                "qualified_name": "store.ErrNotFound",
+                "tokens": 109
+              },
+              {
+                "rank": 4,
+                "path": "store/memory.go",
+                "line": 10,
+                "node_id": "fb3e5ae8d891313f",
+                "kind": "type",
+                "qualified_name": "store.MemoryStore",
+                "tokens": 112
+              },
+              {
+                "rank": 5,
+                "path": "store/memory.go",
+                "line": 16,
+                "node_id": "1c78e34c116d006f",
+                "kind": "function",
+                "qualified_name": "store.NewMemoryStore",
+                "tokens": 97
+              },
+              {
+                "rank": 6,
+                "path": "store/file.go",
+                "line": 18,
+                "node_id": "413085a0204683f1",
+                "kind": "function",
+                "qualified_name": "store.NewFileStore",
+                "tokens": 139
+              },
+              {
+                "rank": 7,
+                "path": "store/file.go",
+                "line": 64,
+                "node_id": "5a09f17a4b314f9f",
+                "kind": "method",
+                "qualified_name": "store.FileStore.path",
+                "tokens": 33
+              },
+              {
+                "rank": 8,
+                "path": "store/store.go",
+                "line": 1,
+                "node_id": "3a41284772ac75d8",
+                "kind": "file",
+                "qualified_name": "store/store.go",
+                "tokens": 139
+              },
+              {
+                "rank": 9,
+                "path": "store/memory.go",
+                "line": 1,
+                "node_id": "465133105a865286",
+                "kind": "file",
+                "qualified_name": "store/memory.go",
+                "tokens": 109
+              },
+              {
+                "rank": 10,
+                "path": "store/file.go",
+                "line": 1,
+                "node_id": "4b1304aec61e0326",
+                "kind": "file",
+                "qualified_name": "store/file.go",
+                "tokens": 138
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 0.3333333333333333,
+              "recall_at_10": 0.3333333333333333,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.277175541571212,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.3333333333333333,
+                "2000": 0.3333333333333333,
+                "600": 0.3333333333333333
+              },
+              "hit_grades": [
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "fx-05",
+            "stratum": "config_docs",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-06",
+            "stratum": "ambiguous",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/store.go",
+                "line": 12,
+                "node_id": "9e263cfc447c9b13",
+                "kind": "type",
+                "qualified_name": "store.Store",
+                "tokens": 85
+              },
+              {
+                "rank": 2,
+                "path": "store/file.go",
+                "line": 13,
+                "node_id": "95c9f541553d4db1",
+                "kind": "type",
+                "qualified_name": "store.FileStore",
+                "tokens": 138
+              },
+              {
+                "rank": 3,
+                "path": "store/store.go",
+                "line": 8,
+                "node_id": "ccb4e5f92867eab8",
+                "kind": "variable",
+                "qualified_name": "store.ErrNotFound",
+                "tokens": 109
+              },
+              {
+                "rank": 4,
+                "path": "store/memory.go",
+                "line": 10,
+                "node_id": "fb3e5ae8d891313f",
+                "kind": "type",
+                "qualified_name": "store.MemoryStore",
+                "tokens": 112
+              },
+              {
+                "rank": 5,
+                "path": "store/memory.go",
+                "line": 16,
+                "node_id": "1c78e34c116d006f",
+                "kind": "function",
+                "qualified_name": "store.NewMemoryStore",
+                "tokens": 97
+              },
+              {
+                "rank": 6,
+                "path": "store/file.go",
+                "line": 18,
+                "node_id": "413085a0204683f1",
+                "kind": "function",
+                "qualified_name": "store.NewFileStore",
+                "tokens": 139
+              },
+              {
+                "rank": 7,
+                "path": "store/file.go",
+                "line": 64,
+                "node_id": "5a09f17a4b314f9f",
+                "kind": "method",
+                "qualified_name": "store.FileStore.path",
+                "tokens": 33
+              },
+              {
+                "rank": 8,
+                "path": "store/store.go",
+                "line": 1,
+                "node_id": "3a41284772ac75d8",
+                "kind": "file",
+                "qualified_name": "store/store.go",
+                "tokens": 139
+              },
+              {
+                "rank": 9,
+                "path": "store/memory.go",
+                "line": 1,
+                "node_id": "465133105a865286",
+                "kind": "file",
+                "qualified_name": "store/memory.go",
+                "tokens": 109
+              },
+              {
+                "rank": 10,
+                "path": "store/file.go",
+                "line": 1,
+                "node_id": "4b1304aec61e0326",
+                "kind": "file",
+                "qualified_name": "store/file.go",
+                "tokens": 138
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.9409942346984062,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                0,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          {
+            "id": "fx-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-08",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/file.go",
+                "line": 18,
+                "node_id": "413085a0204683f1",
+                "kind": "function",
+                "qualified_name": "store.NewFileStore",
+                "tokens": 139
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 0.5,
+              "recall_at_10": 0.5,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 0.787154602990972,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 0.5,
+                "2000": 0.5,
+                "600": 0.5
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-09",
+            "stratum": "nl_behaviour",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-10",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          }
+        ],
+        "overall": {
+          "queries": 10,
+          "scored": 8,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 0.75,
+            "first_relevant_rank_mean": 1,
+            "mrr@10": 0.75,
+            "ndcg@10": 0.5927894568514069,
+            "negative_hit_rate@5": 0,
+            "recall@10": 0.5416666666666667,
+            "recall@1200tok": 0.5416666666666667,
+            "recall@2000tok": 0.5416666666666667,
+            "recall@5": 0.5416666666666667,
+            "recall@600tok": 0.5416666666666667,
+            "top1": 0.75
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.9409942346984062,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "architecture_flow": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.277175541571212,
+              "recall@10": 0.3333333333333333,
+              "recall@1200tok": 0.3333333333333333,
+              "recall@2000tok": 0.3333333333333333,
+              "recall@5": 0.3333333333333333,
+              "recall@600tok": 0.3333333333333333,
+              "top1": 1
+            }
+          },
+          "config_docs": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0,
+              "mrr@10": 0,
+              "ndcg@10": 0,
+              "recall@10": 0,
+              "recall@1200tok": 0,
+              "recall@2000tok": 0,
+              "recall@5": 0,
+              "recall@600tok": 0,
+              "top1": 0
+            }
+          },
+          "exact_identifier": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 0.86283051022107,
+              "recall@10": 0.75,
+              "recall@1200tok": 0.75,
+              "recall@2000tok": 0.75,
+              "recall@5": 0.75,
+              "recall@600tok": 0.75,
+              "top1": 1
+            }
+          },
+          "exact_path": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0.5,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 0.5,
+              "ndcg@10": 0.3992424290497488,
+              "recall@10": 0.25,
+              "recall@1200tok": 0.25,
+              "recall@2000tok": 0.25,
+              "recall@5": 0.25,
+              "recall@600tok": 0.25,
+              "top1": 0.5
+            }
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 7,
+            "scored": 6,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0.8333333333333334,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 0.8333333333333334,
+              "ndcg@10": 0.6591935086367139,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.638888888888889,
+              "recall@1200tok": 0.638888888888889,
+              "recall@2000tok": 0.638888888888889,
+              "recall@5": 0.638888888888889,
+              "recall@600tok": 0.638888888888889,
+              "top1": 0.8333333333333334
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 0.5,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 0.5,
+              "ndcg@10": 0.393577301495486,
+              "negative_hit_rate@5": 0,
+              "recall@10": 0.25,
+              "recall@1200tok": 0.25,
+              "recall@2000tok": 0.25,
+              "recall@5": 0.25,
+              "recall@600tok": 0.25,
+              "top1": 0.5
+            }
+          }
+        }
+      },
+      {
+        "name": "semantic_name_only",
+        "status": "unavailable",
+        "reason": "no embedder configured; run `graphi setup-embedder ...`",
+        "method": "engine/search.Service.SemanticSearch (name-only documents)",
+        "queries": [],
+        "overall": {
+          "queries": 0,
+          "scored": 0,
+          "status": "UNKNOWN"
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "architecture_flow": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "config_docs": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_identifier": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "exact_path": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "nl_behaviour": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "no_hit": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          },
+          "holdout": {
+            "queries": 0,
+            "scored": 0,
+            "status": "UNKNOWN"
+          }
+        }
+      },
+      {
+        "name": "oracle_upper_bound",
+        "status": "ok",
+        "method": "judged spans with grade >= 1 ranked by grade (the scorer's ceiling)",
+        "queries": [
+          {
+            "id": "fx-01",
+            "stratum": "exact_identifier",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "auth/token.go",
+                "line": 43,
+                "kind": "span",
+                "qualified_name": "auth/token.go:43-58",
+                "tokens": 184
+              },
+              {
+                "rank": 2,
+                "path": "auth/token.go",
+                "line": 29,
+                "kind": "span",
+                "qualified_name": "auth/token.go:29-41",
+                "tokens": 222
+              },
+              {
+                "rank": 3,
+                "path": "auth/token_test.go",
+                "line": 9,
+                "kind": "span",
+                "qualified_name": "auth/token_test.go:9-29",
+                "tokens": 93
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                1,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-02",
+            "stratum": "exact_path",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "config/loader.go",
+                "line": 1,
+                "kind": "span",
+                "qualified_name": "config/loader.go:1-80",
+                "tokens": 157
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 1,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3
+              ]
+            }
+          },
+          {
+            "id": "fx-03",
+            "stratum": "nl_behaviour",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "auth/token.go",
+                "line": 43,
+                "kind": "span",
+                "qualified_name": "auth/token.go:43-58",
+                "tokens": 184
+              },
+              {
+                "rank": 2,
+                "path": "httpapi/handler.go",
+                "line": 46,
+                "kind": "span",
+                "qualified_name": "httpapi/handler.go:46-53",
+                "tokens": 132
+              },
+              {
+                "rank": 3,
+                "path": "auth/token_test.go",
+                "line": 9,
+                "kind": "span",
+                "qualified_name": "auth/token_test.go:9-29",
+                "tokens": 93
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-04",
+            "stratum": "architecture_flow",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "httpapi/handler.go",
+                "line": 28,
+                "kind": "span",
+                "qualified_name": "httpapi/handler.go:28-44",
+                "tokens": 151
+              },
+              {
+                "rank": 2,
+                "path": "cmd/app/main.go",
+                "line": 23,
+                "kind": "span",
+                "qualified_name": "cmd/app/main.go:23-36",
+                "tokens": 55
+              },
+              {
+                "rank": 3,
+                "path": "store/store.go",
+                "line": 10,
+                "kind": "span",
+                "qualified_name": "store/store.go:10-19",
+                "tokens": 103
+              },
+              {
+                "rank": 4,
+                "path": "doc.go",
+                "line": 24,
+                "kind": "span",
+                "qualified_name": "doc.go:24-29",
+                "tokens": 141
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                2,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-05",
+            "stratum": "config_docs",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "doc.go",
+                "line": 31,
+                "kind": "span",
+                "qualified_name": "doc.go:31-35",
+                "tokens": 94
+              },
+              {
+                "rank": 2,
+                "path": "config/loader.go",
+                "line": 11,
+                "kind": "span",
+                "qualified_name": "config/loader.go:11-24",
+                "tokens": 192
+              },
+              {
+                "rank": 3,
+                "path": "config/loader.go",
+                "line": 41,
+                "kind": "span",
+                "qualified_name": "config/loader.go:41-68",
+                "tokens": 186
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                2
+              ]
+            }
+          },
+          {
+            "id": "fx-06",
+            "stratum": "ambiguous",
+            "split": "dev",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/store.go",
+                "line": 10,
+                "kind": "span",
+                "qualified_name": "store/store.go:10-19",
+                "tokens": 103
+              },
+              {
+                "rank": 2,
+                "path": "store/file.go",
+                "line": 11,
+                "kind": "span",
+                "qualified_name": "store/file.go:11-15",
+                "tokens": 161
+              },
+              {
+                "rank": 3,
+                "path": "store/memory.go",
+                "line": 8,
+                "kind": "span",
+                "qualified_name": "store/memory.go:8-13",
+                "tokens": 122
+              },
+              {
+                "rank": 4,
+                "path": "store/store.go",
+                "line": 21,
+                "kind": "span",
+                "qualified_name": "store/store.go:21-30",
+                "tokens": 39
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 3,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                2,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-07",
+            "stratum": "no_hit",
+            "split": "dev",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          },
+          {
+            "id": "fx-08",
+            "stratum": "exact_identifier",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "store/file.go",
+                "line": 17,
+                "kind": "span",
+                "qualified_name": "store/file.go:17-23",
+                "tokens": 150
+              },
+              {
+                "rank": 2,
+                "path": "store/file.go",
+                "line": 11,
+                "kind": "span",
+                "qualified_name": "store/file.go:11-15",
+                "tokens": 161
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2
+              ]
+            }
+          },
+          {
+            "id": "fx-09",
+            "stratum": "nl_behaviour",
+            "split": "holdout",
+            "hits": [
+              {
+                "rank": 1,
+                "path": "config/loader.go",
+                "line": 41,
+                "kind": "span",
+                "qualified_name": "config/loader.go:41-68",
+                "tokens": 186
+              },
+              {
+                "rank": 2,
+                "path": "config/loader.go",
+                "line": 70,
+                "kind": "span",
+                "qualified_name": "config/loader.go:70-80",
+                "tokens": 52
+              },
+              {
+                "rank": 3,
+                "path": "config/loader.go",
+                "line": 11,
+                "kind": "span",
+                "qualified_name": "config/loader.go:11-24",
+                "tokens": 192
+              }
+            ],
+            "metrics": {
+              "scored": true,
+              "relevant_spans": 2,
+              "top1": 1,
+              "recall_at_5": 1,
+              "recall_at_10": 1,
+              "mrr_at_10": 1,
+              "ndcg_at_10": 1,
+              "first_relevant_rank": 1,
+              "recall_at_tokens": {
+                "1200": 1,
+                "2000": 1,
+                "600": 1
+              },
+              "hit_grades": [
+                3,
+                2,
+                1
+              ]
+            }
+          },
+          {
+            "id": "fx-10",
+            "stratum": "no_hit",
+            "split": "holdout",
+            "hits": [],
+            "metrics": {
+              "scored": false,
+              "relevant_spans": 0,
+              "top1": 0,
+              "recall_at_5": 0,
+              "recall_at_10": 0,
+              "mrr_at_10": 0,
+              "ndcg_at_10": 0,
+              "first_relevant_rank": null,
+              "recall_at_tokens": {
+                "1200": 0,
+                "2000": 0,
+                "600": 0
+              },
+              "negative_hit_at_5": false,
+              "hit_grades": []
+            }
+          }
+        ],
+        "overall": {
+          "queries": 10,
+          "scored": 8,
+          "status": "measured",
+          "metrics": {
+            "first_relevant_found": 1,
+            "first_relevant_rank_mean": 1,
+            "mrr@10": 1,
+            "ndcg@10": 1,
+            "negative_hit_rate@5": 0,
+            "recall@10": 1,
+            "recall@1200tok": 1,
+            "recall@2000tok": 1,
+            "recall@5": 1,
+            "recall@600tok": 1,
+            "top1": 1
+          }
+        },
+        "strata": {
+          "ambiguous": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "architecture_flow": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "config_docs": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "exact_identifier": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "exact_path": {
+            "queries": 1,
+            "scored": 1,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "nl_behaviour": {
+            "queries": 2,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "no_hit": {
+            "queries": 2,
+            "scored": 0,
+            "status": "measured",
+            "metrics": {
+              "negative_hit_rate@5": 0
+            }
+          }
+        },
+        "splits": {
+          "dev": {
+            "queries": 7,
+            "scored": 6,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          },
+          "holdout": {
+            "queries": 3,
+            "scored": 2,
+            "status": "measured",
+            "metrics": {
+              "first_relevant_found": 1,
+              "first_relevant_rank_mean": 1,
+              "mrr@10": 1,
+              "ndcg@10": 1,
+              "negative_hit_rate@5": 0,
+              "recall@10": 1,
+              "recall@1200tok": 1,
+              "recall@2000tok": 1,
+              "recall@5": 1,
+              "recall@600tok": 1,
+              "top1": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  "performance": [
+    {
+      "baseline": "lexical",
+      "index_ms": {
+        "status": "measured",
+        "value": 20,
+        "unit": "ms"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 79,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 125,
+        "unit": "us"
+      },
+      "latency_samples": 30,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 104.078125,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "no vector sidecar: this baseline ranks without vectors"
+      }
+    },
+    {
+      "baseline": "hybrid_v1",
+      "index_ms": {
+        "status": "measured",
+        "value": 20,
+        "unit": "ms"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 316,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 5329,
+        "unit": "us"
+      },
+      "latency_samples": 30,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 108.625,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "no vector sidecar: this baseline ranks without vectors"
+      }
+    },
+    {
+      "baseline": "semantic_name_only",
+      "index_ms": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "query_p50_us": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "query_p95_us": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "latency_samples": 0,
+      "peak_rss_mb": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      },
+      "vector_sidecar_bytes": {
+        "status": "UNKNOWN",
+        "reason": "baseline unavailable: no embedder configured; run `graphi setup-embedder ...`"
+      }
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "index_ms": {
+        "status": "not_applicable",
+        "reason": "the oracle ranks the judged spans and builds no index"
+      },
+      "query_p50_us": {
+        "status": "measured",
+        "value": 0,
+        "unit": "us"
+      },
+      "query_p95_us": {
+        "status": "measured",
+        "value": 2,
+        "unit": "us"
+      },
+      "latency_samples": 30,
+      "peak_rss_mb": {
+        "status": "measured",
+        "value": 108.875,
+        "unit": "MB"
+      },
+      "vector_sidecar_bytes": {
+        "status": "not_applicable",
+        "reason": "the oracle ranks the judged spans and builds no index"
+      }
+    }
+  ],
+  "environment": {
+    "generated_at": "2026-08-30T15:23:28Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  }
+}

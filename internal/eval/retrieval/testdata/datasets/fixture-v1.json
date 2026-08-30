@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "id": "fixture-v1",
+  "repo": "fixture",
+  "language": "go",
+  "evidence_class": "agent-annotated, human-reviewed",
+  "notes": "Mini dataset over internal/eval/retrieval/testdata/fixture-repo (the hermetic PR-time run, AC-10). Every stratum at least once in the dev split (7 dev queries) plus 3 holdout queries; line ranges are checked by TestDatasets_FixtureSpansResolve on every go test.",
+  "queries": [
+    {
+      "id": "fx-01",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "ValidateToken",
+      "judgements": [
+        {"path": "auth/token.go", "start_line": 43, "end_line": 58, "anchor": "func ValidateToken", "grade": 3, "reason": "The declaration of ValidateToken itself.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "auth/token.go", "start_line": 29, "end_line": 41, "anchor": "func ParseToken", "grade": 1, "reason": "ParseToken is the helper ValidateToken calls; related but not the identifier asked for.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "auth/token_test.go", "start_line": 9, "end_line": 29, "anchor": "func TestValidateToken", "grade": 1, "reason": "The test exercises ValidateToken but is not its definition.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-02",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "config/loader.go",
+      "judgements": [
+        {"path": "config/loader.go", "start_line": 1, "end_line": 80, "anchor": "package config", "grade": 3, "reason": "The file named by the query; any symbol in it answers a path query.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-03",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where is the auth token validated",
+      "judgements": [
+        {"path": "auth/token.go", "start_line": 43, "end_line": 58, "anchor": "func ValidateToken", "grade": 3, "reason": "ValidateToken is the single trust decision: parse, expiry, signature.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "httpapi/handler.go", "start_line": 46, "end_line": 53, "anchor": "func (h *Handler) authenticate", "grade": 2, "reason": "authenticate is the call site that hands the bearer token to ValidateToken.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "auth/token_test.go", "start_line": 9, "end_line": 29, "anchor": "func TestValidateToken", "grade": 1, "reason": "The test shows the validation contract but is not where validation happens.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-04",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does an http request reach the store",
+      "judgements": [
+        {"path": "httpapi/handler.go", "start_line": 28, "end_line": 44, "anchor": "func (h *Handler) ServeHTTP", "grade": 3, "reason": "ServeHTTP is the flow: authenticate, route on method, then Store.Get/Put.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "cmd/app/main.go", "start_line": 23, "end_line": 36, "anchor": "func run", "grade": 2, "reason": "run wires config, store and handler together, the other half of the flow.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "store/store.go", "start_line": 10, "end_line": 19, "anchor": "type Store interface", "grade": 2, "reason": "The Store interface is the boundary the request ends at.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "doc.go", "start_line": 24, "end_line": 29, "anchor": "# Request flow", "grade": 1, "reason": "Prose description of the same flow; useful but not code.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-05",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "which environment variables configure the service",
+      "judgements": [
+        {"path": "doc.go", "start_line": 31, "end_line": 35, "anchor": "# Configuration reference", "grade": 3, "reason": "The configuration reference lists every FIXTURE_ variable and its default.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "config/loader.go", "start_line": 41, "end_line": 68, "anchor": "func Load", "grade": 2, "reason": "Load reads each variable; the code answer to the docs question.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "config/loader.go", "start_line": 11, "end_line": 24, "anchor": "type Config struct", "grade": 2, "reason": "Config's field comments name the variable behind each setting.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-06",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Store",
+      "judgements": [
+        {"path": "store/store.go", "start_line": 10, "end_line": 19, "anchor": "type Store interface", "grade": 3, "reason": "The interface is the canonical Store.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "store/memory.go", "start_line": 8, "end_line": 13, "anchor": "type MemoryStore struct", "grade": 2, "reason": "One of the two implementations an ambiguous 'Store' may mean.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "store/file.go", "start_line": 11, "end_line": 15, "anchor": "type FileStore struct", "grade": 2, "reason": "The other implementation.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "store/store.go", "start_line": 21, "end_line": 30, "anchor": "func Open", "grade": 1, "reason": "Open constructs a Store; a plausible but secondary answer.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-07",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "dev",
+      "query": "kubernetes pod scheduler",
+      "judgements": [
+        {"path": "cmd/app/main.go", "start_line": 1, "end_line": 36, "anchor": "package main", "grade": 0, "reason": "Negative example: the wiring binary has nothing to do with kubernetes; surfacing it is a false positive.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-08",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "NewFileStore",
+      "judgements": [
+        {"path": "store/file.go", "start_line": 17, "end_line": 23, "anchor": "func NewFileStore", "grade": 3, "reason": "The declaration of NewFileStore.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "store/file.go", "start_line": 11, "end_line": 15, "anchor": "type FileStore struct", "grade": 2, "reason": "The type the constructor returns.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-09",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "how are configuration values parsed from environment variables",
+      "judgements": [
+        {"path": "config/loader.go", "start_line": 41, "end_line": 68, "anchor": "func Load", "grade": 3, "reason": "Load is where each FIXTURE_ variable is read and parsed.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "config/loader.go", "start_line": 70, "end_line": 80, "anchor": "func parseTTL", "grade": 2, "reason": "parseTTL is the one non-trivial value parser Load delegates to.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"},
+        {"path": "config/loader.go", "start_line": 11, "end_line": 24, "anchor": "type Config struct", "grade": 1, "reason": "The parsed result, not the parsing.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    },
+    {
+      "id": "fx-10",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "holdout",
+      "query": "graphql schema resolver",
+      "judgements": [
+        {"path": "doc.go", "start_line": 1, "end_line": 44, "anchor": "package fixture", "grade": 0, "reason": "Negative example: the package documentation mentions no GraphQL; surfacing it is a false positive.", "annotator": "claude-delegate (SW-258 build)", "reviewer": "orchestrator"}
+      ]
+    }
+  ]
+}

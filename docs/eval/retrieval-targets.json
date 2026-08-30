@@ -1,0 +1,408 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-30",
+  "immutable_until": "SW-266",
+  "notes": "SW-258 retrieval targets, written ONCE from measured baselines before any fusion exists. Per stratum: the best single-baseline value of every aggregate metric over the DEV split (holdout is never used to set a target), the oracle ceiling the scorer can reach, a fusion_target on the conceptual strata (best + min_delta on the target metric, capped at the ceiling), and the Top-1 no-regression floor on exact_identifier. Immutable until the story named in immutable_until; regenerate only from a report checked in beside it (derived_from names the report and its sha256).",
+  "derived_from": {
+    "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
+    "sha256": "c4023fcfa683d1ce937b8bc9e604563944858cb5ce8cbdc0fa82b2c20a65e43f",
+    "repo": "cobra",
+    "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset": "cobra-v1",
+    "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
+    "candidate_sha": "8f1d1111739e0b86fc513f9b6a58802c5817bb91",
+    "runner_class": "local"
+  },
+  "target_metric": "ndcg@10",
+  "conceptual_strata": [
+    "nl_behaviour",
+    "architecture_flow"
+  ],
+  "fusion_min_delta": 0.1,
+  "split": "dev",
+  "baselines": [
+    "lexical",
+    "hybrid_v1"
+  ],
+  "unavailable_baselines": [
+    {
+      "baseline": "semantic_name_only",
+      "reason": "no embedder configured; run `graphi setup-embedder ...`"
+    }
+  ],
+  "strata": {
+    "ambiguous": {
+      "dev_queries": 4,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "lexical",
+          "value": 0.75
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "hybrid_v1",
+          "value": 1.6666666666666667
+        },
+        "mrr@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.5
+        },
+        "ndcg@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.4493176858951544
+        },
+        "recall@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.4625
+        },
+        "recall@1200tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.4125
+        },
+        "recall@2000tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.4625
+        },
+        "recall@5": {
+          "baseline": "hybrid_v1",
+          "value": 0.3125
+        },
+        "recall@600tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.3125
+        },
+        "top1": {
+          "baseline": "hybrid_v1",
+          "value": 0.25
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 0.8,
+        "top1": 1
+      }
+    },
+    "architecture_flow": {
+      "dev_queries": 5,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "hybrid_v1",
+          "value": 0.6
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "hybrid_v1",
+          "value": 2.3333333333333335
+        },
+        "mrr@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.26666666666666666
+        },
+        "ndcg@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.22862302249679978
+        },
+        "recall@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.35
+        },
+        "recall@1200tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.2833333333333333
+        },
+        "recall@2000tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.35
+        },
+        "recall@5": {
+          "baseline": "hybrid_v1",
+          "value": 0.2833333333333333
+        },
+        "recall@600tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.2833333333333333
+        },
+        "top1": {
+          "baseline": "lexical",
+          "value": 0
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 1,
+        "top1": 1
+      },
+      "fusion_target": {
+        "metric": "ndcg@10",
+        "best_baseline": "hybrid_v1",
+        "best_value": 0.22862302249679978,
+        "min_delta": 0.1,
+        "must_reach": 0.32862302249679975
+      }
+    },
+    "config_docs": {
+      "dev_queries": 5,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "hybrid_v1",
+          "value": 0.8
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "hybrid_v1",
+          "value": 1.25
+        },
+        "mrr@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.7
+        },
+        "ndcg@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.41117404924150963
+        },
+        "recall@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.36666666666666664
+        },
+        "recall@1200tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.31666666666666665
+        },
+        "recall@2000tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.36666666666666664
+        },
+        "recall@5": {
+          "baseline": "hybrid_v1",
+          "value": 0.26666666666666666
+        },
+        "recall@600tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.26666666666666666
+        },
+        "top1": {
+          "baseline": "hybrid_v1",
+          "value": 0.6
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 0.7333333333333333,
+        "top1": 1
+      }
+    },
+    "exact_identifier": {
+      "dev_queries": 4,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "hybrid_v1",
+          "value": 1.25
+        },
+        "mrr@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.875
+        },
+        "ndcg@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.7003201168888918
+        },
+        "recall@10": {
+          "baseline": "lexical",
+          "value": 0.6666666666666666
+        },
+        "recall@1200tok": {
+          "baseline": "lexical",
+          "value": 0.6666666666666666
+        },
+        "recall@2000tok": {
+          "baseline": "lexical",
+          "value": 0.6666666666666666
+        },
+        "recall@5": {
+          "baseline": "lexical",
+          "value": 0.5833333333333333
+        },
+        "recall@600tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.5833333333333333
+        },
+        "top1": {
+          "baseline": "lexical",
+          "value": 0.75
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 1,
+        "top1": 1
+      },
+      "no_regression": {
+        "metric": "top1",
+        "baseline": "lexical",
+        "floor": 0.75
+      }
+    },
+    "exact_path": {
+      "dev_queries": 3,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "mrr@10": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "ndcg@10": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "recall@10": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "recall@1200tok": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "recall@2000tok": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "recall@5": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "recall@600tok": {
+          "baseline": "lexical",
+          "value": 1
+        },
+        "top1": {
+          "baseline": "lexical",
+          "value": 1
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 1,
+        "top1": 1
+      }
+    },
+    "nl_behaviour": {
+      "dev_queries": 6,
+      "best_single_baseline": {
+        "first_relevant_found": {
+          "baseline": "hybrid_v1",
+          "value": 0.5
+        },
+        "first_relevant_rank_mean": {
+          "baseline": "hybrid_v1",
+          "value": 1
+        },
+        "mrr@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.5
+        },
+        "ndcg@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.30582721007823904
+        },
+        "recall@10": {
+          "baseline": "hybrid_v1",
+          "value": 0.27777777777777773
+        },
+        "recall@1200tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.2222222222222222
+        },
+        "recall@2000tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.27777777777777773
+        },
+        "recall@5": {
+          "baseline": "hybrid_v1",
+          "value": 0.2222222222222222
+        },
+        "recall@600tok": {
+          "baseline": "hybrid_v1",
+          "value": 0.2222222222222222
+        },
+        "top1": {
+          "baseline": "hybrid_v1",
+          "value": 0.5
+        }
+      },
+      "oracle_ceiling": {
+        "first_relevant_found": 1,
+        "first_relevant_rank_mean": 1,
+        "mrr@10": 1,
+        "ndcg@10": 1,
+        "recall@10": 1,
+        "recall@1200tok": 1,
+        "recall@2000tok": 1,
+        "recall@5": 1,
+        "recall@600tok": 0.8472222222222222,
+        "top1": 1
+      },
+      "fusion_target": {
+        "metric": "ndcg@10",
+        "best_baseline": "hybrid_v1",
+        "best_value": 0.30582721007823904,
+        "min_delta": 0.1,
+        "must_reach": 0.4058272100782391
+      }
+    },
+    "no_hit": {
+      "dev_queries": 3,
+      "best_single_baseline": {
+        "negative_hit_rate@5": {
+          "baseline": "lexical",
+          "value": 0
+        }
+      },
+      "oracle_ceiling": {
+        "negative_hit_rate@5": 0
+      }
+    }
+  }
+}
