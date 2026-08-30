@@ -68,7 +68,7 @@ type SourceSpan struct {
 // known") is treated as unverifiable: a predecessor whose only same-line
 // successor has column 0 cannot determine where the successor begins, so
 // it emits no window. The sort key still uses line then column then ID; the
-// column-0 successor sorts BEFORE known columns, but the bounds loop skips
+// column-0 successor sorts AFTER known columns, and the bounds loop skips
 // it (column <= n.Column() for any non-zero n) or treats it as unverifiable
 // (column 0 falls into the no-known-column branch). The two-line boundary
 // check (`off` lies between the line's start and the line's end) closes

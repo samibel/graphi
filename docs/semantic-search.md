@@ -115,7 +115,9 @@ Span methods:
 
 Excluded from documents (counted by reason, never embedded as a name-only stand-in):
 paths matching the shared vendor/generated classification (`engine/classify.IsGeneratedPath`
-— the one classifier), and `file`, `package` and `external` artefact nodes.
+— the one classifier), `file`, `package` and `external` artefact nodes, and nodes for which no
+span could be established (`no_span`) — the fail-closed absence above means such a node gets no
+document and therefore no vector, rather than a guessed window.
 
 ## Safety guarantees that hold regardless of configuration
 

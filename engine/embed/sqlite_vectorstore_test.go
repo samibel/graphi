@@ -186,9 +186,10 @@ func TestSQLiteVectorTable_DeleteExceptReplaceSet(t *testing.T) {
 // The fixture seeds 40,000 rows for the active embedder and passes a keep
 // set of 40,000 ids — both numbers are well above the variable cap. The
 // assertion: every row survives (the keep set covers every seeded row), the
-// table is not half-pruned (the transaction made the prune atomic), and
-// nothing outside the embedder scope was touched (the other-embedder row
-// from the companion scope survives).
+// table is not half-pruned (the transaction made the prune atomic).
+// Cross-embedder inertness is covered separately by
+// TestGenerateAndPersist_ZeroNodesPrunesScope; this fixture seeds one
+// embedder only.
 func TestSQLiteVectorTable_DeleteExceptAboveVariableLimit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("large-fixture test")
@@ -256,8 +257,8 @@ func TestSQLiteVectorTable_DeleteExceptAboveVariableLimit(t *testing.T) {
 
 	// The reverse case: keep is empty (the bounded prune must ALSO handle
 	// >cap-sized scopes when the contract is "delete everything in scope").
-	// We seed again (the keep path above left everything intact), then ask
-	// DeleteExcept to drop every row.
+	// The rows survive from the previous phase (the keep path left everything
+	// intact), so no re-seed is needed; we ask DeleteExcept to drop all but ten.
 	if err := table.DeleteExcept(ctx, nil); err != nil {
 		t.Fatalf("DeleteExcept(nil) on large scope: %v", err)
 	}

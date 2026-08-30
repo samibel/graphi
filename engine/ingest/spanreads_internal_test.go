@@ -211,7 +211,9 @@ func TestIngestAll_SpansCauseNoExtraFileReads(t *testing.T) {
 			t.Fatalf("IngestAll wrapped: %v", err)
 		}
 		wrappedBaseline := counter.Load() - wrappedBefore
-		installRootReadsHook(func() { counter.Add(1) }) // restore the simple hook for the next sub-test
+		// Restore the simple counting hook so the assertions below read a hook
+		// that counts once per read; the sub-test's own t.Cleanup nils it after.
+		installRootReadsHook(func() { counter.Add(1) })
 		if wrappedBaseline == readsWithout {
 			t.Fatalf("wrapped baseline == unwrapped baseline (%d): the kill is silent, the parent assertion is vacuous", wrappedBaseline)
 		}
