@@ -104,7 +104,7 @@ func TestGenerateAndPersist_DoubleIndexEquality(t *testing.T) {
 		reg.Register(mock)
 		ix := embed.NewIndex()
 		table := embed.NewMemVectorTable()
-		res, err := embed.GenerateAndPersist(ctx, reg, nodes, ix, table)
+		res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V1DocumentSource{}, ix, table)
 		if err != nil {
 			t.Fatalf("GenerateAndPersist: %v", err)
 		}
@@ -168,7 +168,7 @@ func TestGenerateAndPersist_ReloadMatchesInMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open table: %v", err)
 	}
-	if _, err := embed.GenerateAndPersist(ctx, reg, nodes, liveIndex, table); err != nil {
+	if _, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V1DocumentSource{}, liveIndex, table); err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	_ = table.Close()
@@ -208,7 +208,7 @@ func TestGenerateAndPersist_GracefulSkip(t *testing.T) {
 	ctx := context.Background()
 	nodes := mustNodes(t)
 	table := embed.NewMemVectorTable()
-	res, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), nodes, embed.NewIndex(), table)
+	res, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), nodes, embed.V1DocumentSource{}, embed.NewIndex(), table)
 	if err != nil {
 		t.Fatalf("GenerateAndPersist error on graceful-skip path: %v", err)
 	}

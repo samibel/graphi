@@ -74,6 +74,14 @@ type Reproducible struct {
 	RelevantMinGrade      int    `json:"relevant_min_grade"`
 	MatchingRule          string `json:"matching_rule"`
 
+	// SpanMethodShare (SW-260 AC-9) is the fraction of SemanticDocument v2
+	// documents per span method — keys `ast` (exact parser span) and `window`
+	// (the bounded fallback) — over the indexed files, so the fallback share is
+	// visible in every eval run. Computed by the runner from the same parsers
+	// and document builder `graphi index --semantic` uses (engine/embed);
+	// omitted only by a report written before the field existed.
+	SpanMethodShare map[string]float64 `json:"span_method_share,omitempty"`
+
 	Baselines []BaselineResult `json:"baselines"`
 }
 

@@ -63,7 +63,7 @@ func TestSemanticSearch_IndexPersistReloadE2E(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open table: %v", err)
 	}
-	if _, err := embed.GenerateAndPersist(ctx, genReg, nodes, embed.NewIndex(), table); err != nil {
+	if _, err := embed.GenerateAndPersist(ctx, genReg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table); err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	_ = table.Close()

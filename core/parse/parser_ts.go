@@ -97,7 +97,7 @@ func (p *TSParser) Parse(ctx context.Context, filename string, src []byte) (res 
 	if extractor == nil {
 		extractor = &tsSymbolExtractor{lang: p.lang}
 	}
-	nodes, edges, pending, xerr := extractor.Extract(filename, root)
+	nodes, edges, pending, spans, xerr := extractWithOptionalSpans(extractor, filename, root)
 	if xerr != nil {
 		return nil, fmt.Errorf("parse: typescript extraction in %q: %w", filename, xerr)
 	}
@@ -124,6 +124,7 @@ func (p *TSParser) Parse(ctx context.Context, filename string, src []byte) (res 
 		PendingRefs: pending,
 		Imports:     imports,
 		References:  refs,
+		Spans:       spans,
 	}, nil
 }
 
@@ -157,9 +158,21 @@ func (*tsSymbolExtractor) Language() string { return "typescript" }
 // happens here (so MapTreeSitter stays a pure leaf), no I/O, and no fabricated
 // endpoints — any use it cannot prove from a single file is recorded as a PendingRef.
 func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []model.Edge, []PendingRef, error) {
+	nodes, edges, pending, _, err := e.ExtractWithSpans(filename, root)
+	return nodes, edges, pending, err
+}
+
+// ExtractWithSpans implements SpanExtractor (SW-260 AC-2): Extract plus the
+// exact CST declaration spans — the tree-sitter node bounds widened to the
+// enclosing `export_statement` and to any attached decorators / adjacent
+// leading doc comment (see tsDeclSpan). TypeScript is the tree-sitter adapter
+// of record because its extractor already emits decorated declarations as
+// nodes (Python's does not: a `decorated_definition` wraps them and is never
+// descended into, so decorator inclusion would be unprovable there).
+func (e *tsSymbolExtractor) ExtractWithSpans(filename string, root any) ([]model.Node, []model.Edge, []PendingRef, map[model.NodeId]SourceSpan, error) {
 	t, ok := root.(*tsAST)
 	if !ok || t == nil || t.root == nil {
-		return nil, nil, nil, fmt.Errorf("parse: typescript extractor: expected non-nil *tsAST root for %q, got %T", filename, root)
+		return nil, nil, nil, nil, fmt.Errorf("parse: typescript extractor: expected non-nil *tsAST root for %q, got %T", filename, root)
 	}
 
 	w := &tsWalk{
@@ -169,6 +182,7 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 		defKind:  map[string]string{},
 		defPos:   map[string]TSPoint{},
 		defMeta:  map[string]model.NodeMeta{},
+		defSpan:  map[string]SourceSpan{},
 		funcs:    map[string]struct{}{},
 		edgeSeen: map[string]struct{}{},
 		pendSeen: map[string]struct{}{},
@@ -178,7 +192,7 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 	// recursive collectors descend (skips the file with structured, source-free
 	// provenance if nesting exceeds the bound).
 	if derr := guardCSTDepth(t.root, t.lang, maxParseDepth(), filename, "typescript"); derr != nil {
-		return nil, nil, nil, derr
+		return nil, nil, nil, nil, derr
 	}
 
 	// Pass 1: discover every top-level definition (so forward references resolve).
@@ -217,9 +231,20 @@ func (e *tsSymbolExtractor) Extract(filename string, root any) ([]model.Node, []
 
 	nodes, edges, err := MapTreeSitter(filename, "typescript", nodeSpecs, w.edgeSpecs, nil)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	return nodes, edges, w.pending, nil
+	// Span sidecar: match the minted nodes back to their recorded declaration
+	// extents by qualified name. The file node (no declaration) gets none.
+	spans := make(map[model.NodeId]SourceSpan, len(w.defSpan))
+	for _, n := range nodes {
+		if n.Kind() == KindFile {
+			continue
+		}
+		if sp, ok := w.defSpan[strings.TrimPrefix(n.QualifiedName(), w.pkg+".")]; ok {
+			spans[n.ID()] = sp
+		}
+	}
+	return nodes, edges, w.pending, spans, nil
 }
 
 // tsWalk accumulates the definition tables and the resolved edge/pending split for a
@@ -233,6 +258,7 @@ type tsWalk struct {
 	defKind  map[string]string         // bareName -> Kind (first binding wins)
 	defPos   map[string]TSPoint        // bareName -> definition position
 	defMeta  map[string]model.NodeMeta // bareName -> non-identity meta (first binding wins)
+	defSpan  map[string]SourceSpan     // bareName -> non-identity declaration span (first binding wins)
 	defOrder []string                  // discovery order
 	funcs    map[string]struct{}       // bare names that are callable (function/method)
 
@@ -242,7 +268,10 @@ type tsWalk struct {
 	pendSeen  map[string]struct{}
 }
 
-func (w *tsWalk) addDef(bare, kind string, pos TSPoint) {
+// addDef records a top-level definition (first binding wins). decl is the CST
+// node of the declaration statement the name belongs to; its span is recorded
+// alongside (SW-260) and never touches identity or ordering.
+func (w *tsWalk) addDef(bare, kind string, pos TSPoint, decl *gts.Node) {
 	if bare == "" {
 		return
 	}
@@ -254,6 +283,51 @@ func (w *tsWalk) addDef(bare, kind string, pos TSPoint) {
 	w.defOrder = append(w.defOrder, bare)
 	if kind == KindFunction || kind == KindMethod {
 		w.funcs[bare] = struct{}{}
+	}
+	if decl != nil {
+		w.defSpan[bare] = tsDeclSpan(w.lang, decl)
+	}
+}
+
+// tsDeclSpan derives the exact ast span of a declaration from its CST node:
+//
+//   - a declaration wrapped in an `export_statement` spans the whole statement
+//     (the `export` keyword and any decorator that precedes it as a sibling
+//     inside the statement — `@Component() export class A {}`);
+//   - decorators that precede the declaration as SIBLINGS (method decorators in
+//     a class body) are pulled into the span; decorators that are CHILDREN of
+//     the declaration (`export @Dec class B {}`, `@Injectable() class C {}`) are
+//     already inside its bounds;
+//   - a leading `comment` sibling is attached only when it ends on the line
+//     directly above the span start (a blank line detaches it).
+//
+// Rows are tree-sitter 0-based and rendered 1-based like Node.Line; EndByte is
+// tree-sitter's exclusive end.
+func tsDeclSpan(lang *gts.Language, decl *gts.Node) SourceSpan {
+	outer := decl
+	if p := decl.Parent(); p != nil && p.Type(lang) == "export_statement" {
+		outer = p
+	}
+	start, startRow := outer.StartByte(), outer.StartPoint().Row
+	for prev := outer.PrevSibling(); prev != nil; prev = prev.PrevSibling() {
+		switch prev.Type(lang) {
+		case "decorator":
+			start, startRow = prev.StartByte(), prev.StartPoint().Row
+			continue
+		case "comment":
+			if prev.EndPoint().Row+1 == startRow {
+				start, startRow = prev.StartByte(), prev.StartPoint().Row
+				continue
+			}
+		}
+		break
+	}
+	return SourceSpan{
+		StartByte: int(start),
+		EndByte:   int(outer.EndByte()),
+		StartLine: int(startRow) + 1,
+		EndLine:   int(outer.EndPoint().Row) + 1,
+		Method:    SpanMethodAST,
 	}
 }
 
@@ -308,7 +382,7 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 		case "function_declaration":
 			decoNames, hasDeco = nil, false // reset: a decorator never precedes a function
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindFunction, point(name))
+				w.addDef(name.Text(w.src), KindFunction, point(name), c)
 			}
 		case "class_declaration":
 			// Class decorators (Angular @Component, NestJS @Controller, …) are
@@ -320,7 +394,7 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 			decoNames, hasDeco = nil, false
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
 				bare := name.Text(w.src)
-				w.addDef(bare, KindType, point(name))
+				w.addDef(bare, KindType, point(name), c)
 				w.setDefMeta(bare, tsEntryMeta(names, decorated, false))
 			}
 			// Recurse into the class body to pick up methods.
@@ -330,7 +404,7 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 		case "interface_declaration", "type_alias_declaration", "enum_declaration":
 			decoNames, hasDeco = nil, false
 			if name := c.ChildByFieldName("name", w.lang); name != nil {
-				w.addDef(name.Text(w.src), KindType, point(name))
+				w.addDef(name.Text(w.src), KindType, point(name), c)
 			}
 		case "method_definition":
 			names, decorated := decoNames, hasDeco
@@ -338,7 +412,7 @@ func (w *tsWalk) walkDefs(n *gts.Node, inClass bool) {
 			if inClass {
 				if name := c.ChildByFieldName("name", w.lang); name != nil {
 					bare := name.Text(w.src)
-					w.addDef(bare, KindMethod, point(name))
+					w.addDef(bare, KindMethod, point(name), c)
 					// WP-14 follow-up: `override` member (invoked through its supertype)
 					// and a decorated member (NestJS @Get, framework-invoked) are both
 					// entry points — exempt from dead_symbol.
@@ -460,7 +534,8 @@ func (w *tsWalk) collectDeclarators(decl *gts.Node, kind string) {
 		if name == nil || name.Type(w.lang) != "identifier" {
 			continue // destructuring patterns are out of scope this slice
 		}
-		w.addDef(name.Text(w.src), kind, point(name))
+		// Declarators of one statement (`const a = 1, b = 2`) share its span.
+		w.addDef(name.Text(w.src), kind, point(name), decl)
 	}
 }
 

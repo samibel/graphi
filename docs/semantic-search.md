@@ -57,6 +57,49 @@ dial** — and returns cosine-ranked hits. With **no** embedder configured,
 `graphi index --semantic` reports `unavailable — no embedder configured` (no error,
 no network) and lexical indexing/search is unaffected.
 
+## Document schema (v2)
+
+`graphi index --semantic` no longer embeds the name-only v1 text (`Kind + " " +
+QualifiedName`, `engine/embed.NodeText`, now deprecated and kept only for the SW-261
+migration comparison). It embeds one **`SemanticDocument` v2** per symbol node
+(`engine/embed.BuildDocument`), cut from the parser's **`SourceSpan`** — a non-identity
+sidecar on `core/parse.ParseResult.Spans` keyed by node id. Node identity, the graph and
+every default-path byte are unchanged; **only the `--semantic` path consumes spans.**
+
+Fields: `document_id` (xxhash64 over `node_id + text_hash + document_schema`), `node_id`,
+`language`, `kind`, `qualified_name`, `path`, `start_byte`/`end_byte` (0-based, end
+exclusive), `start_line`/`end_line` (1-based, inclusive), `span_method`, `text_hash`
+(xxhash64 of `text`), `document_schema` (`"v2"`), `text`, `truncated`.
+
+`text` is assembled in a fixed order so identical source yields byte-identical documents:
+
+1. `kind qualified_name`
+2. the path split on `/` and joined by spaces (`internal greet hello.go`)
+3. the node's annotations (decorator/annotation names from node metadata), when any
+4. the body: the span's bytes — the full declaration **including its leading doc comment
+   and attached decorators**, trailing whitespace trimmed
+
+Bounds: `MaxDocumentTokens` = 512 tokens of the active embedder's tokenizer when it
+declares one (`embed.DocumentTokenizer`), else whitespace tokens; then a hard
+`MaxDocumentBytes` = 16 KiB cap. A cut sets `truncated: true`; a large declaration stays
+**one** document (multi-chunk is backlog until an eval gap is measured).
+
+Span methods:
+
+- `ast` — exact. Go (`go/ast`: `Doc.Pos()` … `End()`; a multi-spec `var (...)`/`const (...)`
+  block yields per-spec spans with each spec's own doc) and TypeScript (tree-sitter node
+  bounds widened to the enclosing `export_statement`, preceding sibling decorators and an
+  adjacent leading doc comment).
+- `window` — the fallback for every other parser: from the node's line, at most
+  `SpanWindowMaxLines` (40) lines, clipped at the next declaration's start line and at end
+  of file. It is a labelled heuristic, never presented as an AST fact; its share is
+  reported per run (`span_method_share` in the SW-258 retrieval report and on the
+  `graphi index --semantic` summary line).
+
+Excluded from documents (counted by reason, never embedded as a name-only stand-in):
+paths matching the shared vendor/generated classification (`engine/classify.IsGeneratedPath`
+— the one classifier), and `file`, `package` and `external` artefact nodes.
+
 ## Safety guarantees that hold regardless of configuration
 
 - **Ollama is loopback-only and fail-closed.** A non-loopback host is **rejected at
