@@ -169,12 +169,17 @@ Hit fields under repository control (`path`, `node_id`, `qualified_name`) are bo
 `trust.MaxPathLength` (240 bytes) with a visible `…[truncated]` marker before they enter the report
 or the raw files (`context/standards.md`); scoring runs over the canonical value.
 
-Run directory (`-export-raw`): `run.json` (index with per-file sha256), `report.json`,
-`dataset.json` (the exact judged bytes), `raw/hits-<baseline>.json` (every ranking, nothing
+Run directory (`-export-raw`): `run.json` (index with per-file sha256),
+`<dataset-id>-report.json` (the single published report), `dataset.json` (the exact judged bytes),
+`raw/hits-<baseline>.json` (every ranking, nothing
 derived), `raw/latency-<baseline>.json` (every timed execution + the single-sample measures
 `index_ms` / `peak_rss_mb` / `vector_sidecar_bytes` with their status and reason). An unavailable
 baseline's raw records say `collected: false` and carry the typed `reason` — the only thing that can
 justify `unavailable` in the report.
+
+`run.json.report` is authoritative. New exports use the dataset-qualified name so the AC gate and
+`-aggregate` read the same bytes without retaining a byte-identical `report.json` alias. The reader
+still accepts historical directories whose index names `report.json`.
 
 Every raw file is read **twice-identified**: `run.json` says which series and baseline a file is,
 and the file says the same about itself (`format_version`, `harness_version`, `series`, `baseline`,

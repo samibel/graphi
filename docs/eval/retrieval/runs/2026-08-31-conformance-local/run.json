@@ -5,7 +5,7 @@
   "date": "2026-08-31",
   "runner_class": "local",
   "repo": "cobra",
-  "report": "report.json",
+  "report": "cobra-v1-report.json",
   "report_sha256": "5a0e16d2d64ac08891acd1c93acae3fe445a47d24dfeb38d41b7afb3c4d64ddc",
   "dataset": "dataset.json",
   "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
@@ -131,5 +131,5 @@
     "cpu_count": 12,
     "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
   },
-  "notes": "SW-258 retrieval-eval run directory: report.json is the published artifact, dataset.json the exact judged bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
+  "notes": "SW-263 retrieval-eval run directory: the dataset-qualified report named by this index is the single published artifact, dataset.json is the exact judged bytes it was scored against, raw/hits-<baseline>.json holds every ranking (the scorer's input, nothing derived), and raw/latency-<baseline>.json holds every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` verifies the indexed report and recomputes every published statistic from these, exiting non-zero on any discrepancy."
 }

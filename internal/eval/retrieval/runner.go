@@ -289,11 +289,11 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 	deps := resolve.Deps{Query: query.New(idx.store), Search: idx.search}
 	for _, b := range o.Baselines {
 		fmt.Fprintf(o.Log, "retrieval-eval: baseline %s over %d queries\n", b, len(ds.Queries))
-		exec, method, err := executorFor(b, deps, idx, ds, minGrade)
+		exec, err := executorFor(b, deps, idx, ds, minGrade)
 		if err != nil {
 			return nil, err
 		}
-		res, hits, lat, err := runBaseline(ctx, b, method, exec, ds, o.Repeats, tokens)
+		res, hits, lat, err := runBaseline(ctx, b, exec, ds, o.Repeats, tokens)
 		if err != nil {
 			return nil, err
 		}
@@ -503,16 +503,21 @@ type rawHit struct {
 // cannot run on this build; it ends the baseline rather than yielding zeros.
 type executor func(ctx context.Context, q Query) (hits []rawHit, unavailable string, err error)
 
-type resultRetriever interface {
-	Retrieve(context.Context, retrieval.Request) (retrieval.Result, error)
+// baselineExecutor keeps a baseline's execution and its audit label together.
+// Retrieval baselines learn their weights hash from the first real result,
+// avoiding a separate probe query that would warm caches and contaminate the
+// latency evidence. Static baselines use fixedExecutor.
+type baselineExecutor struct {
+	run    executor
+	method func() string
 }
 
-func retrievalMethod(r resultRetriever, label string, mode retrieval.Mode) (string, error) {
-	probe, err := r.Retrieve(context.Background(), retrieval.Request{Limit: 1, Mode: mode})
-	if err != nil {
-		return "", fmt.Errorf("retrieval: inspect %s method: %w", label, err)
-	}
-	return "engine/retrieval (" + label + ", weights " + probe.Summary.WeightsHash + ")", nil
+func fixedExecutor(run executor, method string) baselineExecutor {
+	return baselineExecutor{run: run, method: func() string { return method }}
+}
+
+func retrievalMethod(label string, summary retrieval.Summary) string {
+	return "engine/retrieval (" + label + ", weights " + summary.WeightsHash + ")"
 }
 
 // semanticReadyReason returns the typed reason when the SW-263 fusion
@@ -630,10 +635,10 @@ func atoiStrict(s string) (int, bool) {
 	return n, true
 }
 
-func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrade int) (executor, string, error) {
+func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrade int) (baselineExecutor, error) {
 	switch b {
 	case BaselineLexical:
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			resp, err := idx.search.Search(ctx, q.Text, TopK)
 			if err != nil {
 				return nil, "", err
@@ -643,9 +648,9 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 				out = append(out, rawHit{path: m.SourcePath, line: m.Line, nodeID: m.NodeID, kind: m.Kind, qn: m.QualifiedName})
 			}
 			return out, "", nil
-		}, "engine/search.Service.Search (sqlite fts5 bm25)", nil
+		}, "engine/search.Service.Search (sqlite fts5 bm25)"), nil
 	case BaselineHybridV1:
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := hybridsearch.Search(ctx, hybridsearch.Params{Query: q.Text, MaxItems: TopK, Deps: deps})
 			if err != nil {
 				return nil, "", err
@@ -673,9 +678,9 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 				out = append(out, h)
 			}
 			return out, "", nil
-		}, hybridsearch.MethodVersion + " (engine/agenttools/hybridsearch, weights " + hybridsearch.WeightsHash() + ")", nil
+		}, hybridsearch.MethodVersion+" (engine/agenttools/hybridsearch, weights "+hybridsearch.WeightsHash()+")"), nil
 	case BaselineSemanticNameOnly:
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			resp, err := idx.search.SemanticSearch(ctx, q.Text, TopK)
 			if err != nil {
 				return nil, "", err
@@ -695,7 +700,7 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 				out = append(out, rawHit{path: h.SourcePath, line: h.Line, nodeID: h.NodeID, kind: h.Kind, qn: h.QualifiedName})
 			}
 			return out, "", nil
-		}, "engine/search.Service.SemanticSearch (name-only documents)", nil
+		}, "engine/search.Service.SemanticSearch (name-only documents)"), nil
 	case BaselineChunkOnly:
 		// Wire a non-nil GraphReader over the store so semantic-only rows
 		// in any ModeAuto baseline receive the bounded degree signal
@@ -704,54 +709,48 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 		// graph reader is dormant here; the wiring is uniform across the
 		// three retrieval ablations.
 		r := retrieval.New(deps, idx.search, idx.store)
-		method, err := retrievalMethod(r, "chunk-only, ModeLexicalOnly", retrieval.ModeLexicalOnly)
-		if err != nil {
-			return nil, "", err
-		}
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		method := "engine/retrieval (chunk-only, ModeLexicalOnly)"
+		return baselineExecutor{run: func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeLexicalOnly})
 			if err != nil {
 				return nil, "", err
 			}
+			method = retrievalMethod("chunk-only, ModeLexicalOnly", res.Summary)
 			return retrievalToRaws(ctx, idx, res), "", nil
-		}, method, nil
+		}, method: func() string { return method }}, nil
 	case BaselineFusion:
 		if reason := semanticReadyReason(idx); reason != "" {
 			// The semantic path is not active: this baseline reports
 			// unavailable with the typed reason rather than producing a
 			// silent lexical-only ranking that masquerades as fusion.
-			return unavailableExecutor(reason), "engine/retrieval (fusion, ModeFusionNoGraph) — requires configured embedder", nil
+			return fixedExecutor(unavailableExecutor(reason), "engine/retrieval (fusion, ModeFusionNoGraph) — requires configured embedder"), nil
 		}
 		r := retrieval.New(deps, idx.search, idx.store)
-		method, err := retrievalMethod(r, "fusion, ModeFusionNoGraph", retrieval.ModeFusionNoGraph)
-		if err != nil {
-			return nil, "", err
-		}
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		method := "engine/retrieval (fusion, ModeFusionNoGraph)"
+		return baselineExecutor{run: func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeFusionNoGraph})
 			if err != nil {
 				return nil, "", err
 			}
+			method = retrievalMethod("fusion, ModeFusionNoGraph", res.Summary)
 			return retrievalToRaws(ctx, idx, res), "", nil
-		}, method, nil
+		}, method: func() string { return method }}, nil
 	case BaselineFusionGraph:
 		if reason := semanticReadyReason(idx); reason != "" {
-			return unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeAuto) — requires configured embedder", nil
+			return fixedExecutor(unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeAuto) — requires configured embedder"), nil
 		}
 		r := retrieval.New(deps, idx.search, idx.store)
-		method, err := retrievalMethod(r, "fusion+graph, ModeAuto", retrieval.ModeAuto)
-		if err != nil {
-			return nil, "", err
-		}
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		method := "engine/retrieval (fusion+graph, ModeAuto)"
+		return baselineExecutor{run: func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeAuto})
 			if err != nil {
 				return nil, "", err
 			}
+			method = retrievalMethod("fusion+graph, ModeAuto", res.Summary)
 			return retrievalToRaws(ctx, idx, res), "", nil
-		}, method, nil
+		}, method: func() string { return method }}, nil
 	case BaselineOracle:
-		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			spans := append([]Judgement(nil), q.Judgements...)
 			sort.SliceStable(spans, func(i, j int) bool {
 				if spans[i].Grade != spans[j].Grade {
@@ -771,16 +770,16 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 					qn: fmt.Sprintf("%s:%d-%d", s.Path, s.StartLine, s.EndLine)})
 			}
 			return out, "", nil
-		}, "judged spans with grade >= 1 ranked by grade (the scorer's ceiling)", nil
+		}, "judged spans with grade >= 1 ranked by grade (the scorer's ceiling)"), nil
 	}
-	return nil, "", fmt.Errorf("retrieval: unknown baseline %q", b)
+	return baselineExecutor{}, fmt.Errorf("retrieval: unknown baseline %q", b)
 }
 
 // runBaseline executes every query Repeats times, checks the ranking is the
 // same every time, scores it, and aggregates. Scoring runs over the canonical
 // hits; the report and the raw record publish the bounded ones (boundHit).
-func runBaseline(ctx context.Context, b Baseline, method string, exec executor, ds *Dataset, repeats int, tokens *tokenCounter) (BaselineResult, RawHitSet, RawLatencySet, error) {
-	res := BaselineResult{Name: b, Status: BaselineStatusOK, Method: method, Queries: []QueryResult{},
+func runBaseline(ctx context.Context, b Baseline, exec baselineExecutor, ds *Dataset, repeats int, tokens *tokenCounter) (BaselineResult, RawHitSet, RawLatencySet, error) {
+	res := BaselineResult{Name: b, Status: BaselineStatusOK, Method: exec.method(), Queries: []QueryResult{},
 		Strata: map[string]AggregateMetrics{}, Splits: map[string]AggregateMetrics{}}
 	hitSet := RawHitSet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesHits, Baseline: b, Collected: true, Queries: []RawQueryHits{}}
 	latSet := RawLatencySet{FormatVersion: FormatVersion, HarnessVersion: HarnessVersion, Series: RawSeriesLatency, Baseline: b, Collected: true, Queries: []RawQueryLatency{}}
@@ -793,13 +792,13 @@ func runBaseline(ctx context.Context, b Baseline, method string, exec executor, 
 		)
 		for i := 0; i < repeats; i++ {
 			start := time.Now()
-			hits, unavailable, err := exec(ctx, q)
+			hits, unavailable, err := exec.run(ctx, q)
 			elapsed := time.Since(start)
 			if err != nil {
 				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: %w", b, q.ID, err)
 			}
 			if unavailable != "" {
-				return unavailableBaseline(b, method, unavailable), hitSet, latSet, nil
+				return unavailableBaseline(b, exec.method(), unavailable), hitSet, latSet, nil
 			}
 			if i > 0 && !sameRanking(ranking, hits) {
 				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s: ranking differs between executions %d and %d", b, q.ID, i, i+1)
@@ -826,6 +825,7 @@ func runBaseline(ctx context.Context, b Baseline, method string, exec executor, 
 		latSet.Queries = append(latSet.Queries, RawQueryLatency{ID: q.ID, SamplesUS: samples})
 		latSet.Samples += len(samples)
 	}
+	res.Method = exec.method()
 	res.Overall, res.Strata, res.Splits = AggregateAll(res.Queries, TokenBudgets)
 	return res, hitSet, latSet, nil
 }

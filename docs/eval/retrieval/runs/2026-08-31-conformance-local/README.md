@@ -1,5 +1,12 @@
 # AC-9 conformance re-run — `cobra` @ `a0a6ae02…` (2026-08-31, conformance local)
 
+> **Evidence integrity: INVALID until this directory is regenerated.** The indexed report is now
+> readable, but `go run ./cmd/retrieval-eval -aggregate
+> docs/eval/retrieval/runs/2026-08-31-conformance-local` currently reports 705 metrics checked,
+> 680 reproduced and 25 performance discrepancies. `TestAC9Evidence_RoundTripsFromRaw` pins that
+> failure closed. Do not cite this directory as reproducible evidence until the command below
+> completes and the aggregate reports 705 reproduced, 0 discrepant and 0 unknown.
+>
 > **Status: AC-9 STILL MISSES on the conceptual strata (per the SW-263 reviewer's expectation).
 > Per the conformance fix pass the implementation now conforms to AC-1..AC-8; AC-9 is a score,
 > not a conformance criterion. The headline gate against `docs/eval/retrieval-targets.json`
@@ -276,3 +283,23 @@ older run directories are not mistaken for a same-harness before/after.
   GeneratedPenalty=-25).
 - **Harness version:** `retrieval-eval/2` (the SW-263 review bumped it from `/1`; the
   `/1`-shaped report is refused as a different method).
+
+## Regenerating this evidence
+
+Run from the graphi repository with the pinned corpus already present and unmodified at
+`$HOME/.cache/graphi/corpus/cobra`:
+
+```bash
+GOFLAGS=-buildvcs=false go run ./cmd/retrieval-eval \
+  -manifest corpus/manifest.json -repo cobra \
+  -dataset internal/eval/retrieval/testdata/datasets/cobra-v1.json \
+  -out docs/eval/retrieval/runs/2026-08-31-conformance-local/cobra-v1-report.json \
+  -export-raw docs/eval/retrieval/runs/2026-08-31-conformance-local \
+  -embedder ollama:nomic-embed-text -runner-class local -date 2026-08-31
+
+GOFLAGS=-buildvcs=false go run ./cmd/retrieval-eval \
+  -aggregate docs/eval/retrieval/runs/2026-08-31-conformance-local
+```
+
+The exporter writes only `cobra-v1-report.json`; `run.json.report` names those same bytes. It does
+not retain the historical byte-identical `report.json` alias.

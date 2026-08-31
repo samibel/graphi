@@ -5,7 +5,7 @@
   "repo": "cobra",
   "runner_class": "local",
   "environment": {
-    "generated_at": "2026-08-31T09:27:18Z",
+    "generated_at": "2026-08-31T11:07:37Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
@@ -710,16 +710,16 @@
     {
       "baseline": "lexical",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "lexical",
       "metric": "query_p50_us",
-      "published": "214us",
+      "published": "205us",
       "recomputed": "214us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "lexical",
@@ -731,9 +731,9 @@
     {
       "baseline": "lexical",
       "metric": "peak_rss_mb",
-      "published": "402.40625MB",
+      "published": "366.8125MB",
       "recomputed": "402.40625MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "lexical",
@@ -1410,30 +1410,30 @@
     {
       "baseline": "hybrid_v1",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "query_p50_us",
-      "published": "2234us",
+      "published": "2173us",
       "recomputed": "2234us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "query_p95_us",
-      "published": "4653us",
+      "published": "4629us",
       "recomputed": "4653us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "peak_rss_mb",
-      "published": "404.421875MB",
+      "published": "368.796875MB",
       "recomputed": "404.421875MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "hybrid_v1",
@@ -2110,30 +2110,30 @@
     {
       "baseline": "semantic_name_only",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "query_p50_us",
-      "published": "13901us",
+      "published": "12647us",
       "recomputed": "13901us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "query_p95_us",
-      "published": "20879us",
+      "published": "20632us",
       "recomputed": "20879us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "peak_rss_mb",
-      "published": "404.421875MB",
+      "published": "368.796875MB",
       "recomputed": "404.421875MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "semantic_name_only",
@@ -2824,16 +2824,16 @@
     {
       "baseline": "oracle_upper_bound",
       "metric": "query_p95_us",
-      "published": "4us",
+      "published": "3us",
       "recomputed": "4us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "oracle_upper_bound",
       "metric": "peak_rss_mb",
-      "published": "404.421875MB",
+      "published": "368.796875MB",
       "recomputed": "404.421875MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "oracle_upper_bound",
@@ -3510,30 +3510,30 @@
     {
       "baseline": "chunk_only",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "chunk_only",
       "metric": "query_p50_us",
-      "published": "2401us",
+      "published": "2346us",
       "recomputed": "2401us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "chunk_only",
       "metric": "query_p95_us",
-      "published": "5794us",
+      "published": "5805us",
       "recomputed": "5794us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "chunk_only",
       "metric": "peak_rss_mb",
-      "published": "404.703125MB",
+      "published": "371.640625MB",
       "recomputed": "404.703125MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "chunk_only",
@@ -4210,30 +4210,30 @@
     {
       "baseline": "fusion",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion",
       "metric": "query_p50_us",
-      "published": "15557us",
+      "published": "15337us",
       "recomputed": "15557us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion",
       "metric": "query_p95_us",
-      "published": "23592us",
+      "published": "24792us",
       "recomputed": "23592us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion",
       "metric": "peak_rss_mb",
-      "published": "405MB",
+      "published": "400.84375MB",
       "recomputed": "405MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion",
@@ -4910,30 +4910,30 @@
     {
       "baseline": "fusion+graph",
       "metric": "index_ms",
-      "published": "197ms",
+      "published": "240ms",
       "recomputed": "197ms",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion+graph",
       "metric": "query_p50_us",
-      "published": "16883us",
+      "published": "17564us",
       "recomputed": "16883us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion+graph",
       "metric": "query_p95_us",
-      "published": "23765us",
+      "published": "24638us",
       "recomputed": "23765us",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion+graph",
       "metric": "peak_rss_mb",
-      "published": "406.453125MB",
+      "published": "401.609375MB",
       "recomputed": "406.453125MB",
-      "status": "reproduced"
+      "status": "DISCREPANCY"
     },
     {
       "baseline": "fusion+graph",
@@ -4951,11 +4951,38 @@
     }
   ],
   "metrics_checked": 705,
-  "metrics_reproduced": 705,
-  "metrics_discrepant": 0,
+  "metrics_reproduced": 680,
+  "metrics_discrepant": 25,
   "metrics_unknown": 0,
+  "discrepancies": [
+    "lexical index_ms: published 240ms, recomputed 197ms",
+    "lexical query_p50_us: published 205us, recomputed 214us",
+    "lexical peak_rss_mb: published 366.8125MB, recomputed 402.40625MB",
+    "hybrid_v1 index_ms: published 240ms, recomputed 197ms",
+    "hybrid_v1 query_p50_us: published 2173us, recomputed 2234us",
+    "hybrid_v1 query_p95_us: published 4629us, recomputed 4653us",
+    "hybrid_v1 peak_rss_mb: published 368.796875MB, recomputed 404.421875MB",
+    "semantic_name_only index_ms: published 240ms, recomputed 197ms",
+    "semantic_name_only query_p50_us: published 12647us, recomputed 13901us",
+    "semantic_name_only query_p95_us: published 20632us, recomputed 20879us",
+    "semantic_name_only peak_rss_mb: published 368.796875MB, recomputed 404.421875MB",
+    "oracle_upper_bound query_p95_us: published 3us, recomputed 4us",
+    "oracle_upper_bound peak_rss_mb: published 368.796875MB, recomputed 404.421875MB",
+    "chunk_only index_ms: published 240ms, recomputed 197ms",
+    "chunk_only query_p50_us: published 2346us, recomputed 2401us",
+    "chunk_only query_p95_us: published 5805us, recomputed 5794us",
+    "chunk_only peak_rss_mb: published 371.640625MB, recomputed 404.703125MB",
+    "fusion index_ms: published 240ms, recomputed 197ms",
+    "fusion query_p50_us: published 15337us, recomputed 15557us",
+    "fusion query_p95_us: published 24792us, recomputed 23592us",
+    "fusion peak_rss_mb: published 400.84375MB, recomputed 405MB",
+    "fusion+graph index_ms: published 240ms, recomputed 197ms",
+    "fusion+graph query_p50_us: published 17564us, recomputed 16883us",
+    "fusion+graph query_p95_us: published 24638us, recomputed 23765us",
+    "fusion+graph peak_rss_mb: published 401.609375MB, recomputed 406.453125MB"
+  ],
   "complete": true,
-  "publishable": true,
-  "status": "PASS",
+  "publishable": false,
+  "status": "DISCREPANCY",
   "method": "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, fusion+graph, oracle_upper_bound — seven baselines; the SW-263 review flagged the previous four-baseline framing as stale) and the report's baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that docs/eval/retrieval-targets.json and -budgets.json record in derived_from no longer matches it - that provenance layer, not this aggregate, is what binds a checked-in artifact to the report it came from. For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, with raw/hits-\u003cbaseline\u003e.json and raw/latency-\u003cbaseline\u003e.json: an omitted or extra query on any side is a discrepancy. Every per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; every aggregate through the same Aggregate over the RAW hit set in dataset order (not over the report's query list); every performance block through the same PerformanceFromRaw (nearest-rank PercentileInt64 over the timed executions; index_ms, peak_rss_mb and vector_sidecar_bytes from the record's own measures), each compared EXACTLY, status and reason included. The hit lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did not publish. A baseline may read `unavailable` only when BOTH its raw records say collected: false; then the report's reason, the hit record's reason and the latency record's reason must agree, both records must carry zero samples and an empty query set, and the report's empty query list, UNKNOWN aggregates and UNKNOWN measures are all checked against that; a collected record makes any other status a discrepancy. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN and is never counted as reproduced."
 }
