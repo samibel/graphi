@@ -43,9 +43,16 @@ const ReasonCorrupt = "semantic index corrupt: run `graphi index --semantic`"
 // The state is the SW-261 GenerationStore state; the reason is the
 // user-visible message the typed Unavailable response carries. The
 // mapping is total — every State has a defined reason, including the
-// StateUnset sentinel which returns the unconfigured-embedder reason so a
-// caller that forgot to plumb state never silently serves a missing
-// generation as ready.
+// StateUnset sentinel.
+//
+// StateUnset is NOT a safety net: SemanticSearch treats an unset state as
+// "no state plumbed" and proceeds, so ReasonForState is never consulted on
+// that path. Callers that hold a generation store must plumb the state
+// (the runtime does, in loadSemanticState, including the no-meta-dir case
+// it synthesises as missing). An earlier version of this comment claimed
+// the sentinel prevented a forgotten plumbing from serving a missing
+// generation as ready; it does not, and the review that caught it is the
+// reason the runtime synthesises rather than relying on this.
 func ReasonForState(state embed.State) string {
 	switch state {
 	case embed.StateUnset:

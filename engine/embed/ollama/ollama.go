@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/samibel/graphi/engine/embed"
@@ -50,8 +51,13 @@ func init() {
 type Embedder struct {
 	endpoint string // "host:port", validated loopback
 	model    string
-	dim      int
-	client   *http.Client
+	// dim is discovered from the first successful response and is written by
+	// two paths (ProbeDim and Embed), so it is guarded: embed.Embedder
+	// requires implementations to be safe for concurrent use.
+	dimMu sync.RWMutex
+	dim   int
+
+	client *http.Client
 }
 
 // New constructs an Ollama embedder targeting endpoint (a "host:port", defaulting
@@ -81,9 +87,36 @@ func New(endpoint, model string) (*Embedder, error) {
 // ID implements embed.Embedder.
 func (e *Embedder) ID() string { return Scheme + ":" + e.model }
 
-// Dim implements embed.Embedder. It is the dimensionality observed from the most
-// recent successful Embed; 0 before the first call.
-func (e *Embedder) Dim() int { return e.dim }
+// Dim implements embed.Embedder. It is the dimensionality observed from the
+// most recent successful request; 0 before the first one.
+//
+// The value is guarded because embed.Embedder requires implementations to be
+// safe for concurrent use, and two writers exist: ProbeDim (the pre-fingerprint
+// probe) and Embed (the ordinary path). An earlier revision documented this as
+// "concurrency-safe because requests serialise through the http.Client
+// transport", which was not true of the field itself — the transport serialises
+// nothing about e.dim.
+func (e *Embedder) Dim() int {
+	e.dimMu.RLock()
+	defer e.dimMu.RUnlock()
+	return e.dim
+}
+
+// setDimOnce records the discovered dimension the first time a response
+// reveals it. Later responses of the same size are a no-op; a response of a
+// DIFFERENT size is ignored here rather than silently re-pointing the
+// embedder mid-build — the fingerprint recorded at build start is what the
+// generation is published under, so a mid-flight change must not rewrite it.
+func (e *Embedder) setDimOnce(n int) {
+	if n <= 0 {
+		return
+	}
+	e.dimMu.Lock()
+	defer e.dimMu.Unlock()
+	if e.dim == 0 {
+		e.dim = n
+	}
+}
 
 // DimProbeText is the text the embedder sends to learn its dim before any
 // real work. It is a single ASCII string so the request shape mirrors the
@@ -102,8 +135,8 @@ const DimProbeText = "graphi-dim-probe"
 // so the build fails closed rather than silently fingerprinting with
 // dim=0.
 //
-// The probe is concurrency-safe (Embed's per-call logic is already
-// serialized through the http.Client transport).
+// The probe is safe to call concurrently with Embed: the discovered
+// dimension is guarded by dimMu and recorded once (see setDimOnce).
 func (e *Embedder) ProbeDim(ctx context.Context) error {
 	body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Prompt: DimProbeText})
 	if err != nil {
@@ -129,8 +162,8 @@ func (e *Embedder) ProbeDim(ctx context.Context) error {
 	if len(decoded.Embedding) == 0 {
 		return fmt.Errorf("ollama: probe returned empty embedding")
 	}
-	if e.dim == 0 {
-		e.dim = len(decoded.Embedding)
+	if e.Dim() == 0 {
+		e.setDimOnce(len(decoded.Embedding))
 	}
 	return nil
 }
@@ -183,8 +216,8 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		if len(decoded.Embedding) == 0 {
 			return nil, fmt.Errorf("ollama: empty embedding for input")
 		}
-		if e.dim == 0 {
-			e.dim = len(decoded.Embedding)
+		if e.Dim() == 0 {
+			e.setDimOnce(len(decoded.Embedding))
 		}
 		out = append(out, decoded.Embedding)
 	}

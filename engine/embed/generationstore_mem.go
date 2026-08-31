@@ -218,6 +218,22 @@ func (s *MemGenerationStore) Load(_ context.Context, id GenerationID) ([]Row, er
 // carry-forward). ok=false when the (generation, node id) pair is
 // absent. The vector is defensively copied so a caller cannot mutate
 // the store's row through the returned Row.
+// DimForModel implements GenerationStore over the in-memory active generation,
+// with the same contract as the SQLite adapter: the dimension is returned only
+// when the active generation belongs to modelID.
+func (s *MemGenerationStore) DimForModel(_ context.Context, modelID string) (int, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if modelID == "" || s.active == "" {
+		return 0, false, nil
+	}
+	gen, ok := s.generations[s.active]
+	if !ok || gen.fingerprint.ModelID != modelID || gen.fingerprint.Dim <= 0 {
+		return 0, false, nil
+	}
+	return gen.fingerprint.Dim, true, nil
+}
+
 func (s *MemGenerationStore) LoadRow(_ context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

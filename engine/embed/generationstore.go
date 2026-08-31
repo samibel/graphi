@@ -223,4 +223,31 @@ type GenerationStore interface {
 	// and SQLiteGenerationStore satisfy it; callers that hold a
 	// GenerationStore but not a RowLoader fall back to Load.
 	LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error)
+
+	// DimForModel reports the vector dimension the ACTIVE generation was
+	// built with, and only when that generation belongs to modelID.
+	// ok=false means "nothing persisted for this model" — never a guess.
+	//
+	// WHY THIS EXISTS (SW-261 review round 3). An embedder may not know its
+	// own dimension until it has made a request: Ollama reports Dim() == 0
+	// until its first call. The BUILD path probes before fingerprinting, so
+	// it fingerprints the real dimension. The RELOAD path constructs a fresh
+	// embedder and must not dial — `internal/canary` pins zero requests on
+	// reload — so it would fingerprint dim 0 and never match what it just
+	// built. Every freshly built Ollama index then reloaded as permanently
+	// stale, making the ready state unreachable on the only real embedder.
+	//
+	// The dimension is therefore read back from what the build persisted
+	// rather than re-discovered. This preserves exact canonical equality:
+	// the dimension stays a real fingerprint field, two different dimensions
+	// still never share a generation, and a caller whose embedder reports a
+	// dimension keeps using its own (a disagreement then reads stale, as it
+	// should).
+	//
+	// RESIDUAL RISK, stated rather than hidden: the lookup is keyed by model
+	// id, so a model swapped BEHIND AN UNCHANGED id (a mutable Ollama tag)
+	// whose dimension differs is not detected until the next build. A changed
+	// id has no persisted entry and fails closed. Binding a model id to an
+	// artifact hash is supply-chain identity work and belongs to SW-262.
+	DimForModel(ctx context.Context, modelID string) (int, bool, error)
 }

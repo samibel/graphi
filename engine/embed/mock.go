@@ -47,11 +47,15 @@ func (m *MockEmbedder) Embed(_ context.Context, texts []string) ([][]float32, er
 	return out, nil
 }
 
-// ProbeDim implements DimDiscoverer. The mock embedder's dim is fixed at
-// construction time, so the probe is a no-op that returns the current
-// Dim(). It exists so the runtime's pre-fingerprint probe call is a valid
-// Embedder method on every backend (Ollama dials, mock is instant) and
-// so the test path stays consistent.
+// ProbeDim implements DimDiscoverer. The mock's dim is fixed at
+// construction, so there is nothing to discover: the probe does no work and
+// returns nil. It exists so the build path's pre-fingerprint probe is a
+// valid call on every backend (Ollama dials once, the mock is instant).
+//
+// Note for anyone writing a test against the reload path: because this mock
+// always reports a real dim, it cannot reproduce the asymmetry that made
+// every Ollama index reload stale. A fixture that reports 0 until probed is
+// required for that — see cmd/internal/runtime's round-trip test.
 func (m *MockEmbedder) ProbeDim(_ context.Context) error { return nil }
 
 // vector derives the deterministic unit vector for a single text.

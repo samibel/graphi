@@ -895,6 +895,25 @@ func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir
 		}
 	}
 	defer func() { _ = table.Close() }()
+
+	// An embedder that discovers its dimension by making a request reports 0
+	// here: reload constructs a fresh instance and MUST NOT dial (zero
+	// requests on reload is pinned by internal/canary). Adopt the dimension
+	// the build persisted for this exact model instead of re-discovering it,
+	// so the reload reconstructs the same canonical the build wrote. Without
+	// this, every generation built by such an embedder — Ollama is the only
+	// real one — reloaded as permanently stale and the ready state was
+	// unreachable in production (SW-261 review round 3).
+	//
+	// This is deliberately NOT a wildcard: the dimension stays a compared
+	// field, an embedder that knows its own dimension keeps using it, and a
+	// disagreement still reads stale. See GenerationStore.DimForModel for the
+	// one case it does not detect (a model swapped behind an unchanged id).
+	if fp.Dim == 0 {
+		if d, ok, derr := table.DimForModel(ctx, emb.ID()); derr == nil && ok {
+			fp.Dim = d
+		}
+	}
 	_, state, aerr := table.Active(ctx, fp, embed.NodeReferencerFromGraphLookup(store.GetNode))
 	if aerr != nil {
 		// An Active error is treated as "corrupt" so the runtime surfaces
@@ -1125,7 +1144,15 @@ func BuildSemanticGeneration(
 	// generation reloads as StateReady unless the graph has moved in
 	// the meantime (in which case the counter has advanced and the
 	// next reload reads StateStale).
-	graphGen, _ := graphGenerationFromStore(ctx, graphStore)
+	// A read failure here is not cosmetic: the fingerprint would silently
+	// fall back to the placeholder, and the generation would be published
+	// under an identity that names no graph. Surface it instead — a build
+	// that cannot establish which graph it belongs to should not produce a
+	// generation at all.
+	graphGen, gerr := graphGenerationFromStore(ctx, graphStore)
+	if gerr != nil {
+		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: read graph identity: %w", gerr)
+	}
 	return embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, generationStore, progress, graphGen)
 }
 

@@ -168,13 +168,10 @@ func MigrateFromLegacyVectors(ctx context.Context, db *sql.DB) (LegacyMigrationR
 		// Insert the generation row, marked active=0 (only the
 		// lexicographically-first embedder's generation is marked
 		// active=1, the others are inactive pending operator decision).
-		// The schema's generations_one_active unique index allows at
-		// most one active row at any time; the migration writes one
-		// active generation here and the rest as inactive.
-		// Wait — the constraint is "at most one active across the
-		// whole sidecar". The active pointer is the served one; we
-		// therefore mark only ONE generation active (the first
-		// embedder in canonical order), the rest are inactive. The
+		// The schema allows at most ONE active row across the whole
+		// sidecar, so exactly one migrated generation is marked active
+		// — the first embedder in canonical order — and the rest are
+		// written inactive. The
 		// runtime's loadSemanticState will read the active generation
 		// and answer StateStale (fingerprint mismatch), regardless of
 		// which embedder built it. Inactive generations stay on disk
@@ -208,7 +205,7 @@ func MigrateFromLegacyVectors(ctx context.Context, db *sql.DB) (LegacyMigrationR
 		if err := tx.QueryRowContext(ctx,
 			`SELECT COUNT(*) FROM generation_rows WHERE generation_id = ?`,
 			string(id)).Scan(&n); err != nil {
-			return LegacyMigrationResult{}, fmt.Errorf("embed: stamp v1 row count: %v", err)
+			return LegacyMigrationResult{}, fmt.Errorf("embed: stamp v1 row count: %w", err)
 		}
 		if _, err := tx.ExecContext(ctx,
 			`UPDATE generations SET row_count = ? WHERE id = ?`,

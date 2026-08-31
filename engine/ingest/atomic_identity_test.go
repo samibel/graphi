@@ -1,17 +1,30 @@
 package ingest_test
 
-// SW-261 review round 2 (CRITICAL 2a): both identity writes happen *after*
-// the graph commits — a failed SetMetadata leaves the counter old while
-// the full-pass marker and the dirty state have already been cleared. The
-// fix moves the bump BEFORE the marker clear (full pass) and after the
-// metaTx but on a path that returns an error before dirty state is lost
-// (incremental). These tests force a SetMetadata failure and assert that
-// the sidecar / dirty state remains recoverable: a subsequent warm-start
-// probe must NOT classify the store as current.
+// SW-261 CRITICAL 2a — the graph identity must never lag behind the graph.
+//
+// index.commit_generation is what tells a reload whether the persisted vectors
+// belong to the graph it is looking at. If a mutation can land while that key
+// still names the previous graph, a reload serves vectors built for the old
+// graph as `ready` — the one outcome the field exists to prevent.
+//
+// Both writers therefore publish the identity BEFORE the step that makes the
+// mutation irreversible: the full pass bumps before clearing its marker, and
+// the incremental pass bumps before the Phase-2 transaction that clears the
+// dirty state. That makes the failure modes safe in one direction — a failed
+// write means nothing landed, a failed commit means the identity is merely
+// ahead and forces a rebuild.
+//
+// Round 2 fixed only the full pass, and its incremental test said so in its own
+// body ("we can't easily swap the store mid-Ingester") before returning without
+// asserting anything; round 3 caught the path still open. These tests force a
+// SetMetadata failure on each writer and assert that nothing was mutated behind
+// it.
 
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -68,57 +81,141 @@ func TestFullPass_BumpFailsKeepsMarkerOpen(t *testing.T) {
 	}
 }
 
-// TestIncremental_BumpFailureReturnsError pins CRITICAL 2a for the
-// incremental path: a failed commit_generation bump after a successful
-// metaTx must surface as a loud error. The pre-fix shape silently
-// swallowed the bump's return value; the test asserts IngestChanged
-// propagates it.
-func TestIncremental_BumpFailureReturnsError(t *testing.T) {
+// failAfterNCommitGenGraphstore fails the commit_generation write only after
+// the first n successful ones, so a priming full pass can succeed and the
+// NEXT identity write — the incremental one — is the one that fails. The
+// round-2 test could not do this ("we can't easily swap the store mid-Ingester")
+// and settled for re-running the full pass, which left the incremental path
+// untested; counting instead of swapping is what makes it testable.
+type failAfterNCommitGenGraphstore struct {
+	graphstore.Graphstore
+	allow     int // this many commit_generation writes succeed first
+	seen      int
+	failError error
+}
+
+func (f *failAfterNCommitGenGraphstore) SetMetadata(ctx context.Context, key, value string) error {
+	if key == "index.commit_generation" {
+		f.seen++
+		if f.seen > f.allow {
+			return f.failError
+		}
+	}
+	return f.Graphstore.SetMetadata(ctx, key, value)
+}
+
+// TestIncremental_BumpFailureLeavesNothingMutated pins CRITICAL 2a for the
+// INCREMENTAL path, which round 2 fixed only for the full pass and round 3
+// caught still open.
+//
+// The property is an ordering one. The Phase-2 transaction is what clears the
+// dirty state, so it is the last moment at which anything remembers a mutation
+// is outstanding. Publishing the identity BEFORE that transaction makes the two
+// failure modes safe:
+//
+//   - the identity write fails  → the transaction never runs, the file stays
+//     dirty, and the graph is untouched, so the vectors built for it are still
+//     legitimately current;
+//   - the identity write succeeds and the transaction fails → the identity is
+//     ahead of the graph, so a reload reads stale and rebuilds.
+//
+// The unsafe ordering is the reverse: mutate, clear dirty, then fail to publish
+// — a durably changed graph still naming the previous identity, which a reload
+// serves as `ready`. This test fails under that ordering because the mutation
+// lands despite the error.
+func TestIncremental_BumpFailureLeavesNothingMutated(t *testing.T) {
 	ctx := context.Background()
 	inner := graphstore.NewMemStore()
 	t.Cleanup(func() { _ = inner.Close() })
-	// The MemStore records SetMetadata calls but doesn't surface them;
-	// the wrapper above is enough. We use a fresh wrapper so the bump
-	// fails from the very first SetMetadata on the commit_generation
-	// key (the warm-start bump in IngestAll does NOT touch the counter;
-	// only finishFullPass / the incremental bump does).
-	wrapped := &failOnCommitGenGraphstore{
+	// One write is allowed: the priming full pass. The incremental bump is
+	// the second and fails.
+	wrapped := &failAfterNCommitGenGraphstore{
 		Graphstore: inner,
+		allow:      1,
 		failError:  errors.New("simulated disk full"),
 	}
 	ing := newIngester(t, wrapped, parse.NewDefaultRegistry())
 	root := writeRepo(t, typeresolveFixture())
 
-	// A first full pass under a non-failing wrapper sets up the store.
-	// We can't share an Ingester across two stores, so we rebuild the
-	// ingester over the failing wrapper now.
 	if err := ing.IngestAll(ctx, root); err != nil {
-		// IngestAll itself failed — that's the expected shape of
-		// TestFullPass_BumpFailsKeepsMarkerOpen. For this test we
-		// need a state where the store is warm and a subsequent
-		// incremental bump fails. Use the inner (unwrapped) store
-		// directly.
-		ing2 := newIngester(t, inner, parse.NewDefaultRegistry())
-		if err := ing2.IngestAll(ctx, root); err != nil {
-			t.Fatalf("priming IngestAll on inner store: %v", err)
-		}
-		// Now the meta-sidecar is warm; replace the ingester's store
-		// via a fresh wrapper that fails the bump. We rebuild a new
-		// ingester over the wrapped store, but the sidecar file is
-		// fresh (ingest.New creates a new meta dir), so the warm-start
-		// probe re-does the full pass — which is also expected to
-		// fail. That's the same shape TestFullPass_BumpFailsKeepsMarkerOpen
-		// already pins; for the incremental path we need a DIFFERENT
-		// shape: the warm-start succeeds, the incremental bump fails.
-		//
-		// We can't easily swap the store mid-Ingester, so this test
-		// verifies the same property (a failed bump returns loud) by
-		// re-running the full pass against the failing wrapper. The
-		// incremental path uses the exact same bump function, so the
-		// contract is symmetric.
-		_ = wrapped
-		t.Log("incremental path uses the same bump helper; the loud-error contract is shared with the full pass")
-		return
+		t.Fatalf("priming IngestAll: %v", err)
 	}
-	t.Fatal("IngestAll on failing wrapper succeeded; want error (the post-graph bump must propagate)")
+	before := countNodes(ctx, t, inner)
+	if before == 0 {
+		t.Fatal("priming pass stored no nodes; the fixture is not exercising anything")
+	}
+
+	// A real incremental mutation: a new file with a new symbol.
+	addFile(t, root, "added.go", "package p\n\nfunc AddedSymbol() {}\n")
+
+	err := ing.IngestChanged(ctx, root, []string{"added.go"})
+	if err == nil {
+		t.Fatal("IngestChanged succeeded although the identity write failed; want a loud error")
+	}
+
+	// The mutation must not have landed. Under the unsafe ordering the node
+	// would be in the graph and the file marked clean, with the identity still
+	// naming the previous graph — the exact state that serves stale vectors as
+	// ready.
+	if after := countNodes(ctx, t, inner); after != before {
+		t.Fatalf("node count moved from %d to %d despite the failed identity write: "+
+			"the graph was mutated while commit_generation still names the previous graph, "+
+			"which is the state a reload would serve as `ready`", before, after)
+	}
+}
+
+// TestIncremental_SuccessfulMutationAdvancesIdentity is the positive half: a
+// committed incremental mutation must move index.commit_generation, or a
+// semantic generation built for the previous graph would keep reading `ready`.
+// Without this, an identity that never advanced would satisfy the negative test
+// above just as well.
+func TestIncremental_SuccessfulMutationAdvancesIdentity(t *testing.T) {
+	ctx := context.Background()
+	store := graphstore.NewMemStore()
+	t.Cleanup(func() { _ = store.Close() })
+	ing := newIngester(t, store, parse.NewDefaultRegistry())
+	root := writeRepo(t, typeresolveFixture())
+
+	if err := ing.IngestAll(ctx, root); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	first, err := store.Metadata(ctx, "index.commit_generation")
+	if err != nil {
+		t.Fatalf("read identity after full pass: %v", err)
+	}
+	if first == "" {
+		t.Fatal("full pass left index.commit_generation empty")
+	}
+
+	addFile(t, root, "added.go", "package p\n\nfunc AddedSymbol() {}\n")
+	if err := ing.IngestChanged(ctx, root, []string{"added.go"}); err != nil {
+		t.Fatalf("IngestChanged: %v", err)
+	}
+	second, err := store.Metadata(ctx, "index.commit_generation")
+	if err != nil {
+		t.Fatalf("read identity after incremental: %v", err)
+	}
+	if second == first {
+		t.Fatalf("index.commit_generation did not move across an incremental mutation (%q): "+
+			"vectors built for the previous graph would keep reading ready", first)
+	}
+}
+
+// countNodes reports how many nodes the store holds, so a test can assert that
+// a failed pass mutated nothing.
+func countNodes(ctx context.Context, t *testing.T, gs graphstore.Graphstore) int {
+	t.Helper()
+	nodes, err := gs.Nodes(ctx, graphstore.Query{})
+	if err != nil {
+		t.Fatalf("Nodes: %v", err)
+	}
+	return len(nodes)
+}
+
+// addFile writes one new file into the fixture repo.
+func addFile(t *testing.T, root, rel, body string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(root, rel), []byte(body), 0o644); err != nil {
+		t.Fatalf("write %s: %v", rel, err)
+	}
 }

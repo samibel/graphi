@@ -828,13 +828,11 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 
 			const n = 50
 			var (
-				wg        sync.WaitGroup
-				winners   int64
-				rejects   int64
-				depth     atomic.Int64 // AC-6: at most one build in flight
-				maxDepth  atomic.Int64 // observed peak for diagnostics
-				depthMu   sync.Mutex   // serialises the depth-update window
-				depthSeen = make([]int64, 0, n)
+				wg       sync.WaitGroup
+				winners  int64
+				rejects  int64
+				depth    atomic.Int64 // AC-6: at most one build in flight
+				maxDepth atomic.Int64 // observed peak, reported on failure
 			)
 			wg.Add(n)
 			for i := 0; i < n; i++ {
@@ -850,52 +848,32 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 						return
 					}
 					atomic.AddInt64(&winners, 1)
-					// SW-261 review round 2 (MINOR 8): the previous
-					// maxDepth assertion was removed rather than
-					// repaired. Repair it with an atomic.Int64
-					// load-then-CAS-update: the goroutine that
-					// observes depth == 0 advances to 1, the
-					// goroutine that observes depth == 1 stays at
-					// 1 (because a parallel Commit cleared the
-					// slot), the goroutine that observes depth == 2
-					// has seen two builds in flight simultaneously
-					// — a violation. The CAS-update is the
-					// load-bearing test: if AC-6 is broken, two
-					// goroutines will both see depth == 0 and
-					// both advance to 1, raising maxDepth.
-					depthMu.Lock()
-					cur := depth.Load()
-					if cur > 1 {
-						t.Errorf("depth = %d > 1 (two builds in flight, AC-6 violated)", cur)
+					// AC-6's guarantee is "at most one build in flight".
+					// Measure it by incrementing FIRST and judging the
+					// post-increment value: the previous revision loaded,
+					// compared `cur > 1`, and only then incremented, so
+					// two genuinely overlapping builds slipped through —
+					// g1 sees 0 and goes to 1, g2 sees 1 (not > 1) and
+					// goes to 2. Off by exactly one, and in the direction
+					// that made the test unable to fail.
+					if inFlight := depth.Add(1); inFlight > 1 {
+						t.Errorf("%d builds in flight at once (AC-6 allows one): the staging slot was held twice", inFlight)
 					}
-					depth.Add(1)
-					depthMu.Unlock()
-					// Record observed depth (the load we just
-					// read) for diagnostics.
-					depthMu.Lock()
-					depthSeen = append(depthSeen, cur)
-					depthMu.Unlock()
-					// Simulate the window the Build holds the
-					// staging slot: a brief sleep here widens
-					// the race window so a regression would
-					// produce a > 1 peak reliably.
+					// Keep the running peak so the failure message can
+					// report how far the invariant was exceeded.
+					for {
+						peak := maxDepth.Load()
+						cur := depth.Load()
+						if cur <= peak || maxDepth.CompareAndSwap(peak, cur) {
+							break
+						}
+					}
+					// Widen the window a regression would have to hit.
 					time.Sleep(time.Millisecond)
 					if err := b.Commit(ctx); err != nil {
 						t.Errorf("Commit: %v", err)
 					}
-					depthMu.Lock()
 					depth.Add(-1)
-					curMax := depth.Load()
-					if curMax > 0 {
-						// A concurrent goroutine might observe
-						// a depth below 1 if its Commit ran
-						// first; only the > 1 case is a
-						// violation. Record the observed peak.
-						if cur := maxDepth.Load(); cur < 1 {
-							maxDepth.Store(1)
-						}
-					}
-					depthMu.Unlock()
 				}()
 			}
 			wg.Wait()
@@ -917,7 +895,9 @@ func TestContract_ConcurrentGoroutines(t *testing.T) {
 			if state != embed.StateReady {
 				t.Fatalf("state after concurrent build = %s, want ready (the active pointer must never be unvalidated)", state)
 			}
-			_ = depthSeen
+			if peak := maxDepth.Load(); peak > 1 {
+				t.Fatalf("peak builds in flight = %d, want 1: AC-6's serialise-or-reject guarantee did not hold", peak)
+			}
 		})
 	}
 }

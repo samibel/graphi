@@ -335,7 +335,7 @@ func (b *sqliteBuild) Commit(ctx context.Context) error {
 		// preserved by the demote; we just commit a new zero-row
 		// generation. The fingerprint canonical stays consistent.
 	}
-	// Per-row dimension validation.
+	// Per-row dimension validation. Upsert already checks the dim at
 	// write time, but a hand-tampered sidecar (or a future migration
 	// path) could land a wrong-dim row; the Commit-time pass catches
 	// it before the pointer moves. fp.Dim == 0 means "unknown" — a
@@ -640,6 +640,42 @@ func (s *SQLiteGenerationStore) Load(ctx context.Context, id GenerationID) ([]Ro
 // an indexed point probe (PK is (generation_id, node_id)) so AC-4
 // carry-forward reuses one prior row at a time without materialising
 // the whole generation. ok=false when the row is absent.
+// DimForModel implements GenerationStore. It reads the dimension the ACTIVE
+// generation recorded, and returns it only when that generation's fingerprint
+// names the same model — never a dimension belonging to some other model's
+// generation. See the interface doc for why the reload path needs this and
+// what it deliberately does not detect.
+func (s *SQLiteGenerationStore) DimForModel(ctx context.Context, modelID string) (int, bool, error) {
+	if modelID == "" {
+		return 0, false, nil
+	}
+	var (
+		canonical string
+		dim       int
+		schema    string
+	)
+	err := s.db.QueryRowContext(ctx, `
+        SELECT fingerprint, fingerprint_dim, document_schema
+        FROM generations
+        WHERE is_active = 1
+        LIMIT 1`).Scan(&canonical, &dim, &schema)
+	if err == sql.ErrNoRows {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, fmt.Errorf("embed: dim for model: %w", err)
+	}
+	if fingerprintFromCanonical(canonical, dim, schema).ModelID != modelID {
+		return 0, false, nil
+	}
+	if dim <= 0 {
+		// A generation built by an embedder that never learned its own
+		// dimension carries nothing worth adopting.
+		return 0, false, nil
+	}
+	return dim, true, nil
+}
+
 func (s *SQLiteGenerationStore) LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
 	var (
 		docID, nID, hash, path, span string
