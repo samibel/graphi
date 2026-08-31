@@ -40,6 +40,32 @@ type Reader interface {
 	SearchNodes(ctx context.Context, text string, limit int) ([]graphstore.RankedNode, error)
 }
 
+// SemanticState carries the typed GenerationStore state into the search
+// service (SW-261 AC-10). The state drives the configured-but-not-ready
+// graceful skip: when the state is non-zero and non-Ready, SemanticSearch
+// returns the typed Unavailable response with Reason naming the state
+// instead of consulting the embedder. The default build (no embedder)
+// leaves the State field at the StateUnset sentinel (the zero value);
+// SemanticSearch uses State.IsZero() as the explicit "no state plumbed"
+// check so a runtime that did call Active() and got back a StateMissing
+// cannot be confused with one that never called Active() at all.
+type SemanticState struct {
+	// State is the GenerationStore state. embed.StateReady means the
+	// service may serve from the configured embedder + index; any other
+	// value (missing / stale / corrupt) means the service returns the
+	// typed Unavailable response with Reason.
+	State embed.State
+	// Requested is the fingerprint the runtime asked the GenerationStore
+	// to match against the active generation. It is recorded here for
+	// diagnostics; the search service does not need it for the
+	// configured-but-not-ready graceful skip.
+	Requested embed.Fingerprint
+	// Reason is the user-visible message the typed Unavailable response
+	// carries. It is engine-owned (one closed vocabulary per state) so
+	// every surface renders byte-identically.
+	Reason string
+}
+
 // Service is the shared search service. It is safe for concurrent use when the
 // underlying Reader is.
 //
@@ -47,7 +73,8 @@ type Reader interface {
 // is OPTIONAL and OFF by default: a Service constructed with New has a nil embed
 // registry, so SemanticSearch returns the typed Unavailable response (graceful
 // skip). WithSemantic opts the service into the configured embedder + vector
-// index.
+// index; WithSemanticState plumbs the typed GenerationStore state so a
+// non-ready state serves no vectors.
 type Service struct {
 	reader Reader
 
@@ -56,6 +83,11 @@ type Service struct {
 	embedReg   *embed.Registry
 	index      embed.VectorIndex
 	nodeReader NodeReader
+	// semanticState carries the typed GenerationStore state (SW-261).
+	// The zero value (State = StateUnset) is treated as "no state
+	// plumbed" by SemanticSearch, which only consults the field when
+	// State is non-zero (i.e. a runtime has actually called Active()).
+	semanticState SemanticState
 }
 
 // New constructs a Service over the given read-only search reader. Semantic
@@ -77,6 +109,20 @@ func (s *Service) WithSemantic(reg *embed.Registry, index embed.VectorIndex, nod
 	}
 	s.index = index
 	s.nodeReader = nodeReader
+	return s
+}
+
+// WithSemanticState plumbs the typed GenerationStore state into the search
+// service (SW-261 AC-10). When state is non-ready, SemanticSearch returns
+// the typed Unavailable response with Reason naming the state instead of
+// consulting the embedder. The default build (no embedder, no state) leaves
+// the field at StateUnset (zero); SemanticSearch uses State.IsZero() as
+// the explicit "no state plumbed" check so a runtime that called Active()
+// and got back StateMissing cannot be confused with one that never called
+// Active() at all (a previous revision conflated the two and read an
+// empty index as ready, fail-open against AC-7).
+func (s *Service) WithSemanticState(state SemanticState) *Service {
+	s.semanticState = state
 	return s
 }
 

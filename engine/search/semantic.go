@@ -3,15 +3,72 @@ package search
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/embed"
 )
 
 // UnavailableReason is the single, canonical graceful-skip reason string emitted
 // when no embedder is configured. It is engine-owned so every surface
 // (CLI/MCP/HTTP) serializes byte-identically (SW-059 parity).
+//
+// The SW-261 track extends this file's "unavailable" envelope to name the
+// GenerationStore state when one IS configured but not ready: the typed
+// reason is the user-visible hint, and it travels byte-identically across
+// CLI/MCP/HTTP because every surface renders through the same
+// engine/search.SemanticResponse. The default build (no embedder) keeps
+// emitting UnavailableReason verbatim — the S0 baseline golden for
+// `search_semantic` is unchanged.
 const UnavailableReason = "no embedder configured; run `graphi setup-embedder ...`"
+
+// ReasonUnavailable names the user-visible state when an embedder IS
+// configured but the GenerationStore has no active generation. It is the
+// companion of UnavailableReason for the configured-but-unbuilt path.
+const ReasonUnavailable = "semantic index unavailable: run `graphi index --semantic`"
+
+// ReasonStale names the user-visible state when the active generation's
+// fingerprint differs from the requested one (model, schema, chunker or
+// graph generation changed). The active generation lives in a different
+// embedding space and cannot be served; the user must re-index.
+const ReasonStale = "semantic index stale: run `graphi index --semantic`"
+
+// ReasonCorrupt names the user-visible state when the active generation
+// failed validation (row count, dim, or a referenced node). The rows are
+// untrustworthy and must not be served; re-indexing rebuilds them.
+const ReasonCorrupt = "semantic index corrupt: run `graphi index --semantic`"
+
+// ReasonForState renders the closed-vocabulary reason for a typed state.
+// The state is the SW-261 GenerationStore state; the reason is the
+// user-visible message the typed Unavailable response carries. The
+// mapping is total — every State has a defined reason, including the
+// StateUnset sentinel.
+//
+// StateUnset is NOT a safety net: SemanticSearch treats an unset state as
+// "no state plumbed" and proceeds, so ReasonForState is never consulted on
+// that path. Callers that hold a generation store must plumb the state
+// (the runtime does, in loadSemanticState, including the no-meta-dir case
+// it synthesises as missing). An earlier version of this comment claimed
+// the sentinel prevented a forgotten plumbing from serving a missing
+// generation as ready; it does not, and the review that caught it is the
+// reason the runtime synthesises rather than relying on this.
+func ReasonForState(state embed.State) string {
+	switch state {
+	case embed.StateUnset:
+		return UnavailableReason
+	case embed.StateMissing:
+		return ReasonUnavailable
+	case embed.StateStale:
+		return ReasonStale
+	case embed.StateCorrupt:
+		return ReasonCorrupt
+	case embed.StateReady:
+		return ""
+	default:
+		return fmt.Sprintf("semantic index unknown state: %d", int(state))
+	}
+}
 
 // SemanticHit is one ranked semantic-search result: the node identity (cited by
 // NodeId) plus its cosine score. The node provenance fields mirror Match so a
@@ -48,6 +105,11 @@ type SemanticResponse struct {
 //     a typed Unavailable SemanticResponse (Available=false, Reason=
 //     UnavailableReason) with NO error, makes ZERO network calls, performs NO
 //     embedding, and does not touch the always-available lexical Search.
+//   - If a semantic state has been plumbed through WithSemanticState and
+//     the state is non-ready (SW-261 AC-10), it returns the typed
+//     unavailable response with Reason naming the state. The configured
+//     embedder is intentionally NOT consulted — a non-ready generation
+//     must not be served.
 //   - Otherwise it embeds the query with the active embedder, ranks indexed
 //     vectors by cosine similarity, and returns scored hits citing NodeId + score
 //     in deterministic order (score desc, NodeId asc).
@@ -57,6 +119,15 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 	if s.embedReg == nil || !s.embedReg.Configured() {
 		// Graceful skip: no embedder, no network, no error.
 		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
+	}
+	if !s.semanticState.State.IsZero() && s.semanticState.State != embed.StateReady {
+		// Configured embedder, but the generation store is non-ready
+		// (missing / stale / corrupt). The configured path is NOT
+		// consulted: the user-visible reason names the state so an
+		// agent can act on it. The byte shape (query, available=false,
+		// reason, hits=[]) is identical to the no-embedder graceful
+		// skip — only the Reason differs.
+		return SemanticResponse{Query: query, Available: false, Reason: s.semanticState.Reason, Hits: []SemanticHit{}}, nil
 	}
 	emb, ok := s.embedReg.Active()
 	if !ok {

@@ -50,6 +50,22 @@ type Embedder interface {
 	Embed(ctx context.Context, texts []string) ([][]float32, error)
 }
 
+// DimDiscoverer is the OPTIONAL capability an Embedder may expose so the
+// fingerprint's dim field is non-zero BEFORE the fingerprint is built
+// (SW-261 review round 2 MAJOR 5). Embedders that learn their dim from
+// their first call (Ollama) MUST implement this; the runtime calls
+// ProbeDim once at the start of the build, learns the real dim, and
+// uses it in the fingerprint so a dim change between builds is
+// detected. An embedder that does NOT implement DimDiscoverer is
+// treated as "dim is already known" — the runtime uses Dim() as-is.
+//
+// ProbeDim MUST be idempotent and safe to call concurrently with
+// Embed; it MUST be fail-closed (return an error rather than silently
+// fingerprinting with dim=0).
+type DimDiscoverer interface {
+	ProbeDim(ctx context.Context) error
+}
+
 // TokenizingEmbedder is the OPTIONAL capability an Embedder may expose so the
 // document builder can bound texts in the active embedder's OWN tokenizer
 // rather than falling back to a whitespace-token approximation (SW-260 AC-6).

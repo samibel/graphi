@@ -81,7 +81,50 @@ const (
 	fullPassInProgressKey      = "full_pass_in_progress"
 	fullPassGenerationKey      = "full_pass_generation"
 	graphFullPassGenerationKey = "index.full_ingest_generation"
+	// graphCommitGenerationKey is the monotonic identity advanced on EVERY
+	// committed graph mutation (full pass AND incremental). It exists so
+	// SW-261's vector fingerprint can carry a graph identity that
+	// actually moves on every graph change — the existing
+	// graphFullPassGenerationKey only advances on full passes, which
+	// leaves the fingerprint inert across incremental mutations.
+	graphCommitGenerationKey = "index.commit_generation"
 )
+
+// mintCommitGeneration returns a fresh commit-generation value. The
+// value is a UUID hex so a monotonic-counter race between two
+// processes cannot collide; one process wins on the SQL-level INSERT,
+// the loser sees a fresh distinct value (the counter still advanced).
+func mintCommitGeneration() (string, error) {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", fmt.Errorf("ingest: mint commit generation: %w", err)
+	}
+	return hex.EncodeToString(raw[:]), nil
+}
+
+// bumpCommitGenerationOnStore writes a fresh commit_generation value to
+// the graphstore's metadata, so every durable graph change gets a distinct
+// identity; failures may over-advance. Both callers publish it BEFORE the
+// step that makes their mutation irreversible — the full pass before
+// clearing its marker, the incremental pass before the Phase-2 transaction
+// that clears the dirty state — so a failed write can never leave a mutated
+// graph naming the previous identity. Over-advancing costs a rebuild;
+// under-advancing serves stale vectors as current. See each call site for
+// why that ordering is the safe one. It uses the graphstore's kv_meta
+// rather than the sidecar's ingest_semantics so the runtime can read
+// the value with the graphstore handle it already holds (the same
+// path `index.full_ingest_generation` uses), keeping the build and
+// reload paths symmetric: both call Metadata on the graphstore.
+func bumpCommitGenerationOnStore(ctx context.Context, store graphstore.Graphstore) error {
+	next, err := mintCommitGeneration()
+	if err != nil {
+		return err
+	}
+	if err := store.SetMetadata(ctx, graphCommitGenerationKey, next); err != nil {
+		return fmt.Errorf("ingest: bump commit generation: %w", err)
+	}
+	return nil
+}
 
 // CanWarmStart reports whether the meta sidecar holds a reusable prior index:
 // a non-empty file cache written under the CURRENT ingest semantics AND the
@@ -192,7 +235,31 @@ func (i *Ingester) beginFullPass(ctx context.Context) (string, error) {
 // stored with the graph and removes the in-progress marker. It is called only
 // after every graph batch, the main sidecar transaction, graph metadata writes,
 // and the final SQLite checkpoint have completed.
+//
+// SW-261 review round 2 (CRITICAL 2a): the graph identity advance MUST be
+// durable BEFORE the marker clears, otherwise a failed SetMetadata leaves
+// the counter stale while the marker (and the dirty state in the
+// incremental path) has already been cleared — a later reload would
+// classify stale vectors `ready`. The order is therefore:
+//
+//  1. bump the graphstore's commit_generation so the runtime's reload path
+//     sees the new identity;
+//  2. only on a successful bump, clear the sidecar marker.
+//
+// A failed bump leaves the marker open so the next session forces a
+// rebuild. The graphstore's writeMu serialises the bump against any
+// concurrent graph mutation in this process; cross-process safety comes
+// from the ingest lock held across the whole pass.
 func (i *Ingester) finishFullPass(ctx context.Context, generation string) error {
+	// Step 1: advance the graph identity. A failed bump means the marker
+	// stays open (we never reach step 2) so the next session rebuilds
+	// rather than warm-starting against stale vectors.
+	if err := bumpCommitGenerationOnStore(ctx, i.store); err != nil {
+		return fmt.Errorf("ingest: advance graph identity before marker clear: %w", err)
+	}
+	// Step 2: certify the sidecar at this generation and remove the
+	// in-progress marker. A failure here leaves the marker open (the
+	// sidecar transaction rolls back); a future session will rebuild.
 	return i.metaTx(ctx, func(tx *sql.Tx) error {
 		if _, err := tx.ExecContext(ctx,
 			"INSERT INTO ingest_semantics(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",

@@ -119,6 +119,107 @@ paths matching the shared vendor/generated classification (`engine/classify.IsGe
 span could be established (`no_span`) — the fail-closed absence above means such a node gets no
 document and therefore no vector, rather than a guessed window.
 
+## Generation / freshness contract (SW-261)
+
+The semantic generation pass persists vectors under a **fingerprint** that names
+the embedding space exactly:
+
+```
+{ model_id, revision, model_sha256, tokenizer_sha256, dim,
+  document_schema, chunker_config, graph_generation }
+```
+
+A fingerprint is canonicalised by a length-prefixed, line-delimited encoding
+(per-field `<len>:<value>` joined by `\n`), so a `|`-bearing value cannot
+collide with the field separator. The generation id is the full
+sha256 hex of the canonical string with a `v<n>-` schema prefix; two
+fingerprints differing in any field produce distinct ids and never share a
+generation.
+
+Reload validates the fingerprint against the requested one and returns the
+**closed state vocabulary**:
+
+- `missing` — no active generation. The search service answers the typed
+  unavailable response with `reason: "semantic index unavailable: run graphi
+  index --semantic"`. No vectors are served.
+- `stale` — the active generation exists but its fingerprint does not match
+  (model, schema, chunker, or graph generation moved). The service answers
+  `"semantic index stale: run graphi index --semantic"`. No vectors are
+  served. The mismatch is the exact embedding-space mixing the story exists
+  to prevent.
+- `corrupt` — fingerprint matches but row count, dim, or a referenced node
+  fails validation. Every row's vector dim is checked (the previous
+  single-sample check missed drift in non-sampled rows). The service
+  answers `"semantic index corrupt: run graphi index --semantic"`.
+- `ready` — fingerprint matches and every check passed. Vectors are served.
+
+### Graph identity (which "graph" do the vectors correspond to?)
+
+The fingerprint's `graph_generation` field is sourced from the graphstore's
+`index.commit_generation` metadata key. The ingest pipeline advances this
+key on every committed graph mutation — full pass **and** incremental — so
+the value moves on every graph change. Build and reload consume the same
+key, so a freshly built semantic generation reloads as `ready`; any
+subsequent graph change advances the counter and the next reload reads
+`stale`. The fallback chain for stores with no full pass yet (only the
+placeholder) is visible to the operator.
+
+A store that has never seen a graphi pass has no
+`index.commit_generation` entry; the runtime substitutes the documented
+placeholder so a fresh store is visibly flagged, not silently classified
+`ready`.
+
+### Cross-process guarantee (AC-5/AC-6)
+
+The `--semantic` Build/Commit flow holds the **cross-process ingest lock**
+(`internal/ingestlock`) for the entire `Begin → Upsert → Commit/Abort`
+sequence. Two graphi processes on the same meta directory cannot race: the
+loser waits at SQLite-level `BEGIN IMMEDIATE` until the winner's
+generation commits, then either:
+
+- warm-starts over the certified active generation (its `Begin` sees a clean
+  active pointer and proceeds), or
+- sees the prior active generation as `stale` (the fingerprint's graph
+  identity has advanced) and is told to re-build.
+
+The store's per-process `buildMu`/`liveBuilds` alone do NOT deliver this
+guarantee — a second handle would see a live foreign staging row and
+delete it as a stale leftover. The ingest lock is the authoritative
+mechanism; the runtime helper `BuildSemanticGeneration` (used by
+`graphi index --semantic`) is the single owner.
+
+**Documented limit:** the AC-5/AC-6 guarantee applies to **operations that
+go through `graphi index --semantic`** (or the runtime helper). A bare
+`GenerationStore.Begin/Commit` against the same SQLite file from two
+independently opened handles, without the runtime helper, will still see
+the cross-process symptom the review caught — by design: the store's
+seam is the persistence boundary; the cross-process serialisation is a
+caller concern (the runtime wires it). The conformance suite
+(`TestContract_CrossHandleSerialisesBuilds`) exercises the property
+at the store layer with two concurrently-open handles and pins the
+runtime-helper-driven outcome (the foreign staging row is observable
+to the second handle; the runtime helper is what suppresses it).
+
+### Carry-forward (AC-4)
+
+When a `ready` generation exists under the **same embedding-space
+fingerprint**, the generation pass reuses prior rows whose `text_hash`
+matches the current document. The match is a point-probe against the prior
+generation by NodeID (the `RowLoader.LoadRow` seam), not a materialised
+whole-generation map, per the working-set rule. A stale / corrupt / missing
+state forces a full re-embed — there is no path that loads prior rows from
+a non-ready generation, which is the embedding-space mixing the story
+exists to prevent.
+
+A reused row counts as `Reused`, not `Embedded`. The summary line on
+`graphi index --semantic` reports both:
+`<n> embedded, <r> reused, <s> skipped`. `Purged` is the count of
+prior-generation rows that no longer appear in the new generation's
+row set — prior rows whose node disappeared from the graph AND
+prior rows that were re-embedded (not carried forward). The
+arithmetic is `Purged = priorRowCount - (Embedded + Reused)` so a
+correctly re-embedded row is not counted as purged.
+
 ## Safety guarantees that hold regardless of configuration
 
 - **Ollama is loopback-only and fail-closed.** A non-loopback host is **rejected at

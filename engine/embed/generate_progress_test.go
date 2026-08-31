@@ -21,6 +21,41 @@ func (s docSource) Document(n model.Node) (embed.SemanticDocument, bool) {
 	return d, ok
 }
 
+// loadRows loads the active generation from a GenerationStore and converts
+// each Row to a Vector for the byte-compat checks in this file.
+func loadRows(t *testing.T, s embed.GenerationStore, fp embed.Fingerprint) []embed.Vector {
+	t.Helper()
+	ctx := context.Background()
+	gen, _, err := s.Active(ctx, fp, nil)
+	if err != nil {
+		t.Fatalf("Active: %v", err)
+	}
+	if gen.ID == "" {
+		return nil
+	}
+	rows, err := s.Load(ctx, gen.ID)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	out := make([]embed.Vector, len(rows))
+	for i, r := range rows {
+		out[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+	}
+	return out
+}
+
+// fpFor builds a Fingerprint that matches what GenerateAndPersist will use
+// internally (ModelID/Dim/DocumentSchema only — graph_generation is left at
+// the placeholder because the in-process test does not have a graphstore).
+func fpFor(emb embed.Embedder) embed.Fingerprint {
+	return embed.Fingerprint{
+		ModelID:         emb.ID(),
+		Dim:             emb.Dim(),
+		DocumentSchema:  embed.DocumentSchema,
+		GraphGeneration: embed.GraphGenerationPlaceholder,
+	}
+}
+
 // TestGenerateAndPersist_EmbedsV2DocumentText pins SW-260 AC-8: the
 // generation pass embeds SemanticDocument.text (body + doc + path), not the
 // v1 NodeText, and a node without a document is skipped and counted rather
@@ -44,8 +79,8 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8)}
 	reg := embed.NewRegistry()
 	reg.Register(rec)
-	table := embed.NewMemVectorTable()
-	got, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, source, embed.NewIndex(), table)
+	store := embed.NewMemGenerationStore()
+	got, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, source, embed.NewIndex(), store, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
@@ -65,16 +100,16 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 			t.Errorf("embedded text is the deprecated v1 NodeText %q", text)
 		}
 	}
-	rows, _ := table.Load(ctx)
+	rows := loadRows(t, store, fpFor(rec))
 	if len(rows) != 1 || rows[0].NodeID != docs[0].NodeID {
 		t.Errorf("persisted rows = %+v", rows)
 	}
 	// A nil source with a configured embedder is an error, never a silent v1 fallback.
-	if _, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, nil, embed.NewIndex(), table); err == nil {
+	if _, err := embed.GenerateAndPersist(ctx, reg, res.Nodes, nil, embed.NewIndex(), store, embed.GraphGenerationPlaceholder); err == nil {
 		t.Error("nil DocumentSource must be an error")
 	}
 	// The graceful skip still precedes everything: no embedder, no source needed.
-	if r, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), res.Nodes, nil, embed.NewIndex(), table); err != nil || r.Configured {
+	if r, err := embed.GenerateAndPersist(ctx, embed.NewRegistry(), res.Nodes, nil, embed.NewIndex(), store, embed.GraphGenerationPlaceholder); err != nil || r.Configured {
 		t.Errorf("graceful skip = %+v, %v", r, err)
 	}
 }
@@ -126,10 +161,10 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	reg.Register(rec)
 
 	var steps [][2]int
-	table := embed.NewMemVectorTable()
-	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table, func(done, total int) {
+	store := embed.NewMemGenerationStore()
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) {
 		steps = append(steps, [2]int{done, total})
-	})
+	}, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersistWithProgress: %v", err)
 	}
@@ -176,18 +211,12 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	// Byte-compat with the plain wrapper: same persisted vectors per node.
 	reg2 := embed.NewRegistry()
 	reg2.Register(embed.NewMockEmbedder(8))
-	table2 := embed.NewMemVectorTable()
-	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table2); err != nil {
+	store2 := embed.NewMemGenerationStore()
+	if _, err := embed.GenerateAndPersist(ctx, reg2, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store2, embed.GraphGenerationPlaceholder); err != nil {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
-	got, err := table.Load(ctx)
-	if err != nil {
-		t.Fatalf("Load chunked: %v", err)
-	}
-	want, err := table2.Load(ctx)
-	if err != nil {
-		t.Fatalf("Load plain: %v", err)
-	}
+	got := loadRows(t, store, fpFor(rec))
+	want := loadRows(t, store2, fpFor(rec.inner))
 	if len(got) != len(want) || len(got) != n {
 		t.Fatalf("persisted vectors: chunked=%d plain=%d, want %d", len(got), len(want), n)
 	}
@@ -214,19 +243,26 @@ func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
 	reg.Register(rec)
 
 	var steps int
-	table := embed.NewMemVectorTable()
-	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), table, func(done, total int) { steps++ })
+	store := embed.NewMemGenerationStore()
+	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) { steps++ }, embed.GraphGenerationPlaceholder)
 	if err == nil {
 		t.Fatal("want the injected chunk failure to propagate")
 	}
 	if steps != 1 {
 		t.Fatalf("progress steps before failure = %d, want exactly 1 (the successful first chunk)", steps)
 	}
-	rows, lerr := table.Load(ctx)
-	if lerr != nil {
-		t.Fatalf("Load: %v", lerr)
+	// The Commit never ran, so Active returns StateMissing — there is no
+	// persisted generation to count. The first chunk's rows live in the
+	// staging generation; the partial progress is recoverable on a
+	// re-run because the next Begin drops the stale staging row.
+	gen, state, err := store.Active(ctx, fpFor(rec), nil)
+	if err != nil {
+		t.Fatalf("Active after failure: %v", err)
 	}
-	if len(rows) == 0 || len(rows) >= len(nodes) {
-		t.Fatalf("persisted rows after chunk-2 failure = %d, want the first chunk only (0 < n < %d)", len(rows), len(nodes))
+	if state != embed.StateMissing {
+		t.Fatalf("state after chunk-2 failure = %s, want missing (no Commit)", state)
+	}
+	if gen.ID != "" {
+		t.Fatalf("expected no active generation after a failed Commit, got %s", gen.ID)
 	}
 }

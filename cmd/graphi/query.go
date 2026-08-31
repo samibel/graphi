@@ -10,7 +10,6 @@ import (
 	"runtime/pprof"
 
 	rtime "github.com/samibel/graphi/cmd/internal/runtime"
-	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/distill"
@@ -321,38 +320,52 @@ func runIndexAt(cwd string, args []string) int {
 	}
 	reg.Freeze() // SW-222 (AX-02): embedder composition is complete here.
 
-	nodes, err := store.Nodes(ctx, graphstore.Query{})
+	table, err := embed.NewSQLiteGenerationStoreDB(ctx, ing.MetaDB())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: index --semantic: read nodes: %v\n", err)
-		return 1
-	}
-	table, err := embed.NewSQLiteVectorTableDB(ctx, ing.MetaDB(), emb.ID(), emb.Dim())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open vectors table: %v\n", err)
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: open generations store: %v\n", err)
 		return 1
 	}
 	// Announce the second phase up front and stream its progress: the
 	// generation pass runs one HTTP round-trip per node text on the Ollama
 	// backend, so on a real repo it takes minutes — silence here reads as a
 	// hang (a user killed exactly this pass believing it dead).
-	fmt.Fprintf(os.Stderr, "graphi: embedding %d nodes via %s…\n", len(nodes), emb.ID())
+	fmt.Fprintf(os.Stderr, "graphi: embedding via %s…\n", emb.ID())
 	eprog := newEmbedProgress(os.Stderr, isTerminal(os.Stderr))
 	// SW-260: embed SemanticDocument v2 text (declaration body + doc comment +
 	// path, cut at the parser's exact span or the bounded window fallback)
 	// instead of the v1 name-only text. Documents are cut file by file from
 	// the repository, so nodes are visited in path order.
-	sortNodesByPath(nodes)
 	docs := newFileDocumentSource(ctx, target.root, emb)
-	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, docs, embed.NewIndex(), table, eprog.Handle)
+	// SW-261 cross-process guarantee: hold the cross-process ingest lock
+	// across the entire semantic Begin/Commit sequence so a second
+	// graphi process on the same meta directory cannot observe a live
+	// foreign staging row and delete it as a stale leftover. The runtime
+	// helper owns the lock acquisition so the AC-5/AC-6 contract has one
+	// authoritative owner; the embed layer's buildMu still serialises
+	// goroutines within a single process.
+	//
+	// SW-261 review round 2 (CRITICAL 2b): the helper takes the node
+	// snapshot INSIDE the locked section so the embedded node set is
+	// consistent with the graph_generation this run fingerprints. The
+	// earlier call site snapshotted nodes BEFORE acquiring the lock,
+	// and a concurrent ingest between snapshot and lock produced a
+	// generation holding the OLD node set fingerprinted as the NEW
+	// graph. The progress callback receives the (done, total) counts
+	// from that locked snapshot.
+	res, err := rtime.BuildSemanticGeneration(ctx, ing, store, reg, table, nil, docs, embed.NewIndex(), eprog.Handle)
 	eprog.Finish()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: index --semantic: %v\n", err)
 		return 1
 	}
-	fmt.Printf("graphi index --semantic: embedded %d nodes via %s\n", res.Embedded, res.EmbedderID)
+	// res.Embedded is the count of nodes that were freshly embedded (the
+	// prior row's text_hash differed). Carried-forward rows show up in
+	// res.Reused, NOT in res.Embedded — the previous revision double-
+	// counted them and reported reused rows as freshly embedded.
+	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
 	share := docs.stats.SpanMethodShare()
-	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
-		embed.DocumentSchema, res.Embedded, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
+	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
+		embed.DocumentSchema, res.Embedded, res.Reused, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
 	return 0
 }
 

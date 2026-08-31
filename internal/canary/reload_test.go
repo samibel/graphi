@@ -9,10 +9,10 @@ import (
 )
 
 // dialFailEmbedder fails the test if its Embed is ever reached — standing in for a
-// network embedder dial. The reload path (Index.Rebuild from the durable vectors
-// table) must NEVER touch an embedder, so this proves reload is a pure local read
-// with ZERO dials (SW-061 canary extension; story AC: "reload of persisted vectors
-// on startup is a pure local read (no dial, no embed)").
+// network embedder dial. The reload path (Index.Rebuild from the durable store)
+// must NEVER touch an embedder, so this proves reload is a pure local read
+// with ZERO dials (SW-061 canary extension; SW-261: the GenerationStore
+// replaces the legacy `vectors` table).
 type dialFailEmbedder struct{ t *testing.T }
 
 func (e dialFailEmbedder) ID() string { return "mock" }
@@ -22,43 +22,94 @@ func (e dialFailEmbedder) Embed(context.Context, []string) ([][]float32, error) 
 	return nil, nil
 }
 
-// The reload-on-startup path performs ZERO embedder dials: vectors persisted by a
-// prior index pass are loaded from the durable SQLite sidecar and Rebuilt into the
-// in-memory index without ever invoking the embedder.
+// reloadFixtureSeed writes a tiny ready generation to dir and returns the
+// vectors a reload would see. The seed uses a separate fingerprint from
+// the canary embedder so a fingerprint mismatch (and therefore a re-embed)
+// is impossible — the reload path is the point of the test.
+func reloadFixtureSeed(t *testing.T, ctx context.Context, dir string) []embed.Vector {
+	t.Helper()
+	store, err := embed.OpenSQLiteGenerationStore(ctx, dir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() { _ = store.Close() }()
+	fp := embed.Fingerprint{
+		ModelID:         "mock",
+		Dim:             4,
+		DocumentSchema:  embed.DocumentSchema,
+		GraphGeneration: embed.GraphGenerationPlaceholder,
+	}
+	b, err := store.Begin(ctx, fp)
+	if err != nil {
+		t.Fatalf("Begin: %v", err)
+	}
+	want := []embed.Vector{
+		{NodeID: model.NodeId("a"), Values: []float32{1, 0, 0, 0}},
+		{NodeID: model.NodeId("b"), Values: []float32{0, 1, 0, 0}},
+	}
+	for _, v := range want {
+		if err := b.Upsert(ctx, embed.Row{
+			DocumentID: string(v.NodeID),
+			NodeID:     v.NodeID,
+			TextHash:   "h-" + string(v.NodeID),
+			Vector:     v.Values,
+		}); err != nil {
+			_ = b.Abort(ctx)
+			t.Fatalf("Upsert: %v", err)
+		}
+	}
+	if err := b.Commit(ctx); err != nil {
+		t.Fatalf("Commit: %v", err)
+	}
+	return want
+}
+
+// The reload-on-startup path performs ZERO embedder dials: vectors persisted
+// by a prior index pass are loaded from the durable GenerationStore and
+// Rebuilt into the in-memory index without ever invoking the embedder.
 func TestReload_PerformsZeroDials(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 
 	// Persist a couple of vectors (as `index --semantic` would have).
-	table, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", 4)
-	if err != nil {
-		t.Fatalf("open table: %v", err)
-	}
-	for _, v := range []embed.Vector{
-		{NodeID: model.NodeId("a"), Values: []float32{1, 0, 0, 0}},
-		{NodeID: model.NodeId("b"), Values: []float32{0, 1, 0, 0}},
-	} {
-		if err := table.Upsert(ctx, v); err != nil {
-			t.Fatalf("Upsert: %v", err)
-		}
-	}
-	_ = table.Close()
+	want := reloadFixtureSeed(t, ctx, dir)
 
 	// Simulate startup: a configured (would-dial) embedder is present, but reload
 	// must not touch it. Rebuild reads local rows only.
 	_ = dialFailEmbedder{t} // registering+using it would dial; reload must not
 
-	reload, err := embed.OpenSQLiteVectorTable(ctx, dir, "mock", 4)
+	store, err := embed.OpenSQLiteGenerationStore(ctx, dir)
 	if err != nil {
-		t.Fatalf("reopen table: %v", err)
+		t.Fatalf("reopen store: %v", err)
 	}
-	defer reload.Close()
+	defer func() { _ = store.Close() }()
+	fp := embed.Fingerprint{
+		ModelID:         "mock",
+		Dim:             4,
+		DocumentSchema:  embed.DocumentSchema,
+		GraphGeneration: embed.GraphGenerationPlaceholder,
+	}
+	gen, state, err := store.Active(ctx, fp, nil)
+	if err != nil {
+		t.Fatalf("Active: %v", err)
+	}
+	if state != embed.StateReady {
+		t.Fatalf("reload state = %s, want ready", state)
+	}
+	rows, err := store.Load(ctx, gen.ID)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	vecs := make([]embed.Vector, len(rows))
+	for i, r := range rows {
+		vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+	}
 	index := embed.NewIndex()
-	if err := index.Rebuild(ctx, reload); err != nil {
+	if err := index.Rebuild(ctx, vecs); err != nil {
 		t.Fatalf("Rebuild: %v", err)
 	}
-	if index.Len() != 2 {
-		t.Fatalf("reloaded index Len = %d, want 2", index.Len())
+	if index.Len() != len(want) {
+		t.Fatalf("reloaded index Len = %d, want %d", index.Len(), len(want))
 	}
 	// Search the reloaded index (still no embedder dial — query vector supplied).
 	hits := index.Search([]float32{1, 0, 0, 0}, 0)

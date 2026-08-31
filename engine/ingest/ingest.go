@@ -618,6 +618,34 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	// P1 WP1.2: cached paths this pass purges (files gone from disk), collected
 	// inside the Phase-2 transaction for the post-commit evidence refresh.
 	var removedPaths []string
+	// SW-261 graph identity, published BEFORE the Phase-2 transaction that
+	// clears the dirty state (review round 3).
+	//
+	// The ordering is the whole point. This transaction is what marks the
+	// touched files clean (clearDirtyTx below), so it is the moment after
+	// which nothing remembers that a mutation happened. Advancing the
+	// identity afterwards — as the previous revision did — left a window in
+	// which a failed SetMetadata, or a process death, produced a durably
+	// mutated graph whose commit_generation still named the previous graph:
+	// a later reload then classified vectors built for the OLD graph as
+	// `ready`. That window is the one outcome this field exists to prevent.
+	//
+	// Publishing first inverts the failure mode into the safe one:
+	//   - bump fails            → we return here, the transaction never runs,
+	//                             the files stay dirty, nothing is lost;
+	//   - bump ok, commit fails → the identity is AHEAD of the graph, so the
+	//                             next reload reads `stale` and rebuilds.
+	// Over-advancing costs a rebuild. Under-advancing serves stale vectors as
+	// current, so when the two stores cannot commit together, this is the
+	// direction to fail in.
+	//
+	// (The previous comment here claimed a later session would catch the
+	// divergence through CanWarmStart. It would not: CanWarmStart compares
+	// the sidecar's full-pass generation against index.full_ingest_generation
+	// and never reads index.commit_generation.)
+	if err := bumpCommitGenerationOnStore(ctx, i.store); err != nil {
+		return fmt.Errorf("ingest: advance graph identity before incremental commit: %w", err)
+	}
 	if err := i.metaTx(ctx, func(tx *sql.Tx) error {
 		// Mirror IngestAll's batched write sessions: one durable graph
 		// transaction per phase, committed before each seam where the pass
@@ -922,6 +950,10 @@ func (i *Ingester) ingestChanged(ctx context.Context, root string, changed []str
 	if err := i.refreshIntraProcTaint(ctx, root, toProcess, parsedResults); err != nil {
 		return err
 	}
+	// The graph identity was already advanced before the Phase-2 transaction
+	// opened — see the comment at that call site for why publishing first is
+	// the safe ordering.
+	//
 	// P1 trust snapshot: rebind after every successful incremental mutation
 	// (post-commit, same three keys, current live generation) so the snapshot
 	// tracks every graph the readers can see — not only full passes. Same

@@ -9,10 +9,9 @@ import (
 )
 
 // Index.Search ranks by cosine descending with a deterministic NodeId tie-break,
-// rebuilt from a durable table.
+// rebuilt from a slice of vectors.
 func TestIndex_RebuildAndRank(t *testing.T) {
 	ctx := context.Background()
-	table := embed.NewMemVectorTable()
 	// Three nodes; node "b" aligns exactly with the query, "a" is orthogonal-ish,
 	// "c" is the negative direction.
 	rows := []embed.Vector{
@@ -20,13 +19,8 @@ func TestIndex_RebuildAndRank(t *testing.T) {
 		{NodeID: model.NodeId("b"), Values: []float32{1, 0}},
 		{NodeID: model.NodeId("c"), Values: []float32{-1, 0}},
 	}
-	for _, r := range rows {
-		if err := table.Upsert(ctx, r); err != nil {
-			t.Fatalf("Upsert: %v", err)
-		}
-	}
 	ix := embed.NewIndex()
-	if err := ix.Rebuild(ctx, table); err != nil {
+	if err := ix.Rebuild(ctx, rows); err != nil {
 		t.Fatalf("Rebuild: %v", err)
 	}
 	if ix.Len() != 3 {

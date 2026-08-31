@@ -36,15 +36,9 @@ func synthVectors(n, d int, seed uint64) []embed.Vector {
 	return out
 }
 
-func tableFrom(t *testing.T, vecs []embed.Vector) *embed.MemVectorTable {
+func tableFrom(t *testing.T, vecs []embed.Vector) []embed.Vector {
 	t.Helper()
-	tbl := embed.NewMemVectorTable()
-	for _, v := range vecs {
-		if err := tbl.Upsert(context.Background(), v); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return tbl
+	return append([]embed.Vector(nil), vecs...)
 }
 
 // bruteForceTopK is the ground-truth ranking used as the recall oracle.
