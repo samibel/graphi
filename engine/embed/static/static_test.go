@@ -762,19 +762,15 @@ func TestStatic_RegistrationAfterFreeze_Fails(t *testing.T) {
 	}
 }
 
-// AC-8 (cont.): the static package's DIRECT imports carry no networking
-// or process-execution package. The static package's transitive closure
-// contains net (via engine/embed → sqlite), but its DIRECT import list
-// is what determines whether IT can dial or exec. The runtime egress gate
-// (TestStatic_EmbedAttemptsNoDial) is the proof — an explicit
-// net.DefaultResolver sentinel confirms no dial is attempted at embed time.
+// AC-8 (cont.): the static package contains NO networking or
+// process-execution import, in any non-test, non-generated .go file.
+// This is the structural invariant: the embedder is reachable from
+// index / search / MCP / HTTP via the registry's registered scheme, so
+// ANY outbound code in this package would mean the default graph links
+// an egress path. The download path lives in cmd/graphi instead (see
+// cmd/graphi/setup_static.go) — the only legitimate place for an
+// outbound HTTPS client in graphi.
 func TestStatic_EmbedderRuntimeIsZeroEgress(t *testing.T) {
-	// The download path (download.go) imports net/http and net/url — that
-	// is its purpose, and `graphi setup-embedder` is the ONLY entry point
-	// that initiates a download (AC-5). The embedder runtime (every file
-	// reachable from the search/index/MCP/HTTP paths) must reach the
-	// network from zero. We enforce that by grepping every non-test
-	// .go file outside download.go for a net import.
 	fsys := os.DirFS(".")
 	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -789,9 +785,6 @@ func TestStatic_EmbedderRuntimeIsZeroEgress(t *testing.T) {
 		if strings.HasSuffix(p, "_test.go") {
 			return nil
 		}
-		if p == "download.go" {
-			return nil // the only file allowed to import net/http
-		}
 		if p == "nfd_table.go" {
 			return nil // generated, no network
 		}
@@ -800,9 +793,49 @@ func TestStatic_EmbedderRuntimeIsZeroEgress(t *testing.T) {
 			return err
 		}
 		src := string(body)
-		for _, banned := range []string{"\"net\"", "\"net/http\"", "\"net/url\"", "\"os/exec\"", "\"crypto/tls\"", "\"syscall/js\""} {
+		for _, banned := range []string{"\"net\"", "\"net/http\"", "\"net/http/httptest\"", "\"net/url\"", "\"os/exec\"", "\"crypto/tls\"", "\"syscall/js\""} {
 			if strings.Contains(src, banned) {
-				t.Errorf("%s imports %s; the embedder runtime must reach the network from zero (download.go is the only file allowed)", p, banned)
+				t.Errorf("%s imports %s; engine/embed/static must contain no outbound code (the download path is in cmd/graphi).", p, banned)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestStatic_NoOutboundDialInSource: belt-and-braces, the same invariant
+// asserted via the Go AST. We parse every non-test .go file in the
+// package and walk it for any http.Client.Do / http.Get / net.Dial call
+// that would constitute an outbound dial. This is the same AST walk the
+// production canary gate uses (internal/canary/gate.scanPackageAST),
+// applied at the package level so a regression is caught by a unit
+// test rather than waiting for the release build.
+func TestStatic_NoOutboundDialInSource(t *testing.T) {
+	denied := []string{
+		"net.Dial", "net.DialTCP", "net.DialUDP", "net.DialIP",
+		"http.Get", "http.Post", "http.PostForm", "http.Head",
+		"http.Client.Do", "http.Client.Get", "http.Client.Post", "http.Client.Head",
+	}
+	fsys := os.DirFS(".")
+	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(p) != ".go" || strings.HasSuffix(p, "_test.go") {
+			return nil
+		}
+		body, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		for _, sym := range denied {
+			if strings.Contains(string(body), sym) {
+				t.Errorf("%s mentions %q; the static package must not call out to the network in any form (AC-5).", p, sym)
 			}
 		}
 		return nil

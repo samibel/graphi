@@ -21,12 +21,19 @@
 // `pipeline` block for the rounding points and the pairwiseSum* helpers for
 // the summation tree.
 //
-// CGo-free: only stdlib imports in the embedder runtime. The download path
-// (download.go) imports net/http and net/url — that is its purpose, and
-// `graphi setup-embedder` is the ONLY entry point that initiates a download
-// (AC-5). AC-8 (AssertNoCgoEmbedder and the egress canary) and AC-5 (the
-// embedder runtime is offline by construction; no setup-embedder call is
-// reachable from index/search/MCP/HTTP) hold this contract end-to-end.
+// CGo-free and zero-egress: the embedder runtime imports only the Go
+// standard library and never reaches the network. The download path that
+// installs the pinned artifact lives in cmd/graphi (cmd/graphi/setup_static.go)
+// — NOT in this package — because this package is reachable from
+// index / search / MCP / HTTP via the registry's registered scheme, and any
+// outbound code in it would mean the default graph links an egress path
+// (AC-5 / AC-8). `graphi setup-embedder static:<model>@<revision>` is the
+// ONLY entry point that initiates a download; the embedder runtime
+// (every file in this package) reads the cached artifact and never dials.
+// TestStatic_EmbedderRuntimeIsZeroEgress and TestStatic_NoOutboundDialInSource
+// enforce this invariant at the package level; the production canary gate
+// (internal/canary/gate) does the same for the whole default graph at
+// release time.
 package static
 
 import (

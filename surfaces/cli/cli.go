@@ -12,10 +12,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
 	"github.com/samibel/graphi/surfaces/client"
@@ -393,7 +391,9 @@ func mutatingFlags(cmd string, args []string, errOut io.Writer) (mutatingReq, er
 //
 // where <selector> is e.g. "ollama" or "ollama:127.0.0.1:11434" (loopback-only,
 // opt-in), "onnx:<model>" (requires the embed_onnx build), or
-// "static:<model>@<revision>" (downloads + pins the artifact; SW-262).
+// "static:<model>@<revision>". The `static:` selector is dispatched by
+// cmd/graphi's runStaticSetupEmbedder (NOT this function) so the
+// download path stays out of the default graph (AC-5 / AC-8).
 func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer) error {
 	selector := ""
 	if len(args) > 0 {
@@ -412,72 +412,18 @@ func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer)
 		fmt.Fprintln(out, "Run a semantic query:           graphi search -semantic \"<query>\"")
 		return nil
 	}
-	// The static: path actually downloads. We delegate to the static
-	// package's download function; the cli package stays agnostic.
+	// The static: selector is handled at the cmd layer (runStaticSetupEmbedder
+	// in cmd/graphi/setup.go), not here. This function only ever prints
+	// instructions for non-static selectors — it never reaches the network.
 	if strings.HasPrefix(selector, "static:") {
-		return runStaticSetup(ctx, selector[len("static:"):], args, out, errOut)
+		fmt.Fprintf(errOut, "graphi: setup-embedder: the `static:` selector is handled at the cmd layer; the cli surface prints help only\n")
+		return fmt.Errorf("static: handled by cmd/graphi")
 	}
 	fmt.Fprintf(out, "To enable graphi semantic search with %q, export:\n", selector)
 	fmt.Fprintf(out, "  export GRAPHI_EMBEDDER=%s\n", selector)
 	fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
 	fmt.Fprintln(out, "Note: network embedders (Ollama) are loopback-only and validated fail-closed at construction.")
 	return nil
-}
-
-// runStaticSetup is the static-scheme branch of `graphi setup-embedder`. It
-// parses the rest of the command line, calls into the static package's
-// download or install-local path, and reports the outcome. The cli surface
-// is the only entry point that reaches the network; the embedder itself
-// never initiates a download (AC-5).
-func runStaticSetup(ctx context.Context, modelAtRev string, args []string, out, errOut io.Writer) error {
-	if modelAtRev == "" {
-		fmt.Fprintln(errOut, "graphi: setup-embedder: the `static:` selector requires a model@revision (e.g. `graphi setup-embedder static:potion-code-16M-v2@<revision>`)")
-		return fmt.Errorf("static: empty model@revision")
-	}
-	fs := flag.NewFlagSet("setup-embedder static", flag.ContinueOnError)
-	fs.SetOutput(errOut)
-	local := fs.String("local", "", "validate and install from a local artifact directory (air-gapped path; AC-6)")
-	dest := fs.String("cache-dir", defaultStaticCacheDir(), "destination directory for the artifact (default $XDG_CACHE_HOME/graphi/models/)")
-	// Re-parse the args after the model@revision selector. The selector is
-	// already consumed by RunSetupEmbedder as args[0].
-	if err := fs.Parse(args[1:]); err != nil {
-		return err
-	}
-	if *local != "" {
-		if err := static.InstallLocal(ctx, *local, *dest); err != nil {
-			fmt.Fprintf(errOut, "graphi: setup-embedder: %v\n", err)
-			return err
-		}
-		fmt.Fprintf(out, "static: artifact installed from %s to %s (SHA-256 verified)\n", *local, *dest)
-		fmt.Fprintf(out, "To enable semantic search, export:\n")
-		fmt.Fprintf(out, "  export GRAPHI_EMBEDDER=static:%s\n", modelAtRev)
-		fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
-		return nil
-	}
-	if err := static.Download(ctx, *dest); err != nil {
-		fmt.Fprintf(errOut, "graphi: setup-embedder: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(out, "static: artifact downloaded to %s (SHA-256 verified)\n", *dest)
-	fmt.Fprintf(out, "To enable semantic search, export:\n")
-	fmt.Fprintf(out, "  export GRAPHI_EMBEDDER=static:%s\n", modelAtRev)
-	fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
-	return nil
-}
-
-// defaultStaticCacheDir returns the default destination for setup-embedder
-// (the same path the embedder reads from). Honours XDG_CACHE_HOME.
-func defaultStaticCacheDir() string {
-	cache := os.Getenv("XDG_CACHE_HOME")
-	if cache == "" {
-		if home, _ := os.UserHomeDir(); home != "" {
-			cache = filepath.Join(home, ".cache")
-		}
-	}
-	if cache == "" {
-		return ""
-	}
-	return filepath.Join(cache, "graphi", "models", "potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b")
 }
 
 // RunListPRs runs the SW-105 read-only forge PR-enumeration through the shared

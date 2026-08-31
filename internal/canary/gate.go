@@ -114,6 +114,18 @@ var outboundDialAllowlist = []string{
 	// tests drive an in-memory MockForge and do zero network I/O; the real
 	// GitHubForge is the only dialer (mirrors engine/review's single egress).
 	"github.com/samibel/graphi/surfaces/forge",
+	// cmd/graphi is the top-level CLI entry point. Its ONLY outbound network
+	// call is the `graphi setup-embedder static:<model>@<revision>` command
+	// (SW-262), which downloads the pinned static-embedder artifact over
+	// HTTPS and validates its SHA-256 against the in-tree pin table. The
+	// download is user-invoked, fail-closed, and structurally isolated from
+	// the rest of the default graph: engine/embed/static is net-free (its
+	// own test fails if net/http ever re-appears there), and surfaces/cli
+	// is also net-free. The download path is one file (setup_static.go);
+	// no other file in cmd/graphi imports net/http or net/url. The
+	// `graphi setup-embedder` non-static selectors (ollama, onnx) stay
+	// print-only and never reach the network from this path.
+	"github.com/samibel/graphi/cmd/graphi",
 }
 
 // outboundDialCallDenylist names the dial constructors the AST scan flags when

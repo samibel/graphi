@@ -255,18 +255,84 @@ func applyClients(cs []mcpconfig.Client) error {
 	return firstErr
 }
 
-// runSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059). It
-// prints the explicit GRAPHI_EMBEDDER config a user sets to enable the OPTIONAL
-// semantic search. It is OFFLINE (no construction, no dial) and there is no
-// hidden default — semantic search stays OFF until the user opts in.
+// runSetupEmbedder is the opt-in `graphi setup-embedder` command (SW-059,
+// extended by SW-262). It dispatches the `static:<model>@<revision>`
+// selector to the cmd-local download path (this file) and every other
+// selector to the offline print path (surfaces/cli.RunSetupEmbedder).
+// The static path is the ONLY one that reaches the network; it lives
+// here — NOT in surfaces/cli or engine/embed/static — so the default
+// graph does not link an outbound HTTP client (AC-5 / AC-8).
 //
 //	graphi setup-embedder [<selector>]
 func runSetupEmbedder(args []string) int {
+	selector := ""
+	if len(args) > 0 {
+		selector = args[0]
+	}
+	if strings.HasPrefix(selector, "static:") {
+		return runStaticSetupEmbedder(args)
+	}
 	if err := cli.RunSetupEmbedder(context.Background(), args, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: setup-embedder: %v\n", err)
 		return 1
 	}
 	return 0
+}
+
+// runStaticSetupEmbedder is the cmd-graphi side of the static-embedder
+// download path. It parses the model@revision + --local / --cache-dir
+// flags and delegates to the StaticDownload / StaticInstallLocal helpers
+// in setup_static.go. The network code (net/http) lives in this package
+// only — surfaces/cli and engine/embed/static are net-free.
+func runStaticSetupEmbedder(args []string) int {
+	selector := args[0]
+	if len(selector) <= len("static:") {
+		fmt.Fprintln(os.Stderr, "graphi: setup-embedder: the `static:` selector requires a model@revision (e.g. `graphi setup-embedder static:potion-code-16M-v2@<revision>`)")
+		return 1
+	}
+	modelAtRev := selector[len("static:"):]
+
+	fs := flag.NewFlagSet("setup-embedder static", flag.ContinueOnError)
+	local := fs.String("local", "", "validate and install from a local artifact directory (air-gapped path; AC-6)")
+	dest := fs.String("cache-dir", defaultStaticCacheDir(), "destination directory for the artifact (default $XDG_CACHE_HOME/graphi/models/)")
+	if err := fs.Parse(args[1:]); err != nil {
+		return 1
+	}
+	if *local != "" {
+		if err := StaticInstallLocal(context.Background(), *local, *dest); err != nil {
+			fmt.Fprintf(os.Stderr, "graphi: setup-embedder: %v\n", err)
+			return 1
+		}
+		fmt.Printf("static: artifact installed from %s to %s (SHA-256 verified)\n", *local, *dest)
+		fmt.Println("To enable semantic search, export:")
+		fmt.Printf("  export GRAPHI_EMBEDDER=static:%s\n", modelAtRev)
+		fmt.Println("Then re-index with embeddings:  graphi index --semantic")
+		return 0
+	}
+	if err := StaticDownload(context.Background(), *dest); err != nil {
+		fmt.Fprintf(os.Stderr, "graphi: setup-embedder: %v\n", err)
+		return 1
+	}
+	fmt.Printf("static: artifact downloaded to %s (SHA-256 verified)\n", *dest)
+	fmt.Println("To enable semantic search, export:")
+	fmt.Printf("  export GRAPHI_EMBEDDER=static:%s\n", modelAtRev)
+	fmt.Println("Then re-index with embeddings:  graphi index --semantic")
+	return 0
+}
+
+// defaultStaticCacheDir returns the default destination for setup-embedder
+// (the same path the embedder reads from). Honours XDG_CACHE_HOME.
+func defaultStaticCacheDir() string {
+	cache := os.Getenv("XDG_CACHE_HOME")
+	if cache == "" {
+		if home, _ := os.UserHomeDir(); home != "" {
+			cache = filepath.Join(home, ".cache")
+		}
+	}
+	if cache == "" {
+		return ""
+	}
+	return filepath.Join(cache, "graphi", "models", "potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b")
 }
 
 // runPrivacyAudit prints the local-first proof from real facts and exits non-zero
