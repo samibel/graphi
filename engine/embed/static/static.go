@@ -80,81 +80,155 @@ const DefaultMaxLength = 512
 // the HuggingFace id carries).
 const ModelID = "potion-code-16M-v2"
 
-// poolingMode is the single pooling mode the production embedder implements.
-// The ID format encodes it (AC-2); changing it changes every cached
-// generation, so an embedder with a different mode would read as stale on
-// reload.
-const poolingMode = "mean"
-
-// configHash / tokenizerHash mirror the pin table in pins.go. They enter the
-// Embedder.ID() format, so a divergence between this file and pins.go is a
-// build-time test failure (TestStatic_PinTableAgreesWithPins).
-const (
-	configHash    = "148e5691a6fcc553437156859701fba017a1ba5d340b170f17e0f3668fb861a7"
-	tokenizerHash = "107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45"
-)
-
 // modelConfig is config.json: Model2Vec reads only "normalize" (default false).
 type modelConfig struct {
 	Normalize      *bool  `json:"normalize"`
 	EmbeddingDtype string `json:"embedding_dtype"`
 }
 
-// Embedder is the production static-potion embedder. It is constructed lazily:
-// New takes a selector argument, parses it, and validates the model+revision;
-// the artifact itself is NOT read until Embed is called for the first time. A
-// construction never dials anything, and never reads the artifact directory.
-// The lazy-load shape is what makes "first install, warm start, offline with
-// cache, offline without cache" share one constructor (AC-9): a warm cache
-// is fast (LoadModel in <100ms per the SW-259 record), a cold cache surfaces
-// a typed error naming the exact repair command.
+// SelectorErrorKind enumerates the bad-selector cases New/NewWithPinnedModel
+// reject with a typed error. The kind is the discriminator callers use in
+// errors.As to render an actionable message; the operator-facing detail
+// names the accepted form (AC-1).
+type SelectorErrorKind int
+
+const (
+	// SelectorEmpty: the constructor argument is the empty string.
+	SelectorEmpty SelectorErrorKind = iota + 1
+	// SelectorMissingAt: the argument has no `@<revision>` segment.
+	SelectorMissingAt
+	// SelectorEmptyRevision: the `@<revision>` segment is present but empty.
+	SelectorEmptyRevision
+	// SelectorUnknownModel: the model name is not the pinned one.
+	SelectorUnknownModel
+	// SelectorUnknownRevision: the revision is not the pinned one.
+	SelectorUnknownRevision
+)
+
+// SelectorError is the typed error New returns for every bad-selector
+// case. AC-1 wants a typed error naming the accepted form; tests assert
+// it with errors.As.
+type SelectorError struct {
+	Kind     SelectorErrorKind
+	Input    string
+	Model    string // accepted model (the pinned one) when relevant
+	Revision string
+}
+
+func (e *SelectorError) Error() string {
+	switch e.Kind {
+	case SelectorEmpty:
+		return "static: selector is empty; the accepted form is static:<model>@<revision>"
+	case SelectorMissingAt:
+		return fmt.Sprintf("static: selector %q is not in the accepted form static:<model>@<revision> (e.g. static:%s@%s)", e.Input, e.Model, e.Revision)
+	case SelectorEmptyRevision:
+		return fmt.Sprintf("static: selector %q is missing @<revision>; the accepted form is static:<model>@<revision> (e.g. static:%s@%s)", e.Input, e.Model, e.Revision)
+	case SelectorUnknownModel:
+		return fmt.Sprintf("static: unknown model %q; the accepted form is static:%s@%s", e.Input, e.Model, e.Revision)
+	case SelectorUnknownRevision:
+		return fmt.Sprintf("static: unsupported revision %q; the pinned revision is %s", e.Input, e.Revision)
+	default:
+		return fmt.Sprintf("static: bad selector %q", e.Input)
+	}
+}
+
+// inferenceContractID is the implementation-contract identity the
+// production embedder advertises via ID() (AC-2). It encodes the three
+// things the SW-259 carry-forwards pinned:
+//
+//   - EmbedEach: every text is its own longest, so no BatchLongest pad id
+//     is pooled into a node's mean;
+//   - F16: table is binary16, mean is rounded to binary16 after the
+//     float32 accumulation, every square and the sum-of-squares are
+//     binary16-rounded before the float32 sqrt (rounding points 1–5);
+//   - tree: the sum-of-squares is the fixed pairwise tree
+//     pairwiseSumF16 (8-lane interleave, halves at multiples of 8).
+//
+// Any change to any of the three must change this string so the SW-261
+// fingerprint reads the new generation as different.
+const inferenceContractID = "embedeach-f16-tree"
+
+// Embedder is the production static-potion embedder. New takes a
+// selector argument, parses it, validates the model+revision against the
+// pinned pair, and (when the artifact directory is reachable) loads it +
+// verifies the pinned SHA-256 (AC-2/AC-6). A construction never dials
+// anything, and never reads the artifact directory unless the user has
+// already pointed at one (GRAPHI_STATIC_MODEL_DIR or the default cache).
+// The lazy-load shape is what makes "first install, warm start, offline
+// with cache, offline without cache" share one constructor (AC-9): a
+// warm cache is fast (~100ms per the SW-259 record), a cold cache
+// surfaces a typed error naming the exact repair command.
 type Embedder struct {
 	model    string
 	revision string
-	dim      int    // discovered on first embed; 0 before that
-	modelSHA string // pinned config hash, the [:12] of which enters ID()
+	dim      int // discovered on first embed; 0 before that
 
 	mu      sync.Mutex
 	loaded  bool
-	loadedM *Model
+	loadedM *Model // nil until VerifyPins + LoadModel succeed
 	loadErr error
 }
 
-// New constructs a static embedder for `model@revision`. The selector format
-// is `static:<model>@<revision>`; the part after `static:` is passed here. An
-// empty arg, an arg without `@revision`, or an arg whose model is not the
-// pinned one is rejected with a typed error naming the accepted form. The
-// function performs no IO (AC-5: the embedder never initiates a download).
+// New constructs a static embedder for `model@revision`. The selector
+// format is `static:<model>@<revision>`; the part after `static:` is
+// passed here. An empty arg, an arg without `@revision`, or an arg whose
+// model / revision is not the pinned pair is rejected with a typed
+// SelectorError naming the accepted form. The function performs no IO
+// (AC-5: the embedder never initiates a download).
+//
+// When the artifact directory is reachable and the pinned files verify
+// against the in-tree pin table, New also loads the model so ID() can
+// advertise the real file hashes. When the artifact directory is NOT
+// reachable (first install, offline without cache) New succeeds with a
+// nil Model; the lazy load path surfaces a typed unavailable error on
+// the first Embed / ProbeDim call.
 func New(arg string) (*Embedder, error) {
 	return NewWithPinnedModel(arg, ModelID, defaultRevision())
 }
 
-// NewWithPinnedModel is New with the pinned (model, revision) pair supplied.
-// It is the seam tests use to assert the unknown-model / missing-revision
-// typed errors without depending on the package constants.
+// NewWithPinnedModel is New with the pinned (model, revision) pair
+// supplied. It is the seam tests use to assert the unknown-model /
+// missing-revision typed errors without depending on the package
+// constants.
 func NewWithPinnedModel(arg, pinnedModel, pinnedRevision string) (*Embedder, error) {
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
-		return nil, fmt.Errorf("static: selector is empty; the accepted form is static:<model>@<revision>")
+		return nil, &SelectorError{Kind: SelectorEmpty}
 	}
 	model, rev, ok := splitStaticSelector(arg)
 	if !ok {
-		return nil, fmt.Errorf("static: selector %q is not in the accepted form static:<model>@<revision> (e.g. static:%s@%s)", arg, pinnedModel, pinnedRevision)
+		return nil, &SelectorError{Kind: SelectorMissingAt, Input: arg, Model: pinnedModel, Revision: pinnedRevision}
 	}
 	if rev == "" {
-		return nil, fmt.Errorf("static: selector %q is missing @<revision>; the accepted form is static:<model>@<revision> (e.g. static:%s@%s)", arg, pinnedModel, pinnedRevision)
+		return nil, &SelectorError{Kind: SelectorEmptyRevision, Input: arg, Model: pinnedModel, Revision: pinnedRevision}
 	}
 	if model != pinnedModel {
-		return nil, fmt.Errorf("static: unknown model %q; the accepted form is static:%s@%s", model, pinnedModel, pinnedRevision)
+		return nil, &SelectorError{Kind: SelectorUnknownModel, Input: model, Model: pinnedModel, Revision: pinnedRevision}
 	}
 	if rev != pinnedRevision {
-		return nil, fmt.Errorf("static: unsupported revision %q; the pinned revision is %s", rev, pinnedRevision)
+		return nil, &SelectorError{Kind: SelectorUnknownRevision, Input: rev, Revision: pinnedRevision}
 	}
-	return &Embedder{
+	e := &Embedder{
 		model:    pinnedModel,
 		revision: pinnedRevision,
-		modelSHA: configHash,
-	}, nil
+	}
+	// Try to load + verify pins right now so ID() carries the real
+	// identity. A missing artifact is fine: the lazy load path will
+	// surface a typed unavailable error on the first use.
+	dir := ResolveArtifactDir(pinnedModel + "@" + pinnedRevision)
+	if dir == "" {
+		return e, nil
+	}
+	if m, err := LoadModel(dir); err == nil {
+		e.loadedM = m
+		e.loaded = true
+	}
+	// On error we still return the Embedder; the lazy load will surface
+	// the typed PinMismatchError (or its sibling unavailable error) on
+	// the first Embed / ProbeDim call. New itself never refuses on
+	// artifact errors; the typed errors surface through the search
+	// service's typed unavailable response (AC-5).
+	return e, nil
 }
 
 // defaultRevision is the only revision we pin. Surfaced as a function so the
@@ -180,22 +254,46 @@ func splitStaticSelector(arg string) (model, rev string, ok bool) {
 //
 // Any change to the model, revision, configuration hash, pooling mode or
 // normalisation flag changes the ID, which feeds the SW-261 fingerprint and
-// the GenerationStore's typed state. The literal ":" between segments is
-// the canonical separator; the literal "@" between model and revision
-// matches the user-facing selector shape.
+// ID implements embed.Embedder. The format is
+//
+//	static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>
+//
+// The first three segments are the user-facing identity: scheme,
+// model@revision, and the SHA-256 (first 12 hex digits) of the actual
+// model.safetensors file. The fourth segment is the tokenizer's SHA-256
+// (first 12 hex digits) so a swapped tokenizer changes the ID. The fifth
+// segment is `inferenceContractID` — "embedeach-f16-tree" — the
+// implementation-contract identity (EmbedEach batch-invariance, F16
+// rounding points, fixed pairwise summation tree) that the SW-259
+// carry-forwards pinned; a change to the rounding tree or the pooling
+// strategy changes this segment, so SW-261's fingerprint reads the new
+// generation as a different embedding space.
+//
+// The on-disk SHA values are the inference-configuration identity AC-2
+// promises: a structurally valid replacement of the weights or the
+// tokenizer that changes the file hashes changes the ID, and the
+// GenerationStore's typed state will see the new generation as a
+// distinct fingerprint (it is impossible for a swapped model to
+// inherit the cached identity). When the artifact has not been loaded
+// yet, ID() falls back to the pinned hashes from PinnedSHA256 — the
+// identity is the same shape, just sourced from the pin table rather
+// than the artifact itself. The lazy load path replaces those values
+// with the real hashes as soon as the artifact is reachable.
 func (e *Embedder) ID() string {
-	normalize := "true"
-	// When the artifact is loaded, the on-disk normalize flag enters the ID
-	// too — the contract says any inference-configuration change must change
-	// the ID. Until the first load the on-disk value is unknown, so the ID
-	// reads normalize=true (the pinned config.json's value) for the
-	// fingerprint's first build; a subsequent embed that reveals a different
-	// value would produce a different ID and the GenerationStore would
-	// fingerprint the new one (the AC-2 contract).
-	if e.loadedM != nil && !e.loadedM.normalize {
-		normalize = "false"
+	modelHash := PinnedSHA256[FileSafetensors][:12]
+	tokHash := PinnedSHA256[FileTokenizer][:12]
+	e.mu.Lock()
+	loaded := e.loadedM
+	e.mu.Unlock()
+	if loaded != nil && loaded.FileHashes != nil {
+		if h, ok := loaded.FileHashes[FileSafetensors]; ok && len(h) >= 12 {
+			modelHash = h[:12]
+		}
+		if h, ok := loaded.FileHashes[FileTokenizer]; ok && len(h) >= 12 {
+			tokHash = h[:12]
+		}
 	}
-	return Scheme + ":" + e.model + "@" + e.revision + ":" + e.modelSHA[:12] + ":" + poolingMode + ":" + normalize
+	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + tokHash + ":" + inferenceContractID
 }
 
 // Dim implements embed.Embedder. The dimension is read from the artifact and
@@ -377,30 +475,95 @@ func ResolveArtifactDir(modelAtRev string) string {
 // is opened — a single oversized file cannot allocate.
 const maxArtifactBytes int64 = 34 << 20 // 34 MiB; the four pinned files sum to ~32 MiB
 
+// verifyAllPins is the load-time byte-identity check (AC-2/AC-6). It
+// streams every pinned file through SHA-256 and compares to the in-tree
+// pin table, returning the hash map (so ID() can advertise the real
+// identity) or a typed PinMismatchError naming expected vs actual. A
+// single mismatch aborts the whole load; no Model is produced.
+func verifyAllPins(dir string) (map[string]string, error) {
+	hashes := make(map[string]string, len(PinnedFileNames))
+	for _, name := range PinnedFileNames {
+		want, ok := PinnedSHA256[name]
+		if !ok {
+			return nil, fmt.Errorf("static: VerifyPins: no pin recorded for %s; refusing to load a file with no recorded identity", name)
+		}
+		path := filepath.Join(dir, name)
+		got, err := sha256File(path)
+		if err != nil {
+			return nil, fmt.Errorf("static: VerifyPins: hash %s: %w", name, err)
+		}
+		if got != want {
+			return nil, &PinMismatchError{
+				File:     name,
+				Path:     path,
+				Expected: want,
+				Actual:   got,
+			}
+		}
+		hashes[name] = got
+	}
+	return hashes, nil
+}
+
+// statPinnedFiles returns the os.FileInfo of every pinned file (used by
+// the AC-7 per-file size check) and the total size in bytes. The walk
+// refuses symlinks (defends the size check against a symlink-to-/dev/zero
+// or a malicious huge file masquerading as a pinned path) and non-regular
+// files. Every error is typed and names the offending path.
+func statPinnedFiles(dir string) (map[string]os.FileInfo, int64, error) {
+	stats := make(map[string]os.FileInfo, len(PinnedFileNames))
+	var total int64
+	for _, name := range PinnedFileNames {
+		path := filepath.Join(dir, name)
+		st, err := os.Lstat(path)
+		if err != nil {
+			return nil, 0, fmt.Errorf("static: artifact %s: stat %s: %w", dir, name, err)
+		}
+		if st.Mode()&os.ModeSymlink != 0 {
+			return nil, 0, fmt.Errorf("static: artifact %s: %s is a symlink; pinned files must be regular", dir, path)
+		}
+		if !st.Mode().IsRegular() {
+			return nil, 0, fmt.Errorf("static: artifact %s: %s is not a regular file: %s", dir, name, st.Mode().String())
+		}
+		stats[name] = st
+		total += st.Size()
+	}
+	return stats, total, nil
+}
+
 // LoadModel reads the artifact directory into a Model. It is the production
 // loader; the spike's LoadModel is a strict subset.
+//
+// The loader fails closed on every AC-7 violation with a typed error:
+//   - a missing file, a corrupted safetensors header, a wrong dtype, a
+//     shape that does not match the vocabulary, an oversized file, an
+//     out-of-bounds offset, or a byte-count mismatch;
+//   - a file whose bytes do not match the in-tree pin table (AC-2/AC-6);
+//   - a symlink at a pinned path (defends the size check from a
+//     symlink-to-/dev/zero or similar attack).
+//
+// Every validation runs BEFORE the embedding table is allocated. The
+// loader's overflow-safe arithmetic bounds the safetensors size check
+// against an extreme positive shape that could otherwise wrap the
+// product and panic at `make`.
 func LoadModel(dir string) (*Model, error) {
 	if dir == "" {
 		return nil, errors.New("static: artifact directory is empty")
 	}
-	// Validate every required file is present, regular, and not a symlink.
-	// This is the AC-7 pre-allocation gate: we never open a file whose
-	// declared size would exceed maxArtifactBytes, and we never follow a
-	// symlink.
-	var totalSize int64
-	for _, name := range []string{FileConfig, FileTokenizer, FileSafetensors, FileModules} {
-		path := filepath.Join(dir, name)
-		st, lerr := os.Lstat(path)
-		if lerr != nil {
-			return nil, fmt.Errorf("static: artifact %s: %w", dir, lerr)
-		}
-		if st.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("static: artifact %s: %s is a symlink; pinned files must be regular", dir, path)
-		}
-		if !st.Mode().IsRegular() {
-			return nil, fmt.Errorf("static: artifact %s: %s is not a regular file", dir, path)
-		}
-		totalSize += st.Size()
+	// AC-2/AC-6: byte-level identity. Compute every pinned file's
+	// SHA-256 and compare to the in-tree pin table BEFORE any structural
+	// parse, so a swapped model cannot inherit the cached identity.
+	hashes, err := verifyAllPins(dir)
+	if err != nil {
+		return nil, err
+	}
+	// AC-7: validate every file is present, regular, and not a symlink
+	// BEFORE allocating anything. The total-size check guards the
+	// embedding table (32 MiB artifact vs 34 MiB ceiling) and the
+	// per-file size check guards the loadF16Matrix path.
+	stats, totalSize, err := statPinnedFiles(dir)
+	if err != nil {
+		return nil, err
 	}
 	if totalSize > maxArtifactBytes {
 		return nil, fmt.Errorf("static: artifact %s: total size %d exceeds pinned limit %d (AC-7)", dir, totalSize, maxArtifactBytes)
@@ -426,12 +589,13 @@ func LoadModel(dir string) (*Model, error) {
 		return nil, fmt.Errorf("static: artifact %s: %d embedding rows for %d vocabulary tokens", dir, rows, tok.VocabSize())
 	}
 	m := &Model{
-		Dir:       dir,
-		tok:       tok,
-		rows:      rows,
-		dim:       dim,
-		table:     table,
-		maxLength: DefaultMaxLength,
+		Dir:        dir,
+		tok:        tok,
+		rows:       rows,
+		dim:        dim,
+		table:      table,
+		maxLength:  DefaultMaxLength,
+		FileHashes: hashes,
 	}
 	if cfg.Normalize != nil {
 		m.normalize = *cfg.Normalize
@@ -447,6 +611,7 @@ func LoadModel(dir string) (*Model, error) {
 		m.medianTokenLength = int(float64(lengths[rows/2-1]+lengths[rows/2]) / 2)
 	}
 	m.ArtifactBytes = totalSize
+	_ = stats // (currently unused; reserved for AC-7 per-file size bounds)
 	return m, nil
 }
 

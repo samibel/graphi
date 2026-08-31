@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
 	"github.com/samibel/graphi/surfaces/client"
@@ -403,8 +404,8 @@ func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer)
 		fmt.Fprintln(out, "graphi semantic search is OPTIONAL and OFF by default.")
 		fmt.Fprintln(out, "To enable it, choose an embedder and export GRAPHI_EMBEDDER:")
 		fmt.Fprintln(out, "  Static (pure-Go, CGo-free, daemon-less; Labs, recommended):")
-		fmt.Fprintln(out, "    graphi setup-embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b")
-		fmt.Fprintln(out, "    export GRAPHI_EMBEDDER=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b")
+		fmt.Fprintf(out, "    %s\n", static.PinnedSelectorWithSetupPrefix)
+		fmt.Fprintf(out, "    export GRAPHI_EMBEDDER=%s\n", static.PinnedSelector)
 		fmt.Fprintln(out, "  Ollama (loopback, opt-in):  export GRAPHI_EMBEDDER=ollama")
 		fmt.Fprintln(out, "  Ollama (explicit host):     export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434")
 		fmt.Fprintln(out, "  ONNX (build with -tags embed_onnx): export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx")

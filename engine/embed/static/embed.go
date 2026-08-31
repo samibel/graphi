@@ -33,6 +33,16 @@ type Model struct {
 	// model2vec's character-budget multiplier.
 	medianTokenLength int
 	maxLength         int
+
+	// FileHashes records the SHA-256 (lower-case hex) of every pinned file
+	// the model was loaded from. They are the inference-configuration
+	// identity the production embedder advertises via ID() (AC-2): a
+	// structurally valid replacement of the weights or the tokenizer that
+	// changes the file hashes changes the ID, and the SW-261 fingerprint
+	// reads it back as a different generation. The hashes are computed at
+	// load time (VerifyPins) BEFORE the embedder is constructible, so a
+	// swapped model cannot inherit the cached identity.
+	FileHashes map[string]string
 }
 
 // Dim is the embedding dimensionality.
@@ -141,21 +151,10 @@ func (m *Model) dropUnkAndCap(ids []int) []int {
 	return kept
 }
 
-// pipeline selects the arithmetic EmbedEach mirrors.
-type pipeline int
-
-const (
-	// pipelineF16 is the reference on a text with at least one pooled token:
-	// numpy float16 arithmetic throughout (rounding points 1–5 below).
-	pipelineF16 pipeline = iota
-	// pipelineF16MeanF64Norm is the reference on a text with NO pooled
-	// token: that row is the zero vector, and numpy stacks it then
-	// promotes to float64 for normalisation. The production embedder
-	// mirrors both: with at least one pooled token, steps 2'–5' run in
-	// float16 (steps 2–5 below); with none, the same pipeline returns the
-	// zero vector, which is what numpy's float64 promotion produces.
-	pipelineF16MeanF64Norm
-)
+// (No pipeline enum / constants: the production embedder implements
+// one arithmetic pipeline, the SW-259 reference, and does not select
+// a pipeline at runtime. The spike-only pipeline selection was
+// removed.)
 
 // Embed is the production entry point and the AC-2 / SW-259 carry-forward:
 // it is BATCH-INVARIANT — Embed(texts)[i] is bit-identical to
@@ -191,7 +190,7 @@ func (m *Model) Embed(ctx context.Context, texts []string) ([][]float32, error) 
 	}
 	out := make([][]float32, len(texts))
 	for i, t := range texts {
-		out[i] = m.embedOne(m.InferenceIDs(t), pipelineF16)
+		out[i] = m.embedOne(m.InferenceIDs(t))
 	}
 	return out, nil
 }
@@ -199,8 +198,11 @@ func (m *Model) Embed(ctx context.Context, texts []string) ([][]float32, error) 
 // embedOne is the per-text arithmetic (the SW-259 reference pipeline on a
 // single text, which is its own longest). The empty-token path returns the
 // zero vector; the rest of the function is the five rounding points the
-// production embedder pins.
-func (m *Model) embedOne(ids []int, p pipeline) []float32 {
+// production embedder pins. There is no pipeline parameter: the
+// production embedder implements one pipeline (the SW-259 reference) and
+// the spike-only `pipelineF16MeanF64Norm` and `pipelineF32` paths are
+// not surfaced.
+func (m *Model) embedOne(ids []int) []float32 {
 	vec := make([]float32, m.dim)
 	if len(ids) == 0 {
 		return vec
@@ -215,39 +217,23 @@ func (m *Model) embedOne(ids []int, p pipeline) []float32 {
 	for j := range vec {
 		vec[j] = vec[j] / n
 	}
-	if p != pipelineF32 {
-		for j := range vec {
-			vec[j] = roundF16(vec[j]) // rounding point 1: the float16 mean
-		}
+	for j := range vec {
+		vec[j] = roundF16(vec[j]) // rounding point 1: the float16 mean
 	}
 	if !m.normalize {
 		return vec
 	}
-	switch p {
-	case pipelineF16:
-		squares := make([]uint16, m.dim)
-		for j, v := range vec {
-			squares[j] = f32ToF16(v * v) // rounding point 2
-		}
-		sumsq := roundF16(pairwiseSumF16(squares))           // rounding point 3
-		norm := roundF16(float32(math.Sqrt(float64(sumsq)))) // rounding point 4
-		if norm == 0 {
-			return vec
-		}
-		for j := range vec {
-			vec[j] = roundF16(vec[j] / norm) // rounding point 5
-		}
+	squares := make([]uint16, m.dim)
+	for j, v := range vec {
+		squares[j] = f32ToF16(v * v) // rounding point 2
+	}
+	sumsq := roundF16(pairwiseSumF16(squares))           // rounding point 3
+	norm := roundF16(float32(math.Sqrt(float64(sumsq)))) // rounding point 4
+	if norm == 0 {
 		return vec
-	case pipelineF16MeanF64Norm:
-		squares := make([]float64, m.dim)
-		for j, v := range vec {
-			squares[j] = float64(v) * float64(v) // 2': exact in float64
-		}
-		norm := math.Sqrt(pairwiseSumF64(squares)) + 1e-32 // 3', 4'
-		for j := range vec {
-			vec[j] = float32(float64(vec[j]) / norm) // 5': float64 divide, one round to float32
-		}
-		return vec
+	}
+	for j := range vec {
+		vec[j] = roundF16(vec[j] / norm) // rounding point 5
 	}
 	return vec
 }
@@ -300,8 +286,9 @@ func pairwiseSumF16(a []uint16) float32 {
 }
 
 // pairwiseSumF64 is numpy's DOUBLE_pairwise_sum — the same tree as
-// pairwiseSumF16 with float64 accumulators — used by the float64 add.reduce
-// of a chunk the reference promoted to float64 (pipelineF16MeanF64Norm).
+// pairwiseSumF16 with float64 accumulators. Kept for unit tests of the
+// tree shape; the production embedder's normalize pipeline runs
+// pairwiseSumF16 (the F16 reference).
 func pairwiseSumF64(a []float64) float64 {
 	n := len(a)
 	switch {
@@ -334,8 +321,7 @@ func pairwiseSumF64(a []float64) float64 {
 	}
 }
 
-// pipelineF32 is reserved for the spike's clean float32 variant, not used in
-// the production path. It exists so the embedOne signature mirrors the SW-259
-// spike's API surface (and so future readers understand why the third
-// argument exists).
-const pipelineF32 = pipeline(99)
+// pipelineF32 / pipelineF16MeanF64Norm were the spike-only pipeline
+// constants; embedOne no longer takes a pipeline parameter. They are
+// removed; a future refactor that wants to re-introduce pipeline
+// selection should redesign the spike rather than copy these.

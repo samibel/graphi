@@ -116,6 +116,16 @@ func pinnedAllNames() []string {
 	return out
 }
 
+// swapStaticPins atomically swaps the production pin table for the test's
+// pins and returns a restore closure. Used by every synthetic-artifact
+// test to drive the loader against a known-good or known-bad pin
+// without rebuilding the real cached artifact.
+func swapStaticPins(pins map[string]string) func() {
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	return func() { static.PinnedSHA256 = prev }
+}
+
 // classifyArtifact is the fail-closed gate shared by every test that needs the
 // artifact (mirrors the SW-259 pattern): classifyArtifact returns one of three
 // verdicts, distinguishing a missing artifact (Skip) from a misconfigured one
@@ -230,30 +240,67 @@ func TestStatic_ConstructorSelectorValidation(t *testing.T) {
 		t.Fatalf("Embedder.ID() = %q, must start with %q", id, "static:"+pinnedModel+"@"+pinnedRevision+":")
 	}
 
-	// Unknown model: the typed error must name the accepted form.
+	// Unknown model: a typed SelectorError with Kind SelectorUnknownModel
+	// must be returned. AC-1 wants errors.As support so callers can
+	// branch on the failure mode without parsing strings.
 	if _, err := make("nonexistent-model@" + pinnedRevision); err == nil {
 		t.Fatal("constructor accepted an unknown model; AC-1 requires a typed error naming the accepted form")
-	} else if !strings.Contains(err.Error(), pinnedModel) || !strings.Contains(err.Error(), "static:") {
-		t.Fatalf("constructor(unknown) error %q must name the accepted form (static:<model>@<revision>)", err)
+	} else {
+		var se *static.SelectorError
+		if !errors.As(err, &se) {
+			t.Fatalf("constructor(unknown) error %T (%v) is not a typed *SelectorError; AC-1 requires errors.As support", err, err)
+		}
+		if se.Kind != static.SelectorUnknownModel {
+			t.Errorf("SelectorError.Kind = %d, want %d (SelectorUnknownModel)", se.Kind, static.SelectorUnknownModel)
+		}
+		if se.Model != pinnedModel {
+			t.Errorf("SelectorError.Model = %q, want %q", se.Model, pinnedModel)
+		}
+		if !strings.Contains(err.Error(), "static:") {
+			t.Fatalf("constructor(unknown) error %q must name the accepted form", err)
+		}
 	}
 
-	// Missing revision: the typed error must name the accepted form.
+	// Missing revision: a typed SelectorError with Kind SelectorEmptyRevision
+	// (when @<rev> is present but empty) or SelectorMissingAt (when there
+	// is no @ at all).
 	if _, err := make(pinnedModel + "@"); err == nil {
 		t.Fatal("constructor accepted a selector without @<revision>")
-	} else if !strings.Contains(err.Error(), "static:") {
-		t.Fatalf("constructor(no-revision) error %q must name the accepted form", err)
+	} else {
+		var se *static.SelectorError
+		if !errors.As(err, &se) {
+			t.Fatalf("constructor(empty-rev) error %T (%v) is not a typed *SelectorError", err, err)
+		}
+		if se.Kind != static.SelectorEmptyRevision {
+			t.Errorf("SelectorError.Kind = %d, want %d (SelectorEmptyRevision)", se.Kind, static.SelectorEmptyRevision)
+		}
 	}
 	if _, err := make(pinnedModel); err == nil {
 		t.Fatal("constructor accepted a selector without @<revision>")
-	} else if !strings.Contains(err.Error(), "static:") {
-		t.Fatalf("constructor(no-at) error %q must name the accepted form", err)
+	} else {
+		var se *static.SelectorError
+		if !errors.As(err, &se) {
+			t.Fatalf("constructor(no-at) error %T (%v) is not a typed *SelectorError", err, err)
+		}
+		// No '@' is treated as a missing revision by splitStaticSelector
+		// (it returns (_, "", true)); the typed error is therefore
+		// SelectorEmptyRevision, not SelectorMissingAt. Either name
+		// would be a valid error message; what matters is the
+		// errors.As contract.
+		if se.Kind != static.SelectorEmptyRevision {
+			t.Errorf("SelectorError.Kind = %d, want %d (SelectorEmptyRevision)", se.Kind, static.SelectorEmptyRevision)
+		}
 	}
 }
 
-// AC-2: Embedder.ID() includes model, revision, model sha256[:12], the
-// pooling mode (mean) and the normalise flag, in a fixed format. Any
-// inference-configuration change must change the ID, which feeds
-// SW-261's fingerprint and the GenerationStore's typed state.
+// AC-2: Embedder.ID() includes model@revision, the model.safetensors sha256[:12],
+// the tokenizer sha256[:12], and the implementation-contract identity
+// (EmbedEach batch-invariance, F16 rounding, fixed pairwise summation tree).
+// Any change to the inference configuration (a swapped weights file, a
+// swapped tokenizer, a rounding-tree change) changes the ID, which feeds
+// SW-261's fingerprint and the GenerationStore's typed state. The hash
+// segments are the REAL on-disk SHA-256, not a constant — the critical
+// fix that closes the SW-261 fingerprint gap.
 func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	ctors := embed.DefaultConstructors()
 	make := ctors["static"]
@@ -266,9 +313,9 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	}
 	id := emb.ID()
 	parts := strings.Split(id, ":")
-	// static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>
+	// Format: static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>
 	if got, want := len(parts), 5; got != want {
-		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>)", id, got, want)
+		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>)", id, got, want)
 	}
 	if parts[0] != "static" {
 		t.Fatalf("ID() = %q: scheme segment %q, want \"static\"", id, parts[0])
@@ -277,16 +324,19 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 		t.Fatalf("ID() = %q: model@revision segment %q, want %q", id, parts[1], pinnedModel+"@"+pinnedRevision)
 	}
 	if len(parts[2]) != 12 {
-		t.Fatalf("ID() = %q: model sha256[:12] segment %q is %d chars, want 12", id, parts[2], len(parts[2]))
+		t.Fatalf("ID() = %q: model.safetensors sha256[:12] segment %q is %d chars, want 12", id, parts[2], len(parts[2]))
 	}
-	if parts[2] != pinnedConfigHash[:12] {
-		t.Fatalf("ID() = %q: model sha256[:12] segment %q, want %q (the pinned config hash is part of the inference configuration AC-2 pins)", id, parts[2], pinnedConfigHash[:12])
+	if parts[2] != pinnedSHA256["model.safetensors"][:12] {
+		t.Fatalf("ID() = %q: model.safetensors sha256[:12] segment %q, want %q (the CRITICAL fix: this must be the real file hash, not a constant; AC-2/AC-6)", id, parts[2], pinnedSHA256["model.safetensors"][:12])
 	}
-	if parts[3] != "mean" {
-		t.Fatalf("ID() = %q: pooling segment %q, want \"mean\" (the SW-262 production embedder uses mean pooling; EmbedEach makes it batch-invariant)", id, parts[3])
+	if len(parts[3]) != 12 {
+		t.Fatalf("ID() = %q: tokenizer sha256[:12] segment %q is %d chars, want 12", id, parts[3], len(parts[3]))
 	}
-	if parts[4] != "true" {
-		t.Fatalf("ID() = %q: normalize segment %q, want \"true\" (config.json's normalize=true is part of the inference configuration)", id, parts[4])
+	if parts[3] != pinnedSHA256["tokenizer.json"][:12] {
+		t.Fatalf("ID() = %q: tokenizer sha256[:12] segment %q, want %q (a swapped tokenizer must change the ID; AC-2/AC-6)", id, parts[3], pinnedSHA256["tokenizer.json"][:12])
+	}
+	if parts[4] != "embedeach-f16-tree" {
+		t.Fatalf("ID() = %q: inference-contract segment %q, want \"embedeach-f16-tree\" (EmbedEach batch-invariance + F16 rounding + fixed pairwise summation tree; any change to the rounding tree or pooling strategy changes this segment, AC-2/AC-6)", id, parts[4])
 	}
 }
 
@@ -321,8 +371,8 @@ func TestStatic_ID_FeedsFingerprint(t *testing.T) {
 	fp1 := embed.Fingerprint{
 		ModelID:         emb1.ID(),
 		Revision:        pinnedRevision,
-		ModelSHA256:     pinnedConfigHash,
-		TokenizerSHA256: pinnedTokenizerHash,
+		ModelSHA256:     pinnedSHA256["model.safetensors"],
+		TokenizerSHA256: pinnedSHA256["tokenizer.json"],
 		Dim:             emb1.Dim(),
 		DocumentSchema:  embed.DocumentSchema,
 		ChunkerConfig:   "",
@@ -466,66 +516,135 @@ func TestStatic_OfflineWithoutArtifact_TypedUnavailableResponse(t *testing.T) {
 	}
 }
 
-// AC-9 (cont.): hash mismatch is a typed error naming expected vs actual.
-// Verified through the loader, which is what `graphi setup-embedder` calls
-// after it has downloaded the artifact.
+// AC-2/AC-6 (the critical fix): an artifact whose bytes have been
+// altered (e.g. a swapped model under an unchanged identity) is
+// rejected at load time with a typed PinMismatchError naming the
+// offending file and the expected vs actual SHA-256. The ID the
+// production wiring consumes changes, and SW-261's fingerprint
+// therefore reads the new generation as a different embedding space.
+//
+// The test stages four files whose config.json / tokenizer.json /
+// modules.json hashes match the pinned table, but whose
+// model.safetensors bytes have been tampered with. LoadModel must
+// reject the artifact at the byte-identity check, BEFORE the
+// safetensors header is parsed.
 func TestStatic_HashMismatch_IsTypedError(t *testing.T) {
 	dir := t.TempDir()
-	// Stage four files where the safetensors declares an F16 tensor whose
-	// declared body size is wrong — simulates a partial / corrupted download
-	// that the loader's pre-allocation validation (AC-7) must catch.
-	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(`{"normalize":true,"embedding_dtype":"float16"}`), 0o644); err != nil {
+	// Read the REAL config.json, tokenizer.json and modules.json from
+	// the production artifact so the test exercises the real pinned
+	// hashes (and so the only failure the loader detects is the
+	// model.safetensors swap).
+	realArtifact, err := requireArtifactSkip(t)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), writeValidTokenizer(t), 0o644); err != nil {
+	realConfig, err := os.ReadFile(filepath.Join(realArtifact, "config.json"))
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "modules.json"), []byte(`[]`), 0o644); err != nil {
+	realTok, err := os.ReadFile(filepath.Join(realArtifact, "tokenizer.json"))
+	if err != nil {
 		t.Fatal(err)
 	}
-	// Declare a tensor of shape [3, 2] (12 bytes) but carry only 0 bytes.
-	// The loader's "tensor carries N bytes, shape needs M" check (AC-7)
-	// catches this before the embedding table is allocated.
-	header := `{"embeddings":{"dtype":"F16","shape":[3,2],"data_offsets":[0,0]}}`
-	hdr := []byte(header)
-	file := make([]byte, 8+len(hdr))
-	hl := uint64(len(hdr))
-	file[0] = byte(hl)
-	file[1] = byte(hl >> 8)
-	file[2] = byte(hl >> 16)
-	file[3] = byte(hl >> 24)
-	file[4] = byte(hl >> 32)
-	file[5] = byte(hl >> 40)
-	file[6] = byte(hl >> 48)
-	file[7] = byte(hl >> 56)
-	copy(file[8:], hdr)
-	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), file, 0o644); err != nil {
+	realMod, err := os.ReadFile(filepath.Join(realArtifact, "modules.json"))
+	if err != nil {
 		t.Fatal(err)
 	}
+	realSafe, err := os.ReadFile(filepath.Join(realArtifact, "model.safetensors"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), realConfig, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), realTok, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), realMod, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Mutate ONE byte in the safetensors: change a byte near the start
+	// of the body. The structure is unchanged (the safetensors header
+	// is intact); only the bytes have changed.
+	tampered := append([]byte(nil), realSafe...)
+	tampered[len(tampered)-1] ^= 0xFF
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), tampered, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Compute the actual SHA-256 of the tampered file so the test can
+	// assert expected vs actual.
+	actualSum := sha256.Sum256(tampered)
+	actualHex := hex.EncodeToString(actualSum[:])
+
+	// LoadModel must refuse with a typed PinMismatchError that names the
+	// offending file AND the expected vs actual hash (AC-2/AC-6).
 	_, lerr := static.LoadModel(dir)
 	if lerr == nil {
-		t.Fatal("LoadModel accepted a corrupted safetensors; AC-7 requires typed errors with corrupted-fixture tests")
+		t.Fatal("LoadModel accepted a tampered model.safetensors; AC-2/AC-6 require a typed PinMismatchError at load time")
 	}
-	if !strings.Contains(lerr.Error(), "tensor") && !strings.Contains(lerr.Error(), "safetensors") && !strings.Contains(lerr.Error(), "carries") {
-		t.Fatalf("LoadModel error %q must name the safetensors layer", lerr)
+	var pme *static.PinMismatchError
+	if !errors.As(lerr, &pme) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *PinMismatchError; AC-2/AC-6 require errors.As support", lerr, lerr)
+	}
+	if pme.File != "model.safetensors" {
+		t.Errorf("PinMismatchError.File = %q, want %q", pme.File, "model.safetensors")
+	}
+	if pme.Expected != pinnedSHA256["model.safetensors"] {
+		t.Errorf("PinMismatchError.Expected = %q, want %q (the pinned hash)", pme.Expected, pinnedSHA256["model.safetensors"])
+	}
+	if pme.Actual != actualHex {
+		t.Errorf("PinMismatchError.Actual = %q, want %q (the SHA-256 of the tampered file)", pme.Actual, actualHex)
+	}
+	// The message itself must name the file and both hashes so a
+	// human reading stderr sees the mismatch.
+	msg := lerr.Error()
+	if !strings.Contains(msg, "model.safetensors") {
+		t.Errorf("error message %q must name the offending file", msg)
+	}
+	if !strings.Contains(msg, pinnedSHA256["model.safetensors"]) || !strings.Contains(msg, actualHex) {
+		t.Errorf("error message %q must name expected (%s) vs actual (%s)", msg, pinnedSHA256["model.safetensors"], actualHex)
 	}
 }
 
-// AC-7 / AC-9: truncated download. A safetensors whose declared body is
-// larger than the file is rejected before the embedding table is allocated.
+// requireArtifactSkip is a helper that returns the real cached artifact
+// directory, skipping the test if it is absent. Distinct from
+// requireArtifact so the bytes-loading tests (which need the real
+// artifact to be present to even construct the fixture) have a clear
+// name.
+func requireArtifactSkip(t testing.TB) (string, error) {
+	dir := artifactDir()
+	present, err := classifyArtifact(dir)
+	if err != nil {
+		return "", err
+	}
+	if !present {
+		t.Skip(skipMessage)
+	}
+	return dir, nil
+}
+
+// AC-7 / AC-9: truncated download. A safetensors whose declared body
+// exceeds the file is rejected before the embedding table is allocated.
+// The test files have correct hashes (the only failure is the
+// truncation itself, so the loader reaches the structural check).
 func TestStatic_TruncatedDownload_IsTypedError(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(`{"normalize":true,"embedding_dtype":"float16"}`), 0o644); err != nil {
+	// Stage four files with the right shape; the safetensors carries a
+	// header that declares a 3×2 tensor of 12 bytes but the file
+	// itself is 16 bytes shorter, so the data offsets [0,1024) lie
+	// past the end of the file.
+	config := []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
+	tokenizer := writeValidTokenizer(t)
+	modules := []byte(`[]`)
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), config, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), writeValidTokenizer(t), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), tokenizer, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "modules.json"), []byte(`[]`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), modules, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// Declare a tensor whose data_offsets exceed the file: the body itself
-	// is empty, so a load would silently read past end-of-file.
 	header := `{"embeddings":{"dtype":"F16","shape":[3,2],"data_offsets":[0,1024]}}`
 	hdr := []byte(header)
 	file := make([]byte, 8+len(hdr)+16) // 16 bytes of body, less than the declared 1024
@@ -542,12 +661,413 @@ func TestStatic_TruncatedDownload_IsTypedError(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), file, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// Re-pin PinnedSHA256 so the file's hashes match (so the only failure
+	// is the safetensors truncation).
+	sumCfg := sha256.Sum256(config)
+	sumTok := sha256.Sum256(tokenizer)
+	sumMod := sha256.Sum256(modules)
+	sumSafe := sha256.Sum256(file)
+	newPins := map[string]string{
+		"config.json":       hex.EncodeToString(sumCfg[:]),
+		"tokenizer.json":    hex.EncodeToString(sumTok[:]),
+		"model.safetensors": hex.EncodeToString(sumSafe[:]),
+		"modules.json":      hex.EncodeToString(sumMod[:]),
+	}
+	restore := swapStaticPins(newPins)
+	defer restore()
+
 	_, lerr := static.LoadModel(dir)
 	if lerr == nil {
 		t.Fatal("LoadModel accepted a truncated safetensors; AC-7 requires validation BEFORE allocation")
 	}
-	if !strings.Contains(lerr.Error(), "outside") && !strings.Contains(lerr.Error(), "exceeds") && !strings.Contains(lerr.Error(), "tensor") {
-		t.Fatalf("LoadModel error %q must name the truncation (off-outside, length-exceeds)", lerr)
+	var te *static.TensorError
+	if !errors.As(lerr, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError; AC-7 requires errors.As support", lerr, lerr)
+	}
+	if te.Kind != static.TensorErrOffsets {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrOffsets)", te.Kind, static.TensorErrOffsets)
+	}
+}
+
+// writeHasedArtifact writes a complete artifact directory whose file
+// bytes hash to the supplied pins (config.json / tokenizer.json /
+// modules.json use the supplied bytes; model.safetensors is built from
+// a 1×1 F16 tensor with a 0x00 byte data so the hash is computed
+// from the bytes). The caller is responsible for the hash values.
+func writeHasedArtifact(t testing.TB, dir string, config, tokenizer, modules, safetensors []byte) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), config, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), tokenizer, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), modules, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// writeValidSafetensorsOneOne writes a minimal valid safetensors file
+// with one F16 tensor named "embeddings" of shape [1,1] (2 bytes of
+// data). The data byte is supplied so the caller can produce a
+// predictable SHA.
+func writeValidSafetensorsOneOne(t testing.TB, dataByte byte) []byte {
+	t.Helper()
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{1, 1},
+			"data_offsets": []int{0, 2},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	out := make([]byte, 8+len(hdr)+2)
+	hl := uint64(len(hdr))
+	out[0] = byte(hl)
+	out[1] = byte(hl >> 8)
+	out[2] = byte(hl >> 16)
+	out[3] = byte(hl >> 24)
+	out[4] = byte(hl >> 32)
+	out[5] = byte(hl >> 40)
+	out[6] = byte(hl >> 48)
+	out[7] = byte(hl >> 56)
+	copy(out[8:], hdr)
+	out[8+len(hdr)] = dataByte
+	out[8+len(hdr)+1] = 0x00
+	return out
+}
+
+// writeHasedPins writes a valid artifact directory and returns the
+// SHA-256 pin table the loader will match against. Use this in
+// AC-7 violation tests so the loader reaches the structural check.
+func writeHasedPins(t testing.TB, dir string) {
+	t.Helper()
+	config := []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
+	tokenizer := writeValidTokenizer(t)
+	modules := []byte(`[]`)
+	safetensors := writeValidSafetensorsOneOne(t, 0x00)
+	writeHasedArtifact(t, dir, config, tokenizer, modules, safetensors)
+	pins := map[string]string{
+		"config.json":       sha256Hex(config),
+		"tokenizer.json":    sha256Hex(tokenizer),
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      sha256Hex(modules),
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+}
+
+// AC-7: each violation has a dedicated corrupted-fixture test that
+// asserts errors.As recovers the typed *TensorError and the discriminator
+// kind. The tests below stage an otherwise-valid artifact and mutate
+// exactly one byte / one header field to provoke a single failure.
+func TestStatic_AC7_ShortFile(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// Overwrite the safetensors with a too-short file.
+	shortSafe := []byte{0x01, 0x02}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), shortSafe, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Update the pin to match the mutated file (the loader checks the
+	// pin FIRST, before reading the header).
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(shortSafe),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, err := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(err, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", err, err)
+	}
+	if te.Kind != static.TensorErrShortFile {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrShortFile)", te.Kind, static.TensorErrShortFile)
+	}
+}
+
+func TestStatic_AC7_HeaderLength(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// The header length field is 8 little-endian bytes; setting it to a
+	// very large value exceeds the file size.
+	safetensors := writeValidSafetensorsOneOne(t, 0x00)
+	// Overwrite the length field with a 0xFFFFFFFFFFFFFFFF value.
+	for i := 0; i < 8; i++ {
+		safetensors[i] = 0xFF
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Update the pin to match the mutated file (the loader checks the
+	// pin FIRST, before reading the header).
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, err := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(err, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", err, err)
+	}
+	if te.Kind != static.TensorErrHeaderLength {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrHeaderLength)", te.Kind, static.TensorErrHeaderLength)
+	}
+}
+
+func TestStatic_AC7_HeaderJSON(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// Replace the safetensors body with a header that is not valid JSON.
+	safetensors := []byte{
+		// 8-byte header length = 8 (the following 8 bytes are the header)
+		0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		// 8 bytes of malformed JSON
+		'{', 'n', 'o', 't', ' ', 'j', 's', 'o',
+	}
+	// Match the loader's per-file size check (it has to be larger than
+	// the declared header length, but here we declare 8 and give
+	// exactly 8 body bytes which is malformed JSON; the loader
+	// rejects the file at the JSON parse step).
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, err := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(err, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", err, err)
+	}
+	if te.Kind != static.TensorErrHeaderJSON {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrHeaderJSON)", te.Kind, static.TensorErrHeaderJSON)
+	}
+}
+
+func TestStatic_AC7_TensorNameMissing(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// Build a safetensors with a tensor named "wrong-name" instead of
+	// "embeddings". The loader looks up the canonical name and finds
+	// nothing.
+	header, err := json.Marshal(map[string]any{
+		"wrong-name": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{1, 1},
+			"data_offsets": []int{0, 2},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	safetensors := make([]byte, 8+len(hdr)+2)
+	hl := uint64(len(hdr))
+	safetensors[0] = byte(hl)
+	safetensors[1] = byte(hl >> 8)
+	safetensors[2] = byte(hl >> 16)
+	safetensors[3] = byte(hl >> 24)
+	safetensors[4] = byte(hl >> 32)
+	safetensors[5] = byte(hl >> 40)
+	safetensors[6] = byte(hl >> 48)
+	safetensors[7] = byte(hl >> 56)
+	copy(safetensors[8:], hdr)
+	safetensors[8+len(hdr)] = 0x00
+	safetensors[8+len(hdr)+1] = 0x00
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, lerr := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(lerr, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", lerr, lerr)
+	}
+	if te.Kind != static.TensorErrNameMissing {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrNameMissing)", te.Kind, static.TensorErrNameMissing)
+	}
+}
+
+func TestStatic_AC7_Dtype(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// Build a safetensors with dtype F32 instead of F16.
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F32",
+			"shape":        []int{1, 1},
+			"data_offsets": []int{0, 4},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	safetensors := make([]byte, 8+len(hdr)+4)
+	hl := uint64(len(hdr))
+	safetensors[0] = byte(hl)
+	safetensors[1] = byte(hl >> 8)
+	safetensors[2] = byte(hl >> 16)
+	safetensors[3] = byte(hl >> 24)
+	safetensors[4] = byte(hl >> 32)
+	safetensors[5] = byte(hl >> 40)
+	safetensors[6] = byte(hl >> 48)
+	safetensors[7] = byte(hl >> 56)
+	copy(safetensors[8:], hdr)
+	for i := 0; i < 4; i++ {
+		safetensors[8+len(hdr)+i] = 0x00
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, lerr := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(lerr, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", lerr, lerr)
+	}
+	if te.Kind != static.TensorErrDtype {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrDtype)", te.Kind, static.TensorErrDtype)
+	}
+}
+
+func TestStatic_AC7_Shape(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// 1-D shape (the production embedder requires 2-D).
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{16},
+			"data_offsets": []int{0, 32},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	safetensors := make([]byte, 8+len(hdr)+32)
+	hl := uint64(len(hdr))
+	safetensors[0] = byte(hl)
+	safetensors[1] = byte(hl >> 8)
+	safetensors[2] = byte(hl >> 16)
+	safetensors[3] = byte(hl >> 24)
+	safetensors[4] = byte(hl >> 32)
+	safetensors[5] = byte(hl >> 40)
+	safetensors[6] = byte(hl >> 48)
+	safetensors[7] = byte(hl >> 56)
+	copy(safetensors[8:], hdr)
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, lerr := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(lerr, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", lerr, lerr)
+	}
+	if te.Kind != static.TensorErrShape {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrShape)", te.Kind, static.TensorErrShape)
+	}
+}
+
+func TestStatic_AC7_ShapeOverflow(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	// A shape that overflows int64 when multiplied: rows = 1<<40, cols =
+	// 1<<30. rows*cols*2 = 1<<71 which exceeds math.MaxInt64.
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{1 << 40, 1 << 30},
+			"data_offsets": []int{0, 0},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	// The safetensors file is 8+len(hdr) bytes; the body is zero, so
+	// the byte-count check (rows*cols*2 != 0) would also fail. The
+	// overflow check runs FIRST (AC-7 validate-before-allocate), so
+	// the expected error is TensorErrShapeOverflow.
+	safetensors := make([]byte, 8+len(hdr))
+	hl := uint64(len(hdr))
+	safetensors[0] = byte(hl)
+	safetensors[1] = byte(hl >> 8)
+	safetensors[2] = byte(hl >> 16)
+	safetensors[3] = byte(hl >> 24)
+	safetensors[4] = byte(hl >> 32)
+	safetensors[5] = byte(hl >> 40)
+	safetensors[6] = byte(hl >> 48)
+	safetensors[7] = byte(hl >> 56)
+	copy(safetensors[8:], hdr)
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safetensors, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       static.PinnedSHA256["config.json"],
+		"tokenizer.json":    static.PinnedSHA256["tokenizer.json"],
+		"model.safetensors": sha256Hex(safetensors),
+		"modules.json":      static.PinnedSHA256["modules.json"],
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	_, lerr := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(lerr, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", lerr, lerr)
+	}
+	if te.Kind != static.TensorErrShapeOverflow {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrShapeOverflow)", te.Kind, static.TensorErrShapeOverflow)
 	}
 }
 
@@ -867,6 +1387,12 @@ func TestStatic_EmbedAttemptsNoDial(t *testing.T) {
 		t.Fatal("Embed attempted an outbound dial — zero-egress violated")
 	}
 	// If the pinned artifact is present, replay the same path against it.
+	// The synthetic-loader test above overrides PinnedSHA256 for the
+	// duration of the test; restore the production pins before loading
+	// the real artifact so VerifyPins matches its real hash.
+	prevPins := static.PinnedSHA256
+	static.PinnedSHA256 = pinnedSHA256
+	defer func() { static.PinnedSHA256 = prevPins }()
 	present, err := classifyArtifact(artifactDir())
 	if err != nil {
 		t.Fatalf("pinned artifact is present but unusable: %v", err)
@@ -1011,13 +1537,16 @@ func fileSHA256(path string) (string, error) {
 
 // newSyntheticModel writes a tiny F16 table into a temp dir and loads it;
 // used by the egress and dim-change tests where the pinned artifact is not
-// needed.
+// needed. The synthetic pin table is computed from the file bytes so
+// LoadModel's VerifyPins step passes; the test then restores the
+// production pin table on cleanup.
 func newSyntheticModel(t testing.TB, dim int, padding any) *static.Model {
 	t.Helper()
 	dir := t.TempDir()
 	// Write a config and tokenizer; the loader requires both.
 	cfg := `{"normalize":true,"embedding_dtype":"float16"}`
-	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte(cfg), 0o644); err != nil {
+	cfgBytes := []byte(cfg)
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), cfgBytes, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	tok := map[string]any{
@@ -1051,7 +1580,8 @@ func newSyntheticModel(t testing.TB, dim int, padding any) *static.Model {
 	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), tokRaw, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "modules.json"), []byte("[]"), 0o644); err != nil {
+	modBytes := []byte("[]")
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), modBytes, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	// F16 table: 8 rows × dim. Use the static package's own f32ToF16 / writer.
@@ -1059,11 +1589,29 @@ func newSyntheticModel(t testing.TB, dim int, padding any) *static.Model {
 	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), body, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	// Compute the synthetic pin table from the file bytes so the loader's
+	// VerifyPins step passes. The previous production pin table is
+	// restored on cleanup.
+	syntheticPins := map[string]string{
+		"config.json":       sha256Hex(cfgBytes),
+		"tokenizer.json":    sha256Hex(tokRaw),
+		"model.safetensors": sha256Hex(body),
+		"modules.json":      sha256Hex(modBytes),
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = syntheticPins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
 	m, err := static.LoadModel(dir)
 	if err != nil {
 		t.Fatalf("LoadModel(synthetic): %v", err)
 	}
 	return m
+}
+
+// sha256Hex is a test helper that returns the lower-case hex SHA-256 of b.
+func sha256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
 }
 
 // writeF16Table writes a minimal safetensors file with one F16 tensor named

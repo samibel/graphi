@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -141,6 +142,16 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 	}
 	vecs, err := emb.Embed(ctx, []string{query})
 	if err != nil {
+		// AC-5: an embedder that surfaces a typed UnavailableError must
+		// reach SemanticSearch as the typed unavailable response with
+		// reason carrying the exact repair command. A plain
+		// error from the configured path is a real surface failure
+		// (an off-the-shelf embedder returning a wrapped network
+		// error, for example) and continues to surface as a non-nil
+		// error; the typed case is opt-in.
+		if u := repairable(err); u != "" {
+			return SemanticResponse{Query: query, Available: false, Reason: u, Hits: []SemanticHit{}}, nil
+		}
 		return SemanticResponse{}, err
 	}
 	if len(vecs) == 0 {
@@ -189,4 +200,28 @@ func MarshalSemantic(r SemanticResponse) ([]byte, error) {
 // with node provenance. It is satisfied by graphstore.Graphstore.
 type NodeReader interface {
 	GetNode(ctx context.Context, id model.NodeId) (model.Node, error)
+}
+
+// Repairable is the interface an embedder error must implement to be
+// surfaced into the typed unavailable response with its repair command.
+// The production static embedder satisfies it (see engine/embed/static
+// .UnavailableError.Repair); other embedders continue to surface their
+// errors as plain errors.
+type Repairable interface {
+	error
+	Repair() string
+}
+
+// repairable unwraps err to find a typed Repairable. Returns the repair
+// command on success, "" on no typed repair. The walk uses errors.As so
+// a wrapped UnavailableError is recognised.
+func repairable(err error) string {
+	if err == nil {
+		return ""
+	}
+	var r Repairable
+	if errors.As(err, &r) {
+		return r.Repair()
+	}
+	return ""
 }

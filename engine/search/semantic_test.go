@@ -156,3 +156,51 @@ func TestMarshalSemantic_Stable(t *testing.T) {
 		t.Fatalf("hits not serialized as array: %v", decoded["hits"])
 	}
 }
+
+// repairEmbedder is a test embedder whose Embed always returns a typed
+// UnavailableError. It exists to assert the AC-5 contract: when the
+// configured embedder surfaces a typed repair command, SemanticSearch
+// must reach the user as a typed unavailable response with the exact
+// command, not as a generic error.
+type repairEmbedder struct {
+	repair string
+}
+
+func (r repairEmbedder) ID() string { return "test:repair" }
+func (r repairEmbedder) Dim() int   { return 4 }
+func (r repairEmbedder) Embed(_ context.Context, _ []string) ([][]float32, error) {
+	return nil, &typedRepairError{msg: "no embedder artifact cached", repair: r.repair}
+}
+
+type typedRepairError struct {
+	msg    string
+	repair string
+}
+
+func (e *typedRepairError) Error() string  { return e.msg }
+func (e *typedRepairError) Repair() string { return e.repair }
+
+func TestSemanticSearch_TypedRepairCommand_PropagatesToUnavailableResponse(t *testing.T) {
+	ctx := context.Background()
+	st := graphstore.NewMemStore()
+	defer st.Close()
+
+	wantRepair := "graphi setup-embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+	reg := embed.NewRegistry()
+	reg.Register(repairEmbedder{repair: wantRepair})
+	svc := search.New(st).WithSemantic(reg, embed.NewIndex(), st)
+
+	res, err := svc.SemanticSearch(ctx, "anything", 10)
+	if err != nil {
+		t.Fatalf("SemanticSearch returned an error; the typed repair path should not surface as a generic error: %v", err)
+	}
+	if res.Available {
+		t.Fatal("Available = true; the configured embedder surfaced a typed repair, the response must be unavailable")
+	}
+	if res.Reason != wantRepair {
+		t.Fatalf("Reason = %q, want %q (the exact repair command)", res.Reason, wantRepair)
+	}
+	if len(res.Hits) != 0 {
+		t.Fatalf("Hits = %d, want 0", len(res.Hits))
+	}
+}

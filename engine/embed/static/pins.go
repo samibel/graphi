@@ -45,3 +45,15 @@ const PinnedHuggingFaceURL = "https://huggingface.co/minishlab/" + PinnedModel +
 // list drives both the setup-embedder download loop and the loader's
 // pre-allocation existence check.
 var PinnedFileNames = []string{"config.json", "tokenizer.json", "model.safetensors", "modules.json"}
+
+// PinnedSelector is the canonical user-facing selector for the production
+// embedder. It is the single source of the "static:<model>@<revision>"
+// string the help text, the print message, and the runtime wiring all
+// reference — a divergence between the three used to be a copy/paste
+// bug; now they all read this constant.
+const PinnedSelector = "static:" + PinnedModel + "@" + PinnedRevision
+
+// PinnedSelectorWithSetupPrefix is `graphi setup-embedder <PinnedSelector>`,
+// the copy-pasteable command the help text and the print message both
+// reference.
+const PinnedSelectorWithSetupPrefix = "graphi setup-embedder " + PinnedSelector

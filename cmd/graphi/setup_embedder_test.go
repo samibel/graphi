@@ -107,3 +107,31 @@ func TestSetupEmbedder_HelpCatalogMentionsStatic(t *testing.T) {
 		t.Errorf("setup-embedder example must show the static: invocation: %q", entry.example)
 	}
 }
+
+// AC-1: a static: selector with a non-pinned model@revision is refused
+// with a typed SelectorError BEFORE the network code runs. The reviewer
+// caught a previous version that downloaded the pinned artifact under
+// the wrong selector and printed an invalid export; this test pins the
+// fail-closed behavior.
+func TestSetupEmbedder_StaticWrongSelector_IsRefusedBeforeNetwork(t *testing.T) {
+	var rc int
+	captureStderr(t, func() {
+		rc = runSetupEmbedder([]string{"static:wrong-model@wrong-rev"})
+	})
+	if rc == 0 {
+		t.Fatal("setup-embedder accepted a non-pinned selector; AC-1 requires a typed SelectorError naming the accepted form")
+	}
+}
+
+// AC-5: a static: selector without a model@revision is also refused
+// (typed error) — the empty model@revision path is checked before any
+// network call.
+func TestSetupEmbedder_StaticEmptyRevision_IsRefusedBeforeNetwork(t *testing.T) {
+	var rc int
+	captureStderr(t, func() {
+		rc = runSetupEmbedder([]string{"static:potion-code-16M-v2@"})
+	})
+	if rc == 0 {
+		t.Fatal("setup-embedder accepted an empty revision; AC-1 requires a typed SelectorError")
+	}
+}

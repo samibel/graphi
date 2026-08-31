@@ -1,20 +1,11 @@
-// Package main's tests for the static-embedder setup path (SW-262).
-//
-// These tests exercise the AC-4 supply-chain surface (HTTPS only,
-// SHA-256-pinned, max-per-file ceiling, atomic temp+rename, no partial
-// file on failure, expected-vs-actual hash on mismatch, NOTICE +
-// LICENSE written beside the artifact) and the AC-6 air-gapped path
-// (`--local <dir>`). The tests run against an httptest.NewTLSServer that
-// the production code downloads from; the server is configured to serve
-// either a valid set of pinned bytes, a wrong hash, a truncated body or
-// an over-limit file so each failure mode is exercised in isolation.
-//
-// The download path is structurally isolated from the engine layer: it
-// lives at cmd/graphi (this file), not at engine/embed/static, so the
-// default graph does not link an outbound HTTP client.
-package main
+// Package staticfetch's tests: AC-4 (HTTPS only, SHA-256-pinned,
+// max-per-file ceiling, atomic temp+rename, no partial file on
+// failure, expected-vs-actual hash on mismatch, NOTICE + LICENSE
+// written beside the artifact) and AC-6 (air-gapped path).
+package staticfetch_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"net/http"
@@ -24,13 +15,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/cmd/graphi/staticfetch"
 	"github.com/samibel/graphi/engine/embed/static"
 )
 
-// AC-4 happy path: every pinned file is downloaded over HTTPS, the SHA-256
-// matches the pin, the artifact lands at the expected path and the loader
-// reads it. The NOTICE and LICENSE files are written beside the artifact.
-func TestStatic_SetupEmbedder_DownloadsAndInstalls(t *testing.T) {
+const (
+	staticPackage = "github.com/samibel/graphi/cmd/graphi/staticfetch"
+)
+
+// AC-4 happy path: every pinned file is downloaded over HTTPS, the
+// SHA-256 matches the pin, the artifact lands at the expected path and
+// the loader reads it. NOTICE and LICENSE are written beside the
+// artifact.
+func TestStaticfetch_DownloadsAndInstalls(t *testing.T) {
 	dir := t.TempDir()
 	contents := map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
@@ -56,15 +53,13 @@ func TestStatic_SetupEmbedder_DownloadsAndInstalls(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
-
-	restore := swapStaticPins(pins)
+	restore := swapPins(pins)
 	defer restore()
-
 	dest := filepath.Join(dir, "model")
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := StaticDownloadForTest(srv.Client(), srv.URL, dest); err != nil {
+	if err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
 	for name, want := range contents {
@@ -84,11 +79,8 @@ func TestStatic_SetupEmbedder_DownloadsAndInstalls(t *testing.T) {
 	}
 }
 
-// AC-4 (cont.): a hash mismatch leaves no artifact behind. The downloader
-// downloads to a temp file under dest/.staging and renames atomically only
-// after every file's hash is verified. A single bad file aborts the whole
-// pass and the staging directory is removed.
-func TestStatic_SetupEmbedder_HashMismatch_LeavesNoArtifact(t *testing.T) {
+// AC-4: hash mismatch leaves no artifact behind.
+func TestStaticfetch_HashMismatch_LeavesNoArtifact(t *testing.T) {
 	dir := t.TempDir()
 	contents := map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
@@ -118,15 +110,15 @@ func TestStatic_SetupEmbedder_HashMismatch_LeavesNoArtifact(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
-	restore := swapStaticPins(wrongPins)
+	restore := swapPins(wrongPins)
 	defer restore()
 	dest := filepath.Join(dir, "model")
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	err := StaticDownloadForTest(srv.Client(), srv.URL, dest)
+	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
 	if err == nil {
-		t.Fatal("Download accepted a mismatched hash; AC-4 requires a typed error")
+		t.Fatal("Download accepted a mismatched hash")
 	}
 	if !strings.Contains(err.Error(), "model.safetensors") {
 		t.Fatalf("error %v must name the offending file", err)
@@ -140,9 +132,8 @@ func TestStatic_SetupEmbedder_HashMismatch_LeavesNoArtifact(t *testing.T) {
 	}
 }
 
-// AC-4 (cont.): a truncated download (server claims Content-Length > body)
-// is a typed error; no artifact is left behind.
-func TestStatic_SetupEmbedder_TruncatedDownload_IsTypedError(t *testing.T) {
+// AC-4: truncated download.
+func TestStaticfetch_TruncatedDownload_IsTypedError(t *testing.T) {
 	dir := t.TempDir()
 	body := []byte("short body")
 	sum := sha256.Sum256(body)
@@ -157,13 +148,13 @@ func TestStatic_SetupEmbedder_TruncatedDownload_IsTypedError(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
-	restore := swapStaticPins(pins)
+	restore := swapPins(pins)
 	defer restore()
 	dest := filepath.Join(dir, "model")
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	err := StaticDownloadForTest(srv.Client(), srv.URL, dest)
+	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
 	if err == nil {
 		t.Fatal("Download accepted a truncated body")
 	}
@@ -176,16 +167,9 @@ func TestStatic_SetupEmbedder_TruncatedDownload_IsTypedError(t *testing.T) {
 	}
 }
 
-// AC-4 (cont.): the maximum per-file size is enforced BEFORE allocation. A
-// server that returns a Content-Length above the ceiling is refused
-// without writing to disk. We set the real Content-Length header to a
-// value above the 40 MiB per-file ceiling; the downloader must reject
-// the file at the size check without writing any bytes.
-func TestStatic_SetupEmbedder_OverSizeRefused(t *testing.T) {
+// AC-4: per-file size ceiling.
+func TestStaticfetch_OverSizeRefused(t *testing.T) {
 	dir := t.TempDir()
-	// The four pinned files. The downloader will validate them in order;
-	// the first response carries an over-limit Content-Length so the size
-	// check fires before any bytes are written.
 	contents := map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
 		"tokenizer.json":    []byte(`{"version":"1.0"}`),
@@ -203,10 +187,7 @@ func TestStatic_SetupEmbedder_OverSizeRefused(t *testing.T) {
 			return
 		}
 		if name == "config.json" {
-			// Over-limit Content-Length: 64 MiB header, 1 byte body. The
-			// downloader's size check must fire before any body bytes are
-			// written to disk.
-			w.Header().Set("Content-Length", "67108864")
+			w.Header().Set("Content-Length", "68157440") // 65 MiB
 			_, _ = w.Write([]byte("x"))
 			return
 		}
@@ -214,39 +195,37 @@ func TestStatic_SetupEmbedder_OverSizeRefused(t *testing.T) {
 		_, _ = w.Write(body)
 	}))
 	defer srv.Close()
-	// Pin only config.json so we don't depend on the others being fetched.
 	pins := map[string]string{"config.json": hashOfConfig}
-	restore := swapStaticPins(pins)
+	restore := swapPins(pins)
 	defer restore()
 	dest := filepath.Join(dir, "model")
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	err := StaticDownloadForTest(srv.Client(), srv.URL, dest)
+	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
 	if err == nil {
-		t.Fatal("Download accepted an oversize Content-Length; AC-4 requires the size limit to be enforced")
+		t.Fatal("Download accepted an oversize Content-Length")
 	}
 	if !strings.Contains(err.Error(), "size") && !strings.Contains(err.Error(), "limit") && !strings.Contains(err.Error(), "exceeds") {
 		t.Fatalf("error %v must name the size limit", err)
 	}
-	// No artifact landed.
 	entries, _ := os.ReadDir(dest)
 	for _, e := range entries {
 		t.Errorf("partial artifact left behind: %s", e.Name())
 	}
 }
 
-// AC-4 (cont.): HTTPS only. An http:// URL is refused.
-func TestStatic_SetupEmbedder_HTTPSOnly(t *testing.T) {
+// AC-4: HTTPS only.
+func TestStaticfetch_HTTPSOnly(t *testing.T) {
 	dir := t.TempDir()
 	dest := filepath.Join(dir, "model")
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	pins := map[string]string{"config.json": strings.Repeat("a", 64)}
-	restore := swapStaticPins(pins)
+	restore := swapPins(pins)
 	defer restore()
-	err := StaticDownloadForTest(&http.Client{}, "http://example.invalid/file", dest)
+	err := staticfetch.DownloadForTest(&http.Client{}, "http://example.invalid/file", dest)
 	if err == nil {
 		t.Fatal("Download accepted a non-HTTPS URL")
 	}
@@ -255,10 +234,8 @@ func TestStatic_SetupEmbedder_HTTPSOnly(t *testing.T) {
 	}
 }
 
-// AC-6: a local artifact directory skips any network access; the install
-// path validates the SHA-256 against the pin table and either succeeds or
-// returns a typed error.
-func TestStatic_AirGapped_ValidatesLocalArtifact(t *testing.T) {
+// AC-6: air-gapped install path.
+func TestStaticfetch_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 	dir := t.TempDir()
 	contents := map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
@@ -276,9 +253,9 @@ func TestStatic_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	restore := swapStaticPins(pins)
+	restore := swapPins(pins)
 	defer restore()
-	if err := StaticInstallLocalForTest(dir); err != nil {
+	if err := staticfetch.InstallLocalForTest(dir, dir); err != nil {
 		t.Fatalf("InstallLocal: %v", err)
 	}
 	wrong := map[string]string{}
@@ -286,20 +263,96 @@ func TestStatic_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 		wrong[k] = v
 	}
 	wrong["config.json"] = strings.Repeat("0", 64)
-	restoreWrong := swapStaticPins(wrong)
+	restoreWrong := swapPins(wrong)
 	defer restoreWrong()
-	if err := StaticInstallLocalForTest(dir); err == nil {
-		t.Fatal("InstallLocal accepted a mismatched hash; AC-6 requires a typed error")
+	if err := staticfetch.InstallLocalForTest(dir, dir); err == nil {
+		t.Fatal("InstallLocal accepted a mismatched hash")
 	} else if !strings.Contains(err.Error(), "config.json") {
 		t.Fatalf("InstallLocal error %q must name the offending file", err)
 	}
 }
 
-// swapStaticPins atomically swaps the production pin table for the test's
-// pins and returns a restore closure. Used by every download test to drive
-// the downloader against a known-good or known-bad pin.
-func swapStaticPins(pins map[string]string) func() {
+// AC-4: the staticfetch package is the ONLY place in cmd/graphi that
+// imports net/http. This is the canary allowlist's narrower boundary:
+// cmd/graphi/staticfetch, not cmd/graphi. A future contributor adding
+// a net call to any other file in cmd/graphi is caught by this test
+// at unit-test time, AND by the canary gate at release time.
+//
+// The check walks every non-test .go file under cmd/graphi (this
+// test's parent directory) EXCEPT files inside this package, and
+// asserts that no file mentions the net/http, net/url or
+// crypto/tls import. The canary allowlist entry for staticfetch is
+// kept narrow precisely so this local test can verify the invariant
+// the canary gate cannot (the gate runs on the whole graphi tree; this
+// test runs on the cmd/graphi subtree).
+func TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi(t *testing.T) {
+	// The test runs from cmd/graphi/staticfetch/, so the parent is
+	// cmd/graphi — the subtree we want to audit. cd back so the path
+	// arithmetic is unambiguous in case the test is run with a
+	// different working directory.
+	parent := ".."
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	banned := []string{`"net/http"`, `"net/http/httptest"`, `"net/url"`, `"crypto/tls"`, `"syscall/js"`}
+	// The staticfetch package is the only allowed network caller; every
+	// other top-level entry (a subdir or a .go file) must be net-free.
+	for _, e := range entries {
+		name := e.Name()
+		if name == "staticfetch" || name == "testdata" {
+			continue
+		}
+		if e.IsDir() {
+			sub, err := os.ReadDir(filepath.Join(parent, name))
+			if err != nil {
+				continue
+			}
+			for _, se := range sub {
+				if se.IsDir() {
+					continue
+				}
+				if filepath.Ext(se.Name()) != ".go" || strings.HasSuffix(se.Name(), "_test.go") {
+					continue
+				}
+				path := filepath.Join(parent, name, se.Name())
+				body, rerr := os.ReadFile(path)
+				if rerr != nil {
+					continue
+				}
+				src := string(body)
+				for _, b := range banned {
+					if strings.Contains(src, b) {
+						t.Errorf("%s imports %s; the only network caller in cmd/graphi is the staticfetch package (the canary allowlist is narrow by design)", path, b)
+					}
+				}
+			}
+		} else {
+			if filepath.Ext(name) != ".go" || strings.HasSuffix(name, "_test.go") {
+				continue
+			}
+			path := filepath.Join(parent, name)
+			body, rerr := os.ReadFile(path)
+			if rerr != nil {
+				continue
+			}
+			src := string(body)
+			for _, b := range banned {
+				if strings.Contains(src, b) {
+					t.Errorf("%s imports %s; the only network caller in cmd/graphi is the staticfetch package", path, b)
+				}
+			}
+		}
+	}
+}
+
+// swapPins atomically swaps the production pin table for the test's
+// pins and returns a restore closure.
+func swapPins(pins map[string]string) func() {
 	prev := static.PinnedSHA256
 	static.PinnedSHA256 = pins
 	return func() { static.PinnedSHA256 = prev }
 }
+
+// _ keeps the context import in case future tests need it.
+var _ = context.Background
