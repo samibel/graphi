@@ -716,22 +716,62 @@ func TestRules_ExactIdentifierIsDocumentedRegex(t *testing.T) {
 		in   string
 		want bool
 	}{
+		// Bare identifiers — every `exact_identifier` query in the SW-258
+		// dev set is a bare name; the AC-6 widening makes these match.
+		{"ExecuteC", true},
+		{"MarkFlagsMutuallyExclusive", true},
+		{"GenMarkdownTree", true},
+		{"RegisterFlagCompletionFunc", true},
+		{"x", true},
 		{"cobra.Command.AddCommand", true},
 		{"pkg.Func", true},
-		{"x", false},           // single segment — not an exact identifier
-		{"a.b.c.d", true},      // multi-segment
-		{"foo.", false},        // trailing dot, no second segment
+		{"a.b.c.d", true}, // multi-segment dotted
+		// Rejections: the form rules the contract still imposes.
+		{"foo.", false},        // trailing dot, no segment after
 		{"9pkg.X", false},      // leading digit
-		{"with-dash.X", false}, // dash not allowed
+		{"with-dash.X", false}, // dash not allowed in a segment
 		{"", false},
-		{"hello world", false},   // free text
-		{"flag_groups.go", true}, // two identifier segments separated by "."
-		{"a/b/c", false},         // path-shaped
+		{"hello world", false}, // free text
+		{"a/b/c", false},       // path-shaped — covered by ExactPathPattern, not Identifier
 	}
 	for _, c := range cases {
 		if got := isExactIdentifier(c.in); got != c.want {
 			t.Errorf("isExactIdentifier(%q) = %v, want %v", c.in, got, c.want)
 		}
+	}
+}
+
+// TestRules_ExactIdentifierWideningTieBreakBoundHolds pins the AC-6
+// invariant the amendment requires: widening the regex to bare
+// identifiers changes WHICH queries the rule fires on (it now matches
+// every `exact_identifier` dev query), but it MUST NOT change the bound
+// the tie-break term relies on. The exact-semantic tie-break contributes
+// at most candidateK = 50 to a row, while the smallest gap between two
+// adjacent lexical RRF values at the pinned constants is
+//
+//	rrfScale/(rrfK+candidateK-1) - rrfScale/(rrfK+candidateK) = 1_000_000/109 - 1_000_000/110 = 84
+//
+// The test uses a hand-built row set with a lexical rank 1 row and a
+// semantic rank 1 row and proves the semantic term (now triggered by a
+// bare identifier query the old rule would have missed) still cannot
+// lift a row past one with a better lexical rank. The numbered constants
+// are the same ones rrf.go pins — any change in them is a deliberate
+// contract change with its own story, not a side effect of the regex
+// widening.
+func TestRules_ExactIdentifierWideningTieBreakBoundHolds(t *testing.T) {
+	if exactSemanticTieBreak(1) >= rrfScale/(rrfK+candidateK-1)-rrfScale/(rrfK+candidateK) {
+		t.Errorf("AC-6 bound violated: exactSemanticTieBreak(1)=%d >= smallest lexical gap (%d) — a bare-identifier query could reorder lexical ranks",
+			exactSemanticTieBreak(1), rrfScale/(rrfK+candidateK-1)-rrfScale/(rrfK+candidateK))
+	}
+	if exactSemanticTieBreak(candidateK) >= rrfScale/(rrfK+candidateK-1)-rrfScale/(rrfK+candidateK) {
+		t.Errorf("AC-6 bound violated at candidateK: exactSemanticTieBreak(candidateK)=%d >= smallest lexical gap (%d)",
+			exactSemanticTieBreak(candidateK), rrfScale/(rrfK+candidateK-1)-rrfScale/(rrfK+candidateK))
+	}
+	// The deepest lexical contribution still towers over the largest
+	// semantic tie-break: 1_000_000/(rrfK+candidateK) = 9090 > 50.
+	if rrfScale/(rrfK+candidateK) <= exactSemanticTieBreak(1) {
+		t.Errorf("AC-6 bound violated: the deepest lexical contribution %d must exceed the largest semantic tie-break %d",
+			rrfScale/(rrfK+candidateK), exactSemanticTieBreak(1))
 	}
 }
 
@@ -980,6 +1020,154 @@ func (f *fakeSemantic) search(ctx context.Context, q string, limit int) (semanti
 // factor (10000) so any change is a deliberate contract change with its
 // own story. Two inputs one full quantisation unit apart (1e-4 = 0.0001)
 // must round to different integers.
+// TestRetrieve_AC5CapGatedBySemanticPath is the AC-5 vs AC-7 amendment
+// proof. The AC-5 (unconditional diversification) and AC-7 (byte-identity
+// with search_hybrid on the lexical-only fallback) are unconditional and
+// cannot both hold: the one-query "hello greeter" byte-parity fixture
+// passes only because the MaxPerFile=3 cap happens NOT to bite on the
+// existing query. A passing fixture where the cap has no effect is NOT
+// a resolution — the amendment requires a case where the cap WOULD have
+// applied on the fallback path and does not, and a case where the same
+// query on the semantic/fused path DOES get capped. This test pins both.
+//
+// Fixture: a fake lexical provider that returns EIGHT hits (five from
+// "same.go", three from "other.go") — well above the cap of 3 per path.
+// Case 1 (AC-7 lexical-only fallback): every hit reaches result.Rows
+// in lexical order; the cap does NOT run. Case 2 (AC-5 fused path): at
+// most MaxPerFile=3 rows from "same.go" appear in result.Rows.
+func TestRetrieve_AC5CapGatedBySemanticPath(t *testing.T) {
+	lexHits := []lexicalHit{
+		{NodeID: "s1", Kind: "function", QualifiedName: "pkg.S1", Path: "same.go", Line: 1, Score: 100},
+		{NodeID: "s2", Kind: "function", QualifiedName: "pkg.S2", Path: "same.go", Line: 10, Score: 90},
+		{NodeID: "s3", Kind: "function", QualifiedName: "pkg.S3", Path: "same.go", Line: 20, Score: 80},
+		{NodeID: "s4", Kind: "function", QualifiedName: "pkg.S4", Path: "same.go", Line: 30, Score: 70},
+		{NodeID: "s5", Kind: "function", QualifiedName: "pkg.S5", Path: "same.go", Line: 40, Score: 60},
+		{NodeID: "o1", Kind: "function", QualifiedName: "pkg.O1", Path: "other.go", Line: 1, Score: 50},
+		{NodeID: "o2", Kind: "function", QualifiedName: "pkg.O2", Path: "other.go", Line: 10, Score: 40},
+		{NodeID: "o3", Kind: "function", QualifiedName: "pkg.O3", Path: "other.go", Line: 20, Score: 30},
+	}
+	semHits := []semanticHit{
+		{NodeID: "s1", DocumentID: "doc-s1", CosineScore: 0.95},
+		{NodeID: "s2", DocumentID: "doc-s2", CosineScore: 0.93},
+		{NodeID: "s3", DocumentID: "doc-s3", CosineScore: 0.91},
+		{NodeID: "s4", DocumentID: "doc-s4", CosineScore: 0.89},
+		{NodeID: "s5", DocumentID: "doc-s5", CosineScore: 0.87},
+		{NodeID: "o1", DocumentID: "doc-o1", CosineScore: 0.85},
+		{NodeID: "o2", DocumentID: "doc-o2", CosineScore: 0.83},
+		{NodeID: "o3", DocumentID: "doc-o3", CosineScore: 0.81},
+	}
+
+	// Case 1 — AC-7 lexical-only fallback: the cap does NOT run. Limit=6
+	// surfaces the contrast: 5 same.go + 1 other.go in the top 6 means the
+	// cap WOULD have applied (4 same.go would breach maxPerFile=3) but is
+	// bypassed on this path.
+	t.Run("lexical-only fallback keeps all rows uncapped", func(t *testing.T) {
+		lex := &fakeLexical{hits: lexHits}
+		e := newEngine(lex, nil, nil)
+		res, err := e.Retrieve(context.Background(), Request{Query: "x", Mode: ModeLexicalOnly, Limit: 6})
+		if err != nil {
+			t.Fatalf("Retrieve: %v", err)
+		}
+		var sameCount, otherCount int
+		for _, r := range res.Rows {
+			switch r.Path {
+			case "same.go":
+				sameCount++
+			case "other.go":
+				otherCount++
+			}
+		}
+		if sameCount != 5 {
+			t.Errorf("AC-7 fallback: same.go count = %d, want 5 (the cap must NOT run on this path)", sameCount)
+		}
+		if otherCount != 1 {
+			t.Errorf("AC-7 fallback: other.go count = %d, want 1 (Limit=6 picks the top 6 lexical hits)", otherCount)
+		}
+		if got, want := rowOrder(res.Rows), []string{"s1", "s2", "s3", "s4", "s5", "o1"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("AC-7 fallback: row order = %v, want %v", got, want)
+		}
+		if res.Degradation != StateLexicalOnly {
+			t.Errorf("Degradation = %q, want %q", res.Degradation, StateLexicalOnly)
+		}
+	})
+
+	// Case 2 — AC-5 fused path: the cap DOES run, exactly MaxPerFile rows
+	// from any path. Same fixture, Limit=6: inCap is [s1, s2, s3, o1, o2,
+	// o3] (3 same.go + 3 other.go), demoted [s4, s5]. top-Limit=6 returns
+	// [s1, s2, s3, o1, o2, o3]: 3 same.go, 3 other.go — the cap bites
+	// despite the identical lexical provider output the AC-7 path saw.
+	t.Run("fused path caps MaxPerFile rows per path", func(t *testing.T) {
+		lex := &fakeLexical{hits: lexHits}
+		sem := &fakeSemantic{available: true, hits: semHits, state: StateReady}
+		e := newEngine(lex, sem, nil)
+		res, err := e.Retrieve(context.Background(), Request{Query: "x", Mode: ModeFusionNoGraph, Limit: 6})
+		if err != nil {
+			t.Fatalf("Retrieve: %v", err)
+		}
+		var sameCount, otherCount int
+		for _, r := range res.Rows {
+			switch r.Path {
+			case "same.go":
+				sameCount++
+			case "other.go":
+				otherCount++
+			}
+		}
+		if sameCount != maxPerFile {
+			t.Errorf("AC-5 fused path: same.go count = %d, want exactly %d (the cap keeps the top 3 same.go rows)",
+				sameCount, maxPerFile)
+		}
+		if otherCount != 3 {
+			t.Errorf("AC-5 fused path: other.go count = %d, want 3 (other.go stayed under the cap)", otherCount)
+		}
+		if res.Degradation != StateReady {
+			t.Errorf("Degradation = %q, want %q", res.Degradation, StateReady)
+		}
+	})
+
+	// Case 3 — same fixture, but with the lexical-only fallback driven by
+	// a non-ready semantic provider (the same AC-7 trigger as the existing
+	// "no embedder" path). The cap stays bypassed even though the engine
+	// consulted the semantic provider — the gate is the global semantic
+	// list absence, not the caller's mode pin alone.
+	t.Run("non-ready semantic provider keeps AC-7 fallback parity", func(t *testing.T) {
+		lex := &fakeLexical{hits: lexHits}
+		sem := &fakeSemantic{available: false, state: StateLexicalOnly}
+		e := newEngine(lex, sem, nil)
+		res, err := e.Retrieve(context.Background(), Request{Query: "x", Mode: ModeAuto, Limit: 6})
+		if err != nil {
+			t.Fatalf("Retrieve: %v", err)
+		}
+		var sameCount, otherCount int
+		for _, r := range res.Rows {
+			switch r.Path {
+			case "same.go":
+				sameCount++
+			case "other.go":
+				otherCount++
+			}
+		}
+		if sameCount != 5 {
+			t.Errorf("non-ready semantic provider: same.go count = %d, want 5 (AC-7 fallback keeps all rows when the semantic list is globally absent)",
+				sameCount)
+		}
+		if otherCount != 1 {
+			t.Errorf("non-ready semantic provider: other.go count = %d, want 1 (Limit=6)", otherCount)
+		}
+	})
+}
+
+// rowOrder is a small projection helper for the AC-5/AC-7 integration
+// test: print row order as a flat slice of node_ids so the test's
+// failure message names the exact divergence.
+func rowOrder(rows []Row) []string {
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = r.NodeID
+	}
+	return out
+}
+
 func TestSanity_QuantisationFactorMatchesSpec(t *testing.T) {
 	a := 0.7000
 	b := 0.7001 // 1e-4 difference; one full unit at factor 10000
@@ -1244,5 +1432,52 @@ func TestRetrieve_AppliesTheExactQueryRule(t *testing.T) {
 		t.Errorf("non-exact query: semantic-only row at %d, lexical rank-1 row at %d; "+
 			"AC-2's symmetric fusion must let the semantic-only row win the node_id tie-break",
 			semPos, lexPos)
+	}
+}
+
+// TestRetrieve_BareIdentifierFiresTheExactQueryRule is the AC-6 widening
+// proof: a bare-identifier query (the form every `exact_identifier`
+// SW-258 dev query takes — "ExecuteC", "MarkFlagsMutuallyExclusive",
+// "GenMarkdownTree", "RegisterFlagCompletionFunc") now matches the rule
+// and gets the lexical-dominant ranking. The pre-widening regex required a
+// dotted name, so the rule never fired on the stratum it exists to
+// protect; the widening changes the rule, not the data. The fixture is
+// shaped so that without the rule the symmetric AC-2 fusion would let a
+// semantic-only row at rank 1 overtake the bare-identifier's lexical
+// candidate (the "with-dash" tie-break inversion in reverse).
+func TestRetrieve_BareIdentifierFiresTheExactQueryRule(t *testing.T) {
+	lex := &fakeLexical{hits: []lexicalHit{
+		// Lexical rank 1 carries the bare identifier the user asked for.
+		{NodeID: "lex-bare", Kind: "function", QualifiedName: "ExecuteC", Path: "doc/man_docs.go", Line: 10},
+		{NodeID: "lex-other", Kind: "function", QualifiedName: "RunForker", Path: "doc/man_docs.go", Line: 40},
+	}}
+	sem := &fakeSemantic{available: true, hits: []semanticHit{
+		// Semantic rank 1 is a semantic-only row (no lexical counterpart).
+		{NodeID: "sem-only", DocumentID: "doc-s", QualifiedName: "OtherFunc", Path: "other.go", Line: 3, CosineScore: 0.99},
+	}}
+	e := newEngine(lex, sem, nil)
+
+	// Sanity: the bare identifier now matches the rule (it would NOT
+	// have matched the pre-widening regex).
+	if !isExactQuery("ExecuteC") {
+		t.Fatalf("test premise broken: %q is not an exact query under the widened rule", "ExecuteC")
+	}
+	res, err := e.Retrieve(context.Background(), Request{Query: "ExecuteC", Mode: ModeFusionNoGraph})
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+	// No lexical row may appear BELOW a semantic-only row on an exact
+	// query — AC-6 lexical-dominance invariant. The widened rule is what
+	// makes this query an exact query at all.
+	seenSemanticOnly := false
+	for i, r := range res.Rows {
+		if r.Explain.LexicalRank == 0 {
+			seenSemanticOnly = true
+			continue
+		}
+		if seenSemanticOnly {
+			t.Errorf("exact (bare identifier) query 'ExecuteC': lexical row %s at position %d ranks BELOW a semantic-only row; AC-6 requires lexical rank to dominate. rows=%+v", r.NodeID, i+1, res.Rows)
+			break
+		}
 	}
 }

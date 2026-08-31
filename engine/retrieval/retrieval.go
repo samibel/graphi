@@ -545,15 +545,29 @@ func normaliseRequest(req Request) Request {
 	return req
 }
 
-// applyRerankAndDiversify is the post-RRF stage dispatcher. ModeAuto and
-// ModeLexicalOnly and ModeSemanticRequired all run the full RRF + rerank
-// + diversify pipeline (AC-1..AC-5). ModeFusionNoGraph skips the
-// bounded rerank so the row ordering reflects the union+RRF contribution
-// alone — the "fusion" ablation in the AC-9 eval harness. In that mode
-// graphScore and classScore are zero on every row, finalScore equals
-// rrfScore, and the sort is rrfScore desc, node_id asc (deterministic).
-// Diversification still applies because AC-5 is independent of the
-// rerank stage.
+// applyRerankAndDiversify is the post-RRF stage dispatcher.
+//
+// AC-5 vs AC-7 (amendment recorded in the SW-263 Amendments section):
+// the unconditional MaxPerFile=3 cap and the lexical-only byte parity
+// with search_hybrid are two absolute requirements and cannot both hold
+// unconditionally — a capped top Limit cannot be byte-identical to an
+// undiversified lexical path. The amendment scopes AC-5: the cap applies
+// WHERE the semantic or fused path is active, and AC-7's byte parity
+// takes precedence on the lexical-only fallback. The dispatcher's gate
+// is the global semantic-active flag (semantic list consulted + state ==
+// StateReady) — ModeLexicalOnly, ModeAuto with no embedder, and any
+// degraded path (missing/stale/corrupt) all leave semanticActive false
+// and skip diversify entirely, so the rerank's lexical score carries
+// every row's Final unchanged and the rendered bytes match
+// search_hybrid's audit output verbatim.
+//
+// ModeAuto and ModeSemanticRequired run the full RRF + rerank + diversify
+// pipeline (AC-1..AC-5). ModeFusionNoGraph skips the bounded rerank so
+// the row ordering reflects the union+RRF contribution alone — the
+// "fusion" ablation in the AC-9 eval harness. In that mode graphScore
+// and classScore are zero on every row, finalScore equals rrfScore, and
+// the sort is rrfScore desc, node_id asc (deterministic). Diversification
+// applies here because semanticActive is true on the fused path.
 func (e *engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row, semanticActive bool) []row {
 	if req.Mode == ModeFusionNoGraph {
 		for i := range rows {
@@ -567,9 +581,25 @@ func (e *engine) applyRerankAndDiversify(ctx context.Context, req Request, rows 
 			}
 			return rows[i].nodeID < rows[j].nodeID
 		})
-		return e.diversify(rows, req.Limit)
+		if semanticActive {
+			return e.diversify(rows, req.Limit)
+		}
+		// AC-7 fallback: cap is bypassed on the lexical-only fallback
+		// even when the caller pinned ModeFusionNoGraph (an unusual but
+		// legal shape — they want the union+RRF ordering without the
+		// rerank, and on a degraded semantic state that returns the
+		// pure lexical output). The dispatcher keeps the union+RRF
+		// sort as the source of truth without touching the cap.
+		return rows
 	}
 	rows = e.rerank(ctx, req.Query, rows, semanticActive)
+	if !semanticActive {
+		// AC-7 fallback: the rerank's lexical score carries every row's
+		// Final unaltered; the cap would move the row set away from the
+		// search_hybrid byte parity AC-7 calls for. Truncate to Limit
+		// only.
+		return rows
+	}
 	return e.diversify(rows, req.Limit)
 }
 

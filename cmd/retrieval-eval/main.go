@@ -10,10 +10,26 @@
 // It never clones: a pinned repository is read from a local checkout that
 // must already sit at the pinned sha.
 //
+// Embedder selector grammar (`-embedder` / `GRAPHI_EMBEDDER`): the
+// scheme is `ollama` (loopback, model defaults to `nomic-embed-text`); an
+// optional `host:port` segment selects a non-default endpoint
+// (`ollama:127.0.0.1:11434` is the loopback default; anything non-loopback
+// fails closed at the embedder boundary). The model is NOT part of the
+// selector — `ollama:nomic-embed-text` is NOT a valid selector (the
+// segment after the colon is the endpoint, not a model name, and the
+// loopback guard refuses a non-IP host). An OMITTED `-embedder` means
+// intentional unavailable baselines (exit 0, semantic rows unavailable).
+// A NON-empty `-embedder` that fails to construct, register, generate,
+// reload, or serve causes exit 1 and NO publishable report is written
+// (SW-263 reviewer ruling: the help text previously advertised an
+// invalid form, and a non-empty selector that failed to construct was
+// silently downgraded to an unavailable semantic service and the run
+// exited zero).
+//
 // Usage:
 //
 //	go run ./cmd/retrieval-eval -manifest corpus/manifest.json -repo <name> -dataset <path> -out <report.json> \
-//	    [-baseline <name>]... [-export-raw <dir>] [-runner-class local] [-checkout <dir>]
+//	    [-baseline <name>]... [-export-raw <dir>] [-runner-class local] [-checkout <dir>] [-embedder <selector>]
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
@@ -80,7 +96,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
-	embedder := fs.String("embedder", "", "GRAPHI_EMBEDDER-style selector (e.g. ollama:nomic-embed-text); empty ⇒ no embedder ⇒ fusion/fusion+graph report unavailable")
+	embedder := fs.String("embedder", "", "GRAPHI_EMBEDDER-style selector (e.g. `ollama`, `ollama:127.0.0.1:11434`); the model defaults to `nomic-embed-text` and is NOT a selector segment. Empty ⇒ no embedder ⇒ fusion/fusion+graph report unavailable; NON-empty that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
 
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")

@@ -296,6 +296,86 @@ func TestRetrievalEval_UsageErrors(t *testing.T) {
 	}
 }
 
+// TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport
+// is the regression the SW-263 reviewer required: the previously-advertised
+// selector form `ollama:nomic-embed-text` was rejected by the loopback guard
+// at construction (the segment after the colon is treated as the endpoint,
+// not the model name), but the runner's earlier buildSearchService silently
+// downgraded a failed construction into an unavailable semantic service and
+// exited zero. A reproduction arrived as a published three-semantic-baselines-
+// unavailable report that exited 0; the fix is to fail closed: the run must
+// exit non-zero AND write no publishable report (neither -out nor the
+// -export-raw directory).
+//
+// Two cases are pinned:
+//
+//  1. The advertised-but-invalid form `ollama:nomic-embed-text`: the
+//     constructor rejects it ("non-IP host requires DNS and is off-box").
+//     The run exits 1; the report file is not written; the export-raw
+//     directory has no `cobra-v1-report.json`.
+//
+//  2. An EMBEDDED selector that the loopback guard refuses for a different
+//     reason (`ollama:1.2.3.4:11434` — non-loopback). Same fail-closed
+//     posture: exit 1, no report, no export-raw.
+//
+// The omitted-`-embedder` path is intentionally NOT tested here: it is the
+// "intentional unavailable baselines" mode and exits 0 by contract (see
+// TestRetrievalEval_FixtureRunExportAndAggregate, which uses neither flag).
+func TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport(t *testing.T) {
+	chdirRoot(t)
+	cases := []struct {
+		name     string
+		selector string
+		wantMsg  string
+	}{
+		{
+			name:     "ollama:nomic-embed-text (advertised-but-invalid form)",
+			selector: "ollama:nomic-embed-text",
+			wantMsg:  "non-loopback",
+		},
+		{
+			name:     "ollama on a non-loopback host",
+			selector: "ollama:1.2.3.4:11434",
+			wantMsg:  "non-loopback",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			out := filepath.Join(dir, "report.json")
+			raw := filepath.Join(dir, "raw")
+
+			var stderr bytes.Buffer
+			code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", fixtureDataset,
+				"-out", out, "-export-raw", raw, "-runner-class", "test", "-repeats", "1", "-date", "2026-08-30",
+				"-embedder", tc.selector}, &bytes.Buffer{}, &stderr)
+			if code != exitError {
+				t.Errorf("run exit %d, want %d (the reviewer ruled that a non-empty -embedder that fails to construct must exit non-zero):\n%s",
+					code, exitError, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), tc.wantMsg) {
+				t.Errorf("stderr does not mention %q:\n%s", tc.wantMsg, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "SW-263") {
+				t.Errorf("stderr does not mention the SW-263 fail-closed marker:\n%s", stderr.String())
+			}
+			// Publishable report MUST not exist: the harness failed before
+			// the report was written. -export-raw may exist (as a directory)
+			// but it MUST be empty — the inverted case is exactly the defect.
+			if _, err := os.Stat(out); !os.IsNotExist(err) {
+				t.Errorf("report file %s exists; expected it NOT to be written on a failed embedder:\n%s", out, stderr.String())
+			}
+			if fi, err := os.Stat(raw); err == nil {
+				entries, _ := os.ReadDir(raw)
+				if fi.IsDir() && len(entries) > 0 {
+					t.Errorf("export-raw directory %s is non-empty after a failed embedder (%d entries); expected no publishable artifact:\n%v",
+						raw, len(entries), entries)
+				}
+			}
+		})
+	}
+}
+
 // A URL-pinned entry is never cloned: an absent checkout fails closed with
 // the instruction, and a checkout at another sha is refused.
 func TestResolveRepo_PinnedEntryNeedsALocalCheckoutAtTheSHA(t *testing.T) {

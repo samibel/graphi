@@ -390,7 +390,12 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 		store.Close()
 		return nil, fmt.Errorf("retrieval: index of %s produced no nodes", root)
 	}
-	svc := buildSearchService(ctx, store, metaDir, embedderSelector, log)
+	svc, svcErr := buildSearchService(ctx, store, metaDir, embedderSelector, log)
+	if svcErr != nil {
+		store.Close()
+		return nil, svcErr
+	}
+	_ = svc
 	fmt.Fprintf(log, "retrieval-eval: indexed %d nodes, %d edges, %d files in %dms\n", stats.TotalNodes, stats.TotalEdges, len(stats.Files), elapsed.Milliseconds())
 	filePaths := make([]string, 0, len(stats.Files))
 	for _, f := range stats.Files {
@@ -411,21 +416,34 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 // are unavailable with the typed reason. Non-empty selector loads the
 // embedder, generates + persists a GenerationStore, reloads the in-memory
 // index from the active generation, and wires WithSemanticState(Ready).
-func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDir, selector string, log io.Writer) *search.Service {
+//
+// Fail-closed posture (SW-263 reviewer ruling): an OMITTED `-embedder`
+// is the only way to opt into intentional unavailable baselines; the run
+// then exits 0 because the ablations report the typed unavailable reason.
+// A NON-empty `-embedder` that fails at any of construction,
+// registration, generation, reload or readiness is fatal: the caller
+// asked for vectors, the harness cannot supply them, and the run must
+// NOT write a publishable report that quietly downgrades to a
+// "semantic_baselines: unavailable" verdict. The earlier behaviour
+// (the runner's `runner.go:418` log-and-return-unavailable branch)
+// produced a reproducible-looking three-semantic-baselines-unavailable
+// report that exited 0; the orchestrator published exactly that and
+// only the `CandidateSHA` check caught the issue.
+func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, error) {
 	if strings.TrimSpace(selector) == "" {
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		// Omitted selector: intentional unavailable baselines; exit 0 is fine.
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store), nil
 	}
 	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
 	if err != nil || emb == nil {
-		fmt.Fprintf(log, "retrieval-eval: embedder %q unavailable: %v — semantic baselines will report unavailable\n", selector, err)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: embedder %q unavailable: %v (SW-263 fail-closed: a non-empty -embedder that fails to construct is fatal; either omit -embedder to opt into intentional unavailable baselines, or fix the selector)",
+			selector, err)
 	}
 	fmt.Fprintf(log, "retrieval-eval: embedder %q active; generating vectors\n", emb.ID())
 
 	reg := embed.NewRegistry()
 	if rerr := reg.Register(emb); rerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: embedder register: %v\n", rerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: embedder register: %v (SW-263 fail-closed)", rerr)
 	}
 	reg.Freeze()
 	index := embed.NewIndex()
@@ -433,19 +451,16 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 	// exactly what the index produced (one embedding per indexed node).
 	nodes, nerr := store.Nodes(ctx, graphstore.Query{})
 	if nerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: nodes enumerate: %v\n", nerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: nodes enumerate: %v (SW-263 fail-closed)", nerr)
 	}
 	genStore, gerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
 	if gerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: generation store open: %v\n", gerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: generation store open: %v (SW-263 fail-closed)", gerr)
 	}
 	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V2DocumentSource{}, index, genStore, embed.GraphGenerationPlaceholder)
 	_ = genStore.Close()
 	if err != nil {
-		fmt.Fprintf(log, "retrieval-eval: generate+persist: %v\n", err)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: generate+persist: %v (SW-263 fail-closed)", err)
 	}
 	fmt.Fprintf(log, "retrieval-eval: generation pass embedded=%d reused=%d skipped=%d purged=%d (id=%s)\n",
 		res.Embedded, res.Reused, res.Skipped, res.Purged, res.EmbedderID)
@@ -454,8 +469,7 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 	// production runtime's reload pattern in cmd/internal/runtime).
 	reloadStore, rerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
 	if rerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: generation store reopen: %v\n", rerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: generation store reopen: %v (SW-263 fail-closed)", rerr)
 	}
 	defer func() { _ = reloadStore.Close() }()
 	fp := embed.Fingerprint{
@@ -471,26 +485,23 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 	}
 	gen, _, aerr := reloadStore.Active(ctx, fp, nil)
 	if aerr != nil || gen.ID == "" {
-		fmt.Fprintf(log, "retrieval-eval: active generation lookup: aerr=%v\n", aerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: active generation lookup: aerr=%v (SW-263 fail-closed)", aerr)
 	}
 	rows, lerr := reloadStore.Load(ctx, gen.ID)
 	if lerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: reload generation: %v\n", lerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: reload generation: %v (SW-263 fail-closed)", lerr)
 	}
 	vecs := make([]embed.Vector, len(rows))
 	for i, r := range rows {
 		vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	if rerr := index.Rebuild(ctx, vecs); rerr != nil {
-		fmt.Fprintf(log, "retrieval-eval: index rebuild: %v\n", rerr)
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return nil, fmt.Errorf("retrieval-eval: index rebuild: %v (SW-263 fail-closed)", rerr)
 	}
 	svc := search.New(store).WithSemantic(reg, index, store).
 		WithSemanticState(search.SemanticState{State: embed.StateReady})
 	fmt.Fprintf(log, "retrieval-eval: semantic ready (model=%s, dim=%d, rows=%d)\n", emb.ID(), emb.Dim(), len(rows))
-	return svc
+	return svc, nil
 }
 
 // rawHit is what an executor returns before tokens are charged.

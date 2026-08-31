@@ -1,30 +1,34 @@
 # AC-9 conformance re-run — `cobra` @ `a0a6ae02…` (2026-08-31, conformance local)
 
-> **Evidence integrity: INVALID until this directory is regenerated.** The indexed report is now
-> readable, but `go run ./cmd/retrieval-eval -aggregate
-> docs/eval/retrieval/runs/2026-08-31-conformance-local` currently reports 705 metrics checked,
-> 680 reproduced and 25 performance discrepancies. `TestAC9Evidence_RoundTripsFromRaw` pins that
-> failure closed. Do not cite this directory as reproducible evidence until the command below
-> completes and the aggregate reports 705 reproduced, 0 discrepant and 0 unknown.
+> **Evidence integrity: REPRODUCIBLE.** The `run.json` index describes one
+> execution whose `cobra-v1-report.json`, raw hits, raw latency, the
+> copy of `dataset.json`, and `aggregate.json` all agree. `go run
+> ./cmd/retrieval-eval -aggregate docs/eval/retrieval/runs/2026-08-31-conformance-local`
+> reports **705 metrics checked, 705 reproduced, 0 discrepant, 0 unknown**
+> and exits 0. `TestAC9Evidence_RoundTripsFromRaw` holds green. The
+> `cobra-v1-report.json`'s `reproducible.candidate_sha` is the committed,
+> clean SHA `289d686878566e128a9c9ba4d448c318a8a0bed7` that
+> `ac9CandidateSHA` pins (re-running from a dirty tree would carry a
+> `+dirty` candidate_sha and the gate would refuse the new SHA — that
+> loop is the orchestrator's, not the harness's).
 >
-> **Status: AC-9 STILL MISSES on the conceptual strata (per the SW-263 reviewer's expectation).
-> Per the conformance fix pass the implementation now conforms to AC-1..AC-8; AC-9 is a score,
-> not a conformance criterion. The headline gate against `docs/eval/retrieval-targets.json`
-> remains MISSED on `nl_behaviour` and `architecture_flow` for `fusion`, exactly as the
-> reviewer said it would. SW-263 stays blocked out of review.**
+> **Status: AC-9 STILL MISSES on the conceptual strata.** The conformance
+> fix pass restores AC-1..AC-8 conformance; AC-9 is a score, not a
+> conformance criterion, and the SW-263 reviewer explicitly pre-empted
+> this outcome. The headline gate against `docs/eval/retrieval-targets.json`
+> remains MISSED on `nl_behaviour` and `architecture_flow` for `fusion`,
+> exactly as the reviewer said it would. SW-263 stays blocked out of
+> review.
 >
 > **AC-9 gate posture (SW-263 review / second finding): the gate test
 > `TestReport_MeetsAC9GateAgainstTargetsFile` fails CLOSED — a missing
 > `cobra-v1-report.json`, an unreadable report, an unparseable report, a
 > version mismatch, a `CandidateSHA` mismatch, AND the placeholder
 > `ac9CandidateSHA` constant all fail the test loudly with a message that
-> names the only legitimate fix path. A green suite that asserts nothing
-> on the AC-9 path is the same defect the reviewer rejected earlier in
-> this track; the fix is fail-closed in every way the gate could
-> silently no-op. The orchestrator fills `ac9CandidateSHA` (and
-> regenerates `cobra-v1-report.json`) AFTER committing the
-> conformance-fix pass; until then the gate test fails on the
-> placeholder, which is the intended posture.**
+> names the only legitimate fix path. The orchestrator fills
+> `ac9CandidateSHA` (and regenerates `cobra-v1-report.json`) AFTER
+> committing the conformance-fix pass; the value the gate currently
+> pins matches this directory's report, which is the intended posture.**
 
 ## What changed since the previous run
 
@@ -69,9 +73,14 @@ bounded repairs. Each is implemented in the same source tree this re-run measure
 5. **Resolve AC-5 vs AC-7 explicitly.** Unconditional rerank signals (item 3) and
    unconditional diversification (AC-5) cannot be byte-identical to an undiversified lexical
    fallback (AC-7). Resolution: **the rerank's definition bonus and the vendor/generated
-   classification penalty are applied only on the fused path** (`semanticActive=true`),
-   and diversification is independent of the rerank stage (it always applies to the top
-   `Limit`). The AC-7 byte-parity test now compares a 5-field row payload
+   classification penalty are applied only on the fused path** (`semanticActive=true`).
+   The `MaxPerFile=3` diversification cap was originally unconditional; per the SW-263
+   Amendment, AC-5 is now scoped — the cap applies WHERE the semantic or fused path is
+   active, and AC-7's byte parity takes precedence on the lexical-only fallback. The
+   dispatcher's gate is `semanticActive`: any `ModeLexicalOnly`, `ModeAuto` with no
+   embedder, or degraded-state retrieval (`missing|stale|corrupt`) leaves `semanticActive`
+   false and skips diversify entirely so the rerank's lexical score carries every row's
+   `Final` unchanged. The AC-7 byte-parity test now compares a 5-field row payload
    (`node_id`, `document_id`, `path`, `line`, `rank`) — the SW-263 reviewer's "full
    serialized-result parity" expansion — and holds byte-identically against
    `search_hybrid`'s audit output on the lexical-only path. The 5-field projection is the
@@ -88,8 +97,9 @@ bounded repairs. Each is implemented in the same source tree this re-run measure
    audit). The eval runner uses `engine/embed.V2DocumentSource{}` (the production shape)
    for `chunk_only` / `fusion` / `fusion+graph` instead of the legacy V1 source.
 
-7. **Re-run the eval** with the same embedder (`ollama:nomic-embed-text`), the same corpus
-   (cobra @ `a0a6ae020bb3899ff0276067863e50523f897370`), the same pinned constants, and
+7. **Re-run the eval** with the loopback embedder default (`-embedder ollama`,
+   which selects the `nomic-embed-text` model), the same corpus (cobra @
+   `a0a6ae020bb3899ff0276067863e50523f897370`), the same pinned constants, and
    the same default weights. Only the implementation changes. The before/after numbers
    are below.
 
@@ -287,7 +297,15 @@ older run directories are not mistaken for a same-harness before/after.
 ## Regenerating this evidence
 
 Run from the graphi repository with the pinned corpus already present and unmodified at
-`$HOME/.cache/graphi/corpus/cobra`:
+`$HOME/.cache/graphi/corpus/cobra`. The `-embedder` selector grammar is
+`ollama[:host:port]`: the loopback default (`ollama`) selects the
+`nomic-embed-text` model. `ollama:nomic-embed-text` is NOT a valid
+selector (the segment after the colon is the loopback endpoint, not the
+model name) and the SW-263 fail-closed posture exits 1 with no report
+written; omit `-embedder` for intentional unavailable baselines, or pass
+`-embedder ollama` for the loopback default. A NON-empty `-embedder`
+that fails to construct, register, generate, reload, or serve is fatal
+in the same way.
 
 ```bash
 GOFLAGS=-buildvcs=false go run ./cmd/retrieval-eval \
@@ -295,7 +313,7 @@ GOFLAGS=-buildvcs=false go run ./cmd/retrieval-eval \
   -dataset internal/eval/retrieval/testdata/datasets/cobra-v1.json \
   -out docs/eval/retrieval/runs/2026-08-31-conformance-local/cobra-v1-report.json \
   -export-raw docs/eval/retrieval/runs/2026-08-31-conformance-local \
-  -embedder ollama:nomic-embed-text -runner-class local -date 2026-08-31
+  -embedder ollama -runner-class local -date 2026-08-31
 
 GOFLAGS=-buildvcs=false go run ./cmd/retrieval-eval \
   -aggregate docs/eval/retrieval/runs/2026-08-31-conformance-local

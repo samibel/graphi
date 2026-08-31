@@ -4,11 +4,17 @@ import "regexp"
 
 // exactIdentifierPattern is the constant regex the AC-6 exact-identifier
 // rule applies (AC-6 calls out that the rule is a documented constant,
-// never learned). It matches a dotted identifier of two or more segments,
-// each segment starting with [A-Za-z_] followed by [A-Za-z0-9_]*. The
-// pattern is exported so a test can assert the rule is byte-identical
-// across revisions and so a surface can render the rule verbatim.
-var exactIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$`)
+// never learned). It matches a bare identifier or a dotted identifier
+// of one or more segments, each segment starting with [A-Za-z_] followed
+// by [A-Za-z0-9_]*. The trailing quantifier is `*` (not `+`) so a bare
+// identifier like "ExecuteC", "MarkFlagsMutuallyExclusive",
+// "GenMarkdownTree" or "RegisterFlagCompletionFunc" matches — every
+// `exact_identifier` query in the SW-258 dev set is a bare name, and the
+// previous `+`-anchored rule was vacuous on the stratum it exists to
+// protect (SW-263 Amendments, AC-6 widening). The pattern is exported
+// so a test can assert the rule is byte-identical across revisions and
+// so a surface can render the rule verbatim.
+var exactIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
 
 // ExactPathPattern is the constant regex the AC-6 exact-path rule applies.
 // It matches a non-empty path that contains at least one "/" and otherwise
