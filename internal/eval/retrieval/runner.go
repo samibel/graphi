@@ -503,6 +503,18 @@ type rawHit struct {
 // cannot run on this build; it ends the baseline rather than yielding zeros.
 type executor func(ctx context.Context, q Query) (hits []rawHit, unavailable string, err error)
 
+type resultRetriever interface {
+	Retrieve(context.Context, retrieval.Request) (retrieval.Result, error)
+}
+
+func retrievalMethod(r resultRetriever, label string, mode retrieval.Mode) (string, error) {
+	probe, err := r.Retrieve(context.Background(), retrieval.Request{Limit: 1, Mode: mode})
+	if err != nil {
+		return "", fmt.Errorf("retrieval: inspect %s method: %w", label, err)
+	}
+	return "engine/retrieval (" + label + ", weights " + probe.Summary.WeightsHash + ")", nil
+}
+
 // semanticReadyReason returns the typed reason when the SW-263 fusion
 // ablations cannot run (no embedder configured), or "" when the semantic
 // path is active and ready. It is the single source of truth so the
@@ -685,20 +697,17 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 			return out, "", nil
 		}, "engine/search.Service.SemanticSearch (name-only documents)", nil
 	case BaselineChunkOnly:
-		bridge := &retrieval.HybridSearchBridge{Deps: deps}
-		bridge.WeightsHash = hybridsearch.WeightsHash()
 		// Wire a non-nil GraphReader over the store so semantic-only rows
 		// in any ModeAuto baseline receive the bounded degree signal
 		// (SW-263 / decision-ac9 defect 3). chunk_only runs in
 		// ModeLexicalOnly so no semantic candidates are consulted and the
 		// graph reader is dormant here; the wiring is uniform across the
 		// three retrieval ablations.
-		var chunkGraph retrieval.GraphReader
-		if idx.store != nil {
-			chunkGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		r := retrieval.New(deps, idx.search, idx.store)
+		method, err := retrievalMethod(r, "chunk-only, ModeLexicalOnly", retrieval.ModeLexicalOnly)
+		if err != nil {
+			return nil, "", err
 		}
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, chunkGraph)
-		method := "engine/retrieval (chunk-only, ModeLexicalOnly, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeLexicalOnly})
 			if err != nil {
@@ -713,14 +722,11 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 			// silent lexical-only ranking that masquerades as fusion.
 			return unavailableExecutor(reason), "engine/retrieval (fusion, ModeFusionNoGraph) — requires configured embedder", nil
 		}
-		bridge := &retrieval.HybridSearchBridge{Deps: deps}
-		bridge.WeightsHash = hybridsearch.WeightsHash()
-		var fusionGraph retrieval.GraphReader
-		if idx.store != nil {
-			fusionGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		r := retrieval.New(deps, idx.search, idx.store)
+		method, err := retrievalMethod(r, "fusion, ModeFusionNoGraph", retrieval.ModeFusionNoGraph)
+		if err != nil {
+			return nil, "", err
 		}
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, fusionGraph)
-		method := "engine/retrieval (fusion, ModeFusionNoGraph, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeFusionNoGraph})
 			if err != nil {
@@ -732,14 +738,11 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 		if reason := semanticReadyReason(idx); reason != "" {
 			return unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeAuto) — requires configured embedder", nil
 		}
-		bridge := &retrieval.HybridSearchBridge{Deps: deps}
-		bridge.WeightsHash = hybridsearch.WeightsHash()
-		var fgGraph retrieval.GraphReader
-		if idx.store != nil {
-			fgGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		r := retrieval.New(deps, idx.search, idx.store)
+		method, err := retrievalMethod(r, "fusion+graph, ModeAuto", retrieval.ModeAuto)
+		if err != nil {
+			return nil, "", err
 		}
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, fgGraph)
-		method := "engine/retrieval (fusion+graph, ModeAuto, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeAuto})
 			if err != nil {

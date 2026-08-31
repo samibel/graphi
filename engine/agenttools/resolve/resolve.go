@@ -54,16 +54,47 @@ type RetrieverRequest struct {
 // shim if it ever reads this directly.
 type RetrieverResult struct {
 	Rows        []RetrieverRow
+	Summary     RetrieverSummary
 	Degradation string
 }
 
 // RetrieverRow mirrors engine/retrieval.Row.
 type RetrieverRow struct {
-	NodeID string
-	Path   string
-	Line   int
-	Span   string
-	Final  int
+	NodeID     string
+	DocumentID string
+	Path       string
+	Line       int
+	Span       string
+	Explain    RetrieverExplain
+	Final      int
+}
+
+// RetrieverExplain mirrors engine/retrieval.Explain without importing the
+// concrete module. Keeping every field prevents the composition adapter from
+// silently reducing the audit trail before SW-264 consumes it.
+type RetrieverExplain struct {
+	LexicalRank    int
+	SemanticRank   int
+	RRF            int
+	Graph          int
+	Classification int
+	Final          int
+}
+
+// RetrieverSummary mirrors engine/retrieval.Summary. It is intentionally data,
+// not another adapter seam: resolve owns the consumer-facing dependency shape,
+// while retrieval retains its narrow package interface.
+type RetrieverSummary struct {
+	RetrievalVersion string
+	WeightsHash      string
+	ModelFingerprint string
+	IndexFingerprint string
+	Query            string
+	Limit            int
+	CandidateK       int
+	RRFk             int
+	RRFScale         int
+	MaxPerFile       int
 }
 
 // Available reports whether the graph-backed toolchain can run at all.

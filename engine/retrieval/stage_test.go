@@ -25,13 +25,13 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestUnion_DedupesOnNodeIDAcrossSources(t *testing.T) {
-	e := &Engine{}
-	lex := []LexicalHit{
+	e := &engine{}
+	lex := []lexicalHit{
 		{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1},
 		{NodeID: "b", Kind: "function", QualifiedName: "pkg.B", Path: "b.go", Line: 1},
 		{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1},
 	}
-	sem := []SemanticHit{
+	sem := []semanticHit{
 		{NodeID: "a", DocumentID: "doc-a", CosineScore: 0.9},
 		{NodeID: "c", DocumentID: "doc-c", CosineScore: 0.8},
 	}
@@ -89,15 +89,15 @@ func TestUnion_DedupesOnNodeIDAcrossSources(t *testing.T) {
 //     the spec's "node_id fallback when no document id exists"
 //     implies, and the wildcard is consumed by the first merge.
 func TestUnion_HierarchicalKeyDocumentThenNode(t *testing.T) {
-	e := &Engine{}
-	lex := []LexicalHit{
+	e := &engine{}
+	lex := []lexicalHit{
 		// Lexical-only: no document_id. Should merge with the first
 		// semantic row for node X (the missing-document_id wildcard).
 		{NodeID: "X", Kind: "function", QualifiedName: "pkg.X", Path: "x.go", Line: 10},
 		// Lexical-only: no semantic counterpart.
 		{NodeID: "Y", Kind: "function", QualifiedName: "pkg.Y", Path: "y.go", Line: 20},
 	}
-	sem := []SemanticHit{
+	sem := []semanticHit{
 		// Carries a REAL document id different from node_id — the v2 case.
 		{NodeID: "X", DocumentID: "doc-X-v2", Kind: "function", QualifiedName: "pkg.X", Path: "x.go", Line: 10, CosineScore: 0.91},
 		// A second semantic row for X with a different document_id —
@@ -244,11 +244,11 @@ func TestUnion_HierarchicalKeyDocumentThenNode(t *testing.T) {
 //	distinct (the "multiple document versions of one node" v2 case
 //	that the previous flat-node_id key collapsed into a single row).
 func TestUnion_HierarchicalKeyDistinctOrderings(t *testing.T) {
-	e := &Engine{}
+	e := &engine{}
 	// Case (a): shared document_id, distinct node_ids.
 	// A flat-document_id key would merge these into one row. The
 	// hierarchical key keeps them distinct because node_id differs.
-	caseA := e.union("q", nil, []SemanticHit{
+	caseA := e.union("q", nil, []semanticHit{
 		{NodeID: "p", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.p", Path: "p.go", Line: 1, CosineScore: 0.80},
 		{NodeID: "q", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.q", Path: "q.go", Line: 1, CosineScore: 0.79},
 	})
@@ -260,7 +260,7 @@ func TestUnion_HierarchicalKeyDistinctOrderings(t *testing.T) {
 	// Case (b): shared node_id, distinct document_ids.
 	// A flat-node_id key would merge these into one row. The
 	// hierarchical key keeps them distinct because document_id differs.
-	caseB := e.union("q", nil, []SemanticHit{
+	caseB := e.union("q", nil, []semanticHit{
 		{NodeID: "z", DocumentID: "doc-z-a", Kind: "function", QualifiedName: "pkg.z", Path: "z.go", Line: 1, CosineScore: 0.85},
 		{NodeID: "z", DocumentID: "doc-z-b", Kind: "function", QualifiedName: "pkg.z", Path: "z.go", Line: 1, CosineScore: 0.84},
 	})
@@ -276,6 +276,26 @@ func TestUnion_HierarchicalKeyDistinctOrderings(t *testing.T) {
 	}
 	if !gotDocs["doc-z-a"] || !gotDocs["doc-z-b"] {
 		t.Errorf("case (b) row document_ids = %v, want both doc-z-a and doc-z-b", gotDocs)
+	}
+}
+
+// A lexical wildcard consumed by a semantic row must be re-keyed to the exact
+// (document_id, node_id) identity. Otherwise a duplicate semantic observation
+// of that exact identity misses the still-wildcard map lookup and creates a
+// second result row, violating AC-2's dedupe requirement.
+func TestUnion_LexicalMergeThenDuplicateSemanticStaysDeduped(t *testing.T) {
+	e := &engine{}
+	rows := e.union("q",
+		[]lexicalHit{{NodeID: "n", Path: "n.go"}},
+		[]semanticHit{
+			{NodeID: "n", DocumentID: "doc-n", Path: "n.go", CosineScore: 0.9},
+			{NodeID: "n", DocumentID: "doc-n", Path: "n.go", CosineScore: 0.9},
+		})
+	if len(rows) != 1 {
+		t.Fatalf("union returned %d rows for one exact identity, want 1: %+v", len(rows), rows)
+	}
+	if rows[0].documentID != "doc-n" || rows[0].lexicalRank != 1 || rows[0].semanticRank != 1 {
+		t.Errorf("merged row = %+v", rows[0])
 	}
 }
 
@@ -330,8 +350,8 @@ func TestUnion_SemanticOnlyHitIsReachable(t *testing.T) {
 	// semantic hit in the result. The retrieval module's semantics-only
 	// path starts from the union, which must preserve the semantic-only
 	// row. Verify with a hand-built engine.
-	e := &Engine{}
-	sem := []SemanticHit{
+	e := &engine{}
+	sem := []semanticHit{
 		{NodeID: "alpha", DocumentID: "doc-alpha", CosineScore: 0.95},
 	}
 	got := e.union("no-overlap-query", nil, sem)
@@ -347,7 +367,7 @@ func TestRRF_HandComputedValuesMatchFormula(t *testing.T) {
 	// AC-2: "WHEN both lexical and semantic candidates exist, the system
 	// shall ... fuse with integer RRF". The RRF formula is per
 	// contributing source: rrfScore = sum over sources s that
-	// contributed of RRFScale / (RRFk + rank_s). A row present in
+	// contributed of rrfScale / (rrfK + rank_s). A row present in
 	// only one source receives its single-source contribution; a row
 	// present in both receives both. A semantic-only hit is therefore
 	// reachable in the result with a positive RRF contribution
@@ -361,7 +381,7 @@ func TestRRF_HandComputedValuesMatchFormula(t *testing.T) {
 	// no-embedder build still mirrors search_hybrid's audit output.
 	// This test exercises the fused-union path with the semantic list
 	// active (semanticActive=true).
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "both", lexicalRank: 1, semanticRank: 1},
 		{nodeID: "lexical-only", lexicalRank: 1, semanticRank: 0},
@@ -370,10 +390,10 @@ func TestRRF_HandComputedValuesMatchFormula(t *testing.T) {
 	}
 	out := e.rrf(in, true, false)
 	want := map[string]int{
-		"both":          RRFScale/(RRFk+1) + RRFScale/(RRFk+1),
-		"lexical-only":  RRFScale / (RRFk + 1), // AC-2: lexical contributes its single-source term
-		"semantic-only": RRFScale / (RRFk + 1), // AC-2: semantic contributes its single-source term; semantic-only hit is reachable in the result
-		"both-5-3":      RRFScale/(RRFk+5) + RRFScale/(RRFk+3),
+		"both":          rrfScale/(rrfK+1) + rrfScale/(rrfK+1),
+		"lexical-only":  rrfScale / (rrfK + 1), // AC-2: lexical contributes its single-source term
+		"semantic-only": rrfScale / (rrfK + 1), // AC-2: semantic contributes its single-source term; semantic-only hit is reachable in the result
+		"both-5-3":      rrfScale/(rrfK+5) + rrfScale/(rrfK+3),
 	}
 	for _, r := range out {
 		if got, ok := want[r.nodeID]; !ok {
@@ -395,7 +415,7 @@ func TestRRF_ZeroAcrossAllRowsWhenSemanticListGloballyAbsent(t *testing.T) {
 	// produced the SW-263 / decision-ac9 defect 1 — the same path
 	// that pinned a single-source row's RRF to 0 in the fused case.
 	// The correct gate is global, not per-row.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "both", lexicalRank: 1, semanticRank: 1},
 		{nodeID: "lexical-only", lexicalRank: 1, semanticRank: 0},
@@ -415,7 +435,7 @@ func TestRRF_NoFloatsInRankingPath(t *testing.T) {
 	// A literal float in the row's score field would defeat the byte-
 	// stability promise. Test by re-running on the same input twice and
 	// asserting byte-identical JSON.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "a", lexicalRank: 1, semanticRank: 1, lexicalScore: 9999, semanticScore: 9500},
 		{nodeID: "b", lexicalRank: 2, semanticRank: 3, lexicalScore: 8000, semanticScore: 7000},
@@ -448,43 +468,43 @@ func TestQuantiseScore_FloatInputsWithinEpsilonOrderIdentically(t *testing.T) {
 	if math.Abs(a-b) > 5e-5 {
 		t.Fatalf("test inputs not within 5e-5: %v", math.Abs(a-b))
 	}
-	if QuantiseScore(a) != QuantiseScore(b) {
+	if quantiseScore(a) != quantiseScore(b) {
 		t.Errorf("AC-3: quantise(%.5f)=%d != quantise(%.5f)=%d (diff %.1e)",
-			a, QuantiseScore(a), b, QuantiseScore(b), math.Abs(a-b))
+			a, quantiseScore(a), b, quantiseScore(b), math.Abs(a-b))
 	}
 	// And an input that DOES differ by more than 5e-5 must order.
 	c := 0.70006 // 6e-5 difference
 	if math.Abs(a-c) <= 5e-5 {
 		t.Fatalf("test inputs not beyond 5e-5: %v", math.Abs(a-c))
 	}
-	if QuantiseScore(a) == QuantiseScore(c) {
+	if quantiseScore(a) == quantiseScore(c) {
 		t.Errorf("AC-3: quantise(%.5f)=%d must differ from quantise(%.5f)=%d",
-			a, QuantiseScore(a), c, QuantiseScore(c))
+			a, quantiseScore(a), c, quantiseScore(c))
 	}
 }
 
 func TestQuantiseScore_ClampsOutOfRangeAndHandlesNaN(t *testing.T) {
-	if QuantiseScore(1.5) != 10000 {
-		t.Errorf("overshoot clamp: got %d, want 10000", QuantiseScore(1.5))
+	if quantiseScore(1.5) != 10000 {
+		t.Errorf("overshoot clamp: got %d, want 10000", quantiseScore(1.5))
 	}
-	if QuantiseScore(-1.5) != -10000 {
-		t.Errorf("undershoot clamp: got %d, want -10000", QuantiseScore(-1.5))
+	if quantiseScore(-1.5) != -10000 {
+		t.Errorf("undershoot clamp: got %d, want -10000", quantiseScore(-1.5))
 	}
-	if QuantiseScore(math.NaN()) != 0 {
-		t.Errorf("NaN: got %d, want 0", QuantiseScore(math.NaN()))
+	if quantiseScore(math.NaN()) != 0 {
+		t.Errorf("NaN: got %d, want 0", quantiseScore(math.NaN()))
 	}
-	if QuantiseScore(math.Inf(1)) != 0 {
-		t.Errorf("+Inf: got %d, want 0", QuantiseScore(math.Inf(1)))
+	if quantiseScore(math.Inf(1)) != 0 {
+		t.Errorf("+Inf: got %d, want 0", quantiseScore(math.Inf(1)))
 	}
 }
 
 // ---------------------------------------------------------------------------
 // AC-4 rerank uses audited hybridsearch signals + definition bonus +
-// vendor/generated penalty; the weight set is stamped by WeightsHash().
+// vendor/generated penalty; the weight set is stamped by weightsHash().
 // ---------------------------------------------------------------------------
 
 func TestRerank_UsesAuditedHybridsearchSignals(t *testing.T) {
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "exact", lexicalRank: 1, kind: "function", qualifiedName: "pkg.TokenValidator", path: "auth.go", rrfScore: 1000},
 		{nodeID: "prefix", lexicalRank: 2, kind: "function", qualifiedName: "pkg.Tokenizer", path: "auth.go", rrfScore: 1000},
@@ -503,21 +523,21 @@ func TestRerank_WeightsHashIsStable(t *testing.T) {
 	// Two constructions of the same weight set must yield the same hash;
 	// a different weight set must yield a different hash. The hash
 	// carries the audit discipline to the Result.Summary (AC-4).
-	h1 := WeightsHash()
-	h2 := WeightsHash()
+	h1 := weightsHash()
+	h2 := weightsHash()
 	if h1 != h2 {
-		t.Errorf("WeightsHash not deterministic: %s vs %s", h1, h2)
+		t.Errorf("weightsHash not deterministic: %s vs %s", h1, h2)
 	}
 	// A different rerankWeights struct must yield a different hash.
 	h3 := weightsHashOf(rerankWeights{SegmentExact: 99})
 	if h3 == h1 {
-		t.Errorf("WeightsHash invariant under field mutation: %s == %s", h3, h1)
+		t.Errorf("weightsHash invariant under field mutation: %s == %s", h3, h1)
 	}
 }
 
 func TestRerank_DefinitionBonusPromotesDeclarationKinds(t *testing.T) {
 	// A non-definition kind at the same RRF should rank below a definition.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "method", kind: "method", qualifiedName: "pkg.F", path: "x.go", rrfScore: 1000},
 		{nodeID: "var", kind: "variable", qualifiedName: "pkg.V", path: "x.go", rrfScore: 1000},
@@ -531,7 +551,7 @@ func TestRerank_DefinitionBonusPromotesDeclarationKinds(t *testing.T) {
 func TestRerank_GeneratedPathCarriesClassificationPenalty(t *testing.T) {
 	// Generated/vendor paths get a negative penalty (AC-4); a non-classified
 	// path does not.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "g", kind: "function", qualifiedName: "pkg.X", path: "vendor/foo.go", rrfScore: 1000},
 		{nodeID: "h", kind: "function", qualifiedName: "pkg.Y", path: "src/bar.go", rrfScore: 1000},
@@ -551,7 +571,7 @@ func TestRerank_GeneratedPathCarriesClassificationPenalty(t *testing.T) {
 // "already final"; the fix derives isDefinition and pathClass from the
 // row's own fields so the rerank's intent is uniform.
 func TestRerank_DelegatingRowAppliesDefinitionBonusAndClassificationPenalty(t *testing.T) {
-	e := &Engine{}
+	e := &engine{}
 	makeRows := func() []row {
 		return []row{
 			// Delegating row (lexicalScore set), kind="function" → definition.
@@ -617,13 +637,13 @@ func TestRerank_DelegatingRowAppliesDefinitionBonusAndClassificationPenalty(t *t
 }
 
 // ---------------------------------------------------------------------------
-// AC-5 diversification: MaxPerFile cap; demoted rows still reachable.
+// AC-5 diversification: maxPerFile cap; demoted rows still reachable.
 // ---------------------------------------------------------------------------
 
 func TestDiversify_OneRowPerNodeID(t *testing.T) {
 	// The union stage already dedupes on node_id; diversify re-checks the
 	// invariant on its input as a structural guarantee.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "a", path: "x.go", finalScore: 100},
 		{nodeID: "b", path: "x.go", finalScore: 90},
@@ -641,7 +661,7 @@ func TestDiversify_OneRowPerNodeID(t *testing.T) {
 }
 
 func TestDiversify_DemotesRowsBeyondMaxPerFile(t *testing.T) {
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "a", path: "x.go", finalScore: 100},
 		{nodeID: "b", path: "x.go", finalScore: 90},
@@ -660,7 +680,7 @@ func TestDiversify_DemotesRowsBeyondMaxPerFile(t *testing.T) {
 }
 
 func TestDiversify_CapRespectedInTopLimit(t *testing.T) {
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
 		{nodeID: "a", path: "x.go", finalScore: 100},
 		{nodeID: "b", path: "x.go", finalScore: 90},
@@ -709,8 +729,8 @@ func TestRules_ExactIdentifierIsDocumentedRegex(t *testing.T) {
 		{"a/b/c", false},         // path-shaped
 	}
 	for _, c := range cases {
-		if got := IsExactIdentifier(c.in); got != c.want {
-			t.Errorf("IsExactIdentifier(%q) = %v, want %v", c.in, got, c.want)
+		if got := isExactIdentifier(c.in); got != c.want {
+			t.Errorf("isExactIdentifier(%q) = %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -727,8 +747,8 @@ func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 		{"path with space/x.go", false},
 	}
 	for _, c := range cases {
-		if got := IsExactPath(c.in); got != c.want {
-			t.Errorf("IsExactPath(%q) = %v, want %v", c.in, got, c.want)
+		if got := isExactPath(c.in); got != c.want {
+			t.Errorf("isExactPath(%q) = %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -737,13 +757,13 @@ func TestRules_IsExactQueryShortCircuitsOnIdentifier(t *testing.T) {
 	// A typical exact-identifier query must take the lexical-dominant
 	// branch: the test asserts the rule fires, the ranking consequence
 	// is tested by integration.
-	if !IsExactQuery("cobra.Command.AddCommand") {
+	if !isExactQuery("cobra.Command.AddCommand") {
 		t.Error("exact identifier missed")
 	}
-	if !IsExactQuery("path/to/file.go") {
+	if !isExactQuery("path/to/file.go") {
 		t.Error("exact path missed")
 	}
-	if IsExactQuery("how does cobra validate required flags") {
+	if isExactQuery("how does cobra validate required flags") {
 		t.Error("NL query misclassified as exact")
 	}
 }
@@ -759,12 +779,12 @@ func TestRetrieve_LexicalOnlyWhenNoEmbedder(t *testing.T) {
 	// Build a fake lexical provider that returns two rows and a nil
 	// semantic provider (the default-build shape).
 	lex := &fakeLexical{
-		hits: []LexicalHit{
+		hits: []lexicalHit{
 			{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1},
 			{NodeID: "b", Kind: "function", QualifiedName: "pkg.B", Path: "b.go", Line: 1},
 		},
 	}
-	e := New(lex, nil, nil)
+	e := newEngine(lex, nil, nil)
 	res, err := e.Retrieve(context.Background(), Request{Query: "anything"})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -790,12 +810,12 @@ func TestRetrieve_LexicalOnlyWhenEmbedderUnavailable(t *testing.T) {
 	// Semantic provider exists but reports not available (the
 	// "configured-but-no-meta" / "generation missing" path).
 	lex := &fakeLexical{
-		hits: []LexicalHit{
+		hits: []lexicalHit{
 			{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1},
 		},
 	}
 	sem := &fakeSemantic{available: false, reason: "no embedder configured"}
-	e := New(lex, sem, nil)
+	e := newEngine(lex, sem, nil)
 	res, err := e.Retrieve(context.Background(), Request{Query: "x"})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -810,10 +830,10 @@ func TestRetrieve_LexicalOnlyWhenEmbedderUnavailable(t *testing.T) {
 
 func TestRetrieve_GenerationStaleReportsTypedState(t *testing.T) {
 	lex := &fakeLexical{
-		hits: []LexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}},
+		hits: []lexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}},
 	}
 	sem := &fakeSemantic{available: false, state: StateGenerationStale}
-	e := New(lex, sem, nil)
+	e := newEngine(lex, sem, nil)
 	res, err := e.Retrieve(context.Background(), Request{Query: "x"})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -825,10 +845,10 @@ func TestRetrieve_GenerationStaleReportsTypedState(t *testing.T) {
 
 func TestRetrieve_GenerationCorruptReportsTypedState(t *testing.T) {
 	lex := &fakeLexical{
-		hits: []LexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}},
+		hits: []lexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}},
 	}
 	sem := &fakeSemantic{available: false, state: StateGenerationCorrupt}
-	e := New(lex, sem, nil)
+	e := newEngine(lex, sem, nil)
 	res, err := e.Retrieve(context.Background(), Request{Query: "x"})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -842,9 +862,9 @@ func TestRetrieve_NoErrorOnDegradedPaths(t *testing.T) {
 	// The story (AC-7) says degradation must be "no error" — every
 	// degraded state must still surface a usable Result.
 	for _, st := range []State{StateLexicalOnly, StateGenerationMissing, StateGenerationStale, StateGenerationCorrupt} {
-		lex := &fakeLexical{hits: []LexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}}}
+		lex := &fakeLexical{hits: []lexicalHit{{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1}}}
 		sem := &fakeSemantic{available: false, state: st}
-		e := New(lex, sem, nil)
+		e := newEngine(lex, sem, nil)
 		res, err := e.Retrieve(context.Background(), Request{Query: "x"})
 		if err != nil {
 			t.Errorf("state %q: Retrieve returned error %v, want nil", st, err)
@@ -861,7 +881,7 @@ func TestRetrieve_NoErrorOnDegradedPaths(t *testing.T) {
 
 func TestRetrieve_IsByteIdenticalAcrossRuns(t *testing.T) {
 	lex := &fakeLexical{
-		hits: []LexicalHit{
+		hits: []lexicalHit{
 			{NodeID: "a", Kind: "function", QualifiedName: "pkg.A", Path: "a.go", Line: 1},
 			{NodeID: "b", Kind: "method", QualifiedName: "pkg.B.X", Path: "b.go", Line: 1},
 			{NodeID: "c", Kind: "function", QualifiedName: "pkg.C", Path: "c.go", Line: 1},
@@ -870,13 +890,13 @@ func TestRetrieve_IsByteIdenticalAcrossRuns(t *testing.T) {
 	}
 	sem := &fakeSemantic{
 		available: true,
-		hits: []SemanticHit{
+		hits: []semanticHit{
 			{NodeID: "c", DocumentID: "doc-c", CosineScore: 0.95},
 			{NodeID: "d", DocumentID: "doc-d", CosineScore: 0.90},
 		},
 		state: StateReady,
 	}
-	e := New(lex, sem, nil)
+	e := newEngine(lex, sem, nil)
 	r1, err := e.Retrieve(context.Background(), Request{Query: "pkg", Limit: 10})
 	if err != nil {
 		t.Fatal(err)
@@ -891,7 +911,7 @@ func TestRetrieve_IsByteIdenticalAcrossRuns(t *testing.T) {
 		t.Errorf("non-deterministic:\n r1=%s\n r2=%s", b1, b2)
 	}
 	// And without a semantic provider — the lexical-only path.
-	e2 := New(lex, nil, nil)
+	e2 := newEngine(lex, nil, nil)
 	r3, _ := e2.Retrieve(context.Background(), Request{Query: "pkg", Limit: 10})
 	r4, _ := e2.Retrieve(context.Background(), Request{Query: "pkg", Limit: 10})
 	b3, _ := json.Marshal(r3)
@@ -928,10 +948,10 @@ func TestFinaliseRows_HonorsLimit(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type fakeLexical struct {
-	hits []LexicalHit
+	hits []lexicalHit
 }
 
-func (f *fakeLexical) Search(ctx context.Context, q string, limit int) ([]LexicalHit, error) {
+func (f *fakeLexical) search(ctx context.Context, q string, limit int) ([]lexicalHit, error) {
 	if limit > 0 && len(f.hits) > limit {
 		return f.hits[:limit], nil
 	}
@@ -942,20 +962,18 @@ type fakeSemantic struct {
 	available bool
 	reason    string
 	state     State
-	hits      []SemanticHit
+	hits      []semanticHit
 }
 
-func (f *fakeSemantic) Available() bool { return f.available }
-
-func (f *fakeSemantic) Search(ctx context.Context, q string, limit int) (SemanticOutcome, error) {
+func (f *fakeSemantic) search(ctx context.Context, q string, limit int) (semanticOutcome, error) {
 	if !f.available {
 		st := f.state
 		if st == "" {
 			st = StateLexicalOnly
 		}
-		return SemanticOutcome{Available: false, Reason: f.reason, State: st}, nil
+		return semanticOutcome{Available: false, Reason: f.reason, State: st}, nil
 	}
-	return SemanticOutcome{Available: true, State: StateReady, Hits: f.hits}, nil
+	return semanticOutcome{Available: true, State: StateReady, Hits: f.hits}, nil
 }
 
 // TestSanity_QuantisationFactorMatchesSpec pins the AC-3 quantisation
@@ -965,50 +983,50 @@ func (f *fakeSemantic) Search(ctx context.Context, q string, limit int) (Semanti
 func TestSanity_QuantisationFactorMatchesSpec(t *testing.T) {
 	a := 0.7000
 	b := 0.7001 // 1e-4 difference; one full unit at factor 10000
-	if QuantiseScore(a) == QuantiseScore(b) {
+	if quantiseScore(a) == quantiseScore(b) {
 		t.Errorf("quantisation factor below 10000: %.4f and %.4f both quantised to %d",
-			a, b, QuantiseScore(a))
+			a, b, quantiseScore(a))
 	}
 }
 
 // TestSanity_SummaryContainsPinnedConstants locks the summary's echo of
 // the pinned arithmetic constants: a reader of the bytes must be able to
-// verify CandidateK=50, RRFk=60, RRFScale=1_000_000, MaxPerFile=3
+// verify candidateK=50, rrfK=60, rrfScale=1_000_000, maxPerFile=3
 // without consulting the source.
 func TestSanity_SummaryContainsPinnedConstants(t *testing.T) {
 	lex := &fakeLexical{}
-	e := New(lex, nil, nil)
+	e := newEngine(lex, nil, nil)
 	res, err := e.Retrieve(context.Background(), Request{Query: "x"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Summary.CandidateK != CandidateK {
-		t.Errorf("Summary.CandidateK = %d, want %d", res.Summary.CandidateK, CandidateK)
+	if res.Summary.CandidateK != candidateK {
+		t.Errorf("Summary.CandidateK = %d, want %d", res.Summary.CandidateK, candidateK)
 	}
-	if res.Summary.RRFk != RRFk {
-		t.Errorf("Summary.RRFk = %d, want %d", res.Summary.RRFk, RRFk)
+	if res.Summary.RRFk != rrfK {
+		t.Errorf("Summary.RRFk = %d, want %d", res.Summary.RRFk, rrfK)
 	}
-	if res.Summary.RRFScale != RRFScale {
-		t.Errorf("Summary.RRFScale = %d, want %d", res.Summary.RRFScale, RRFScale)
+	if res.Summary.RRFScale != rrfScale {
+		t.Errorf("Summary.RRFScale = %d, want %d", res.Summary.RRFScale, rrfScale)
 	}
-	if res.Summary.MaxPerFile != MaxPerFile {
-		t.Errorf("Summary.MaxPerFile = %d, want %d", res.Summary.MaxPerFile, MaxPerFile)
+	if res.Summary.MaxPerFile != maxPerFile {
+		t.Errorf("Summary.MaxPerFile = %d, want %d", res.Summary.MaxPerFile, maxPerFile)
 	}
-	if res.Summary.RetrievalVersion != RetrievalVersion {
-		t.Errorf("Summary.RetrievalVersion = %q, want %q", res.Summary.RetrievalVersion, RetrievalVersion)
+	if res.Summary.RetrievalVersion != retrievalVersion {
+		t.Errorf("Summary.RetrievalVersion = %q, want %q", res.Summary.RetrievalVersion, retrievalVersion)
 	}
 	if len(res.Summary.WeightsHash) != 8 {
 		t.Errorf("WeightsHash length = %d, want 8 (short sha256)", len(res.Summary.WeightsHash))
 	}
-	// WeightsHash is hex.
+	// weightsHash is hex.
 	if _, err := hex.DecodeString(res.Summary.WeightsHash); err != nil {
 		t.Errorf("WeightsHash not hex: %q (%v)", res.Summary.WeightsHash, err)
 	}
 }
 
 // TestSanity_WeightsHashIsHexShortSha256 pins the audit discipline:
-// WeightsHash is a hex-encoded sha256 truncated to 8 chars (16 hex
-// chars = 8 bytes), same shape as hybridsearch.WeightsHash.
+// weightsHash is a hex-encoded sha256 truncated to 8 chars (16 hex
+// chars = 8 bytes), same shape as hybridsearch.weightsHash.
 func TestSanity_WeightsHashIsHexShortSha256(t *testing.T) {
 	// Independent computation: hash the JSON of the sorted weight map.
 	keys := []string{"definition_bonus", "degree_point", "full_coverage", "generated_penalty", "name_substring", "path_segment", "segment_exact", "segment_prefix", "vendor_penalty"}
@@ -1028,8 +1046,8 @@ func TestSanity_WeightsHashIsHexShortSha256(t *testing.T) {
 	if _, err := hex.DecodeString(want); err != nil || len(want) != 8 {
 		t.Errorf("sanity hash malformed: %q", want)
 	}
-	if _, err := hex.DecodeString(WeightsHash()); err != nil || len(WeightsHash()) != 8 {
-		t.Errorf("WeightsHash malformed: %q", WeightsHash())
+	if _, err := hex.DecodeString(weightsHash()); err != nil || len(weightsHash()) != 8 {
+		t.Errorf("weightsHash malformed: %q", weightsHash())
 	}
 }
 
@@ -1076,15 +1094,15 @@ func TestUnion_SemanticRankComesFromQuantisedScoreNotTheProviderOrder(t *testing
 	// than one quantisation unit would be ordered by a difference the
 	// contract says is not there. The union stage must re-order on the
 	// quantised value, with node_id as the tie-break.
-	e := &Engine{}
+	e := &engine{}
 	// Float order is z, a: 0.90003 > 0.90001. Both quantise to 9000
 	// (a difference of 2e-5, well inside the 5e-5 AC-3 epsilon), so the
 	// contract order is node_id ascending: a, then z.
-	sem := []SemanticHit{
+	sem := []semanticHit{
 		{NodeID: "z", DocumentID: "doc-z", CosineScore: 0.90003},
 		{NodeID: "a", DocumentID: "doc-a", CosineScore: 0.90001},
 	}
-	if QuantiseScore(sem[0].CosineScore) != QuantiseScore(sem[1].CosineScore) {
+	if quantiseScore(sem[0].CosineScore) != quantiseScore(sem[1].CosineScore) {
 		t.Fatalf("test premise broken: %v and %v do not quantise equal",
 			sem[0].CosineScore, sem[1].CosineScore)
 	}
@@ -1100,7 +1118,7 @@ func TestUnion_SemanticRankComesFromQuantisedScoreNotTheProviderOrder(t *testing
 	}
 	// And a genuinely larger cosine must still outrank, so the
 	// re-ordering has not simply become an alphabetical sort.
-	sem = append(sem, SemanticHit{NodeID: "zz", DocumentID: "doc-zz", CosineScore: 0.99})
+	sem = append(sem, semanticHit{NodeID: "zz", DocumentID: "doc-zz", CosineScore: 0.99})
 	got = e.union("q", nil, sem)
 	for _, r := range got {
 		if r.nodeID == "zz" && r.semanticRank != 1 {
@@ -1115,12 +1133,12 @@ func TestRRF_ExactQueryMakesLexicalDominant(t *testing.T) {
 	// most a tie-break)."
 	//
 	// Under the symmetric RRF of AC-2 a semantic-only row at rank 1
-	// scores RRFScale/(RRFk+1) = 16393, which outranks a lexical row at
-	// rank 50 (RRFScale/(RRFk+50) = 9090). For an exact query that is
+	// scores rrfScale/(rrfK+1) = 16393, which outranks a lexical row at
+	// rank 50 (rrfScale/(rrfK+50) = 9090). For an exact query that is
 	// precisely the inversion AC-6 forbids.
-	e := &Engine{}
+	e := &engine{}
 	in := []row{
-		{nodeID: "lex-deep", lexicalRank: CandidateK},
+		{nodeID: "lex-deep", lexicalRank: candidateK},
 		{nodeID: "sem-top", semanticRank: 1},
 		{nodeID: "both", lexicalRank: 1, semanticRank: 40},
 		{nodeID: "lex-top", lexicalRank: 1},
@@ -1133,7 +1151,7 @@ func TestRRF_ExactQueryMakesLexicalDominant(t *testing.T) {
 	if score["sem-top"] >= score["lex-deep"] {
 		t.Errorf("semantic-only row scored %d, lexical rank-%d row scored %d: "+
 			"AC-6 requires every lexical candidate to outrank a semantic-only one on an exact query",
-			score["sem-top"], CandidateK, score["lex-deep"])
+			score["sem-top"], candidateK, score["lex-deep"])
 	}
 	// The semantic term may not change the relative order of two
 	// lexical rows: "both" (lexical 1, semantic 40) and "lex-top"
@@ -1143,7 +1161,7 @@ func TestRRF_ExactQueryMakesLexicalDominant(t *testing.T) {
 		t.Errorf("both=%d lex-top=%d: the semantic tie-break must order two equal-lexical rows",
 			score["both"], score["lex-top"])
 	}
-	if score["both"]-score["lex-top"] >= RRFScale/(RRFk+CandidateK-1)-RRFScale/(RRFk+CandidateK) {
+	if score["both"]-score["lex-top"] >= rrfScale/(rrfK+candidateK-1)-rrfScale/(rrfK+candidateK) {
 		t.Errorf("semantic tie-break of %d is larger than the smallest gap between two adjacent "+
 			"lexical RRF values: it can reorder lexical ranks, which AC-6 forbids",
 			score["both"]-score["lex-top"])
@@ -1151,37 +1169,37 @@ func TestRRF_ExactQueryMakesLexicalDominant(t *testing.T) {
 	// Non-exact queries keep AC-2's symmetric fusion.
 	out = e.rrf(in, true, false)
 	for _, r := range out {
-		if r.nodeID == "sem-top" && r.rrfScore != RRFScale/(RRFk+1) {
+		if r.nodeID == "sem-top" && r.rrfScore != rrfScale/(rrfK+1) {
 			t.Errorf("non-exact query: sem-top rrf = %d, want the full AC-2 contribution %d",
-				r.rrfScore, RRFScale/(RRFk+1))
+				r.rrfScore, rrfScale/(rrfK+1))
 		}
 	}
 }
 
 func TestRetrieve_AppliesTheExactQueryRule(t *testing.T) {
 	// The AC-6 defect was not a wrong rule but an unconsulted one:
-	// IsExactQuery had no caller outside its own unit test. This test
+	// isExactQuery had no caller outside its own unit test. This test
 	// drives the rule through the public entry point, which is where
 	// AC-6 is actually owed.
 	//
 	// The fixture is built so that symmetric AC-2 fusion puts a
 	// SEMANTIC-ONLY row above a lexical one: "a-sem" is semantic rank 1
-	// (RRFScale/(RRFk+1) = 16393) and "z-lex1" is lexical rank 1 (also
+	// (rrfScale/(rrfK+1) = 16393) and "z-lex1" is lexical rank 1 (also
 	// 16393), so the node_id tie-break lifts the semantic-only row over
 	// the lexical candidate. AC-6 forbids exactly that on an exact
 	// query.
-	lex := &fakeLexical{hits: []LexicalHit{
+	lex := &fakeLexical{hits: []lexicalHit{
 		{NodeID: "z-lex1", Kind: "function", QualifiedName: "pkg.One", Path: "doc/man_docs.go", Line: 10},
 		{NodeID: "b-lex2", Kind: "function", QualifiedName: "pkg.Two", Path: "doc/man_docs.go", Line: 40},
 	}}
-	sem := &fakeSemantic{available: true, hits: []SemanticHit{
+	sem := &fakeSemantic{available: true, hits: []semanticHit{
 		{NodeID: "a-sem", DocumentID: "doc-a", QualifiedName: "pkg.Other", Path: "other.go", Line: 3, CosineScore: 0.99},
 		{NodeID: "b-lex2", DocumentID: "doc-b", QualifiedName: "pkg.Two", Path: "doc/man_docs.go", Line: 40, CosineScore: 0.50},
 	}}
-	e := New(lex, sem, nil)
+	e := newEngine(lex, sem, nil)
 
 	const exact = "doc/man_docs.go" // matches ExactPathPattern
-	if !IsExactQuery(exact) {
+	if !isExactQuery(exact) {
 		t.Fatalf("test premise broken: %q is not an exact query", exact)
 	}
 	res, err := e.Retrieve(context.Background(), Request{Query: exact, Mode: ModeFusionNoGraph})
@@ -1218,9 +1236,9 @@ func TestRetrieve_AppliesTheExactQueryRule(t *testing.T) {
 			lexPos = i + 1
 		}
 	}
-	if semRRF != RRFScale/(RRFk+1) {
+	if semRRF != rrfScale/(rrfK+1) {
 		t.Errorf("non-exact query: semantic-only row RRF = %d, want the full AC-2 contribution %d",
-			semRRF, RRFScale/(RRFk+1))
+			semRRF, rrfScale/(rrfK+1))
 	}
 	if semPos == 0 || lexPos == 0 || semPos > lexPos {
 		t.Errorf("non-exact query: semantic-only row at %d, lexical rank-1 row at %d; "+

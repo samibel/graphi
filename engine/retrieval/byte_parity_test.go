@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/samibel/graphi/core/graphstore"
@@ -183,12 +182,12 @@ func TestByteParity_NoEmbedderEqualsSearchHybridGolden(t *testing.T) {
 			hex.EncodeToString(sum[:]), sw257HelloGreeterHash)
 	}
 
-	// Retrieval path with no embedder. The HybridSearchBridge delegates
-	// to hybridsearch.Search; the retrieval pipeline adds no extra
+	// Retrieval path with no embedder. New hides the hybrid-search adapter;
+	// the retrieval pipeline adds no extra
 	// signals in the default weights so the byte projection is the
 	// SAME as search_hybrid's.
-	bridge := &retrieval.HybridSearchBridge{Deps: deps}
-	r := retrieval.New(bridge, nil, nil)
+	graph, _ := store.(graphstore.BoundedGraphLookup)
+	r := retrieval.New(deps, deps.Search, graph)
 	res, err := r.Retrieve(ctx, retrieval.Request{Query: "hello greeter", Limit: 20})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -320,8 +319,8 @@ func TestLexicalOnly_DegradationStateIsTyped(t *testing.T) {
 	defer func() { _ = store.Close() }()
 
 	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
-	bridge := &retrieval.HybridSearchBridge{Deps: deps}
-	r := retrieval.New(bridge, nil, nil)
+	graph, _ := store.(graphstore.BoundedGraphLookup)
+	r := retrieval.New(deps, deps.Search, graph)
 	res, err := r.Retrieve(context.Background(), retrieval.Request{Query: "hello greeter"})
 	if err != nil {
 		t.Fatalf("Retrieve: %v", err)
@@ -331,32 +330,29 @@ func TestLexicalOnly_DegradationStateIsTyped(t *testing.T) {
 	}
 }
 
-// TestSearchServiceBridge_SemanticAvailableReflectsGenerationState drives
-// the bridge over a real search.Service whose semantic path is
-// unconfigured and asserts the bridge reports the right typed state.
-func TestSearchServiceBridge_SemanticAvailableReflectsGenerationState(t *testing.T) {
+// TestNew_SemanticAvailabilityReflectsGenerationState drives the public deep
+// module over a real search.Service whose semantic path is unconfigured.
+func TestNew_SemanticAvailabilityReflectsGenerationState(t *testing.T) {
 	store := indexedFixture(t)
 	defer func() { _ = store.Close() }()
 
 	svc := search.New(store)
-	bridge := &retrieval.SearchServiceBridge{Service: svc}
-	out, err := bridge.Search(context.Background(), "x", 10)
+	deps := resolve.Deps{Query: query.New(store), Search: svc}
+	graph, _ := store.(graphstore.BoundedGraphLookup)
+	r := retrieval.New(deps, svc, graph)
+	out, err := r.Retrieve(context.Background(), retrieval.Request{Query: "x", Limit: 10})
 	if err != nil {
-		t.Fatalf("Search: %v", err)
+		t.Fatalf("Retrieve: %v", err)
 	}
-	if out.Available {
-		t.Errorf("Available = true, want false (no embedder)")
-	}
-	if out.State != retrieval.StateLexicalOnly {
-		t.Errorf("State = %q, want %q", out.State, retrieval.StateLexicalOnly)
+	if out.Degradation != retrieval.StateLexicalOnly {
+		t.Errorf("Degradation = %q, want %q", out.Degradation, retrieval.StateLexicalOnly)
 	}
 }
 
-// TestLexicalProvider_DelegatingProducesIdenticalNodeIDs is the
-// dedicated structural assertion: the production
-// HybridSearchBridge's row set equals the corresponding hybridsearch
-// output's node_id set in the same order.
-func TestLexicalProvider_DelegatingProducesIdenticalNodeIDs(t *testing.T) {
+// TestNew_DelegatingLexicalPathProducesIdenticalNodeIDs is the dedicated
+// structural assertion through the public seam: New's hidden lexical adapter
+// returns the same node ids as search_hybrid in the same order.
+func TestNew_DelegatingLexicalPathProducesIdenticalNodeIDs(t *testing.T) {
 	store := indexedFixture(t)
 	defer func() { _ = store.Close() }()
 
@@ -367,20 +363,18 @@ func TestLexicalProvider_DelegatingProducesIdenticalNodeIDs(t *testing.T) {
 	shRes, _ := hybridsearch.Search(ctx, hybridsearch.Params{
 		Query: "hello greeter", MaxItems: 20, Deps: deps,
 	})
-	bridge := &retrieval.HybridSearchBridge{Deps: deps}
-	hits, err := bridge.Search(ctx, "hello greeter", 20)
+	graph, _ := store.(graphstore.BoundedGraphLookup)
+	r := retrieval.New(deps, deps.Search, graph)
+	res, err := r.Retrieve(ctx, retrieval.Request{Query: "hello greeter", Limit: 20, Mode: retrieval.ModeLexicalOnly})
 	if err != nil {
-		t.Fatalf("bridge.Search: %v", err)
+		t.Fatalf("Retrieve: %v", err)
 	}
-	if len(hits) != len(shRes.Items) {
-		t.Fatalf("bridge returned %d hits, search_hybrid %d", len(hits), len(shRes.Items))
+	if len(res.Rows) != len(shRes.Items) {
+		t.Fatalf("retrieval returned %d rows, search_hybrid %d", len(res.Rows), len(shRes.Items))
 	}
-	for i := range hits {
-		if hits[i].NodeID != shRes.Items[i].RefID {
-			t.Errorf("rank %d: bridge NodeID=%s, search_hybrid RefID=%s", i, hits[i].NodeID, shRes.Items[i].RefID)
+	for i := range res.Rows {
+		if res.Rows[i].NodeID != shRes.Items[i].RefID {
+			t.Errorf("rank %d: retrieval NodeID=%s, search_hybrid RefID=%s", i, res.Rows[i].NodeID, shRes.Items[i].RefID)
 		}
 	}
 }
-
-// kept to avoid an unused-import lint when sort is the only thing in this file
-var _ = sort.Strings

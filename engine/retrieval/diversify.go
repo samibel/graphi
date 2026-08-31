@@ -5,7 +5,7 @@ package retrieval
 //   - AC-5: no single node_id contributes more than one row in the top
 //     Limit (the dedupe in union already enforces this — but we re-check
 //     the invariant here so the contract is local and testable) and no
-//     single path contributes more than MaxPerFile rows. Rows beyond
+//     single path contributes more than maxPerFile rows. Rows beyond
 //     the cap are DEMOTED, not dropped: a larger Limit still reaches
 //     them. The demotion is implemented by partitioning rows into
 //     "in-cap" and "demoted" groups (both deterministically ordered)
@@ -23,9 +23,9 @@ package retrieval
 //     future pass would inflate. Filtering here, before finaliseRows,
 //     makes the eligibility rule a property of the retrieval module's
 //     output rather than of a downstream projection step.
-func (e *Engine) diversify(rows []row, limit int) []row {
+func (e *engine) diversify(rows []row, limit int) []row {
 	if limit <= 0 {
-		limit = LimitDefault
+		limit = limitDefault
 	}
 	// Rows are already sorted by finalScore desc, node_id asc from the
 	// rerank stage (AC-8).
@@ -42,9 +42,9 @@ func (e *Engine) diversify(rows []row, limit int) []row {
 		if r.ineligible {
 			continue
 		}
-		// AC-5 path cap (demotion): keep MaxPerFile rows per path among the
+		// AC-5 path cap (demotion): keep maxPerFile rows per path among the
 		// top rows; rows beyond the cap move to the demoted tail.
-		if pathCount[r.path] >= MaxPerFile {
+		if pathCount[r.path] >= maxPerFile {
 			demoted = append(demoted, r)
 			continue
 		}

@@ -4,7 +4,13 @@
 package retrieval_test
 
 import (
-	"context"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -17,43 +23,79 @@ import (
 // A reviewer will grep the exported surface — keep it exactly as the AC
 // lists it.
 func TestExportedSurface_ListsExactlyTheNamedTypes(t *testing.T) {
-	// The check is structural: every type under retrieval.R* / retrieval.E*
-	// that the public surface should carry must be reachable through the
-	// named types, and no other exported names should exist. We probe the
-	// surface indirectly by ensuring the constructors return what the story
-	// promises — a value satisfying Retriever with the named types as the
-	// only exported building blocks.
-	type namedExported interface {
-		Retrieve(ctx context.Context, req retrieval.Request) (retrieval.Result, error)
+	allowedPackageNames := map[string]bool{
+		"Mode": true, "ModeAuto": true, "ModeLexicalOnly": true, "ModeSemanticRequired": true, "ModeFusionNoGraph": true,
+		"Request": true,
+		"State":   true, "StateReady": true, "StateLexicalOnly": true,
+		"StateGenerationMissing": true, "StateGenerationStale": true, "StateGenerationCorrupt": true,
+		"Explain": true, "Row": true, "Summary": true, "Result": true,
+		"New": true,
 	}
-	// The compile-time guarantee of these type assertions IS the AC-1 test.
-	var _ namedExported = (*retrieval.Engine)(nil)
-	var _ retrieval.LexicalProvider = (retrieval.LexicalProvider)(nil)
-	var _ retrieval.SemanticProvider = (retrieval.SemanticProvider)(nil)
-}
 
-// TestPinConstants_AreUntouchable is the spec's "must not be 'improved'"
-// list. A change here is a deliberate contract change that needs a story
-// of its own, not a fix.
-func TestPinConstants_AreUntouchable(t *testing.T) {
-	if retrieval.CandidateK != 50 {
-		t.Errorf("CandidateK = %d, want 50", retrieval.CandidateK)
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller")
 	}
-	if retrieval.RRFk != 60 {
-		t.Errorf("RRFk = %d, want 60", retrieval.RRFk)
+	dir := filepath.Dir(thisFile)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if retrieval.RRFScale != 1_000_000 {
-		t.Errorf("RRFScale = %d, want 1_000_000", retrieval.RRFScale)
+	var exported, methods []string
+	fset := token.NewFileSet()
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, decl := range file.Decls {
+			switch d := decl.(type) {
+			case *ast.GenDecl:
+				for _, spec := range d.Specs {
+					switch s := spec.(type) {
+					case *ast.TypeSpec:
+						if s.Name.IsExported() {
+							exported = append(exported, s.Name.Name)
+						}
+					case *ast.ValueSpec:
+						for _, ident := range s.Names {
+							if ident.IsExported() {
+								exported = append(exported, ident.Name)
+							}
+						}
+					}
+				}
+			case *ast.FuncDecl:
+				if !d.Name.IsExported() {
+					continue
+				}
+				if d.Recv == nil {
+					exported = append(exported, d.Name.Name)
+				} else {
+					methods = append(methods, d.Name.Name)
+				}
+			}
+		}
 	}
-	if retrieval.MaxPerFile != 3 {
-		t.Errorf("MaxPerFile = %d, want 3", retrieval.MaxPerFile)
+	sort.Strings(exported)
+	sort.Strings(methods)
+	var unexpected []string
+	for _, name := range exported {
+		if !allowedPackageNames[name] {
+			unexpected = append(unexpected, name)
+		}
 	}
-	if retrieval.LimitDefault != 20 {
-		t.Errorf("LimitDefault = %d, want 20", retrieval.LimitDefault)
+	if len(unexpected) > 0 {
+		t.Errorf("unexpected package exports: %v (all exports: %v)", unexpected, exported)
 	}
-	if retrieval.RetrievalVersion != "retrieval/1" {
-		t.Errorf("RetrievalVersion = %q, want retrieval/1", retrieval.RetrievalVersion)
+	if strings.Join(methods, ",") != "Retrieve" {
+		t.Errorf("exported methods = %v, want [Retrieve]", methods)
 	}
+
 }
 
 // TestStateVocabulary_IsClosed is the typed-state contract AC-1 implies:
@@ -77,8 +119,8 @@ func TestStateVocabulary_IsClosed(t *testing.T) {
 	}
 }
 
-// TestModeVocabulary_IsClosed pins ModeAuto / ModeLexicalOnly /
-// ModeSemanticRequired as the only Mode values a caller can pass.
+// TestModeVocabulary_IsClosed pins the public modes, including the no-graph
+// fusion ablation the AC-9 harness needs.
 func TestModeVocabulary_IsClosed(t *testing.T) {
 	// ModeAuto == 0 (zero value) is the default. The other two are positive.
 	if retrieval.ModeAuto != 0 {
@@ -86,6 +128,9 @@ func TestModeVocabulary_IsClosed(t *testing.T) {
 	}
 	if retrieval.ModeLexicalOnly == retrieval.ModeSemanticRequired {
 		t.Errorf("ModeLexicalOnly == ModeSemanticRequired")
+	}
+	if retrieval.ModeFusionNoGraph == retrieval.ModeSemanticRequired || retrieval.ModeFusionNoGraph == retrieval.ModeLexicalOnly {
+		t.Errorf("ModeFusionNoGraph aliases another mode")
 	}
 }
 

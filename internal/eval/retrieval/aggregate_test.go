@@ -1,7 +1,6 @@
 package retrieval
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -23,31 +22,37 @@ func exportFixtureRun(t *testing.T) (dir string, res *Result, ds *Loaded) {
 	return dir, res, ds
 }
 
+func readRunIndex(t *testing.T, dir string) RunIndex {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(dir, RunIndexFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var idx RunIndex
+	if err := json.Unmarshal(raw, &idx); err != nil {
+		t.Fatal(err)
+	}
+	return idx
+}
+
 // AC-5: a -aggregate path recomputes every published statistic from the raw
 // samples, and a report that has drifted from its samples is a discrepancy.
 func TestAggregate_RoundTripReproducesEveryPublishedNumber(t *testing.T) {
 	dir, _, _ := exportFixtureRun(t)
 
-	for _, f := range []string{RunIndexFile, ReportFile, CobraV1ReportFile, DatasetFile,
+	idx := readRunIndex(t, dir)
+	const wantReport = "fixture-v1-report.json"
+	if idx.Report != wantReport {
+		t.Fatalf("run index report = %q, want the dataset-qualified artifact %q", idx.Report, wantReport)
+	}
+	for _, f := range []string{RunIndexFile, wantReport, DatasetFile,
 		RawFileName(RawSeriesHits, BaselineLexical), RawFileName(RawSeriesLatency, BaselineOracle)} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(f))); err != nil {
 			t.Errorf("run dir lacks %s: %v", f, err)
 		}
 	}
-	// The two report files MUST be byte-identical: CobraV1ReportFile is the
-	// AC-9 gate's reading copy, ReportFile is what -aggregate reads; a
-	// drift between them is a build defect the gate would not catch on
-	// its own (the gate reads CobraV1ReportFile only).
-	a, err := os.ReadFile(filepath.Join(dir, ReportFile))
-	if err != nil {
-		t.Fatalf("read %s: %v", ReportFile, err)
-	}
-	b, err := os.ReadFile(filepath.Join(dir, CobraV1ReportFile))
-	if err != nil {
-		t.Fatalf("read %s: %v", CobraV1ReportFile, err)
-	}
-	if !bytes.Equal(a, b) {
-		t.Errorf("%s and %s diverged; the gate's reading copy must be byte-identical to the canonical report", ReportFile, CobraV1ReportFile)
+	if _, err := os.Stat(filepath.Join(dir, "report.json")); !os.IsNotExist(err) {
+		t.Errorf("run dir carries duplicate report.json; want exactly the indexed %s (stat err %v)", wantReport, err)
 	}
 
 	run, err := ReadRunDir(dir)
@@ -121,10 +126,11 @@ func restampIndex(t *testing.T, dir string, mut func(*RunIndex)) {
 	}
 }
 
-// rewriteReport edits report.json in place and re-stamps its digest.
+// rewriteReport edits the report named by run.json and re-stamps its digest.
 func rewriteReport(t *testing.T, dir string, mut func(*Report)) {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(dir, ReportFile))
+	idx := readRunIndex(t, dir)
+	raw, err := os.ReadFile(filepath.Join(dir, idx.Report))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +143,7 @@ func rewriteReport(t *testing.T, dir string, mut func(*Report)) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, ReportFile), out, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, idx.Report), out, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	restampIndex(t, dir, func(idx *RunIndex) { idx.ReportSHA256 = SHA256Hex(out) })

@@ -193,6 +193,75 @@ re-run). A future re-run that ALSO runs the post-fix implementation against
 V1 source would isolate the conformance fixes' own effect; that is out of
 scope for SW-263.
 
+## Number question — confirmed with direct evidence (SW-263 round 2)
+
+The orchestrator's hypothesis (harness `/2`'s `V2DocumentSource` re-based the
+measurement; the earlier `nl_behaviour` 0.3302 and `architecture_flow` 0.2914
+were optimistic relative to production and should be superseded) is
+**confirmed** by a same-harness `/1` post-fix re-run captured for analysis
+only (transient change to `internal/eval/retrieval/runner.go:444` —
+`V2DocumentSource` reverted back to `V1DocumentSource`; the change was never
+committed; the tree is clean on the runner file).
+
+The earlier 0.3302 / 0.2914 figures are **superseded**, not a defect. The drop
+is dominated by the V1 → V2 re-basing, with a small (~0.015) additional
+negative effect from the conformance fixes on `architecture_flow` only.
+
+### Decomposition (dev split, fusion baseline)
+
+| Metric | `/1` pre-fix, V1 (ac3ac6 / rerun) | `/1` post-fix, V1 (this analysis) | `/2` post-fix, V2 (committed conformance) |
+|---|---|---|---|
+| `nl_behaviour` ndcg@10 | 0.3302 | 0.3302 | 0.2938 |
+| `architecture_flow` ndcg@10 | 0.2914 | 0.2765 | 0.2647 |
+
+Decomposing the observed drop (`/1 pre-fix` → `/2 post-fix`):
+
+| Stratum | Conformance fixes' own effect (`/1` pre → `/1` post) | Harness change effect (`/1` post → `/2` post) | Sum | Observed total |
+|---|---|---|---|---|
+| `nl_behaviour` | 0.0000 | -0.0364 | -0.0364 | -0.0364 |
+| `architecture_flow` | -0.0149 | -0.0118 | -0.0267 | -0.0267 |
+
+The conformance fixes' own effect is:
+- `nl_behaviour`: **zero** (all six dev queries hold the same per-query ndcg@10).
+- `architecture_flow`: **-0.015** (one dev query, `cb-22`, loses the
+  `doc.GenManTreeFromOpts` row that was at rank 10; the rerank bonus now
+  applies uniformly on the fused path per AC-4, which shuffles that row out
+  of the top-10 — a side effect of restoring AC-4 conformance, not a defect).
+
+The harness change (`V1DocumentSource` → `V2DocumentSource`) is the dominant
+cause:
+- `nl_behaviour`: **100%** of the drop (entire -0.0364).
+- `architecture_flow`: **44%** of the drop (-0.0118 of -0.0267).
+
+### Why this is a re-basing, not a defect
+
+- The earlier 0.3302 / 0.2914 figures were measured under harness `/1`, which
+  uses `V1DocumentSource` (text: `kind + qualified_name`, name-only). The
+  retrieval module at runtime does **not** use `V1DocumentSource`; production
+  wires the v2 schema (text: `kind + qualified_name + normalised_path_segments`).
+  Harness `/1` therefore measured an eval analogue that is not the production
+  shape.
+- Harness `/2` uses `V2DocumentSource`, the eval-and-test analogue of the
+  production `fileDocumentSource`. The 938 vectors embedded differ; cosine
+  rankings differ; per-query ndcg moves.
+- The conformance fixes change retrieval correctness (AC-2/3/4/5/7/8). They
+  are not designed to improve ndcg. The `-0.015` on `architecture_flow` is a
+  single-query side effect of the rerank now applying the definition bonus
+  uniformly on the fused path (AC-4); the other four dev `architecture_flow`
+  queries hold the same per-query ndcg@10.
+- The gate does not have a regression floor on `architecture_flow` (the gate's
+  no-regression floor is `exact_identifier` Top-1, which held at 1.0 across
+  all five runs).
+- `chunk_only` (lexical-only) is byte-identical across all four historical
+  runs and the analysis run, confirming the lexical path is stable and the
+  variance is confined to the semantic/fusion path.
+
+**Conclusion:** the orchestrator's hypothesis is confirmed; the earlier
+numbers are superseded; this is not a defect. A future reader who compares
+the `/1` (rerun/ac3ac6) and `/2` (conformance) fusion numbers as if they were
+the same method would be misled — the comparison is documented here so the
+older run directories are not mistaken for a same-harness before/after.
+
 ## Embedder / corpus / harness identity
 
 - **Embedder:** `ollama:nomic-embed-text` (loopback 127.0.0.1:11434), 768-dim.

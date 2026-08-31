@@ -29,7 +29,6 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
-	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/embed"
 	_ "github.com/samibel/graphi/engine/embed/ollama"
@@ -41,12 +40,6 @@ import (
 )
 
 const embedderSelector = "ollama"
-
-// deepLimit is the Limit the AC-5 attribution diagnostic asks for: deep
-// enough that every row AC-5 demoted below the reported top-10 is still
-// present in the returned set (the union is at most 2*CandidateK rows,
-// so 2*CandidateK is a complete read of the fused row set).
-const deepLimit = 2 * retrieval.CandidateK
 
 func main() {
 	repoDir := flag.String("repo", "", "path to the cobra checkout")
@@ -209,14 +202,19 @@ func run(repoDir, datasetPath, newRunDir, prevRunDir string, w io.Writer) error 
 	}
 
 	deps := resolve.Deps{Query: query.New(store), Search: svc}
-	bridge := &retrieval.HybridSearchBridge{Deps: deps}
-	bridge.WeightsHash = hybridsearch.WeightsHash()
-	semBridge := &retrieval.SearchServiceBridge{Service: svc}
-	var graphR retrieval.GraphReader
+	var graphR graphstore.BoundedGraphLookup
 	if bg, ok := any(store).(graphstore.BoundedGraphLookup); ok {
-		graphR = retrieval.NewGraphReader(bg)
+		graphR = bg
 	}
-	r := retrieval.New(bridge, semBridge, graphR)
+	r := retrieval.New(deps, svc, graphR)
+	probe, err := r.Retrieve(ctx, retrieval.Request{Limit: 1, Mode: retrieval.ModeFusionNoGraph})
+	if err != nil {
+		return err
+	}
+	// A lexical top-k plus semantic top-k union contains at most twice the
+	// candidate depth. Read that depth from the public Summary rather than
+	// depending on retrieval's private arithmetic constants (AC-1).
+	deepLimit := 2 * probe.Summary.CandidateK
 
 	var prevHitsFusion, prevHitsFG map[string][]string
 	if prevRunDir != "" {
@@ -288,10 +286,10 @@ func run(repoDir, datasetPath, newRunDir, prevRunDir string, w io.Writer) error 
 			lexRRF := 0
 			semRRF := 0
 			if row.Explain.LexicalRank > 0 {
-				lexRRF = retrieval.RRFScale / (retrieval.RRFk + row.Explain.LexicalRank)
+				lexRRF = fusionRes.Summary.RRFScale / (fusionRes.Summary.RRFk + row.Explain.LexicalRank)
 			}
 			if row.Explain.SemanticRank > 0 {
-				semRRF = retrieval.RRFScale / (retrieval.RRFk + row.Explain.SemanticRank)
+				semRRF = fusionRes.Summary.RRFScale / (fusionRes.Summary.RRFk + row.Explain.SemanticRank)
 			}
 			rowExplains = append(rowExplains, perRowExplain{
 				Rank: i + 1, NodeID: row.NodeID, Path: row.Path,

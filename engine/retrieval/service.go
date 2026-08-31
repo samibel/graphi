@@ -15,7 +15,7 @@ import (
 	"github.com/samibel/graphi/engine/search"
 )
 
-// HybridSearchBridge is the production LexicalProvider for engine/retrieval:
+// hybridSearchBridge is the production lexical adapter for engine/retrieval:
 // it delegates the lexical candidate retrieval to engine/agenttools/hybridsearch
 // rather than re-deriving its per-token + graph-expansion pipeline.
 //
@@ -27,37 +27,34 @@ import (
 // two EXISTING seams — not a parallel implementation of either.
 //
 // The bridge converts search_hybrid's contract.Item rows into the
-// retrieval.LexicalHit shape. The score (search_hybrid's audit score) is
-// carried on LexicalHit.Score so the rerank stage can reuse it without
+// retrieval.lexicalHit shape. The score (search_hybrid's audit score) is
+// carried on lexicalHit.Score so the rerank stage can reuse it without
 // recomputation when the semantic path is empty (the AC-7 byte-parity
 // path); when the semantic path is active, the union + RRF + rerank
 // stages fuse the lexical and semantic scores on top of this base.
-type HybridSearchBridge struct {
+type hybridSearchBridge struct {
 	// Deps is the resolve.Deps hybridsearch.Search consumes directly. The
 	// engine/agenttools/resolve package declares Retriever, RetrieverRequest
 	// and RetrieverResult locally; it does NOT import engine/retrieval, so
 	// engine/retrieval is free to import it. There is no import cycle, and
 	// no adapter struct is needed.
-	Deps resolve.Deps
-	// WeightsHash is the hybridsearch weights hash echoed into the
-	// retrieval's summary so the audit discipline carries through.
-	WeightsHash string
+	deps resolve.Deps
 }
 
-// Search implements LexicalProvider by calling hybridsearch.Search and
+// search implements lexicalProvider by calling hybridsearch.Search and
 // converting its results. The limit is the per-source top-k from the
 // retrieval's candidate-union stage.
-func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int) ([]LexicalHit, error) {
+func (b *hybridSearchBridge) search(ctx context.Context, query string, limit int) ([]lexicalHit, error) {
 	if b == nil {
-		return nil, fmt.Errorf("retrieval: HybridSearchBridge is nil")
+		return nil, fmt.Errorf("retrieval: hybrid search adapter is nil")
 	}
-	if !b.Deps.Available() || b.Deps.Search == nil {
+	if !b.deps.Available() || b.deps.Search == nil {
 		return nil, fmt.Errorf("retrieval: hybridsearch bridge has no available deps")
 	}
 	res, err := hybridsearch.Search(ctx, hybridsearch.Params{
 		Query:    query,
 		MaxItems: limit,
-		Deps:     b.Deps,
+		Deps:     b.deps,
 	})
 	if err != nil {
 		return nil, err
@@ -79,8 +76,8 @@ func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int
 		ids = append(ids, model.NodeId(it.RefID))
 	}
 	var byID map[model.NodeId]model.Node
-	if b.Deps.Query != nil {
-		if lookup, ok := b.Deps.Query.Reader().(graphstore.GraphLookup); ok {
+	if b.deps.Query != nil {
+		if lookup, ok := b.deps.Query.Reader().(graphstore.GraphLookup); ok {
 			if ns, err := lookup.NodesByID(ctx, ids); err == nil {
 				byID = make(map[model.NodeId]model.Node, len(ns))
 				for _, n := range ns {
@@ -89,9 +86,9 @@ func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int
 			}
 		}
 	}
-	out := make([]LexicalHit, len(res.Items))
+	out := make([]lexicalHit, len(res.Items))
 	for i, it := range res.Items {
-		h := LexicalHit{
+		h := lexicalHit{
 			NodeID: it.RefID,
 			Score:  it.Rank,
 		}
@@ -113,7 +110,7 @@ func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int
 	return out, nil
 }
 
-// SearchServiceBridge adapts engine/search.Service into the retrieval
+// searchServiceBridge adapts engine/search.Service into the retrieval
 // module's semantic provider. It is the one place the SW-263 retrieval
 // module reads from the SW-059 lexical service and the SW-261 typed
 // semantic state.
@@ -123,57 +120,42 @@ func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int
 // Fingerprints() method exposes them to the retrieval module's typed
 // summary; the runtime wires them up at composition time from the
 // GenerationStore.Active fingerprint and the embedder's identity.
-type SearchServiceBridge struct {
-	Service          *search.Service
-	State            embed.State
-	Reason           string
-	ModelFingerprint string
-	IndexFingerprint string
+type searchServiceBridge struct {
+	service *search.Service
 }
 
-// Fingerprints is the typed seam the retrieval module's semanticOutcome
-// type-asserts on to populate Summary.ModelFingerprint and
-// Summary.IndexFingerprint. Both return "" on the lexical-only path; the
-// bridge therefore returns the configured values verbatim when set, and
-// empty when unset (the legacy fixture path). The retrieval module does
-// not interpret the strings — it stamps them so an audit reader can
-// verify which embedding space served the row set.
-func (b *SearchServiceBridge) Fingerprints() (model, index string) {
-	if b == nil {
+// fingerprints derives the audit identity from the same typed state
+// SemanticSearch serves. Keeping this inside the module makes it impossible
+// for a composition caller to wire search correctly while forgetting either
+// fingerprint (the production defect found in the first SW-263 review).
+func (b *searchServiceBridge) fingerprints() (model, index string) {
+	if b == nil || b.service == nil {
 		return "", ""
 	}
-	return b.ModelFingerprint, b.IndexFingerprint
+	st := b.service.SemanticState()
+	model = st.Requested.ModelID
+	if st.State == embed.StateReady {
+		index = st.Requested.Canonical()
+	}
+	return model, index
 }
 
-// Available reports whether the underlying service has a configured
-// semantic path.
-func (b *SearchServiceBridge) Available() bool {
-	if b == nil || b.Service == nil {
-		return false
+// search implements semanticProvider.
+func (b *searchServiceBridge) search(ctx context.Context, query string, limit int) (semanticOutcome, error) {
+	if b == nil || b.service == nil {
+		return semanticOutcome{Available: false, Reason: search.UnavailableReason, State: StateLexicalOnly}, nil
 	}
-	resp, err := b.Service.SemanticSearch(context.Background(), "", 0)
+	resp, err := b.service.SemanticSearch(ctx, query, limit)
 	if err != nil {
-		return false
-	}
-	return resp.Available
-}
-
-// Search implements SemanticProvider.
-func (b *SearchServiceBridge) Search(ctx context.Context, query string, limit int) (SemanticOutcome, error) {
-	if b == nil || b.Service == nil {
-		return SemanticOutcome{Available: false, Reason: search.UnavailableReason, State: StateLexicalOnly}, nil
-	}
-	resp, err := b.Service.SemanticSearch(ctx, query, limit)
-	if err != nil {
-		return SemanticOutcome{}, err
+		return semanticOutcome{}, err
 	}
 	if !resp.Available {
 		state := stateFromReason(resp.Reason)
-		return SemanticOutcome{Available: false, Reason: resp.Reason, State: state}, nil
+		return semanticOutcome{Available: false, Reason: resp.Reason, State: state}, nil
 	}
-	hits := make([]SemanticHit, len(resp.Hits))
+	hits := make([]semanticHit, len(resp.Hits))
 	for i, h := range resp.Hits {
-		hits[i] = SemanticHit{
+		hits[i] = semanticHit{
 			NodeID:        h.NodeID,
 			Kind:          h.Kind,
 			QualifiedName: h.QualifiedName,
@@ -184,7 +166,7 @@ func (b *SearchServiceBridge) Search(ctx context.Context, query string, limit in
 			CosineScore:   h.Score,
 		}
 	}
-	return SemanticOutcome{Available: true, Reason: "", State: StateReady, Hits: hits}, nil
+	return semanticOutcome{Available: true, Reason: "", State: StateReady, Hits: hits}, nil
 }
 
 // stateFromReason maps the SW-261 typed reason text back to the
@@ -211,9 +193,9 @@ func stateFromReason(reason string) State {
 	return StateLexicalOnly
 }
 
-// QuantiseScore implements AC-3: cosine values are quantised to
+// quantiseScore implements AC-3: cosine values are quantised to
 // int(round(cos*10000)) BEFORE the semantic list is ordered.
-func QuantiseScore(cos float64) int {
+func quantiseScore(cos float64) int {
 	if math.IsNaN(cos) || math.IsInf(cos, 0) {
 		return 0
 	}
@@ -229,8 +211,6 @@ func QuantiseScore(cos float64) int {
 	return -int(-scaled + 0.5)
 }
 
-// mustStderr is a tiny helper used only when constructing a retrieval
-// instance from the runtime — keeps the file standalone-testable.
 func mustStderr(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format, args...)
 }

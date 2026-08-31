@@ -3,16 +3,16 @@
 // track). It owns the ranking pipeline end to end:
 //
 //   - candidate union of the top-k lexical and top-k semantic candidates
-//     (k pinned at CandidateK = 50), deduped over document_id then node_id,
+//     (k pinned at candidateK = 50), deduped over document_id then node_id,
 //     with a semantic-only hit reachable in the result;
-//   - integer Reciprocal Rank Fusion (RRFk = 60, scale = 1_000_000,
-//     score = scale/(RRFk+rank)); only integer arithmetic in the ranking
+//   - integer Reciprocal Rank Fusion (rrfK = 60, scale = 1_000_000,
+//     score = scale/(rrfK+rank)); only integer arithmetic in the ranking
 //     path, no floats in ordering;
 //   - bounded rerank on the audited integer signals of
 //     engine/agenttools/hybridsearch (SegmentExact, SegmentPrefix,
 //     PathSegment, DegreePoint) plus a definition bonus and the
 //     vendor/generated classification penalty;
-//   - diversification with one row per node_id and MaxPerFile = 3 rows per
+//   - diversification with one row per node_id and maxPerFile = 3 rows per
 //     path in the top Limit — rows beyond the cap are demoted, never
 //     dropped, so a larger Limit still reaches them;
 //   - a typed, byte-stable Explain block per row (LexicalRank, SemanticRank,
@@ -44,30 +44,32 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/search"
 )
 
-// RetrievalVersion stamps the retrieval method (per AC-1 Summary). It is the
+// retrievalVersion stamps the retrieval method (per AC-1 Summary). It is the
 // audit value that lets a downstream caller tell the SW-263 release from any
 // later revision that breaks serialization.
-const RetrievalVersion = "retrieval/1"
+const retrievalVersion = "retrieval/1"
 
 // Pinned arithmetic constants from the spec ("Arithmetic that is fixed and
 // must not be 'improved'"). They are named so reviewers and tests see them
 // as contracts, not magic numbers.
 const (
-	// CandidateK is the per-source top-k the union stage fetches (lexical
+	// candidateK is the per-source top-k the union stage fetches (lexical
 	// and semantic independently).
-	CandidateK = 50
-	// RRFk is the standard RRF damping constant (Cormack et al., 2009).
-	RRFk = 60
-	// RRFScale multiplies every RRF contribution so integer division
+	candidateK = 50
+	// rrfK is the standard RRF damping constant (Cormack et al., 2009).
+	rrfK = 60
+	// rrfScale multiplies every RRF contribution so integer division
 	// preserves sub-unit rank differences.
-	RRFScale = 1_000_000
-	// MaxPerFile caps how many rows in the top Limit share one source path.
+	rrfScale = 1_000_000
+	// maxPerFile caps how many rows in the top Limit share one source path.
 	// Rows beyond the cap are demoted below the Limit, never dropped.
-	MaxPerFile = 3
-	// LimitDefault is the default Result.Limit when Request.Limit <= 0.
-	LimitDefault = 20
+	maxPerFile = 3
+	// limitDefault is the default Result.Limit when Request.Limit <= 0.
+	limitDefault = 20
 )
 
 // Mode is the retrieval mode (AC-1 Request.Mode). The default (zero value)
@@ -104,7 +106,7 @@ type Request struct {
 	Query string
 	// Limit caps the rows in the top Result.Rows; rows beyond the cap are
 	// demoted below it (a larger Limit still reaches them). <=0 selects
-	// LimitDefault.
+	// limitDefault.
 	Limit int
 	// BudgetHint is the soft token budget for the row set (advisory; the
 	// caller is the contract surface that enforces a real budget).
@@ -148,7 +150,7 @@ type Explain struct {
 	// row is lexical-only.
 	SemanticRank int
 	// RRF is the integer Reciprocal Rank Fusion contribution:
-	// scale / (RRFk + rank) per source, summed over the sources that
+	// scale / (rrfK + rank) per source, summed over the sources that
 	// contributed to the row (lexical, semantic, or both).
 	RRF int
 	// Graph is the bounded rerank contribution (integer): the segment /
@@ -171,7 +173,7 @@ type Row struct {
 	DocumentID string
 	// Path is the repo-relative source path.
 	Path string
-	// Span is "start_line-end_line" (e.g. "12-34"). Engine-owned
+	// Span is "start_line-end_line" (e.g. "12-34"). engine-owned
 	// serialization, never the literal parsed source.
 	Span string
 	// Explain is the integer scoring breakdown. Deterministic.
@@ -217,26 +219,22 @@ type Result struct {
 
 // LexicalProvider is the lexical candidate source. It is satisfied by
 // engine/search.Service. Limit is the per-source top-k.
-type LexicalProvider interface {
-	Search(ctx context.Context, query string, limit int) ([]LexicalHit, error)
+type lexicalProvider interface {
+	search(ctx context.Context, query string, limit int) ([]lexicalHit, error)
 }
 
 // SemanticProvider is the semantic candidate source. It is satisfied by
 // engine/search.Service via its typed SemanticSearch method. nil means "no
 // semantic path" (the default build); a non-nil provider whose Configured()
 // reports false is treated the same way.
-type SemanticProvider interface {
-	// Available reports whether a configured semantic path exists. False
-	// means the retrieval returns lexical-only rows with Degradation =
-	// StateLexicalOnly.
-	Available() bool
+type semanticProvider interface {
 	// Search returns the typed semantic outcome: hits (when ready) or the
 	// typed unavailable reason. It never returns an error on the typed
 	// unavailable path — only an infrastructure error can produce one.
-	Search(ctx context.Context, query string, limit int) (SemanticOutcome, error)
+	search(ctx context.Context, query string, limit int) (semanticOutcome, error)
 }
 
-// LexicalHit is the minimal lexical candidate the union stage needs:
+// lexicalHit is the minimal lexical candidate the union stage needs:
 // node identity + provenance. Score is the pre-computed rerank score the
 // lexical provider (HybridSearchBridge) returns from search_hybrid —
 // it carries over so the retrieval's rerank stage can reuse it without
@@ -244,7 +242,7 @@ type SemanticProvider interface {
 // path). A non-delegating provider (tests) may leave Score at 0; the
 // rerank stage then computes it from the row's kind/qualified_name/path
 // and the graph's degree signal.
-type LexicalHit struct {
+type lexicalHit struct {
 	NodeID        string
 	Kind          string
 	QualifiedName string
@@ -258,10 +256,10 @@ type LexicalHit struct {
 	Score int
 }
 
-// SemanticHit is the minimal semantic candidate the union stage needs.
+// semanticHit is the minimal semantic candidate the union stage needs.
 // CosineScore is the float64 the embedder returned; the retrieval module
 // quantises it to an int before ordering (AC-3).
-type SemanticHit struct {
+type semanticHit struct {
 	NodeID        string
 	Kind          string
 	QualifiedName string
@@ -272,8 +270,8 @@ type SemanticHit struct {
 	CosineScore   float64
 }
 
-// SemanticOutcome is the typed result SemanticProvider.Search returns.
-type SemanticOutcome struct {
+// semanticOutcome is the typed result SemanticProvider.Search returns.
+type semanticOutcome struct {
 	// Available is true when the embedder is configured and the active
 	// generation is ready. When false, Reason names the typed state and
 	// Hits is empty.
@@ -282,13 +280,13 @@ type SemanticOutcome struct {
 	Reason string
 	// Hits is the ranked semantic candidate list (cosine score desc, then
 	// node_id asc) — never nil when Available.
-	Hits []SemanticHit
+	Hits []semanticHit
 	// State is the typed retrieval State this outcome implies.
 	State State
 }
 
 // rerankWeights is the integer weight set the rerank stage applies. The
-// field names are the wire names the summary's WeightsHash digests.
+// field names are the wire names the summary's weightsHash digests.
 //
 // AC-4 (SW-263 review / item 3): the set the rerank APPLIES and the set
 // the audit hash stamps MUST be the same object — a stamp that does not
@@ -317,7 +315,7 @@ type rerankWeights struct {
 // vendor/generated penalty. The hybridsearch constants are imported
 // verbatim so the two paths share the same audited scoring discipline.
 // Every field here is read by the rerank at apply-time AND hashed into
-// Summary.WeightsHash, so a tuning pass that moves one number moves
+// Summary.weightsHash, so a tuning pass that moves one number moves
 // rankings AND the audit hash together.
 var defaultRerankWeights = rerankWeights{
 	SegmentExact:     100,
@@ -331,18 +329,18 @@ var defaultRerankWeights = rerankWeights{
 	DegreePoint:      2,
 }
 
-// WeightsHash is the auditable stamp of the active weight model. It is the
+// weightsHash is the auditable stamp of the active weight model. It is the
 // short sha256 (first 8 hex bytes, 16 chars) of the JSON encoding of the
-// weight struct — the same audit discipline hybridsearch.WeightsHash uses
+// weight struct — the same audit discipline hybridsearch.weightsHash uses
 // (so a caller comparing the two hashes sees the same shape).
-func WeightsHash() string {
+func weightsHash() string {
 	b, _ := json.Marshal(defaultRerankWeights)
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])[:8]
 }
 
 // weightsSortedCopy returns the rerank weights sorted by JSON field name
-// (so the SHA in WeightsHash is independent of struct field order).
+// (so the SHA in weightsHash is independent of struct field order).
 func weightsSortedCopy(w rerankWeights) []byte {
 	// Marshal with sorted keys via an intermediate map. The map MUST
 	// carry every field the rerank actually applies (including
@@ -381,8 +379,8 @@ func weightsSortedCopy(w rerankWeights) []byte {
 	return buf
 }
 
-// weightsHashOf computes WeightsHash for an arbitrary weight struct. It is
-// the same algorithm as WeightsHash() but over an arbitrary value, so a
+// weightsHashOf computes weightsHash for an arbitrary weight struct. It is
+// the same algorithm as weightsHash() but over an arbitrary value, so a
 // test can assert the hash is stable under field reordering.
 func weightsHashOf(w rerankWeights) string {
 	b := weightsSortedCopy(w)
@@ -390,25 +388,33 @@ func weightsHashOf(w rerankWeights) string {
 	return hex.EncodeToString(sum[:])[:8]
 }
 
-// Retriever is the deep module's public seam (AC-1). It is the single
-// interface consumers depend on; the underlying pipeline stages (union,
-// rrf, rerank, diversify, explain) are unexported.
-type Retriever interface {
-	Retrieve(ctx context.Context, req Request) (Result, error)
+// New builds the deep retrieval module over the existing engine seams. The
+// lexical argument is the same dependency set search_hybrid consumes, semantic
+// is the existing search.Service whose SemanticSearch method owns generation
+// state, and graph is the existing bounded graphstore read seam. All adapters,
+// candidate types and ranking stages remain implementation details (AC-1).
+//
+// New panics when the always-available lexical seam is incomplete. semantic
+// and graph may be nil: that is the default lexical-only composition.
+func New(lexical resolve.Deps, semantic *search.Service, graph graphstore.BoundedGraphLookup) *engine {
+	if !lexical.Available() || lexical.Search == nil {
+		panic("retrieval: New: lexical dependencies are unavailable")
+	}
+	var sem semanticProvider
+	if semantic != nil {
+		sem = &searchServiceBridge{service: semantic}
+	}
+	return newEngine(&hybridSearchBridge{deps: lexical}, sem, newGraphReader(graph))
 }
 
-// New builds a retrieval instance over the given lexical and semantic
-// providers. The semantic provider may be nil (no embedder configured — the
-// default build). The graph is an optional narrow dependency for callers
-// that want a non-delegating lexical pipeline (tests). Production callers
-// use the delegating HybridSearchBridge and pass nil for graph.
-//
-// New panics on a nil lexical provider: lexical is always available.
-func New(lexical LexicalProvider, semantic SemanticProvider, graph GraphReader) *Engine {
+// newEngine is the private construction seam used by stage tests. Production
+// callers cross New and cannot supply implementation-shaped candidates or
+// adapters, which keeps the module's external interface deep.
+func newEngine(lexical lexicalProvider, semantic semanticProvider, graph graphReader) *engine {
 	if lexical == nil {
 		panic("retrieval: New: lexical provider is nil")
 	}
-	return &Engine{
+	return &engine{
 		lexical:  lexical,
 		semantic: semantic,
 		graph:    graph,
@@ -427,8 +433,8 @@ func New(lexical LexicalProvider, semantic SemanticProvider, graph GraphReader) 
 // when the semantic path is active, so semantic-only candidates
 // receive the same bounded degree boost lexical-only rows already get
 // via the delegating bridge (SW-263 / decision-ac9 defect 3).
-type GraphReader interface {
-	InboundDegree(ctx context.Context, id string, cap int) (int, error)
+type graphReader interface {
+	inboundDegree(ctx context.Context, id string, cap int) (int, error)
 }
 
 // BoundedDegreeReader is the minimal port the production composition
@@ -439,14 +445,15 @@ type GraphReader interface {
 // retrieval module's interface surface stays dependency-light; the
 // adapter is the only place that imports graphstore for the degree
 // read.
-type BoundedDegreeReader = graphstore.BoundedGraphLookup
-
-// NewGraphReader adapts a BoundedDegreeReader into the GraphReader
+// newGraphReader adapts graphstore.BoundedGraphLookup into the graphReader
 // the retrieval module consumes. The adapter is the single seam
 // between the retrieval module and the graphstore port; tests can
 // pass a hand-rolled fake, production code passes the store via
 // WithGraphReader at composition time.
-func NewGraphReader(src BoundedDegreeReader) GraphReader {
+func newGraphReader(src graphstore.BoundedGraphLookup) graphReader {
+	if src == nil {
+		return nil
+	}
 	return &degreeAdapter{src: src}
 }
 
@@ -454,10 +461,10 @@ func NewGraphReader(src BoundedDegreeReader) GraphReader {
 // bounded incident-edge read returns. The cap is the same cap the
 // rerank uses (32, matching search_hybrid's degreeReadCap).
 type degreeAdapter struct {
-	src BoundedDegreeReader
+	src graphstore.BoundedGraphLookup
 }
 
-func (d *degreeAdapter) InboundDegree(ctx context.Context, id string, cap int) (int, error) {
+func (d *degreeAdapter) inboundDegree(ctx context.Context, id string, cap int) (int, error) {
 	if d == nil || d.src == nil {
 		return 0, nil
 	}
@@ -472,22 +479,23 @@ func (d *degreeAdapter) InboundDegree(ctx context.Context, id string, cap int) (
 // BoundedDegreeReader through BoundedGraphLookup, so a future
 // backend that forgets to will fail the build at this line.
 var (
-	_ BoundedDegreeReader = (*graphstore.SQLiteStore)(nil)
+	_ graphstore.BoundedGraphLookup = (*graphstore.SQLiteStore)(nil)
 )
 
-// Engine is the retrieval module's concrete type. Consumers depend on the
-// Retriever interface; Engine is what New returns.
-type Engine struct {
-	lexical  LexicalProvider
-	semantic SemanticProvider
-	graph    GraphReader
+// engine is the retrieval module's concrete implementation. New returns it so
+// callers can invoke its sole exported method without making the type itself
+// part of the package interface.
+type engine struct {
+	lexical  lexicalProvider
+	semantic semanticProvider
+	graph    graphReader
 }
 
 // Retrieve is the single public entry point (AC-1).
-func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
+func (e *engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 	req = normaliseRequest(req)
 	state, semHits, semFP, idxFP := e.semanticOutcome(ctx, req)
-	lexHits, err := e.lexical.Search(ctx, req.Query, CandidateK)
+	lexHits, err := e.lexical.search(ctx, req.Query, candidateK)
 	if err != nil {
 		return Result{}, err
 	}
@@ -502,27 +510,27 @@ func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 	// receives its single-source contribution (AC-2's union, not an
 	// intersection filter).
 	//
-	// IsExactQuery is AC-6's rule, applied here because this is the one
+	// isExactQuery is AC-6's rule, applied here because this is the one
 	// stage where the two sources are weighed against each other: on an
 	// exact identifier / path query the semantic term collapses to a
 	// bounded tie-break so lexical rank dominates.
-	rows = e.rrf(rows, state == StateReady, IsExactQuery(req.Query))
+	rows = e.rrf(rows, state == StateReady, isExactQuery(req.Query))
 	semanticActive := state == StateReady
 	rows = e.applyRerankAndDiversify(ctx, req, rows, semanticActive)
 	res := Result{
 		Rows:        finaliseRows(rows, req.Limit),
 		Degradation: state,
 		Summary: Summary{
-			RetrievalVersion: RetrievalVersion,
-			WeightsHash:      WeightsHash(),
+			RetrievalVersion: retrievalVersion,
+			WeightsHash:      weightsHash(),
 			ModelFingerprint: semFP,
 			IndexFingerprint: idxFP,
 			Query:            req.Query,
 			Limit:            req.Limit,
-			CandidateK:       CandidateK,
-			RRFk:             RRFk,
-			RRFScale:         RRFScale,
-			MaxPerFile:       MaxPerFile,
+			CandidateK:       candidateK,
+			RRFk:             rrfK,
+			RRFScale:         rrfScale,
+			MaxPerFile:       maxPerFile,
 		},
 	}
 	return res, nil
@@ -532,7 +540,7 @@ func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 // default limit.
 func normaliseRequest(req Request) Request {
 	if req.Limit <= 0 {
-		req.Limit = LimitDefault
+		req.Limit = limitDefault
 	}
 	return req
 }
@@ -546,7 +554,7 @@ func normaliseRequest(req Request) Request {
 // rrfScore, and the sort is rrfScore desc, node_id asc (deterministic).
 // Diversification still applies because AC-5 is independent of the
 // rerank stage.
-func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row, semanticActive bool) []row {
+func (e *engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row, semanticActive bool) []row {
 	if req.Mode == ModeFusionNoGraph {
 		for i := range rows {
 			rows[i].graphScore = 0
@@ -576,7 +584,7 @@ func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows 
 // in the Search result, and the retrieval's Degradation must carry the
 // precise state to the consumer — calling only when Available() would
 // collapse the four SW-261 states into one undifferentiated lexical-only.
-func (e *Engine) semanticOutcome(ctx context.Context, req Request) (state State, hits []SemanticHit, modelFP, indexFP string) {
+func (e *engine) semanticOutcome(ctx context.Context, req Request) (state State, hits []semanticHit, modelFP, indexFP string) {
 	state = StateLexicalOnly
 	if e.semantic == nil {
 		return
@@ -586,7 +594,7 @@ func (e *Engine) semanticOutcome(ctx context.Context, req Request) (state State,
 		// candidates consulted even when the embedder is configured.
 		return
 	}
-	out, err := e.semantic.Search(ctx, req.Query, CandidateK)
+	out, err := e.semantic.search(ctx, req.Query, candidateK)
 	if err != nil {
 		// An infrastructure error on the semantic path is treated as a
 		// lexical-only retrieval with no error surfaced (AC-7 fail-soft).
@@ -603,8 +611,8 @@ func (e *Engine) semanticOutcome(ctx context.Context, req Request) (state State,
 	}
 	state = StateReady
 	hits = out.Hits
-	if bp, ok := e.semantic.(interface{ Fingerprints() (model, index string) }); ok {
-		modelFP, indexFP = bp.Fingerprints()
+	if bp, ok := e.semantic.(interface{ fingerprints() (model, index string) }); ok {
+		modelFP, indexFP = bp.fingerprints()
 	}
 	return
 }

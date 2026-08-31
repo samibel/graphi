@@ -254,7 +254,7 @@ const ac9ReportPath = "docs/eval/retrieval/runs/2026-08-31-conformance-local/cob
 // conformance re-run lands; the test refuses to pass on a stale or
 // foreign CandidateSHA — the gate is a property of the reviewed tree,
 // not of whatever report the filesystem holds.
-const ac9CandidateSHA = "PENDING_REVIEW_RUN_SHA"
+const ac9CandidateSHA = "6653370ff117bde5a2535798626ee64b8c5b3b55"
 
 // ac9PlaceholderSHA is the sentinel value ac9CandidateSHA holds before
 // the orchestrator has committed the AC-9 eval re-run. The gate
@@ -265,6 +265,29 @@ const ac9CandidateSHA = "PENDING_REVIEW_RUN_SHA"
 // message that names the only legitimate fix path: update
 // ac9CandidateSHA to the SHA the orchestrator just committed.
 const ac9PlaceholderSHA = "PENDING_REVIEW_RUN_SHA"
+
+// TestAC9Evidence_RoundTripsFromRaw is the fail-closed evidence-integrity
+// check for the exact run selected by the AC-9 gate. A digest-consistent
+// run.json is not sufficient: the indexed report must be the gate's named
+// report, and every published hit list, metric and performance measure must
+// reproduce from dataset.json and raw/. This test stays independently green
+// when the evidence is sound even though the score gate below honestly fails.
+func TestAC9Evidence_RoundTripsFromRaw(t *testing.T) {
+	reportPath := resolveRepoPath(t, ac9ReportPath)
+	dir := filepath.Dir(reportPath)
+	run, err := ReadRunDir(dir)
+	if err != nil {
+		t.Fatalf("AC-9 evidence directory is unreadable: %v", err)
+	}
+	if run.Index.Report != filepath.Base(reportPath) {
+		t.Fatalf("AC-9 evidence index names report %q, but the gate reads %q; one report artifact must serve both aggregation and gating", run.Index.Report, filepath.Base(reportPath))
+	}
+	agg := Reproduce(run)
+	if agg.ExitCode() != ExitReproduced {
+		t.Fatalf("AC-9 evidence does not round-trip: status=%s checked=%d reproduced=%d discrepant=%d unknown=%d discrepancies=%v",
+			agg.Status, agg.Checked, agg.Reproduced, agg.Discrepant, agg.Unknown, agg.Discrepancies)
+	}
+}
 
 // TestReport_MeetsAC9GateAgainstTargetsFile is the AC-9 comparison test: it
 // loads the IMMUTABLE docs/eval/retrieval-targets.json (the SW-258 pin

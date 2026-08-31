@@ -85,16 +85,16 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 			"-out", filepath.Join(filepath.Dir(nudged), "r.json"), "-export-raw", nudged, "-repeats", "1"}, &bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
 			t.Fatal("second run failed")
 		}
-		p := filepath.Join(nudged, retrieval.ReportFile)
+		ib, _ := os.ReadFile(filepath.Join(nudged, retrieval.RunIndexFile))
+		var idx retrieval.RunIndex
+		_ = json.Unmarshal(ib, &idx)
+		p := filepath.Join(nudged, idx.Report)
 		rb, _ := os.ReadFile(p)
 		var r retrieval.Report
 		_ = json.Unmarshal(rb, &r)
 		r.Reproducible.Baselines[0].Overall.Metrics[retrieval.MetricRecall10] += 0.01
 		nb, _ := retrieval.MarshalReport(&r)
 		_ = os.WriteFile(p, nb, 0o644)
-		ib, _ := os.ReadFile(filepath.Join(nudged, retrieval.RunIndexFile))
-		var idx retrieval.RunIndex
-		_ = json.Unmarshal(ib, &idx)
 		idx.ReportSHA256 = retrieval.SHA256Hex(nb)
 		ob, _ := json.MarshalIndent(idx, "", "  ")
 		_ = os.WriteFile(filepath.Join(nudged, retrieval.RunIndexFile), ob, 0o644)

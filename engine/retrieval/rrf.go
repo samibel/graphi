@@ -3,7 +3,7 @@ package retrieval
 // rrf computes the integer Reciprocal Rank Fusion contribution for one
 // row, paying out per contributing source (AC-2):
 //
-//	rrfScore = sum over sources s that contributed of RRFScale / (RRFk + rank_s)
+//	rrfScore = sum over sources s that contributed of rrfScale / (rrfK + rank_s)
 //
 // Where:
 //   - lexical contribution fires when lexicalRank > 0;
@@ -27,7 +27,7 @@ package retrieval
 // the row's Final unaltered, and the rendered bytes match
 // search_hybrid's audit output verbatim.
 //
-// The exact flag carries AC-6's verdict for the query (IsExactQuery).
+// The exact flag carries AC-6's verdict for the query (isExactQuery).
 // On an exact identifier / path query the semantic side is demoted from
 // a co-equal RRF source to a pure tie-break: the lexical term is paid in
 // full and the semantic term becomes exactSemanticTieBreak, which is by
@@ -37,8 +37,8 @@ package retrieval
 // on lexical rank — which is exactly "lexical rank shall dominate;
 // semantic contributes at most a tie-break".
 //
-// RRFScale=1_000_000 and RRFk=60 are the pinned constants (AC-2).
-func (e *Engine) rrf(rows []row, semanticActive, exact bool) []row {
+// rrfScale=1_000_000 and rrfK=60 are the pinned constants (AC-2).
+func (e *engine) rrf(rows []row, semanticActive, exact bool) []row {
 	if !semanticActive {
 		for i := range rows {
 			rows[i].rrfScore = 0
@@ -48,13 +48,13 @@ func (e *Engine) rrf(rows []row, semanticActive, exact bool) []row {
 	for i := range rows {
 		var rrf int
 		if rows[i].lexicalRank > 0 {
-			rrf += RRFScale / (RRFk + rows[i].lexicalRank)
+			rrf += rrfScale / (rrfK + rows[i].lexicalRank)
 		}
 		if rows[i].semanticRank > 0 {
 			if exact {
 				rrf += exactSemanticTieBreak(rows[i].semanticRank)
 			} else {
-				rrf += RRFScale / (RRFk + rows[i].semanticRank)
+				rrf += rrfScale / (rrfK + rows[i].semanticRank)
 			}
 		}
 		rows[i].rrfScore = rrf
@@ -63,24 +63,24 @@ func (e *Engine) rrf(rows []row, semanticActive, exact bool) []row {
 }
 
 // exactSemanticTieBreak is the semantic term on an AC-6 exact query: a
-// strictly positive value in [1, CandidateK] that decreases with the
+// strictly positive value in [1, candidateK] that decreases with the
 // semantic rank.
 //
 // The bound is what makes it a tie-break rather than a signal. The
 // smallest gap between two adjacent lexical RRF values over the pinned
 // candidate depth is
 //
-//	RRFScale/(RRFk+CandidateK-1) - RRFScale/(RRFk+CandidateK)
+//	rrfScale/(rrfK+candidateK-1) - rrfScale/(rrfK+candidateK)
 //
 // which is 1_000_000/109 - 1_000_000/110 = 84 at the pinned constants.
-// Every value this function returns is at most CandidateK = 50 < 84, so
+// Every value this function returns is at most candidateK = 50 < 84, so
 // adding it can never lift a row past a row with a better lexical rank.
 // It can only order rows whose lexical terms are equal — in practice the
 // semantic-only tail, every member of which scores below the deepest
-// lexical candidate (CandidateK < RRFScale/(RRFk+CandidateK) = 9090).
+// lexical candidate (candidateK < rrfScale/(rrfK+candidateK) = 9090).
 func exactSemanticTieBreak(semanticRank int) int {
-	if semanticRank <= 0 || semanticRank > CandidateK {
+	if semanticRank <= 0 || semanticRank > candidateK {
 		return 0
 	}
-	return CandidateK + 1 - semanticRank
+	return candidateK + 1 - semanticRank
 }

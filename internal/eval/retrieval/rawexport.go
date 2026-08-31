@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 // Run directory layout. The published report sits beside the raw samples it
@@ -13,20 +14,15 @@ import (
 // `-aggregate <dir>` needs nothing outside the directory.
 const (
 	RunIndexFile = "run.json"
-	ReportFile   = "report.json"
-	// CobraV1ReportFile is the dataset-named alias the AC-9 gate reads.
-	// Every other historical run directory also carries a `cobra-v1-report.json`
-	// alongside `report.json` (they are byte-identical); the gate binds to
-	// the dataset-named path because it is invariant across harnesses —
-	// `report.json` is a convention the runner chose, the dataset-named
-	// alias is the contract. The runner writes both; the index lists
-	// `report.json` (the canonical name `-aggregate` reads) and the
-	// dataset-named file is the gate's reading copy. SW-263 review /
-	// item 6: bind the gate to the dataset-named path, fail closed if
-	// it is missing (gate is a property of the tree, not of mtime).
-	CobraV1ReportFile = "cobra-v1-report.json"
-	DatasetFile       = "dataset.json"
-	RawDir            = "raw"
+	DatasetFile  = "dataset.json"
+	RawDir       = "raw"
+
+	// legacyReportFile was the aggregate reader's canonical filename before
+	// SW-263. The exporter also wrote a byte-identical dataset-qualified copy,
+	// which made it unclear which artifact was authoritative. Readers remain
+	// compatible with historical run.json files that name report.json; new
+	// exports index one dataset-qualified report and remove this duplicate.
+	legacyReportFile = "report.json"
 )
 
 // RawFileRef is one raw file as the index lists it: its digest is over the
@@ -106,7 +102,7 @@ type RunIndex struct {
 }
 
 // RunIndexNotes explains the directory to a reader who has only the files.
-const RunIndexNotes = "SW-258 retrieval-eval run directory: report.json is the published artifact, dataset.json the exact judged " +
+const RunIndexNotes = "SW-258 retrieval-eval run directory: the dataset-qualified report named by run.json is the single published artifact, dataset.json the exact judged " +
 	"bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and " +
 	"raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) " +
 	"with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. " +
@@ -115,6 +111,19 @@ const RunIndexNotes = "SW-258 retrieval-eval run directory: report.json is the p
 // RawFileName names a series file for a baseline.
 func RawFileName(series string, b Baseline) string {
 	return RawDir + "/" + series + "-" + string(b) + ".json"
+}
+
+// reportFileName gives one run's published report a stable, descriptive name.
+// The dataset id is already part of the report citation, so using it here lets
+// the AC-9 gate and -aggregate read the same artifact without a second 848KB
+// alias. Refuse path-shaped ids: an evidence id may name a file, never escape
+// the run directory.
+func reportFileName(datasetID string) (string, error) {
+	id := strings.TrimSpace(datasetID)
+	if id == "" || id == "." || id == ".." || filepath.Base(id) != id || strings.ContainsAny(id, `/\`) {
+		return "", fmt.Errorf("retrieval: dataset id %q cannot name a report artifact", datasetID)
+	}
+	return id + "-report.json", nil
 }
 
 // WriteRunDir writes the complete run directory: index, report, dataset copy
@@ -131,6 +140,10 @@ func WriteRunDir(dir string, res *Result, dataset *Loaded, date string) (*RunInd
 	if err := os.MkdirAll(filepath.Join(dir, RawDir), 0o755); err != nil {
 		return nil, fmt.Errorf("retrieval: create run dir: %w", err)
 	}
+	reportFile, err := reportFileName(res.Report.Reproducible.Dataset.ID)
+	if err != nil {
+		return nil, err
+	}
 	index := &RunIndex{
 		FormatVersion:  FormatVersion,
 		HarnessVersion: HarnessVersion,
@@ -138,7 +151,7 @@ func WriteRunDir(dir string, res *Result, dataset *Loaded, date string) (*RunInd
 		Date:           date,
 		RunnerClass:    res.Report.Reproducible.RunnerClass,
 		Repo:           res.Report.Reproducible.Repo.Name,
-		Report:         ReportFile,
+		Report:         reportFile,
 		Dataset:        DatasetFile,
 		DatasetSHA256:  dataset.SHA256,
 		Environment:    res.Report.Environment,
@@ -149,16 +162,8 @@ func WriteRunDir(dir string, res *Result, dataset *Loaded, date string) (*RunInd
 	if err != nil {
 		return nil, err
 	}
-	if err := os.WriteFile(filepath.Join(dir, ReportFile), reportBytes, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, reportFile), reportBytes, 0o644); err != nil {
 		return nil, fmt.Errorf("retrieval: write report: %w", err)
-	}
-	// Dataset-named alias the AC-9 gate reads (CobraV1ReportFile). Same
-	// bytes, second copy: the index's ReportSHA256 is the canonical
-	// report's digest, and the gate's reading copy is byte-identical.
-	// The runner writes both so a fresh checkout has the file the gate
-	// expects without the orchestrator having to manually copy it.
-	if err := os.WriteFile(filepath.Join(dir, CobraV1ReportFile), reportBytes, 0o644); err != nil {
-		return nil, fmt.Errorf("retrieval: write %s: %w", CobraV1ReportFile, err)
 	}
 	index.ReportSHA256 = SHA256Hex(reportBytes)
 	if err := os.WriteFile(filepath.Join(dir, DatasetFile), dataset.Raw, 0o644); err != nil {
@@ -192,6 +197,15 @@ func WriteRunDir(dir string, res *Result, dataset *Loaded, date string) (*RunInd
 	}
 	if err := os.WriteFile(filepath.Join(dir, RunIndexFile), raw, 0o644); err != nil {
 		return nil, fmt.Errorf("retrieval: write run index: %w", err)
+	}
+	// The index is durable before the legacy duplicate is removed. A failed
+	// export therefore never strands a directory with an index whose report
+	// disappeared. Historical directories remain readable because ReadRunDir
+	// follows index.Report rather than assuming either filename.
+	if reportFile != legacyReportFile {
+		if err := os.Remove(filepath.Join(dir, legacyReportFile)); err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("retrieval: remove duplicate %s: %w", legacyReportFile, err)
+		}
 	}
 	return index, nil
 }

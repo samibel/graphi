@@ -19,8 +19,8 @@ type row struct {
 	semanticRank  int    // 1-based, 0 when not in semantic candidates
 	lexicalScore  int    // provider's rerank score for this row (e.g. hybridsearch's audit score), 0 when unranked
 	semanticScore int    // quantised cosine, 0 when semantic-only candidate or absent
-	rrfScore      int    // RRFScale/(RRFk+rank) summed over the sources that contributed; 0 when only one source contributed (lexical-only byte-parity path)
-	graphScore    int    // bounded rerank contribution; for the byte-parity lexical-only path this equals LexicalHit.Score
+	rrfScore      int    // rrfScale/(rrfK+rank) summed over the sources that contributed; 0 when only one source contributed (lexical-only byte-parity path)
+	graphScore    int    // bounded rerank contribution; for the byte-parity lexical-only path this equals lexicalHit.Score
 	classScore    int    // classification penalty (negative or zero)
 	finalScore    int    // rrfScore + graphScore + classScore
 	pathClass     string // "vendor", "generated", "" otherwise (the integer penalty comes from pathClass)
@@ -101,7 +101,7 @@ func (r row) toRow() Row {
 // (the AC-2 eligibility rule, applied before ranking/truncation so a
 // future pass cannot be inflated by a top-K spot vacated by an
 // ineligible row).
-func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row {
+func (e *engine) union(query string, lex []lexicalHit, sem []semanticHit) []row {
 	// rowKey is the hierarchical (documentID, nodeID) merge key. A row
 	// stored under rowKey{"", nodeID} is the "wildcard" record a
 	// lexical row occupies; a row stored under rowKey{docID, nodeID}
@@ -176,6 +176,13 @@ func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row 
 		if r == nil && h.DocumentID != "" {
 			if cand, ok := byKey[wild]; ok && cand.documentID == "" {
 				r = cand
+				// Consuming the lexical wildcard gives the row its exact
+				// semantic identity. Re-key it rather than retaining two map
+				// entries for one pointer: a later duplicate semantic hit must
+				// find this row through the exact key, while a different
+				// document_id for the same node remains distinct.
+				delete(byKey, wild)
+				byKey[exact] = r
 			}
 		}
 		if r == nil {
@@ -198,7 +205,7 @@ func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row 
 			r.semanticRank = i + 1
 		}
 		if r.semanticScore == 0 {
-			r.semanticScore = QuantiseScore(h.CosineScore)
+			r.semanticScore = quantiseScore(h.CosineScore)
 		}
 		// A semantic row that supplies a real path resolves any pre-existing
 		// "no path" guess. A semantic row with an empty path leaves the
@@ -242,13 +249,13 @@ func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row 
 // quantisedOrder returns sem ordered by the AC-3 ranking key: the
 // quantised cosine descending, then canonical node_id ascending. The
 // input slice is not modified.
-func quantisedOrder(sem []SemanticHit) []SemanticHit {
+func quantisedOrder(sem []semanticHit) []semanticHit {
 	if len(sem) < 2 {
 		return sem
 	}
-	out := append([]SemanticHit(nil), sem...)
+	out := append([]semanticHit(nil), sem...)
 	sort.SliceStable(out, func(i, j int) bool {
-		qi, qj := QuantiseScore(out[i].CosineScore), QuantiseScore(out[j].CosineScore)
+		qi, qj := quantiseScore(out[i].CosineScore), quantiseScore(out[j].CosineScore)
 		if qi != qj {
 			return qi > qj
 		}

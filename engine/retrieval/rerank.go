@@ -38,7 +38,7 @@ import (
 // sort.SliceStable with the explicit tie-break (finalScore desc,
 // node_id asc) guarantees a byte-identical Result across two runs
 // (AC-8).
-func (e *Engine) rerank(ctx context.Context, query string, rows []row, semanticActive bool) []row {
+func (e *engine) rerank(ctx context.Context, query string, rows []row, semanticActive bool) []row {
 	tokens := hybridsearch.Tokenize(query)
 	for i := range rows {
 		if rows[i].lexicalScore != 0 {
@@ -88,7 +88,7 @@ func (e *Engine) rerank(ctx context.Context, query string, rows []row, semanticA
 // hybridsearch signals + degree signal. It is the non-delegating
 // fallback; the production delegating HybridSearchBridge produces
 // the same numbers and bypasses this function.
-func (e *Engine) scoreOne(ctx context.Context, tokens []string, r row) (int, bool, string) {
+func (e *engine) scoreOne(ctx context.Context, tokens []string, r row) (int, bool, string) {
 	hWeights := hybridsearch.DefaultWeights()
 	segments := hybridsearch.SplitIdentifier(r.qualifiedName)
 	pathSegs := hybridsearch.SplitPath(r.path)
@@ -145,7 +145,7 @@ func (e *Engine) scoreOne(ctx context.Context, tokens []string, r row) (int, boo
 	}
 	var degScore int
 	if e.graph != nil {
-		if d, err := e.graph.InboundDegree(ctx, r.nodeID, 32); err == nil {
+		if d, err := e.graph.inboundDegree(ctx, r.nodeID, 32); err == nil {
 			if d < 0 {
 				d = 0
 			}
