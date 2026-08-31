@@ -212,6 +212,34 @@ budget = measured × 2.0; a class with no measurement reads `UNKNOWN`. Both carr
 `derived_from` (report path + sha256) and `immutable_until: "SW-266"`. The reports they were derived
 from are checked in under `docs/eval/retrieval/runs/`.
 
+## SW-263 AC-9 evaluation runs
+
+The `chunk_only`, `fusion` and `fusion+graph` baselines in this harness
+are the SW-263 retrieval ablations (`engine/retrieval` in
+`ModeLexicalOnly`, `ModeFusionNoGraph`, and `ModeAuto` respectively).
+The AC-9 gate in `internal/eval/retrieval/targets_test.go`
+(`TestReport_MeetsAC9GateAgainstTargetsFile`) compares the most recent
+checked-in cobra run's fusion ndcg@10 against the targets file's
+`fusion_target.must_reach` on `nl_behaviour` and `architecture_flow`,
+and the fusion top1 against the `no_regression.floor` on
+`exact_identifier`.
+
+**Embedder caveat (read this before citing fusion numbers):** the fusion
+ablations require a configured embedder; the SW-258 targets were derived
+without one (so `semantic_name_only` was `unavailable` there). The AC-9
+runs that exercise fusion therefore use `ollama:nomic-embed-text` —
+**not** the static code embedder the spec eventually wants
+(`static:potion-code-16M-v2`, SW-262, deliberately not built yet). The
+fusion numbers are model-dependent and will move when the static embedder
+lands. Do not present AC-9 numbers as the spec's final numbers.
+
+The 2026-08-31 cobra run (`docs/eval/retrieval/runs/2026-08-31-local/`)
+is the SW-263 AC-9 evaluation: the `README.md` in that directory records
+the actual numbers and the embedder id, and the verdict against the
+targets (gate PASS / MISS). Per the story, if the target is missed the
+story does not go to review and the miss is reported with the actual
+per-stratum numbers.
+
 ## What this harness does not do
 
 - It does not wire an opt-in embedder: `semantic_name_only` runs through the real

@@ -389,7 +389,7 @@ func TestRun_FailsClosed(t *testing.T) {
 			t.Errorf("ParseBaselines = %v", err)
 		}
 		bs, err := ParseBaselines(nil)
-		if err != nil || len(bs) != 4 {
+		if err != nil || len(bs) != 7 {
 			t.Errorf("ParseBaselines(nil) = %v, %v", bs, err)
 		}
 	})

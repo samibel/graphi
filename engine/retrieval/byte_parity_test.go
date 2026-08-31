@@ -202,11 +202,41 @@ func TestByteParity_NoEmbedderEqualsSearchHybridGolden(t *testing.T) {
 			string(shJSON), string(retJSON), diff, shJSON, retJSON)
 	}
 
-	// Also check the Explain fields are present and integer-only on the
-	// retrieval rows (AC-1, AC-3, AC-8).
-	for _, row := range res.Rows {
-		_ = row.Explain.LexicalRank + row.Explain.SemanticRank + row.Explain.RRF +
-			row.Explain.Graph + row.Explain.Classification + row.Explain.Final
+	// AC-1 + AC-2 + AC-7 invariants on the lexical-only path: every row
+	// is reachable from the lexical candidate list, no semantic candidates
+	// were consulted, and the integer RRF formula collapses to 0 (single
+	// source, identity RRF — see engine/retrieval/rrf.go) so Final equals
+	// the rerank + classification contributions only. The previous "_ =
+	// sum" placeholder claimed to check "present and integer-only" but did
+	// nothing; these assertions are the structural checks AC-7 and AC-2
+	// require on this path.
+	for i, row := range res.Rows {
+		if row.Explain.SemanticRank != 0 {
+			t.Errorf("row %d (%s): SemanticRank = %d, want 0 (lexical-only path)",
+				i, row.NodeID, row.Explain.SemanticRank)
+		}
+		wantLexical := i + 1
+		if row.Explain.LexicalRank != wantLexical {
+			t.Errorf("row %d (%s): LexicalRank = %d, want %d (1-based lexical position)",
+				i, row.NodeID, row.Explain.LexicalRank, wantLexical)
+		}
+		// Single-source RRF is the identity (rrf.go), so RRF is 0 and
+		// Final = Graph + Classification exactly. AC-7 relies on this:
+		// the lexical-only Final is the same integer the byte projection
+		// of search_hybrid carries.
+		if row.Explain.RRF != 0 {
+			t.Errorf("row %d (%s): RRF = %d, want 0 (single-source RRF is identity)",
+				i, row.NodeID, row.Explain.RRF)
+		}
+		wantFinal := row.Explain.Graph + row.Explain.Classification
+		if row.Explain.Final != wantFinal {
+			t.Errorf("row %d (%s): Final = %d, want %d (Final = Graph + Classification when RRF = 0)",
+				i, row.NodeID, row.Explain.Final, wantFinal)
+		}
+		if row.Explain.Final <= 0 {
+			t.Errorf("row %d (%s): Final = %d, want > 0 (ranked row must have a positive score)",
+				i, row.NodeID, row.Explain.Final)
+		}
 	}
 
 	if res.Degradation != retrieval.StateLexicalOnly {

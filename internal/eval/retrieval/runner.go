@@ -20,6 +20,7 @@ import (
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/retrieval"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/internal/eval"
 )
@@ -27,7 +28,7 @@ import (
 // Baseline names one ranking method the runner can execute (AC-3).
 type Baseline string
 
-// The four baselines. They are executed by name and in this order.
+// The seven baselines. They are executed by name and in this order.
 const (
 	// BaselineLexical is engine/search.Service.Search: the store's FTS5
 	// (SQLite) ranking over qualified names.
@@ -43,10 +44,29 @@ const (
 	// the metric code can reach, which proves the scorer rather than a
 	// retriever.
 	BaselineOracle Baseline = "oracle_upper_bound"
+	// BaselineChunkOnly is the SW-263 retrieval module in ModeLexicalOnly:
+	// lexical chunking only, no semantic candidate union, no RRF. The AC-9
+	// "chunk-only" ablation (no embedder needed). The ranking is the same
+	// integer sequence the HybridSearchBridge delegates to search_hybrid, so
+	// chunk-only and hybrid_v1 carry identical hits in identical order.
+	BaselineChunkOnly Baseline = "chunk_only"
+	// BaselineFusion is the SW-263 retrieval module in ModeFusionNoGraph:
+	// lexical+semantic union + integer RRF, NO bounded graph rerank. The
+	// AC-9 "fusion" ablation. Requires an embedder (the runner wires one in
+	// when -embedder is set); without one the baseline is unavailable with
+	// the typed reason.
+	BaselineFusion Baseline = "fusion"
+	// BaselineFusionGraph is the SW-263 retrieval module in default ModeAuto:
+	// full union + RRF + bounded rerank + classification + diversify. The
+	// AC-9 "fusion+graph" ablation. Requires an embedder for the same
+	// reason as fusion.
+	BaselineFusionGraph Baseline = "fusion+graph"
 )
 
-// AllBaselines in report order.
-var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle}
+// AllBaselines in report order. The three SW-263 retrieval ablations
+// (chunk_only, fusion, fusion+graph) follow the SW-258 baselines so a
+// reader of the report sees them as the addition this story is about.
+var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineFusionGraph}
 
 // ParseBaselines resolves names to baselines, refusing an unknown one.
 func ParseBaselines(names []string) ([]Baseline, error) {
@@ -97,6 +117,14 @@ type Options struct {
 
 	RunnerClass  string
 	CandidateSHA string
+
+	// EmbedderSelector is the GRAPHI_EMBEDDER-style string (e.g.
+	// "ollama:nomic-embed-text") the runner resolves into an Embedder
+	// via embed.Constructor before indexing. Empty ⇒ no embedder (the
+	// SW-258 default); the fusion / fusion+graph baselines then report
+	// as unavailable with the typed reason and the semantic_name_only
+	// baseline keeps its existing graceful-skip behavior.
+	EmbedderSelector string
 
 	// Repeats is the timed executions per query (DefaultRepeats when 0).
 	Repeats int
@@ -216,7 +244,7 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 		workDir = dir
 	}
 
-	idx, err := buildIndex(ctx, o.RepoRoot, workDir, o.Log)
+	idx, err := buildIndex(ctx, o.RepoRoot, workDir, o.EmbedderSelector, o.Log)
 	if err != nil {
 		return nil, err
 	}
@@ -317,8 +345,13 @@ type index struct {
 // run does (engine/ingest over parse.NewDefaultRegistry, IngestAll timed),
 // then wires the search service with the DEFAULT embedder registry — which on
 // the default build registers nothing, so SemanticSearch is the typed
-// unavailable response.
-func buildIndex(ctx context.Context, root, workDir string, log io.Writer) (*index, error) {
+// unavailable response. When embedderSelector is non-empty the runner resolves
+// it via embed.Constructor, generates + persists a GenerationStore under
+// metaDir, reloads it into a fresh in-memory index, and wires the search
+// service with WithSemantic + WithSemanticState(Ready) so the SW-263
+// retrieval ablations (fusion, fusion+graph) and the semantic_name_only
+// baseline can rank vectors end to end.
+func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log io.Writer) (*index, error) {
 	dbPath := filepath.Join(workDir, "retrieval-eval.db")
 	metaDir := filepath.Join(workDir, "retrieval-eval-meta")
 	store, err := graphstore.OpenSQLite(dbPath)
@@ -357,7 +390,7 @@ func buildIndex(ctx context.Context, root, workDir string, log io.Writer) (*inde
 		store.Close()
 		return nil, fmt.Errorf("retrieval: index of %s produced no nodes", root)
 	}
-	svc := search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	svc := buildSearchService(ctx, store, metaDir, embedderSelector, log)
 	fmt.Fprintf(log, "retrieval-eval: indexed %d nodes, %d edges, %d files in %dms\n", stats.TotalNodes, stats.TotalEdges, len(stats.Files), elapsed.Milliseconds())
 	filePaths := make([]string, 0, len(stats.Files))
 	for _, f := range stats.Files {
@@ -371,6 +404,95 @@ func buildIndex(ctx context.Context, root, workDir string, log io.Writer) (*inde
 	}, nil
 }
 
+// buildSearchService wires the search service with or without a configured
+// embedder per the runner's selector. Empty selector (the SW-258 default)
+// keeps the unconfigured graceful-skip registry so SemanticSearch returns
+// the typed Unavailable response and the fusion / fusion+graph ablations
+// are unavailable with the typed reason. Non-empty selector loads the
+// embedder, generates + persists a GenerationStore, reloads the in-memory
+// index from the active generation, and wires WithSemanticState(Ready).
+func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDir, selector string, log io.Writer) *search.Service {
+	if strings.TrimSpace(selector) == "" {
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
+	if err != nil || emb == nil {
+		fmt.Fprintf(log, "retrieval-eval: embedder %q unavailable: %v — semantic baselines will report unavailable\n", selector, err)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	fmt.Fprintf(log, "retrieval-eval: embedder %q active; generating vectors\n", emb.ID())
+
+	reg := embed.NewRegistry()
+	if rerr := reg.Register(emb); rerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: embedder register: %v\n", rerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	reg.Freeze()
+	index := embed.NewIndex()
+	// Enumerate every node in the graph so the generation pass covers
+	// exactly what the index produced (one embedding per indexed node).
+	nodes, nerr := store.Nodes(ctx, graphstore.Query{})
+	if nerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: nodes enumerate: %v\n", nerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	genStore, gerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
+	if gerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: generation store open: %v\n", gerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V1DocumentSource{}, index, genStore, embed.GraphGenerationPlaceholder)
+	_ = genStore.Close()
+	if err != nil {
+		fmt.Fprintf(log, "retrieval-eval: generate+persist: %v\n", err)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	fmt.Fprintf(log, "retrieval-eval: generation pass embedded=%d reused=%d skipped=%d purged=%d (id=%s)\n",
+		res.Embedded, res.Reused, res.Skipped, res.Purged, res.EmbedderID)
+	// Reload the durable generation into a fresh in-memory index so the
+	// search path serves from a stable, fingerprinted set (mirrors the
+	// production runtime's reload pattern in cmd/internal/runtime).
+	reloadStore, rerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
+	if rerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: generation store reopen: %v\n", rerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	defer func() { _ = reloadStore.Close() }()
+	fp := embed.Fingerprint{
+		ModelID:         emb.ID(),
+		Dim:             emb.Dim(),
+		DocumentSchema:  embed.DocumentSchema,
+		GraphGeneration: embed.GraphGenerationPlaceholder,
+	}
+	if fp.Dim == 0 {
+		if d, ok, derr := reloadStore.DimForModel(ctx, emb.ID()); derr == nil && ok {
+			fp.Dim = d
+		}
+	}
+	gen, _, aerr := reloadStore.Active(ctx, fp, nil)
+	if aerr != nil || gen.ID == "" {
+		fmt.Fprintf(log, "retrieval-eval: active generation lookup: aerr=%v\n", aerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	rows, lerr := reloadStore.Load(ctx, gen.ID)
+	if lerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: reload generation: %v\n", lerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	vecs := make([]embed.Vector, len(rows))
+	for i, r := range rows {
+		vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+	}
+	if rerr := index.Rebuild(ctx, vecs); rerr != nil {
+		fmt.Fprintf(log, "retrieval-eval: index rebuild: %v\n", rerr)
+		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+	}
+	svc := search.New(store).WithSemantic(reg, index, store).
+		WithSemanticState(search.SemanticState{State: embed.StateReady})
+	fmt.Fprintf(log, "retrieval-eval: semantic ready (model=%s, dim=%d, rows=%d)\n", emb.ID(), emb.Dim(), len(rows))
+	return svc
+}
+
 // rawHit is what an executor returns before tokens are charged.
 type rawHit struct {
 	path, nodeID, kind, qn string
@@ -380,6 +502,106 @@ type rawHit struct {
 // executor runs one query. unavailable is the typed reason when the baseline
 // cannot run on this build; it ends the baseline rather than yielding zeros.
 type executor func(ctx context.Context, q Query) (hits []rawHit, unavailable string, err error)
+
+// semanticReadyReason returns the typed reason when the SW-263 fusion
+// ablations cannot run (no embedder configured), or "" when the semantic
+// path is active and ready. It is the single source of truth so the
+// chunk-only baseline stays lexical-only while fusion / fusion+graph refuse
+// to answer without a configured embedder rather than silently degrading
+// to a lexical-only ranking masquerading as fusion.
+func semanticReadyReason(idx *index) string {
+	resp, err := idx.search.SemanticSearch(context.Background(), "", 0)
+	if err != nil {
+		return fmt.Sprintf("semantic search probe failed: %v", err)
+	}
+	if !resp.Available {
+		return resp.Reason
+	}
+	return ""
+}
+
+// unavailableExecutor returns an executor that responds with the typed
+// unavailability reason on every query. It is the wrapper the fusion /
+// fusion+graph cases use when no embedder is configured, so the baseline
+// reports unavailable (the AC-6 posture) rather than yielding a silent
+// lexical-only ranking.
+func unavailableExecutor(reason string) executor {
+	return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+		return nil, reason, nil
+	}
+}
+
+// retrievalToRaws projects a retrieval.Result into the runner's rawHit
+// shape so the same scoring + token-charging pipeline the existing
+// baselines use sees the SW-263 ablations' rows. The path/line/node_id
+// fields come from the retrieval's row; kind/qualified_name are looked up
+// against the store so the metadata the matcher reads (token budget
+// computation, the per-hit kind printed in the raw file) matches what the
+// other baselines carry. Rows with no source path after the node lookup
+// (package / external nodes that surface in the semantic index with
+// empty SourcePath) are skipped — the matcher cannot credit them against
+// any file-scoped judgement and the token counter's fileLines errors on
+// a directory.
+func retrievalToRaws(ctx context.Context, idx *index, res retrieval.Result) []rawHit {
+	out := make([]rawHit, 0, len(res.Rows))
+	for _, row := range res.Rows {
+		path := row.Path
+		line := 0
+		node, err := idx.store.GetNode(ctx, model.NodeId(row.NodeID))
+		if err == nil {
+			if path == "" {
+				path = node.SourcePath()
+			}
+			if row.Span != "" {
+				if l, ok := parseSpanStart(row.Span); ok {
+					line = l
+				}
+			}
+			if line == 0 {
+				line = node.Line()
+			}
+		}
+		if path == "" {
+			continue
+		}
+		var kind, qn string
+		if err == nil {
+			kind, qn = node.Kind(), node.QualifiedName()
+		}
+		out = append(out, rawHit{path: path, line: line, nodeID: row.NodeID, kind: kind, qn: qn})
+	}
+	return out
+}
+
+// parseSpanStart extracts the 1-based start line from a "start-end" span
+// string. Returns ok=false on any parse failure so the caller falls back to
+// the node's declared line. The retrieval's Span is engine-owned and
+// always renders as "start-end" when both are known, so the parse is a
+// strict substring split.
+func parseSpanStart(span string) (int, bool) {
+	for i := 0; i < len(span); i++ {
+		if span[i] == '-' {
+			n, ok := atoiStrict(span[:i])
+			return n, ok
+		}
+	}
+	return 0, false
+}
+
+func atoiStrict(s string) (int, bool) {
+	if s == "" {
+		return 0, false
+	}
+	n := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c < '0' || c > '9' {
+			return 0, false
+		}
+		n = n*10 + int(c-'0')
+	}
+	return n, true
+}
 
 func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrade int) (executor, string, error) {
 	switch b {
@@ -436,10 +658,62 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 			}
 			out := make([]rawHit, 0, len(resp.Hits))
 			for _, h := range resp.Hits {
+				// Skip hits with no source path: package / external nodes
+				// surface in the v2 index with empty SourcePath, the
+				// matcher cannot credit them against a judgement, and
+				// the token counter's fileLines errors on a directory.
+				if h.SourcePath == "" {
+					continue
+				}
 				out = append(out, rawHit{path: h.SourcePath, line: h.Line, nodeID: h.NodeID, kind: h.Kind, qn: h.QualifiedName})
 			}
 			return out, "", nil
 		}, "engine/search.Service.SemanticSearch (name-only documents)", nil
+	case BaselineChunkOnly:
+		bridge := &retrieval.HybridSearchBridge{Deps: deps}
+		bridge.WeightsHash = hybridsearch.WeightsHash()
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		method := "engine/retrieval (chunk-only, ModeLexicalOnly, weights " + retrieval.WeightsHash() + ")"
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeLexicalOnly})
+			if err != nil {
+				return nil, "", err
+			}
+			return retrievalToRaws(ctx, idx, res), "", nil
+		}, method, nil
+	case BaselineFusion:
+		if reason := semanticReadyReason(idx); reason != "" {
+			// The semantic path is not active: this baseline reports
+			// unavailable with the typed reason rather than producing a
+			// silent lexical-only ranking that masquerades as fusion.
+			return unavailableExecutor(reason), "engine/retrieval (fusion, ModeFusionNoGraph) — requires configured embedder", nil
+		}
+		bridge := &retrieval.HybridSearchBridge{Deps: deps}
+		bridge.WeightsHash = hybridsearch.WeightsHash()
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		method := "engine/retrieval (fusion, ModeFusionNoGraph, weights " + retrieval.WeightsHash() + ")"
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeFusionNoGraph})
+			if err != nil {
+				return nil, "", err
+			}
+			return retrievalToRaws(ctx, idx, res), "", nil
+		}, method, nil
+	case BaselineFusionGraph:
+		if reason := semanticReadyReason(idx); reason != "" {
+			return unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeAuto) — requires configured embedder", nil
+		}
+		bridge := &retrieval.HybridSearchBridge{Deps: deps}
+		bridge.WeightsHash = hybridsearch.WeightsHash()
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		method := "engine/retrieval (fusion+graph, ModeAuto, weights " + retrieval.WeightsHash() + ")"
+		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeAuto})
+			if err != nil {
+				return nil, "", err
+			}
+			return retrievalToRaws(ctx, idx, res), "", nil
+		}, method, nil
 	case BaselineOracle:
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			spans := append([]Judgement(nil), q.Judgements...)

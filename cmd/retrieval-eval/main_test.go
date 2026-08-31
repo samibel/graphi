@@ -59,7 +59,7 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 	if err := json.Unmarshal(b, &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.Reproducible.Repo.Name != FixtureRepoName || report.Reproducible.RunnerClass != "test" || len(report.Reproducible.Baselines) != 4 {
+	if report.Reproducible.Repo.Name != FixtureRepoName || report.Reproducible.RunnerClass != "test" || len(report.Reproducible.Baselines) != 7 {
 		t.Errorf("report header = %+v", report.Reproducible)
 	}
 	if !strings.Contains(stderr.String(), "semantic_name_only") || !strings.Contains(stderr.String(), "unavailable") {

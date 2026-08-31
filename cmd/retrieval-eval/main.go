@@ -30,6 +30,12 @@ import (
 	"strings"
 	"time"
 
+	// Importing the ollama package registers its loopback scheme into
+	// embed.DefaultConstructors via init(); the harness never constructs
+	// an embedder itself — the runner does, after resolving the
+	// -embedder selector. Importing for side effects only; the blank
+	// identifier silences the unused-import lint.
+	_ "github.com/samibel/graphi/engine/embed/ollama"
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 )
@@ -74,6 +80,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
+	embedder := fs.String("embedder", "", "GRAPHI_EMBEDDER-style selector (e.g. ollama:nomic-embed-text); empty ⇒ no embedder ⇒ fusion/fusion+graph report unavailable")
 
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")
@@ -140,7 +147,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		RepoRoot: root, RepoName: *repo, RepoSHA: sha,
 		Dataset: ds, Baselines: names,
 		RunnerClass: *runnerClass, CandidateSHA: resolveCommit(),
-		Repeats: *repeats, Log: stderr,
+		EmbedderSelector: *embedder,
+		Repeats:          *repeats, Log: stderr,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)

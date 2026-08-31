@@ -75,14 +75,24 @@ type Mode int
 
 const (
 	// ModeAuto: lexical when no embedder is configured, otherwise lexical +
-	// semantic union. The default build hits this branch.
+	// semantic union, then the full RRF + rerank + diversify pipeline.
+	// The default build hits this branch.
 	ModeAuto Mode = iota
 	// ModeLexicalOnly: ignore semantic candidates regardless of state. The
-	// configured path still decides the Degradation state.
+	// configured path still decides the Degradation state. Used by the
+	// "chunk-only" ablation in the AC-9 eval harness: pure lexical ranking
+	// with no semantic signal and no RRF fusion contribution.
 	ModeLexicalOnly
 	// ModeSemanticRequired: refuse to answer if no semantic candidates are
 	// available — typed unavailable response with a typed reason, no error.
 	ModeSemanticRequired
+	// ModeFusionNoGraph: lexical+semantic union, integer RRF fusion, but
+	// NO graph rerank. Used by the "fusion" ablation in the AC-9 eval
+	// harness: isolates the contribution of the union + RRF step from
+	// the bounded graph rerank signals that ModeAuto also applies. The
+	// sort is by rrfScore desc, node_id asc (determinism). Diversification
+	// still applies.
+	ModeFusionNoGraph
 )
 
 // Request is one retrieval call (AC-1).
@@ -408,8 +418,7 @@ func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 	}
 	rows := e.union(req.Query, lexHits, semHits)
 	rows = e.rrf(rows)
-	rows = e.rerank(ctx, req.Query, rows)
-	rows = e.diversify(rows, req.Limit)
+	rows = e.applyRerankAndDiversify(ctx, req, rows)
 	res := Result{
 		Rows:        finaliseRows(rows, req.Limit),
 		Degradation: state,
@@ -436,6 +445,34 @@ func normaliseRequest(req Request) Request {
 		req.Limit = LimitDefault
 	}
 	return req
+}
+
+// applyRerankAndDiversify is the post-RRF stage dispatcher. ModeAuto and
+// ModeLexicalOnly and ModeSemanticRequired all run the full RRF + rerank
+// + diversify pipeline (AC-1..AC-5). ModeFusionNoGraph skips the
+// bounded rerank so the row ordering reflects the union+RRF contribution
+// alone — the "fusion" ablation in the AC-9 eval harness. In that mode
+// graphScore and classScore are zero on every row, finalScore equals
+// rrfScore, and the sort is rrfScore desc, node_id asc (deterministic).
+// Diversification still applies because AC-5 is independent of the
+// rerank stage.
+func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row) []row {
+	if req.Mode == ModeFusionNoGraph {
+		for i := range rows {
+			rows[i].graphScore = 0
+			rows[i].classScore = 0
+			rows[i].finalScore = rows[i].rrfScore
+		}
+		sort.SliceStable(rows, func(i, j int) bool {
+			if rows[i].finalScore != rows[j].finalScore {
+				return rows[i].finalScore > rows[j].finalScore
+			}
+			return rows[i].nodeID < rows[j].nodeID
+		})
+		return e.diversify(rows, req.Limit)
+	}
+	rows = e.rerank(ctx, req.Query, rows)
+	return e.diversify(rows, req.Limit)
 }
 
 // semanticOutcome runs the semantic path (if any) and returns the typed

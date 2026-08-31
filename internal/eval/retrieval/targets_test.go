@@ -2,6 +2,8 @@ package retrieval
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -234,4 +236,191 @@ func TestDeriveBudgets(t *testing.T) {
 			t.Errorf("index budget = %+v, want none", b2.Fixtures[FixtureSmall].IndexMS)
 		}
 	})
+}
+
+// TestReport_MeetsAC9GateAgainstTargetsFile is the AC-9 comparison test: it
+// loads the IMMUTABLE docs/eval/retrieval-targets.json (the SW-258 pin
+// that this story may NOT edit) and the checked-in AC-9 evaluation report
+// under docs/eval/retrieval/runs/<date>-local/cobra-v1-report.json, and
+// asserts:
+//
+//   - on every conceptual stratum the targets file lists (nl_behaviour,
+//     architecture_flow), the fusion baseline's ndcg@10 over the dev split
+//     meets or exceeds must_reach (best + 0.10, capped at the ceiling);
+//   - on exact_identifier, the fusion baseline's Top-1 over the dev split
+//     meets or exceeds the no-regression floor the targets file pins.
+//
+// If the run directory has not yet been produced (the report is generated
+// by cmd/retrieval-eval and only lands on the PR when the orchestrator
+// commits it) the test skips with a clear message rather than failing
+// closed — a missing report is not a regression, a stale one is. The
+// targets file path is fixed; the run directory path is the most recent
+// <date>-local directory under docs/eval/retrieval/runs/, so the test
+// picks up whatever the orchestrator committed last without the file
+// being edited by hand.
+//
+// This is the test pattern AC-9 calls for ("extend the existing
+// internal/eval/retrieval/targets_test.go pattern rather than inventing a
+// parallel one"); the same fixtures and the same DeriveTargets derivation
+// it pins are reused.
+func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
+	targetsPath := resolveRepoPath(t, "docs/eval/retrieval-targets.json")
+	targetsRaw, err := os.ReadFile(targetsPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", targetsPath, err)
+	}
+	var tg Targets
+	if err := json.Unmarshal(targetsRaw, &tg); err != nil {
+		t.Fatalf("json.Unmarshal targets(%s): %v", targetsPath, err)
+	}
+	if tg.FusionMinDelta != FusionMinDelta {
+		t.Errorf("targets fusion_min_delta = %v, want %v (drift between files)", tg.FusionMinDelta, FusionMinDelta)
+	}
+
+	reportPath := latestLocalCobraReport(t)
+	reportRaw, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Skipf("AC-9 report %s not present: %v — the orchestrator commits it after the eval run; this test is a gate, not a derivation", reportPath, err)
+	}
+	var rep Report
+	if err := json.Unmarshal(reportRaw, &rep); err != nil {
+		t.Fatalf("json.Unmarshal report(%s): %v", reportPath, err)
+	}
+	if err := CheckReportVersion(&rep); err != nil {
+		t.Fatalf("report version: %v", err)
+	}
+
+	// Confirm the report cites the dataset the targets were derived from.
+	if rep.Reproducible.Dataset.ID != "cobra-v1" {
+		t.Errorf("report dataset = %q, want cobra-v1", rep.Reproducible.Dataset.ID)
+	}
+
+	// Collect the per-baseline dev-split strata aggregates the test compares
+	// against, indexed by baseline name. A baseline that did not run (status
+	// != ok) is absent and the test fails with the typed reason.
+	type devStrata struct {
+		perStratum map[string]AggregateMetrics
+	}
+	per := map[Baseline]devStrata{}
+	for _, b := range rep.Reproducible.Baselines {
+		if b.Status != BaselineStatusOK {
+			continue
+		}
+		var dev []QueryResult
+		for _, q := range b.Queries {
+			if q.Split == SplitDev {
+				dev = append(dev, q)
+			}
+		}
+		_, strata, _ := AggregateAll(dev, rep.Reproducible.TokenBudgets)
+		per[b.Name] = devStrata{perStratum: strata}
+	}
+
+	// The targets file lists the conceptual strata fusion must improve on.
+	for _, stratum := range tg.ConceptualStrata {
+		st := tg.Strata[stratum]
+		if st.FusionTarget == nil {
+			t.Errorf("stratum %s: targets file has no fusion_target (the SW-258 derivation set one for every conceptual stratum)", stratum)
+			continue
+		}
+		ft := st.FusionTarget
+		// fusion is the headline metric. fusion+graph is reported for
+		// visibility — it is NOT a target the targets file pins, so a
+		// miss on it is informational, not a gate failure.
+		for _, bname := range []Baseline{BaselineFusion, BaselineFusionGraph} {
+			devStrat, ok := per[bname]
+			if !ok {
+				t.Errorf("stratum %s, baseline %s: missing from the report (the baseline did not run with status=ok)", stratum, bname)
+				continue
+			}
+			agg := devStrat.perStratum[stratum]
+			v, ok := agg.Metrics[ft.Metric]
+			if !ok {
+				t.Errorf("stratum %s, baseline %s: no %s in dev aggregate", stratum, bname, ft.Metric)
+				continue
+			}
+			if bname == BaselineFusion {
+				if v+1e-9 < ft.MustReach {
+					t.Errorf("AC-9 MISS on %s: fusion %s = %.6f < must_reach %.6f (best=%.6f + min_delta=%.2f, ceiling=%v)",
+						stratum, ft.Metric, v, ft.MustReach, ft.BestValue, ft.MinDelta, tg.Strata[stratum].Oracle[ft.Metric])
+				}
+			}
+		}
+	}
+
+	// exact_identifier Top-1 must not regress.
+	ei := tg.Strata[StratumExactIdentifier]
+	if ei.NoRegression == nil {
+		t.Errorf("stratum exact_identifier: targets file has no no_regression floor")
+	} else {
+		floor := ei.NoRegression.Floor
+		for _, bname := range []Baseline{BaselineFusion, BaselineFusionGraph} {
+			devStrat, ok := per[bname]
+			if !ok {
+				continue
+			}
+			agg := devStrat.perStratum[StratumExactIdentifier]
+			top1, ok := agg.Metrics[MetricTop1]
+			if !ok {
+				continue
+			}
+			if top1+1e-9 < floor {
+				t.Errorf("AC-9 REGRESSION on exact_identifier Top-1: baseline %s = %.4f < floor %.4f (best_baseline=%s)",
+					bname, top1, floor, ei.NoRegression.Baseline)
+			}
+		}
+	}
+}
+
+// latestLocalCobraReport returns the most recently modified cobra-v1 report
+// under docs/eval/retrieval/runs/, picking the latest <date>-local
+// directory. The orchestrator commits exactly one such directory per
+// accepted AC-9 run; tests do not write to that tree, so the listing is a
+// pure read over what is already checked in.
+func latestLocalCobraReport(t *testing.T) string {
+	t.Helper()
+	root := resolveRepoPath(t, "docs/eval/retrieval/runs")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("read %s: %v", root, err)
+	}
+	var latest os.DirEntry
+	var latestMod int64
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasSuffix(e.Name(), "-local") {
+			continue
+		}
+		fi, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if latest == nil || fi.ModTime().UnixNano() > latestMod {
+			latest, latestMod = e, fi.ModTime().UnixNano()
+		}
+	}
+	if latest == nil {
+		return filepath.Join(root, "no-such-run", "cobra-v1-report.json")
+	}
+	return filepath.Join(root, latest.Name(), "cobra-v1-report.json")
+}
+
+// resolveRepoPath walks up from the test cwd to the directory holding
+// go.mod and returns the absolute path of the given repo-relative path.
+// It mirrors the helpers in engine/retrieval/byte_parity_test.go.
+func resolveRepoPath(t *testing.T, rel string) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return filepath.Join(dir, rel)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("could not find go.mod walking up from %s", dir)
+		}
+		dir = parent
+	}
 }
