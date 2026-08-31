@@ -1,0 +1,4961 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/1",
+  "scorer_version": "retrieval-aggregate/1",
+  "repo": "cobra",
+  "runner_class": "local",
+  "environment": {
+    "generated_at": "2026-08-31T07:09:16Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  },
+  "environment_complete": true,
+  "metrics": [
+    {
+      "baseline": "run",
+      "metric": "dataset",
+      "published": "cobra-v1 sha256=be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82 evidence=\"agent-annotated, human-reviewed\" queries=40 dev=30 holdout=10 ids=cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cobra-v1 sha256=be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82 evidence=\"agent-annotated, human-reviewed\" queries=40 dev=30 holdout=10 ids=cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "baseline_set",
+      "published": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "recomputed": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "performance_set",
+      "published": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "recomputed": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "raw.hits.series_set",
+      "published": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "recomputed": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "raw.latency.series_set",
+      "published": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "recomputed": "chunk_only,fusion,fusion+graph,hybrid_v1,lexical,oracle_upper_bound,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-01.hits",
+      "published": "7 hit(s)",
+      "recomputed": "7 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.2 ndcg=0.35678291531015954",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.2 ndcg=0.35678291531015954",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-02.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-03.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-04.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-05.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-06.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-07.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-08.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-09.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-10.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-11.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-12.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-13.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-14.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-15.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-16.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-17.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-18.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-19.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-20.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-21.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-22.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-23.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-24.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-25.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-26.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-27.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-28.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-29.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-30.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=0 r5=0 r10=0.2 mrr=0.16666666666666666 ndcg=0.12081130269949418",
+      "recomputed": "top1=0 r5=0 r10=0.2 mrr=0.16666666666666666 ndcg=0.12081130269949418",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-32.hits",
+      "published": "9 hit(s)",
+      "recomputed": "9 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.2 r10=1 mrr=0.2 ndcg=0.5158334897721626",
+      "recomputed": "top1=0 r5=0.2 r10=1 mrr=0.2 ndcg=0.5158334897721626",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=0 r5=0.25 r10=0.25 mrr=0.25 ndcg=0.2497364052720713",
+      "recomputed": "top1=0 r5=0.25 r10=0.25 mrr=0.25 ndcg=0.2497364052720713",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-34.hits",
+      "published": "8 hit(s)",
+      "recomputed": "8 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=0 r5=0.75 r10=1 mrr=0.5 ndcg=0.7104537796651722",
+      "recomputed": "top1=0 r5=0.75 r10=1 mrr=0.5 ndcg=0.7104537796651722",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-36.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-37.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-38.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-39.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-40.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.4 first_relevant_rank_mean=2.2142857142857144 mrr@10=0.2947619047619047 ndcg@10=0.28283066802725854 negative_hit_rate@5=0 recall@10=0.29857142857142854 recall@1200tok=0.29285714285714287 recall@2000tok=0.29857142857142854 recall@5=0.25333333333333335 recall@600tok=0.23095238095238096 top1=0.2571428571428571",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.4 first_relevant_rank_mean=2.2142857142857144 mrr@10=0.2947619047619047 ndcg@10=0.28283066802725854 negative_hit_rate@5=0 recall@10=0.29857142857142854 recall@1200tok=0.29285714285714287 recall@2000tok=0.29857142857142854 recall@5=0.25333333333333335 recall@600tok=0.23095238095238096 top1=0.2571428571428571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.6666666666666667 mrr@10=0.8666666666666667 ndcg@10=0.7308198318053652 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.5555555555555556 top1=0.8333333333333334",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.6666666666666667 mrr@10=0.8666666666666667 ndcg@10=0.7308198318053652 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.5555555555555556 top1=0.8333333333333334",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=4.25 mrr@10=0.22333333333333333 ndcg@10=0.31936699548178005 recall@10=0.49000000000000005 recall@1200tok=0.45 recall@2000tok=0.49000000000000005 recall@5=0.24 recall@600tok=0.15 top1=0",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=4.25 mrr@10=0.22333333333333333 ndcg@10=0.31936699548178005 recall@10=0.49000000000000005 recall@1200tok=0.45 recall@2000tok=0.49000000000000005 recall@5=0.24 recall@600tok=0.15 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.37037037037037035 first_relevant_rank_mean=2.6 mrr@10=0.25246913580246916 ndcg@10=0.24742358731974015 negative_hit_rate@5=0 recall@10=0.26358024691358023 recall@1200tok=0.2561728395061728 recall@2000tok=0.26358024691358023 recall@5=0.21419753086419752 recall@600tok=0.19444444444444445 top1=0.2222222222222222",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.37037037037037035 first_relevant_rank_mean=2.6 mrr@10=0.25246913580246916 ndcg@10=0.24742358731974015 negative_hit_rate@5=0 recall@10=0.26358024691358023 recall@1200tok=0.2561728395061728 recall@2000tok=0.26358024691358023 recall@5=0.21419753086419752 recall@600tok=0.19444444444444445 top1=0.2222222222222222",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.25 mrr@10=0.4375 ndcg@10=0.40232956541513315 negative_hit_rate@5=0 recall@10=0.41666666666666663 recall@1200tok=0.41666666666666663 recall@2000tok=0.41666666666666663 recall@5=0.38541666666666663 recall@600tok=0.35416666666666663 top1=0.375",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.25 mrr@10=0.4375 ndcg@10=0.40232956541513315 negative_hit_rate@5=0 recall@10=0.41666666666666663 recall@1200tok=0.41666666666666663 recall@2000tok=0.41666666666666663 recall@5=0.38541666666666663 recall@600tok=0.35416666666666663 top1=0.375",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_p50_us",
+      "published": "200us",
+      "recomputed": "200us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_p95_us",
+      "published": "375us",
+      "recomputed": "375us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "peak_rss_mb",
+      "published": "411.828125MB",
+      "recomputed": "411.828125MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-01.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.5 ndcg=0.521179458095534",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.5 ndcg=0.521179458095534",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-02.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-03.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.7895959410076381",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.7895959410076381",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-04.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-05.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-06.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-07.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-08.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-09.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-10.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.8216212264723879",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.8216212264723879",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6244247138302589",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6244247138302589",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.3889173201667876",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.3889173201667876",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-16.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-17.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-18.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-19.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=0 r5=0.6666666666666666 r10=1 mrr=0.3333333333333333 ndcg=0.47605735923935294",
+      "recomputed": "top1=0 r5=0.6666666666666666 r10=1 mrr=0.3333333333333333 ndcg=0.47605735923935294",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-20.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=0 r5=0.25 r10=0.25 mrr=0.5 ndcg=0.1296840415099727",
+      "recomputed": "top1=0 r5=0.25 r10=0.25 mrr=0.5 ndcg=0.1296840415099727",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-21.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.06717171396683416",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.06717171396683416",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-22.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-23.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-24.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.47020199776783905",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.47020199776783905",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-25.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-26.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=0.5 r10=0.75 mrr=1 ndcg=0.6734416725718845",
+      "recomputed": "top1=1 r5=0.5 r10=0.75 mrr=1 ndcg=0.6734416725718845",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-27.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.7050356957126813",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.7050356957126813",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-28.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=0 r5=0.25 r10=0.5 mrr=0.5 ndcg=0.46625222356982915",
+      "recomputed": "top1=0 r5=0.25 r10=0.5 mrr=0.5 ndcg=0.46625222356982915",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-29.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.1 ndcg=0.09232555472959784",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.1 ndcg=0.09232555472959784",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-30.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.21114065435315316",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.21114065435315316",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5296347172140421",
+      "recomputed": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5296347172140421",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-32.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.4 r10=1 mrr=0.5 ndcg=0.6877660506491766",
+      "recomputed": "top1=0 r5=0.4 r10=1 mrr=0.5 ndcg=0.6877660506491766",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-34.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.8054385715318317",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.8054385715318317",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-36.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-37.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-38.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-39.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-40.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.7428571428571429 first_relevant_rank_mean=1.7307692307692308 mrr@10=0.5933333333333334 ndcg@10=0.46748051901088294 negative_hit_rate@5=0 recall@10=0.4838095238095238 recall@1200tok=0.4376190476190477 recall@2000tok=0.4838095238095238 recall@5=0.40952380952380957 recall@600tok=0.40952380952380957 top1=0.4857142857142857",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.7428571428571429 first_relevant_rank_mean=1.7307692307692308 mrr@10=0.5933333333333334 ndcg@10=0.46748051901088294 negative_hit_rate@5=0 recall@10=0.4838095238095238 recall@1200tok=0.4376190476190477 recall@2000tok=0.4838095238095238 recall@5=0.40952380952380957 recall@600tok=0.40952380952380957 top1=0.4857142857142857",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.7320239664164171 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.611111111111111 top1=0.8333333333333334",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.7320239664164171 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.611111111111111 top1=0.8333333333333334",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.5 mrr@10=0.4166666666666667 ndcg@10=0.26979184070448103 recall@10=0.24999999999999997 recall@1200tok=0.20833333333333331 recall@2000tok=0.24999999999999997 recall@5=0.20833333333333331 recall@600tok=0.20833333333333331 top1=0.375",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.5 mrr@10=0.4166666666666667 ndcg@10=0.26979184070448103 recall@10=0.24999999999999997 recall@1200tok=0.20833333333333331 recall@2000tok=0.24999999999999997 recall@5=0.20833333333333331 recall@600tok=0.20833333333333331 top1=0.375",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.5 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.2222222222222222 ndcg@10=0.19051918541399981 recall@10=0.2916666666666667 recall@1200tok=0.23611111111111108 recall@2000tok=0.2916666666666667 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.5 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.2222222222222222 ndcg@10=0.19051918541399981 recall@10=0.2916666666666667 recall@1200tok=0.23611111111111108 recall@2000tok=0.2916666666666667 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=3 mrr@10=0.6 ndcg@10=0.3580326334895243 recall@10=0.38888888888888884 recall@1200tok=0.2638888888888889 recall@2000tok=0.38888888888888884 recall@5=0.2222222222222222 recall@600tok=0.2222222222222222 top1=0.5",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=3 mrr@10=0.6 ndcg@10=0.3580326334895243 recall@10=0.38888888888888884 recall@1200tok=0.2638888888888889 recall@2000tok=0.38888888888888884 recall@5=0.2222222222222222 recall@600tok=0.2222222222222222 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.5 mrr@10=0.6 ndcg@10=0.5205418630224898 recall@10=0.5700000000000001 recall@1200tok=0.53 recall@2000tok=0.5700000000000001 recall@5=0.45 recall@600tok=0.45 top1=0.4",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.5 mrr@10=0.6 ndcg@10=0.5205418630224898 recall@10=0.5700000000000001 recall@1200tok=0.53 recall@2000tok=0.5700000000000001 recall@5=0.45 recall@600tok=0.45 top1=0.4",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.7407407407407407 first_relevant_rank_mean=1.4 mrr@10=0.6049382716049384 ndcg@10=0.4678703640850803 negative_hit_rate@5=0 recall@10=0.4728395061728395 recall@1200tok=0.4314814814814815 recall@2000tok=0.4728395061728395 recall@5=0.3950617283950617 recall@600tok=0.3950617283950617 top1=0.48148148148148145",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.7407407407407407 first_relevant_rank_mean=1.4 mrr@10=0.6049382716049384 ndcg@10=0.4678703640850803 negative_hit_rate@5=0 recall@10=0.4728395061728395 recall@1200tok=0.4314814814814815 recall@2000tok=0.4728395061728395 recall@5=0.3950617283950617 recall@600tok=0.3950617283950617 top1=0.48148148148148145",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.8333333333333335 mrr@10=0.5541666666666667 ndcg@10=0.4661647918854671 negative_hit_rate@5=0 recall@10=0.5208333333333333 recall@1200tok=0.4583333333333333 recall@2000tok=0.5208333333333333 recall@5=0.4583333333333333 recall@600tok=0.4583333333333333 top1=0.5",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.8333333333333335 mrr@10=0.5541666666666667 ndcg@10=0.4661647918854671 negative_hit_rate@5=0 recall@10=0.5208333333333333 recall@1200tok=0.4583333333333333 recall@2000tok=0.5208333333333333 recall@5=0.4583333333333333 recall@600tok=0.4583333333333333 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query_p50_us",
+      "published": "2121us",
+      "recomputed": "2121us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "query_p95_us",
+      "published": "4429us",
+      "recomputed": "4429us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "peak_rss_mb",
+      "published": "413.796875MB",
+      "recomputed": "413.796875MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "hybrid_v1",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-01.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=1 mrr=1 ndcg=0.9006871014818231",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=1 mrr=1 ndcg=0.9006871014818231",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-02.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8517171819727974",
+      "recomputed": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8517171819727974",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-03.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9788167285762264",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9788167285762264",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-04.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-05.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-06.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-07.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-08.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-09.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-10.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.125 ndcg=0.25326522695626263",
+      "recomputed": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.125 ndcg=0.25326522695626263",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.23037447999585617",
+      "recomputed": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.23037447999585617",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.5 ndcg=0.48317166136803286",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.5 ndcg=0.48317166136803286",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-15.hits",
+      "published": "9 hit(s)",
+      "recomputed": "9 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=1 r5=0.25 r10=0.5 mrr=1 ndcg=0.33135427183851357",
+      "recomputed": "top1=1 r5=0.25 r10=0.5 mrr=1 ndcg=0.33135427183851357",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-16.hits",
+      "published": "8 hit(s)",
+      "recomputed": "8 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-17.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.2 ndcg=0.2501943181583481",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.2 ndcg=0.2501943181583481",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-18.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-19.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9834400815490293",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9834400815490293",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-20.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=0 r5=0.25 r10=0.25 mrr=0.2 ndcg=0.1480301869100765",
+      "recomputed": "top1=0 r5=0.25 r10=0.25 mrr=0.2 ndcg=0.1480301869100765",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-21.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.2 ndcg=0.3947676827106606",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.2 ndcg=0.3947676827106606",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-22.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-23.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-24.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.22434336714668332",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.22434336714668332",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-25.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5874203951744315",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5874203951744315",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-26.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.6832490214923532",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.6832490214923532",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-27.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.25 ndcg=0.27853701919404256",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.25 ndcg=0.27853701919404256",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-28.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=0 r5=0.25 r10=0.75 mrr=0.3333333333333333 ndcg=0.38331844203970533",
+      "recomputed": "top1=0 r5=0.25 r10=0.75 mrr=0.3333333333333333 ndcg=0.38331844203970533",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-29.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.2484175114087326",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.2484175114087326",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-30.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=0 r5=0 r10=0.75 mrr=0.125 ndcg=0.36475664171949546",
+      "recomputed": "top1=0 r5=0 r10=0.75 mrr=0.125 ndcg=0.36475664171949546",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=1 r5=0.2 r10=0.4 mrr=1 ndcg=0.4412576003965277",
+      "recomputed": "top1=1 r5=0.2 r10=0.4 mrr=1 ndcg=0.4412576003965277",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-32.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.8 r10=1 mrr=0.5 ndcg=0.6886039320648766",
+      "recomputed": "top1=0 r5=0.8 r10=1 mrr=0.5 ndcg=0.6886039320648766",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=0 r5=0.25 r10=0.25 mrr=0.2 ndcg=0.22432432793730117",
+      "recomputed": "top1=0 r5=0.25 r10=0.25 mrr=0.2 ndcg=0.22432432793730117",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-34.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=0 r5=0.75 r10=1 mrr=0.3333333333333333 ndcg=0.5780389240793556",
+      "recomputed": "top1=0 r5=0.75 r10=1 mrr=0.3333333333333333 ndcg=0.5780389240793556",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-36.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-37.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-38.hits",
+      "published": "8 hit(s)",
+      "recomputed": "8 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-39.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-40.hits",
+      "published": "7 hit(s)",
+      "recomputed": "7 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.8285714285714286 first_relevant_rank_mean=3 mrr@10=0.5253514739229024 ndcg@10=0.49634780551459384 negative_hit_rate@5=0 recall@10=0.5733333333333335 recall@1200tok=0.4795238095238096 recall@2000tok=0.5733333333333335 recall@5=0.4404761904761905 recall@600tok=0.3823809523809524 top1=0.42857142857142855",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.8285714285714286 first_relevant_rank_mean=3 mrr@10=0.5253514739229024 ndcg@10=0.49634780551459384 negative_hit_rate@5=0 recall@10=0.5733333333333335 recall@1200tok=0.4795238095238096 recall@2000tok=0.5733333333333335 recall@5=0.4404761904761905 recall@600tok=0.3823809523809524 top1=0.42857142857142855",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9325513501450841 recall@10=1 recall@1200tok=0.9166666666666666 recall@2000tok=1 recall@5=0.861111111111111 recall@600tok=0.861111111111111 top1=1",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9325513501450841 recall@10=1 recall@1200tok=0.9166666666666666 recall@2000tok=1 recall@5=0.861111111111111 recall@600tok=0.861111111111111 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0.625 first_relevant_rank_mean=4.4 mrr@10=0.2489583333333333 ndcg@10=0.19354499478962667 recall@10=0.22916666666666666 recall@1200tok=0.15625 recall@2000tok=0.22916666666666666 recall@5=0.11458333333333331 recall@600tok=0.07291666666666666 top1=0.125",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0.625 first_relevant_rank_mean=4.4 mrr@10=0.2489583333333333 ndcg@10=0.19354499478962667 recall@10=0.22916666666666666 recall@1200tok=0.15625 recall@2000tok=0.22916666666666666 recall@5=0.11458333333333331 recall@600tok=0.07291666666666666 top1=0.125",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=5 mrr@10=0.2518518518518518 ndcg@10=0.2917635530527416 recall@10=0.375 recall@1200tok=0.2916666666666667 recall@2000tok=0.375 recall@5=0.2916666666666667 recall@600tok=0.16666666666666666 top1=0.16666666666666666",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=5 mrr@10=0.2518518518518518 ndcg@10=0.2917635530527416 recall@10=0.375 recall@1200tok=0.2916666666666667 recall@2000tok=0.375 recall@5=0.2916666666666667 recall@600tok=0.16666666666666666 top1=0.16666666666666666",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=4 mrr@10=0.47519841269841273 ndcg@10=0.4242831718381268 recall@10=0.5555555555555555 recall@1200tok=0.3055555555555555 recall@2000tok=0.5555555555555555 recall@5=0.2638888888888889 recall@600tok=0.2222222222222222 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=4 mrr@10=0.47519841269841273 ndcg@10=0.4242831718381268 recall@10=0.5555555555555555 recall@1200tok=0.3055555555555555 recall@2000tok=0.5555555555555555 recall@5=0.2638888888888889 recall@600tok=0.2222222222222222 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=2.75 mrr@10=0.4066666666666666 ndcg@10=0.3864449568956122 recall@10=0.53 recall@1200tok=0.49000000000000005 recall@2000tok=0.53 recall@5=0.4 recall@600tok=0.26 top1=0.2",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=2.75 mrr@10=0.4066666666666666 ndcg@10=0.3864449568956122 recall@10=0.53 recall@1200tok=0.49000000000000005 recall@2000tok=0.53 recall@5=0.4 recall@600tok=0.26 top1=0.2",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.8518518518518519 first_relevant_rank_mean=3 mrr@10=0.5448559670781893 ndcg@10=0.49548900098708876 negative_hit_rate@5=0 recall@10=0.5641975308641975 recall@1200tok=0.4611111111111111 recall@2000tok=0.5641975308641975 recall@5=0.4197530864197531 recall@600tok=0.36604938271604937 top1=0.4444444444444444",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.8518518518518519 first_relevant_rank_mean=3 mrr@10=0.5448559670781893 ndcg@10=0.49548900098708876 negative_hit_rate@5=0 recall@10=0.5641975308641975 recall@1200tok=0.4611111111111111 recall@2000tok=0.5641975308641975 recall@5=0.4197530864197531 recall@600tok=0.36604938271604937 top1=0.4444444444444444",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=3 mrr@10=0.45952380952380956 ndcg@10=0.4992462707949242 negative_hit_rate@5=0 recall@10=0.6041666666666667 recall@1200tok=0.5416666666666667 recall@2000tok=0.6041666666666667 recall@5=0.5104166666666667 recall@600tok=0.4375 top1=0.375",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=3 mrr@10=0.45952380952380956 ndcg@10=0.4992462707949242 negative_hit_rate@5=0 recall@10=0.6041666666666667 recall@1200tok=0.5416666666666667 recall@2000tok=0.6041666666666667 recall@5=0.5104166666666667 recall@600tok=0.4375 top1=0.375",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_p50_us",
+      "published": "13109us",
+      "recomputed": "13109us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_p95_us",
+      "published": "21192us",
+      "recomputed": "21192us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "peak_rss_mb",
+      "published": "413.796875MB",
+      "recomputed": "413.796875MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-01.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-02.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-03.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-04.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-05.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-06.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-07.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-08.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-09.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-10.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-11.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-12.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-13.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-14.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-15.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-16.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-17.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-18.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-19.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-20.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-21.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-22.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-23.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-24.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-25.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-26.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-27.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-28.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-29.hits",
+      "published": "3 hit(s)",
+      "recomputed": "3 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-30.hits",
+      "published": "4 hit(s)",
+      "recomputed": "4 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-31.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-32.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-33.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-34.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-35.hits",
+      "published": "5 hit(s)",
+      "recomputed": "5 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-36.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-37.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-38.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-39.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-40.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.9057142857142858 top1=1",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.9057142857142858 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.8854166666666666 top1=1",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.8854166666666666 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.7777777777777777 top1=1",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.7777777777777777 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.79 top1=1",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.79 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.8870370370370373 top1=1",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.8870370370370373 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.96875 top1=1",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 negative_hit_rate@5=0 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=0.96875 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "index_ms",
+      "published": "not_applicable (the oracle ranks the judged spans and builds no index)",
+      "recomputed": "not_applicable (the oracle ranks the judged spans and builds no index)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query_p50_us",
+      "published": "1us",
+      "recomputed": "1us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "query_p95_us",
+      "published": "3us",
+      "recomputed": "3us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "peak_rss_mb",
+      "published": "413.796875MB",
+      "recomputed": "413.796875MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (the oracle ranks the judged spans and builds no index)",
+      "recomputed": "not_applicable (the oracle ranks the judged spans and builds no index)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "oracle_upper_bound",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-01.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.5 ndcg=0.5277822631368584",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.6666666666666666 mrr=0.5 ndcg=0.5277822631368584",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-02.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-03.hits",
+      "published": "2 hit(s)",
+      "recomputed": "2 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.7895959410076381",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.7895959410076381",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-04.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7452525342261977",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-05.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-06.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6735439182299786",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-07.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-08.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-09.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-10.hits",
+      "published": "1 hit(s)",
+      "recomputed": "1 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.8216212264723879",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.8216212264723879",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6244247138302589",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6244247138302589",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.23226091263429732",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.23226091263429732",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-16.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-17.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-18.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-19.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=0 r5=0.6666666666666666 r10=0.6666666666666666 mrr=0.3333333333333333 ndcg=0.32872604726693166",
+      "recomputed": "top1=0 r5=0.6666666666666666 r10=0.6666666666666666 mrr=0.3333333333333333 ndcg=0.32872604726693166",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-20.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=0 r5=0.25 r10=0.25 mrr=0.5 ndcg=0.1296840415099727",
+      "recomputed": "top1=0 r5=0.25 r10=0.25 mrr=0.5 ndcg=0.1296840415099727",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-21.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.06717171396683416",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.06717171396683416",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-22.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=1 mrr=0.14285714285714285 ndcg=0.421127542186111",
+      "recomputed": "top1=0 r5=0 r10=1 mrr=0.14285714285714285 ndcg=0.421127542186111",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-23.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-24.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.47020199776783905",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.47020199776783905",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-25.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.1768311590122932",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.1768311590122932",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-26.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-27.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.7050356957126813",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.7050356957126813",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-28.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=0 r5=0.25 r10=0.5 mrr=0.5 ndcg=0.46625222356982915",
+      "recomputed": "top1=0 r5=0.25 r10=0.5 mrr=0.5 ndcg=0.46625222356982915",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-29.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-30.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=1 r5=0.25 r10=0.5 mrr=1 ndcg=0.3594465516367995",
+      "recomputed": "top1=1 r5=0.25 r10=0.5 mrr=1 ndcg=0.3594465516367995",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=0 r5=0.6 r10=0.8 mrr=0.5 ndcg=0.6317321123369537",
+      "recomputed": "top1=0 r5=0.6 r10=0.8 mrr=0.5 ndcg=0.6317321123369537",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-32.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.4 r10=1 mrr=0.5 ndcg=0.6877660506491766",
+      "recomputed": "top1=0 r5=0.4 r10=1 mrr=0.5 ndcg=0.6877660506491766",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-34.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=1 r5=0.75 r10=1 mrr=1 ndcg=0.7364438343263754",
+      "recomputed": "top1=1 r5=0.75 r10=1 mrr=1 ndcg=0.7364438343263754",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-36.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-37.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-38.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-39.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-40.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.7714285714285715 first_relevant_rank_mean=1.8888888888888888 mrr@10=0.5977324263038549 ndcg@10=0.4764647181147411 negative_hit_rate@5=0 recall@10=0.49904761904761913 recall@1200tok=0.43619047619047624 recall@2000tok=0.49904761904761913 recall@5=0.4023809523809524 recall@600tok=0.4023809523809524 top1=0.4857142857142857",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.7714285714285715 first_relevant_rank_mean=1.8888888888888888 mrr@10=0.5977324263038549 ndcg@10=0.4764647181147411 negative_hit_rate@5=0 recall@10=0.49904761904761913 recall@1200tok=0.43619047619047624 recall@2000tok=0.49904761904761913 recall@5=0.4023809523809524 recall@600tok=0.4023809523809524 top1=0.4857142857142857",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.7331244339233045 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.611111111111111 top1=0.8333333333333334",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.7331244339233045 recall@10=0.6666666666666666 recall@1200tok=0.6666666666666666 recall@2000tok=0.6666666666666666 recall@5=0.611111111111111 recall@600tok=0.611111111111111 top1=0.8333333333333334",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.9793298531782393 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.5 mrr@10=0.4166666666666667 ndcg@10=0.25020978976291974 recall@10=0.20833333333333331 recall@1200tok=0.20833333333333331 recall@2000tok=0.20833333333333331 recall@5=0.20833333333333331 recall@600tok=0.20833333333333331 top1=0.375",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0.5 first_relevant_rank_mean=1.5 mrr@10=0.4166666666666667 ndcg@10=0.25020978976291974 recall@10=0.20833333333333331 recall@1200tok=0.20833333333333331 recall@2000tok=0.20833333333333331 recall@5=0.20833333333333331 recall@600tok=0.20833333333333331 top1=0.375",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.5 mrr@10=0.24603174603174602 ndcg@10=0.2361518904496148 recall@10=0.40277777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.40277777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.5 mrr@10=0.24603174603174602 ndcg@10=0.2361518904496148 recall@10=0.40277777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.40277777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.6018518518518519 ndcg@10=0.3842995806553673 recall@10=0.38888888888888884 recall@1200tok=0.2222222222222222 recall@2000tok=0.38888888888888884 recall@5=0.2222222222222222 recall@600tok=0.2222222222222222 top1=0.5",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.6018518518518519 ndcg@10=0.3842995806553673 recall@10=0.38888888888888884 recall@1200tok=0.2222222222222222 recall@2000tok=0.38888888888888884 recall@5=0.2222222222222222 recall@600tok=0.2222222222222222 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.5 mrr@10=0.6 ndcg@10=0.5271623946059809 recall@10=0.61 recall@1200tok=0.5700000000000001 recall@2000tok=0.61 recall@5=0.4 recall@600tok=0.4 top1=0.4",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.5 mrr@10=0.6 ndcg@10=0.5271623946059809 recall@10=0.61 recall@1200tok=0.5700000000000001 recall@2000tok=0.61 recall@5=0.4 recall@600tok=0.4 top1=0.4",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.8148148148148148 first_relevant_rank_mean=2 mrr@10=0.6143445032333922 ndcg@10=0.48549137373582424 negative_hit_rate@5=0 recall@10=0.5111111111111112 recall@1200tok=0.4296296296296297 recall@2000tok=0.5111111111111112 recall@5=0.3950617283950617 recall@600tok=0.3950617283950617 top1=0.48148148148148145",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.8148148148148148 first_relevant_rank_mean=2 mrr@10=0.6143445032333922 ndcg@10=0.48549137373582424 negative_hit_rate@5=0 recall@10=0.5111111111111112 recall@1200tok=0.4296296296296297 recall@2000tok=0.5111111111111112 recall@5=0.3950617283950617 recall@600tok=0.3950617283950617 top1=0.48148148148148145",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.625 first_relevant_rank_mean=1.4 mrr@10=0.5416666666666667 ndcg@10=0.44599975539358533 negative_hit_rate@5=0 recall@10=0.4583333333333333 recall@1200tok=0.4583333333333333 recall@2000tok=0.4583333333333333 recall@5=0.4270833333333333 recall@600tok=0.4270833333333333 top1=0.5",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.625 first_relevant_rank_mean=1.4 mrr@10=0.5416666666666667 ndcg@10=0.44599975539358533 negative_hit_rate@5=0 recall@10=0.4583333333333333 recall@1200tok=0.4583333333333333 recall@2000tok=0.4583333333333333 recall@5=0.4270833333333333 recall@600tok=0.4270833333333333 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query_p50_us",
+      "published": "2384us",
+      "recomputed": "2384us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "query_p95_us",
+      "published": "5297us",
+      "recomputed": "5297us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "peak_rss_mb",
+      "published": "414.234375MB",
+      "recomputed": "414.234375MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "chunk_only",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-01.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.7852134991855585",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.7852134991855585",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-02.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8590229523269859",
+      "recomputed": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8590229523269859",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-03.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9803535331101173",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9803535331101173",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-04.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-05.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-06.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-07.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-08.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-09.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-10.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.05628116154583615",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.05628116154583615",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.7391347775232319",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.7391347775232319",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6628425833343131",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6628425833343131",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.08273300636460515",
+      "recomputed": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.08273300636460515",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.25 ndcg=0.20316888566115965",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.25 ndcg=0.20316888566115965",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-16.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.2369571467252551",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.2369571467252551",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-17.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-18.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-19.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.6685473221716215",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.6685473221716215",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-20.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.23505205275550092",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.23505205275550092",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-21.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.10646464774659968",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.10646464774659968",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-22.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=0.25 mrr=0.1 ndcg=0.07421548282284281",
+      "recomputed": "top1=0 r5=0 r10=0.25 mrr=0.1 ndcg=0.07421548282284281",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-23.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-24.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.3333333333333333 ndcg=0.3726262671130989",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.3333333333333333 ndcg=0.3726262671130989",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-25.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.37062100517025215",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.37062100517025215",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-26.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-27.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6745556476919424",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6745556476919424",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-28.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7048392974917773",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7048392974917773",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-29.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.27919269631859855",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.27919269631859855",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-30.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.4017281490214823",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.4017281490214823",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=1 r5=0.4 r10=0.6 mrr=1 ndcg=0.6060398578158167",
+      "recomputed": "top1=1 r5=0.4 r10=0.6 mrr=1 ndcg=0.6060398578158167",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-32.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5509426854670464",
+      "recomputed": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5509426854670464",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-34.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=1 r5=0.75 r10=0.75 mrr=1 ndcg=0.6550480609578988",
+      "recomputed": "top1=1 r5=0.75 r10=0.75 mrr=1 ndcg=0.6550480609578988",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-36.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-37.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-38.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-39.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-40.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.8571428571428571 first_relevant_rank_mean=2.2333333333333334 mrr@10=0.6696371882086167 ndcg@10=0.5334611743441603 negative_hit_rate@5=0 recall@10=0.543809523809524 recall@1200tok=0.5080952380952382 recall@2000tok=0.543809523809524 recall@5=0.4690476190476191 recall@600tok=0.4338095238095238 top1=0.6",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.8571428571428571 first_relevant_rank_mean=2.2333333333333334 mrr@10=0.6696371882086167 ndcg@10=0.5334611743441603 negative_hit_rate@5=0 recall@10=0.543809523809524 recall@1200tok=0.5080952380952382 recall@2000tok=0.543809523809524 recall@5=0.4690476190476191 recall@600tok=0.4338095238095238 top1=0.6",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.91477951224372 recall@10=0.9444444444444443 recall@1200tok=0.9444444444444443 recall@2000tok=0.9444444444444443 recall@5=0.861111111111111 recall@600tok=0.8055555555555555 top1=1",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=0.91477951224372 recall@10=0.9444444444444443 recall@1200tok=0.9444444444444443 recall@2000tok=0.9444444444444443 recall@5=0.861111111111111 recall@600tok=0.8055555555555555 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=4 mrr@10=0.3576388888888889 ndcg@10=0.2880611282901019 recall@10=0.3333333333333333 recall@1200tok=0.2708333333333333 recall@2000tok=0.3333333333333333 recall@5=0.18749999999999997 recall@600tok=0.15625 top1=0.25",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=4 mrr@10=0.3576388888888889 ndcg@10=0.2880611282901019 recall@10=0.3333333333333333 recall@1200tok=0.2708333333333333 recall@2000tok=0.3333333333333333 recall@5=0.18749999999999997 recall@600tok=0.15625 top1=0.25",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.75 mrr@10=0.4055555555555556 ndcg@10=0.24281762876827728 recall@10=0.27777777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.27777777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.75 mrr@10=0.4055555555555556 ndcg@10=0.24281762876827728 recall@10=0.27777777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.27777777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=2.1666666666666665 mrr@10=0.7738095238095237 ndcg@10=0.5048614416157755 recall@10=0.47222222222222215 recall@1200tok=0.38888888888888884 recall@2000tok=0.47222222222222215 recall@5=0.38888888888888884 recall@600tok=0.34722222222222215 top1=0.6666666666666666",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=2.1666666666666665 mrr@10=0.7738095238095237 ndcg@10=0.5048614416157755 recall@10=0.47222222222222215 recall@1200tok=0.38888888888888884 recall@2000tok=0.47222222222222215 recall@5=0.38888888888888884 recall@600tok=0.34722222222222215 top1=0.6666666666666666",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.25 mrr@10=0.7 ndcg@10=0.47838011599163205 recall@10=0.44000000000000006 recall@1200tok=0.44000000000000006 recall@2000tok=0.44000000000000006 recall@5=0.4 recall@600tok=0.32 top1=0.6",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.25 mrr@10=0.7 ndcg@10=0.47838011599163205 recall@10=0.44000000000000006 recall@1200tok=0.44000000000000006 recall@2000tok=0.44000000000000006 recall@5=0.4 recall@600tok=0.32 top1=0.6",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.8888888888888888 first_relevant_rank_mean=2.2083333333333335 mrr@10=0.7022633744855966 ndcg@10=0.5368966469218424 negative_hit_rate@5=0 recall@10=0.5351851851851852 recall@1200tok=0.5074074074074074 recall@2000tok=0.5351851851851852 recall@5=0.45679012345679015 recall@600tok=0.4111111111111111 top1=0.6296296296296297",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.8888888888888888 first_relevant_rank_mean=2.2083333333333335 mrr@10=0.7022633744855966 ndcg@10=0.5368966469218424 negative_hit_rate@5=0 recall@10=0.5351851851851852 recall@1200tok=0.5074074074074074 recall@2000tok=0.5351851851851852 recall@5=0.45679012345679015 recall@600tok=0.4111111111111111 top1=0.6296296296296297",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.5595238095238095 ndcg@10=0.5218664543944835 negative_hit_rate@5=0 recall@10=0.5729166666666667 recall@1200tok=0.5104166666666667 recall@2000tok=0.5729166666666667 recall@5=0.5104166666666667 recall@600tok=0.5104166666666667 top1=0.5",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.5595238095238095 ndcg@10=0.5218664543944835 negative_hit_rate@5=0 recall@10=0.5729166666666667 recall@1200tok=0.5104166666666667 recall@2000tok=0.5729166666666667 recall@5=0.5104166666666667 recall@600tok=0.5104166666666667 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query_p50_us",
+      "published": "14982us",
+      "recomputed": "14982us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "query_p95_us",
+      "published": "22672us",
+      "recomputed": "22672us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "peak_rss_mb",
+      "published": "415.1875MB",
+      "recomputed": "415.1875MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "raw.hits.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "raw.latency.query_set",
+      "published": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "recomputed": "cb-01,cb-02,cb-03,cb-04,cb-05,cb-06,cb-07,cb-08,cb-09,cb-10,cb-11,cb-12,cb-13,cb-14,cb-15,cb-16,cb-17,cb-18,cb-19,cb-20,cb-21,cb-22,cb-23,cb-24,cb-25,cb-26,cb-27,cb-28,cb-29,cb-30,cb-31,cb-32,cb-33,cb-34,cb-35,cb-36,cb-37,cb-38,cb-39,cb-40",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-01.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-01.metrics",
+      "published": "top1=0 r5=0.6666666666666666 r10=0.6666666666666666 mrr=0.5 ndcg=0.5366284793039741",
+      "recomputed": "top1=0 r5=0.6666666666666666 r10=0.6666666666666666 mrr=0.5 ndcg=0.5366284793039741",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-02.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-02.metrics",
+      "published": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8590229523269859",
+      "recomputed": "top1=1 r5=0.5 r10=1 mrr=1 ndcg=0.8590229523269859",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-03.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-03.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.8231817979910552",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.8231817979910552",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-04.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-04.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9467676761267002",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-05.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-05.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=0.9173194127129571",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-06.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-06.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-07.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-07.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-08.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-08.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-09.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-09.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-10.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-10.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.05628116154583615",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.05628116154583615",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.7391347775232319",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.6666666666666666 mrr=1 ndcg=0.7391347775232319",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6628425833343131",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6628425833343131",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.08273300636460515",
+      "recomputed": "top1=0 r5=0 r10=0.3333333333333333 mrr=0.16666666666666666 ndcg=0.08273300636460515",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.25 ndcg=0.20316888566115965",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.25 ndcg=0.20316888566115965",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-16.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.2369571467252551",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.1111111111111111 ndcg=0.2369571467252551",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-17.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-17.metrics",
+      "published": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "recomputed": "top1=0 r5=0.3333333333333333 r10=0.3333333333333333 mrr=0.3333333333333333 ndcg=0.32337146516641396",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-18.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-18.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-19.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-19.metrics",
+      "published": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.6685473221716215",
+      "recomputed": "top1=1 r5=0.6666666666666666 r10=0.6666666666666666 mrr=1 ndcg=0.6685473221716215",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-20.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-20.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.23505205275550092",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.23505205275550092",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-21.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-21.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.10646464774659968",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0.10646464774659968",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-22.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-22.metrics",
+      "published": "top1=0 r5=0 r10=0.25 mrr=0.1 ndcg=0.07421548282284281",
+      "recomputed": "top1=0 r5=0 r10=0.25 mrr=0.1 ndcg=0.07421548282284281",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-23.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-23.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-24.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-24.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.3333333333333333 ndcg=0.3726262671130989",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.3333333333333333 ndcg=0.3726262671130989",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-25.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-25.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.37062100517025215",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.37062100517025215",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-26.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-26.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.5982318540006006",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-27.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-27.metrics",
+      "published": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6745556476919424",
+      "recomputed": "top1=1 r5=0.3333333333333333 r10=0.3333333333333333 mrr=1 ndcg=0.6745556476919424",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-28.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-28.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7048392974917773",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.7048392974917773",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-29.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-29.metrics",
+      "published": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.27919269631859855",
+      "recomputed": "top1=0 r5=0 r10=0.5 mrr=0.14285714285714285 ndcg=0.27919269631859855",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-30.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-30.metrics",
+      "published": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.4017281490214823",
+      "recomputed": "top1=1 r5=0.5 r10=0.5 mrr=1 ndcg=0.4017281490214823",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-31.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-31.metrics",
+      "published": "top1=1 r5=0.4 r10=0.6 mrr=1 ndcg=0.6060398578158167",
+      "recomputed": "top1=1 r5=0.4 r10=0.6 mrr=1 ndcg=0.6060398578158167",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-32.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-32.metrics",
+      "published": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5509426854670464",
+      "recomputed": "top1=0 r5=0.6 r10=0.6 mrr=0.5 ndcg=0.5509426854670464",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-33.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-33.metrics",
+      "published": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "recomputed": "top1=1 r5=0.25 r10=0.25 mrr=1 ndcg=0.5798699757173987",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-34.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-34.metrics",
+      "published": "top1=1 r5=0.75 r10=0.75 mrr=1 ndcg=0.6550480609578988",
+      "recomputed": "top1=1 r5=0.75 r10=0.75 mrr=1 ndcg=0.6550480609578988",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-35.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-35.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-36.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-36.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-37.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-37.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-38.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-38.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-39.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-39.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-40.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query.cb-40.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "overall",
+      "published": "measured queries=40 scored=35 first_relevant_found=0.8571428571428571 first_relevant_rank_mean=2.2666666666666666 mrr@10=0.6553514739229025 ndcg@10=0.5218681242012847 negative_hit_rate@5=0 recall@10=0.543809523809524 recall@1200tok=0.5080952380952382 recall@2000tok=0.543809523809524 recall@5=0.4690476190476191 recall@600tok=0.4338095238095238 top1=0.5714285714285714",
+      "recomputed": "measured queries=40 scored=35 first_relevant_found=0.8571428571428571 first_relevant_rank_mean=2.2666666666666666 mrr@10=0.6553514739229025 ndcg@10=0.5218681242012847 negative_hit_rate@5=0 recall@10=0.543809523809524 recall@1200tok=0.5080952380952382 recall@2000tok=0.543809523809524 recall@5=0.4690476190476191 recall@600tok=0.4338095238095238 top1=0.5714285714285714",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.exact_identifier",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.8471533864102788 recall@10=0.9444444444444443 recall@1200tok=0.9444444444444443 recall@2000tok=0.9444444444444443 recall@5=0.861111111111111 recall@600tok=0.8055555555555555 top1=0.8333333333333334",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=1.1666666666666667 mrr@10=0.9166666666666666 ndcg@10=0.8471533864102788 recall@10=0.9444444444444443 recall@1200tok=0.9444444444444443 recall@2000tok=0.9444444444444443 recall@5=0.861111111111111 recall@600tok=0.8055555555555555 top1=0.8333333333333334",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.exact_path",
+      "published": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "recomputed": "measured queries=4 scored=4 first_relevant_found=1 first_relevant_rank_mean=1 mrr@10=1 ndcg@10=1 recall@10=1 recall@1200tok=1 recall@2000tok=1 recall@5=1 recall@600tok=1 top1=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=8 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=4 mrr@10=0.3576388888888889 ndcg@10=0.2880611282901019 recall@10=0.3333333333333333 recall@1200tok=0.2708333333333333 recall@2000tok=0.3333333333333333 recall@5=0.18749999999999997 recall@600tok=0.15625 top1=0.25",
+      "recomputed": "measured queries=8 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=4 mrr@10=0.3576388888888889 ndcg@10=0.2880611282901019 recall@10=0.3333333333333333 recall@1200tok=0.2708333333333333 recall@2000tok=0.3333333333333333 recall@5=0.18749999999999997 recall@600tok=0.15625 top1=0.25",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.architecture_flow",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.75 mrr@10=0.4055555555555556 ndcg@10=0.24281762876827728 recall@10=0.27777777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.27777777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.6666666666666666 first_relevant_rank_mean=3.75 mrr@10=0.4055555555555556 ndcg@10=0.24281762876827728 recall@10=0.27777777777777773 recall@1200tok=0.23611111111111108 recall@2000tok=0.27777777777777773 recall@5=0.23611111111111108 recall@600tok=0.23611111111111108 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.config_docs",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=2.1666666666666665 mrr@10=0.7738095238095237 ndcg@10=0.5048614416157755 recall@10=0.47222222222222215 recall@1200tok=0.38888888888888884 recall@2000tok=0.47222222222222215 recall@5=0.38888888888888884 recall@600tok=0.34722222222222215 top1=0.6666666666666666",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=2.1666666666666665 mrr@10=0.7738095238095237 ndcg@10=0.5048614416157755 recall@10=0.47222222222222215 recall@1200tok=0.38888888888888884 recall@2000tok=0.47222222222222215 recall@5=0.38888888888888884 recall@600tok=0.34722222222222215 top1=0.6666666666666666",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.ambiguous",
+      "published": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.25 mrr@10=0.7 ndcg@10=0.47838011599163205 recall@10=0.44000000000000006 recall@1200tok=0.44000000000000006 recall@2000tok=0.44000000000000006 recall@5=0.4 recall@600tok=0.32 top1=0.6",
+      "recomputed": "measured queries=5 scored=5 first_relevant_found=0.8 first_relevant_rank_mean=1.25 mrr@10=0.7 ndcg@10=0.47838011599163205 recall@10=0.44000000000000006 recall@1200tok=0.44000000000000006 recall@2000tok=0.44000000000000006 recall@5=0.4 recall@600tok=0.32 top1=0.6",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "strata.no_hit",
+      "published": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "recomputed": "measured queries=5 scored=0 negative_hit_rate@5=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "splits.dev",
+      "published": "measured queries=30 scored=27 first_relevant_found=0.8888888888888888 first_relevant_rank_mean=2.25 mrr@10=0.6837448559670781 ndcg@10=0.5218686189588554 negative_hit_rate@5=0 recall@10=0.5351851851851852 recall@1200tok=0.5074074074074074 recall@2000tok=0.5351851851851852 recall@5=0.45679012345679015 recall@600tok=0.4111111111111111 top1=0.5925925925925926",
+      "recomputed": "measured queries=30 scored=27 first_relevant_found=0.8888888888888888 first_relevant_rank_mean=2.25 mrr@10=0.6837448559670781 ndcg@10=0.5218686189588554 negative_hit_rate@5=0 recall@10=0.5351851851851852 recall@1200tok=0.5074074074074074 recall@2000tok=0.5351851851851852 recall@5=0.45679012345679015 recall@600tok=0.4111111111111111 top1=0.5925925925925926",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "splits.holdout",
+      "published": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.5595238095238095 ndcg@10=0.5218664543944835 negative_hit_rate@5=0 recall@10=0.5729166666666667 recall@1200tok=0.5104166666666667 recall@2000tok=0.5729166666666667 recall@5=0.5104166666666667 recall@600tok=0.5104166666666667 top1=0.5",
+      "recomputed": "measured queries=10 scored=8 first_relevant_found=0.75 first_relevant_rank_mean=2.3333333333333335 mrr@10=0.5595238095238095 ndcg@10=0.5218664543944835 negative_hit_rate@5=0 recall@10=0.5729166666666667 recall@1200tok=0.5104166666666667 recall@2000tok=0.5729166666666667 recall@5=0.5104166666666667 recall@600tok=0.5104166666666667 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "index_ms",
+      "published": "200ms",
+      "recomputed": "200ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query_p50_us",
+      "published": "17661us",
+      "recomputed": "17661us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "query_p95_us",
+      "published": "23144us",
+      "recomputed": "23144us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "peak_rss_mb",
+      "published": "415.8125MB",
+      "recomputed": "415.8125MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fusion+graph",
+      "metric": "latency_samples",
+      "published": "120",
+      "recomputed": "120",
+      "status": "reproduced"
+    }
+  ],
+  "metrics_checked": 705,
+  "metrics_reproduced": 705,
+  "metrics_discrepant": 0,
+  "metrics_unknown": 0,
+  "complete": true,
+  "publishable": true,
+  "status": "PASS",
+  "method": "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, oracle_upper_bound) and the report's baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that docs/eval/retrieval-targets.json and -budgets.json record in derived_from no longer matches it - that provenance layer, not this aggregate, is what binds a checked-in artifact to the report it came from. For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, with raw/hits-\u003cbaseline\u003e.json and raw/latency-\u003cbaseline\u003e.json: an omitted or extra query on any side is a discrepancy. Every per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; every aggregate through the same Aggregate over the RAW hit set in dataset order (not over the report's query list); every performance block through the same PerformanceFromRaw (nearest-rank PercentileInt64 over the timed executions; index_ms, peak_rss_mb and vector_sidecar_bytes from the record's own measures), each compared EXACTLY, status and reason included. The hit lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did not publish. A baseline may read `unavailable` only when BOTH its raw records say collected: false; then the report's reason, the hit record's reason and the latency record's reason must agree, both records must carry zero samples and an empty query set, and the report's empty query list, UNKNOWN aggregates and UNKNOWN measures are all checked against that; a collected record makes any other status a discrepancy. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN and is never counted as reproduced."
+}

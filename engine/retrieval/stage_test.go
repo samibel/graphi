@@ -114,15 +114,22 @@ func TestUnion_SemanticOnlyHitIsReachable(t *testing.T) {
 
 func TestRRF_HandComputedValuesMatchFormula(t *testing.T) {
 	// AC-2: "WHEN both lexical and semantic candidates exist, the system
-	// shall ... fuse with integer RRF". RRF is the FUSION of two
-	// sources; with only one source, the fusion has nothing to fuse and
-	// rrfScore is 0 (the byte-parity AC-7 path depends on this — adding
-	// RRF to a single source would break the byte-parity invariant).
+	// shall ... fuse with integer RRF". The RRF formula is per
+	// contributing source: rrfScore = sum over sources s that
+	// contributed of RRFScale / (RRFk + rank_s). A row present in
+	// only one source receives its single-source contribution; a row
+	// present in both receives both. A semantic-only hit is therefore
+	// reachable in the result with a positive RRF contribution
+	// (SW-263 / decision-ac9 defect 1; the previous implementation
+	// collapsed single-source rows to rrfScore=0, which is what this
+	// test previously pinned).
 	//
-	// The RRF formula applied per-source: rrfScore = sum over sources of
-	// RRFScale / (RRFk + rank). It applies ONLY to rows present in BOTH
-	// sources; a row present in only one source carries zero RRF (its
-	// single-source ranking is the rerank's job, not RRF's).
+	// The byte-parity AC-7 path is preserved by a different gate: when
+	// the semantic list is GLOBALLY absent (no embedder), the rrf stage
+	// is skipped entirely and every row's rrfScore is 0 — so a
+	// no-embedder build still mirrors search_hybrid's audit output.
+	// This test exercises the fused-union path with the semantic list
+	// active (semanticActive=true).
 	e := &Engine{}
 	in := []row{
 		{nodeID: "both", lexicalRank: 1, semanticRank: 1},
@@ -130,18 +137,44 @@ func TestRRF_HandComputedValuesMatchFormula(t *testing.T) {
 		{nodeID: "semantic-only", lexicalRank: 0, semanticRank: 1},
 		{nodeID: "both-5-3", lexicalRank: 5, semanticRank: 3},
 	}
-	out := e.rrf(in)
+	out := e.rrf(in, true, false)
 	want := map[string]int{
 		"both":          RRFScale/(RRFk+1) + RRFScale/(RRFk+1),
-		"lexical-only":  0, // AC-2: no fusion, no RRF
-		"semantic-only": 0, // AC-2: no fusion, no RRF
+		"lexical-only":  RRFScale / (RRFk + 1), // AC-2: lexical contributes its single-source term
+		"semantic-only": RRFScale / (RRFk + 1), // AC-2: semantic contributes its single-source term; semantic-only hit is reachable in the result
 		"both-5-3":      RRFScale/(RRFk+5) + RRFScale/(RRFk+3),
 	}
 	for _, r := range out {
 		if got, ok := want[r.nodeID]; !ok {
 			t.Errorf("unexpected node %s", r.nodeID)
 		} else if r.rrfScore != got {
-			t.Errorf("node %s rrf = %d, want %d", r.nodeID, r.rrfScore, got)
+			t.Errorf("node %s rrf = %d, want %d (RRF is per contributing source)", r.nodeID, r.rrfScore, got)
+		}
+	}
+}
+
+func TestRRF_ZeroAcrossAllRowsWhenSemanticListGloballyAbsent(t *testing.T) {
+	// AC-7 byte parity: when the semantic list is globally absent (no
+	// embedder, configured-but-not-ready generation, or the caller
+	// pinned ModeLexicalOnly), the rrf stage MUST score 0 across the
+	// whole row set so the rerank's lexical score carries the row's
+	// Final unaltered and the rendered bytes match search_hybrid's
+	// audit output. The previous implementation achieved this through a
+	// per-row "both ranks > 0" intersection filter, which is what
+	// produced the SW-263 / decision-ac9 defect 1 — the same path
+	// that pinned a single-source row's RRF to 0 in the fused case.
+	// The correct gate is global, not per-row.
+	e := &Engine{}
+	in := []row{
+		{nodeID: "both", lexicalRank: 1, semanticRank: 1},
+		{nodeID: "lexical-only", lexicalRank: 1, semanticRank: 0},
+		{nodeID: "semantic-only", lexicalRank: 0, semanticRank: 1},
+		{nodeID: "both-5-3", lexicalRank: 5, semanticRank: 3},
+	}
+	out := e.rrf(in, false, false)
+	for _, r := range out {
+		if r.rrfScore != 0 {
+			t.Errorf("semantic list globally absent: node %s rrf = %d, want 0 (AC-7 byte parity)", r.nodeID, r.rrfScore)
 		}
 	}
 }
@@ -158,8 +191,8 @@ func TestRRF_NoFloatsInRankingPath(t *testing.T) {
 		{nodeID: "c", lexicalRank: 5, semanticRank: 0, lexicalScore: 4000},
 		{nodeID: "d", lexicalRank: 0, semanticRank: 4, semanticScore: 6000},
 	}
-	out1 := e.rrf(in)
-	out2 := e.rrf(in)
+	out1 := e.rrf(in, true, false)
+	out2 := e.rrf(in, true, false)
 	b1, _ := json.Marshal(out1)
 	b2, _ := json.Marshal(out2)
 	if string(b1) != string(b2) {
@@ -716,4 +749,177 @@ func itoa(i int) string {
 		buf[pos] = '-'
 	}
 	return string(buf[pos:])
+}
+
+// ---------------------------------------------------------------------------
+// AC-3 (ordering) and AC-6 (exact-query rule) — the two conformance gaps
+// the SW-263 AC-9 diagnosis found. Both were present as *dead* code: the
+// quantised cosine was computed and never read, and the exact-query rule
+// was written, exported and tested in isolation while no pipeline stage
+// ever called it.
+// ---------------------------------------------------------------------------
+
+func TestUnion_SemanticRankComesFromQuantisedScoreNotTheProviderOrder(t *testing.T) {
+	// AC-3: "Cosine scores shall be quantised to int(round(cos*10000))
+	// BEFORE ordering the semantic list; ties break on canonical
+	// node_id."
+	//
+	// engine/search.Service.SemanticSearch orders its hits by the raw
+	// float cosine (semantic.go's "re-establish deterministic order"
+	// sort). Taking that arrival order as semanticRank would make the
+	// ordering float-derived, so two hits whose cosines differ by less
+	// than one quantisation unit would be ordered by a difference the
+	// contract says is not there. The union stage must re-order on the
+	// quantised value, with node_id as the tie-break.
+	e := &Engine{}
+	// Float order is z, a: 0.90003 > 0.90001. Both quantise to 9000
+	// (a difference of 2e-5, well inside the 5e-5 AC-3 epsilon), so the
+	// contract order is node_id ascending: a, then z.
+	sem := []SemanticHit{
+		{NodeID: "z", DocumentID: "doc-z", CosineScore: 0.90003},
+		{NodeID: "a", DocumentID: "doc-a", CosineScore: 0.90001},
+	}
+	if QuantiseScore(sem[0].CosineScore) != QuantiseScore(sem[1].CosineScore) {
+		t.Fatalf("test premise broken: %v and %v do not quantise equal",
+			sem[0].CosineScore, sem[1].CosineScore)
+	}
+	got := e.union("q", nil, sem)
+	ranks := map[string]int{}
+	for _, r := range got {
+		ranks[r.nodeID] = r.semanticRank
+	}
+	if ranks["a"] != 1 || ranks["z"] != 2 {
+		t.Errorf("semantic ranks = a:%d z:%d, want a:1 z:2 "+
+			"(quantised ties break on canonical node_id, not on the float)",
+			ranks["a"], ranks["z"])
+	}
+	// And a genuinely larger cosine must still outrank, so the
+	// re-ordering has not simply become an alphabetical sort.
+	sem = append(sem, SemanticHit{NodeID: "zz", DocumentID: "doc-zz", CosineScore: 0.99})
+	got = e.union("q", nil, sem)
+	for _, r := range got {
+		if r.nodeID == "zz" && r.semanticRank != 1 {
+			t.Errorf("zz semanticRank = %d, want 1 (highest quantised score)", r.semanticRank)
+		}
+	}
+}
+
+func TestRRF_ExactQueryMakesLexicalDominant(t *testing.T) {
+	// AC-6: "IF the query matches the exact-identifier or exact-path
+	// rule THEN lexical rank shall dominate (semantic contributes at
+	// most a tie-break)."
+	//
+	// Under the symmetric RRF of AC-2 a semantic-only row at rank 1
+	// scores RRFScale/(RRFk+1) = 16393, which outranks a lexical row at
+	// rank 50 (RRFScale/(RRFk+50) = 9090). For an exact query that is
+	// precisely the inversion AC-6 forbids.
+	e := &Engine{}
+	in := []row{
+		{nodeID: "lex-deep", lexicalRank: CandidateK},
+		{nodeID: "sem-top", semanticRank: 1},
+		{nodeID: "both", lexicalRank: 1, semanticRank: 40},
+		{nodeID: "lex-top", lexicalRank: 1},
+	}
+	out := e.rrf(in, true, true /* exact */)
+	score := map[string]int{}
+	for _, r := range out {
+		score[r.nodeID] = r.rrfScore
+	}
+	if score["sem-top"] >= score["lex-deep"] {
+		t.Errorf("semantic-only row scored %d, lexical rank-%d row scored %d: "+
+			"AC-6 requires every lexical candidate to outrank a semantic-only one on an exact query",
+			score["sem-top"], CandidateK, score["lex-deep"])
+	}
+	// The semantic term may not change the relative order of two
+	// lexical rows: "both" (lexical 1, semantic 40) and "lex-top"
+	// (lexical 1, no semantic) must stay adjacent, with the semantic
+	// side acting only as the tie-break between them.
+	if score["both"] <= score["lex-top"] {
+		t.Errorf("both=%d lex-top=%d: the semantic tie-break must order two equal-lexical rows",
+			score["both"], score["lex-top"])
+	}
+	if score["both"]-score["lex-top"] >= RRFScale/(RRFk+CandidateK-1)-RRFScale/(RRFk+CandidateK) {
+		t.Errorf("semantic tie-break of %d is larger than the smallest gap between two adjacent "+
+			"lexical RRF values: it can reorder lexical ranks, which AC-6 forbids",
+			score["both"]-score["lex-top"])
+	}
+	// Non-exact queries keep AC-2's symmetric fusion.
+	out = e.rrf(in, true, false)
+	for _, r := range out {
+		if r.nodeID == "sem-top" && r.rrfScore != RRFScale/(RRFk+1) {
+			t.Errorf("non-exact query: sem-top rrf = %d, want the full AC-2 contribution %d",
+				r.rrfScore, RRFScale/(RRFk+1))
+		}
+	}
+}
+
+func TestRetrieve_AppliesTheExactQueryRule(t *testing.T) {
+	// The AC-6 defect was not a wrong rule but an unconsulted one:
+	// IsExactQuery had no caller outside its own unit test. This test
+	// drives the rule through the public entry point, which is where
+	// AC-6 is actually owed.
+	//
+	// The fixture is built so that symmetric AC-2 fusion puts a
+	// SEMANTIC-ONLY row above a lexical one: "a-sem" is semantic rank 1
+	// (RRFScale/(RRFk+1) = 16393) and "z-lex1" is lexical rank 1 (also
+	// 16393), so the node_id tie-break lifts the semantic-only row over
+	// the lexical candidate. AC-6 forbids exactly that on an exact
+	// query.
+	lex := &fakeLexical{hits: []LexicalHit{
+		{NodeID: "z-lex1", Kind: "function", QualifiedName: "pkg.One", Path: "doc/man_docs.go", Line: 10},
+		{NodeID: "b-lex2", Kind: "function", QualifiedName: "pkg.Two", Path: "doc/man_docs.go", Line: 40},
+	}}
+	sem := &fakeSemantic{available: true, hits: []SemanticHit{
+		{NodeID: "a-sem", DocumentID: "doc-a", QualifiedName: "pkg.Other", Path: "other.go", Line: 3, CosineScore: 0.99},
+		{NodeID: "b-lex2", DocumentID: "doc-b", QualifiedName: "pkg.Two", Path: "doc/man_docs.go", Line: 40, CosineScore: 0.50},
+	}}
+	e := New(lex, sem, nil)
+
+	const exact = "doc/man_docs.go" // matches ExactPathPattern
+	if !IsExactQuery(exact) {
+		t.Fatalf("test premise broken: %q is not an exact query", exact)
+	}
+	res, err := e.Retrieve(context.Background(), Request{Query: exact, Mode: ModeFusionNoGraph})
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+	seenSemanticOnly := false
+	for i, r := range res.Rows {
+		if r.Explain.LexicalRank == 0 {
+			seenSemanticOnly = true
+			continue
+		}
+		if seenSemanticOnly {
+			t.Errorf("exact query %q: lexical row %s at position %d ranks BELOW a semantic-only row; "+
+				"AC-6 requires lexical rank to dominate. rows=%+v", exact, r.NodeID, i+1, res.Rows)
+			break
+		}
+	}
+
+	// The same providers under a NON-exact query must keep AC-2's
+	// symmetric fusion, so the rule is a rule and not a constant: the
+	// semantic-only row gets its full RRF contribution and overtakes the
+	// lexical rank-1 row on the node_id tie-break.
+	res, err = e.Retrieve(context.Background(), Request{Query: "how is a man page generated", Mode: ModeFusionNoGraph})
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+	var semRRF, lexPos, semPos int
+	for i, r := range res.Rows {
+		switch r.NodeID {
+		case "a-sem":
+			semRRF, semPos = r.Explain.RRF, i+1
+		case "z-lex1":
+			lexPos = i + 1
+		}
+	}
+	if semRRF != RRFScale/(RRFk+1) {
+		t.Errorf("non-exact query: semantic-only row RRF = %d, want the full AC-2 contribution %d",
+			semRRF, RRFScale/(RRFk+1))
+	}
+	if semPos == 0 || lexPos == 0 || semPos > lexPos {
+		t.Errorf("non-exact query: semantic-only row at %d, lexical rank-1 row at %d; "+
+			"AC-2's symmetric fusion must let the semantic-only row win the node_id tie-break",
+			semPos, lexPos)
+	}
 }

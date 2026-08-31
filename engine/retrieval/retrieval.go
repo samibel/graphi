@@ -41,6 +41,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"sort"
+
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 )
 
 // RetrievalVersion stamps the retrieval method (per AC-1 Summary). It is the
@@ -395,10 +398,62 @@ func New(lexical LexicalProvider, semantic SemanticProvider, graph GraphReader) 
 // GraphReader is the optional narrow read dependency a non-delegating
 // lexical pipeline (tests) uses for the rerank's degree signal. nil
 // disables the degree signal — the delegating HybridSearchBridge does
-// not need this because search_hybrid computes degree internally.
+// not need this for lexical rows because search_hybrid computes degree
+// internally (its score is carried as the row's lexicalScore, which
+// the rerank stage adopts unaltered). For semantic-only rows the
+// bridge never runs, so without a non-nil GraphReader semantic-only
+// rows in ModeAuto would receive a zero degree contribution — the
+// production composition must therefore wire a non-nil GraphReader
+// when the semantic path is active, so semantic-only candidates
+// receive the same bounded degree boost lexical-only rows already get
+// via the delegating bridge (SW-263 / decision-ac9 defect 3).
 type GraphReader interface {
 	InboundDegree(ctx context.Context, id string, cap int) (int, error)
 }
+
+// BoundedDegreeReader is the minimal port the production composition
+// passes through NewGraphReader. graphstore.BoundedGraphLookup
+// satisfies it (SQLiteStore, MemStore), so the production
+// composition can hand the existing graphstore.Graphstore to
+// NewGraphReader without introducing a parallel read port. The
+// retrieval module's interface surface stays dependency-light; the
+// adapter is the only place that imports graphstore for the degree
+// read.
+type BoundedDegreeReader = graphstore.BoundedGraphLookup
+
+// NewGraphReader adapts a BoundedDegreeReader into the GraphReader
+// the retrieval module consumes. The adapter is the single seam
+// between the retrieval module and the graphstore port; tests can
+// pass a hand-rolled fake, production code passes the store via
+// WithGraphReader at composition time.
+func NewGraphReader(src BoundedDegreeReader) GraphReader {
+	return &degreeAdapter{src: src}
+}
+
+// degreeAdapter implements GraphReader by counting the edges the
+// bounded incident-edge read returns. The cap is the same cap the
+// rerank uses (32, matching search_hybrid's degreeReadCap).
+type degreeAdapter struct {
+	src BoundedDegreeReader
+}
+
+func (d *degreeAdapter) InboundDegree(ctx context.Context, id string, cap int) (int, error) {
+	if d == nil || d.src == nil {
+		return 0, nil
+	}
+	edges, _, err := d.src.IncomingBounded(ctx, model.NodeId(id), cap)
+	if err != nil {
+		return 0, err
+	}
+	return len(edges), nil
+}
+
+// compile-time guard: every backend the harness ships satisfies
+// BoundedDegreeReader through BoundedGraphLookup, so a future
+// backend that forgets to will fail the build at this line.
+var (
+	_ BoundedDegreeReader = (*graphstore.SQLiteStore)(nil)
+)
 
 // Engine is the retrieval module's concrete type. Consumers depend on the
 // Retriever interface; Engine is what New returns.
@@ -417,7 +472,21 @@ func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 		return Result{}, err
 	}
 	rows := e.union(req.Query, lexHits, semHits)
-	rows = e.rrf(rows)
+	// semanticActive drives the RRF stage: when the semantic list is
+	// globally absent (no embedder, configured-but-not-ready
+	// generation, or the caller pinned ModeLexicalOnly), RRF scores
+	// zero across the whole row set so the rerank's lexical score
+	// carries every row's Final unaltered — the AC-7 byte-parity
+	// invariant. When the semantic list is active, RRF pays out per
+	// contributing source so a lexical-only or semantic-only row still
+	// receives its single-source contribution (AC-2's union, not an
+	// intersection filter).
+	//
+	// IsExactQuery is AC-6's rule, applied here because this is the one
+	// stage where the two sources are weighed against each other: on an
+	// exact identifier / path query the semantic term collapses to a
+	// bounded tie-break so lexical rank dominates.
+	rows = e.rrf(rows, state == StateReady, IsExactQuery(req.Query))
 	rows = e.applyRerankAndDiversify(ctx, req, rows)
 	res := Result{
 		Rows:        finaliseRows(rows, req.Limit),

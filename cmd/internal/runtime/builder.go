@@ -239,7 +239,22 @@ func (c *Composition) composeRetrieval(searchSvc *search.Service) resolve.Retrie
 		WeightsHash: hybridsearch.WeightsHash(),
 	}
 	semBridge := &retrieval.SearchServiceBridge{Service: searchSvc}
-	eng := retrieval.New(bridge, semBridge, nil)
+	// Wire a non-nil GraphReader over the store so semantic-only rows in
+	// ModeAuto receive the bounded degree boost lexical-only rows
+	// already get through the delegating HybridSearchBridge (SW-263 /
+	// decision-ac9 defect 3: passing nil here would silently zero the
+	// degree contribution on every semantic-only candidate the fused
+	// ablations surface). The lexical-only byte-parity path
+	// (AC-7) is unaffected: the delegating bridge carries its own
+	// degree signal on the lexicalScore and the rerank stage adopts
+	// that score unaltered without consulting this reader.
+	var graphReader retrieval.GraphReader
+	if c.store != nil {
+		if bg, ok := c.store.(graphstore.BoundedGraphLookup); ok {
+			graphReader = retrieval.NewGraphReader(bg)
+		}
+	}
+	eng := retrieval.New(bridge, semBridge, graphReader)
 	return retrievalAdapter{eng: eng}
 }
 

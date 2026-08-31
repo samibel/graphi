@@ -537,11 +537,26 @@ func unavailableExecutor(reason string) executor {
 // fields come from the retrieval's row; kind/qualified_name are looked up
 // against the store so the metadata the matcher reads (token budget
 // computation, the per-hit kind printed in the raw file) matches what the
-// other baselines carry. Rows with no source path after the node lookup
-// (package / external nodes that surface in the semantic index with
-// empty SourcePath) are skipped — the matcher cannot credit them against
-// any file-scoped judgement and the token counter's fileLines errors on
-// a directory.
+// other baselines carry.
+//
+// Eligibility: rows with no source path after the node lookup (package
+// / external nodes that surface in the v2 index with empty SourcePath)
+// are skipped — the matcher cannot credit them against any file-scoped
+// judgement and the token counter's fileLines errors on a directory.
+//
+// Note on placement: SW-263's retrieval module ALSO enforces the
+// eligibility rule in its diversify stage (AC-2 eligibility applied
+// BEFORE ranking/truncation so a backfillable eligible row can take
+// an ineligible row's slot), so this post-retrieval skip is
+// defence-in-depth, not the primary filter. For the other baselines
+// (lexical, hybrid_v1) the filter is a no-op in practice: those
+// surfaces never emit empty-path rows for an indexed corpus. For
+// semantic_name_only the post-search filter mirrors the legacy
+// behaviour the harness has always had; extending it to a pre-truncation
+// backfill would require the search service to expose an
+// over-fetch+filter API it does not today, so the asymmetry between
+// semantic_name_only (post) and the retrieval ablations (pre) remains
+// for the present re-run and is documented in the AC-9 report.
 func retrievalToRaws(ctx context.Context, idx *index, res retrieval.Result) []rawHit {
 	out := make([]rawHit, 0, len(res.Rows))
 	for _, row := range res.Rows {
@@ -672,7 +687,17 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 	case BaselineChunkOnly:
 		bridge := &retrieval.HybridSearchBridge{Deps: deps}
 		bridge.WeightsHash = hybridsearch.WeightsHash()
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		// Wire a non-nil GraphReader over the store so semantic-only rows
+		// in any ModeAuto baseline receive the bounded degree signal
+		// (SW-263 / decision-ac9 defect 3). chunk_only runs in
+		// ModeLexicalOnly so no semantic candidates are consulted and the
+		// graph reader is dormant here; the wiring is uniform across the
+		// three retrieval ablations.
+		var chunkGraph retrieval.GraphReader
+		if idx.store != nil {
+			chunkGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		}
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, chunkGraph)
 		method := "engine/retrieval (chunk-only, ModeLexicalOnly, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeLexicalOnly})
@@ -690,7 +715,11 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 		}
 		bridge := &retrieval.HybridSearchBridge{Deps: deps}
 		bridge.WeightsHash = hybridsearch.WeightsHash()
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		var fusionGraph retrieval.GraphReader
+		if idx.store != nil {
+			fusionGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		}
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, fusionGraph)
 		method := "engine/retrieval (fusion, ModeFusionNoGraph, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeFusionNoGraph})
@@ -705,7 +734,11 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 		}
 		bridge := &retrieval.HybridSearchBridge{Deps: deps}
 		bridge.WeightsHash = hybridsearch.WeightsHash()
-		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, nil)
+		var fgGraph retrieval.GraphReader
+		if idx.store != nil {
+			fgGraph = retrieval.NewGraphReader(graphstore.BoundedGraphLookup(idx.store))
+		}
+		r := retrieval.New(bridge, &retrieval.SearchServiceBridge{Service: idx.search}, fgGraph)
 		method := "engine/retrieval (fusion+graph, ModeAuto, weights " + retrieval.WeightsHash() + ")"
 		return func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeAuto})
