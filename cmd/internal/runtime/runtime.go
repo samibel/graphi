@@ -910,7 +910,20 @@ func loadSemanticState(ctx context.Context, store graphstore.Graphstore, metaDir
 	// disagreement still reads stale. See GenerationStore.DimForModel for the
 	// one case it does not detect (a model swapped behind an unchanged id).
 	if fp.Dim == 0 {
-		if d, ok, derr := table.DimForModel(ctx, emb.ID()); derr == nil && ok {
+		d, ok, derr := table.DimForModel(ctx, emb.ID())
+		switch {
+		case derr != nil:
+			// The lookup itself failed — a sidecar we cannot read is not the
+			// same thing as a fingerprint that does not match. Reporting it
+			// as `stale` (which the exact comparison would do, since fp.Dim
+			// stays 0) would tell the user to re-index when the real problem
+			// is an unreadable store. Both are fail-closed; only one is true.
+			return search.SemanticState{
+				State:     embed.StateCorrupt,
+				Requested: fp,
+				Reason:    fmt.Sprintf("semantic index unreadable: %v", derr),
+			}
+		case ok:
 			fp.Dim = d
 		}
 	}

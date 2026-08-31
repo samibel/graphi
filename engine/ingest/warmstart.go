@@ -103,9 +103,13 @@ func mintCommitGeneration() (string, error) {
 }
 
 // bumpCommitGenerationOnStore writes a fresh commit_generation value to
-// the graphstore's metadata. Called at the end of every committed graph
-// mutation (full pass and incremental) so the counter advances exactly
-// once per durable graph change. It uses the graphstore's kv_meta
+// the graphstore's metadata, so the counter advances exactly once per
+// durable graph change. Both callers publish it BEFORE the step that makes
+// their mutation irreversible — the full pass before clearing its marker,
+// the incremental pass before the Phase-2 transaction that clears the dirty
+// state — so a failed write can never leave a mutated graph naming the
+// previous identity. See each call site for why that ordering is the safe
+// one. It uses the graphstore's kv_meta
 // rather than the sidecar's ingest_semantics so the runtime can read
 // the value with the graphstore handle it already holds (the same
 // path `index.full_ingest_generation` uses), keeping the build and

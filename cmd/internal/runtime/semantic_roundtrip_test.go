@@ -126,6 +126,15 @@ func TestSemanticRoundTrip_BuildThenReloadIsReady(t *testing.T) {
 	putNode(t, ctx, gstore, "pkg.Alpha", "a.go")
 	putNode(t, ctx, gstore, "pkg.Beta", "b.go")
 
+	// Seed a REAL graph identity. Without this the store has none, both sides
+	// fall back to the documented placeholder, and they agree for a reason
+	// that has nothing to do with the round trip — so a build/reload
+	// disagreement on a non-placeholder identity would slip through. The
+	// nodes are inserted directly here, so nothing else writes this key.
+	if err := gstore.SetMetadata(ctx, "index.commit_generation", "generation-under-test"); err != nil {
+		t.Fatalf("seed graph identity: %v", err)
+	}
+
 	ing, err := ingest.New(gstore, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
 	if err != nil {
 		t.Fatalf("ingest.New: %v", err)
