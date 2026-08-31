@@ -6,7 +6,7 @@
   "runner_class": "local",
   "repo": "cobra",
   "report": "cobra-v1-report.json",
-  "report_sha256": "9de3a2fc422c2ae86c1b0d68774c465f3ffd77537d8c9505e09040ea71075039",
+  "report_sha256": "124b8b3bb166f5ed46db03124c811c058cd11484b7fd88e8c65ec2d2b282ee68",
   "dataset": "dataset.json",
   "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
   "raw": [
@@ -22,7 +22,7 @@
       "series": "latency",
       "baseline": "lexical",
       "file": "raw/latency-lexical.json",
-      "sha256": "b7c3031fb8f3085d8b00544d43dc3d58843f654fe401ef1b2cf30e93f4b32e36",
+      "sha256": "8085ef862458e5cde74ad0661a12d290d4b01765799db953d1e243fb4f9faee4",
       "collected": true,
       "samples": 120
     },
@@ -38,7 +38,7 @@
       "series": "latency",
       "baseline": "hybrid_v1",
       "file": "raw/latency-hybrid_v1.json",
-      "sha256": "53400428d79ec47c92b4bfed87aa9554a2c39f216f6ed6ac7aa2a53305ba986a",
+      "sha256": "c027e6ce96ac06c143b258e1746d234e82e6daaafaefd0e36c6a56e45d22e17f",
       "collected": true,
       "samples": 120
     },
@@ -54,7 +54,7 @@
       "series": "latency",
       "baseline": "semantic_name_only",
       "file": "raw/latency-semantic_name_only.json",
-      "sha256": "7431cffd15007ea7df81bf36c42350ea59ecee9f17366e68d4f1c5350364a221",
+      "sha256": "5a75a49fa4efb59979e47b78e44305f63f57e03415e8fe21f1e30d2a62eee32a",
       "collected": true,
       "samples": 120
     },
@@ -70,7 +70,7 @@
       "series": "latency",
       "baseline": "oracle_upper_bound",
       "file": "raw/latency-oracle_upper_bound.json",
-      "sha256": "3a018bba26f0cb6e6e7cade4cc1c8f78fdabb8e7e7a6f07ce03eb1ac8ccea69b",
+      "sha256": "394e964592091f53f68e056f86ab3201081af19a17f9ea06a54d4028ad933ec1",
       "collected": true,
       "samples": 120
     },
@@ -78,7 +78,7 @@
       "series": "hits",
       "baseline": "chunk_only",
       "file": "raw/hits-chunk_only.json",
-      "sha256": "7ebc7ca1b7152439f9fe6be75bc0f27c37181ea660fba3c7968409746e5f82a0",
+      "sha256": "934c20ad96f62760290ae6f4ca425e313a1c52014e86f58a13bff4c79eacf8f6",
       "collected": true,
       "samples": 270
     },
@@ -86,7 +86,7 @@
       "series": "latency",
       "baseline": "chunk_only",
       "file": "raw/latency-chunk_only.json",
-      "sha256": "e5120e76c97bf2b9e77425ac0c22ce29a95053a106f1ecd1541b0ddbd2d6f3dc",
+      "sha256": "d4a88165322cd603bb310a1ed9a1b560cc6849374a7aab8a54c802dcf12dd5a8",
       "collected": true,
       "samples": 120
     },
@@ -94,7 +94,7 @@
       "series": "hits",
       "baseline": "fusion",
       "file": "raw/hits-fusion.json",
-      "sha256": "c5fe6ce44ee4fa24a13ef0714a3fb5cd2cbc730e642dba3c2b35ddfe4678e2c2",
+      "sha256": "696a115349768488f7144a46401f622753f40bb1956121cf48656bd9b766e08f",
       "collected": true,
       "samples": 400
     },
@@ -102,7 +102,7 @@
       "series": "latency",
       "baseline": "fusion",
       "file": "raw/latency-fusion.json",
-      "sha256": "4378dc0d89cab9c747546b19999cff563c0d1a516769e95522fa7a2a23be0ece",
+      "sha256": "2b2823e84f8507d5fae8023c0362525832bcd5756d4edb142cb5665223052845",
       "collected": true,
       "samples": 120
     },
@@ -110,7 +110,7 @@
       "series": "hits",
       "baseline": "fusion+graph",
       "file": "raw/hits-fusion+graph.json",
-      "sha256": "17b5595187d5e71782b89e3ca6e36922298b39844d313dd98d0b44a5ffbabf56",
+      "sha256": "6ffb678b57ccda1f122feb0a6738cf66e125bb9e023f6e80d7267a4a4ee4317d",
       "collected": true,
       "samples": 400
     },
@@ -118,13 +118,13 @@
       "series": "latency",
       "baseline": "fusion+graph",
       "file": "raw/latency-fusion+graph.json",
-      "sha256": "be0ab935a4d638c9f18ac95a7fc1a71ad4f2a879e3b456b1ae5c907345e03272",
+      "sha256": "e2c34d76e0a50f62d62dbe3ff6be3a08c97a2f34eafeb37f7ed3462aa7aba6d2",
       "collected": true,
       "samples": 120
     }
   ],
   "environment": {
-    "generated_at": "2026-08-31T14:28:13Z",
+    "generated_at": "2026-08-31T19:48:51Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

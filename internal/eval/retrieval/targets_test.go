@@ -254,7 +254,7 @@ const ac9ReportPath = "docs/eval/retrieval/runs/2026-08-31-conformance-local/cob
 // conformance re-run lands; the test refuses to pass on a stale or
 // foreign CandidateSHA — the gate is a property of the reviewed tree,
 // not of whatever report the filesystem holds.
-const ac9CandidateSHA = "289d686878566e128a9c9ba4d448c318a8a0bed7"
+const ac9CandidateSHA = "e7a3c7b0285df1b00a595cc43914ee189f650741"
 
 // ac9PlaceholderSHA is the sentinel value ac9CandidateSHA holds before
 // the orchestrator has committed the AC-9 eval re-run. The gate
