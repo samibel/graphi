@@ -25,15 +25,19 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/analysis/githistory"
 	"github.com/samibel/graphi/engine/module"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/retrieval"
 	"github.com/samibel/graphi/engine/review"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -192,9 +196,11 @@ func (c *Composition) Frozen() bool { return c.contributions.Frozen() }
 func (c *Composition) Client() *client.Direct {
 	c.clientOnce.Do(func() {
 		asvc := c.contributions.Analysis()
-		d := client.NewDirect(c.graphQuery, NewSearchService(c.store, c.metaDir)).
+		searchSvc := NewSearchService(c.store, c.metaDir)
+		d := client.NewDirect(c.graphQuery, searchSvc).
 			WithAnalysis(asvc).
 			WithReview(review.NewService(asvc)).
+			WithRetrieval(c.composeRetrieval(searchSvc)).
 			WithOperationHandlers(c.operationHandlers())
 		if c.repoRoot != "" {
 			d = d.WithRepoRoot(c.repoRoot).WithGitProvider(c.gitProvider)
@@ -202,6 +208,101 @@ func (c *Composition) Client() *client.Direct {
 		c.client = d
 	})
 	return c.client
+}
+
+// composeRetrieval builds the SW-263 deep retrieval instance exactly once
+// at the post-ingest seam (AC-10): after the search service has reloaded
+// the durable semantic generation, but before the client is returned. The
+// returned resolve.Retriever is exposed on the surface client via
+// WithRetrieval, which the agent-tool dependency assembly (agentDeps)
+// carries into every resolve.Deps. No global, no locator — a single
+// composition per Composition, exactly as the spec requires.
+//
+// The bridge from engine/retrieval.Engine to resolve.Retriever lives
+// here, in the composition root: the retrieval module owns its own typed
+// Request/Result pair (the AC-1 export surface), the resolve package
+// owns its parallel narrow interface (so the agent-tools layer does
+// not import engine/retrieval), and the only place that needs both
+// types in one place is the single composition site.
+func (c *Composition) composeRetrieval(searchSvc *search.Service) resolve.Retriever {
+	if c.store == nil {
+		// No store: no retrieval. The composition root never builds a
+		// retriever without a graph to read; withDeps callers get the
+		// "no retrieval" graceful state.
+		return nil
+	}
+	bridge := &retrieval.HybridSearchBridge{
+		Deps: resolve.Deps{
+			Query:  c.graphQuery,
+			Search: searchSvc,
+		},
+		WeightsHash: hybridsearch.WeightsHash(),
+	}
+	semBridge := &retrieval.SearchServiceBridge{Service: searchSvc}
+	eng := retrieval.New(bridge, semBridge, nil)
+	return retrievalAdapter{eng: eng}
+}
+
+// retrievalAdapter is the one-place bridge from *retrieval.Engine to
+// resolve.Retriever. It converts the local Request/Result pair the
+// retrieval module owns (AC-1's exported surface) into the parallel
+// narrow types the resolve package declares. Field translation is
+// mechanical: Mode maps 0:1, the rest copy verbatim, the typed
+// degradation state carries over as a string. SW-264 is the consumer
+// this adapter is built for.
+type retrievalAdapter struct {
+	eng *retrieval.Engine
+}
+
+func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverRequest) (resolve.RetrieverResult, error) {
+	rreq := retrieval.Request{
+		Query:      req.Query,
+		Limit:      req.Limit,
+		BudgetHint: req.Budget,
+		Mode:       retrieval.Mode(req.Mode),
+	}
+	res, err := a.eng.Retrieve(ctx, rreq)
+	if err != nil {
+		return resolve.RetrieverResult{}, err
+	}
+	out := resolve.RetrieverResult{
+		Degradation: string(res.Degradation),
+		Rows:        make([]resolve.RetrieverRow, len(res.Rows)),
+	}
+	for i, row := range res.Rows {
+		out.Rows[i] = resolve.RetrieverRow{
+			NodeID: row.NodeID,
+			Path:   row.Path,
+			Line:   lineFromSpan(row.Span),
+			Span:   row.Span,
+			Final:  row.Explain.Final,
+		}
+	}
+	return out, nil
+}
+
+// lineFromSpan parses the engine-owned "start-end" span string back
+// into a 1-based start line. It is the inverse of retrieval.spanFromLine
+// and is local to the composition root so the engine module does not
+// have to expose a span parser.
+func lineFromSpan(s string) int {
+	if s == "" {
+		return 0
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] == '-' {
+			n := 0
+			for j := 0; j < i; j++ {
+				c := s[j]
+				if c < '0' || c > '9' {
+					return 0
+				}
+				n = n*10 + int(c-'0')
+			}
+			return n
+		}
+	}
+	return 0
 }
 
 // operationHandlers converts the module set's frozen handler table into the

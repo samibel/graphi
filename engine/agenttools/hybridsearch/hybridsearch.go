@@ -45,8 +45,12 @@ const (
 	DefaultMaxItems  = 20
 )
 
-// hybridWeights is the fixed integer weight model, hashed into the summary.
-type hybridWeights struct {
+// Weights is the fixed integer weight model, hashed into the summary.
+// It is the audited signal set SW-263 (engine/retrieval) REUSES — the
+// field names are the wire names so a reviewer comparing the two
+// hashes sees the same shape. Exported as a value (not a pointer) so a
+// caller cannot mutate the audit numbers from outside the package.
+type Weights struct {
 	SegmentExact  int `json:"segment_exact"`  // query token == identifier segment
 	SegmentPrefix int `json:"segment_prefix"` // token (len>=3) is a segment prefix
 	NameSubstring int `json:"name_substring"` // token appears anywhere in the name
@@ -55,14 +59,21 @@ type hybridWeights struct {
 	DegreePoint   int `json:"degree_point"`   // per bounded inbound edge
 }
 
-var defaultWeights = hybridWeights{
-	SegmentExact:  100,
-	SegmentPrefix: 40,
-	NameSubstring: 15,
-	PathSegment:   30,
-	FullCoverage:  50,
-	DegreePoint:   2,
+// DefaultWeights returns a copy of the audited weight set so external
+// callers (SW-263 engine/retrieval) cannot mutate the live model.
+func DefaultWeights() Weights {
+	return Weights{
+		SegmentExact:  100,
+		SegmentPrefix: 40,
+		NameSubstring: 15,
+		PathSegment:   30,
+		FullCoverage:  50,
+		DegreePoint:   2,
+	}
 }
+
+// defaultWeights is the private weight model hashed into the summary.
+var defaultWeights = DefaultWeights()
 
 // WeightsHash is the auditable stamp of the active weight model.
 func WeightsHash() string {
@@ -289,8 +300,13 @@ func Search(ctx context.Context, p Params) (*contract.Result, error) {
 	return out, nil
 }
 
-// tokenize lowercases, strips punctuation, drops stopwords and short tokens.
-func tokenize(q string) []string {
+// Tokenize lowercases, strips punctuation, drops stopwords and short tokens.
+// Exported for SW-263 (engine/retrieval) so the same tokenization rule
+// runs on both paths. The exported name carries the same semantics — the
+// implementation is byte-identical to the pre-SW-263 internal tokenize,
+// so search_hybrid's output and retrieval's rerank agree on which tokens
+// get scored.
+func Tokenize(q string) []string {
 	fields := strings.Fields(strings.ToLower(q))
 	out := make([]string, 0, len(fields))
 	seen := map[string]struct{}{}
@@ -311,10 +327,16 @@ func tokenize(q string) []string {
 	return out
 }
 
-// splitIdentifier splits a qualified name into lowercase word segments:
+// tokenize is the internal name kept for the search_hybrid call sites so
+// their diff against main stays minimal (no rename + no behavioural
+// change). It delegates to the exported Tokenize.
+func tokenize(q string) []string { return Tokenize(q) }
+
+// SplitIdentifier splits a qualified name into lowercase word segments:
 // dot/underscore/dash separators plus camelCase boundaries
 // ("auth.TokenValidator" → [auth token validator]).
-func splitIdentifier(qn string) []string {
+// Exported for SW-263 (engine/retrieval).
+func SplitIdentifier(qn string) []string {
 	var segs []string
 	var cur []rune
 	flush := func() {
@@ -344,9 +366,14 @@ func splitIdentifier(qn string) []string {
 	return segs
 }
 
-// splitPath splits a repo-relative path into lowercase segments including the
+// splitIdentifier is the internal name kept for the search_hybrid call
+// sites. It delegates to the exported SplitIdentifier.
+func splitIdentifier(qn string) []string { return SplitIdentifier(qn) }
+
+// SplitPath splits a repo-relative path into lowercase segments including the
 // extension-less basename parts.
-func splitPath(p string) []string {
+// Exported for SW-263 (engine/retrieval).
+func SplitPath(p string) []string {
 	var segs []string
 	for _, seg := range strings.Split(strings.ToLower(p), "/") {
 		if i := strings.LastIndex(seg, "."); i > 0 {
@@ -360,6 +387,9 @@ func splitPath(p string) []string {
 	}
 	return segs
 }
+
+// splitPath is the internal name kept for the search_hybrid call sites.
+func splitPath(p string) []string { return SplitPath(p) }
 
 func containsString(set []string, s string) bool {
 	for _, v := range set {

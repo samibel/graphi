@@ -24,6 +24,46 @@ import (
 type Deps struct {
 	Query  *query.Service
 	Search *search.Service
+	// Retrieval is the engine/retrieval instance composed once at
+	// runtime startup (SW-263). Tools that produce a hybrid retrieval
+	// (SW-264's search_hybrid/2, task_context/2) reach for it here.
+	// nil means the composition did not wire retrieval — agents
+	// should degrade to lexical-only search_hybrid/1 in that case.
+	Retrieval Retriever
+}
+
+// Retriever is the narrow interface Deps exposes for retrieval. The
+// engine/retrieval.Retriever is satisfied; declaring the interface in
+// resolve keeps the engine/agenttools/* layer free of an import on
+// engine/retrieval.
+type Retriever interface {
+	Retrieve(ctx context.Context, req RetrieverRequest) (RetrieverResult, error)
+}
+
+// RetrieverRequest is the minimal request shape Deps' Retriever
+// accepts. It mirrors engine/retrieval.Request without importing it.
+type RetrieverRequest struct {
+	Query  string
+	Limit  int
+	Mode   int // 0 = auto, 1 = lexical-only, 2 = semantic-required
+	Budget int
+}
+
+// RetrieverResult mirrors engine/retrieval.Result. The retrieval module
+// carries the real type; the engine/agenttools/* layer adapts via a
+// shim if it ever reads this directly.
+type RetrieverResult struct {
+	Rows        []RetrieverRow
+	Degradation string
+}
+
+// RetrieverRow mirrors engine/retrieval.Row.
+type RetrieverRow struct {
+	NodeID string
+	Path   string
+	Line   int
+	Span   string
+	Final  int
 }
 
 // Available reports whether the graph-backed toolchain can run at all.

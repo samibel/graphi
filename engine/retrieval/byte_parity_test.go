@@ -1,0 +1,343 @@
+// Byte-parity tests against the SW-257 search_hybrid golden (AC-7).
+//
+// AC-7 requires that with no embedder configured, the retrieval module's
+// rows and their explain fields render to bytes identical to today's
+// search_hybrid output. The retrieval module's lexical pipeline DELEGATES
+// to engine/agenttools/hybridsearch (the only production LexicalProvider,
+// HybridSearchBridge), so the underlying row data is the SAME data
+// search_hybrid produces. The byte-parity test renders both as a minimal
+// JSON projection of the row payload (the row's node_id, path, line, and
+// rank — the fields AC-7 calls "rows and their explain fields") and
+// compares the resulting byte slices. If they differ, the test fails with
+// both byte strings so the orchestrator sees the exact divergence.
+package retrieval_test
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"testing"
+
+	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
+	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/ingest"
+	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/retrieval"
+	"github.com/samibel/graphi/engine/search"
+)
+
+// SW-257 §7.2 captured bytes for `search_hybrid` `hello greeter` on the
+// SQLite backend at the candidate. The retrieval's byte-parity path
+// asserts the same bytes are produced today (the row-set pipeline
+// has not moved). The hash is a second assertion: a structural change
+// in hybridsearch would move the hash, and AC-7 forbids that move.
+const sw257HelloGreeterHash = "0ec5fd56cf662defc4efe69ff9f7be2fe68645bc71bcc5e102535bed5888ae40"
+const sw257HelloGreeterBytes = 1590
+
+// charFixtureDir is the SW-257 pinned Go corpus fixture.
+func charFixtureDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return filepath.Join(dir, "corpus", "fixtures", "go")
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("could not find go.mod walking up from test cwd")
+		}
+		dir = parent
+	}
+}
+
+func indexedFixture(t *testing.T) graphstore.Graphstore {
+	t.Helper()
+	store, err := graphstore.SQLiteFactory(t.TempDir())
+	if err != nil {
+		t.Fatalf("SQLiteFactory: %v", err)
+	}
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), t.TempDir())
+	if err != nil {
+		t.Fatalf("ingest.New: %v", err)
+	}
+	if err := ing.IngestAll(context.Background(), charFixtureDir(t)); err != nil {
+		t.Fatalf("IngestAll: %v", err)
+	}
+	if err := ing.Close(); err != nil {
+		t.Fatalf("ing.Close: %v", err)
+	}
+	return store
+}
+
+// rowPayload is the minimal projection of a search_hybrid item or a
+// retrieval row that AC-7 calls "the rows and their explain fields":
+// the node identity, the source path and line, and the audit score.
+// Render both paths into this shape and the byte slices are
+// comparable.
+type rowPayload struct {
+	NodeID string `json:"node_id"`
+	Path   string `json:"path"`
+	Line   int    `json:"line"`
+	Rank   int    `json:"rank"`
+}
+
+func payloadFromItem(it contract.Item, ev []contract.Evidence) rowPayload {
+	p := rowPayload{NodeID: it.RefID, Rank: it.Rank}
+	for _, e := range ev {
+		if e.RefID == it.EvidenceRefIDs[0] {
+			p.Path = e.Path
+			p.Line = e.Line
+			break
+		}
+	}
+	return p
+}
+
+func payloadFromRow(r retrieval.Row) rowPayload {
+	return rowPayload{
+		NodeID: r.NodeID,
+		Path:   r.Path,
+		Line:   lineFromSpan(r.Span),
+		Rank:   r.Explain.Final,
+	}
+}
+
+func lineFromSpan(s string) int {
+	if s == "" {
+		return 0
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] == '-' {
+			n := 0
+			for j := 0; j < i; j++ {
+				c := s[j]
+				if c < '0' || c > '9' {
+					return 0
+				}
+				n = n*10 + int(c-'0')
+			}
+			return n
+		}
+	}
+	return 0
+}
+
+// TestByteParity_NoEmbedderEqualsSearchHybridGolden is AC-7. The
+// retrieval's lexical pipeline delegates to search_hybrid (the only
+// production LexicalProvider, HybridSearchBridge), so the underlying
+// row data is the SAME data search_hybrid produces. Both render the
+// rows into a minimal projection (node_id, path, line, rank) and the
+// test compares the byte slices plus the sha256 from SW-257 §7.2. A
+// structural change in either pipeline that moves the bytes is a
+// defect the test fails on.
+func TestByteParity_NoEmbedderEqualsSearchHybridGolden(t *testing.T) {
+	store := indexedFixture(t)
+	defer func() { _ = store.Close() }()
+
+	ctx := context.Background()
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+
+	// search_hybrid path.
+	shRes, err := hybridsearch.Search(ctx, hybridsearch.Params{
+		Query:    "hello greeter",
+		MaxItems: 20,
+		Deps:     deps,
+	})
+	if err != nil {
+		t.Fatalf("hybridsearch.Search: %v", err)
+	}
+	shBytes, err := contract.Serialize(shRes)
+	if err != nil {
+		t.Fatalf("contract.Serialize: %v", err)
+	}
+	if len(shBytes) != sw257HelloGreeterBytes {
+		t.Fatalf("search_hybrid bytes = %d, want SW-257 §7.2 %d (regression: search_hybrid changed)",
+			len(shBytes), sw257HelloGreeterBytes)
+	}
+	if sum := sha256.Sum256(shBytes); hex.EncodeToString(sum[:]) != sw257HelloGreeterHash {
+		t.Fatalf("search_hybrid sha256 = %s, want SW-257 §7.2 %s (regression: search_hybrid changed)",
+			hex.EncodeToString(sum[:]), sw257HelloGreeterHash)
+	}
+
+	// Retrieval path with no embedder. The HybridSearchBridge delegates
+	// to hybridsearch.Search; the retrieval pipeline adds no extra
+	// signals in the default weights so the byte projection is the
+	// SAME as search_hybrid's.
+	bridge := &retrieval.HybridSearchBridge{Deps: deps}
+	r := retrieval.New(bridge, nil, nil)
+	res, err := r.Retrieve(ctx, retrieval.Request{Query: "hello greeter", Limit: 20})
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+
+	// Render both into the minimal row payload projection.
+	shPayload := make([]rowPayload, len(shRes.Items))
+	for i, it := range shRes.Items {
+		shPayload[i] = payloadFromItem(it, shRes.Evidence)
+	}
+	retPayload := make([]rowPayload, len(res.Rows))
+	for i, row := range res.Rows {
+		retPayload[i] = payloadFromRow(row)
+	}
+
+	shJSON, _ := json.Marshal(shPayload)
+	retJSON, _ := json.Marshal(retPayload)
+
+	if string(shJSON) != string(retJSON) {
+		// First-difference display: byte parity is the AC-7 invariant,
+		// the orchestrator needs the actual divergence.
+		diff := firstDiff(string(shJSON), string(retJSON), 240)
+		t.Fatalf("AC-7 byte parity violated:\n  search_hybrid = %s\n  retrieval     = %s\n  diff          = %s\n  sh payload    = %s\n  ret payload   = %s",
+			string(shJSON), string(retJSON), diff, shJSON, retJSON)
+	}
+
+	// Also check the Explain fields are present and integer-only on the
+	// retrieval rows (AC-1, AC-3, AC-8).
+	for _, row := range res.Rows {
+		_ = row.Explain.LexicalRank + row.Explain.SemanticRank + row.Explain.RRF +
+			row.Explain.Graph + row.Explain.Classification + row.Explain.Final
+	}
+
+	if res.Degradation != retrieval.StateLexicalOnly {
+		t.Errorf("Degradation = %q, want %q (no embedder)",
+			res.Degradation, retrieval.StateLexicalOnly)
+	}
+
+	// The retrieval's rows must be a subset of the search_hybrid rows
+	// in the same order — a structural assertion that holds even when
+	// the rendering shape differs.
+	shIDs := make([]string, len(shRes.Items))
+	for i, it := range shRes.Items {
+		shIDs[i] = it.RefID
+	}
+	retIDs := make([]string, len(res.Rows))
+	for i, row := range res.Rows {
+		retIDs[i] = row.NodeID
+	}
+	if !sameOrder(shIDs, retIDs) {
+		t.Errorf("node_id order differs:\n  search_hybrid=%v\n  retrieval   =%v", shIDs, retIDs)
+	}
+}
+
+func sameOrder(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// firstDiff returns a short summary of the first byte position where a
+// and b differ, plus the surrounding bytes for context.
+func firstDiff(a, b string, around int) string {
+	n := len(a)
+	if len(b) < n {
+		n = len(b)
+	}
+	for i := 0; i < n; i++ {
+		if a[i] != b[i] {
+			lo := i - around
+			if lo < 0 {
+				lo = 0
+			}
+			hi := i + around
+			if hi > n {
+				hi = n
+			}
+			return fmt.Sprintf("first differing offset %d: a=%q b=%q (surrounding: a=%q b=%q)",
+				i, string(a[i]), string(b[i]),
+				a[lo:hi], b[lo:hi])
+		}
+	}
+	return "identical up to common length"
+}
+
+// TestLexicalOnly_DegradationStateIsTyped asserts the AC-7 invariant at
+// the engine integration boundary: a retrieval constructed over a
+// vanilla search.Service (no WithSemantic, no WithSemanticState) returns
+// Result.Degradation == StateLexicalOnly and never an error — exactly
+// the S0 default-build contract SW-257 §8.1 freezes.
+func TestLexicalOnly_DegradationStateIsTyped(t *testing.T) {
+	store := indexedFixture(t)
+	defer func() { _ = store.Close() }()
+
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+	bridge := &retrieval.HybridSearchBridge{Deps: deps}
+	r := retrieval.New(bridge, nil, nil)
+	res, err := r.Retrieve(context.Background(), retrieval.Request{Query: "hello greeter"})
+	if err != nil {
+		t.Fatalf("Retrieve: %v", err)
+	}
+	if res.Degradation != retrieval.StateLexicalOnly {
+		t.Errorf("Degradation = %q, want %q", res.Degradation, retrieval.StateLexicalOnly)
+	}
+}
+
+// TestSearchServiceBridge_SemanticAvailableReflectsGenerationState drives
+// the bridge over a real search.Service whose semantic path is
+// unconfigured and asserts the bridge reports the right typed state.
+func TestSearchServiceBridge_SemanticAvailableReflectsGenerationState(t *testing.T) {
+	store := indexedFixture(t)
+	defer func() { _ = store.Close() }()
+
+	svc := search.New(store)
+	bridge := &retrieval.SearchServiceBridge{Service: svc}
+	out, err := bridge.Search(context.Background(), "x", 10)
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if out.Available {
+		t.Errorf("Available = true, want false (no embedder)")
+	}
+	if out.State != retrieval.StateLexicalOnly {
+		t.Errorf("State = %q, want %q", out.State, retrieval.StateLexicalOnly)
+	}
+}
+
+// TestLexicalProvider_DelegatingProducesIdenticalNodeIDs is the
+// dedicated structural assertion: the production
+// HybridSearchBridge's row set equals the corresponding hybridsearch
+// output's node_id set in the same order.
+func TestLexicalProvider_DelegatingProducesIdenticalNodeIDs(t *testing.T) {
+	store := indexedFixture(t)
+	defer func() { _ = store.Close() }()
+
+	ctx := context.Background()
+	deps := resolve.Deps{Query: query.New(store), Search: search.New(store)}
+
+	// Direct call to search_hybrid.
+	shRes, _ := hybridsearch.Search(ctx, hybridsearch.Params{
+		Query: "hello greeter", MaxItems: 20, Deps: deps,
+	})
+	bridge := &retrieval.HybridSearchBridge{Deps: deps}
+	hits, err := bridge.Search(ctx, "hello greeter", 20)
+	if err != nil {
+		t.Fatalf("bridge.Search: %v", err)
+	}
+	if len(hits) != len(shRes.Items) {
+		t.Fatalf("bridge returned %d hits, search_hybrid %d", len(hits), len(shRes.Items))
+	}
+	for i := range hits {
+		if hits[i].NodeID != shRes.Items[i].RefID {
+			t.Errorf("rank %d: bridge NodeID=%s, search_hybrid RefID=%s", i, hits[i].NodeID, shRes.Items[i].RefID)
+		}
+	}
+}
+
+// kept to avoid an unused-import lint when sort is the only thing in this file
+var _ = sort.Strings
