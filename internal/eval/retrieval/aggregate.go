@@ -81,7 +81,8 @@ type AggregateReport struct {
 // AggregateMethod states the arithmetic inline.
 const AggregateMethod = "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared " +
 	"EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); " +
-	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, oracle_upper_bound) and the report's " +
+	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, fusion+graph, oracle_upper_bound — " +
+	"seven baselines; the SW-263 review flagged the previous four-baseline framing as stale) and the report's " +
 	"baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. " +
 	"So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report " +
 	"still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that " +

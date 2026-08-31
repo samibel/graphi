@@ -127,6 +127,22 @@ func (s *Service) WithSemanticState(state SemanticState) *Service {
 	return s
 }
 
+// SemanticState returns the typed GenerationStore state the search
+// service was last plumbed with. It is the accessor the SW-263
+// composition root uses to wire the model and index fingerprints the
+// retrieval Summary must stamp on the configured path: the model id
+// comes from Requested.ModelID, and the active generation's canonical
+// form (when state is StateReady) is the index fingerprint. Returning
+// the zero SemanticState when WithSemanticState has never been called
+// is the "no embedder configured" signal — both fingerprints read ""
+// in that case, exactly the AC-7 lexical-only contract.
+func (s *Service) SemanticState() SemanticState {
+	if s == nil {
+		return SemanticState{}
+	}
+	return s.semanticState
+}
+
 // DefaultResultLimit is the maximum number of matches returned when the caller
 // passes a non-positive limit.
 const DefaultResultLimit = 100

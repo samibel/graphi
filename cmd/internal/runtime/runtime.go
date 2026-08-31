@@ -825,7 +825,7 @@ func NewSearchServiceWithEmbedder(store graphstore.Graphstore, metaDir string, e
 					} else {
 						vecs := make([]embed.Vector, len(rows))
 						for i, r := range rows {
-							vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+							vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 						}
 						if rerr := index.Rebuild(context.Background(), vecs); rerr != nil {
 							fmt.Fprintf(os.Stderr, "graphi: vectors reload failed: %v\n", rerr)

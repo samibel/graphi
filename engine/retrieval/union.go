@@ -51,25 +51,43 @@ func (r row) toRow() Row {
 // deduped row set, preserving lexical rank, semantic rank, and the
 // lexical provider's pre-computed score per row (AC-2).
 //
-// Dedupe key: node_id is the primary identity in graphi, so the
-// production dedupe is on node_id. AC-2's "dedupe on document_id
-// then node_id" wording reflects the hierarchical intent (a
-// document_id groups nodes; a node_id distinguishes within a
-// document). With v1 schemas document_id is a deterministic function
-// of node_id, so the two keys are 1:1; with v2 schemas document_id
-// can be shared across nodes with identical body+doc text, but those
-// rows are still distinct by node_id and the dedupe preserves them
-// as separate rows. A lexical row (no document_id) and a semantic
-// row for the same node_id therefore merge — the lexical row's
-// absence of document_id is the "wildcard" the spec's hierarchical
-// key implies.
+// Dedupe key: the AC-2 contract is `(document_id, node_id)` —
+// document_id groups nodes that share one body+doc embedding, node_id
+// distinguishes within a document. The fallback when a row carries
+// no document_id is `node_id` alone (a documented "wildcard"): the
+// lexical provider hands hits over with no document_id, and those
+// rows must still merge with their semantic counterparts over the
+// shared node_id.
 //
-// Defensive consistency: when both lexical and semantic rows arrive
-// for the same node_id with non-empty document_ids, the document_ids
-// are required to agree (they are both deterministic functions of
-// the node's text, so a disagreement signals an embedder bug). The
-// merge prefers the semantic document_id as the row's document_id
-// when the semantic side carries one.
+// Implementation: the union maintains two logical keying spaces
+//
+//   - the WILDCARD key `{nodeID}` — what every lexical row inserts
+//     under, and what a semantic row falls back to when no exact
+//     match exists and the wildcard row has no document_id yet;
+//   - the EXACT key `{documentID, nodeID}` — what every semantic row
+//     inserts under, and what a duplicate semantic row finds.
+//
+// A semantic row's lookup is: try the exact key first; if absent,
+// try the wildcard key ONLY when the wildcard row's document_id is
+// still empty (i.e., the lexical row has not yet merged with any
+// semantic row). This makes the wildcard match exactly the merge
+// the spec describes — "a lexical row (no document_id) and a
+// semantic row for the same node_id merge" — and nothing more.
+//
+// Two rows that share a node_id but differ in document_id do NOT
+// merge (each semantic row inserts under its own exact key; the
+// wildcard fallback refused the second one because the wildcard
+// row already carries the first semantic document_id). Two rows
+// that share a document_id but differ in node_id do NOT merge
+// (different exact keys, no wildcard fallback applies). The v2
+// "one document, many nodes" case survives as distinct rows.
+//
+// Defensive consistency: when two semantic hits for the same
+// (document_id, node_id) key arrive, the row is updated in place
+// (the duplicate-key dedupe); a disagreement on document_id for
+// the same node_id within the same semantic provider is an
+// embedder bug and silently keeps the first one (deterministic
+// embedders do not produce this).
 //
 // Ties break on canonical node_id ascending so two runs over the
 // same inputs produce the same row set in the same order — a
@@ -84,13 +102,33 @@ func (r row) toRow() Row {
 // future pass cannot be inflated by a top-K spot vacated by an
 // ineligible row).
 func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row {
-	byID := map[string]*row{}
+	// rowKey is the hierarchical (documentID, nodeID) merge key. A row
+	// stored under rowKey{"", nodeID} is the "wildcard" record a
+	// lexical row occupies; a row stored under rowKey{docID, nodeID}
+	// is the exact record a semantic row occupies. The empty
+	// document_id is reserved for the wildcard; the spec's v1
+	// document_id formula makes this empty-string collision impossible
+	// (every v1 / v2 document_id is non-empty) but the wildcard
+	// discipline is checked anyway (see assertion below).
+	type rowKey struct {
+		documentID string
+		nodeID     string
+	}
+	byKey := map[rowKey]*row{}
+	// exactWildcardNodeID is the lookup key the semantic pass uses
+	// to find a lexical-only row waiting to absorb a document_id.
+	const wildcard = ""
 
 	for i, h := range lex {
-		r := byID[h.NodeID]
+		// Lexical rows insert under the WILDCARD key: they have no
+		// document_id, so the wildcard entry IS their identity, and
+		// any semantic row for the same node_id merges into them
+		// (the documented fallback).
+		k := rowKey{documentID: wildcard, nodeID: h.NodeID}
+		r := byKey[k]
 		if r == nil {
 			r = &row{nodeID: h.NodeID, documentID: "", kind: h.Kind, qualifiedName: h.QualifiedName, path: h.Path, span: spanFromLine(h.Line)}
-			byID[h.NodeID] = r
+			byKey[k] = r
 		}
 		if r.lexicalRank == 0 || i+1 < r.lexicalRank {
 			r.lexicalRank = i + 1
@@ -123,10 +161,26 @@ func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row 
 	// architectures (AC-8).
 	sem = quantisedOrder(sem)
 	for i, h := range sem {
-		r := byID[h.NodeID]
+		// Lookup order: exact (document_id, node_id) first; on miss,
+		// the wildcard row is the merge partner ONLY when it carries
+		// no document_id yet (the merge with the first semantic hit
+		// for this node_id is what the spec calls out). After that
+		// first merge, the wildcard row has a document_id, and any
+		// subsequent semantic row for a DIFFERENT document_id on the
+		// same node_id stays as its own distinct row — the v2
+		// "one node, multiple document_ids" case the hierarchical
+		// key is built for.
+		exact := rowKey{documentID: h.DocumentID, nodeID: h.NodeID}
+		wild := rowKey{documentID: wildcard, nodeID: h.NodeID}
+		r := byKey[exact]
+		if r == nil && h.DocumentID != "" {
+			if cand, ok := byKey[wild]; ok && cand.documentID == "" {
+				r = cand
+			}
+		}
 		if r == nil {
 			r = &row{nodeID: h.NodeID, documentID: h.DocumentID, kind: h.Kind, qualifiedName: h.QualifiedName, path: h.Path, span: spanFromLine(h.Line)}
-			byID[h.NodeID] = r
+			byKey[exact] = r
 		}
 		if r.documentID == "" {
 			r.documentID = h.DocumentID
@@ -157,8 +211,8 @@ func (e *Engine) union(query string, lex []LexicalHit, sem []SemanticHit) []row 
 			r.ineligible = true
 		}
 	}
-	out := make([]row, 0, len(byID))
-	for _, r := range byID {
+	out := make([]row, 0, len(byKey))
+	for _, r := range byKey {
 		out = append(out, *r)
 	}
 	sort.SliceStable(out, func(i, j int) bool {

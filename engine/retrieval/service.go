@@ -117,12 +117,32 @@ func (b *HybridSearchBridge) Search(ctx context.Context, query string, limit int
 // module's semantic provider. It is the one place the SW-263 retrieval
 // module reads from the SW-059 lexical service and the SW-261 typed
 // semantic state.
+//
+// The bridge carries the model and index fingerprints the retrieval's
+// Summary must stamp on the configured path (SW-263 review / item 4). The
+// Fingerprints() method exposes them to the retrieval module's typed
+// summary; the runtime wires them up at composition time from the
+// GenerationStore.Active fingerprint and the embedder's identity.
 type SearchServiceBridge struct {
 	Service          *search.Service
 	State            embed.State
 	Reason           string
 	ModelFingerprint string
 	IndexFingerprint string
+}
+
+// Fingerprints is the typed seam the retrieval module's semanticOutcome
+// type-asserts on to populate Summary.ModelFingerprint and
+// Summary.IndexFingerprint. Both return "" on the lexical-only path; the
+// bridge therefore returns the configured values verbatim when set, and
+// empty when unset (the legacy fixture path). The retrieval module does
+// not interpret the strings — it stamps them so an audit reader can
+// verify which embedding space served the row set.
+func (b *SearchServiceBridge) Fingerprints() (model, index string) {
+	if b == nil {
+		return "", ""
+	}
+	return b.ModelFingerprint, b.IndexFingerprint
 }
 
 // Available reports whether the underlying service has a configured
@@ -160,7 +180,7 @@ func (b *SearchServiceBridge) Search(ctx context.Context, query string, limit in
 			Path:          h.SourcePath,
 			Line:          h.Line,
 			Column:        h.Column,
-			DocumentID:    h.NodeID,
+			DocumentID:    h.DocumentID,
 			CosineScore:   h.Score,
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -238,26 +239,58 @@ func TestDeriveBudgets(t *testing.T) {
 	})
 }
 
+// ac9ReportPath is the explicit named report the AC-9 gate reads.
+// SW-263 review / item 6 binds the gate to a fixed report path rather
+// than picking the latest by filesystem mtime — a fresh checkout can
+// therefore gate a stale or foreign run if the orchestrator committed
+// one with a different name. The path points at the SW-263 conformance
+// re-run the orchestrator regenerates AFTER the conformance fix lands;
+// the orchestrator updates this constant alongside its SHA, and a
+// mismatch fails closed. Skipping is reserved for the no-such-file case.
+const ac9ReportPath = "docs/eval/retrieval/runs/2026-08-31-conformance-local/cobra-v1-report.json"
+
+// ac9CandidateSHA is the candidate SHA the AC-9 gate asserts the named
+// report carries. The orchestrator updates this constant AFTER the
+// conformance re-run lands; the test refuses to pass on a stale or
+// foreign CandidateSHA — the gate is a property of the reviewed tree,
+// not of whatever report the filesystem holds.
+const ac9CandidateSHA = "PENDING_REVIEW_RUN_SHA"
+
+// ac9PlaceholderSHA is the sentinel value ac9CandidateSHA holds before
+// the orchestrator has committed the AC-9 eval re-run. The gate
+// refuses to pass while the placeholder is in place — a green suite
+// that asserts nothing is the same failure mode the SW-263 reviewer
+// already rejected twice (silent skip on a missing file; silent pass
+// on a stale SHA). The placeholder is therefore a hard failure with a
+// message that names the only legitimate fix path: update
+// ac9CandidateSHA to the SHA the orchestrator just committed.
+const ac9PlaceholderSHA = "PENDING_REVIEW_RUN_SHA"
+
 // TestReport_MeetsAC9GateAgainstTargetsFile is the AC-9 comparison test: it
 // loads the IMMUTABLE docs/eval/retrieval-targets.json (the SW-258 pin
-// that this story may NOT edit) and the checked-in AC-9 evaluation report
-// under docs/eval/retrieval/runs/<date>-local/cobra-v1-report.json, and
-// asserts:
+// that this story may NOT edit) and the EXPLICIT NAMED AC-9 evaluation
+// report at ac9ReportPath, and asserts:
 //
+//   - the report's CandidateSHA matches ac9CandidateSHA (the reviewed
+//     SHA); a stale or foreign run fails closed;
 //   - on every conceptual stratum the targets file lists (nl_behaviour,
 //     architecture_flow), the fusion baseline's ndcg@10 over the dev split
 //     meets or exceeds must_reach (best + 0.10, capped at the ceiling);
 //   - on exact_identifier, the fusion baseline's Top-1 over the dev split
 //     meets or exceeds the no-regression floor the targets file pins.
 //
-// If the run directory has not yet been produced (the report is generated
-// by cmd/retrieval-eval and only lands on the PR when the orchestrator
-// commits it) the test skips with a clear message rather than failing
-// closed — a missing report is not a regression, a stale one is. The
-// targets file path is fixed; the run directory path is the most recent
-// <date>-local directory under docs/eval/retrieval/runs/, so the test
-// picks up whatever the orchestrator committed last without the file
-// being edited by hand.
+// Fail-closed posture (SW-263 review / item 6, second finding):
+// a missing report, an unreadable report, an unparseable report, a
+// version mismatch, a CandidateSHA mismatch, AND the placeholder
+// ac9CandidateSHA ALL fail the test loudly. A passing gate that
+// skipped its checks is the same defect the reviewer rejected on
+// the missing-report path earlier in this track; extending it to
+// every other way the gate could silently no-op is the same fix.
+//
+// The path and SHA are fixed. The orchestrator renames the report
+// (and updates the SHA) only when a new AC-9 run lands. SW-263
+// review / item 6 makes the gate a property of the reviewed tree,
+// not of filesystem mtime.
 //
 // This is the test pattern AC-9 calls for ("extend the existing
 // internal/eval/retrieval/targets_test.go pattern rather than inventing a
@@ -277,10 +310,21 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 		t.Errorf("targets fusion_min_delta = %v, want %v (drift between files)", tg.FusionMinDelta, FusionMinDelta)
 	}
 
-	reportPath := latestLocalCobraReport(t)
+	// The placeholder SHA must fail loudly before any file IO. A green
+	// gate on PENDING_REVIEW_RUN_SHA is exactly the silent-pass defect
+	// the reviewer rejected: the test would assert nothing about the
+	// review, but the orchestrator would see PASS and ship the story.
+	// Refuse the placeholder explicitly.
+	if ac9CandidateSHA == ac9PlaceholderSHA {
+		t.Fatalf("AC-9 gate CandidateSHA is still the placeholder %q. The orchestrator must update ac9CandidateSHA in internal/eval/retrieval/targets_test.go to the SHA of the committed AC-9 re-run BEFORE this gate can pass; a placeholder pass is the silent-skip defect the SW-263 reviewer already rejected.",
+			ac9PlaceholderSHA)
+	}
+
+	reportPath := resolveRepoPath(t, ac9ReportPath)
 	reportRaw, err := os.ReadFile(reportPath)
 	if err != nil {
-		t.Skipf("AC-9 report %s not present: %v — the orchestrator commits it after the eval run; this test is a gate, not a derivation", reportPath, err)
+		t.Fatalf("AC-9 report %s unreadable: %v. The gate is a property of the reviewed tree (SW-263 review / item 6); a missing report fails closed — the orchestrator regenerates the report under the named path, not at the latest mtime, and a missing report is a build error, not a skip.",
+			reportPath, err)
 	}
 	var rep Report
 	if err := json.Unmarshal(reportRaw, &rep); err != nil {
@@ -288,6 +332,15 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 	}
 	if err := CheckReportVersion(&rep); err != nil {
 		t.Fatalf("report version: %v", err)
+	}
+
+	// Bind the gate to the reviewed candidate SHA. A stale or foreign
+	// CandidateSHA fails closed: the report is whatever the filesystem
+	// holds, but the gate is a property of the reviewed tree, not a
+	// property of the filesystem (SW-263 review / item 6).
+	if rep.Reproducible.CandidateSHA != ac9CandidateSHA {
+		t.Fatalf("AC-9 gate CandidateSHA mismatch: report = %q, gate = %q. The report was generated against a different tree; re-run the eval against the reviewed commit or update the gate constant alongside the new report.",
+			rep.Reproducible.CandidateSHA, ac9CandidateSHA)
 	}
 
 	// Confirm the report cites the dataset the targets were derived from.
@@ -372,36 +425,26 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 	}
 }
 
-// latestLocalCobraReport returns the most recently modified cobra-v1 report
-// under docs/eval/retrieval/runs/, picking the latest <date>-local
-// directory. The orchestrator commits exactly one such directory per
-// accepted AC-9 run; tests do not write to that tree, so the listing is a
-// pure read over what is already checked in.
-func latestLocalCobraReport(t *testing.T) string {
+// listRunDirs lists every <date>-<runner>-local run directory under
+// docs/eval/retrieval/runs/. Kept as a small helper the gate could
+// fall back to (the named-path gate above is the one the SW-263 review
+// requires; this list is for diagnostic messages only).
+func listRunDirs(t *testing.T) []string {
 	t.Helper()
 	root := resolveRepoPath(t, "docs/eval/retrieval/runs")
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		t.Fatalf("read %s: %v", root, err)
 	}
-	var latest os.DirEntry
-	var latestMod int64
+	var out []string
 	for _, e := range entries {
 		if !e.IsDir() || !strings.HasSuffix(e.Name(), "-local") {
 			continue
 		}
-		fi, err := e.Info()
-		if err != nil {
-			continue
-		}
-		if latest == nil || fi.ModTime().UnixNano() > latestMod {
-			latest, latestMod = e, fi.ModTime().UnixNano()
-		}
+		out = append(out, e.Name())
 	}
-	if latest == nil {
-		return filepath.Join(root, "no-such-run", "cobra-v1-report.json")
-	}
-	return filepath.Join(root, latest.Name(), "cobra-v1-report.json")
+	sort.Strings(out)
+	return out
 }
 
 // resolveRepoPath walks up from the test cwd to the directory holding

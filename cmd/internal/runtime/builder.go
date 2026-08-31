@@ -35,6 +35,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/analysis"
 	"github.com/samibel/graphi/engine/analysis/githistory"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/module"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/retrieval"
@@ -224,6 +225,14 @@ func (c *Composition) Client() *client.Direct {
 // owns its parallel narrow interface (so the agent-tools layer does
 // not import engine/retrieval), and the only place that needs both
 // types in one place is the single composition site.
+//
+// SW-263 review / item 4: the SearchServiceBridge now carries the model
+// and index fingerprints the retrieval's Summary stamps on the
+// configured path. The values come from the same GenerationStore.Active
+// fingerprint the search service's typed state plumbs (model id from the
+// embedder, canonical fingerprint from the active generation); on the
+// lexical-only path both read "" and the Summary stamps empty
+// fingerprints — exactly the contract AC-7 names.
 func (c *Composition) composeRetrieval(searchSvc *search.Service) resolve.Retriever {
 	if c.store == nil {
 		// No store: no retrieval. The composition root never builds a
@@ -238,7 +247,12 @@ func (c *Composition) composeRetrieval(searchSvc *search.Service) resolve.Retrie
 		},
 		WeightsHash: hybridsearch.WeightsHash(),
 	}
-	semBridge := &retrieval.SearchServiceBridge{Service: searchSvc}
+	modelFP, indexFP := retrievalFingerprints(c, searchSvc)
+	semBridge := &retrieval.SearchServiceBridge{
+		Service:          searchSvc,
+		ModelFingerprint: modelFP,
+		IndexFingerprint: indexFP,
+	}
 	// Wire a non-nil GraphReader over the store so semantic-only rows in
 	// ModeAuto receive the bounded degree boost lexical-only rows
 	// already get through the delegating HybridSearchBridge (SW-263 /
@@ -256,6 +270,38 @@ func (c *Composition) composeRetrieval(searchSvc *search.Service) resolve.Retrie
 	}
 	eng := retrieval.New(bridge, semBridge, graphReader)
 	return retrievalAdapter{eng: eng}
+}
+
+// retrievalFingerprints extracts the model and index fingerprints the
+// retrieval Summary must stamp on the configured path. Both read ""
+// when the semantic path is not active (no embedder, configured-but
+// not-ready generation) so the Summary's typed state carries the
+// fingerprint the row set was actually built against — never a
+// fabricated identity. The model id comes from the configured embedder
+// when one is present (the runtime never exposes the embedder
+// directly, so we read the typed state the search service already
+// carries); the index fingerprint comes from the GenerationStore.Active
+// generation's canonical form (the same value the typed-state plumbing
+// validates against).
+func retrievalFingerprints(c *Composition, searchSvc *search.Service) (model, index string) {
+	if searchSvc == nil {
+		return "", ""
+	}
+	// The search service's plumbed state carries the requested
+	// fingerprint (the model id + schema + dim + graph generation); on
+	// a ready state the active generation's canonical string is what
+	// goes into IndexFingerprint. The model id alone is the
+	// ModelFingerprint; an operator reading the summary then knows
+	// which embedder served and which persisted generation they came
+	// from, without naming the runtime's internal GenerationStore.
+	st := searchSvc.SemanticState()
+	if st.Requested.ModelID != "" {
+		model = st.Requested.ModelID
+	}
+	if st.State == embed.StateReady {
+		index = st.Requested.Canonical()
+	}
+	return model, index
 }
 
 // retrievalAdapter is the one-place bridge from *retrieval.Engine to

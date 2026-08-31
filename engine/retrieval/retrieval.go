@@ -289,9 +289,20 @@ type SemanticOutcome struct {
 
 // rerankWeights is the integer weight set the rerank stage applies. The
 // field names are the wire names the summary's WeightsHash digests.
+//
+// AC-4 (SW-263 review / item 3): the set the rerank APPLIES and the set
+// the audit hash stamps MUST be the same object — a stamp that does not
+// describe the arithmetic it stamps is worse than no stamp. The previous
+// implementation read hybridsearch.DefaultWeights at the call site
+// (which includes NameSubstring) but hashed a smaller struct that
+// omitted it, so a tuned NameSubstring would move rankings without
+// moving the audit hash. We carry every integer weight the rerank uses
+// in this struct, including NameSubstring, so the hash is a complete
+// fingerprint of the active arithmetic.
 type rerankWeights struct {
 	SegmentExact     int `json:"segment_exact"`
 	SegmentPrefix    int `json:"segment_prefix"`
+	NameSubstring    int `json:"name_substring"`
 	PathSegment      int `json:"path_segment"`
 	FullCoverage     int `json:"full_coverage"`
 	DefinitionBonus  int `json:"definition_bonus"`
@@ -301,13 +312,17 @@ type rerankWeights struct {
 }
 
 // defaultRerankWeights reuses the audited hybridsearch integer signals
-// (SegmentExact, SegmentPrefix, PathSegment, DegreePoint) at their published
-// values; adds a definition bonus and a vendor/generated penalty. The
-// hybridsearch constants are imported verbatim so the two paths share the
-// same audited scoring discipline.
+// (SegmentExact, SegmentPrefix, NameSubstring, PathSegment, FullCoverage,
+// DegreePoint) at their published values; adds a definition bonus and a
+// vendor/generated penalty. The hybridsearch constants are imported
+// verbatim so the two paths share the same audited scoring discipline.
+// Every field here is read by the rerank at apply-time AND hashed into
+// Summary.WeightsHash, so a tuning pass that moves one number moves
+// rankings AND the audit hash together.
 var defaultRerankWeights = rerankWeights{
 	SegmentExact:     100,
 	SegmentPrefix:    40,
+	NameSubstring:    15,
 	PathSegment:      30,
 	FullCoverage:     50,
 	DefinitionBonus:  20,
@@ -329,12 +344,17 @@ func WeightsHash() string {
 // weightsSortedCopy returns the rerank weights sorted by JSON field name
 // (so the SHA in WeightsHash is independent of struct field order).
 func weightsSortedCopy(w rerankWeights) []byte {
-	// Marshal with sorted keys via an intermediate map.
+	// Marshal with sorted keys via an intermediate map. The map MUST
+	// carry every field the rerank actually applies (including
+	// NameSubstring) — see the AC-4 audit-discipline comment on
+	// rerankWeights for why this list and the apply-time struct must
+	// be the same.
 	m := map[string]int{
 		"definition_bonus":  w.DefinitionBonus,
 		"degree_point":      w.DegreePoint,
 		"full_coverage":     w.FullCoverage,
 		"generated_penalty": w.GeneratedPenalty,
+		"name_substring":    w.NameSubstring,
 		"path_segment":      w.PathSegment,
 		"segment_exact":     w.SegmentExact,
 		"segment_prefix":    w.SegmentPrefix,
@@ -487,7 +507,8 @@ func (e *Engine) Retrieve(ctx context.Context, req Request) (Result, error) {
 	// exact identifier / path query the semantic term collapses to a
 	// bounded tie-break so lexical rank dominates.
 	rows = e.rrf(rows, state == StateReady, IsExactQuery(req.Query))
-	rows = e.applyRerankAndDiversify(ctx, req, rows)
+	semanticActive := state == StateReady
+	rows = e.applyRerankAndDiversify(ctx, req, rows, semanticActive)
 	res := Result{
 		Rows:        finaliseRows(rows, req.Limit),
 		Degradation: state,
@@ -525,7 +546,7 @@ func normaliseRequest(req Request) Request {
 // rrfScore, and the sort is rrfScore desc, node_id asc (deterministic).
 // Diversification still applies because AC-5 is independent of the
 // rerank stage.
-func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row) []row {
+func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows []row, semanticActive bool) []row {
 	if req.Mode == ModeFusionNoGraph {
 		for i := range rows {
 			rows[i].graphScore = 0
@@ -540,7 +561,7 @@ func (e *Engine) applyRerankAndDiversify(ctx context.Context, req Request, rows 
 		})
 		return e.diversify(rows, req.Limit)
 	}
-	rows = e.rerank(ctx, req.Query, rows)
+	rows = e.rerank(ctx, req.Query, rows, semanticActive)
 	return e.diversify(rows, req.Limit)
 }
 

@@ -14,8 +14,19 @@ import (
 const (
 	RunIndexFile = "run.json"
 	ReportFile   = "report.json"
-	DatasetFile  = "dataset.json"
-	RawDir       = "raw"
+	// CobraV1ReportFile is the dataset-named alias the AC-9 gate reads.
+	// Every other historical run directory also carries a `cobra-v1-report.json`
+	// alongside `report.json` (they are byte-identical); the gate binds to
+	// the dataset-named path because it is invariant across harnesses —
+	// `report.json` is a convention the runner chose, the dataset-named
+	// alias is the contract. The runner writes both; the index lists
+	// `report.json` (the canonical name `-aggregate` reads) and the
+	// dataset-named file is the gate's reading copy. SW-263 review /
+	// item 6: bind the gate to the dataset-named path, fail closed if
+	// it is missing (gate is a property of the tree, not of mtime).
+	CobraV1ReportFile = "cobra-v1-report.json"
+	DatasetFile       = "dataset.json"
+	RawDir            = "raw"
 )
 
 // RawFileRef is one raw file as the index lists it: its digest is over the
@@ -140,6 +151,14 @@ func WriteRunDir(dir string, res *Result, dataset *Loaded, date string) (*RunInd
 	}
 	if err := os.WriteFile(filepath.Join(dir, ReportFile), reportBytes, 0o644); err != nil {
 		return nil, fmt.Errorf("retrieval: write report: %w", err)
+	}
+	// Dataset-named alias the AC-9 gate reads (CobraV1ReportFile). Same
+	// bytes, second copy: the index's ReportSHA256 is the canonical
+	// report's digest, and the gate's reading copy is byte-identical.
+	// The runner writes both so a fresh checkout has the file the gate
+	// expects without the orchestrator having to manually copy it.
+	if err := os.WriteFile(filepath.Join(dir, CobraV1ReportFile), reportBytes, 0o644); err != nil {
+		return nil, fmt.Errorf("retrieval: write %s: %w", CobraV1ReportFile, err)
 	}
 	index.ReportSHA256 = SHA256Hex(reportBytes)
 	if err := os.WriteFile(filepath.Join(dir, DatasetFile), dataset.Raw, 0o644); err != nil {

@@ -108,7 +108,7 @@ func TestSemanticSearch_IndexPersistReloadE2E(t *testing.T) {
 	}
 	vecs := make([]embed.Vector, len(rows))
 	for i, r := range rows {
-		vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+		vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	reloaded := embed.NewIndex()
 	if err := reloaded.Rebuild(ctx, vecs); err != nil {

@@ -80,16 +80,28 @@ func indexedFixture(t *testing.T) graphstore.Graphstore {
 	return store
 }
 
-// rowPayload is the minimal projection of a search_hybrid item or a
+// rowPayload is the structural projection of a search_hybrid item and a
 // retrieval row that AC-7 calls "the rows and their explain fields":
-// the node identity, the source path and line, and the audit score.
-// Render both paths into this shape and the byte slices are
-// comparable.
+// the node identity, the embedding-space document id (SW-260), the
+// source path and line, and the audit score. The five-field projection
+// is the FULL row payload the AC-7 contract names — DocumentID is the
+// AC-2 identity the previous 4-field projection omitted, so a structural
+// change in either pipeline that moves any of these fields is a defect
+// the test fails on.
+//
+// search_hybrid's Rank is the audit score (an integer), and on the
+// lexical-only path retrieval's Explain.Final IS that same audit score
+// (the rerank's bonus/penalty signals are skipped on the lexical-only
+// path, per the SW-263 review's AC-4-vs-AC-7 resolution). LexicalRank is
+// retrieval-internal: search_hybrid's items don't expose the lexical
+// position, so it is not part of the byte-parity projection — a
+// retrieval-side change to LexicalRank does not break AC-7 conformance.
 type rowPayload struct {
-	NodeID string `json:"node_id"`
-	Path   string `json:"path"`
-	Line   int    `json:"line"`
-	Rank   int    `json:"rank"`
+	NodeID     string `json:"node_id"`
+	DocumentID string `json:"document_id"`
+	Path       string `json:"path"`
+	Line       int    `json:"line"`
+	Rank       int    `json:"rank"`
 }
 
 func payloadFromItem(it contract.Item, ev []contract.Evidence) rowPayload {
@@ -106,10 +118,11 @@ func payloadFromItem(it contract.Item, ev []contract.Evidence) rowPayload {
 
 func payloadFromRow(r retrieval.Row) rowPayload {
 	return rowPayload{
-		NodeID: r.NodeID,
-		Path:   r.Path,
-		Line:   lineFromSpan(r.Span),
-		Rank:   r.Explain.Final,
+		NodeID:     r.NodeID,
+		DocumentID: r.DocumentID,
+		Path:       r.Path,
+		Line:       lineFromSpan(r.Span),
+		Rank:       r.Explain.Final,
 	}
 }
 

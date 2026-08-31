@@ -1,6 +1,7 @@
 package retrieval
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -27,11 +28,26 @@ func exportFixtureRun(t *testing.T) (dir string, res *Result, ds *Loaded) {
 func TestAggregate_RoundTripReproducesEveryPublishedNumber(t *testing.T) {
 	dir, _, _ := exportFixtureRun(t)
 
-	for _, f := range []string{RunIndexFile, ReportFile, DatasetFile,
+	for _, f := range []string{RunIndexFile, ReportFile, CobraV1ReportFile, DatasetFile,
 		RawFileName(RawSeriesHits, BaselineLexical), RawFileName(RawSeriesLatency, BaselineOracle)} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(f))); err != nil {
 			t.Errorf("run dir lacks %s: %v", f, err)
 		}
+	}
+	// The two report files MUST be byte-identical: CobraV1ReportFile is the
+	// AC-9 gate's reading copy, ReportFile is what -aggregate reads; a
+	// drift between them is a build defect the gate would not catch on
+	// its own (the gate reads CobraV1ReportFile only).
+	a, err := os.ReadFile(filepath.Join(dir, ReportFile))
+	if err != nil {
+		t.Fatalf("read %s: %v", ReportFile, err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, CobraV1ReportFile))
+	if err != nil {
+		t.Fatalf("read %s: %v", CobraV1ReportFile, err)
+	}
+	if !bytes.Equal(a, b) {
+		t.Errorf("%s and %s diverged; the gate's reading copy must be byte-identical to the canonical report", ReportFile, CobraV1ReportFile)
 	}
 
 	run, err := ReadRunDir(dir)

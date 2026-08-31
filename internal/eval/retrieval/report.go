@@ -12,12 +12,24 @@ import (
 // the arithmetic (Evaluate/Aggregate/PercentileInt64). They move
 // independently, as in internal/evalreport, and a reader refuses a version it
 // does not know rather than half-reading it.
+//
 // FormatVersion 2 added `dataset.query_ids` to the report citation (SW-258 review
 // round 3). The field is load-bearing — `Reproduce` compares it against the dataset
 // rebuilt from bytes, and that check is what catches a query removed coherently from
 // dataset, report and raw. A v1 report has no such invariant to check, so it is
 // REFUSED rather than read as if it did: accepting it would let the older, weaker
 // shape pass a gate written for the stronger one.
+//
+// HarnessVersion moved from `/1` to `/2` with the SW-263 repair pass:
+// the harness now exercises the production SemanticDocument v2
+// document source (not the name-only v1) and the production document
+// source the embedding space was built from, the retrieval module's
+// hierarchical (document_id, node_id) dedupe key is in scope, the
+// quantised-cosine ordering precedes the per-source truncation, and the
+// fingerprint audit (model + index) is stamped on the Summary. A
+// /1-shaped report cannot be read under a gate written for the
+// stronger shape — it is REFUSED rather than half-read, so a stale or
+// foreign run cannot gate a fresh checkout (SW-263 review / item 6).
 const (
 	FormatVersion  = 2
 	HarnessVersion = "retrieval-eval/2"

@@ -14,13 +14,16 @@ number that does not follow from its samples is an error, not a rounding note.
 
 ## What is measured
 
-Four baselines, executed by name and in this order:
+Seven baselines, executed by name and in this order:
 
 | Baseline | Seam | Notes |
 |---|---|---|
 | `lexical` | `engine/search.Service.Search` | the store's FTS5 bm25 ranking over qualified names (SQLite, the shipped backend) |
 | `hybrid_v1` | `engine/agenttools/hybridsearch.Search` (`search_hybrid/1`) | lexical retrieval + identifier/path/degree signals, no vectors; the weights hash is stamped in `method` |
-| `semantic_name_only` | `engine/search.Service.SemanticSearch` | over the name-only documents; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
+| `semantic_name_only` | `engine/search.Service.SemanticSearch` | over the v1 name-only documents; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
+| `chunk_only` | `engine/retrieval.Retrieve` (`ModeLexicalOnly`) | the SW-263 lexical-only pipeline; no semantic candidates consulted |
+| `fusion` | `engine/retrieval.Retrieve` (`ModeFusionNoGraph`) | the SW-263 fused pipeline; integer RRF over lexical + semantic, no graph rerank |
+| `fusion+graph` | `engine/retrieval.Retrieve` (`ModeAuto`) | the SW-263 fused pipeline with the bounded graph rerank on top |
 | `oracle_upper_bound` | the judged spans themselves, grade ≥ 1 ranked by grade | the ceiling the scorer can reach; proves the metric code, not a retriever |
 
 Per baseline, per query: the top-10 hits, then **Top-1, Recall@5, Recall@10, MRR@10, NDCG@10,

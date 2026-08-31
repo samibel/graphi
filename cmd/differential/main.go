@@ -194,7 +194,7 @@ func run(repoDir, datasetPath, newRunDir, prevRunDir string, w io.Writer) error 
 	}
 	vecs := make([]embed.Vector, len(rows))
 	for i, r := range rows {
-		vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+		vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	if err := index.Rebuild(ctx, vecs); err != nil {
 		return err

@@ -441,7 +441,7 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 		fmt.Fprintf(log, "retrieval-eval: generation store open: %v\n", gerr)
 		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
 	}
-	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V1DocumentSource{}, index, genStore, embed.GraphGenerationPlaceholder)
+	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V2DocumentSource{}, index, genStore, embed.GraphGenerationPlaceholder)
 	_ = genStore.Close()
 	if err != nil {
 		fmt.Fprintf(log, "retrieval-eval: generate+persist: %v\n", err)
@@ -481,7 +481,7 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 	}
 	vecs := make([]embed.Vector, len(rows))
 	for i, r := range rows {
-		vecs[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+		vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	if rerr := index.Rebuild(ctx, vecs); rerr != nil {
 		fmt.Fprintf(log, "retrieval-eval: index rebuild: %v\n", rerr)

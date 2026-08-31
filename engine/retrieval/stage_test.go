@@ -57,6 +57,237 @@ func TestUnion_DedupesOnNodeIDAcrossSources(t *testing.T) {
 	}
 }
 
+// TestUnion_HierarchicalKeyDocumentThenNode exercises the SW-263 review /
+// AC-2 fix: the merge key is (document_id, node_id) when the semantic
+// side carries a real DocumentID (SW-261's SemanticDocument.DocumentID),
+// with node_id as the documented fallback when no document id exists.
+// Four observations must hold, and they distinguish the two orderings
+// of the hierarchical key so a regression that swaps their roles is
+// caught:
+//
+//  1. The merged row's documentID is the semantic side's REAL document
+//     id (e.g. "doc-X-v2"), NOT a fabricated node_id-as-document_id.
+//     The pre-fix implementation fabricated DocumentID = NodeID and
+//     lost the persisted semantic identity (review item 1).
+//
+//  2. Two semantic rows that share a document_id but have different
+//     node_ids (the v2 "multiple nodes share one document" case)
+//     remain DISTINCT rows — the second component of the key,
+//     node_id, distinguishes within the document. (a)
+//
+//  3. Two semantic rows that share a node_id but have different
+//     document_ids remain DISTINCT rows — the first component of
+//     the key, document_id, distinguishes across document versions
+//     of the same node. The v1→v2 schema migration makes this the
+//     newly-possible case (a node's text hash can change when the
+//     document source changes; the prior implementation merged
+//     them, which is the AC-2 defect the review found). (b)
+//
+//  4. A lexical-only row (no document_id) still merges with a
+//     semantic row on the same node_id, but ONLY with the first
+//     such semantic row: the missing document_id is the "wildcard"
+//     the spec's "node_id fallback when no document id exists"
+//     implies, and the wildcard is consumed by the first merge.
+func TestUnion_HierarchicalKeyDocumentThenNode(t *testing.T) {
+	e := &Engine{}
+	lex := []LexicalHit{
+		// Lexical-only: no document_id. Should merge with the first
+		// semantic row for node X (the missing-document_id wildcard).
+		{NodeID: "X", Kind: "function", QualifiedName: "pkg.X", Path: "x.go", Line: 10},
+		// Lexical-only: no semantic counterpart.
+		{NodeID: "Y", Kind: "function", QualifiedName: "pkg.Y", Path: "y.go", Line: 20},
+	}
+	sem := []SemanticHit{
+		// Carries a REAL document id different from node_id — the v2 case.
+		{NodeID: "X", DocumentID: "doc-X-v2", Kind: "function", QualifiedName: "pkg.X", Path: "x.go", Line: 10, CosineScore: 0.91},
+		// A second semantic row for X with a different document_id —
+		// the v2 "one node, two documents" case (case 3 below). It
+		// must NOT merge with the wildcard X row (the wildcard was
+		// already consumed by the first semantic merge) and must
+		// remain a distinct row carrying doc-X-v3.
+		{NodeID: "X", DocumentID: "doc-X-v3", Kind: "function", QualifiedName: "pkg.X", Path: "x.go", Line: 10, CosineScore: 0.88},
+		// Two nodes sharing one document — must remain distinct rows (case 2).
+		{NodeID: "P", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.P", Path: "p.go", Line: 1, CosineScore: 0.80},
+		{NodeID: "Q", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.Q", Path: "q.go", Line: 1, CosineScore: 0.79},
+		// Two semantic rows sharing a node_id (Z) but differing in
+		// document_id (case 3 explicitly) — must remain distinct rows.
+		{NodeID: "Z", DocumentID: "doc-Z-a", Kind: "function", QualifiedName: "pkg.Z", Path: "z.go", Line: 5, CosineScore: 0.85},
+		{NodeID: "Z", DocumentID: "doc-Z-b", Kind: "function", QualifiedName: "pkg.Z", Path: "z.go", Line: 5, CosineScore: 0.84},
+	}
+	got := e.union("q", lex, sem)
+
+	// Observation 1 — the merged X row carries the real document id,
+	// not a fabricated NodeID-as-DocumentID. The X row that absorbed
+	// the first semantic hit (doc-X-v2) carries it; the second
+	// semantic hit (doc-X-v3) for X is a SEPARATE row at the
+	// (doc-X-v3, X) exact key, not the wildcard row.
+	//
+	// Expected row count:
+	//   X (lexical) + first semantic X (doc-X-v2)        -> wildcard X  = 1 row
+	//   second semantic X (doc-X-v3)                    -> exact key    = 1 row
+	//   Y (lexical-only)                                 -> wildcard Y  = 1 row
+	//   P semantic (doc-shared)                          -> exact P      = 1 row
+	//   Q semantic (doc-shared)                          -> exact Q      = 1 row
+	//   Z semantic (doc-Z-a)                             -> exact Z-a    = 1 row
+	//   Z semantic (doc-Z-b)                             -> exact Z-b    = 1 row
+	// Total = 7 rows.
+	if len(got) != 7 {
+		t.Fatalf("union size = %d, want 7 (X-wildcard, X-v3-exact, Y, P, Q, Z-a, Z-b); got nodes = %v",
+			len(got), nodeIDsOf(got))
+	}
+	// Scan for both X rows by (node_id, document_id) — Go map iteration
+	// order is undefined, so a byID[node_id] lookup cannot distinguish
+	// the wildcard X from the exact-key X (doc-X-v3).
+	var xWild, xV3 *row
+	for i := range got {
+		if got[i].nodeID != "X" {
+			continue
+		}
+		switch got[i].documentID {
+		case "doc-X-v2":
+			xWild = &got[i]
+		case "doc-X-v3":
+			xV3 = &got[i]
+		default:
+			t.Errorf("X row carries unexpected documentID %q (want doc-X-v2 or doc-X-v3)", got[i].documentID)
+		}
+	}
+	// (X-via-wildcard): carries doc-X-v2 from the first semantic merge;
+	// BOTH ranks are > 0 because the wildcard merged the lexical row.
+	if xWild == nil {
+		t.Errorf("the X wildcard row (which should carry doc-X-v2 from the first semantic merge) is missing")
+	} else {
+		if xWild.documentID != "doc-X-v2" {
+			t.Errorf("X-wildcard row documentID = %q, want doc-X-v2 (the real semantic document id from the wildcard merge, not NodeID=X fabricated)",
+				xWild.documentID)
+		}
+		if xWild.lexicalRank == 0 || xWild.semanticRank == 0 {
+			t.Errorf("X-wildcard did not merge across sources: lex=%d sem=%d, want both > 0",
+				xWild.lexicalRank, xWild.semanticRank)
+		}
+	}
+	// (X-via-exact): the second semantic hit for X with doc-X-v3.
+	// The previous implementation merged it into the wildcard row,
+	// which is the AC-2 defect the review found.
+	if xV3 == nil {
+		t.Errorf("the second semantic row for X (doc-X-v3) was merged into the X wildcard row instead of remaining a distinct row at the exact (doc-X-v3, X) key. Got %d rows.", len(got))
+	} else if xV3.lexicalRank != 0 {
+		t.Errorf("X-v3 exact row lexicalRank = %d, want 0 (semantic-only, no lexical counterpart)", xV3.lexicalRank)
+	}
+
+	// Observation 2 — P and Q share doc-shared but are distinct rows.
+	var pRow, qRow *row
+	for i := range got {
+		switch got[i].nodeID {
+		case "P":
+			pRow = &got[i]
+		case "Q":
+			qRow = &got[i]
+		}
+	}
+	if pRow == nil || pRow.documentID != "doc-shared" {
+		t.Errorf("P row missing or wrong documentID: %+v", pRow)
+	}
+	if qRow == nil || qRow.documentID != "doc-shared" {
+		t.Errorf("Q row missing or wrong documentID: %+v", qRow)
+	}
+
+	// Observation 3 — Z's two semantic rows (doc-Z-a, doc-Z-b) are
+	// distinct. They live under the exact keys (doc-Z-a, Z) and
+	// (doc-Z-b, Z).
+	var za, zb *row
+	for i := range got {
+		if got[i].nodeID != "Z" {
+			continue
+		}
+		switch got[i].documentID {
+		case "doc-Z-a":
+			za = &got[i]
+		case "doc-Z-b":
+			zb = &got[i]
+		default:
+			t.Errorf("Z row carries unexpected documentID %q", got[i].documentID)
+		}
+	}
+	if za == nil || zb == nil {
+		t.Errorf("Z's two semantic rows did not both survive: doc-Z-a present=%v doc-Z-b present=%v (got nodes = %v)",
+			za != nil, zb != nil, nodeIDsOf(got))
+	}
+
+	// Observation 4 — Y is lexical-only with no semantic counterpart.
+	var yRow *row
+	for i := range got {
+		if got[i].nodeID == "Y" {
+			yRow = &got[i]
+		}
+	}
+	if yRow == nil {
+		t.Error("Y missing from union")
+	} else if yRow.semanticRank != 0 || yRow.documentID != "" {
+		t.Errorf("Y = %+v, want lexical-only (semanticRank=0, documentID=\"\")", yRow)
+	}
+}
+
+// TestUnion_HierarchicalKeyDistinctOrderings is the targeted witness the
+// SW-263 review required: a regression test that distinguishes the two
+// orderings of the (document_id, node_id) hierarchical key. A flat
+// node_id key would pass case (a) and fail case (b); a flat document_id
+// key would pass case (b) and fail case (a). Only the hierarchical key
+// passes both.
+//
+// (a) Two rows sharing a document_id but differing in node_id stay
+//
+//	distinct (the "multiple nodes share one document" v2 case).
+//
+// (b) Two rows sharing a node_id but differing in document_id stay
+//
+//	distinct (the "multiple document versions of one node" v2 case
+//	that the previous flat-node_id key collapsed into a single row).
+func TestUnion_HierarchicalKeyDistinctOrderings(t *testing.T) {
+	e := &Engine{}
+	// Case (a): shared document_id, distinct node_ids.
+	// A flat-document_id key would merge these into one row. The
+	// hierarchical key keeps them distinct because node_id differs.
+	caseA := e.union("q", nil, []SemanticHit{
+		{NodeID: "p", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.p", Path: "p.go", Line: 1, CosineScore: 0.80},
+		{NodeID: "q", DocumentID: "doc-shared", Kind: "function", QualifiedName: "pkg.q", Path: "q.go", Line: 1, CosineScore: 0.79},
+	})
+	if len(caseA) != 2 {
+		t.Errorf("case (a) shared document_id, distinct node_ids: union size = %d, want 2 (a flat-document_id key would have collapsed these)",
+			len(caseA))
+	}
+
+	// Case (b): shared node_id, distinct document_ids.
+	// A flat-node_id key would merge these into one row. The
+	// hierarchical key keeps them distinct because document_id differs.
+	caseB := e.union("q", nil, []SemanticHit{
+		{NodeID: "z", DocumentID: "doc-z-a", Kind: "function", QualifiedName: "pkg.z", Path: "z.go", Line: 1, CosineScore: 0.85},
+		{NodeID: "z", DocumentID: "doc-z-b", Kind: "function", QualifiedName: "pkg.z", Path: "z.go", Line: 1, CosineScore: 0.84},
+	})
+	if len(caseB) != 2 {
+		t.Errorf("case (b) shared node_id, distinct document_ids: union size = %d, want 2 (a flat-node_id key would have collapsed these; that is the SW-263 review / AC-2 defect)",
+			len(caseB))
+	}
+	// Sanity: the two Z rows carry distinct document_ids (otherwise the
+	// dedupe happened for the wrong reason).
+	gotDocs := map[string]bool{}
+	for _, r := range caseB {
+		gotDocs[r.documentID] = true
+	}
+	if !gotDocs["doc-z-a"] || !gotDocs["doc-z-b"] {
+		t.Errorf("case (b) row document_ids = %v, want both doc-z-a and doc-z-b", gotDocs)
+	}
+}
+
+// nodeIDsOf is a debug helper for union failure messages.
+func nodeIDsOf(rs []row) []string {
+	out := make([]string, len(rs))
+	for i, r := range rs {
+		out[i] = r.nodeID + "(" + r.documentID + ")"
+	}
+	return out
+}
+
 func TestUnion_TieBreakIsCanonicalNodeID(t *testing.T) {
 	// Verify the dedupe-stable tie-break by constructing rows directly
 	// (bypassing the rank assignment in union, which would always give
@@ -259,7 +490,7 @@ func TestRerank_UsesAuditedHybridsearchSignals(t *testing.T) {
 		{nodeID: "prefix", lexicalRank: 2, kind: "function", qualifiedName: "pkg.Tokenizer", path: "auth.go", rrfScore: 1000},
 		{nodeID: "noHit", lexicalRank: 3, kind: "function", qualifiedName: "pkg.Other", path: "unrelated.go", rrfScore: 1000},
 	}
-	out := e.rerank(context.Background(), "token validator", in)
+	out := e.rerank(context.Background(), "token validator", in, true)
 	if out[0].nodeID != "exact" {
 		t.Errorf("top rank = %s, want exact (SegmentExact should beat SegmentPrefix on the same query)", out[0].nodeID)
 	}
@@ -291,7 +522,7 @@ func TestRerank_DefinitionBonusPromotesDeclarationKinds(t *testing.T) {
 		{nodeID: "method", kind: "method", qualifiedName: "pkg.F", path: "x.go", rrfScore: 1000},
 		{nodeID: "var", kind: "variable", qualifiedName: "pkg.V", path: "x.go", rrfScore: 1000},
 	}
-	out := e.rerank(context.Background(), "F", in)
+	out := e.rerank(context.Background(), "F", in, true)
 	if out[0].nodeID != "method" {
 		t.Errorf("definition rank = %s, want method", out[0].nodeID)
 	}
@@ -305,9 +536,83 @@ func TestRerank_GeneratedPathCarriesClassificationPenalty(t *testing.T) {
 		{nodeID: "g", kind: "function", qualifiedName: "pkg.X", path: "vendor/foo.go", rrfScore: 1000},
 		{nodeID: "h", kind: "function", qualifiedName: "pkg.Y", path: "src/bar.go", rrfScore: 1000},
 	}
-	out := e.rerank(context.Background(), "X", in)
+	out := e.rerank(context.Background(), "X", in, true)
 	if out[0].nodeID != "h" {
 		t.Errorf("classification demotion failed: top = %s, want h", out[0].nodeID)
+	}
+}
+
+// TestRerank_DelegatingRowAppliesDefinitionBonusAndClassificationPenalty
+// (SW-263 review / item 3): on the fused path, a delegating row
+// (lexicalScore != 0) receives the rerank's own signals on top of the
+// audited search_hybrid score. The previous implementation skipped both
+// the definition bonus and the vendor/generated classification penalty
+// on the delegating path because the lexical score was treated as
+// "already final"; the fix derives isDefinition and pathClass from the
+// row's own fields so the rerank's intent is uniform.
+func TestRerank_DelegatingRowAppliesDefinitionBonusAndClassificationPenalty(t *testing.T) {
+	e := &Engine{}
+	makeRows := func() []row {
+		return []row{
+			// Delegating row (lexicalScore set), kind="function" → definition.
+			// path="vendor/x.go" → generated. Rerank should apply BOTH the
+			// definition bonus (+20) AND the generated penalty (-25) on the
+			// fused path.
+			{nodeID: "d", kind: "function", qualifiedName: "pkg.D", path: "vendor/x.go", lexicalScore: 1000, rrfScore: 100},
+			// Delegating row, NOT a definition, NOT classified.
+			{nodeID: "n", kind: "variable", qualifiedName: "pkg.N", path: "src/n.go", lexicalScore: 1000, rrfScore: 100},
+		}
+	}
+	fused := e.rerank(context.Background(), "anything", makeRows(), true /* semanticActive */)
+	if fused[0].nodeID != "n" {
+		t.Errorf("fused top = %s, want n (variable; definition bonus should not lift d past the penalty)",
+			fused[0].nodeID)
+	}
+	if fused[0].graphScore != 1000 {
+		t.Errorf("fused n.graphScore = %d, want 1000 (no bonus/penalty on a non-definition, non-classified row)",
+			fused[0].graphScore)
+	}
+	if fused[0].classScore != 0 {
+		t.Errorf("fused n.classScore = %d, want 0 (no classification)", fused[0].classScore)
+	}
+	// Find d's row and verify both signals applied.
+	var dRow row
+	for _, r := range fused {
+		if r.nodeID == "d" {
+			dRow = r
+		}
+	}
+	if dRow.graphScore != 1000+defaultRerankWeights.DefinitionBonus {
+		t.Errorf("d.graphScore = %d, want 1000+%d (definition bonus applied on delegating fused path)",
+			dRow.graphScore, defaultRerankWeights.DefinitionBonus)
+	}
+	if dRow.classScore != defaultRerankWeights.GeneratedPenalty {
+		t.Errorf("d.classScore = %d, want %d (generated penalty applied on delegating fused path)",
+			dRow.classScore, defaultRerankWeights.GeneratedPenalty)
+	}
+
+	// On the lexical-only path the same rows MUST NOT receive the bonus
+	// or the penalty: the AC-7 byte-parity contract requires the final
+	// scores to equal the search_hybrid audit scores verbatim. Fresh
+	// inputs (rerank mutates in place — the fused call above already
+	// filled pathClass / classScore on a shared input).
+	lexicalOnly := e.rerank(context.Background(), "anything", makeRows(), false /* semanticActive */)
+	for _, r := range lexicalOnly {
+		if r.graphScore != r.lexicalScore {
+			t.Errorf("lexical-only path: %s.graphScore = %d, want lexicalScore=%d (AC-7 byte parity forbids bonus)",
+				r.nodeID, r.graphScore, r.lexicalScore)
+		}
+		if r.classScore != 0 {
+			t.Errorf("lexical-only path: %s.classScore = %d, want 0 (AC-7 byte parity forbids penalty)",
+				r.nodeID, r.classScore)
+		}
+		if r.pathClass != "" {
+			t.Errorf("lexical-only path: %s.pathClass = %q, want empty (AC-7 forbids reclassifying on the lexical-only path)",
+				r.nodeID, r.pathClass)
+		}
+		if r.isDefinition {
+			t.Errorf("lexical-only path: %s.isDefinition = true, want false", r.nodeID)
+		}
 	}
 }
 
@@ -706,7 +1011,7 @@ func TestSanity_SummaryContainsPinnedConstants(t *testing.T) {
 // chars = 8 bytes), same shape as hybridsearch.WeightsHash.
 func TestSanity_WeightsHashIsHexShortSha256(t *testing.T) {
 	// Independent computation: hash the JSON of the sorted weight map.
-	keys := []string{"definition_bonus", "degree_point", "full_coverage", "generated_penalty", "path_segment", "segment_exact", "segment_prefix", "vendor_penalty"}
+	keys := []string{"definition_bonus", "degree_point", "full_coverage", "generated_penalty", "name_substring", "path_segment", "segment_exact", "segment_prefix", "vendor_penalty"}
 	m := map[string]int{}
 	bs, _ := json.Marshal(defaultRerankWeights)
 	_ = json.Unmarshal(bs, &m)
