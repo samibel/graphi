@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/2",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "1aab5022df61d240d9b257e079f6f2dbde68849c+dirty",
+    "candidate_sha": "289d686878566e128a9c9ba4d448c318a8a0bed7",
     "runner_class": "local",
     "repo": {
       "name": "cobra",
@@ -26909,23 +26909,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 227,
+        "value": 200,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 392,
+        "value": 375,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 305.1875,
+        "value": 391.890625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -26937,23 +26937,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2238,
+        "value": 2176,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4690,
+        "value": 4424,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 307.171875,
+        "value": 393.890625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -26965,23 +26965,23 @@
       "baseline": "semantic_name_only",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 11563,
+        "value": 12745,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 15793,
+        "value": 20387,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 307.171875,
+        "value": 393.890625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -27002,13 +27002,13 @@
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 5,
+        "value": 3,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 307.171875,
+        "value": 393.890625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -27020,23 +27020,23 @@
       "baseline": "chunk_only",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2253,
+        "value": 2263,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 5256,
+        "value": 5405,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 308.34375,
+        "value": 393.96875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -27048,23 +27048,23 @@
       "baseline": "fusion",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 15492,
+        "value": 14284,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 26351,
+        "value": 22878,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 308.640625,
+        "value": 394.671875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -27076,23 +27076,23 @@
       "baseline": "fusion+graph",
       "index_ms": {
         "status": "measured",
-        "value": 217,
+        "value": 211,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 17686,
+        "value": 17393,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 24565,
+        "value": 23249,
         "unit": "us"
       },
       "latency_samples": 120,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 324.234375,
+        "value": 395.140625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -27102,7 +27102,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-08-31T14:27:23Z",
+    "generated_at": "2026-08-31T14:28:13Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

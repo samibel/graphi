@@ -6,7 +6,7 @@
   "runner_class": "local",
   "repo": "cobra",
   "report": "cobra-v1-report.json",
-  "report_sha256": "e8c6ea1a4a5267487c6745daed900c86cdec409347df8170dd48a8d32c077455",
+  "report_sha256": "9de3a2fc422c2ae86c1b0d68774c465f3ffd77537d8c9505e09040ea71075039",
   "dataset": "dataset.json",
   "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
   "raw": [
@@ -22,7 +22,7 @@
       "series": "latency",
       "baseline": "lexical",
       "file": "raw/latency-lexical.json",
-      "sha256": "ba4cacb745a507dc22c8a038b3073ad748587687500c04603292cbbee043dfea",
+      "sha256": "b7c3031fb8f3085d8b00544d43dc3d58843f654fe401ef1b2cf30e93f4b32e36",
       "collected": true,
       "samples": 120
     },
@@ -38,7 +38,7 @@
       "series": "latency",
       "baseline": "hybrid_v1",
       "file": "raw/latency-hybrid_v1.json",
-      "sha256": "eff5a2813db974c58113f113222093cf13314d0affa3f3de763ac5249663f8fd",
+      "sha256": "53400428d79ec47c92b4bfed87aa9554a2c39f216f6ed6ac7aa2a53305ba986a",
       "collected": true,
       "samples": 120
     },
@@ -54,7 +54,7 @@
       "series": "latency",
       "baseline": "semantic_name_only",
       "file": "raw/latency-semantic_name_only.json",
-      "sha256": "821f8a4007bce09ff1f4beaa82dcc393dd1719cc44efdfab907976cdc29429ff",
+      "sha256": "7431cffd15007ea7df81bf36c42350ea59ecee9f17366e68d4f1c5350364a221",
       "collected": true,
       "samples": 120
     },
@@ -70,7 +70,7 @@
       "series": "latency",
       "baseline": "oracle_upper_bound",
       "file": "raw/latency-oracle_upper_bound.json",
-      "sha256": "92bab9cd78cf2f5b2da08afe7e81079e9f20c892feab698078407947fe941431",
+      "sha256": "3a018bba26f0cb6e6e7cade4cc1c8f78fdabb8e7e7a6f07ce03eb1ac8ccea69b",
       "collected": true,
       "samples": 120
     },
@@ -86,7 +86,7 @@
       "series": "latency",
       "baseline": "chunk_only",
       "file": "raw/latency-chunk_only.json",
-      "sha256": "2ffdb2bcb7423c02b33dc95c447b86521c146aa1d5fabe0cdcdbb991ead964dd",
+      "sha256": "e5120e76c97bf2b9e77425ac0c22ce29a95053a106f1ecd1541b0ddbd2d6f3dc",
       "collected": true,
       "samples": 120
     },
@@ -102,7 +102,7 @@
       "series": "latency",
       "baseline": "fusion",
       "file": "raw/latency-fusion.json",
-      "sha256": "382f70b2977519b9f98b08764830b6237d410b15081b78a6a2e2f31ee16757bf",
+      "sha256": "4378dc0d89cab9c747546b19999cff563c0d1a516769e95522fa7a2a23be0ece",
       "collected": true,
       "samples": 120
     },
@@ -118,13 +118,13 @@
       "series": "latency",
       "baseline": "fusion+graph",
       "file": "raw/latency-fusion+graph.json",
-      "sha256": "df47eb6883c3969c6a5e62863652f0cbba9a176a8996254fa6a7d840e2fd3dc2",
+      "sha256": "be0ab935a4d638c9f18ac95a7fc1a71ad4f2a879e3b456b1ae5c907345e03272",
       "collected": true,
       "samples": 120
     }
   ],
   "environment": {
-    "generated_at": "2026-08-31T14:27:23Z",
+    "generated_at": "2026-08-31T14:28:13Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
