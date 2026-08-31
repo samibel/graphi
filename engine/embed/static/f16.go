@@ -1,4 +1,9 @@
-package model2vec
+// Binary16 (IEEE 754 half precision) codec for the static embedder. The
+// conversion is exact: every binary16 value is exactly representable in
+// binary32, so f16ToF32 never loses information. The f32ToF16 conversion
+// uses round-to-nearest, ties-to-even — the same rule the numpy reference
+// uses for "store into a float16 array".
+package static
 
 import "math"
 
@@ -30,11 +35,16 @@ func f16ToF32(h uint16) float32 {
 	}
 }
 
-// f32ToF16 encodes a float32 as a binary16 bit pattern with round-to-nearest,
+// F32ToF16 encodes a float32 as a binary16 bit pattern with round-to-nearest,
 // ties-to-even — the rounding numpy's npy_float_to_half (and the F16C/NEON
 // hardware conversions numpy may dispatch to) performs. Overflow yields a
 // signed infinity, values below the smallest binary16 subnormal round to a
 // signed zero, and NaN stays NaN.
+//
+// Exported so the test helper can construct synthetic tables.
+func F32ToF16(f float32) uint16 { return f32ToF16(f) }
+
+// f32ToF16 is the unexported alias used inside the production code.
 func f32ToF16(f float32) uint16 {
 	b := math.Float32bits(f)
 	sign := uint16(b>>16) & 0x8000

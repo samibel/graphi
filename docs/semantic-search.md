@@ -31,14 +31,31 @@ Run `graphi setup-embedder` for copy-pasteable instructions. You opt in by setti
 the `GRAPHI_EMBEDDER` environment variable, then re-indexing with embeddings:
 
 ```sh
-# Option A — Ollama (loopback-only, opt-in). Requires a local Ollama daemon.
+# Option A — Static (pure-Go, CGo-free, daemon-less; the recommended Labs path).
+# SW-262: `graphi setup-embedder static:potion-code-16M-v2@<rev>` downloads
+# the four pinned files from HuggingFace over HTTPS, verifies their SHA-256
+# against the in-tree pin table, and writes them to
+# $XDG_CACHE_HOME/graphi/models/potion-code-16M-v2@<rev>/. The downloader is
+# the only entry point that initiates network I/O — index/search/MCP/HTTP
+# read the cached artifact and never dial. The embedder is batch-invariant
+# (a node's vector does not depend on which other nodes share its embedding
+# chunk), and its dim is read from the artifact, never hard-coded.
+graphi setup-embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b
+export GRAPHI_EMBEDDER=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b
+
+# Option B — Ollama (loopback-only, opt-in). Requires a local Ollama daemon.
 export GRAPHI_EMBEDDER=ollama                 # defaults to 127.0.0.1:11434
 # or pin the loopback endpoint explicitly:
 export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434
 
-# Option B — ONNX (local, CGO). Requires a build with the embed_onnx tag:
+# Option C — ONNX (local, CGO). Requires a build with the embed_onnx tag:
 #   go build -tags embed_onnx ./cmd/graphi
 export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
+
+# Air-gapped install (AC-6): point `setup-embedder` at a pre-staged directory.
+# The directory is validated against the pin table; a hash mismatch is an
+# error, not a warning. No network is consulted.
+graphi setup-embedder static:potion-code-16M-v2@<rev> --local /mnt/artifacts/potion-code-16M-v2
 
 # Then embed the graph and query (share one durable store + meta sidecar so the
 # generated vectors survive between the index and search invocations; these are
@@ -48,6 +65,11 @@ mkdir -p ~/.graphi
 graphi index --semantic -root ./my-repo -db ~/.graphi/graph.db -meta ~/.graphi/meta
 graphi search -semantic "where do we validate auth tokens" -db ~/.graphi/graph.db -meta ~/.graphi/meta
 ```
+
+When `GRAPHI_STATIC_MODEL_DIR` (or the equivalent selector argument) points
+at a local artifact directory the loader reads the cached bytes and validates
+the SHA-256 against the pin table; a mismatch surfaces as a typed error (the
+air-gapped path, AC-6).
 
 `graphi index --semantic` embeds the eligible symbol nodes of the graph
 (keyed by `node_id`) and persists the vectors to a durable `vectors` table in

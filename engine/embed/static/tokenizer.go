@@ -1,4 +1,16 @@
-package model2vec
+// Package static's tokenizer: a strict, fail-closed loader of the pinned
+// BertNormalizer → BertPreTokenizer → WordPiece pipeline, with the two added
+// tokens [PAD]/[UNK], right truncation at 512 tokens, and no post-processor.
+//
+// The loader validates every top-level section of tokenizer.json: an
+// unexpected value or section fails the load naming the field. This is the
+// SW-259 carry-forward "validate the tokenizer's `padding` section
+// fail-closed" requirement: a BatchLongest padding section is REQUIRED, with
+// the pad id read from the file (never hardcoded), and the loader refuses
+// any other padding strategy / direction / pad type / pad-to-multiple-of
+// value. Without this guard, chunk composition could silently change a
+// vector's mean-pooled ids.
+package static
 
 import (
 	"bytes"
@@ -11,12 +23,12 @@ import (
 )
 
 // tokenizerSections are the top-level keys of a HuggingFace tokenizers JSON
-// file this spike knows. Every encoding-relevant section is parsed with
+// file this package knows. Every encoding-relevant section is parsed with
 // DisallowUnknownFields and validated against the component set the pinned
 // tokenizer.json declares; any other top-level key is refused. "decoder" is
 // the one section that is read but not validated: it configures ids → text
-// rendering, which this spike (and model2vec's encode) never performs, so any
-// decoder is accepted as irrelevant.
+// rendering, which neither model2vec's encode nor this package ever performs,
+// so its value cannot affect a token id or a vector.
 var tokenizerSections = map[string]bool{
 	"version":        true,
 	"truncation":     true,
@@ -81,9 +93,13 @@ type modelSpec struct {
 	Vocab                   map[string]int `json:"vocab"`
 }
 
-// Tokenizer is the BertNormalizer → BertPreTokenizer → WordPiece pipeline of the
-// pinned tokenizer.json, with its added tokens, right truncation and (for
-// EncodeBatch) BatchLongest right padding.
+// Tokenizer is the BertNormalizer → BertPreTokenizer → WordPiece pipeline of
+// the pinned tokenizer.json, with its added tokens and right truncation. The
+// production embedder does NOT apply BatchLongest padding (EmbedEach is
+// batch-invariant) — but the loader still validates the padding block
+// fail-closed so a different pinned revision whose tokenizer.json declares
+// no padding (or declares a different strategy) is rejected at load time.
+// Otherwise the chunk composition could silently change a vector.
 type Tokenizer struct {
 	vocab         map[string]int
 	tokens        []string // id → token string
@@ -92,8 +108,11 @@ type Tokenizer struct {
 	maxInputChars int
 	maxLength     int // truncation length; 0 = none
 
-	// padEnabled mirrors a non-null "padding" section: EncodeBatch pads every
-	// encoding on the right with padID up to the longest one in the batch.
+	// padEnabled mirrors a non-null "padding" section. The production
+	// embedder never pools pad ids (EmbedEach is batch-invariant), but the
+	// loader still validates the block fail-closed so a tokenizer.json
+	// whose padding strategy is not BatchLongest/Right (or whose pad_id is
+	// out of range) is refused at load time.
 	padEnabled bool
 	padID      int
 
@@ -116,9 +135,9 @@ type addedMatch struct {
 }
 
 // LoadTokenizer parses a tokenizer.json and validates that every
-// encoding-relevant section uses exactly the settings this spike implements.
-// A section or value outside that set is a load error naming the field;
-// nothing is approximated.
+// encoding-relevant section uses exactly the settings this embedder
+// implements. A section or value outside that set is a load error naming
+// the field; nothing is approximated.
 func LoadTokenizer(path string) (*Tokenizer, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -126,10 +145,10 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 	}
 	var sections map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &sections); err != nil {
-		return nil, fmt.Errorf("tokenizer %s: %w", path, err)
+		return nil, fmt.Errorf("static: tokenizer %s: %w", path, err)
 	}
 	fail := func(field, format string, args ...any) error {
-		return fmt.Errorf("tokenizer %s: %s: %s", path, field, fmt.Sprintf(format, args...))
+		return fmt.Errorf("static: tokenizer %s: %s: %s", path, field, fmt.Sprintf(format, args...))
 	}
 	keys := make([]string, 0, len(sections))
 	for k := range sections {
@@ -138,7 +157,7 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 	sort.Strings(keys)
 	for _, k := range keys {
 		if !tokenizerSections[k] {
-			return nil, fail(k, "unsupported top-level section (value %s); this spike implements only %v", compact(sections[k]), sortedKeys(tokenizerSections))
+			return nil, fail(k, "unsupported top-level section (value %s); this embedder implements only %v", compact(sections[k]), sortedKeys(tokenizerSections))
 		}
 	}
 
@@ -148,7 +167,7 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		return nil, fail("version", "%v", err)
 	}
 	if version != supportedTokenizerVersion {
-		return nil, fail("version", "%q is not the tokenizers JSON version %q this spike implements", version, supportedTokenizerVersion)
+		return nil, fail("version", "%q is not the tokenizers JSON version %q this embedder implements", version, supportedTokenizerVersion)
 	}
 
 	// normalizer
@@ -160,7 +179,7 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		return nil, fail("normalizer", "%v (value %s)", err, compact(sections["normalizer"]))
 	}
 	if norm.Type != "BertNormalizer" {
-		return nil, fail("normalizer.type", "%q is not the BertNormalizer this spike implements", norm.Type)
+		return nil, fail("normalizer.type", "%q is not the BertNormalizer this embedder implements", norm.Type)
 	}
 
 	// pre_tokenizer
@@ -172,7 +191,7 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		return nil, fail("pre_tokenizer", "%v (value %s)", err, compact(sections["pre_tokenizer"]))
 	}
 	if pre.Type != "BertPreTokenizer" {
-		return nil, fail("pre_tokenizer.type", "%q is not the BertPreTokenizer this spike implements", pre.Type)
+		return nil, fail("pre_tokenizer.type", "%q is not the BertPreTokenizer this embedder implements", pre.Type)
 	}
 
 	// post_processor: must be absent — the ids are used raw, without special
@@ -181,10 +200,10 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		return nil, fail("post_processor", "%s is not supported; the pinned file has none", compact(sections["post_processor"]))
 	}
 
-	// decoder: accepted as irrelevant. It describes how ids are rendered back
-	// to text; neither model2vec's encode nor this spike ever decodes, so its
-	// value cannot affect a token id or a vector. It is deliberately not
-	// validated (see tokenizerSections).
+	// decoder: accepted as irrelevant. It describes how ids are rendered
+	// back to text; neither model2vec's encode nor this embedder ever
+	// decodes, so its value cannot affect a token id or a vector. It is
+	// deliberately not validated (see tokenizerSections).
 	_ = sections["decoder"]
 
 	// model
@@ -243,10 +262,10 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 			return nil, fail("truncation", "%v", err)
 		}
 		if tr.Direction != "Right" {
-			return nil, fail("truncation.direction", "%q is not the Right truncation this spike implements", tr.Direction)
+			return nil, fail("truncation.direction", "%q is not the Right truncation this embedder implements", tr.Direction)
 		}
 		if tr.Strategy != "LongestFirst" {
-			return nil, fail("truncation.strategy", "%q is not the LongestFirst truncation this spike implements", tr.Strategy)
+			return nil, fail("truncation.strategy", "%q is not the LongestFirst truncation this embedder implements", tr.Strategy)
 		}
 		if tr.Stride != 0 {
 			return nil, fail("truncation.stride", "%d; only stride 0 is implemented", tr.Stride)
@@ -257,8 +276,15 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		t.maxLength = tr.MaxLength
 	}
 
-	// padding: null means none; otherwise exactly the BatchLongest/Right
-	// padding EncodeBatch implements, with a pad id that names its pad token.
+	// padding (FAIL-CLOSED): must be either null (no padding section) or
+	// exactly the BatchLongest/Right padding EncodeBatch implements. The
+	// production embedder does not use padding (EmbedEach is
+	// batch-invariant), but the loader still validates the block so a
+	// tokenizer.json whose padding strategy is not BatchLongest/Right, or
+	// whose pad_id is out of range, is refused at load time. Without this
+	// guard the chunk composition could silently change a vector (the
+	// SW-259 requirement "validate the tokenizer's padding section
+	// fail-closed").
 	if !isNull(sections["padding"]) {
 		var pad paddingSpec
 		if err := decodeStrict(sections["padding"], &pad); err != nil {
@@ -266,10 +292,10 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 		}
 		var strategy string
 		if err := json.Unmarshal(pad.Strategy, &strategy); err != nil || strategy != "BatchLongest" {
-			return nil, fail("padding.strategy", "%s is not the BatchLongest padding this spike implements", compact(pad.Strategy))
+			return nil, fail("padding.strategy", "%s is not the BatchLongest padding this embedder validates (the production path is batch-invariant and never pools pad ids; the tokenizer section is still rejected so chunk composition cannot silently change a vector)", compact(pad.Strategy))
 		}
 		if pad.Direction != "Right" {
-			return nil, fail("padding.direction", "%q is not the Right padding this spike implements", pad.Direction)
+			return nil, fail("padding.direction", "%q is not the Right padding this embedder validates", pad.Direction)
 		}
 		if pad.PadToMultipleOf != nil {
 			return nil, fail("padding.pad_to_multiple_of", "%d; only null (no rounding up) is implemented", *pad.PadToMultipleOf)
@@ -288,8 +314,8 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 	}
 
 	// added_tokens: each must be a special token already in the vocabulary
-	// with the same id (out-of-vocabulary added tokens would need an id space
-	// the embedding table does not have).
+	// with the same id (out-of-vocabulary added tokens would need an id
+	// space the embedding table does not have).
 	if !isNull(sections["added_tokens"]) {
 		var added []addedToken
 		if err := decodeStrict(sections["added_tokens"], &added); err != nil {
@@ -308,8 +334,6 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 			}
 			m := addedMatch{id: a.ID, singleWord: a.SingleWord, lstrip: a.LStrip, rstrip: a.RStrip}
 			if a.Normalized {
-				// tokenizers normalises the CONTENT of a normalized added token with
-				// the same normalizer before matching it against normalized text.
 				m.content = t.normalize(a.Content)
 				t.normAdded = append(t.normAdded, m)
 			} else {
@@ -321,8 +345,8 @@ func LoadTokenizer(path string) (*Tokenizer, error) {
 	return t, nil
 }
 
-// decodeStrict unmarshals raw into v, refusing unknown object keys so that a
-// setting this spike does not model cannot pass silently.
+// decodeStrict unmarshals raw into v, refusing unknown object keys so that
+// a setting this embedder does not model cannot pass silently.
 func decodeStrict(raw json.RawMessage, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.DisallowUnknownFields()
@@ -370,6 +394,9 @@ func (t *Tokenizer) MaxLength() int { return t.maxLength }
 
 // Padding reports whether tokenizer.json declares a padding section and, if
 // so, the pad id EncodeBatch pads with (read from the file, never assumed).
+// The production embedder never pools pad ids (EmbedEach is
+// batch-invariant); this method is preserved so the loader's fail-closed
+// validation is observable.
 func (t *Tokenizer) Padding() (enabled bool, padID int) { return t.padEnabled, t.padID }
 
 // Encode is tokenizers' Tokenizer.encode(text, add_special_tokens=False).ids:
@@ -400,29 +427,6 @@ func (t *Tokenizer) Encode(text string) []int {
 	return ids
 }
 
-// EncodeBatch is tokenizers' Tokenizer.encode_batch_fast(texts,
-// add_special_tokens=False): every text is encoded (and truncated) as by
-// Encode, then — when tokenizer.json declares padding — every encoding is
-// padded on the right with the pad id up to the longest encoding IN THIS
-// BATCH (BatchLongest). Which texts share a batch therefore changes the ids
-// of the shorter ones; see Model.Embed for the consequence.
-func (t *Tokenizer) EncodeBatch(texts []string) [][]int {
-	out := make([][]int, len(texts))
-	longest := 0
-	for i, text := range texts {
-		out[i] = t.Encode(text)
-		longest = max(longest, len(out[i]))
-	}
-	if t.padEnabled {
-		for i := range out {
-			for len(out[i]) < longest {
-				out[i] = append(out[i], t.padID)
-			}
-		}
-	}
-	return out
-}
-
 // Tokens renders ids back to their vocabulary strings (diagnostics only).
 func (t *Tokenizer) Tokens(ids []int) []string {
 	out := make([]string, len(ids))
@@ -432,17 +436,17 @@ func (t *Tokenizer) Tokens(ids []int) []string {
 	return out
 }
 
-// segment is a piece of input: either literal text to tokenize (id < 0) or an
-// extracted added token.
+// segment is a piece of input: either literal text to tokenize (id < 0) or
+// an extracted added token.
 type segment struct {
 	runes []rune
 	id    int
 }
 
 // splitAdded extracts added tokens from text the way tokenizers'
-// AddedVocabulary does: leftmost, non-overlapping matches; a single_word token
-// must not touch an alphanumeric character on either side; lstrip/rstrip
-// absorb adjacent whitespace into the match.
+// AddedVocabulary does: leftmost, non-overlapping matches; a single_word
+// token must not touch an alphanumeric character on either side; lstrip/
+// rstrip absorb adjacent whitespace into the match.
 func splitAdded(text []rune, toks []addedMatch) []segment {
 	if len(toks) == 0 {
 		return []segment{{runes: text, id: -1}}
@@ -509,8 +513,9 @@ func (t *Tokenizer) normalize(s string) []rune { return t.normalizeRunes([]rune(
 
 // normalizeRunes is tokenizers' BertNormalizer, step for step and in its
 // order: clean_text (drop NUL, U+FFFD and control characters; fold every
-// whitespace to a space), handle_chinese_chars (pad each CJK ideograph with
-// spaces), strip_accents (NFD, then drop nonspacing marks), lowercase.
+// whitespace to a space), handle_chinese_chars (pad each CJK ideograph
+// with spaces), strip_accents (NFD, then drop nonspacing marks),
+// lowercase.
 func (t *Tokenizer) normalizeRunes(in []rune) []rune {
 	out := make([]rune, 0, len(in)+8)
 	for _, r := range in {
@@ -548,9 +553,9 @@ func (t *Tokenizer) normalizeRunes(in []rune) []rune {
 	return out
 }
 
-// isControl is tokenizers' is_control: tab, newline and carriage return count
-// as whitespace; everything in the "Other" categories (Cc, Cf, Co, Cs, and
-// unassigned Cn) is control.
+// isControl is tokenizers' is_control: tab, newline and carriage return
+// count as whitespace; everything in the "Other" categories (Cc, Cf, Co,
+// Cs, and unassigned Cn) is control.
 func isControl(r rune) bool {
 	switch r {
 	case '\t', '\n', '\r':
@@ -562,8 +567,8 @@ func isControl(r rune) bool {
 	return !unicode.In(r, unicode.L, unicode.M, unicode.N, unicode.P, unicode.S, unicode.Z)
 }
 
-// isWhitespace is tokenizers' is_whitespace: tab/newline/CR plus the Unicode
-// White_Space property (Rust char::is_whitespace, Go unicode.IsSpace).
+// isWhitespace is tokenizers' is_whitespace: tab/newline/CR plus the
+// Unicode White_Space property.
 func isWhitespace(r rune) bool {
 	switch r {
 	case '\t', '\n', '\r':
@@ -589,8 +594,8 @@ func isChineseChar(r rune) bool {
 	return false
 }
 
-// isBertPunc is tokenizers' is_bert_punc: ASCII punctuation (which includes the
-// ASCII symbols $+<=>^`|~) or any Unicode punctuation category.
+// isBertPunc is tokenizers' is_bert_punc: ASCII punctuation (which includes
+// the ASCII symbols $+<=>^`|~) or any Unicode punctuation category.
 func isBertPunc(r rune) bool {
 	if r < 0x80 {
 		return (r >= '!' && r <= '/') || (r >= ':' && r <= '@') || (r >= '[' && r <= '`') || (r >= '{' && r <= '~')
@@ -627,9 +632,9 @@ func preTokenize(text []rune) [][]rune {
 }
 
 // wordPiece appends the WordPiece ids of one word: greedy longest-match-first
-// over characters, continuation pieces carrying the prefix; a word longer than
-// max_input_chars_per_word, or one with any unmatched remainder, is the single
-// unk id.
+// over characters, continuation pieces carrying the prefix; a word longer
+// than max_input_chars_per_word, or one with any unmatched remainder, is the
+// single unk id.
 func (t *Tokenizer) wordPiece(ids []int, word []rune) []int {
 	if len(word) > t.maxInputChars {
 		return append(ids, t.unkID)
