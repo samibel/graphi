@@ -6,7 +6,7 @@
   "runner_class": "local",
   "repo": "cobra",
   "report": "cobra-v1-report.json",
-  "report_sha256": "5a0e16d2d64ac08891acd1c93acae3fe445a47d24dfeb38d41b7afb3c4d64ddc",
+  "report_sha256": "e8c6ea1a4a5267487c6745daed900c86cdec409347df8170dd48a8d32c077455",
   "dataset": "dataset.json",
   "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
   "raw": [
@@ -22,7 +22,7 @@
       "series": "latency",
       "baseline": "lexical",
       "file": "raw/latency-lexical.json",
-      "sha256": "32176e2c79863affff32b5dda9b856c8510f32d62493653108953b39c7ede87e",
+      "sha256": "ba4cacb745a507dc22c8a038b3073ad748587687500c04603292cbbee043dfea",
       "collected": true,
       "samples": 120
     },
@@ -38,7 +38,7 @@
       "series": "latency",
       "baseline": "hybrid_v1",
       "file": "raw/latency-hybrid_v1.json",
-      "sha256": "e1e24642279aafcba176a7a0b4a8cdde5f2aff02f0982eb339c48a1842adb1e8",
+      "sha256": "eff5a2813db974c58113f113222093cf13314d0affa3f3de763ac5249663f8fd",
       "collected": true,
       "samples": 120
     },
@@ -54,7 +54,7 @@
       "series": "latency",
       "baseline": "semantic_name_only",
       "file": "raw/latency-semantic_name_only.json",
-      "sha256": "de3d5b925c3bc6e6de03a0b762cd244480fe37b63415730b5eb4b914822f9090",
+      "sha256": "821f8a4007bce09ff1f4beaa82dcc393dd1719cc44efdfab907976cdc29429ff",
       "collected": true,
       "samples": 120
     },
@@ -70,7 +70,7 @@
       "series": "latency",
       "baseline": "oracle_upper_bound",
       "file": "raw/latency-oracle_upper_bound.json",
-      "sha256": "f5a08b6025a75969156359fb58599a5607e4b4963189a0116848f05d8ccb67da",
+      "sha256": "92bab9cd78cf2f5b2da08afe7e81079e9f20c892feab698078407947fe941431",
       "collected": true,
       "samples": 120
     },
@@ -86,7 +86,7 @@
       "series": "latency",
       "baseline": "chunk_only",
       "file": "raw/latency-chunk_only.json",
-      "sha256": "1394d1fad8887db04389cb6a78cfcdacab38af8fcad1d8a6ef390578405fd416",
+      "sha256": "2ffdb2bcb7423c02b33dc95c447b86521c146aa1d5fabe0cdcdbb991ead964dd",
       "collected": true,
       "samples": 120
     },
@@ -102,7 +102,7 @@
       "series": "latency",
       "baseline": "fusion",
       "file": "raw/latency-fusion.json",
-      "sha256": "2254d576cdf03fd49d89d9d58c3e83a375d796b9f2ecaba088f165bd85beab98",
+      "sha256": "382f70b2977519b9f98b08764830b6237d410b15081b78a6a2e2f31ee16757bf",
       "collected": true,
       "samples": 120
     },
@@ -118,18 +118,18 @@
       "series": "latency",
       "baseline": "fusion+graph",
       "file": "raw/latency-fusion+graph.json",
-      "sha256": "75e69c4a24be1d72053edfbd13cb03d9148094372e71fa3ef6699a0f500fe419",
+      "sha256": "df47eb6883c3969c6a5e62863652f0cbba9a176a8996254fa6a7d840e2fd3dc2",
       "collected": true,
       "samples": 120
     }
   ],
   "environment": {
-    "generated_at": "2026-08-31T09:27:18Z",
+    "generated_at": "2026-08-31T14:27:23Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
     "cpu_count": 12,
     "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
   },
-  "notes": "SW-263 retrieval-eval run directory: the dataset-qualified report named by this index is the single published artifact, dataset.json is the exact judged bytes it was scored against, raw/hits-<baseline>.json holds every ranking (the scorer's input, nothing derived), and raw/latency-<baseline>.json holds every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` verifies the indexed report and recomputes every published statistic from these, exiting non-zero on any discrepancy."
+  "notes": "SW-258 retrieval-eval run directory: the dataset-qualified report named by run.json is the single published artifact, dataset.json the exact judged bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
 }
