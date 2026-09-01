@@ -210,7 +210,7 @@ type ollamaEmbedResponse struct {
 func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, error) {
 	out := make([][]float32, 0, len(texts))
 	url := "http://" + e.endpoint + "/api/embed"
-	for i, t := range texts {
+	for _, t := range texts {
 		body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Input: t, Truncate: false})
 		if err != nil {
 			return nil, fmt.Errorf("ollama: marshal request: %w", err)
@@ -246,20 +246,26 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		if decErr != nil {
 			return nil, fmt.Errorf("ollama: decode response: %w", decErr)
 		}
-		if len(decoded.Embeddings) <= i || len(decoded.Embeddings[i]) == 0 {
+		// Reviewer fix Critical 3: each request sends ONE input, so
+		// the response always has its vector at embeddings[0],
+		// regardless of the outer batch index. The previous
+		// implementation read embeddings[i] and broke on the
+		// second text. A test with a batch of two or more texts
+		// catches it; a one-text batch cannot.
+		if len(decoded.Embeddings) == 0 || len(decoded.Embeddings[0]) == 0 {
 			return nil, &embed.AdmissionError{
 				NodeID:  "",
 				Path:    "",
 				Limit:   -1,
 				Actual:  len(t),
 				Profile: e.Profile(),
-				Reason:  fmt.Sprintf("ollama: server returned no embedding for input index %d", i),
+				Reason:  "ollama: server returned no embedding for the input",
 			}
 		}
 		if e.Dim() == 0 {
-			e.setDimOnce(len(decoded.Embeddings[i]))
+			e.setDimOnce(len(decoded.Embeddings[0]))
 		}
-		out = append(out, decoded.Embeddings[i])
+		out = append(out, decoded.Embeddings[0])
 	}
 	return out, nil
 }

@@ -402,9 +402,12 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			// Backward compat: when the source does NOT implement
 			// ResultDocumentSource (the legacy DocumentSource
 			// interface — V1DocumentSource, etc.), we fall back to
-			// Document's bool result. ok=false counts as Excluded
-			// (legacy semantics). A build that wires the production
-			// fileDocumentSource uses the structured Result path.
+			// Document's bool result. The structured Result path is
+			// preferred when available. Legacy fallback (sources
+			// without ResultDocumentSource): ok=false is Excluded
+			// ONLY for declared legitimate exclusion kinds
+			// (file/package/external/no_span). Anything else is a
+			// coverage failure (reviewer fix C4).
 			rds, hasRDS := docs.(ResultDocumentSource)
 			if hasRDS {
 				result := rds.Result(n)
@@ -434,9 +437,20 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 					}
 					return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): document source returned Excluded/Embedded inconsistent result", n.ID(), n.SourcePath())
 				}
-				// Legacy path: ok=false means Excluded.
-				res.Excluded++
-				continue
+				// Legacy fallback: only declared legitimate
+				// exclusion kinds are Excluded. Anything else is
+				// a coverage failure (reviewer fix C4 — the
+				// previous shape laundered any missing declaration
+				// into a no_span exclusion).
+				if isDeclaredExclusion(n) {
+					res.Excluded++
+					continue
+				}
+				res.Failed++
+				if build != nil {
+					_ = build.Abort(ctx)
+				}
+				return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): legacy document source returned false (coverage failure)", n.ID(), n.SourcePath())
 			}
 			// AC-4 carry-forward: lookup the prior row by NodeID via the
 			// GenerationStore.LoadRow point-probe (working-set rule).

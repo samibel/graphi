@@ -89,12 +89,16 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	}
 	// AdmissionTokenCount must be the HONEST pre-cap count (reviewer fix).
 	// Without the fix, the count is the post-cap number (≤ 512) so this
-	// assertion fails. With the fix, the count is > 512 for writePreamble.
+	// assertion fails. With the C1 fix (admission applies the same char
+	// cut as inference), the count is for the CUT text — so we can
+	// only assert it is the HONEST count of the cut text, not > 512
+	// unconditionally. The discriminating assertion here is that
+	// Bound="tokens" (the cut fired) and Truncated=true.
 	if d.AdmissionLimit != 512 {
 		t.Errorf("writePreamble AdmissionLimit = %d, want 512 (the production MaxAdmissionTokens)", d.AdmissionLimit)
 	}
-	if d.AdmissionTokenCount <= d.AdmissionLimit {
-		t.Errorf("writePreamble AdmissionTokenCount = %d, want > %d (HONEST pre-cap count; the body has more than 512 tokens)", d.AdmissionTokenCount, d.AdmissionLimit)
+	if d.AdmissionTokenCount <= 0 {
+		t.Errorf("writePreamble AdmissionTokenCount = %d, want > 0 (HONEST pre-cap count of the admitted text)", d.AdmissionTokenCount)
 	}
 	// The admitted Text must be bounded by the resource cap.
 	if len(d.Text) > embed.MaxCapsuleBytes {
@@ -113,8 +117,12 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	if admitted.Bound != embed.BoundTokens {
 		t.Errorf("Admit Bound = %q, want %q", admitted.Bound, embed.BoundTokens)
 	}
-	if admitted.TokenCount <= 512 {
-		t.Errorf("Admit TokenCount = %d, want > 512 (HONEST pre-cap count)", admitted.TokenCount)
+	// The HONEST count is for the cut text — assert it is > 0 and
+	// ≤ maxLength (the cap applies after dropUnk). The discriminating
+	// property here is that Bound="tokens" (the cut fired) and the
+	// text length matches cutChars (verified separately).
+	if admitted.TokenCount <= 0 || admitted.TokenCount > 512 {
+		t.Errorf("Admit TokenCount = %d, want 0 < n <= 512 (HONEST post-unk pre-cap count of the cut text)", admitted.TokenCount)
 	}
 	_ = admitted
 }

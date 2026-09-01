@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"reflect"
 	"sort"
+	"unsafe"
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
@@ -38,6 +40,7 @@ type fileDocumentSource struct {
 	cur       string
 	curDocs   map[model.NodeId]embed.SemanticDocument
 	curFailed bool // read/parse failure for cur: its nodes are skipped
+	curAdmit  bool // BuildDocuments surfaced an admission error: every declaration in cur is Failed (reviewer fix C4)
 	curGen    bool // cur is a generated/vendored path: excluded, never read
 
 	stats      embed.DocumentStats
@@ -96,8 +99,24 @@ func (s *fileDocumentSource) Result(n model.Node) embed.DocumentResult {
 	if s.curFailed {
 		return embed.DocumentFailed // read/parse failure (coverage failure)
 	}
+	if s.curAdmit {
+		// Admission error during BuildDocuments (reviewer fix C4).
+		// The previous shape discarded the error and classified the
+		// resulting missing declaration as no_span, silently
+		// laundering a coverage failure into a legitimate
+		// exclusion. The fix surfaces it as DocumentFailed so the
+		// build aborts.
+		return embed.DocumentFailed
+	}
 	if _, ok := s.curDocs[n.ID()]; !ok {
-		return embed.DocumentExcluded // no_span (legitimate)
+		// Genuine no_span: the node id was not produced by the
+		// builder and no error surfaced. This is a declared
+		// exclusion (the parser did not produce a span for this
+		// declaration). Distinguishable from the curAdmit path:
+		// when curAdmit is true, EVERY missing id is a failure;
+		// here, only a missing id with no source error is a
+		// no_span.
+		return embed.DocumentExcluded // declared: no_span
 	}
 	return embed.DocumentEmbedded
 }
@@ -127,6 +146,17 @@ func (s *fileDocumentSource) Document(n model.Node) (embed.SemanticDocument, boo
 		s.unreadable++
 		return embed.SemanticDocument{}, false
 	}
+	if s.curAdmit {
+		// Admission error during BuildDocuments (reviewer fix C4).
+		// The previous shape discarded the error and classified the
+		// resulting missing declaration as no_span, silently
+		// laundering a coverage failure into a legitimate
+		// exclusion. The fix surfaces it as a Failed-shaped
+		// (SemanticDocument{}, false) so Result and Document agree.
+		s.stats.Excluded++
+		s.unreadable++
+		return embed.SemanticDocument{}, false
+	}
 	d, ok := s.curDocs[n.ID()]
 	if !ok {
 		return s.exclude(embed.ExcludeNoSpan)
@@ -142,7 +172,7 @@ func (s *fileDocumentSource) exclude(reason string) (embed.SemanticDocument, boo
 // load makes path the current file: reads and parses it and builds its
 // documents, releasing the previous file's.
 func (s *fileDocumentSource) load(path string) {
-	s.cur, s.curDocs, s.curFailed, s.curGen = path, nil, false, false
+	s.cur, s.curDocs, s.curFailed, s.curAdmit, s.curGen = path, nil, false, false, false
 	if classify.IsGeneratedPath(path) {
 		s.curGen = true
 		return
@@ -157,13 +187,21 @@ func (s *fileDocumentSource) load(path string) {
 		s.curFailed = true
 		return
 	}
-	docs, st, _ := embed.BuildDocuments(embed.FileSource{
+	docs, st, buildErr := embed.BuildDocuments(embed.FileSource{
 		Source: embed.Source{Language: res.Meta.Language, Bytes: src, Admitter: s.admitter, Tokenizer: s.tokenizer},
 		Path:   path,
 		Nodes:  res.Nodes,
 		Spans:  res.Spans,
 	})
 	parse.ReleaseRoot(res)
+	// Reviewer fix C4: capture admission errors instead of letting
+	// the missing-declaration case launder into a no_span
+	// exclusion. A non-admission error is fatal too; we surface it
+	// the same way.
+	if buildErr != nil {
+		s.curAdmit = true
+	}
+
 	// Exclusions are counted per STORE node in Document (the file node, the
 	// artefact kinds); only what the builder produced is folded in here.
 	s.stats.Merge(embed.DocumentStats{Documents: st.Documents, Truncated: st.Truncated, SpanMethods: st.SpanMethods})
@@ -171,6 +209,25 @@ func (s *fileDocumentSource) load(path string) {
 	for _, d := range docs {
 		s.curDocs[d.NodeID] = d
 	}
+}
+
+// markAdmitErrorForTest is a test-only helper that simulates the
+// "BuildDocuments surfaced an admission error" state. Production
+// code sets this in load() when BuildDocuments returns an error.
+// The C4 review test uses it to set up the discriminating state
+// without depending on rootfile.Read (which on macOS currently
+// fails most paths with "path escapes from parent", unrelated to
+// SW-267). It uses reflection + unsafe so the helper compiles
+// even when the curAdmit field is absent in the pre-fix code:
+// the test panics with a clear message rather than silently no-op'ing.
+func (s *fileDocumentSource) markAdmitErrorForTest() {
+	v := reflect.ValueOf(s).Elem()
+	field := v.FieldByName("curAdmit")
+	if !field.IsValid() {
+		panic("curAdmit field not present; the C4 fix is missing")
+	}
+	// Unexported fields cannot be set via reflection; use unsafe.
+	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().SetBool(true)
 }
 
 // sortNodesByPath orders nodes by source path (then id) so the document

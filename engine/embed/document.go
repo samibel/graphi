@@ -352,17 +352,24 @@ func admittedTokenCount(text string, source Source) int {
 // name, path segments, signature, doc comment, body. A zero span yields
 // a header-only capsule; a missing doc comment yields "".
 //
-// The capsule's Body field is the span body minus the leading
-// doc-comment block and the signature line — the joined Text therefore
-// renders each piece exactly once (the v2 wire form is preserved for
-// documents whose body fits). The signature and doc-comment are the
-// same bytes the v2 path embedded as a single text run; the v3 capsule
-// just names them. Admitted truncation runs on the Body field so the
-// signature and doc comment survive even on a 12 KB body (AC-1).
+// SW-267 parser-provided spans: when span.SignatureSpan or
+// span.DocSpan is non-nil, the capsule uses those byte ranges
+// verbatim (the parser's view is authoritative) and the heuristic
+// fallback is skipped. The heuristic is rigorously tested for
+// the shapes it covers; the parser span is the canonical source.
 func assembleCapsule(node model.Node, span parse.SourceSpan, src []byte) Capsule {
 	body := spanBody(span, src)
-	doc := spanDocComment(body)
-	sig := spanSignatureFromBody(body)
+	var doc, sig string
+	if span.DocSpan != nil {
+		doc = bytesRange(src, span.DocSpan.StartByte, span.DocSpan.EndByte)
+	} else {
+		doc = spanDocComment(body)
+	}
+	if span.SignatureSpan != nil {
+		sig = bytesRange(src, span.SignatureSpan.StartByte, span.SignatureSpan.EndByte)
+	} else {
+		sig = spanSignatureFromBody(body)
+	}
 	body = stripDocAndSignature(body, doc, sig)
 	return Capsule{
 		Kind:          node.Kind(),
@@ -372,6 +379,20 @@ func assembleCapsule(node model.Node, span parse.SourceSpan, src []byte) Capsule
 		DocComment:    doc,
 		Body:          body,
 	}
+}
+
+// bytesRange returns src[a:b] clamped to src's range; safe for out-of-range.
+func bytesRange(src []byte, a, b int) string {
+	if a < 0 {
+		a = 0
+	}
+	if b > len(src) {
+		b = len(src)
+	}
+	if a >= b {
+		return ""
+	}
+	return strings.TrimRight(string(src[a:b]), " \t\r\n")
 }
 
 // spanSignatureFromBody is the same shape as spanSignature but reads
@@ -652,6 +673,23 @@ func artefactExclusion(n model.Node) string {
 	return ""
 }
 
+// IsDeclaredExclusion reports whether n's absence is a declared
+// legitimate exclusion (file/package/external kind, no source path).
+// Reviewer fix C4: the legacy Document fallback in GenerateAndPersist
+// treats ok=false as Excluded ONLY when the node is a declared
+// exclusion. Anything else (a declaration with a path whose source
+// returned false) is a coverage failure — exactly the laundering
+// path the previous shape left open.
+func IsDeclaredExclusion(n model.Node) bool { return isDeclaredExclusion(n) }
+
+func isDeclaredExclusion(n model.Node) bool {
+	switch n.Kind() {
+	case parse.KindFile, parse.KindPackage, parse.KindExternal:
+		return true
+	}
+	return n.SourcePath() == ""
+}
+
 // documentID is xxhash64 over node_id + text_hash + document_schema.
 func documentID(id model.NodeId, textHash, schema string) string {
 	return model.FormatID(xxhash.Sum64String(string(id) + textHash + schema))
@@ -699,33 +737,54 @@ func spanSignature(sp parse.SourceSpan, src []byte) string {
 }
 
 // spanDocComment is the leading comment block at the head of the span
-// body (the lines that look like a Go // doc comment or a /* ... */
-// block). The capsule carries it as a structured field distinct from
-// the body; the joined Text still hashes deterministically because the
-// doc-comment block always appears at the same position relative to the
-// signature. A span without a doc comment yields "".
+// body. It captures the doc comment in any of three shapes:
+//
+//   - // line comments (Go's standard convention), including consecutive
+//     lines, blank lines between, and the leading whitespace;
+//   - /* ... */ block comments, possibly spanning multiple lines,
+//     including Go-style "* " continuation lines;
+//   - The JSDoc/TSDoc /** ... */ block at the head of a declaration.
 //
 // Heuristic: the leading doc comment is the longest leading run of
-// lines whose trimmed form starts with "//" or "/*". A blank line
-// inside that run is part of the block; the first non-"//"/non-"/*"
-// line (other than blank) ends it. Decorator lines (starting with
-// "@") ride with the body, not the doc-comment block.
+// lines whose trimmed form starts with "//", "/*", or "* " (a block-
+// comment continuation line) — or blank lines that fit between them.
+// The first line that doesn't fit ends the block. Decorator lines
+// (starting with "@") ride with the body, not the doc-comment block.
 func spanDocComment(body string) string {
 	if body == "" {
 		return ""
 	}
 	lines := strings.Split(body, "\n")
 	var docLines []string
+	inBlock := false
 	for _, line := range lines {
 		trim := strings.TrimSpace(line)
-		if strings.HasPrefix(trim, "//") || strings.HasPrefix(trim, "/*") {
+		if trim == "" {
+			if len(docLines) > 0 {
+				docLines = append(docLines, line)
+			}
+			continue
+		}
+		if strings.HasPrefix(trim, "//") {
 			docLines = append(docLines, line)
 			continue
 		}
-		if trim == "" && len(docLines) > 0 {
+		if strings.HasPrefix(trim, "/*") {
+			docLines = append(docLines, line)
+			inBlock = true
+			continue
+		}
+		if strings.HasPrefix(trim, "*") && inBlock {
+			// Block-comment continuation line (Go: "* foo"; JSDoc: "** foo").
 			docLines = append(docLines, line)
 			continue
 		}
+		if strings.HasPrefix(trim, "*/") {
+			docLines = append(docLines, line)
+			inBlock = false
+			continue
+		}
+		// First non-fitting line ends the block.
 		break
 	}
 	if len(docLines) == 0 {

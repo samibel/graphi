@@ -9,6 +9,7 @@ package static
 import (
 	"context"
 	"math"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/samibel/graphi/engine/embed"
@@ -131,47 +132,62 @@ func (m *Model) Truncate(text string, maxTokens int) (string, bool) {
 	return cut, true
 }
 
-// Admit implements embed.Admission (SW-267 AC-2, AC-7). It returns the
-// exact bytes the model will consume and the token count the model will
-// see. The pinned admission algorithm is "first-n-tokens@1": the
-// tokenizer's first MaxAdmissionTokens tokens survive, the rest are
-// dropped (the byte run is reconstructed via the tokenizer's own
-// truncate-by-tokens path so the returned Text is what Embed will
-// pool). The bound label is "tokens" when the truncation cut
-// anything and "none" otherwise.
+// Admit implements embed.Admission (SW-267 AC-2, AC-7) and
+// reviewer-fix Critical 1: admission must consume exactly the same
+// bytes as inference. InferenceIDs applies cutChars (a char prefix
+// to maxLength × medianTokenLength runes) BEFORE tokenization. The
+// previous Admit only counted post-unk tokens and returned the full
+// input text, so an UNK-heavy char prefix followed by recognized
+// words was admitted unchanged while inference silently dropped the
+// tail. The fix applies the SAME four steps InferenceIDs does:
 //
-// The HONEST surface (reviewer fix): the token count is post-unk,
-// PRE-cap (uncapped) so the overflow check is structurally reachable
-// for the pinned tokenizer. The returned TokenCount is the FULL input
-// count, not the cap — the build that wants the cap reports
-// MaxAdmissionTokens, the build that wants the honest count reports
-// the pre-cap number. The two are equal only when the input exactly
-// hits the cap.
+//  1. cutChars: cut text to (maxLength × medianTokenLength) runes.
+//  2. Tokenize the cut text.
+//  3. Drop unk ids.
+//  4. Cap at maxLength tokens.
 //
-// A build that wires Admit into BuildDocument therefore gets a Text
-// that is exactly the bytes the model sees — no silent truncation
-// can sit between TextHash and the persisted vector.
+// Admit returns the BYTE RUN after step 1. If step 1 fired (the
+// char cut trimmed), Bound="tokens" and the returned text is the
+// cut prefix. The build's TextHash describes those bytes, which is
+// what Embed will pool. If no bound fired (input fits every step),
+// Bound="none" and the full text is returned.
+//
+// TokenCount is the post-unk pre-cap HONEST count of the cut text —
+// what model2vec would pool. A build that wants MaxAdmissionTokens
+// reads profile.MaxTokens; a build that wants the honest count reads
+// Admitted.TokenCount.
 func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 	if text == "" {
 		return embed.Admitted{Text: text, TokenCount: 0, Bound: embed.BoundNone}, nil
 	}
-	ids := m.rawIDs(text) // uncapped post-unk — see rawIDs / EncodeRaw
-	if len(ids) <= MaxAdmissionTokens {
-		return embed.Admitted{Text: text, TokenCount: len(ids), Bound: embed.BoundNone}, nil
+	cutText := m.cutChars(text)
+	ids := m.tok.Encode(cutText)
+	kept := ids[:0]
+	for _, id := range ids {
+		if id != m.tok.unkID {
+			kept = append(kept, id)
+		}
 	}
-	// Bound the text at the tokenizer boundary: take the first
-	// MaxAdmissionTokens tokens, drop the rest, return the byte run
-	// that contains them. truncateByTokens is the model's own
-	// byte-aware truncation path.
-	cut := truncateByTokens(text, m.tok, MaxAdmissionTokens)
-	if cut == "" {
-		// The text had tokens but none of them survived the cut — this
-		// can happen with degenerate inputs (whitespace-only, etc.). A
-		// build that gets here is a build that asked for a non-empty
-		// admit on a degenerate input; surface it as a typed error.
+	tokenCount := len(kept)
+	if tokenCount > m.maxLength {
+		kept = kept[:m.maxLength]
+	}
+	bound := embed.BoundNone
+	if cutText != text || (tokenCount == m.maxLength && len(ids) > m.maxLength) {
+		bound = embed.BoundTokens
+	}
+	// Degenerate admit: the WHOLE input yields zero useful tokens.
+	// Surface a typed error so the build fails closed. The C1
+	// bypass scenario (cut text has 0 useful tokens but the input
+	// has recognized words past the inference cut) is NOT
+	// degenerate — the cut text IS the legitimate admitted text,
+	// an honest near-zero signal that the input's salient content
+	// is past the inference boundary. We distinguish by checking
+	// whether the full input contains any recognized char.
+	if tokenCount == 0 && strings.TrimSpace(text) != "" && !hasAnyRecognizedChar(text, m.tok) {
 		return embed.Admitted{}, &embed.AdmissionError{
-			Limit:  MaxAdmissionTokens,
-			Actual: len(ids),
+			Limit:  m.maxLength,
+			Actual: 0,
 			Profile: embed.AdmissionSpec{
 				TokenizerID:      "model2vec-wordpiece",
 				TokenizerSHA256:  m.tokenHash(),
@@ -184,10 +200,30 @@ func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 		}
 	}
 	return embed.Admitted{
-		Text:       cut,
-		TokenCount: len(ids), // pre-cap HONEST count (reviewer fix)
-		Bound:      embed.BoundTokens,
+		Text:       cutText,
+		TokenCount: tokenCount,
+		Bound:      bound,
 	}, nil
+}
+
+// hasAnyRecognizedChar reports whether text contains at least one
+// word the tokenizer would emit as a non-UNK id. It is a coarse
+// pre-check that distinguishes the C1 bypass scenario (input has
+// recognized chars past the inference cut) from a truly degenerate
+// input (input has no recognized chars anywhere).
+func hasAnyRecognizedChar(text string, tok *Tokenizer) bool {
+	if tok == nil {
+		return false
+	}
+	for _, word := range strings.Fields(text) {
+		ids := tok.Encode(word)
+		for _, id := range ids {
+			if id != tok.unkID {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // CountTokens is the OPTIONAL CountTokens hook the document builder
