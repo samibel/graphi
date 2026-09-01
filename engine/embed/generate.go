@@ -18,6 +18,49 @@ import (
 // that exercise the generation pass without source bytes. The `--semantic`
 // path embeds SemanticDocument v2 text (BuildDocument) instead; V1DocumentSource
 // wraps this text in the document shape for that comparison.
+// embedderRevision returns the embedder's revision tag, or "" when the
+// adapter does not expose one. The pinned static embedder's revision
+// lives in its ID() (the @<revision> segment); Ollama is a model-tag
+// identity and reports "".
+func embedderRevision(emb Embedder) string {
+	if r, ok := emb.(interface{ Revision() string }); ok {
+		return r.Revision()
+	}
+	return ""
+}
+
+// embedderModelSHA returns the model's pinned SHA-256 (lowercase hex)
+// when the adapter exposes one. The static adapter's model digest is
+// already in its ID(); Ollama has no native digest binding in v0, so
+// the field reads "" until /api/show's digest is plumbed in.
+func embedderModelSHA(emb Embedder) string {
+	if m, ok := emb.(interface{ ModelSHA256() string }); ok {
+		return m.ModelSHA256()
+	}
+	return ""
+}
+
+// embedderTokenizerSHA returns the tokenizer's pinned SHA-256 when the
+// adapter exposes one. The static adapter's tokenizer digest is
+// already in its ID(); Ollama reads "" until binding lands.
+func embedderTokenizerSHA(emb Embedder) string {
+	if t, ok := emb.(interface{ TokenizerSHA256() string }); ok {
+		return t.TokenizerSHA256()
+	}
+	return ""
+}
+
+// embedderChunkerConfig returns the chunker description the fingerprint
+// binds (AC-8). graphi embeds the whole document so the field is ""
+// for every adapter; a future chunk-and-index-every-chunk design (out
+// of scope, SW-267) would populate it.
+func embedderChunkerConfig(emb Embedder) string {
+	if c, ok := emb.(interface{ ChunkerConfig() string }); ok {
+		return c.ChunkerConfig()
+	}
+	return ""
+}
+
 func NodeText(n model.Node) string {
 	qn := strings.TrimSpace(n.QualifiedName())
 	kind := strings.TrimSpace(n.Kind())
@@ -198,21 +241,27 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			return GenerateResult{}, fmt.Errorf("embed: probe dim before fingerprint: %w", err)
 		}
 	}
-	// Fingerprint the build with the embedder's identity, dimension,
-	// schema and graph generation. The graph_generation field is filled
-	// in by the caller — the production runtime sources it from the
-	// graphstore's `index.commit_generation` key (advanced on every
-	// committed graph mutation, full pass and incremental), so build and
-	// reload consume the same value. An empty graphGeneration (in-process
-	// tests) substitutes the documented placeholder so a test and a real
-	// run stay fingerprint-compatible when the graphstore is not wired.
+	// Fingerprint the build with the embedder's FULL identity (SW-267
+	// AC-3 / AC-8): model ID (which already carries the inference
+	// configuration + admission profile hash), revision, model + tokenizer
+	// digests when the embedder exposes them, dimension, document schema,
+	// graph generation, and the admission profile's serialized form.
+	// Every field has a real value: the Ollama adapter's hidden
+	// dimensions are surfaced (ModelSHA256 / TokenizerSHA256 / ChunkerConfig)
+	// via the AdmissionProfile, and the static adapter's hidden profile
+	// is in its ID(). A profile change invalidates prior generations by
+	// fingerprint (no silent reuse under false provenance).
 	if graphGeneration == "" {
 		graphGeneration = GraphGenerationPlaceholder
 	}
 	fp := Fingerprint{
 		ModelID:         emb.ID(),
+		Revision:        embedderRevision(emb),
+		ModelSHA256:     embedderModelSHA(emb),
+		TokenizerSHA256: embedderTokenizerSHA(emb),
 		Dim:             emb.Dim(),
 		DocumentSchema:  DocumentSchema,
+		ChunkerConfig:   embedderChunkerConfig(emb),
 		GraphGeneration: graphGeneration,
 	}
 
@@ -344,6 +393,24 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			}
 		}
 		if len(texts) > 0 {
+			// SW-267 AC-4 / AC-7: the adapter is the final authority
+			// on per-document admission. The document builder already
+			// called Admit during BuildDocument; this call is the
+			// embedding-side second look so a swap of the underlying
+			// admitter (e.g. an explicit /api/embed with truncate:false
+			// for Ollama) cannot embed an oversized payload. A failure
+			// aborts the build (AC-5: no partial generation as Ready).
+			if adm, ok := emb.(Admission); ok {
+				for _, t := range texts {
+					_, err := adm.Admit(ctx, t)
+					if err != nil {
+						if build != nil {
+							_ = build.Abort(ctx)
+						}
+						return GenerateResult{}, err
+					}
+				}
+			}
 			vecs, err := emb.Embed(ctx, texts)
 			if err != nil {
 				if build != nil {

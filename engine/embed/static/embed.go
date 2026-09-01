@@ -10,6 +10,8 @@ import (
 	"context"
 	"math"
 	"unicode/utf8"
+
+	"github.com/samibel/graphi/engine/embed"
 )
 
 // Model is a loaded potion-style static embedding model. It is the production
@@ -45,6 +47,26 @@ type Model struct {
 	FileHashes map[string]string
 }
 
+// MaxAdmissionTokens is the usable token limit (after the special-token
+// reserve) for the v3 admission profile (AC-1, AC-2, AC-3). The pinned
+// model2vec static embedder's tokenizer caps at 512 tokens post-unk-
+// drop; with zero reserve the USABLE limit is 512. A profile change
+// (different limit, different reserve, different algorithm version)
+// invalidates stored generations by fingerprint.
+const MaxAdmissionTokens = 512
+
+// SpecialTokenReserve is the special-token reserve the admission
+// profile budgets for BOS / EOS / pad. The pinned model2vec static
+// embedder does not inject any special tokens (no post_processor, no
+// add_special_tokens path), so the reserve is 0 and the USABLE limit
+// equals the model's max length.
+const SpecialTokenReserve = 0
+
+// AdmissionAlgorithmID is the algorithm-version-tagged identifier the
+// admission profile advertises. Bumping the algorithm changes the
+// fingerprint and invalidates prior generations (AC-3, AC-8).
+const AdmissionAlgorithmID = "first-n-tokens@1"
+
 // Dim is the embedding dimensionality.
 func (m *Model) Dim() int { return m.dim }
 
@@ -60,22 +82,134 @@ func (m *Model) MedianTokenLength() int { return m.medianTokenLength }
 // Tokenizer exposes the loaded tokenizer (embed.TokenizingEmbedder).
 func (m *Model) Tokenizer() *Tokenizer { return m.tok }
 
-// Truncate implements embed.DocumentTokenizer. It bounds text at maxTokens of
-// the model's own tokenizer and returns the cut form. When maxTokens ≤ 0 the
-// function returns the input unchanged.
+// truncate implements embed.DocumentTokenizer on *Tokenizer so the
+// production embedder satisfies embed.TokenizingEmbedder (AC-7).
+// Truncate cuts text to at most maxTokens of the tokenizer's own
+// tokens (post-unk-drop, pre-cap — the HONEST count, NOT the
+// InferenceIDs-capped value). A maxTokens <= 0 returns the input
+// unchanged. The cut uses the model's own truncateByTokens for the
+// byte run so the returned text is what the embedder will see.
+func (t *Tokenizer) truncate(text string, maxTokens int) (string, bool) {
+	if t == nil || maxTokens <= 0 {
+		return text, false
+	}
+	ids := t.Encode(text)
+	kept := ids[:0]
+	for _, id := range ids {
+		if id != t.unkID {
+			kept = append(kept, id)
+		}
+	}
+	if len(kept) <= maxTokens {
+		return text, false
+	}
+	return truncateByTokens(text, t, maxTokens), true
+}
+
+// Truncate implements embed.DocumentTokenizer for backward compatibility with
+// the SW-260 SW-261 builder paths that wired a DocumentTokenizer. The
+// HONEST admission surface is Model.Admit — AC-7 requires the admission
+// profile to know exactly what the model consumed, and Truncate cannot
+// distinguish "input fits" from "InferenceIDs silently capped at maxLength".
+// When maxTokens ≤ 0 the function returns the input unchanged.
 func (m *Model) Truncate(text string, maxTokens int) (string, bool) {
 	if maxTokens <= 0 {
 		return text, false
 	}
-	ids := m.InferenceIDs(text)
+	// HONEST path: count the model's own post-unk tokens via rawIDs (no
+	// silent cap) and only treat the input as overflowing when its actual
+	// token count exceeds maxTokens. InferenceIDs drops the unk ids THEN
+	// caps — the previous Truncate shape called InferenceIDs and compared
+	// against maxTokens, but InferenceIDs' cap always fires first, so the
+	// "did it truncate?" check was structurally unreachable. rawIDs lets
+	// us see the real count.
+	ids := m.rawIDs(text)
 	if len(ids) <= maxTokens {
 		return text, false
 	}
-	// Reconstruct the text up to the byte where the maxTokens-th token ends.
-	// This is an approximation (we don't store the spans) but it bounds the
-	// text at the tokenizer boundary, which is what AC-6 asks for.
 	cut := truncateByTokens(text, m.tok, maxTokens)
 	return cut, true
+}
+
+// Admit implements embed.Admission (SW-267 AC-2, AC-7). It returns the
+// exact bytes the model will consume and the token count the model will
+// see. The pinned admission algorithm is "first-n-tokens@1": the
+// tokenizer's first MaxAdmissionTokens tokens survive, the rest are
+// dropped (the byte run is reconstructed via the tokenizer's own
+// truncate-by-tokens path so the returned Text is what Embed will
+// pool). The bound label is "tokens" when the truncation cut
+// anything and "none" otherwise.
+//
+// The HONEST surface: the token count is post-unk, post-cap (what
+// model2vec pools). A build that wires Admit into BuildDocument
+// therefore gets a Text that is exactly the bytes the model sees —
+// no silent truncation can sit between TextHash and the persisted
+// vector.
+func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
+	if text == "" {
+		return embed.Admitted{Text: text, TokenCount: 0, Bound: embed.BoundNone}, nil
+	}
+	ids := m.rawIDs(text)
+	if len(ids) <= MaxAdmissionTokens {
+		return embed.Admitted{Text: text, TokenCount: len(ids), Bound: embed.BoundNone}, nil
+	}
+	// Bound the text at the tokenizer boundary: take the first
+	// MaxAdmissionTokens tokens, drop the rest, return the byte run
+	// that contains them. truncateByTokens is the model's own
+	// byte-aware truncation path.
+	cut := truncateByTokens(text, m.tok, MaxAdmissionTokens)
+	if cut == "" {
+		// The text had tokens but none of them survived the cut — this
+		// can happen with degenerate inputs (whitespace-only, etc.). A
+		// build that gets here is a build that asked for a non-empty
+		// admit on a degenerate input; surface it as a typed error.
+		return embed.Admitted{}, &embed.AdmissionError{
+			Limit:  MaxAdmissionTokens,
+			Actual: len(ids),
+			Profile: embed.AdmissionSpec{
+				TokenizerID:      "model2vec-wordpiece",
+				TokenizerSHA256:  m.tokenHash(),
+				TokenizerVersion: "1",
+				MaxTokens:        MaxAdmissionTokens,
+				Reserve:          SpecialTokenReserve,
+				Algorithm:        "first-n-tokens",
+				AlgorithmVersion: "1",
+			},
+		}
+	}
+	return embed.Admitted{
+		Text:       cut,
+		TokenCount: MaxAdmissionTokens,
+		Bound:      embed.BoundTokens,
+	}, nil
+}
+
+// rawIDs returns the model's post-unk, pre-cap token ids for text. It
+// is the HONEST token count Admit uses; InferenceIDs caps at maxLength
+// silently so it would lie about overflow.
+func (m *Model) rawIDs(text string) []int {
+	if m.tok == nil {
+		return nil
+	}
+	ids := m.tok.Encode(text)
+	kept := ids[:0]
+	for _, id := range ids {
+		if id != m.tok.unkID {
+			kept = append(kept, id)
+		}
+	}
+	return kept
+}
+
+// tokenHash returns the lower-case hex SHA-256 of tokenizer.json, or ""
+// when the artifact is not loaded. The admission profile pins this hash
+// so a structurally valid replacement of the tokenizer that changes the
+// file hash invalidates stored generations.
+func (m *Model) tokenHash() string {
+	if m.FileHashes == nil {
+		return ""
+	}
+	return m.FileHashes[FileTokenizer]
 }
 
 // truncateByTokens walks the tokens produced for text and returns the prefix

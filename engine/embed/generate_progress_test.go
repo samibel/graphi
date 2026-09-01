@@ -67,10 +67,13 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	docs, _ := embed.BuildDocuments(embed.FileSource{
+	docs, _, err := embed.BuildDocuments(embed.FileSource{
 		Source: embed.Source{Language: res.Meta.Language, Bytes: []byte(src)},
 		Path:   res.Meta.Path, Nodes: res.Nodes, Spans: res.Spans,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	source := docSource{}
 	for _, d := range docs {
 		source[d.NodeID] = d

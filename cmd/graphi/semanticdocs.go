@@ -32,7 +32,8 @@ type fileDocumentSource struct {
 	root      string
 	reg       *parse.Registry
 	bounds    parse.ResourceBounds
-	tokenizer embed.DocumentTokenizer // active embedder's tokenizer when it exposes one (SW-260 AC-6)
+	admitter  embed.Admission         // active embedder's fail-closed admission (SW-267 AC-2, AC-7)
+	tokenizer embed.DocumentTokenizer // legacy fallback when no admission-aware embedder (SW-260 AC-6)
 
 	cur       string
 	curDocs   map[model.NodeId]embed.SemanticDocument
@@ -44,11 +45,17 @@ type fileDocumentSource struct {
 }
 
 func newFileDocumentSource(ctx context.Context, root string, emb embed.Embedder) *fileDocumentSource {
-	// SW-260 AC-6: pass the active embedder's own tokenizer to the builder when
-	// it exposes one. The interface is opt-in (TokenizingEmbedder), so the
-	// mock and the older ollama/onnx embedders stay valid Embedders unchanged
-	// and fall through to the byte-cap-only path. The DocumentTokenizer is
-	// safe for concurrent use across the embedding pass.
+	// SW-267 AC-2 / AC-7: prefer the fail-closed Admission interface over
+	// the legacy TokenizingEmbedder. The Admission interface returns the
+	// exact bytes the model will consume and errors when the body cannot
+	// fit — exactly what AC-2 promises ("the adapter holds the exact
+	// tokenizer, the usable token limit, the special-token reserve and
+	// the preparation policy"). The TokenizingEmbedder fallback covers
+	// legacy embedders that have a tokenizer but no Admission surface.
+	var adm embed.Admission
+	if aa, ok := emb.(embed.Admission); ok {
+		adm = aa
+	}
 	var tok embed.DocumentTokenizer
 	if te, ok := emb.(embed.TokenizingEmbedder); ok {
 		tok = te.Tokenizer()
@@ -58,6 +65,7 @@ func newFileDocumentSource(ctx context.Context, root string, emb embed.Embedder)
 		root:      root,
 		reg:       parse.NewDefaultRegistry(),
 		bounds:    parse.DefaultResourceBounds(),
+		admitter:  adm,
 		tokenizer: tok,
 	}
 }
@@ -117,8 +125,8 @@ func (s *fileDocumentSource) load(path string) {
 		s.curFailed = true
 		return
 	}
-	docs, st := embed.BuildDocuments(embed.FileSource{
-		Source: embed.Source{Language: res.Meta.Language, Bytes: src, Tokenizer: s.tokenizer},
+	docs, st, _ := embed.BuildDocuments(embed.FileSource{
+		Source: embed.Source{Language: res.Meta.Language, Bytes: src, Admitter: s.admitter, Tokenizer: s.tokenizer},
 		Path:   path,
 		Nodes:  res.Nodes,
 		Spans:  res.Spans,

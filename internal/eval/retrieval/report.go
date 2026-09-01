@@ -20,7 +20,7 @@ import (
 // shape pass a gate written for the stronger one.
 const (
 	FormatVersion  = 2
-	HarnessVersion = "retrieval-eval/1"
+	HarnessVersion = "retrieval-eval/2"
 	ScorerVersion  = "retrieval-aggregate/1"
 )
 

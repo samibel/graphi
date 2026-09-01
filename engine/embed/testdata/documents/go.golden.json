@@ -1,6 +1,6 @@
 [
   {
-    "document_id": "7a43a8d04b05be4d",
+    "document_id": "cb5441dd57a27909",
     "node_id": "d268188476fc54b8",
     "language": "go",
     "kind": "constant",
@@ -12,13 +12,24 @@
     "end_line": 6,
     "span_method": "ast",
     "text_hash": "770b0de64b5acaed",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "constant shop.TaxRate\nshop cart.go\n// TaxRate is the flat tax.\nconst TaxRate = 7",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "constant",
+      "qualified_name": "shop.TaxRate",
+      "path_segments": "shop cart.go",
+      "signature": "const TaxRate = 7",
+      "doc_comment": "// TaxRate is the flat tax.",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "099f3d767ac0e048",
+    "document_id": "926bb0e8d8385dd6",
     "node_id": "7f2428aca84d5db1",
     "language": "go",
     "kind": "type",
@@ -30,13 +41,24 @@
     "end_line": 9,
     "span_method": "ast",
     "text_hash": "03e0029603623928",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "type shop.Cart\nshop cart.go\n// Cart holds items.\ntype Cart struct{ items int }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "type",
+      "qualified_name": "shop.Cart",
+      "path_segments": "shop cart.go",
+      "signature": "type Cart struct{ items int }",
+      "doc_comment": "// Cart holds items.",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "14467f4ba42acabc",
+    "document_id": "9f9a7fcd1b388748",
     "node_id": "0f69ab416765cd02",
     "language": "go",
     "kind": "method",
@@ -48,13 +70,24 @@
     "end_line": 12,
     "span_method": "ast",
     "text_hash": "224dca76156969d3",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "method shop.Cart.Add\nshop cart.go\n// Add appends an item.\nfunc (c *Cart) Add() { c.items++ }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "method",
+      "qualified_name": "shop.Cart.Add",
+      "path_segments": "shop cart.go",
+      "signature": "func (c *Cart) Add() { c.items++ }",
+      "doc_comment": "// Add appends an item.",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "39cb20f3e4870ea1",
+    "document_id": "e4a7bce919edf047",
     "node_id": "c845f37b92b28b53",
     "language": "go",
     "kind": "function",
@@ -66,13 +99,24 @@
     "end_line": 18,
     "span_method": "ast",
     "text_hash": "2967c74f67b302f6",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function shop.outer\nshop cart.go\n// outer wraps a nested func literal.\nfunc outer() int {\n\tinner := func() int { return TaxRate }\n\treturn inner()\n}",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "shop.outer",
+      "path_segments": "shop cart.go",
+      "signature": "func outer() int {",
+      "doc_comment": "// outer wraps a nested func literal.",
+      "body": "\tinner := func() int { return TaxRate }\n\treturn inner()\n}"
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "324c26b52552eba8",
+    "document_id": "a969356ef7c92501",
     "node_id": "117efb0c60642800",
     "language": "go",
     "kind": "function",
@@ -84,13 +128,24 @@
     "end_line": 20,
     "span_method": "ast",
     "text_hash": "2d01ba8fc7fccfa0",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function shop.a\nshop cart.go\nfunc a() int { return 1 }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "shop.a",
+      "path_segments": "shop cart.go",
+      "signature": "func a() int { return 1 }",
+      "doc_comment": "",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "cc21068699d5da26",
+    "document_id": "667d8f186b344786",
     "node_id": "bb54ec08064e0824",
     "language": "go",
     "kind": "function",
@@ -102,13 +157,24 @@
     "end_line": 20,
     "span_method": "ast",
     "text_hash": "74812d273bdddf1e",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function shop.b\nshop cart.go\nfunc b() int { return 2 }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "shop.b",
+      "path_segments": "shop cart.go",
+      "signature": "func b() int { return 2 }",
+      "doc_comment": "",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "bed548ffe43c3a5f",
+    "document_id": "6c4717082148e7bf",
     "node_id": "f068b6a261c5d507",
     "language": "go",
     "kind": "function",
@@ -120,9 +186,20 @@
     "end_line": 23,
     "span_method": "ast",
     "text_hash": "6a0504a910915ce4",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function shop.last\nshop cart.go\n// last is the final declaration.\nfunc last() { fmt.Println(TaxRate) }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "shop.last",
+      "path_segments": "shop cart.go",
+      "signature": "func last() { fmt.Println(TaxRate) }",
+      "doc_comment": "// last is the final declaration.",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   }
 ]

@@ -1,6 +1,6 @@
 [
   {
-    "document_id": "da61b4f920e1d3c5",
+    "document_id": "486a3cfc90f008ef",
     "node_id": "e1a00473e0f5ac5f",
     "language": "typescript",
     "kind": "function",
@@ -12,13 +12,24 @@
     "end_line": 2,
     "span_method": "ast",
     "text_hash": "50a1ea2058bbd022",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function pkg.f\npkg a.ts\n/** doc for f */\nexport function f(a: number): number { return a; }",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "pkg.f",
+      "path_segments": "pkg a.ts",
+      "signature": "export function f(a: number): number { return a; }",
+      "doc_comment": "/** doc for f */",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "dbbf6122789fbe2e",
+    "document_id": "241a756367893323",
     "node_id": "9d7c7d70b78fe29a",
     "language": "typescript",
     "kind": "type",
@@ -29,14 +40,25 @@
     "start_line": 4,
     "end_line": 8,
     "span_method": "ast",
-    "text_hash": "f3f3d97bbd9e0266",
-    "document_schema": "v2",
-    "text": "type pkg.A\npkg a.ts\nComponent\n@Component({sel: 'x'})\nexport class A {\n  @Get()\n  run(): void {}\n}",
+    "text_hash": "fb96794e537cbb10",
+    "document_schema": "v3",
+    "text": "type pkg.A\npkg a.ts\nComponent\nexport class A {\n@Component({sel: 'x'})\nexport class A {\n  @Get()\n  run(): void {}\n}",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "type",
+      "qualified_name": "pkg.A",
+      "path_segments": "pkg a.ts",
+      "signature": "export class A {",
+      "doc_comment": "",
+      "body": "@Component({sel: 'x'})\nexport class A {\n  @Get()\n  run(): void {}\n}"
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "b0caf36c08eee8a7",
+    "document_id": "78867fa1f4819f17",
     "node_id": "24e1f45400f4cfe1",
     "language": "typescript",
     "kind": "method",
@@ -47,14 +69,25 @@
     "start_line": 6,
     "end_line": 7,
     "span_method": "ast",
-    "text_hash": "c340ba1c01fd43aa",
-    "document_schema": "v2",
-    "text": "method pkg.run\npkg a.ts\nGet\n@Get()\n  run(): void {}",
+    "text_hash": "0742a9216740f96d",
+    "document_schema": "v3",
+    "text": "method pkg.run\npkg a.ts\nGet\n  run(): void {}\n@Get()\n  run(): void {}",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "method",
+      "qualified_name": "pkg.run",
+      "path_segments": "pkg a.ts",
+      "signature": "  run(): void {}",
+      "doc_comment": "",
+      "body": "@Get()\n  run(): void {}"
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   },
   {
-    "document_id": "68ecac18b50030ce",
+    "document_id": "83dc11bf883245d4",
     "node_id": "5d028d36a4c961ee",
     "language": "typescript",
     "kind": "function",
@@ -66,9 +99,20 @@
     "end_line": 10,
     "span_method": "ast",
     "text_hash": "9f76c60e1eb49c56",
-    "document_schema": "v2",
+    "document_schema": "v3",
     "text": "function pkg.g\npkg a.ts\nfunction g(): void {}",
     "truncated": false,
-    "bound": "none"
+    "bound": "none",
+    "capsule": {
+      "kind": "function",
+      "qualified_name": "pkg.g",
+      "path_segments": "pkg a.ts",
+      "signature": "function g(): void {}",
+      "doc_comment": "",
+      "body": ""
+    },
+    "admission_token_count": 0,
+    "admission_limit": 0,
+    "admission_algorithm_id": ""
   }
 ]

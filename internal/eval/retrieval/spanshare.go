@@ -37,7 +37,7 @@ func spanMethodShare(ctx context.Context, root string, files []string) (map[stri
 		if err != nil || res == nil {
 			continue
 		}
-		_, st := embed.BuildDocuments(embed.FileSource{
+		_, st, _ := embed.BuildDocuments(embed.FileSource{
 			Source: embed.Source{Language: res.Meta.Language, Bytes: src},
 			Path:   rel,
 			Nodes:  res.Nodes,
