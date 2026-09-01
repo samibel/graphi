@@ -27,7 +27,7 @@ var (
 
 // cobraWritePreambleBody / cobraGenBashCompBody hold the bytes of the two
 // oversized cobra declarations the story names (AC-10). They sit under
-// MaxDocumentBytes (16 KiB) but well over a 512-token embedder context.
+// MaxCapsuleBytes (16 KiB) but well over a 512-token embedder context.
 // The fixtures are the verbatim cobra v1.8.0 source for those two
 // functions (pinned SHA a0a6ae020bb3899ff0276067863e50523f897370).
 //
@@ -181,6 +181,34 @@ func TestV3_AC2_AdmissionOwnedByAdapter(t *testing.T) {
 			t.Errorf("degenerate Admitter error type = %T, want *embed.AdmissionError", err)
 		}
 	})
+}
+
+// TestV3_OversizedSignatureFailsClosed pins the mandatory-prefix policy. A
+// signature is retrieval-critical and may not be partially represented in
+// Text while Capsule.Signature retains the full declaration. If the header,
+// doc comment, and signature do not fit together, BuildDocument returns a
+// typed AdmissionError instead of publishing a vector with false provenance.
+func TestV3_OversizedSignatureFailsClosed(t *testing.T) {
+	signature := "func Oversized(" + strings.Repeat("parameterName string, ", 20) + ") {"
+	src := signature + "\n}\n"
+	n, _ := model.NewNode("function", "p.Oversized", "p/oversized.go", 1, 6)
+	span := parse.SourceSpan{
+		StartByte: 0, EndByte: len(src), StartLine: 1, EndLine: 2,
+		Method:        parse.SpanMethodAST,
+		SignatureSpan: &parse.ByteSpan{StartByte: 0, EndByte: len(signature)},
+	}
+	_, err := embed.BuildDocument(n, span, embed.Source{
+		Language: "go",
+		Bytes:    []byte(src),
+		Admitter: staticAdmitter{tokens: 64},
+	})
+	if !embed.IsAdmissionError(err) {
+		t.Fatalf("BuildDocument error = %T %v, want typed AdmissionError for oversized signature", err, err)
+	}
+	ae := aeFromErr(err)
+	if ae == nil || ae.NodeID != string(n.ID()) || ae.Path != n.SourcePath() {
+		t.Errorf("AdmissionError = %+v, want node %s path %s", ae, n.ID(), n.SourcePath())
+	}
 }
 
 // AC-3: a profile change invalidates stored generations. The

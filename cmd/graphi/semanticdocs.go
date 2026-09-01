@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"reflect"
 	"sort"
-	"unsafe"
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
@@ -14,7 +12,7 @@ import (
 )
 
 // fileDocumentSource is the embed.DocumentSource behind `graphi index
-// --semantic` (SW-260 AC-8): it cuts SemanticDocument v2 text out of the
+// --semantic` (SW-267): it cuts SemanticDocument v3 capsule text out of the
 // repository's source files. Spans are not persisted (SW-261), so the pass
 // re-reads each file through the root-confined reader and re-parses it with
 // the default registry to recover ParseResult.Spans; parsers without an exact
@@ -209,25 +207,6 @@ func (s *fileDocumentSource) load(path string) {
 	for _, d := range docs {
 		s.curDocs[d.NodeID] = d
 	}
-}
-
-// markAdmitErrorForTest is a test-only helper that simulates the
-// "BuildDocuments surfaced an admission error" state. Production
-// code sets this in load() when BuildDocuments returns an error.
-// The C4 review test uses it to set up the discriminating state
-// without depending on rootfile.Read (which on macOS currently
-// fails most paths with "path escapes from parent", unrelated to
-// SW-267). It uses reflection + unsafe so the helper compiles
-// even when the curAdmit field is absent in the pre-fix code:
-// the test panics with a clear message rather than silently no-op'ing.
-func (s *fileDocumentSource) markAdmitErrorForTest() {
-	v := reflect.ValueOf(s).Elem()
-	field := v.FieldByName("curAdmit")
-	if !field.IsValid() {
-		panic("curAdmit field not present; the C4 fix is missing")
-	}
-	// Unexported fields cannot be set via reflection; use unsafe.
-	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().SetBool(true)
 }
 
 // sortNodesByPath orders nodes by source path (then id) so the document

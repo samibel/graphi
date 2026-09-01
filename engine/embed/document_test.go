@@ -17,7 +17,8 @@ import (
 	"github.com/samibel/graphi/internal/goldenfile"
 )
 
-// SW-260 SemanticDocument v2 builder tests (AC-4 … AC-7).
+// SemanticDocument v3 builder tests (SW-260 span coverage, SW-267 capsule and
+// admission contracts).
 
 const docGoFixture = `package shop
 
@@ -105,7 +106,7 @@ func marshalDocs(t *testing.T, docs []embed.SemanticDocument) []byte {
 // schema tag, the two hashes and the fixed text order kind → qualified name →
 // path segments → annotations → doc_comment → signature → body. SW-267 v3
 // adds the structured Capsule field with the same components; the joined
-// Text preserves the v2 wire form when the body fits.
+// Text preserves the deterministic field order when the body fits.
 func TestBuildDocument_FieldsAndTextOrder(t *testing.T) {
 	src := "// Hello says hi.\nfunc Hello() {}\n"
 	n, err := model.NewNode("function", "greet.Hello", "internal/greet/hello.go", 2, 1)
@@ -422,11 +423,13 @@ func TestBuildDocument_Truncation(t *testing.T) {
 	})
 	t.Run("byte cap", func(t *testing.T) {
 		// 300 whitespace tokens but each 100 bytes long: under the token bound,
-		// over the byte cap — with a multi-byte rune straddling the cut.
+		// over the byte cap — with a multi-byte rune straddling the cut. Keep
+		// the oversized bytes in a function body so the mandatory signature
+		// itself remains admissible.
 		word := strings.Repeat("é", 50) // 100 bytes
-		huge := "package h\n\nvar H = `" + strings.Repeat(word+" ", 300) + "`\n"
-		hn, _ := model.NewNode("variable", "h.H", "h/h.go", 3, 1)
-		hs := parse.SourceSpan{StartByte: 11, EndByte: len(huge) - 1, StartLine: 3, EndLine: 3, Method: parse.SpanMethodAST}
+		huge := "package h\n\nfunc H() {\n\t_ = `" + strings.Repeat(word+" ", 300) + "`\n}\n"
+		hn, _ := model.NewNode("function", "h.H", "h/h.go", 3, 6)
+		hs := parse.SourceSpan{StartByte: 11, EndByte: len(huge) - 1, StartLine: 3, EndLine: 5, Method: parse.SpanMethodAST}
 		d, err := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
 		if err != nil {
 			t.Fatalf("BuildDocument: %v", err)

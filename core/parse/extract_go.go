@@ -166,20 +166,37 @@ func (e *goExtractor) pos(p token.Pos) (int, int) {
 	return pp.Line, pp.Column
 }
 
-// setSpan records the exact ast span [start, end) for node id: byte offsets and
-// lines come from the FileSet positions the parser already resolved.
-func (e *goExtractor) setSpan(id model.NodeId, start, end token.Pos) {
+// setSpan records the declaration plus its parser-owned doc and signature
+// sub-ranges. All positions come directly from go/ast and the FileSet; no
+// source-text heuristic participates.
+func (e *goExtractor) setSpan(id model.NodeId, start, end token.Pos, doc *ast.CommentGroup, signatureStart, signatureEnd token.Pos) {
 	if !start.IsValid() || !end.IsValid() {
 		return
 	}
 	s, en := e.fset.Position(start), e.fset.Position(end)
-	e.spans[id] = SourceSpan{
+	span := SourceSpan{
 		StartByte: s.Offset,
 		EndByte:   en.Offset,
 		StartLine: s.Line,
 		EndLine:   en.Line,
 		Method:    SpanMethodAST,
 	}
+	if doc != nil {
+		span.DocSpan = e.byteSpan(doc.Pos(), doc.End())
+	}
+	span.SignatureSpan = e.byteSpan(signatureStart, signatureEnd)
+	e.spans[id] = span
+}
+
+func (e *goExtractor) byteSpan(start, end token.Pos) *ByteSpan {
+	if !start.IsValid() || !end.IsValid() || end <= start {
+		return nil
+	}
+	s, en := e.fset.Position(start), e.fset.Position(end)
+	if s.Offset < 0 || en.Offset <= s.Offset {
+		return nil
+	}
+	return &ByteSpan{StartByte: s.Offset, EndByte: en.Offset}
 }
 
 // specSpanStart returns where a GenDecl spec's span begins: the GenDecl's own
@@ -215,6 +232,39 @@ func genDeclSpecEnd(d *ast.GenDecl, spec ast.Spec) token.Pos {
 	return spec.End()
 }
 
+func genDeclSpecDoc(d *ast.GenDecl, specDoc *ast.CommentGroup) *ast.CommentGroup {
+	if len(d.Specs) == 1 && d.Doc != nil {
+		return d.Doc
+	}
+	return specDoc
+}
+
+// genDeclSignature returns the contiguous parser-owned signature range for a
+// type/var/const spec. A single-spec declaration includes its keyword (and any
+// parentheses); a multi-spec declaration starts at the spec because the shared
+// keyword is not contiguous with each individual declaration. Struct and
+// interface types stop just after their opening brace so their bodies remain
+// disjoint from the capsule signature.
+func genDeclSignature(d *ast.GenDecl, spec ast.Spec) (token.Pos, token.Pos) {
+	start, end := spec.Pos(), spec.End()
+	if len(d.Specs) == 1 {
+		start, end = d.Pos(), d.End()
+	}
+	if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+		switch typ := typeSpec.Type.(type) {
+		case *ast.StructType:
+			if typ.Fields != nil && typ.Fields.Opening.IsValid() {
+				end = typ.Fields.Opening + 1
+			}
+		case *ast.InterfaceType:
+			if typ.Methods != nil && typ.Methods.Opening.IsValid() {
+				end = typ.Methods.Opening + 1
+			}
+		}
+	}
+	return start, end
+}
+
 // evidence renders a stable "file:line" citation for provenance.
 func (e *goExtractor) evidence(line int) string {
 	return fmt.Sprintf("%s:%d", e.filename, line)
@@ -240,7 +290,11 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 		if d.Doc != nil {
 			start = d.Doc.Pos()
 		}
-		e.setSpan(id, start, d.End())
+		signatureEnd := d.Type.End()
+		if d.Body != nil && d.Body.Lbrace.IsValid() {
+			signatureEnd = d.Body.Lbrace + 1
+		}
+		e.setSpan(id, start, d.End(), d.Doc, d.Pos(), signatureEnd)
 		if e.funcByDecl == nil {
 			e.funcByDecl = map[*ast.FuncDecl]model.NodeId{}
 		}
@@ -262,7 +316,8 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 				if err != nil {
 					return err
 				}
-				e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
+				sigStart, sigEnd := genDeclSignature(d, s)
+				e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s), genDeclSpecDoc(d, s.Doc), sigStart, sigEnd)
 				e.symbols[s.Name.Name] = id
 				// Class-hierarchy extraction (EP-011 G2): scan the declared type for
 				// embedded interfaces (→ implements) and embedded concrete types in a
@@ -287,7 +342,8 @@ func (e *goExtractor) declare(decl ast.Decl) error {
 						return err
 					}
 					// Names of one spec (`var a, b int`) share the spec's span.
-					e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s))
+					sigStart, sigEnd := genDeclSignature(d, s)
+					e.setSpan(id, specSpanStart(d, s.Doc, s), genDeclSpecEnd(d, s), genDeclSpecDoc(d, s.Doc), sigStart, sigEnd)
 					e.symbols[name.Name] = id
 				}
 			}

@@ -665,9 +665,8 @@ var (
 // a nil tokenizer until the artifact is reachable; the builder's
 // TokenizingEmbedder path then sees a nil and falls back to the byte
 // cap alone (the same fail-closed posture the legacy SW-260 path had).
-// The returned DocumentTokenizer is the *Tokenizer's HONEST truncation
-// (post-unk-drop, pre-cap token count), never the InferenceIDs-capped
-// value the legacy Truncate used.
+// The returned DocumentTokenizer observes the tokenizer's uncapped raw stream,
+// including UNK ids, so it can detect the same pre-drop cap inference applies.
 func (e *Embedder) Tokenizer() embed.DocumentTokenizer {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -679,7 +678,7 @@ func (e *Embedder) Tokenizer() embed.DocumentTokenizer {
 
 // tokenizerAdapter wraps a *Tokenizer so the production embedder can
 // return embed.DocumentTokenizer from Tokenizer() (AC-7). The adapter
-// delegates to (*Tokenizer).truncate, the HONEST truncation path.
+// delegates to (*Tokenizer).truncate, the uncapped raw-token path.
 type tokenizerAdapter struct{ t *Tokenizer }
 
 func (a tokenizerAdapter) Truncate(text string, maxTokens int) (string, bool) {
@@ -688,9 +687,9 @@ func (a tokenizerAdapter) Truncate(text string, maxTokens int) (string, bool) {
 
 // Admit implements embed.Admission (AC-2, AC-7). The first call loads
 // the artifact (a typed unavailable error surfaces on missing files);
-// subsequent calls run on the cached Model. Admit is fail-closed: an
-// input whose post-unk token count exceeds MaxAdmissionTokens returns
-// a typed *embed.AdmissionError naming the limit and the actual count.
+// subsequent calls run on the cached Model. Inputs beyond the character or
+// raw-token boundary are reduced to the exact byte prefix inference consumes;
+// an input for which no token-aligned prefix can be proved fails closed.
 func (e *Embedder) Admit(ctx context.Context, text string) (embed.Admitted, error) {
 	m, err := e.load(ctx)
 	if err != nil {

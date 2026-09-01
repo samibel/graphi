@@ -14,6 +14,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/samibel/graphi/core/model"
@@ -44,34 +46,27 @@ func (a alwaysFailAdmitter) Admit(_ context.Context, _ string) (embed.Admitted, 
 // (discard BuildDocuments error, classify missing as Excluded), the
 // build would silently publish a partial generation as Ready.
 func TestFileDocumentSource_AdmissionFailureIsFailedNotExcluded(t *testing.T) {
-	// Direct unit test: build a fileDocumentSource, populate its
-	// state to simulate a load that surfaced an admission error,
-	// then assert Result returns DocumentFailed. This is the
-	// discriminating test for the C4 laundering path: the previous
-	// shape classified any missing node as DocumentExcluded, even
-	// when the cause was an admission error during BuildDocuments.
-	//
-	// We do NOT exercise rootfile.Read here because Go's os.Root on
-	// macOS currently rejects most paths with "path escapes from
-	// parent" (an unrelated infrastructure issue). The Result and
-	// load paths are tested through the internal state instead.
-	srcFS := &fileDocumentSource{
-		cur:     "/some/path.go",
-		curDocs: nil, // empty — no documents produced
+	root := t.TempDir()
+	path := filepath.Join(root, "pkg", "input.go")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("package pkg\n\nfunc Fails() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	// A declaration node (kind=function, path set) whose id is
-	// missing from curDocs and whose file's load surfaced an
-	// admission error MUST be DocumentFailed. The previous shape
-	// returned DocumentExcluded (no_span laundering). Use the same
-	// path for s.cur and the node so the test does not trigger load
-	// (model.NewNode strips leading slashes from the path it
-	// stores, so the relative path matches).
-	srcFS.cur = "x/y.go"
-	srcFS.markAdmitErrorForTest() // test-only helper; see semanticdocs.go
-	n, _ := model.NewNode("function", "p.P", "x/y.go", 1, 1)
+	// Result triggers load(), which parses the real file and calls
+	// BuildDocuments with the failing admitter. If load discards the returned
+	// error, this exact node is misclassified as a no_span exclusion.
+	srcFS := newFileDocumentSource(context.Background(), root, failingEmbedder{
+		adm: alwaysFailAdmitter{tokenLimit: 8},
+	})
+	n, _ := model.NewNode("function", "pkg.Fails", "pkg/input.go", 3, 6)
 	if got := srcFS.Result(n); got != embed.DocumentFailed {
 		t.Errorf("Result = %v, want DocumentFailed (C4: admission failure must not launder into no_span). Without the C4 fix the missing node id returns DocumentExcluded and the build commits a partial generation as Ready.", got)
+	}
+	if !srcFS.curAdmit {
+		t.Fatal("load did not capture BuildDocuments' admission error")
 	}
 
 	// Sticky across calls: every subsequent Result for declarations

@@ -241,21 +241,16 @@ func (s DocumentStats) SpanMethodShare() map[string]float64 {
 // no silent truncation can sit between TextHash and the persisted
 // vector.
 //
-// Mandatory-field overflow policy (reviewer fix): when the
-// structured fields (kind, qualified name, path, annotations, doc
-// comment, signature) alone exceed the admission limit, the adapter
-// is asked to admit the joined capsule text including the body. The
-// adapter's first-n-tokens algorithm truncates the body first, then
-// keeps cutting the trailing capsule text; the joined Text therefore
-// drops trailing body bytes (the body's tail). The structured fields
-// are preserved (the header and signature are at the head of the
-// joined Text and survive the cut). A typed *AdmissionError surfaces
-// when the adapter cannot admit ANY admissible bytes (e.g. whitespace-
-// only input).
+// Mandatory-field overflow policy: kind, qualified name, path, annotations,
+// doc comment, and signature form an indivisible prefix. Body bytes may be
+// truncated, but that prefix may not. If adapter admission or the final byte
+// cap cuts any mandatory byte, BuildDocument returns a typed *AdmissionError;
+// it never publishes Text containing half a signature while Capsule.Signature
+// retains the full declaration.
 //
 // When no Admission is provided the builder falls back to the legacy
-// Tokenizer path: cut to MaxDocumentTokens when a DocumentTokenizer
-// is known, else the byte cap alone (AC-6 — bytes vs model admission
+// Tokenizer path: cut to the legacy 512-token limit when a
+// DocumentTokenizer is known, else the byte cap alone (AC-6 — bytes vs model admission
 // stay separated). The v3 builder always applies the resource cap
 // (MaxCapsuleBytes) as the last bound.
 func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (SemanticDocument, error) {
@@ -265,6 +260,9 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (Seman
 	// comment + signature + body). The admission budget covers this
 	// full text, not the body alone.
 	full := renderCapsuleText(cap, annotations)
+	mandatoryCapsule := cap
+	mandatoryCapsule.Body = ""
+	mandatory := renderCapsuleText(mandatoryCapsule, annotations)
 	admitted, algoID, profile, admitErr := admitFull(full, source)
 	if admitErr != nil {
 		// Surface the typed admission error with the document identity
@@ -277,28 +275,40 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (Seman
 		}
 		return SemanticDocument{}, admitErr
 	}
+	if !strings.HasPrefix(admitted.Text, mandatory) {
+		limit := profile.MaxTokens
+		if limit <= 0 {
+			limit = -1
+		}
+		actual := admitted.TokenCount
+		if limit >= 0 && actual <= limit {
+			actual = limit + 1
+		}
+		return SemanticDocument{}, &AdmissionError{
+			NodeID:  string(node.ID()),
+			Path:    node.SourcePath(),
+			Limit:   limit,
+			Actual:  actual,
+			Profile: profile,
+			Reason:  "mandatory capsule fields exceed the admission limit",
+		}
+	}
 	// The admitted bytes are EXACTLY what the model consumes and
 	// EXACTLY what TextHash hashes (reviewer fix Critical 2). The
 	// structured capsule fields still describe the original
 	// declaration; the bounded payload is the admitted text.
 	admittedText := admitted.Text
 	text, byteBound := applyByteCap(admittedText)
-	if byteBound {
-		// Resource cap fired after admission. The resource bound is
-		// bytes (AC-6); this case fires only on a degenerate
-		// input the admission policy accepted but the byte cap
-		// could not.
-		_ = profile // bound label updated below
-	}
 	tokenCount := admitted.TokenCount
-	if byteBound {
-		// The byte cap fired after admission: the admitted bytes
-		// are still what TextHash describes, but they are shorter
-		// than the adapter returned. Keep the HONEST pre-cap count
-		// (the resource cap is bytes, not tokens); the bound label
-		// shifts to "bytes" so the eval harness sees the resource
-		// cap as the closing bound.
-		_ = tokenCount
+	if !strings.HasPrefix(text, mandatory) {
+		return SemanticDocument{}, &AdmissionError{
+			NodeID:  string(node.ID()),
+			Path:    node.SourcePath(),
+			Limit:   MaxCapsuleBytes,
+			Actual:  len(mandatory),
+			Profile: profile,
+			Reason:  "mandatory capsule fields exceed the byte limit",
+		}
 	}
 	textHash := model.FormatID(xxhash.Sum64String(text))
 	bound := admitted.Bound
@@ -329,24 +339,6 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (Seman
 	}, nil
 }
 
-// admittedTokenCount reports the HONEST pre-truncation token count
-// for the bytes the model will consume. When an admission-aware
-// embedder is configured, the count comes from the embedder's own
-// tokenizer (uncapped — see Tokenizer.EncodeRaw). When no
-// admission-aware embedder is configured, the count is 0 (the
-// per-adapter HONEST surface lives in the adapter package).
-func admittedTokenCount(text string, source Source) int {
-	if source.Admitter == nil {
-		return 0
-	}
-	if c, ok := source.Admitter.(interface {
-		CountTokens(text string) int
-	}); ok {
-		return c.CountTokens(text)
-	}
-	return 0
-}
-
 // assembleCapsule constructs the structured v3 capsule (AC-1) from a
 // node plus its non-identity span. Field order is fixed: kind+qualified
 // name, path segments, signature, doc comment, body. A zero span yields
@@ -368,7 +360,11 @@ func assembleCapsule(node model.Node, span parse.SourceSpan, src []byte) Capsule
 	if span.SignatureSpan != nil {
 		sig = bytesRange(src, span.SignatureSpan.StartByte, span.SignatureSpan.EndByte)
 	} else {
-		sig = spanSignatureFromBody(body)
+		signatureBody := body
+		if doc != "" {
+			signatureBody = strings.TrimLeft(strings.TrimPrefix(signatureBody, doc), "\r\n")
+		}
+		sig = spanSignatureFromBody(signatureBody)
 	}
 	body = stripDocAndSignature(body, doc, sig)
 	return Capsule{
@@ -398,14 +394,11 @@ func bytesRange(src []byte, a, b int) string {
 // spanSignatureFromBody is the same shape as spanSignature but reads
 // from a pre-trimmed body string so assembleCapsule can use the value
 // without recomputing the byte run. The signature is the declaration
-// line that opens the function/type (the first non-comment, non-
-// decorator, non-blank line, including any balanced `{ ... }` pair
-// on that line). When the opening line has an unmatched `{` (the
-// function body opens on a later line), the signature ends at the
-// `{` itself so the body remains disjoint. The v2 wire form
-// preserves this shape and the v3 stripDocAndSignature helper uses
-// it to keep the body and signature disjoint. A pure-doc-comment
-// body yields "".
+// line that opens the function/type (the first non-comment, non-decorator,
+// non-blank line). If that line opens a parenthesized or bracketed declaration,
+// continuation lines are included through the opening `{`. A one-line body is
+// included through its balanced `}`; a multiline body stops at `{` so the body
+// remains disjoint. A pure-doc-comment body yields "".
 //
 // Decorators (lines starting with `@`, common in TypeScript / Python)
 // ride with the body, not the signature — they decorate the
@@ -415,8 +408,8 @@ func spanSignatureFromBody(body string) string {
 		return ""
 	}
 	lines := strings.Split(body, "\n")
-	var first string
-	for _, line := range lines {
+	firstLine := -1
+	for i, line := range lines {
 		trim := strings.TrimSpace(line)
 		if trim == "" {
 			continue
@@ -428,15 +421,32 @@ func spanSignatureFromBody(body string) string {
 			// Decorator: skip; ride with body.
 			continue
 		}
-		first = line
+		firstLine = i
 		break
 	}
-	if first == "" {
+	if firstLine < 0 {
 		return ""
 	}
+	first := lines[firstLine]
 	open := strings.Index(first, "{")
 	if open < 0 {
-		return strings.TrimRight(first, " \t\r\n")
+		depth := declarationDelimiterDepth(first)
+		if depth <= 0 {
+			return strings.TrimRight(first, " \t\r\n")
+		}
+		parts := []string{first}
+		for _, line := range lines[firstLine+1:] {
+			if open = strings.Index(line, "{"); open >= 0 {
+				parts = append(parts, line[:open+1])
+				return strings.TrimRight(strings.Join(parts, "\n"), " \t\r\n")
+			}
+			parts = append(parts, line)
+			depth += declarationDelimiterDepth(line)
+			if depth <= 0 {
+				return strings.TrimRight(strings.Join(parts, "\n"), " \t\r\n")
+			}
+		}
+		return strings.TrimRight(strings.Join(parts, "\n"), " \t\r\n")
 	}
 	depth := 0
 	for i := open; i < len(first); i++ {
@@ -453,6 +463,19 @@ func spanSignatureFromBody(body string) string {
 	// Unmatched `{` on the first line: signature ends at `{` so the
 	// body that admission bounds stays disjoint.
 	return strings.TrimRight(first[:open+1], " \t\r\n")
+}
+
+func declarationDelimiterDepth(line string) int {
+	depth := 0
+	for _, r := range line {
+		switch r {
+		case '(', '[', '<':
+			depth++
+		case ')', ']', '>':
+			depth--
+		}
+	}
+	return depth
 }
 
 // stripDocAndSignature removes the leading doc-comment block AND the

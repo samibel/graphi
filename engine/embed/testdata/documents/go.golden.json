@@ -29,7 +29,7 @@
     "admission_algorithm_id": ""
   },
   {
-    "document_id": "926bb0e8d8385dd6",
+    "document_id": "7699f0b64647c867",
     "node_id": "7f2428aca84d5db1",
     "language": "go",
     "kind": "type",
@@ -40,25 +40,25 @@
     "start_line": 8,
     "end_line": 9,
     "span_method": "ast",
-    "text_hash": "03e0029603623928",
+    "text_hash": "0f53b9536b12381d",
     "document_schema": "v3",
-    "text": "type shop.Cart\nshop cart.go\n// Cart holds items.\ntype Cart struct{ items int }",
+    "text": "type shop.Cart\nshop cart.go\n// Cart holds items.\ntype Cart struct{\n items int }",
     "truncated": false,
     "bound": "none",
     "capsule": {
       "kind": "type",
       "qualified_name": "shop.Cart",
       "path_segments": "shop cart.go",
-      "signature": "type Cart struct{ items int }",
+      "signature": "type Cart struct{",
       "doc_comment": "// Cart holds items.",
-      "body": ""
+      "body": " items int }"
     },
     "admission_token_count": 0,
     "admission_limit": 0,
     "admission_algorithm_id": ""
   },
   {
-    "document_id": "9f9a7fcd1b388748",
+    "document_id": "413245df99a8eb4e",
     "node_id": "0f69ab416765cd02",
     "language": "go",
     "kind": "method",
@@ -69,18 +69,18 @@
     "start_line": 11,
     "end_line": 12,
     "span_method": "ast",
-    "text_hash": "224dca76156969d3",
+    "text_hash": "8b20b91f7c975d03",
     "document_schema": "v3",
-    "text": "method shop.Cart.Add\nshop cart.go\n// Add appends an item.\nfunc (c *Cart) Add() { c.items++ }",
+    "text": "method shop.Cart.Add\nshop cart.go\n// Add appends an item.\nfunc (c *Cart) Add() {\n c.items++ }",
     "truncated": false,
     "bound": "none",
     "capsule": {
       "kind": "method",
       "qualified_name": "shop.Cart.Add",
       "path_segments": "shop cart.go",
-      "signature": "func (c *Cart) Add() { c.items++ }",
+      "signature": "func (c *Cart) Add() {",
       "doc_comment": "// Add appends an item.",
-      "body": ""
+      "body": " c.items++ }"
     },
     "admission_token_count": 0,
     "admission_limit": 0,
@@ -116,7 +116,7 @@
     "admission_algorithm_id": ""
   },
   {
-    "document_id": "a969356ef7c92501",
+    "document_id": "24a93473bec4039f",
     "node_id": "117efb0c60642800",
     "language": "go",
     "kind": "function",
@@ -127,25 +127,25 @@
     "start_line": 20,
     "end_line": 20,
     "span_method": "ast",
-    "text_hash": "2d01ba8fc7fccfa0",
+    "text_hash": "edc272df8d5542a9",
     "document_schema": "v3",
-    "text": "function shop.a\nshop cart.go\nfunc a() int { return 1 }",
+    "text": "function shop.a\nshop cart.go\nfunc a() int {\n return 1 }",
     "truncated": false,
     "bound": "none",
     "capsule": {
       "kind": "function",
       "qualified_name": "shop.a",
       "path_segments": "shop cart.go",
-      "signature": "func a() int { return 1 }",
+      "signature": "func a() int {",
       "doc_comment": "",
-      "body": ""
+      "body": " return 1 }"
     },
     "admission_token_count": 0,
     "admission_limit": 0,
     "admission_algorithm_id": ""
   },
   {
-    "document_id": "667d8f186b344786",
+    "document_id": "0105068a419c90ed",
     "node_id": "bb54ec08064e0824",
     "language": "go",
     "kind": "function",
@@ -156,25 +156,25 @@
     "start_line": 20,
     "end_line": 20,
     "span_method": "ast",
-    "text_hash": "74812d273bdddf1e",
+    "text_hash": "236dc71fb7fa465a",
     "document_schema": "v3",
-    "text": "function shop.b\nshop cart.go\nfunc b() int { return 2 }",
+    "text": "function shop.b\nshop cart.go\nfunc b() int {\n return 2 }",
     "truncated": false,
     "bound": "none",
     "capsule": {
       "kind": "function",
       "qualified_name": "shop.b",
       "path_segments": "shop cart.go",
-      "signature": "func b() int { return 2 }",
+      "signature": "func b() int {",
       "doc_comment": "",
-      "body": ""
+      "body": " return 2 }"
     },
     "admission_token_count": 0,
     "admission_limit": 0,
     "admission_algorithm_id": ""
   },
   {
-    "document_id": "6c4717082148e7bf",
+    "document_id": "7c98e232e08ca826",
     "node_id": "f068b6a261c5d507",
     "language": "go",
     "kind": "function",
@@ -185,18 +185,18 @@
     "start_line": 22,
     "end_line": 23,
     "span_method": "ast",
-    "text_hash": "6a0504a910915ce4",
+    "text_hash": "321e655f940cad0d",
     "document_schema": "v3",
-    "text": "function shop.last\nshop cart.go\n// last is the final declaration.\nfunc last() { fmt.Println(TaxRate) }",
+    "text": "function shop.last\nshop cart.go\n// last is the final declaration.\nfunc last() {\n fmt.Println(TaxRate) }",
     "truncated": false,
     "bound": "none",
     "capsule": {
       "kind": "function",
       "qualified_name": "shop.last",
       "path_segments": "shop cart.go",
-      "signature": "func last() { fmt.Println(TaxRate) }",
+      "signature": "func last() {",
       "doc_comment": "// last is the final declaration.",
-      "body": ""
+      "body": " fmt.Println(TaxRate) }"
     },
     "admission_token_count": 0,
     "admission_limit": 0,

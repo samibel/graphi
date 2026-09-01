@@ -9,18 +9,15 @@ package static
 // words was admitted unchanged while inference silently dropped the
 // tail.
 //
-// The test below feeds an UNK-heavy input (a long run of "?" —
-// discarded by the synthetic tokenizer as unk — followed by
-// recognized tokens "hello world") through Admit and asserts:
-//   - Admit's returned Text is SHORTER than the input (char cut fired).
-//   - Admit's returned Text equals the cutChars-prefix that
-//     InferenceIDs applies (same bytes consumed).
-//   - TokenCount is the HONEST count of the cut text.
+// The test below feeds an UNK-heavy input (a long run of "?" — discarded by
+// the synthetic tokenizer as unk — followed by recognized tokens "hello
+// world") through Admit and asserts that the returned Text fits both the
+// character and raw-token boundaries and yields exactly the ids inference
+// would obtain from the original input.
 //
-// Without the fix, Admit returns the full input text. TextHash then
-// describes bytes the model never sees — the exact contract the
-// story exists to close. The regression test was confirmed RED on
-// the previous Admit shape and GREEN on the fix.
+// The character-cut-only implementation returns 2,048 question marks, but
+// their raw UNK stream is itself capped at 512 before UNK removal. Admission
+// must therefore cut the bytes again at the raw-token boundary.
 
 import (
 	"context"
@@ -41,11 +38,9 @@ func TestStatic_AdmitAppliesCharCutToMatchInference(t *testing.T) {
 	// Build an input whose first (maxLength × medianTokenLength)
 	// chars are "?" (UNK under the synthetic tokenizer) and whose
 	// later chars are recognized "hello world hello world ...".
-	// Without the fix, Admit only counts post-unk tokens — which
-	// drops the "?" prefix and finds "hello world hello world" to
-	// fit comfortably under 512 — and returns the FULL input. With
-	// the fix, Admit applies the same char cut InferenceIDs does
-	// and returns the cut prefix.
+	// The admitted prefix must stop at the earlier effective boundary:
+	// the tokenizer emits one raw UNK per question mark and caps that
+	// stream before Model2Vec drops the UNKs.
 	const maxLength = 512
 	medianTokenLength := m.medianTokenLength
 	if medianTokenLength < 1 {
@@ -82,10 +77,68 @@ func TestStatic_AdmitAppliesCharCutToMatchInference(t *testing.T) {
 	if strings.Contains(admitted.Text, "hello") {
 		t.Errorf("Admit returned text containing recognized chars; the recognized tail was not cut by admission")
 	}
-	// The admitted text must match what cutChars would produce.
-	if expected := m.cutChars(input); admitted.Text != expected {
-		t.Errorf("Admit Text differs from cutChars output. Admission and inference must consume exactly the same bytes.\n  Admit: %d bytes\n  cutChars: %d bytes", len(admitted.Text), len(expected))
+	if got := len(m.tok.EncodeRaw(admitted.Text)); got > m.maxLength {
+		t.Errorf("admitted UNK prefix emits %d raw tokens, want <= %d", got, m.maxLength)
 	}
+	expected := truncateByTokens(m.cutChars(input), m.tok, m.maxLength)
+	if admitted.Text != expected {
+		t.Errorf("Admit Text differs from the combined character/token prefix.\n  Admit: %d bytes\n  expected: %d bytes", len(admitted.Text), len(expected))
+	}
+	if got, want := admitted.TokenCount, len(m.InferenceIDs(admitted.Text)); got != want {
+		t.Errorf("Admit TokenCount = %d, inference consumes %d ids", got, want)
+	}
+	if got, want := m.InferenceIDs(admitted.Text), m.InferenceIDs(input); !equalIntSlices(got, want) {
+		t.Errorf("admitted and original inference ids differ:\n admitted=%v\n original=%v", got, want)
+	}
+}
+
+// TestStatic_AdmitTruncatesDenseRecognizedTokens covers the token-bound half
+// of the exact-consumption contract. The input is deliberately shorter than
+// cutChars' character budget but emits 600 recognized tokens. Tokenizer.Encode
+// caps at 512, so an overflow check built on Encode can never observe this
+// case and incorrectly returns the full input with BoundNone.
+func TestStatic_AdmitTruncatesDenseRecognizedTokens(t *testing.T) {
+	m := buildSyntheticModelForAdmit(t)
+	input := strings.Repeat("x ", 600)
+	charLimit := m.maxLength * m.medianTokenLength
+	if got := len([]rune(input)); got >= charLimit {
+		t.Fatalf("test setup: input has %d runes, want below character limit %d", got, charLimit)
+	}
+	if got := len(m.tok.EncodeRaw(input)); got != 600 {
+		t.Fatalf("test setup: EncodeRaw emits %d tokens, want 600", got)
+	}
+
+	admitted, err := m.Admit(context.Background(), input)
+	if err != nil {
+		t.Fatalf("Admit: %v", err)
+	}
+	if admitted.Text == input {
+		t.Fatal("Admit returned the full 600-token input; inference silently caps it at 512")
+	}
+	if admitted.Bound != "tokens" {
+		t.Errorf("Admit Bound = %q, want tokens", admitted.Bound)
+	}
+	if got := len(m.tok.EncodeRaw(admitted.Text)); got > m.maxLength {
+		t.Errorf("admitted text emits %d raw tokens, want <= %d", got, m.maxLength)
+	}
+	if got, want := admitted.TokenCount, len(m.InferenceIDs(admitted.Text)); got != want {
+		t.Errorf("Admit TokenCount = %d, inference consumes %d ids", got, want)
+	}
+	if got, want := m.InferenceIDs(admitted.Text), m.InferenceIDs(input); !equalIntSlices(got, want) {
+		t.Errorf("admitted and original inference ids differ:\n admitted=%v\n original=%v", got, want)
+	}
+}
+
+func equalIntSlices(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // buildSyntheticModelForAdmit builds a Model with a known

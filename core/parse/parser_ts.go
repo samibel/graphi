@@ -269,8 +269,9 @@ type tsWalk struct {
 }
 
 // addDef records a top-level definition (first binding wins). decl is the CST
-// node of the declaration statement the name belongs to; its span is recorded
-// alongside (SW-260) and never touches identity or ordering.
+// node of the declaration statement the name belongs to; its declaration,
+// doc-comment, and signature spans are recorded alongside and never touch
+// identity or ordering.
 func (w *tsWalk) addDef(bare, kind string, pos TSPoint, decl *gts.Node) {
 	if bare == "" {
 		return
@@ -289,7 +290,8 @@ func (w *tsWalk) addDef(bare, kind string, pos TSPoint, decl *gts.Node) {
 	}
 }
 
-// tsDeclSpan derives the exact ast span of a declaration from its CST node:
+// tsDeclSpan derives exact declaration, doc-comment, and signature spans from
+// a declaration's CST node:
 //
 //   - a declaration wrapped in an `export_statement` spans the whole statement
 //     (the `export` keyword and any decorator that precedes it as a sibling
@@ -298,8 +300,11 @@ func (w *tsWalk) addDef(bare, kind string, pos TSPoint, decl *gts.Node) {
 //     a class body) are pulled into the span; decorators that are CHILDREN of
 //     the declaration (`export @Dec class B {}`, `@Injectable() class C {}`) are
 //     already inside its bounds;
-//   - a leading `comment` sibling is attached only when it ends on the line
-//     directly above the span start (a blank line detaches it).
+//   - adjacent leading `comment` siblings form DocSpan; a blank line detaches
+//     them;
+//   - SignatureSpan starts at the first attached decorator (otherwise the
+//     declaration/export wrapper) and ends just after the declaration body's
+//     opening brace. Declarations without a body use their complete statement.
 //
 // Rows are tree-sitter 0-based and rendered 1-based like Node.Line; EndByte is
 // tree-sitter's exclusive end.
@@ -308,27 +313,46 @@ func tsDeclSpan(lang *gts.Language, decl *gts.Node) SourceSpan {
 	if p := decl.Parent(); p != nil && p.Type(lang) == "export_statement" {
 		outer = p
 	}
-	start, startRow := outer.StartByte(), outer.StartPoint().Row
-	for prev := outer.PrevSibling(); prev != nil; prev = prev.PrevSibling() {
-		switch prev.Type(lang) {
-		case "decorator":
-			start, startRow = prev.StartByte(), prev.StartPoint().Row
-			continue
-		case "comment":
-			if prev.EndPoint().Row+1 == startRow {
-				start, startRow = prev.StartByte(), prev.StartPoint().Row
-				continue
-			}
-		}
-		break
+	signatureStart := outer.StartByte()
+	signatureStartRow := outer.StartPoint().Row
+	prev := outer.PrevSibling()
+	for prev != nil && prev.Type(lang) == "decorator" {
+		signatureStart = prev.StartByte()
+		signatureStartRow = prev.StartPoint().Row
+		prev = prev.PrevSibling()
 	}
-	return SourceSpan{
+
+	start := signatureStart
+	startRow := signatureStartRow
+	var docStart, docEnd uint32
+	for prev != nil && prev.Type(lang) == "comment" && prev.EndPoint().Row+1 == startRow {
+		if docEnd == 0 {
+			docEnd = prev.EndByte()
+		}
+		docStart = prev.StartByte()
+		start = docStart
+		startRow = prev.StartPoint().Row
+		prev = prev.PrevSibling()
+	}
+
+	span := SourceSpan{
 		StartByte: int(start),
 		EndByte:   int(outer.EndByte()),
 		StartLine: int(startRow) + 1,
 		EndLine:   int(outer.EndPoint().Row) + 1,
 		Method:    SpanMethodAST,
 	}
+	if docEnd > docStart {
+		span.DocSpan = &ByteSpan{StartByte: int(docStart), EndByte: int(docEnd)}
+	}
+	signatureEnd := outer.EndByte()
+	if body := decl.ChildByFieldName("body", lang); body != nil {
+		signatureEnd = body.StartByte() + 1
+	}
+	if signatureEnd > signatureStart {
+		span.SignatureSpan = &ByteSpan{StartByte: int(signatureStart), EndByte: int(signatureEnd)}
+	}
+	return span
 }
 
 // setDefMeta attaches NON-identity metadata (flags) to a previously-added

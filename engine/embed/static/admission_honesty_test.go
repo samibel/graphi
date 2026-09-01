@@ -13,8 +13,7 @@ package static_test
 // asserts:
 //   - Truncated == true (the adapter cut the body)
 //   - Bound == "tokens" (the token bound closed the gap)
-//   - AdmissionTokenCount > MaxAdmissionTokens (the HONEST pre-cap
-//     count is reported, not the cap value)
+//   - AdmissionTokenCount is the exact number of useful ids pooled
 //   - The admitted text length is bounded below MaxCapsuleBytes
 //   - The admitted text contains the function signature (the
 //     header survives the cut)
@@ -65,10 +64,9 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	if len(src) < 12000 {
 		t.Fatalf("writePreamble fixture = %d bytes, want >= 12000", len(src))
 	}
-	// Build the document using the production admission path. The
-	// embedder's Admit is the HONEST pre-cap count (reviewer fix
-	// Critical 1); without the fix, the count would be ≤ 512 and
-	// the assertions below would fail.
+	// Build the document using the production admission path. Admission
+	// inspects the uncapped raw stream to make overflow reachable and reports
+	// the exact useful-id count for the returned bytes.
 	n, _ := model.NewNode("function", "cobra.writePreamble", "writePreamble.go", 1, 1)
 	s := parse.SourceSpan{StartByte: 0, EndByte: len(src), StartLine: 1, EndLine: 367, Method: parse.SpanMethodAST}
 	var admitter embed.Admission
@@ -87,18 +85,13 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	if d.Bound != "tokens" {
 		t.Errorf("writePreamble Bound = %q, want %q. The adapter's admit must report the token bound that closed the gap.", d.Bound, embed.BoundTokens)
 	}
-	// AdmissionTokenCount must be the HONEST pre-cap count (reviewer fix).
-	// Without the fix, the count is the post-cap number (≤ 512) so this
-	// assertion fails. With the C1 fix (admission applies the same char
-	// cut as inference), the count is for the CUT text — so we can
-	// only assert it is the HONEST count of the cut text, not > 512
-	// unconditionally. The discriminating assertion here is that
-	// Bound="tokens" (the cut fired) and Truncated=true.
+	// The discriminating assertion is that Bound="tokens" and
+	// Truncated=true; TokenCount describes what inference pools after the cut.
 	if d.AdmissionLimit != 512 {
 		t.Errorf("writePreamble AdmissionLimit = %d, want 512 (the production MaxAdmissionTokens)", d.AdmissionLimit)
 	}
 	if d.AdmissionTokenCount <= 0 {
-		t.Errorf("writePreamble AdmissionTokenCount = %d, want > 0 (HONEST pre-cap count of the admitted text)", d.AdmissionTokenCount)
+		t.Errorf("writePreamble AdmissionTokenCount = %d, want > 0 (useful ids pooled for the admitted text)", d.AdmissionTokenCount)
 	}
 	// The admitted Text must be bounded by the resource cap.
 	if len(d.Text) > embed.MaxCapsuleBytes {
@@ -109,7 +102,7 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 		t.Errorf("writePreamble Text does not contain the signature; AC-1 says the signature survives the bound")
 	}
 
-	// Direct Admit call asserts the HONEST pre-cap count.
+	// Direct Admit call asserts the exact pooled-id count.
 	admitted, err := m.Admit(context.Background(), string(src))
 	if err != nil {
 		t.Fatalf("Admit: %v", err)
@@ -117,12 +110,9 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	if admitted.Bound != embed.BoundTokens {
 		t.Errorf("Admit Bound = %q, want %q", admitted.Bound, embed.BoundTokens)
 	}
-	// The HONEST count is for the cut text — assert it is > 0 and
-	// ≤ maxLength (the cap applies after dropUnk). The discriminating
-	// property here is that Bound="tokens" (the cut fired) and the
-	// text length matches cutChars (verified separately).
+	// The count is for the returned text and cannot exceed maxLength.
 	if admitted.TokenCount <= 0 || admitted.TokenCount > 512 {
-		t.Errorf("Admit TokenCount = %d, want 0 < n <= 512 (HONEST post-unk pre-cap count of the cut text)", admitted.TokenCount)
+		t.Errorf("Admit TokenCount = %d, want 0 < n <= 512 useful ids", admitted.TokenCount)
 	}
 	_ = admitted
 }

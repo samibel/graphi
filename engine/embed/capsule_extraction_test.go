@@ -15,40 +15,55 @@ import (
 	"github.com/samibel/graphi/engine/embed"
 )
 
-// TestCapsule_UsesParserProvidedSpan pins AC-1 + the reviewer fix:
-// when the parser supplies SignatureSpan / DocSpan, the capsule uses
-// those byte ranges verbatim. The heuristic is bypassed (no
-// line-by-line guessing). Without the parser-span fields the heuristic
-// runs; with them, the parser's view wins.
-func TestCapsule_UsesParserProvidedSpan(t *testing.T) {
-	src := []byte("package p\n\n// Hello says hi.\nfunc Hello() {}\n")
-	// Byte layout of the source:
-	//   0..9: "package p\n"  (10 bytes)
-	//  10:    "\n"
-	//  11..28: "// Hello says hi." (18 bytes)
-	//  29..43: "func Hello() {}" (15 bytes)
-	//  44:    "\n"
-	span := parse.SourceSpan{
-		StartByte: 0, EndByte: len(src),
-		StartLine: 1, EndLine: 4,
-		Method: parse.SpanMethodAST,
-		// DocSpan: the "// Hello says hi." line (positions 11..28).
-		// SignatureSpan: "func Hello() {}" (positions 29..44 inclusive
-		// of '}', exclusive endByte = 44).
-		DocSpan:       &parse.ByteSpan{StartByte: 11, EndByte: 28},
-		SignatureSpan: &parse.ByteSpan{StartByte: 29, EndByte: 44},
-	}
-	n, _ := model.NewNode("function", "p.Hello", "p/hello.go", 4, 1)
-	d, err := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: src})
-	if err != nil {
-		t.Fatalf("BuildDocument: %v", err)
-	}
-	if d.Capsule.DocComment != "// Hello says hi." {
-		t.Errorf("DocComment = %q, want %q (parser span)", d.Capsule.DocComment, "// Hello says hi.")
-	}
-	if d.Capsule.Signature != "func Hello() {}" {
-		t.Errorf("Signature = %q, want %q (parser span)", d.Capsule.Signature, "func Hello() {}")
-	}
+// TestCapsule_UsesParserProvidedSpans drives the production parsers and then
+// passes their SourceSpan sidecars to BuildDocument. It prevents the optional
+// sub-span fields from becoming a cosmetic contract exercised only by a
+// fabricated SourceSpan.
+func TestCapsule_UsesParserProvidedSpans(t *testing.T) {
+	t.Run("go multiline declaration and block doc", func(t *testing.T) {
+		src := []byte("package p\n\n/* Multiline documents Multiline.\n * Continued.\n */\nfunc Multiline(\n\tx int,\n\ty int,\n) (int, error) {\n\treturn x + y, nil\n}\n")
+		n, span := parsedNodeSpan(t, "p/multiline.go", src, "p.Multiline")
+		if span.DocSpan == nil || span.SignatureSpan == nil {
+			t.Fatalf("Go parser sub-spans = doc:%v signature:%v, want both populated", span.DocSpan, span.SignatureSpan)
+		}
+		d, err := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: src})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
+		wantDoc := "/* Multiline documents Multiline.\n * Continued.\n */"
+		wantSig := "func Multiline(\n\tx int,\n\ty int,\n) (int, error) {"
+		if d.Capsule.DocComment != wantDoc {
+			t.Errorf("DocComment = %q, want parser block comment %q", d.Capsule.DocComment, wantDoc)
+		}
+		if d.Capsule.Signature != wantSig {
+			t.Errorf("Signature = %q, want parser multiline signature %q", d.Capsule.Signature, wantSig)
+		}
+		if strings.Contains(d.Capsule.Body, "func Multiline(") {
+			t.Errorf("Body repeats parser-provided signature: %q", d.Capsule.Body)
+		}
+	})
+
+	t.Run("typescript decorator and multiline declaration", func(t *testing.T) {
+		src := []byte("/** Service docs. */\n@Component({\n  selector: 'x',\n})\nexport class Service {\n  run(): void {}\n}\n")
+		n, span := parsedNodeSpan(t, "shop/service.ts", src, "shop.Service")
+		if span.DocSpan == nil || span.SignatureSpan == nil {
+			t.Fatalf("TypeScript parser sub-spans = doc:%v signature:%v, want both populated", span.DocSpan, span.SignatureSpan)
+		}
+		d, err := embed.BuildDocument(n, span, embed.Source{Language: "typescript", Bytes: src})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
+		wantSig := "@Component({\n  selector: 'x',\n})\nexport class Service {"
+		if d.Capsule.DocComment != "/** Service docs. */" {
+			t.Errorf("DocComment = %q, want parser JSDoc", d.Capsule.DocComment)
+		}
+		if d.Capsule.Signature != wantSig {
+			t.Errorf("Signature = %q, want decorated parser signature %q", d.Capsule.Signature, wantSig)
+		}
+		if strings.Contains(d.Capsule.Body, "@Component") {
+			t.Errorf("Body repeats parser-provided decorator/signature: %q", d.Capsule.Body)
+		}
+	})
 }
 
 // TestCapsule_HeuristicHandlesDecorators pins the heuristic path for
@@ -91,12 +106,34 @@ func TestCapsule_HeuristicHandlesMultilineDeclarations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildDocument: %v", err)
 	}
-	if d.Capsule.Signature != "func MultilineFunc(" {
-		t.Errorf("Signature = %q, want %q (heuristic must end at first {)", d.Capsule.Signature, "func MultilineFunc(")
+	wantSig := "func MultilineFunc(\n\tx int,\n\ty int,\n) (int, error) {"
+	if d.Capsule.Signature != wantSig {
+		t.Errorf("Signature = %q, want %q (heuristic must include a multiline declaration through its opening brace)", d.Capsule.Signature, wantSig)
 	}
 	if strings.Contains(d.Capsule.Body, "func MultilineFunc(") {
 		t.Errorf("Body contains the signature: %q (signature must be disjoint from body)", d.Capsule.Body[:min(60, len(d.Capsule.Body))])
 	}
+}
+
+func parsedNodeSpan(t *testing.T, path string, src []byte, qn string) (model.Node, parse.SourceSpan) {
+	t.Helper()
+	res, err := parse.NewDefaultRegistry().Parse(context.Background(), path, src)
+	if err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	defer parse.ReleaseRoot(res)
+	for _, n := range res.Nodes {
+		if n.QualifiedName() != qn {
+			continue
+		}
+		span, ok := res.Spans[n.ID()]
+		if !ok {
+			t.Fatalf("parser returned no SourceSpan for %s", qn)
+		}
+		return n, span
+	}
+	t.Fatalf("parser returned no node %s", qn)
+	return model.Node{}, parse.SourceSpan{}
 }
 
 // TestCapsule_HeuristicHandlesBlockComments pins the third shape: a
@@ -147,7 +184,6 @@ func TestCapsule_DocAndSignatureDisjoint(t *testing.T) {
 	if strings.Contains(d.Capsule.Body, "func F()") {
 		t.Errorf("Body contains signature: %q", d.Capsule.Body)
 	}
-	_ = context.Background
 }
 
 func min(a, b int) int {

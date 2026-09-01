@@ -50,8 +50,8 @@ type Model struct {
 
 // MaxAdmissionTokens is the usable token limit (after the special-token
 // reserve) for the v3 admission profile (AC-1, AC-2, AC-3). The pinned
-// model2vec static embedder's tokenizer caps at 512 tokens post-unk-
-// drop; with zero reserve the USABLE limit is 512. A profile change
+// model2vec static embedder's tokenizer caps its raw stream at 512 tokens
+// before Model2Vec drops UNK ids; with zero reserve the USABLE limit is 512. A profile change
 // (different limit, different reserve, different algorithm version)
 // invalidates stored generations by fingerprint.
 const MaxAdmissionTokens = 512
@@ -85,23 +85,15 @@ func (m *Model) Tokenizer() *Tokenizer { return m.tok }
 
 // truncate implements embed.DocumentTokenizer on *Tokenizer so the
 // production embedder satisfies embed.TokenizingEmbedder (AC-7).
-// Truncate cuts text to at most maxTokens of the tokenizer's own
-// tokens (post-unk-drop, pre-cap — the HONEST count, NOT the
-// InferenceIDs-capped value). A maxTokens <= 0 returns the input
-// unchanged. The cut uses the model's own truncateByTokens for the
-// byte run so the returned text is what the embedder will see.
+// Truncate cuts text to at most maxTokens of the tokenizer's own raw
+// token stream, before its configured right-truncation cap. Unknown tokens
+// count because the tokenizer applies that cap before Model2Vec drops UNK
+// ids. A maxTokens <= 0 returns the input unchanged.
 func (t *Tokenizer) truncate(text string, maxTokens int) (string, bool) {
 	if t == nil || maxTokens <= 0 {
 		return text, false
 	}
-	ids := t.Encode(text)
-	kept := ids[:0]
-	for _, id := range ids {
-		if id != t.unkID {
-			kept = append(kept, id)
-		}
-	}
-	if len(kept) <= maxTokens {
+	if len(t.EncodeRaw(text)) <= maxTokens {
 		return text, false
 	}
 	return truncateByTokens(text, t, maxTokens), true
@@ -117,64 +109,50 @@ func (m *Model) Truncate(text string, maxTokens int) (string, bool) {
 	if maxTokens <= 0 {
 		return text, false
 	}
-	// HONEST path: count the model's own post-unk tokens via rawIDs (no
-	// silent cap) and only treat the input as overflowing when its actual
-	// token count exceeds maxTokens. InferenceIDs drops the unk ids THEN
-	// caps — the previous Truncate shape called InferenceIDs and compared
-	// against maxTokens, but InferenceIDs' cap always fires first, so the
-	// "did it truncate?" check was structurally unreachable. rawIDs lets
-	// us see the real count.
-	ids := m.rawIDs(text)
-	if len(ids) <= maxTokens {
+	// The tokenizer caps its raw stream before InferenceIDs removes UNK ids.
+	// Use the uncapped raw stream here so the overflow branch is reachable
+	// and follows that ordering exactly.
+	if len(m.tok.EncodeRaw(text)) <= maxTokens {
 		return text, false
 	}
 	cut := truncateByTokens(text, m.tok, maxTokens)
 	return cut, true
 }
 
-// Admit implements embed.Admission (SW-267 AC-2, AC-7) and
-// reviewer-fix Critical 1: admission must consume exactly the same
-// bytes as inference. InferenceIDs applies cutChars (a char prefix
-// to maxLength × medianTokenLength runes) BEFORE tokenization. The
-// previous Admit only counted post-unk tokens and returned the full
-// input text, so an UNK-heavy char prefix followed by recognized
-// words was admitted unchanged while inference silently dropped the
-// tail. The fix applies the SAME four steps InferenceIDs does:
+// Admit implements embed.Admission (SW-267 AC-2, AC-7): admission and
+// inference consume exactly the same bytes. Inference applies these steps:
 //
 //  1. cutChars: cut text to (maxLength × medianTokenLength) runes.
-//  2. Tokenize the cut text.
-//  3. Drop unk ids.
-//  4. Cap at maxLength tokens.
+//  2. Tokenize the cut text and cap the raw token stream at maxLength.
+//  3. Drop unk ids from that capped stream.
 //
-// Admit returns the BYTE RUN after step 1. If step 1 fired (the
-// char cut trimmed), Bound="tokens" and the returned text is the
-// cut prefix. The build's TextHash describes those bytes, which is
-// what Embed will pool. If no bound fired (input fits every step),
-// Bound="none" and the full text is returned.
-//
-// TokenCount is the post-unk pre-cap HONEST count of the cut text —
-// what model2vec would pool. A build that wants MaxAdmissionTokens
-// reads profile.MaxTokens; a build that wants the honest count reads
-// Admitted.TokenCount.
+// Admit first observes step 2 through EncodeRaw, which has no internal cap.
+// If the raw stream overflows, it returns a token-aligned byte prefix whose
+// uncapped encoding fits maxLength. This makes the overflow branch reachable
+// for dense recognized input and for UNK-bearing input alike. TokenCount is
+// the exact number of ids InferenceIDs will pool for the returned Text.
 func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 	if text == "" {
 		return embed.Admitted{Text: text, TokenCount: 0, Bound: embed.BoundNone}, nil
 	}
 	cutText := m.cutChars(text)
-	ids := m.tok.Encode(cutText)
-	kept := ids[:0]
-	for _, id := range ids {
-		if id != m.tok.unkID {
-			kept = append(kept, id)
-		}
-	}
-	tokenCount := len(kept)
-	if tokenCount > m.maxLength {
-		kept = kept[:m.maxLength]
-	}
+	admittedText := cutText
 	bound := embed.BoundNone
-	if cutText != text || (tokenCount == m.maxLength && len(ids) > m.maxLength) {
+	if cutText != text {
 		bound = embed.BoundTokens
+	}
+	if len(m.tok.EncodeRaw(cutText)) > m.maxLength {
+		admittedText = truncateByTokens(cutText, m.tok, m.maxLength)
+		bound = embed.BoundTokens
+	}
+	tokenCount := len(m.InferenceIDs(admittedText))
+	if admittedText == "" && strings.TrimSpace(cutText) != "" {
+		return embed.Admitted{}, &embed.AdmissionError{
+			Limit:   m.maxLength,
+			Actual:  len(m.tok.EncodeRaw(cutText)),
+			Profile: m.admissionSpec(),
+			Reason:  "no token-aligned input prefix fits the model context",
+		}
 	}
 	// Degenerate admit: the WHOLE input yields zero useful tokens.
 	// Surface a typed error so the build fails closed. The C1
@@ -186,21 +164,13 @@ func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 	// whether the full input contains any recognized char.
 	if tokenCount == 0 && strings.TrimSpace(text) != "" && !hasAnyRecognizedChar(text, m.tok) {
 		return embed.Admitted{}, &embed.AdmissionError{
-			Limit:  m.maxLength,
-			Actual: 0,
-			Profile: embed.AdmissionSpec{
-				TokenizerID:      "model2vec-wordpiece",
-				TokenizerSHA256:  m.tokenHash(),
-				TokenizerVersion: tokenizerVersion,
-				MaxTokens:        MaxAdmissionTokens,
-				Reserve:          SpecialTokenReserve,
-				Algorithm:        "first-n-tokens",
-				AlgorithmVersion: "1",
-			},
+			Limit:   m.maxLength,
+			Actual:  0,
+			Profile: m.admissionSpec(),
 		}
 	}
 	return embed.Admitted{
-		Text:       cutText,
+		Text:       admittedText,
 		TokenCount: tokenCount,
 		Bound:      bound,
 	}, nil
@@ -226,42 +196,15 @@ func hasAnyRecognizedChar(text string, tok *Tokenizer) bool {
 	return false
 }
 
-// CountTokens is the OPTIONAL CountTokens hook the document builder
-// uses to populate AdmissionTokenCount with the HONEST pre-cap
-// number after admission has produced the admitted bytes. The
-// production adapter implements it; embedders that don't can omit
-// it (the document builder falls back to 0).
+// CountTokens returns the exact number of ids inference pools for text.
 func (m *Model) CountTokens(text string) int {
-	return len(m.rawIDs(text))
+	return len(m.InferenceIDs(text))
 }
 
 // tokenizerVersion is the tokenizers JSON format version of the
 // pinned tokenizer (loaded from the artifact's "version" field; the
 // loader rejects anything else).
 const tokenizerVersion = "1.0"
-
-// rawIDs returns the model's post-unk, PRE-CAP token ids for text.
-// It is the HONEST token count Admit uses: EncodeRaw emits every
-// token the tokenizer would produce (without the right-truncation
-// cap Encode applies), and rawIDs then drops unk ids so the count is
-// what model2vec's StaticModel.encode would pool. The uncapped
-// count makes the overflow check structurally reachable — the
-// previous shape called Tokenizer.Encode, which truncates to
-// maxLength internally, so len(ids) was never greater than
-// MaxAdmissionTokens for the pinned tokenizer.
-func (m *Model) rawIDs(text string) []int {
-	if m.tok == nil {
-		return nil
-	}
-	ids := m.tok.EncodeRaw(text)
-	kept := ids[:0]
-	for _, id := range ids {
-		if id != m.tok.unkID {
-			kept = append(kept, id)
-		}
-	}
-	return kept
-}
 
 // tokenHash returns the lower-case hex SHA-256 of tokenizer.json, or ""
 // when the artifact is not loaded. The admission profile pins this hash
@@ -274,6 +217,18 @@ func (m *Model) tokenHash() string {
 	return m.FileHashes[FileTokenizer]
 }
 
+func (m *Model) admissionSpec() embed.AdmissionSpec {
+	return embed.AdmissionSpec{
+		TokenizerID:      "model2vec-wordpiece",
+		TokenizerSHA256:  m.tokenHash(),
+		TokenizerVersion: tokenizerVersion,
+		MaxTokens:        MaxAdmissionTokens,
+		Reserve:          SpecialTokenReserve,
+		Algorithm:        "first-n-tokens",
+		AlgorithmVersion: "1",
+	}
+}
+
 // truncateByTokens walks the tokens produced for text and returns the prefix
 // that contains the first n tokens plus the trailing whitespace/newline
 // after them. The returned text is at most one byte longer than needed so
@@ -282,29 +237,29 @@ func truncateByTokens(text string, tok *Tokenizer, n int) string {
 	if n <= 0 {
 		return ""
 	}
-	// Delegate to truncateToTokens: the production loader's pre-allocation
-	// bounds already keep documents short (MaxDocumentTokens = 512 and
-	// MaxDocumentBytes = 16 KiB), so a precise byte-by-byte greedy walk is
-	// not required — a rune-by-rune scan produces a coherent prefix.
+	// Delegate to truncateToTokens: the production capsule path keeps inputs
+	// within its 16 KiB resource cap, so a rune-by-rune scan stays bounded.
 	return truncateToTokens(text, tok, n)
 }
 
-// truncateToTokens walks the input rune-by-rune and greedily tokenises, until
-// atMost tokens are produced. It is a second-line fallback; the production
-// loader's pre-allocation bounds already keep documents short.
+// truncateToTokens walks the input rune-by-rune and returns the longest prefix
+// encountered before the tokenizer's uncapped raw stream exceeds atMost. The
+// returned bytes therefore cannot be silently cut by Tokenizer.Encode before
+// UNK removal. It is a second-line fallback; production documents are capped
+// at 16 KiB, so the simple scan remains bounded.
 func truncateToTokens(text string, tok *Tokenizer, atMost int) string {
 	if atMost <= 0 {
 		return ""
 	}
 	i := 0
+	best := 0
 	for i < len(text) {
-		// Take one rune at a time and try to tokenize the prefix.
 		_, sz := utf8.DecodeRuneInString(text[i:])
 		i += sz
-		ids := tok.Encode(text[:i])
-		if len(ids) >= atMost {
-			return text[:i]
+		if len(tok.EncodeRaw(text[:i])) > atMost {
+			return text[:best]
 		}
+		best = i
 	}
 	return text
 }

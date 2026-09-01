@@ -257,16 +257,31 @@ func TestSpans_Deterministic(t *testing.T) {
 		t.Fatalf("span counts differ")
 	}
 	for id, sa := range a.Spans {
-		if sb := b.Spans[id]; sa != sb {
+		if sb := b.Spans[id]; !sourceSpansEqual(sa, sb) {
 			t.Errorf("span %s differs: %+v vs %+v", id, sa, sb)
 		}
 	}
 	ta, tb := parseTSSpanFixture(t), parseTSSpanFixture(t)
 	for id, sa := range ta.Spans {
-		if sb := tb.Spans[id]; sa != sb {
+		if sb := tb.Spans[id]; !sourceSpansEqual(sa, sb) {
 			t.Errorf("ts span %s differs: %+v vs %+v", id, sa, sb)
 		}
 	}
+}
+
+func sourceSpansEqual(a, b SourceSpan) bool {
+	if a.StartByte != b.StartByte || a.EndByte != b.EndByte ||
+		a.StartLine != b.StartLine || a.EndLine != b.EndLine || a.Method != b.Method {
+		return false
+	}
+	return byteSpansEqual(a.SignatureSpan, b.SignatureSpan) && byteSpansEqual(a.DocSpan, b.DocSpan)
+}
+
+func byteSpansEqual(a, b *ByteSpan) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
 }
 
 // TestParse_OtherParsersLeaveSpansNil pins the seam contract for parsers that

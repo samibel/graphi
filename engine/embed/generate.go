@@ -16,7 +16,7 @@ import (
 //
 // Deprecated: v1 schema, kept for SW-261's migration comparison and for tests
 // that exercise the generation pass without source bytes. The `--semantic`
-// path embeds SemanticDocument v2 text (BuildDocument) instead; V1DocumentSource
+// path embeds SemanticDocument v3 capsule text (BuildDocument) instead; V1DocumentSource
 // wraps this text in the document shape for that comparison.
 // embedderRevision returns the embedder's revision tag, or "" when the
 // adapter does not expose one. The pinned static embedder's revision
@@ -185,8 +185,9 @@ type GenerateResult struct {
 // (story AC: "graceful skip preserved").
 //
 // When an embedder IS configured it enumerates every node, obtains its
-// SemanticDocument from docs (SW-260: the v2 text — body, doc comment, path —
-// replaces the v1 NodeText), embeds the document text through the active
+// SemanticDocument from docs (SW-267: the v3 capsule — identity, path,
+// annotations, doc comment, signature, and bounded body — replaces the v1
+// NodeText), embeds the document text through the active
 // Embedder keyed by NodeId, and persists rows into the GenerationStore via
 // the Begin/Build/Commit pattern.
 //

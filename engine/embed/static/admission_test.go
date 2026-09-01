@@ -2,8 +2,7 @@ package static_test
 
 // SW-267 AC-7 / AC-2 tests for the static adapter's fail-closed
 // admission surface. The adapter's Admit method must return the
-// EXACT bytes the model will consume; the HONEST token count must
-// not silently cap at maxLength the way the previous Truncate did.
+// EXACT bytes the model will consume and the exact useful-id count it pools.
 
 import (
 	"context"
@@ -14,8 +13,8 @@ import (
 )
 
 // TestStatic_AdmitHonestCount pins AC-7: the production embedder's
-// Admit returns the exact token count the model will pool (post-unk,
-// pre-cap), and the returned Text is bounded by the tokenizer boundary.
+// Admit returns the exact token count the model will pool after UNK removal,
+// and the returned Text is bounded by the tokenizer boundary.
 // An input that exceeds MaxAdmissionTokens is truncated to the first
 // N tokens via the model's own byte-aware cut (so the persisted
 // vector represents the bytes TextHash describes — no silent cap
@@ -23,9 +22,8 @@ import (
 //
 // The test uses a synthetic Tokenizer (WordPiece over a tiny vocab)
 // so it does not depend on the production artifact being present.
-// The HONEST surface (raw count, post-unk, pre-cap) is what the test
-// exercises; the production adapter's Admit uses rawIDs (the same
-// shape) when the artifact is loaded.
+// The production behavior is exercised without the pinned artifact by the
+// synthetic-model tests in exact_consumption_test.go.
 func TestStatic_AdmitHonestCount(t *testing.T) {
 	if embed.MaxCapsuleBytes != 16*1024 {
 		t.Fatalf("MaxCapsuleBytes = %d, want 16 KiB (AC-6 resource cap)", embed.MaxCapsuleBytes)

@@ -10,7 +10,7 @@ import (
 )
 
 // spanMethodShare computes the SW-260 AC-9 `span_method_share` of a report:
-// the fraction of SemanticDocument v2 documents per span method over the
+// the fraction of SemanticDocument v3 documents per span method over the
 // indexed files. The lexical index keeps no spans (they are consumed only on
 // the `--semantic` path), so the share is measured the way that path measures
 // it — every indexed file re-read through the root-confined reader, parsed

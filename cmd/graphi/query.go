@@ -331,8 +331,9 @@ func runIndexAt(cwd string, args []string) int {
 	// hang (a user killed exactly this pass believing it dead).
 	fmt.Fprintf(os.Stderr, "graphi: embedding via %s…\n", emb.ID())
 	eprog := newEmbedProgress(os.Stderr, isTerminal(os.Stderr))
-	// SW-260: embed SemanticDocument v2 text (declaration body + doc comment +
-	// path, cut at the parser's exact span or the bounded window fallback)
+	// SW-267: embed SemanticDocument v3 capsule text (identity, path,
+	// annotations, doc comment, signature, and bounded body, cut at the
+	// parser's exact span or the bounded window fallback)
 	// instead of the v1 name-only text. Documents are cut file by file from
 	// the repository, so nodes are visited in path order.
 	docs := newFileDocumentSource(ctx, target.root, emb)
