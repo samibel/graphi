@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/price"
 	"github.com/samibel/graphi/surfaces/client"
@@ -390,9 +391,11 @@ func mutatingFlags(cmd string, args []string, errOut io.Writer) (mutatingReq, er
 //	graphi setup-embedder [<selector>]
 //
 // where <selector> is e.g. "ollama" or "ollama:127.0.0.1:11434" (loopback-only,
-// opt-in) or "onnx:<model>" (requires the embed_onnx build).
+// opt-in), "onnx:<model>" (requires the embed_onnx build), or
+// "static:<model>@<revision>". The `static:` selector is dispatched by
+// cmd/graphi's runStaticSetupEmbedder (NOT this function) so the
+// download path stays out of the default graph (AC-5 / AC-8).
 func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer) error {
-	_ = ctx
 	selector := ""
 	if len(args) > 0 {
 		selector = args[0]
@@ -400,12 +403,22 @@ func RunSetupEmbedder(ctx context.Context, args []string, out, errOut io.Writer)
 	if selector == "" {
 		fmt.Fprintln(out, "graphi semantic search is OPTIONAL and OFF by default.")
 		fmt.Fprintln(out, "To enable it, choose an embedder and export GRAPHI_EMBEDDER:")
+		fmt.Fprintln(out, "  Static (pure-Go, CGo-free, daemon-less; Labs, recommended):")
+		fmt.Fprintf(out, "    %s\n", static.PinnedSelectorWithSetupPrefix)
+		fmt.Fprintf(out, "    export GRAPHI_EMBEDDER=%s\n", static.PinnedSelector)
 		fmt.Fprintln(out, "  Ollama (loopback, opt-in):  export GRAPHI_EMBEDDER=ollama")
 		fmt.Fprintln(out, "  Ollama (explicit host):     export GRAPHI_EMBEDDER=ollama:127.0.0.1:11434")
 		fmt.Fprintln(out, "  ONNX (build with -tags embed_onnx): export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx")
 		fmt.Fprintln(out, "Then re-index with embeddings:  graphi index --semantic")
 		fmt.Fprintln(out, "Run a semantic query:           graphi search -semantic \"<query>\"")
 		return nil
+	}
+	// The static: selector is handled at the cmd layer (runStaticSetupEmbedder
+	// in cmd/graphi/setup.go), not here. This function only ever prints
+	// instructions for non-static selectors — it never reaches the network.
+	if strings.HasPrefix(selector, "static:") {
+		fmt.Fprintf(errOut, "graphi: setup-embedder: the `static:` selector is handled at the cmd layer; the cli surface prints help only\n")
+		return fmt.Errorf("static: handled by cmd/graphi")
 	}
 	fmt.Fprintf(out, "To enable graphi semantic search with %q, export:\n", selector)
 	fmt.Fprintf(out, "  export GRAPHI_EMBEDDER=%s\n", selector)

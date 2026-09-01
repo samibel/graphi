@@ -8,8 +8,10 @@ import (
 
 // EnvSelector is the environment variable that opts a process into an embedder.
 // Empty/unset ⇒ no embedder ⇒ graceful-skip (semantic search OFF). The value is a
-// selector string such as "ollama:nomic-embed-text" or "ollama" — never a host or
-// a secret. Parsing happens in Constructor.
+// selector string such as "ollama:nomic-embed-text" or "ollama" (loopback-only,
+// opt-in) or "static:<model>@<revision>" (SW-262, pure-Go / CGo-free static
+// embedder, also opt-in) — never a host or a secret. Parsing happens in
+// Constructor.
 const EnvSelector = "GRAPHI_EMBEDDER"
 
 // RegisterDefaults registers graphi's built-in DEFAULT embedders onto r and

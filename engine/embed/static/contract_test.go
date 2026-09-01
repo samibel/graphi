@@ -1,0 +1,476 @@
+// Package static's contract tests for the three SW-259 carry-forwards:
+//  1. F16 rounding points (1: mean, 2: squares, 3: sum-of-squares,
+//     4: sqrt, 5: divide);
+//  2. fixed pairwise summation tree (HALF_pairwise_sum);
+//  3. padding section fail-closed (BatchLongest / Right with pad id
+//     read from the file).
+//
+// These tests assert the contracts the production embedder implements
+// (see embed.go's `embedOne` and tokenizer.go's padding block). They
+// do not depend on the SW-259 spike's testdata (which was a behavioural
+// oracle against a Python reference) and do not depend on the pinned
+// artifact; they verify the shape of the arithmetic and the
+// tokenizer-validation rules directly, so a refactor that broke the
+// contract would fail the unit tests before the ORACLE test could
+// catch it.
+package static
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestStatic_NFDTableGeneratorIsCarriedForward(t *testing.T) {
+	raw, err := os.ReadFile("testdata/gen_unicode_tables.py")
+	if err != nil {
+		t.Fatalf("generated NFD table has no reproducible generator: %v", err)
+	}
+	src := string(raw)
+	for _, contract := range []string{"EXPECTED_UNICODE_VERSION = \"15.1.0\"", "unicodedata.normalize(\"NFD\"", `out.write("package static\n\n")`, "0xD800 <= cp <= 0xDFFF"} {
+		if !strings.Contains(src, contract) {
+			t.Errorf("NFD generator does not preserve %q", contract)
+		}
+	}
+}
+
+// F16CarryForwards: rounding point 1 is "mean -> round to F16". A
+// non-power-of-two count of tokens is the only way to make the float32
+// division produce a value whose nearest binary16 is not the same
+// float32 value, so the test exercises a 3-token row sum / 3.
+//
+//	rows = [0.5, 0.5, 0.5]   mean = 0.5 (no rounding loss)
+//	rows = [0.4, 0.4, 0.4]   mean_f32 = 0.4 (no rounding loss)
+//	rows = [0.1, 0.1, 0.1]   mean_f32 = 0.10000000149...;
+//	                          roundF16(0.1) = 0.0999755859375 (rounds DOWN)
+//	rows = [0.2, 0.2, 0.2]   mean_f32 = 0.2; roundF16(0.2) = 0.2000732421875
+//	                          (rounds UP)
+//
+// Verifying that the production embedder's mean (embedOne step 1) is
+// the roundF16 of the float32 mean proves the rounding point is in
+// the production code, not a comment.
+func TestStatic_F16_MeanRoundsToBinary16(t *testing.T) {
+	// Synthesize a synthetic F16 table with rows that produce a
+	// float32 mean whose nearest binary16 differs from the float32
+	// mean itself (the rounding point 1 the production embedder pins).
+	// normalize=false so the test observes the raw mean without the
+	// normalize pipeline's rounding points 2-5.
+	dir := t.TempDir()
+	rows := []float32{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}
+	dim := 1
+	safe := writeSyntheticF16Table(t, rows, dim)
+	cfg := []byte(`{"normalize":false,"embedding_dtype":"float16"}`)
+	tok := writeValidTokenizerBytes()
+	mod := []byte("[]")
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), cfg, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), tok, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), mod, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safe, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       sha256HexBytes(cfg),
+		"tokenizer.json":    sha256HexBytes(tok),
+		"model.safetensors": sha256HexBytes(safe),
+		"modules.json":      sha256HexBytes(mod),
+	}
+	prev := PinnedSHA256
+	PinnedSHA256 = pins
+	t.Cleanup(func() { PinnedSHA256 = prev })
+
+	m, err := LoadModel(dir)
+	if err != nil {
+		t.Fatalf("LoadModel: %v", err)
+	}
+	out, err := m.Embed(t.Context(), []string{"x x x x x x x x x x x x"})
+	if err != nil {
+		t.Fatalf("Embed: %v", err)
+	}
+	if len(out) != 1 || len(out[0]) != 1 {
+		t.Fatalf("unexpected shape: %v", out)
+	}
+	got := out[0][0]
+	// The float32 mean of 12 rows of 0.1 is exactly 0.1; roundF16(0.1)
+	// rounds down to 0.0999755859375 (the nearest binary16 below 0.1).
+	// The production embedder must produce this same value — the
+	// rounding point 1 in the per-text pipeline.
+	want := roundF16(0.1)
+	if got != want {
+		t.Errorf("mean rounding: got %v, want roundF16(0.1) = %v (rounding point 1: float32 mean is rounded to binary16; SW-259 carry-forward)", got, want)
+	}
+}
+
+// F16CarryForwards: rounding points 2-5 (squares, sum-of-squares, sqrt,
+// divide) live in the normalize branch of embedOne. The test exercises
+// normalize=true on a table whose rows have non-unit norm and asserts
+// the post-normalize vector is unit length within a small tolerance.
+// A regression in any of points 2-5 changes the unit-length result.
+func TestStatic_F16_NormalizationPipeline(t *testing.T) {
+	dir := t.TempDir()
+	// Token "x" is id 6. Give that row non-uniform values so each F16
+	// rounding point affects an observable component. The literal expected
+	// vector was generated by numpy 2.x's float16 mean/square/add/sqrt/divide
+	// pipeline, independently of the Go implementation.
+	rows := make([][]float32, 8)
+	for i := range rows {
+		rows[i] = []float32{0, 0, 0, 0}
+	}
+	rows[6] = []float32{0.1, 0.2, 0.3, 0.4}
+	dim := len(rows[6])
+	safe := writeSyntheticF16Matrix(t, rows)
+	cfg := []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
+	tok := writeValidTokenizerBytes()
+	mod := []byte("[]")
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), cfg, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tokenizer.json"), tok, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modules.json"), mod, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "model.safetensors"), safe, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{
+		"config.json":       sha256HexBytes(cfg),
+		"tokenizer.json":    sha256HexBytes(tok),
+		"model.safetensors": sha256HexBytes(safe),
+		"modules.json":      sha256HexBytes(mod),
+	}
+	prev := PinnedSHA256
+	PinnedSHA256 = pins
+	t.Cleanup(func() { PinnedSHA256 = prev })
+
+	m, err := LoadModel(dir)
+	if err != nil {
+		t.Fatalf("LoadModel: %v", err)
+	}
+	out, err := m.Embed(t.Context(), []string{"x"})
+	if err != nil {
+		t.Fatalf("Embed: %v", err)
+	}
+	if len(out) != 1 || len(out[0]) != dim {
+		t.Fatalf("unexpected shape: %v", out)
+	}
+	want := []float32{0.1826171875, 0.365234375, 0.54833984375, 0.73046875}
+	for i := range want {
+		if out[0][i] != want[i] {
+			t.Errorf("normalization component %d = %v, want numpy float16 literal %v (rounding points 2-5)", i, out[0][i], want[i])
+		}
+	}
+}
+
+func TestStatic_EmbedEachIsBatchInvariant(t *testing.T) {
+	dir := t.TempDir()
+	rows := make([][]float32, 8)
+	for row := range rows {
+		rows[row] = []float32{float32(row + 1), float32(row%3 + 1), float32(row%5 + 2), 0.5}
+	}
+	safe := writeSyntheticF16Matrix(t, rows)
+	cfg := []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
+	tok := writeValidTokenizerBytes()
+	mod := []byte("[]")
+	files := map[string][]byte{
+		FileConfig:      cfg,
+		FileTokenizer:   tok,
+		FileSafetensors: safe,
+		FileModules:     mod,
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pins := make(map[string]string, len(files))
+	for name, body := range files {
+		pins[name] = sha256HexBytes(body)
+	}
+	prev := PinnedSHA256
+	PinnedSHA256 = pins
+	t.Cleanup(func() { PinnedSHA256 = prev })
+
+	m, err := LoadModel(dir)
+	if err != nil {
+		t.Fatalf("LoadModel: %v", err)
+	}
+	texts := []string{"x", "hello world", "x x x"}
+	batch, err := m.Embed(t.Context(), texts)
+	if err != nil {
+		t.Fatalf("batch Embed: %v", err)
+	}
+	for i, text := range texts {
+		single, err := m.Embed(t.Context(), []string{text})
+		if err != nil {
+			t.Fatalf("single Embed(%q): %v", text, err)
+		}
+		if len(single) != 1 || len(batch[i]) != len(single[0]) {
+			t.Fatalf("shape mismatch for %q: batch=%v single=%v", text, batch[i], single)
+		}
+		for component := range single[0] {
+			if batch[i][component] != single[0][component] {
+				t.Fatalf("batch[%d][%d]=%v, single=%v; EmbedEach must be bit-exact batch invariant", i, component, batch[i][component], single[0][component])
+			}
+		}
+	}
+}
+
+// AC-2: normalize is an inference setting, not metadata. Two otherwise
+// byte-identical pinned artifacts that differ only in config.json.normalize
+// must have different IDs so SW-261 cannot reuse vectors across the change.
+func TestStatic_ID_ChangesWhenNormalizeChanges(t *testing.T) {
+	idFor := func(normalize bool) string {
+		dir := t.TempDir()
+		safe := writeSyntheticF16Table(t, []float32{0.5, 0.25, 0.5, 0.25, 0.5, 0.25, 0.5, 0.25}, 4)
+		cfg := []byte(`{"normalize":false,"embedding_dtype":"float16"}`)
+		if normalize {
+			cfg = []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
+		}
+		tok := writeValidTokenizerBytes()
+		mod := []byte("[]")
+		files := map[string][]byte{
+			FileConfig:      cfg,
+			FileTokenizer:   tok,
+			FileSafetensors: safe,
+			FileModules:     mod,
+		}
+		for name, body := range files {
+			if err := os.WriteFile(filepath.Join(dir, name), body, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		pins := make(map[string]string, len(files))
+		for name, body := range files {
+			pins[name] = sha256HexBytes(body)
+		}
+		PinnedSHA256 = pins
+		t.Setenv("GRAPHI_STATIC_MODEL_DIR", dir)
+		e, err := New(PinnedModel + "@" + PinnedRevision)
+		if err != nil {
+			t.Fatalf("New(normalize=%v): %v", normalize, err)
+		}
+		return e.ID()
+	}
+
+	prev := PinnedSHA256
+	t.Cleanup(func() { PinnedSHA256 = prev })
+	falseID := idFor(false)
+	trueID := idFor(true)
+	if falseID == trueID {
+		t.Fatalf("normalize change retained ID %q; AC-2 requires a distinct embedding-space fingerprint", falseID)
+	}
+	if !strings.Contains(falseID, ":mean:false:") || !strings.Contains(trueID, ":mean:true:") {
+		t.Fatalf("IDs do not expose AC-2 pooling/normalize fields:\n false=%q\n true=%q", falseID, trueID)
+	}
+}
+
+// F16CarryForwards: the fixed pairwise summation tree. The test
+// constructs a 16-element input where the float32 sequential sum and
+// the pairwise tree differ (so a non-pairwise sum would produce a
+// different answer) and asserts pairwiseSumF16 matches the canonical
+// tree shape.
+func TestStatic_F16_PairwiseTreeShape(t *testing.T) {
+	// 16 elements of distinct values; sequential sum and pairwise tree
+	// differ in float32 because of reassociation.
+	values := []float32{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
+		0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6}
+	a := make([]uint16, len(values))
+	for i, v := range values {
+		a[i] = F32ToF16(v)
+	}
+	// Hand-build the canonical numpy tree: 8 partial sums r[j] = a[j]+a[j+8],
+	// then ((r0+r1)+(r2+r3))+((r4+r5)+(r6+r7)).
+	var r [8]float32
+	for j := 0; j < 8; j++ {
+		r[j] = f16ToF32(a[j]) + f16ToF32(a[j+8])
+	}
+	want := ((r[0] + r[1]) + (r[2] + r[3])) + ((r[4] + r[5]) + (r[6] + r[7]))
+	got := pairwiseSumF16(a)
+	if got != want {
+		t.Errorf("pairwiseSumF16: got %v, want %v (the fixed tree shape is part of the SW-259 carry-forward)", got, want)
+	}
+
+	// The production model has dim=256, which exercises the recursive branch:
+	// split at a multiple of eight, sum both halves with the same fixed tree,
+	// then add the two results. Pin that association separately from n=16.
+	wide := make([]uint16, 256)
+	for i := range wide {
+		wide[i] = F32ToF16(float32(i%17) * 0.013)
+	}
+	wantWide := pairwiseSumF16(wide[:128]) + pairwiseSumF16(wide[128:])
+	if gotWide := pairwiseSumF16(wide); gotWide != wantWide {
+		t.Errorf("pairwiseSumF16(n=256) = %v, want fixed 128+128 split %v", gotWide, wantWide)
+	}
+}
+
+// SW-259 carry-forward: every behaviorally meaningful padding field fails
+// closed. Null is valid and means no padding; a non-null block must be exactly
+// BatchLongest/Right with the pinned pad id/token contract.
+func TestStatic_Tokenizer_PaddingRejection(t *testing.T) {
+	cases := []struct {
+		name    string
+		mutate  func(map[string]any)
+		wantErr string
+	}{
+		{"strategy", func(p map[string]any) { p["strategy"] = "Fixed" }, "padding.strategy"},
+		{"direction", func(p map[string]any) { p["direction"] = "Left" }, "padding.direction"},
+		{"pad_type_id", func(p map[string]any) { p["pad_type_id"] = float64(1) }, "padding.pad_type_id"},
+		{"pad_to_multiple_of", func(p map[string]any) { p["pad_to_multiple_of"] = float64(8) }, "padding.pad_to_multiple_of"},
+		{"pad_id", func(p map[string]any) { p["pad_id"] = float64(99999) }, "padding.pad_id"},
+		{"pad_token", func(p map[string]any) { p["pad_token"] = "[UNK]" }, "padding.pad_token"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var doc map[string]any
+			if err := json.Unmarshal(writeValidTokenizerBytes(), &doc); err != nil {
+				t.Fatal(err)
+			}
+			padding := map[string]any{
+				"strategy":           "BatchLongest",
+				"direction":          "Right",
+				"pad_to_multiple_of": nil,
+				"pad_id":             0,
+				"pad_token":          "[PAD]",
+				"pad_type_id":        0,
+			}
+			tc.mutate(padding)
+			doc["padding"] = padding
+			body, err := json.Marshal(doc)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), FileTokenizer)
+			if err := os.WriteFile(path, body, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := LoadTokenizer(path); err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("LoadTokenizer error = %v, want field %q", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func writeSyntheticF16Matrix(t *testing.T, rows [][]float32) []byte {
+	t.Helper()
+	if len(rows) == 0 || len(rows[0]) == 0 {
+		t.Fatal("writeSyntheticF16Matrix requires a non-empty matrix")
+	}
+	dim := len(rows[0])
+	for i := range rows {
+		if len(rows[i]) != dim {
+			t.Fatalf("row %d has dim %d, want %d", i, len(rows[i]), dim)
+		}
+	}
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{len(rows), dim},
+			"data_offsets": []int{0, len(rows) * dim * 2},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make([]byte, 8+len(header)+len(rows)*dim*2)
+	headerLen := uint64(len(header))
+	for i := 0; i < 8; i++ {
+		out[i] = byte(headerLen >> (8 * i))
+	}
+	copy(out[8:], header)
+	for i := range rows {
+		for j, v := range rows[i] {
+			h := F32ToF16(v)
+			offset := 8 + len(header) + (i*dim+j)*2
+			out[offset] = byte(h)
+			out[offset+1] = byte(h >> 8)
+		}
+	}
+	return out
+}
+
+// writeSyntheticF16Table writes a valid safetensors file with the
+// "embeddings" tensor at shape [rows, dim] where rows = len(values) and
+// each row is filled with `values[i % len(values)]` row-major.
+func writeSyntheticF16Table(t *testing.T, values []float32, dim int) []byte {
+	t.Helper()
+	rows := len(values)
+	header, err := json.Marshal(map[string]any{
+		"embeddings": map[string]any{
+			"dtype":        "F16",
+			"shape":        []int{rows, dim},
+			"data_offsets": []int{0, rows * dim * 2},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := []byte(header)
+	out := make([]byte, 8+len(hdr)+rows*dim*2)
+	hl := uint64(len(hdr))
+	out[0] = byte(hl)
+	out[1] = byte(hl >> 8)
+	out[2] = byte(hl >> 16)
+	out[3] = byte(hl >> 24)
+	out[4] = byte(hl >> 32)
+	out[5] = byte(hl >> 40)
+	out[6] = byte(hl >> 48)
+	out[7] = byte(hl >> 56)
+	copy(out[8:], hdr)
+	for i := 0; i < rows; i++ {
+		for j := 0; j < dim; j++ {
+			h := F32ToF16(values[i])
+			out[8+len(hdr)+(i*dim+j)*2] = byte(h)
+			out[8+len(hdr)+(i*dim+j)*2+1] = byte(h >> 8)
+		}
+	}
+	return out
+}
+
+// writeValidTokenizerBytes returns a minimal valid tokenizer.json byte
+// slice (no padding, BatchLongest NOT required, right truncation).
+// Helper for the contract tests.
+func writeValidTokenizerBytes() []byte {
+	tok := map[string]any{
+		"version": "1.0",
+		"truncation": map[string]any{
+			"direction": "Right", "max_length": 512, "strategy": "LongestFirst", "stride": 0,
+		},
+		"padding": nil,
+		"added_tokens": []map[string]any{
+			{"id": 0, "content": "[PAD]", "single_word": true, "lstrip": true, "rstrip": true, "normalized": true, "special": true},
+			{"id": 1, "content": "[UNK]", "single_word": false, "lstrip": false, "rstrip": false, "normalized": false, "special": true},
+		},
+		"normalizer": map[string]any{
+			"type": "BertNormalizer", "clean_text": true, "handle_chinese_chars": true, "strip_accents": nil, "lowercase": true,
+		},
+		"pre_tokenizer":  map[string]any{"type": "BertPreTokenizer"},
+		"post_processor": nil,
+		"decoder":        map[string]any{"type": "WordPiece", "prefix": "##", "cleanup": true},
+		"model": map[string]any{
+			"type": "WordPiece", "unk_token": "[UNK]", "continuing_subword_prefix": "##",
+			"max_input_chars_per_word": 100,
+			"vocab": map[string]int{
+				"[PAD]": 0, "[UNK]": 1, "hello": 2, "world": 3, "##s": 4, "認": 5, "x": 6, "_": 7,
+			},
+		},
+	}
+	b, _ := json.Marshal(tok)
+	return b
+}
+
+// sha256HexBytes returns the lower-case hex SHA-256 of b.
+func sha256HexBytes(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
 
@@ -282,9 +283,9 @@ var subcommandHelp = map[string]subHelp{
 		"graphi extension init ./packs/my-rules && graphi extension conform ./packs/my-rules",
 	},
 	"setup-embedder": {
-		"print how to opt in to the optional semantic search (offline)",
-		"graphi setup-embedder [<selector>]",
-		"graphi setup-embedder ollama",
+		"print how to opt in to the optional semantic search (offline); for `static:<model>@<revision>` actually downloads the SHA-pinned artifact over HTTPS into the model cache",
+		"graphi setup-embedder [<selector>] | graphi setup-embedder static:<model>@<revision> [--local <dir>] [--cache-dir <dir>]",
+		"graphi setup-embedder " + static.PinnedSelector,
 	},
 	"privacy-audit": {
 		"report this binary's build-time privacy evidence + live egress check; --source scans a developer checkout instead; non-zero on violation or unverified evidence",
