@@ -294,8 +294,9 @@ func TestStatic_ConstructorSelectorValidation(t *testing.T) {
 }
 
 // AC-2: Embedder.ID() includes model@revision, the model.safetensors sha256[:12],
-// the tokenizer sha256[:12], and the implementation-contract identity
-// (EmbedEach batch-invariance, F16 rounding, fixed pairwise summation tree).
+// pooling, normalization, the tokenizer/config sha256[:12], and the
+// implementation-contract identity (EmbedEach batch-invariance, F16 rounding,
+// fixed pairwise summation tree).
 // Any change to the inference configuration (a swapped weights file, a
 // swapped tokenizer, a rounding-tree change) changes the ID, which feeds
 // SW-261's fingerprint and the GenerationStore's typed state. The hash
@@ -313,9 +314,9 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	}
 	id := emb.ID()
 	parts := strings.Split(id, ":")
-	// Format: static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>
-	if got, want := len(parts), 5; got != want {
-		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>)", id, got, want)
+	// Format: static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>
+	if got, want := len(parts), 8; got != want {
+		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>)", id, got, want)
 	}
 	if parts[0] != "static" {
 		t.Fatalf("ID() = %q: scheme segment %q, want \"static\"", id, parts[0])
@@ -329,14 +330,20 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	if parts[2] != pinnedSHA256["model.safetensors"][:12] {
 		t.Fatalf("ID() = %q: model.safetensors sha256[:12] segment %q, want %q (the CRITICAL fix: this must be the real file hash, not a constant; AC-2/AC-6)", id, parts[2], pinnedSHA256["model.safetensors"][:12])
 	}
-	if len(parts[3]) != 12 {
-		t.Fatalf("ID() = %q: tokenizer sha256[:12] segment %q is %d chars, want 12", id, parts[3], len(parts[3]))
+	if parts[3] != "mean" {
+		t.Fatalf("ID() = %q: pooling segment %q, want mean", id, parts[3])
 	}
-	if parts[3] != pinnedSHA256["tokenizer.json"][:12] {
-		t.Fatalf("ID() = %q: tokenizer sha256[:12] segment %q, want %q (a swapped tokenizer must change the ID; AC-2/AC-6)", id, parts[3], pinnedSHA256["tokenizer.json"][:12])
+	if parts[4] != "true" {
+		t.Fatalf("ID() = %q: normalize segment %q, want true", id, parts[4])
 	}
-	if parts[4] != "embedeach-f16-tree" {
-		t.Fatalf("ID() = %q: inference-contract segment %q, want \"embedeach-f16-tree\" (EmbedEach batch-invariance + F16 rounding + fixed pairwise summation tree; any change to the rounding tree or pooling strategy changes this segment, AC-2/AC-6)", id, parts[4])
+	if parts[5] != pinnedSHA256["tokenizer.json"][:12] {
+		t.Fatalf("ID() = %q: tokenizer sha256[:12] segment %q, want %q (a swapped tokenizer must change the ID; AC-2/AC-6)", id, parts[5], pinnedSHA256["tokenizer.json"][:12])
+	}
+	if parts[6] != pinnedSHA256["config.json"][:12] {
+		t.Fatalf("ID() = %q: config sha256[:12] segment %q, want %q (any pinned inference-config change must change the ID; AC-2)", id, parts[6], pinnedSHA256["config.json"][:12])
+	}
+	if parts[7] != "embedeach-f16-tree" {
+		t.Fatalf("ID() = %q: inference-contract segment %q, want \"embedeach-f16-tree\" (EmbedEach batch-invariance + F16 rounding + fixed pairwise summation tree; any change to the rounding tree or pooling strategy changes this segment, AC-2/AC-6)", id, parts[7])
 	}
 }
 
@@ -630,7 +637,8 @@ func requireArtifactSkip(t testing.TB) (string, error) {
 func TestStatic_TruncatedDownload_IsTypedError(t *testing.T) {
 	dir := t.TempDir()
 	// Stage four files with the right shape; the safetensors carries a
-	// header that declares a 3×2 tensor of 12 bytes but the file
+	// header that declares an 8×2 tensor (matching the tokenizer's 8 rows)
+	// but the file
 	// itself is 16 bytes shorter, so the data offsets [0,1024) lie
 	// past the end of the file.
 	config := []byte(`{"normalize":true,"embedding_dtype":"float16"}`)
@@ -645,7 +653,7 @@ func TestStatic_TruncatedDownload_IsTypedError(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "modules.json"), modules, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	header := `{"embeddings":{"dtype":"F16","shape":[3,2],"data_offsets":[0,1024]}}`
+	header := `{"embeddings":{"dtype":"F16","shape":[8,2],"data_offsets":[0,1024]}}`
 	hdr := []byte(header)
 	file := make([]byte, 8+len(hdr)+16) // 16 bytes of body, less than the declared 1024
 	hl := uint64(len(hdr))
@@ -1071,6 +1079,64 @@ func TestStatic_AC7_ShapeOverflow(t *testing.T) {
 	}
 }
 
+// AC-7: the safetensors row count must match tokenizer.json before the
+// embedding table allocation. The fixture is otherwise structurally valid
+// and hash-pinned, so the typed discriminator identifies this exact failure.
+func TestStatic_AC7_VocabMismatchBeforeAllocation(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir) // tokenizer has 8 entries; tensor shape is [1,1]
+
+	_, err := static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(err, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", err, err)
+	}
+	if te.Kind != static.TensorErrVocabMismatch {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrVocabMismatch)", te.Kind, static.TensorErrVocabMismatch)
+	}
+}
+
+// AC-7: total artifact size has its own typed error. This check precedes
+// tokenizer parsing and safetensors allocation, so an oversized but correctly
+// pinned fixture cannot reach make([]uint16, ...).
+func TestStatic_AC7_TotalSizeIsTyped(t *testing.T) {
+	dir := t.TempDir()
+	writeHasedPins(t, dir)
+	path := filepath.Join(dir, "modules.json")
+	if err := os.Truncate(path, maxArtifactBytes+1); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	pins := map[string]string{}
+	for name, hash := range static.PinnedSHA256 {
+		pins[name] = hash
+	}
+	pins["modules.json"] = hex.EncodeToString(h.Sum(nil))
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+
+	_, err = static.LoadModel(dir)
+	var te *static.TensorError
+	if !errors.As(err, &te) {
+		t.Fatalf("LoadModel error %T (%v) is not a typed *TensorError", err, err)
+	}
+	if te.Kind != static.TensorErrTotalSize {
+		t.Errorf("TensorError.Kind = %d, want %d (TensorErrTotalSize)", te.Kind, static.TensorErrTotalSize)
+	}
+}
+
 // writeValidTokenizer writes the minimal valid tokenizer.json the loader
 // will accept: 8 vocab tokens, normalizer + pre_tokenizer + WordPiece model,
 // no padding, right truncation. Returns bytes the caller writes to disk.
@@ -1287,9 +1353,8 @@ func TestStatic_RegistrationAfterFreeze_Fails(t *testing.T) {
 // This is the structural invariant: the embedder is reachable from
 // index / search / MCP / HTTP via the registry's registered scheme, so
 // ANY outbound code in this package would mean the default graph links
-// an egress path. The download path lives in cmd/graphi instead (see
-// cmd/graphi/setup_static.go) — the only legitimate place for an
-// outbound HTTPS client in graphi.
+// an egress path. The download path lives in cmd/graphi/staticfetch and its
+// sole production call site is cmd/graphi/setup.go.
 func TestStatic_EmbedderRuntimeIsZeroEgress(t *testing.T) {
 	fsys := os.DirFS(".")
 	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {

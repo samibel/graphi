@@ -42,6 +42,10 @@ const (
 	// TensorErrShapeOverflow: rows*cols*2 overflows int64 or uintptr (the
 	// allocation would panic at `make`).
 	TensorErrShapeOverflow
+	// TensorErrVocabMismatch: tensor rows differ from tokenizer vocabulary.
+	TensorErrVocabMismatch
+	// TensorErrTotalSize: the pinned artifact exceeds its total-size ceiling.
+	TensorErrTotalSize
 )
 
 // TensorError is the typed error the loader returns on every AC-7
@@ -77,6 +81,10 @@ func (e *TensorError) Error() string {
 		return fmt.Sprintf("static: safetensors %s: tensor %q byte count does not match rows*cols*2: %s (the body is corrupt)", e.File, e.Tensor, e.Detail)
 	case TensorErrShapeOverflow:
 		return fmt.Sprintf("static: safetensors %s: tensor %q shape product rows*cols*2 overflows int64 (%s); refusing to allocate (AC-7)", e.File, e.Tensor, e.Detail)
+	case TensorErrVocabMismatch:
+		return fmt.Sprintf("static: safetensors %s: tensor %q shape does not match tokenizer vocabulary: %s; refusing to allocate (AC-7)", e.File, e.Tensor, e.Detail)
+	case TensorErrTotalSize:
+		return fmt.Sprintf("static: artifact %s exceeds the pinned total-size limit: %s; refusing to allocate (AC-7)", e.File, e.Detail)
 	default:
 		return fmt.Sprintf("static: safetensors %s: tensor %q: %s", e.File, e.Tensor, e.Detail)
 	}
@@ -105,6 +113,10 @@ func shapeBytes(rows, cols int) (int64, error) {
 		return 0, fmt.Errorf("rows*cols overflows int64: rows=%d cols=%d", rows, cols)
 	}
 	prod := r * c
+	maxInt := int64(^uint(0) >> 1)
+	if prod > maxInt {
+		return 0, fmt.Errorf("rows*cols exceeds int capacity: rows=%d cols=%d", rows, cols)
+	}
 	if prod > math.MaxInt64/2 {
 		return 0, fmt.Errorf("rows*cols overflows int64/2: rows=%d cols=%d", rows, cols)
 	}
@@ -125,11 +137,12 @@ func shapeBytes(rows, cols int) (int64, error) {
 //  5. the header entry parses;
 //  6. the dtype is F16;
 //  7. the shape is a 2-D matrix with positive dims;
-//  8. the data offsets are a non-empty range inside the body;
-//  9. rows*cols*2 does not overflow int64;
-//  10. the declared byte count equals rows*cols*2;
-//  11. the bytes are copied into the table (the only allocation).
-func loadF16Matrix(path, name string) (rows, cols int, data []uint16, err error) {
+//  8. rows*cols*2 does not overflow int64 or int;
+//  9. tensor rows equal the already-parsed tokenizer vocabulary;
+//  10. the data offsets are a non-empty range inside the body;
+//  11. the declared byte count equals rows*cols*2;
+//  12. the bytes are copied into the table (the only allocation).
+func loadF16Matrix(path, name string, expectedRows int) (rows, cols int, data []uint16, err error) {
 	raw, rerr := os.ReadFile(path)
 	if rerr != nil {
 		return 0, 0, nil, rerr
@@ -175,6 +188,14 @@ func loadF16Matrix(path, name string) (rows, cols int, data []uint16, err error)
 	want, overerr := shapeBytes(rows, cols)
 	if overerr != nil {
 		return 0, 0, nil, &TensorError{Kind: TensorErrShapeOverflow, File: path, Tensor: name, Detail: overerr.Error()}
+	}
+	if rows != expectedRows {
+		return 0, 0, nil, &TensorError{
+			Kind:   TensorErrVocabMismatch,
+			File:   path,
+			Tensor: name,
+			Detail: fmt.Sprintf("tensor rows=%d tokenizer vocab=%d", rows, expectedRows),
+		}
 	}
 	body := raw[8+n:]
 	start, end := t.DataOffsets[0], t.DataOffsets[1]

@@ -106,11 +106,12 @@ type SemanticResponse struct {
 //     a typed Unavailable SemanticResponse (Available=false, Reason=
 //     UnavailableReason) with NO error, makes ZERO network calls, performs NO
 //     embedding, and does not touch the always-available lexical Search.
-//   - If a semantic state has been plumbed through WithSemanticState and
-//     the state is non-ready (SW-261 AC-10), it returns the typed
-//     unavailable response with Reason naming the state. The configured
-//     embedder is intentionally NOT consulted — a non-ready generation
-//     must not be served.
+//   - If the configured embedder exposes embed.AvailabilityChecker, its local
+//     artifact preflight runs before generation-state and empty-query short
+//     circuits. A repairable failure returns the exact setup command.
+//   - If a semantic state has been plumbed through WithSemanticState and the
+//     artifact is available but the state is non-ready (SW-261 AC-10), it
+//     returns the typed unavailable response with Reason naming the state.
 //   - Otherwise it embeds the query with the active embedder, ranks indexed
 //     vectors by cosine similarity, and returns scored hits citing NodeId + score
 //     in deterministic order (score desc, NodeId asc).
@@ -121,18 +122,26 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 		// Graceful skip: no embedder, no network, no error.
 		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
 	}
+	emb, ok := s.embedReg.Active()
+	if !ok {
+		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
+	}
+	if checker, ok := emb.(embed.AvailabilityChecker); ok {
+		if err := checker.CheckAvailable(ctx); err != nil {
+			if repair := repairable(err); repair != "" {
+				return SemanticResponse{Query: query, Available: false, Reason: repair, Hits: []SemanticHit{}}, nil
+			}
+			return SemanticResponse{}, err
+		}
+	}
 	if !s.semanticState.State.IsZero() && s.semanticState.State != embed.StateReady {
 		// Configured embedder, but the generation store is non-ready
-		// (missing / stale / corrupt). The configured path is NOT
-		// consulted: the user-visible reason names the state so an
+		// (missing / stale / corrupt). Availability has been checked, but
+		// the embedder is NOT invoked: the user-visible reason names the state so an
 		// agent can act on it. The byte shape (query, available=false,
 		// reason, hits=[]) is identical to the no-embedder graceful
 		// skip — only the Reason differs.
 		return SemanticResponse{Query: query, Available: false, Reason: s.semanticState.Reason, Hits: []SemanticHit{}}, nil
-	}
-	emb, ok := s.embedReg.Active()
-	if !ok {
-		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
 	}
 	if limit <= 0 {
 		limit = DefaultResultLimit

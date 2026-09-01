@@ -10,8 +10,8 @@
 package static
 
 // PinnedSHA256 is the canonical pin table. The full hex digest is recorded
-// for every pinned file; AC-2's Embedder.ID() uses the config hash's first
-// 12 hex digits as the inference-configuration signature.
+// for every pinned file; AC-2's Embedder.ID() includes the model, tokenizer,
+// and config hashes so every byte-level inference input has an identity.
 //
 // The four files sum to ~32 MiB (33,514,749 bytes per PINNED.md); the loader
 // enforces a 34 MiB ceiling (maxArtifactBytes) so a corrupted download
@@ -35,6 +35,13 @@ const PinnedModel = "potion-code-16M-v2"
 // (backlog: arbitrary Model2Vec models without a pin-table entry are
 // deliberately not supported — the story's Out-of-scope section says so).
 const PinnedRevision = "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+
+// PinnedNormalize is the normalize value in the pinned config.json. ID uses
+// this before the artifact is loaded; after a successful load it uses the
+// value parsed from the verified config itself. A pin rotation that changes
+// normalization must update this value and necessarily changes the config
+// hash as well.
+const PinnedNormalize = true
 
 // PinnedHuggingFaceURL is the HuggingFace base URL `graphi setup-embedder`
 // fetches from. HTTPS only (AC-4: `graphi setup-embedder static:...` shall

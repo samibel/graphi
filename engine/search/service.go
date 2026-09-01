@@ -42,9 +42,9 @@ type Reader interface {
 
 // SemanticState carries the typed GenerationStore state into the search
 // service (SW-261 AC-10). The state drives the configured-but-not-ready
-// graceful skip: when the state is non-zero and non-Ready, SemanticSearch
-// returns the typed Unavailable response with Reason naming the state
-// instead of consulting the embedder. The default build (no embedder)
+// graceful skip: after any local artifact availability check, when the state
+// is non-zero and non-Ready, SemanticSearch returns the typed Unavailable
+// response with Reason naming the state instead of embedding. The default build (no embedder)
 // leaves the State field at the StateUnset sentinel (the zero value);
 // SemanticSearch uses State.IsZero() as the explicit "no state plumbed"
 // check so a runtime that did call Active() and got back a StateMissing
@@ -113,9 +113,10 @@ func (s *Service) WithSemantic(reg *embed.Registry, index embed.VectorIndex, nod
 }
 
 // WithSemanticState plumbs the typed GenerationStore state into the search
-// service (SW-261 AC-10). When state is non-ready, SemanticSearch returns
-// the typed Unavailable response with Reason naming the state instead of
-// consulting the embedder. The default build (no embedder, no state) leaves
+// service (SW-261 AC-10). When state is non-ready, SemanticSearch first checks
+// an artifact-backed embedder's local availability, then returns the typed
+// Unavailable response with Reason naming the state without embedding. The
+// default build (no embedder, no state) leaves
 // the field at StateUnset (zero); SemanticSearch uses State.IsZero() as
 // the explicit "no state plumbed" check so a runtime that called Active()
 // and got back StateMissing cannot be confused with one that never called

@@ -123,12 +123,12 @@ var outboundDialAllowlist = []string{
 	// from the rest of the default graph: engine/embed/static is
 	// net-free (its own test fails if net/http ever re-appears there),
 	// surfaces/cli is net-free, and the rest of cmd/graphi is also
-	// net-free (TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi walks
-	// the package and asserts no file outside staticfetch imports
-	// net/http). The narrower package boundary is what lets the canary
-	// gate catch a dial added to `index`, `search`, MCP, or HTTP:
-	// those commands live in other files of cmd/graphi and would fail
-	// the gate immediately.
+	// net-free. TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi walks
+	// the whole repository and enforces that setup.go is the sole caller
+	// of Download/InstallLocal, including through an import alias or
+	// function value. The narrower package boundary lets this canary
+	// catch a direct dial added to `index`, `search`, MCP, or HTTP; the
+	// call-site guard catches an indirect reach into this exemption.
 	"github.com/samibel/graphi/cmd/graphi/staticfetch",
 }
 

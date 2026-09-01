@@ -5,13 +5,20 @@
 package staticfetch_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"io"
+	"io/fs"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,26 +47,25 @@ func TestStaticfetch_DownloadsAndInstalls(t *testing.T) {
 		sum := sha256.Sum256(body)
 		pins[name] = hex.EncodeToString(sum[:])
 	}
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		parts := strings.Split(r.URL.Path, "/")
 		name := parts[len(parts)-1]
 		body, ok := contents[name]
 		if !ok {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
+			return staticResponse(http.StatusNotFound, []byte("not found"), int64(len("not found"))), nil
 		}
-		w.Header().Set("Content-Length", "")
-		w.Header().Set("Content-Type", "application/octet-stream")
-		_, _ = w.Write(body)
-	}))
-	defer srv.Close()
+		return staticResponse(http.StatusOK, body, -1), nil
+	})}
 	restore := swapPins(pins)
 	defer restore()
-	dest := filepath.Join(dir, "model")
-	if err := os.MkdirAll(dest, 0o755); err != nil {
-		t.Fatal(err)
+	// First install: neither the cache root nor the revision directory exists.
+	// Production defaults to $XDG_CACHE_HOME/graphi/models/<model@revision>, so
+	// arranging the parent here would hide the most common installation path.
+	dest := filepath.Join(dir, "graphi", "models", "model")
+	if _, err := os.Stat(filepath.Dir(dest)); !os.IsNotExist(err) {
+		t.Fatalf("test precondition: cache parent exists or stat failed unexpectedly: %v", err)
 	}
-	if err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest); err != nil {
+	if err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest); err != nil {
 		t.Fatalf("Download: %v", err)
 	}
 	for name, want := range contents {
@@ -76,6 +82,234 @@ func TestStaticfetch_DownloadsAndInstalls(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dest, "LICENSE")); err != nil {
 		t.Errorf("LICENSE not written: %v", err)
+	}
+}
+
+// AC-4/AC-9 first install: the cache hierarchy does not exist on a fresh
+// machine. InstallLocal shares the exact staging/promotion path with Download
+// and lets this filesystem contract run without a localhost test server.
+func TestStaticfetch_FirstInstallCreatesCacheRoot(t *testing.T) {
+	src := t.TempDir()
+	contents := map[string][]byte{
+		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
+		"tokenizer.json":    []byte(`{"version":"1.0"}`),
+		"model.safetensors": []byte("model"),
+		"modules.json":      []byte("[]"),
+	}
+	pins := map[string]string{}
+	for name, body := range contents {
+		if err := os.WriteFile(filepath.Join(src, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		pins[name] = hex.EncodeToString(sum[:])
+	}
+	restore := swapPins(pins)
+	defer restore()
+
+	root := t.TempDir()
+	dest := filepath.Join(root, "graphi", "models", "model")
+	if _, err := os.Stat(filepath.Dir(dest)); !os.IsNotExist(err) {
+		t.Fatalf("test precondition: cache parent exists or stat failed unexpectedly: %v", err)
+	}
+	if err := staticfetch.InstallLocalForTest(src, dest); err != nil {
+		t.Fatalf("first install: %v", err)
+	}
+	for name, want := range contents {
+		got, err := os.ReadFile(filepath.Join(dest, name))
+		if err != nil {
+			t.Fatalf("read installed %s: %v", name, err)
+		}
+		if string(got) != string(want) {
+			t.Fatalf("installed %s = %q, want %q", name, got, want)
+		}
+	}
+	license, err := os.ReadFile(filepath.Join(dest, "LICENSE"))
+	if err != nil {
+		t.Fatalf("read installed LICENSE: %v", err)
+	}
+	if !strings.Contains(string(license), "MIT License") ||
+		!strings.Contains(string(license), "Copyright (c) 2024 Thomas van Dongen") ||
+		!strings.Contains(string(license), "Permission is hereby granted, free of charge") {
+		t.Fatalf("LICENSE is not the full model licence text: %q", license)
+	}
+}
+
+// AC-4 interrupted promotion: revision-addressed cache directories are
+// immutable. Replacing an existing non-empty directory requires two renames
+// and creates a crash window with no canonical destination, so an invalid
+// existing cache must be left byte-for-byte untouched and return non-zero.
+func TestStaticfetch_ExistingInvalidCacheIsNotReplaced(t *testing.T) {
+	src := t.TempDir()
+	contents := map[string][]byte{
+		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
+		"tokenizer.json":    []byte(`{"version":"1.0"}`),
+		"model.safetensors": []byte("model"),
+		"modules.json":      []byte("[]"),
+	}
+	pins := map[string]string{}
+	for name, body := range contents {
+		if err := os.WriteFile(filepath.Join(src, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		pins[name] = hex.EncodeToString(sum[:])
+	}
+	restore := swapPins(pins)
+	defer restore()
+
+	dest := filepath.Join(t.TempDir(), "model")
+	if err := os.MkdirAll(dest, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const sentinel = "existing cache must survive"
+	if err := os.WriteFile(filepath.Join(dest, "sentinel"), []byte(sentinel), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := staticfetch.InstallLocalForTest(src, dest)
+	if err == nil {
+		t.Fatal("InstallLocal replaced an invalid existing cache; promotion must fail closed")
+	}
+	got, readErr := os.ReadFile(filepath.Join(dest, "sentinel"))
+	if readErr != nil || string(got) != sentinel {
+		t.Fatalf("existing cache changed after refused promotion: body=%q err=%v", got, readErr)
+	}
+	for name := range contents {
+		if _, statErr := os.Stat(filepath.Join(dest, name)); !os.IsNotExist(statErr) {
+			t.Fatalf("new artifact %s leaked into existing cache: %v", name, statErr)
+		}
+	}
+}
+
+func TestStaticfetch_ExistingPinnedCacheWithoutLicenseFailsClosed(t *testing.T) {
+	src := t.TempDir()
+	pins := map[string]string{}
+	for name, body := range map[string][]byte{
+		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
+		"tokenizer.json":    []byte(`{"version":"1.0"}`),
+		"model.safetensors": []byte("model"),
+		"modules.json":      []byte("[]"),
+	} {
+		if err := os.WriteFile(filepath.Join(src, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		pins[name] = hex.EncodeToString(sum[:])
+	}
+	restore := swapPins(pins)
+	defer restore()
+
+	dest := filepath.Join(t.TempDir(), "model")
+	if err := staticfetch.InstallLocalForTest(src, dest); err != nil {
+		t.Fatalf("initial install: %v", err)
+	}
+	if err := os.Remove(filepath.Join(dest, "LICENSE")); err != nil {
+		t.Fatal(err)
+	}
+	err := staticfetch.InstallLocalForTest(src, dest)
+	if err == nil || !strings.Contains(err.Error(), "LICENSE") {
+		t.Fatalf("warm setup with missing licence error = %v, want non-zero naming LICENSE", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(dest, "LICENSE")); !os.IsNotExist(statErr) {
+		t.Fatalf("failed immutable repair modified the destination: %v", statErr)
+	}
+}
+
+// AC-4: a transport interruption is a truncation even when Content-Length is
+// unknown. The error must carry the expected pin and the hash of the bytes
+// received so far, and the failed first install must leave no destination.
+func TestStaticfetch_InterruptedBodyReportsExpectedAndActualHash(t *testing.T) {
+	body := []byte("partial response")
+	want := strings.Repeat("a", 64)
+	client := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			ContentLength: -1,
+			Body:          &interruptedBody{body: body},
+			Header:        make(http.Header),
+		}, nil
+	})}
+	restore := swapPins(map[string]string{"config.json": want})
+	defer restore()
+	dest := filepath.Join(t.TempDir(), "missing", "model")
+	err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest)
+	if err == nil {
+		t.Fatal("Download accepted an interrupted response body")
+	}
+	gotSum := sha256.Sum256(body)
+	got := hex.EncodeToString(gotSum[:])
+	if !strings.Contains(err.Error(), "expected "+want) || !strings.Contains(err.Error(), "actual "+got) {
+		t.Fatalf("interrupted-body error lacks expected/actual hashes: %v", err)
+	}
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Fatalf("interrupted first install left destination behind: %v", statErr)
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+func staticResponse(status int, body []byte, contentLength int64) *http.Response {
+	return &http.Response{
+		StatusCode:    status,
+		ContentLength: contentLength,
+		Body:          io.NopCloser(bytes.NewReader(body)),
+		Header:        make(http.Header),
+	}
+}
+
+type interruptedBody struct {
+	body []byte
+	done bool
+}
+
+func (b *interruptedBody) Read(p []byte) (int, error) {
+	if !b.done {
+		b.done = true
+		return copy(p, b.body), nil
+	}
+	return 0, errors.New("transport interrupted")
+}
+
+func (*interruptedBody) Close() error { return nil }
+
+type repeatedByteReader struct{}
+
+func (repeatedByteReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 'x'
+	}
+	return len(p), nil
+}
+
+func TestStaticfetch_UnknownLengthBodyIsCappedAtReader(t *testing.T) {
+	client := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode:    http.StatusOK,
+			ContentLength: -1,
+			Body:          io.NopCloser(io.LimitReader(repeatedByteReader{}, staticfetch.MaxFileBytes+2)),
+			Header:        make(http.Header),
+		}, nil
+	})}
+	restore := swapPins(map[string]string{"config.json": strings.Repeat("a", 64)})
+	defer restore()
+	dest := filepath.Join(t.TempDir(), "missing", "model")
+	err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest)
+	if err == nil || !strings.Contains(err.Error(), "ceiling") {
+		t.Fatalf("unknown-length oversize error = %v, want non-zero naming ceiling", err)
+	}
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Fatalf("unknown-length oversize response left an artifact: %v", statErr)
+	}
+}
+
+func TestStaticfetch_EveryRedirectHopMustRemainHTTPS(t *testing.T) {
+	if err := staticfetch.CheckRedirectForTest("https://cdn.example.invalid/model"); err != nil {
+		t.Fatalf("HTTPS redirect refused: %v", err)
+	}
+	if err := staticfetch.CheckRedirectForTest("http://cdn.example.invalid/model"); err == nil || !strings.Contains(err.Error(), "non-HTTPS") {
+		t.Fatalf("HTTP redirect error = %v, want non-HTTPS refusal", err)
 	}
 }
 
@@ -98,25 +332,19 @@ func TestStaticfetch_HashMismatch_LeavesNoArtifact(t *testing.T) {
 		wrongPins[k] = v
 	}
 	wrongPins["model.safetensors"] = strings.Repeat("0", 64)
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		parts := strings.Split(r.URL.Path, "/")
 		name := parts[len(parts)-1]
 		body, ok := contents[name]
 		if !ok {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
+			return staticResponse(http.StatusNotFound, []byte("not found"), int64(len("not found"))), nil
 		}
-		w.Header().Set("Content-Length", "")
-		_, _ = w.Write(body)
-	}))
-	defer srv.Close()
+		return staticResponse(http.StatusOK, body, -1), nil
+	})}
 	restore := swapPins(wrongPins)
 	defer restore()
-	dest := filepath.Join(dir, "model")
-	if err := os.MkdirAll(dest, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
+	dest := filepath.Join(dir, "missing", "model")
+	err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest)
 	if err == nil {
 		t.Fatal("Download accepted a mismatched hash")
 	}
@@ -126,9 +354,8 @@ func TestStaticfetch_HashMismatch_LeavesNoArtifact(t *testing.T) {
 	if !strings.Contains(err.Error(), "expected") || !strings.Contains(err.Error(), "actual") {
 		t.Fatalf("error %v must name expected vs actual hash", err)
 	}
-	entries, _ := os.ReadDir(dest)
-	for _, e := range entries {
-		t.Errorf("partial artifact left behind: %s", e.Name())
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Errorf("hash mismatch left an artifact destination behind: %v", statErr)
 	}
 }
 
@@ -143,27 +370,21 @@ func TestStaticfetch_TruncatedDownload_IsTypedError(t *testing.T) {
 		"model.safetensors": hex.EncodeToString(sum[:]),
 		"modules.json":      strings.Repeat("c", 64),
 	}
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "1024")
-		_, _ = w.Write(body)
-	}))
-	defer srv.Close()
+	client := &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+		return staticResponse(http.StatusOK, body, 1024), nil
+	})}
 	restore := swapPins(pins)
 	defer restore()
-	dest := filepath.Join(dir, "model")
-	if err := os.MkdirAll(dest, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
+	dest := filepath.Join(dir, "missing", "model")
+	err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest)
 	if err == nil {
 		t.Fatal("Download accepted a truncated body")
 	}
 	if !strings.Contains(err.Error(), "truncat") && !strings.Contains(err.Error(), "length") && !strings.Contains(err.Error(), "short") {
 		t.Fatalf("error %v must name the truncation", err)
 	}
-	entries, _ := os.ReadDir(dest)
-	for _, e := range entries {
-		t.Errorf("partial artifact left behind: %s", e.Name())
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Errorf("truncation left an artifact destination behind: %v", statErr)
 	}
 }
 
@@ -178,40 +399,31 @@ func TestStaticfetch_OverSizeRefused(t *testing.T) {
 	}
 	sum := sha256.Sum256(contents["config.json"])
 	hashOfConfig := hex.EncodeToString(sum[:])
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		parts := strings.Split(r.URL.Path, "/")
 		name := parts[len(parts)-1]
 		body, ok := contents[name]
 		if !ok {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
+			return staticResponse(http.StatusNotFound, []byte("not found"), int64(len("not found"))), nil
 		}
 		if name == "config.json" {
-			w.Header().Set("Content-Length", "68157440") // 65 MiB
-			_, _ = w.Write([]byte("x"))
-			return
+			return staticResponse(http.StatusOK, []byte("x"), 68157440), nil // 65 MiB
 		}
-		w.Header().Set("Content-Length", "")
-		_, _ = w.Write(body)
-	}))
-	defer srv.Close()
+		return staticResponse(http.StatusOK, body, -1), nil
+	})}
 	pins := map[string]string{"config.json": hashOfConfig}
 	restore := swapPins(pins)
 	defer restore()
-	dest := filepath.Join(dir, "model")
-	if err := os.MkdirAll(dest, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	err := staticfetch.DownloadForTest(srv.Client(), srv.URL, dest)
+	dest := filepath.Join(dir, "missing", "model")
+	err := staticfetch.DownloadForTest(client, "https://example.invalid/model", dest)
 	if err == nil {
 		t.Fatal("Download accepted an oversize Content-Length")
 	}
 	if !strings.Contains(err.Error(), "size") && !strings.Contains(err.Error(), "limit") && !strings.Contains(err.Error(), "exceeds") {
 		t.Fatalf("error %v must name the size limit", err)
 	}
-	entries, _ := os.ReadDir(dest)
-	for _, e := range entries {
-		t.Errorf("partial artifact left behind: %s", e.Name())
+	if _, statErr := os.Stat(dest); !os.IsNotExist(statErr) {
+		t.Errorf("oversize response left an artifact destination behind: %v", statErr)
 	}
 }
 
@@ -236,7 +448,7 @@ func TestStaticfetch_HTTPSOnly(t *testing.T) {
 
 // AC-6: air-gapped install path.
 func TestStaticfetch_AirGapped_ValidatesLocalArtifact(t *testing.T) {
-	dir := t.TempDir()
+	src := t.TempDir()
 	contents := map[string][]byte{
 		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
 		"tokenizer.json":    []byte(`{}`),
@@ -249,14 +461,18 @@ func TestStaticfetch_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 		pins[name] = hex.EncodeToString(sum[:])
 	}
 	for name, body := range contents {
-		if err := os.WriteFile(filepath.Join(dir, name), body, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(src, name), body, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
 	restore := swapPins(pins)
 	defer restore()
-	if err := staticfetch.InstallLocalForTest(dir, dir); err != nil {
+	dest := filepath.Join(t.TempDir(), "missing", "model")
+	if err := staticfetch.InstallLocalForTest(src, dest); err != nil {
 		t.Fatalf("InstallLocal: %v", err)
+	}
+	if err := staticfetch.InstallLocalForTest(src, dest); err != nil {
+		t.Fatalf("InstallLocal warm cache: %v", err)
 	}
 	wrong := map[string]string{}
 	for k, v := range pins {
@@ -265,83 +481,109 @@ func TestStaticfetch_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 	wrong["config.json"] = strings.Repeat("0", 64)
 	restoreWrong := swapPins(wrong)
 	defer restoreWrong()
-	if err := staticfetch.InstallLocalForTest(dir, dir); err == nil {
+	if err := staticfetch.InstallLocalForTest(src, dest); err == nil {
 		t.Fatal("InstallLocal accepted a mismatched hash")
 	} else if !strings.Contains(err.Error(), "config.json") {
 		t.Fatalf("InstallLocal error %q must name the offending file", err)
 	}
 }
 
-// AC-4: the staticfetch package is the ONLY place in cmd/graphi that
-// imports net/http. This is the canary allowlist's narrower boundary:
-// cmd/graphi/staticfetch, not cmd/graphi. A future contributor adding
-// a net call to any other file in cmd/graphi is caught by this test
-// at unit-test time, AND by the canary gate at release time.
+// AC-4/AC-5: the staticfetch package is the ONLY place in cmd/graphi that
+// imports network primitives, and setup.go is the ONLY production call site
+// allowed to invoke its supply-chain entry points. Both halves matter: the
+// canary catches a direct dial in another command, while this call-site guard
+// catches a command that tries to reach the allowlisted downloader indirectly.
 //
-// The check walks every non-test .go file under cmd/graphi (this
-// test's parent directory) EXCEPT files inside this package, and
-// asserts that no file mentions the net/http, net/url or
-// crypto/tls import. The canary allowlist entry for staticfetch is
-// kept narrow precisely so this local test can verify the invariant
-// the canary gate cannot (the gate runs on the whole graphi tree; this
-// test runs on the cmd/graphi subtree).
+// The network-import check covers cmd/graphi. The supply-chain call-site check
+// covers the entire repository, so engine/search, MCP, HTTP, and future packages
+// cannot hide a dial by importing this allowlisted package. It follows import
+// aliases and rejects references (including function values) to Download or
+// InstallLocal outside cmd/graphi/setup.go. Dot imports are refused.
 func TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi(t *testing.T) {
-	// The test runs from cmd/graphi/staticfetch/, so the parent is
-	// cmd/graphi — the subtree we want to audit. cd back so the path
-	// arithmetic is unambiguous in case the test is run with a
-	// different working directory.
-	parent := ".."
-	entries, err := os.ReadDir(parent)
+	repoRoot := filepath.Clean(filepath.Join("..", "..", ".."))
+	cmdRoot := filepath.Join(repoRoot, "cmd", "graphi")
+	staticfetchRoot := filepath.Join(cmdRoot, "staticfetch")
+	setupPath := filepath.Join(cmdRoot, "setup.go")
+	banned := []string{`"net/http"`, `"net/http/httptest"`, `"net/url"`, `"crypto/tls"`, `"syscall/js"`}
+	wantCalls := map[string]int{"Download": 1, "InstallLocal": 1}
+	gotCalls := map[string]int{}
+	err := filepath.WalkDir(repoRoot, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			if path == staticfetchRoot || entry.Name() == ".git" || entry.Name() == "vendor" || entry.Name() == "testdata" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if filepath.Ext(path) != ".go" || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		body, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if strings.HasPrefix(path, cmdRoot+string(filepath.Separator)) {
+			for _, importPath := range banned {
+				if strings.Contains(string(body), importPath) {
+					t.Errorf("%s imports %s; the only network caller in cmd/graphi is staticfetch", path, importPath)
+				}
+			}
+		}
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, body, parser.ImportsOnly)
+		if err != nil {
+			return err
+		}
+		aliases := map[string]bool{}
+		for _, spec := range file.Imports {
+			importPath, err := strconv.Unquote(spec.Path.Value)
+			if err != nil || importPath != staticPackage {
+				continue
+			}
+			alias := "staticfetch"
+			if spec.Name != nil {
+				alias = spec.Name.Name
+			}
+			if alias == "." {
+				t.Errorf("%s dot-imports staticfetch; the sole-call-site guard requires a named import", path)
+				continue
+			}
+			aliases[alias] = true
+		}
+		if len(aliases) == 0 {
+			return nil
+		}
+		// Parse the full file only when it imports staticfetch.
+		file, err = parser.ParseFile(fset, path, body, 0)
+		if err != nil {
+			return err
+		}
+		ast.Inspect(file, func(node ast.Node) bool {
+			sel, ok := node.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			pkg, ok := sel.X.(*ast.Ident)
+			if !ok || !aliases[pkg.Name] || (sel.Sel.Name != "Download" && sel.Sel.Name != "InstallLocal") {
+				return true
+			}
+			if path != setupPath {
+				t.Errorf("%s references staticfetch.%s; only setup.go may invoke the supply-chain surface", path, sel.Sel.Name)
+				return true
+			}
+			gotCalls[sel.Sel.Name]++
+			return true
+		})
+		return nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	banned := []string{`"net/http"`, `"net/http/httptest"`, `"net/url"`, `"crypto/tls"`, `"syscall/js"`}
-	// The staticfetch package is the only allowed network caller; every
-	// other top-level entry (a subdir or a .go file) must be net-free.
-	for _, e := range entries {
-		name := e.Name()
-		if name == "staticfetch" || name == "testdata" {
-			continue
-		}
-		if e.IsDir() {
-			sub, err := os.ReadDir(filepath.Join(parent, name))
-			if err != nil {
-				continue
-			}
-			for _, se := range sub {
-				if se.IsDir() {
-					continue
-				}
-				if filepath.Ext(se.Name()) != ".go" || strings.HasSuffix(se.Name(), "_test.go") {
-					continue
-				}
-				path := filepath.Join(parent, name, se.Name())
-				body, rerr := os.ReadFile(path)
-				if rerr != nil {
-					continue
-				}
-				src := string(body)
-				for _, b := range banned {
-					if strings.Contains(src, b) {
-						t.Errorf("%s imports %s; the only network caller in cmd/graphi is the staticfetch package (the canary allowlist is narrow by design)", path, b)
-					}
-				}
-			}
-		} else {
-			if filepath.Ext(name) != ".go" || strings.HasSuffix(name, "_test.go") {
-				continue
-			}
-			path := filepath.Join(parent, name)
-			body, rerr := os.ReadFile(path)
-			if rerr != nil {
-				continue
-			}
-			src := string(body)
-			for _, b := range banned {
-				if strings.Contains(src, b) {
-					t.Errorf("%s imports %s; the only network caller in cmd/graphi is the staticfetch package", path, b)
-				}
-			}
+	for name, want := range wantCalls {
+		if got := gotCalls[name]; got != want {
+			t.Errorf("setup.go staticfetch.%s references = %d, want %d", name, got, want)
 		}
 	}
 }

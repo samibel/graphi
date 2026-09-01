@@ -180,6 +180,21 @@ type typedRepairError struct {
 func (e *typedRepairError) Error() string  { return e.msg }
 func (e *typedRepairError) Repair() string { return e.repair }
 
+type availabilityRepairEmbedder struct {
+	repair     string
+	embedCalls int
+}
+
+func (e *availabilityRepairEmbedder) ID() string { return "test:availability-repair" }
+func (e *availabilityRepairEmbedder) Dim() int   { return 4 }
+func (e *availabilityRepairEmbedder) Embed(_ context.Context, _ []string) ([][]float32, error) {
+	e.embedCalls++
+	return [][]float32{{1, 0, 0, 0}}, nil
+}
+func (e *availabilityRepairEmbedder) CheckAvailable(context.Context) error {
+	return &typedRepairError{msg: "no embedder artifact cached", repair: e.repair}
+}
+
 func TestSemanticSearch_TypedRepairCommand_PropagatesToUnavailableResponse(t *testing.T) {
 	ctx := context.Background()
 	st := graphstore.NewMemStore()
@@ -202,5 +217,45 @@ func TestSemanticSearch_TypedRepairCommand_PropagatesToUnavailableResponse(t *te
 	}
 	if len(res.Hits) != 0 {
 		t.Fatalf("Hits = %d, want 0", len(res.Hits))
+	}
+}
+
+// AC-5: artifact availability precedes both generation-state and empty-query
+// short circuits. Otherwise a missing static artifact can look like a healthy
+// empty search or produce the unrelated `index --semantic` repair.
+func TestSemanticSearch_TypedRepairCommand_CoversEveryEarlyReturn(t *testing.T) {
+	wantRepair := "graphi setup-embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+	tests := []struct {
+		name  string
+		query string
+		state search.SemanticState
+	}{
+		{name: "empty query", query: ""},
+		{name: "missing generation", query: "anything", state: search.SemanticState{State: embed.StateMissing, Reason: search.ReasonUnavailable}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			st := graphstore.NewMemStore()
+			defer st.Close()
+			emb := &availabilityRepairEmbedder{repair: wantRepair}
+			reg := embed.NewRegistry()
+			if err := reg.Register(emb); err != nil {
+				t.Fatal(err)
+			}
+			svc := search.New(st).
+				WithSemantic(reg, embed.NewIndex(), st).
+				WithSemanticState(tc.state)
+
+			res, err := svc.SemanticSearch(context.Background(), tc.query, 10)
+			if err != nil {
+				t.Fatalf("SemanticSearch returned generic error: %v", err)
+			}
+			if res.Available || res.Reason != wantRepair || len(res.Hits) != 0 {
+				t.Fatalf("response = %+v, want typed unavailable with repair %q", res, wantRepair)
+			}
+			if emb.embedCalls != 0 {
+				t.Fatalf("Embed calls = %d, want 0; availability check must cover the early path", emb.embedCalls)
+			}
+		})
 	}
 }

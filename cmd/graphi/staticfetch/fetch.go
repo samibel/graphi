@@ -18,6 +18,7 @@
 package staticfetch
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -100,6 +101,9 @@ func downloadImpl(ctx context.Context, client *http.Client, baseURL, dest string
 	if err := validateScheme(baseURL); err != nil {
 		return err
 	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return fmt.Errorf("staticfetch: setup-embedder: create cache root for %s: %w", dest, err)
+	}
 	staging, err := os.MkdirTemp(filepath.Dir(dest), filepath.Base(dest)+".staging-*")
 	if err != nil {
 		return fmt.Errorf("staticfetch: setup-embedder: mkdir staging: %w", err)
@@ -128,41 +132,23 @@ func downloadImpl(ctx context.Context, client *http.Client, baseURL, dest string
 		cleanupStaging()
 		return fmt.Errorf("staticfetch: setup-embedder: write NOTICE: %w", err)
 	}
-	if err := writeLicensePlaceholder(staging); err != nil {
+	if err := writeModelLicense(staging); err != nil {
 		cleanupStaging()
 		return fmt.Errorf("staticfetch: setup-embedder: write LICENSE: %w", err)
 	}
-	prior := ""
-	if _, err := os.Stat(dest); err == nil {
-		prior, err = os.MkdirTemp(filepath.Dir(dest), filepath.Base(dest)+".prior-*")
-		if err != nil {
-			cleanupStaging()
-			return fmt.Errorf("staticfetch: setup-embedder: mkdir prior aside: %w", err)
-		}
-		_ = os.RemoveAll(prior)
-		if err := os.Rename(dest, prior); err != nil {
-			cleanupStaging()
-			return fmt.Errorf("staticfetch: setup-embedder: move prior %s -> %s: %w", dest, prior, err)
-		}
-	}
-	if err := os.Rename(staging, dest); err != nil {
-		_ = os.RemoveAll(staging)
-		if prior != "" {
-			_ = os.Rename(prior, dest)
-		}
-		return fmt.Errorf("staticfetch: setup-embedder: atomic install %s -> %s: %w", staging, dest, err)
-	}
-	if prior != "" {
-		_ = os.RemoveAll(prior)
+	if err := promoteImmutable(staging, dest); err != nil {
+		cleanupStaging()
+		return err
 	}
 	return nil
 }
 
 // atomicCopyDir copies the named files from src to dest via a staging
-// directory, then atomically swaps the staging directory into dest.
-// See downloadImpl for the rename-old-aside pattern (the "no partial
-// artifact behind" AC-4 contract).
+// directory, then promotes the immutable revision directory with one rename.
 func atomicCopyDir(src, dest string, names []string) error {
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return fmt.Errorf("staticfetch: setup-embedder: create cache root for %s: %w", dest, err)
+	}
 	staging, err := os.MkdirTemp(filepath.Dir(dest), filepath.Base(dest)+".staging-*")
 	if err != nil {
 		return fmt.Errorf("staticfetch: setup-embedder: mkdir staging: %w", err)
@@ -192,32 +178,50 @@ func atomicCopyDir(src, dest string, names []string) error {
 		cleanupStaging()
 		return fmt.Errorf("staticfetch: setup-embedder: write NOTICE: %w", err)
 	}
-	if err := writeLicensePlaceholder(staging); err != nil {
+	if err := writeModelLicense(staging); err != nil {
 		cleanupStaging()
 		return fmt.Errorf("staticfetch: setup-embedder: write LICENSE: %w", err)
 	}
-	prior := ""
-	if _, err := os.Stat(dest); err == nil {
-		prior, err = os.MkdirTemp(filepath.Dir(dest), filepath.Base(dest)+".prior-*")
+	if err := promoteImmutable(staging, dest); err != nil {
+		cleanupStaging()
+		return err
+	}
+	return nil
+}
+
+// promoteImmutable consumes staging with one atomic rename when dest does not
+// exist. Cache directories are revision-addressed and immutable: replacing a
+// populated directory portably requires moving the old directory aside before
+// moving the new one in, which creates an interruption window with no dest.
+// Therefore an existing verified cache is a warm no-op, while an existing
+// invalid/partial cache is left untouched and refused with an actionable error.
+func promoteImmutable(staging, dest string) error {
+	_, err := os.Lstat(dest)
+	switch {
+	case os.IsNotExist(err):
+		if err := os.Rename(staging, dest); err != nil {
+			return fmt.Errorf("staticfetch: setup-embedder: atomic first install %s -> %s: %w", staging, dest, err)
+		}
+		return nil
+	case err != nil:
+		return fmt.Errorf("staticfetch: setup-embedder: inspect destination %s: %w", dest, err)
+	}
+
+	if err := static.VerifyPins(dest); err != nil {
+		return fmt.Errorf("staticfetch: setup-embedder: destination %s already exists but is not the pinned artifact; left untouched to avoid a non-atomic replacement: %w (move the directory aside and retry)", dest, err)
+	}
+	for _, name := range []string{"NOTICE", "LICENSE"} {
+		want, err := os.ReadFile(filepath.Join(staging, name))
 		if err != nil {
-			cleanupStaging()
-			return fmt.Errorf("staticfetch: setup-embedder: mkdir prior aside: %w", err)
+			return fmt.Errorf("staticfetch: setup-embedder: read staged %s: %w", name, err)
 		}
-		_ = os.RemoveAll(prior)
-		if err := os.Rename(dest, prior); err != nil {
-			cleanupStaging()
-			return fmt.Errorf("staticfetch: setup-embedder: move prior %s -> %s: %w", dest, prior, err)
+		got, err := os.ReadFile(filepath.Join(dest, name))
+		if err != nil || !bytes.Equal(got, want) {
+			return fmt.Errorf("staticfetch: setup-embedder: destination %s has the pinned model files but missing or stale %s; left untouched to avoid a non-atomic repair (move the directory aside and retry)", dest, name)
 		}
 	}
-	if err := os.Rename(staging, dest); err != nil {
-		_ = os.RemoveAll(staging)
-		if prior != "" {
-			_ = os.Rename(prior, dest)
-		}
-		return fmt.Errorf("staticfetch: setup-embedder: atomic install %s -> %s: %w", staging, dest, err)
-	}
-	if prior != "" {
-		_ = os.RemoveAll(prior)
+	if err := os.RemoveAll(staging); err != nil {
+		return fmt.Errorf("staticfetch: setup-embedder: verified cache already installed at %s, but remove redundant staging %s: %w", dest, staging, err)
 	}
 	return nil
 }
@@ -271,7 +275,8 @@ func fetchAndVerifyFile(ctx context.Context, client *http.Client, fullURL, dest,
 	closeErr := tmp.Close()
 	if copyErr != nil {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("staticfetch: setup-embedder: download %s: %w (truncated at %d bytes)", name, copyErr, n)
+		gotHash := hex.EncodeToString(h.Sum(nil))
+		return fmt.Errorf("staticfetch: setup-embedder: download %s: %w (truncated at %d bytes; expected %s, actual %s)", name, copyErr, n, wantHash, gotHash)
 	}
 	if closeErr != nil {
 		_ = os.Remove(tmpPath)
@@ -311,11 +316,30 @@ func writeNotice(dest string) error {
 	return os.WriteFile(filepath.Join(dest, "NOTICE"), []byte(notice), 0o644)
 }
 
-// writeLicensePlaceholder writes a LICENSE file pointing at the
-// upstream model's MIT licence.
-func writeLicensePlaceholder(dest string) error {
-	licence := "This artifact is the minishlab/" + static.ModelID + " model, distributed\n" +
-		"under the MIT licence. The full licence text lives in the upstream\n" +
-		"source repository: https://huggingface.co/minishlab/" + static.ModelID + "\n"
-	return os.WriteFile(filepath.Join(dest, "LICENSE"), []byte(licence), 0o644)
+// writeModelLicense writes the complete MIT licence beside the pinned model,
+// not a link that becomes unavailable in an air-gapped installation.
+func writeModelLicense(dest string) error {
+	const license = `MIT License
+
+Copyright (c) 2024 Thomas van Dongen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`
+	return os.WriteFile(filepath.Join(dest, "LICENSE"), []byte(license), 0o644)
 }

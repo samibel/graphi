@@ -13,10 +13,15 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/engine/embed/static"
 )
 
 // captureStderr runs fn while os.Stderr is redirected, returning what it wrote.
@@ -133,5 +138,42 @@ func TestSetupEmbedder_StaticEmptyRevision_IsRefusedBeforeNetwork(t *testing.T) 
 	})
 	if rc == 0 {
 		t.Fatal("setup-embedder accepted an empty revision; AC-1 requires a typed SelectorError")
+	}
+}
+
+func TestSetupEmbedder_CustomCachePrintsRuntimeModelPath(t *testing.T) {
+	src := t.TempDir()
+	pins := map[string]string{}
+	for name, body := range map[string][]byte{
+		"config.json":       []byte(`{"normalize":true,"embedding_dtype":"float16"}`),
+		"tokenizer.json":    []byte(`{"version":"1.0"}`),
+		"model.safetensors": []byte("model"),
+		"modules.json":      []byte("[]"),
+	} {
+		if err := os.WriteFile(filepath.Join(src, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		pins[name] = hex.EncodeToString(sum[:])
+	}
+	prev := static.PinnedSHA256
+	static.PinnedSHA256 = pins
+	t.Cleanup(func() { static.PinnedSHA256 = prev })
+	dest := filepath.Join(t.TempDir(), "custom", "model")
+
+	var rc int
+	out := captureStdout(t, func() {
+		rc = runSetupEmbedder([]string{static.PinnedSelector, "-local", src, "-cache-dir", dest})
+	})
+	if rc != 0 {
+		t.Fatalf("runSetupEmbedder rc=%d, want 0", rc)
+	}
+	for _, want := range []string{
+		"export GRAPHI_EMBEDDER=" + static.PinnedSelector,
+		"export GRAPHI_STATIC_MODEL_DIR=" + dest,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("custom-cache success output missing %q: %s", want, out)
+		}
 	}
 }

@@ -66,6 +66,18 @@ type DimDiscoverer interface {
 	ProbeDim(ctx context.Context) error
 }
 
+// AvailabilityChecker is the OPTIONAL local preflight capability for an
+// embedder whose runtime depends on an installed artifact. Semantic search
+// calls it before its generation-state and empty-query short circuits so a
+// missing artifact cannot be reported as a successful search or hidden behind
+// an unrelated index repair command.
+//
+// CheckAvailable MUST be read-only and MUST NOT dial. A repairable error is
+// rendered as the typed unavailable response; other errors remain failures.
+type AvailabilityChecker interface {
+	CheckAvailable(ctx context.Context) error
+}
+
 // TokenizingEmbedder is the OPTIONAL capability an Embedder may expose so the
 // document builder can bound texts in the active embedder's OWN tokenizer
 // rather than falling back to a whitespace-token approximation (SW-260 AC-6).

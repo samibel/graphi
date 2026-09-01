@@ -23,8 +23,8 @@
 //
 // CGo-free and zero-egress: the embedder runtime imports only the Go
 // standard library and never reaches the network. The download path that
-// installs the pinned artifact lives in cmd/graphi (cmd/graphi/setup_static.go)
-// — NOT in this package — because this package is reachable from
+// installs the pinned artifact lives in cmd/graphi/staticfetch and is called
+// only by cmd/graphi/setup.go — NOT from this package — because this package is reachable from
 // index / search / MCP / HTTP via the registry's registered scheme, and any
 // outbound code in it would mean the default graph links an egress path
 // (AC-5 / AC-8). `graphi setup-embedder static:<model>@<revision>` is the
@@ -44,6 +44,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -78,7 +79,7 @@ const DefaultMaxLength = 512
 
 // ModelID is the user-facing model name (without the "minishlab/" prefix
 // the HuggingFace id carries).
-const ModelID = "potion-code-16M-v2"
+const ModelID = PinnedModel
 
 // modelConfig is config.json: Model2Vec reads only "normalize" (default false).
 type modelConfig struct {
@@ -147,6 +148,12 @@ func (e *SelectorError) Error() string {
 // Any change to any of the three must change this string so the SW-261
 // fingerprint reads the new generation as different.
 const inferenceContractID = "embedeach-f16-tree"
+
+// poolingID is the pooling algorithm segment AC-2 requires in ID(). Keep it
+// separate from inferenceContractID: callers and stored fingerprints depend
+// on the literal `mean`, while the implementation contract additionally pins
+// batch-invariant EmbedEach semantics and arithmetic association.
+const poolingID = "mean"
 
 // Embedder is the production static-potion embedder. New takes a
 // selector argument, parses it, validates the model+revision against the
@@ -233,9 +240,7 @@ func NewWithPinnedModel(arg, pinnedModel, pinnedRevision string) (*Embedder, err
 
 // defaultRevision is the only revision we pin. Surfaced as a function so the
 // constant is testable.
-func defaultRevision() string { return pinnedRevision }
-
-var pinnedRevision = "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+func defaultRevision() string { return PinnedRevision }
 
 // splitStaticSelector splits "model@revision" into its components. An arg
 // without "@" yields (_, "", false) — the caller treats it as a missing
@@ -250,19 +255,14 @@ func splitStaticSelector(arg string) (model, rev string, ok bool) {
 
 // ID implements embed.Embedder. The format is
 //
-//	static:<model>@<revision>:<config_sha256[:12]>:<pooling>:<normalize>
-//
-// Any change to the model, revision, configuration hash, pooling mode or
-// normalisation flag changes the ID, which feeds the SW-261 fingerprint and
-// ID implements embed.Embedder. The format is
-//
-//	static:<model>@<revision>:<model_sha256[:12]>:<tokenizer_sha256[:12]>:<impl_contract>
+//	static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>
 //
 // The first three segments are the user-facing identity: scheme,
 // model@revision, and the SHA-256 (first 12 hex digits) of the actual
-// model.safetensors file. The fourth segment is the tokenizer's SHA-256
-// (first 12 hex digits) so a swapped tokenizer changes the ID. The fifth
-// segment is `inferenceContractID` — "embedeach-f16-tree" — the
+// model.safetensors file. Pooling and normalization are the literal AC-2
+// fields. The tokenizer and config hashes bind the remaining verified
+// inference inputs. The final segment is `inferenceContractID` —
+// "embedeach-f16-tree" — the
 // implementation-contract identity (EmbedEach batch-invariance, F16
 // rounding points, fixed pairwise summation tree) that the SW-259
 // carry-forwards pinned; a change to the rounding tree or the pooling
@@ -282,6 +282,8 @@ func splitStaticSelector(arg string) (model, rev string, ok bool) {
 func (e *Embedder) ID() string {
 	modelHash := PinnedSHA256[FileSafetensors][:12]
 	tokHash := PinnedSHA256[FileTokenizer][:12]
+	configHash := PinnedSHA256[FileConfig][:12]
+	normalize := PinnedNormalize
 	e.mu.Lock()
 	loaded := e.loadedM
 	e.mu.Unlock()
@@ -292,8 +294,12 @@ func (e *Embedder) ID() string {
 		if h, ok := loaded.FileHashes[FileTokenizer]; ok && len(h) >= 12 {
 			tokHash = h[:12]
 		}
+		if h, ok := loaded.FileHashes[FileConfig]; ok && len(h) >= 12 {
+			configHash = h[:12]
+		}
+		normalize = loaded.normalize
 	}
-	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + tokHash + ":" + inferenceContractID
+	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + poolingID + ":" + strconv.FormatBool(normalize) + ":" + tokHash + ":" + configHash + ":" + inferenceContractID
 }
 
 // Dim implements embed.Embedder. The dimension is read from the artifact and
@@ -320,6 +326,15 @@ func (e *Embedder) ProbeDim(ctx context.Context) error {
 		e.dim = m.dim
 	}
 	return nil
+}
+
+// CheckAvailable implements embed.AvailabilityChecker. It performs only the
+// local, SHA-pinned artifact load; it never downloads or dials. Semantic search
+// uses this before any early return so every missing/corrupt-artifact path
+// carries the exact setup-embedder repair command (AC-5).
+func (e *Embedder) CheckAvailable(ctx context.Context) error {
+	_, err := e.load(ctx)
+	return err
 }
 
 // load fetches and validates the artifact, caching the result on success and
@@ -566,7 +581,11 @@ func LoadModel(dir string) (*Model, error) {
 		return nil, err
 	}
 	if totalSize > maxArtifactBytes {
-		return nil, fmt.Errorf("static: artifact %s: total size %d exceeds pinned limit %d (AC-7)", dir, totalSize, maxArtifactBytes)
+		return nil, &TensorError{
+			Kind:   TensorErrTotalSize,
+			File:   dir,
+			Detail: fmt.Sprintf("total size=%d limit=%d", totalSize, maxArtifactBytes),
+		}
 	}
 
 	cfgRaw, err := os.ReadFile(filepath.Join(dir, FileConfig))
@@ -581,12 +600,9 @@ func LoadModel(dir string) (*Model, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, dim, table, err := loadF16Matrix(filepath.Join(dir, FileSafetensors), tensorName)
+	rows, dim, table, err := loadF16Matrix(filepath.Join(dir, FileSafetensors), tensorName, tok.VocabSize())
 	if err != nil {
 		return nil, err
-	}
-	if rows != tok.VocabSize() {
-		return nil, fmt.Errorf("static: artifact %s: %d embedding rows for %d vocabulary tokens", dir, rows, tok.VocabSize())
 	}
 	m := &Model{
 		Dir:        dir,
@@ -617,8 +633,9 @@ func LoadModel(dir string) (*Model, error) {
 
 // Compile-time interface assertions.
 var (
-	_ embed.Embedder      = (*Embedder)(nil)
-	_ embed.DimDiscoverer = (*Embedder)(nil)
+	_ embed.Embedder            = (*Embedder)(nil)
+	_ embed.DimDiscoverer       = (*Embedder)(nil)
+	_ embed.AvailabilityChecker = (*Embedder)(nil)
 )
 
 // init registers the `static` scheme with engine/embed's constructor table

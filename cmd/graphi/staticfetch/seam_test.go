@@ -6,6 +6,7 @@ package staticfetch
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/samibel/graphi/engine/embed/static"
 )
@@ -23,4 +24,15 @@ func DownloadForTest(client *http.Client, baseURL, dest string) error {
 // table and copies the files to dest.
 func InstallLocalForTest(src, dest string) error {
 	return InstallLocal(context.Background(), src, dest)
+}
+
+// CheckRedirectForTest exercises the exact redirect policy installed on the
+// production download client without opening a localhost listener.
+func CheckRedirectForTest(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return err
+	}
+	req := &http.Request{URL: u}
+	return newHTTPSOnlyClient().CheckRedirect(req, nil)
 }
