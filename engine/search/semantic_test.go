@@ -182,6 +182,7 @@ func (e *typedRepairError) Repair() string { return e.repair }
 
 type availabilityRepairEmbedder struct {
 	repair     string
+	available  bool
 	embedCalls int
 }
 
@@ -192,6 +193,9 @@ func (e *availabilityRepairEmbedder) Embed(_ context.Context, _ []string) ([][]f
 	return [][]float32{{1, 0, 0, 0}}, nil
 }
 func (e *availabilityRepairEmbedder) CheckAvailable(context.Context) error {
+	if e.available {
+		return nil
+	}
 	return &typedRepairError{msg: "no embedder artifact cached", repair: e.repair}
 }
 
@@ -255,6 +259,76 @@ func TestSemanticSearch_TypedRepairCommand_CoversEveryEarlyReturn(t *testing.T) 
 			}
 			if emb.embedCalls != 0 {
 				t.Fatalf("Embed calls = %d, want 0; availability check must cover the early path", emb.embedCalls)
+			}
+		})
+	}
+}
+
+// Artifact availability deliberately precedes generation freshness. If both
+// repairs apply, installing the pinned model is the prerequisite; after the
+// artifact is present, the generation-state repair becomes visible. The same
+// ordering must preserve the empty-query and ready-generation behavior.
+func TestSemanticSearch_ArtifactAvailabilityPrecedence(t *testing.T) {
+	const artifactRepair = "graphi setup-embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+	tests := []struct {
+		name          string
+		available     bool
+		query         string
+		state         search.SemanticState
+		wantAvailable bool
+		wantReason    string
+		wantEmbeds    int
+	}{
+		{
+			name:       "artifact absent wins over stale generation",
+			query:      "anything",
+			state:      search.SemanticState{State: embed.StateStale, Reason: search.ReasonStale},
+			wantReason: artifactRepair,
+		},
+		{
+			name:       "stale generation remains visible when artifact is present",
+			available:  true,
+			query:      "anything",
+			state:      search.SemanticState{State: embed.StateStale, Reason: search.ReasonStale},
+			wantReason: search.ReasonStale,
+		},
+		{
+			name:          "empty query remains an available empty result",
+			available:     true,
+			query:         "",
+			wantAvailable: true,
+		},
+		{
+			name:          "ready generation still reaches the embedder",
+			available:     true,
+			query:         "anything",
+			state:         search.SemanticState{State: embed.StateReady},
+			wantAvailable: true,
+			wantEmbeds:    1,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			st := graphstore.NewMemStore()
+			defer st.Close()
+			emb := &availabilityRepairEmbedder{repair: artifactRepair, available: tc.available}
+			reg := embed.NewRegistry()
+			if err := reg.Register(emb); err != nil {
+				t.Fatal(err)
+			}
+			svc := search.New(st).
+				WithSemantic(reg, embed.NewIndex(), st).
+				WithSemanticState(tc.state)
+
+			res, err := svc.SemanticSearch(context.Background(), tc.query, 10)
+			if err != nil {
+				t.Fatalf("SemanticSearch: %v", err)
+			}
+			if res.Query != tc.query || res.Available != tc.wantAvailable || res.Reason != tc.wantReason || res.Hits == nil || len(res.Hits) != 0 {
+				t.Fatalf("response = %+v, want query=%q available=%v reason=%q hits=[]", res, tc.query, tc.wantAvailable, tc.wantReason)
+			}
+			if emb.embedCalls != tc.wantEmbeds {
+				t.Fatalf("Embed calls = %d, want %d", emb.embedCalls, tc.wantEmbeds)
 			}
 		})
 	}

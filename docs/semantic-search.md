@@ -71,6 +71,14 @@ at a local artifact directory the loader reads the cached bytes and validates
 the SHA-256 against the pin table; a mismatch surfaces as a typed error (the
 air-gapped path, AC-6).
 
+On the first semantic search after process start, the static embedder loads the
+local model and verifies the pinned file hashes before freshness and empty-query
+short circuits; that result is memoised for later queries. If the artifact is
+absent while the semantic generation is also stale or corrupt, the artifact
+setup command takes precedence because installing the model is required before
+the generation can be rebuilt. Once the artifact is present, the generation's
+own `graphi index --semantic` repair reason is returned.
+
 `graphi index --semantic` embeds the eligible symbol nodes of the graph
 (keyed by `node_id`) and persists the vectors to a durable `vectors` table in
 the `-meta` sidecar, tagged with the embedder identity + dimension. The set

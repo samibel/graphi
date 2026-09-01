@@ -108,7 +108,10 @@ type SemanticResponse struct {
 //     embedding, and does not touch the always-available lexical Search.
 //   - If the configured embedder exposes embed.AvailabilityChecker, its local
 //     artifact preflight runs before generation-state and empty-query short
-//     circuits. A repairable failure returns the exact setup command.
+//     circuits. A repairable failure returns the exact setup command. This
+//     precedence is deliberate: installing the artifact is a prerequisite to
+//     rebuilding or querying a stale/corrupt generation; once installed, the
+//     generation-state repair becomes visible. SW-265 consumes this ordering.
 //   - If a semantic state has been plumbed through WithSemanticState and the
 //     artifact is available but the state is non-ready (SW-261 AC-10), it
 //     returns the typed unavailable response with Reason naming the state.
@@ -137,8 +140,8 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 	if !s.semanticState.State.IsZero() && s.semanticState.State != embed.StateReady {
 		// Configured embedder, but the generation store is non-ready
 		// (missing / stale / corrupt). Availability has been checked, but
-		// the embedder is NOT invoked: the user-visible reason names the state so an
-		// agent can act on it. The byte shape (query, available=false,
+		// the embedder is NOT invoked: the user-visible reason names the state
+		// so an agent can act on it. The byte shape (query, available=false,
 		// reason, hits=[]) is identical to the no-embedder graceful
 		// skip — only the Reason differs.
 		return SemanticResponse{Query: query, Available: false, Reason: s.semanticState.Reason, Hits: []SemanticHit{}}, nil
