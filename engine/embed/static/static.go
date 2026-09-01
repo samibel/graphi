@@ -733,6 +733,43 @@ func (e *Embedder) Profile() embed.AdmissionSpec {
 	}
 }
 
+// Revision implements the optional embedder introspection hook the
+// fingerprint builder reads (SW-267 AC-8). The static embedder's
+// pinned revision lives in its constructor argument; the production
+// embedder advertises it explicitly so the fingerprint carries a
+// real value rather than the empty placeholder.
+func (e *Embedder) Revision() string { return e.revision }
+
+// ModelSHA256 returns the model's safetensors SHA-256 (lowercase hex)
+// when the artifact has been loaded; "" otherwise. The fingerprint
+// carries it as a real value (reviewer fix Major 1).
+func (e *Embedder) ModelSHA256() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.loadedM == nil || e.loadedM.FileHashes == nil {
+		return ""
+	}
+	return e.loadedM.FileHashes[FileSafetensors]
+}
+
+// TokenizerSHA256 returns the tokenizer.json SHA-256 (lowercase hex)
+// when the artifact has been loaded; "" otherwise. The fingerprint
+// carries it as a real value (reviewer fix Major 1).
+func (e *Embedder) TokenizerSHA256() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.loadedM == nil || e.loadedM.FileHashes == nil {
+		return ""
+	}
+	return e.loadedM.FileHashes[FileTokenizer]
+}
+
+// ChunkerConfig returns the chunker configuration ("" for the
+// whole-document path). graphi embeds the whole document per node so
+// the field is the literal ""; a future chunk-and-index-every-chunk
+// design would surface a description here.
+func (e *Embedder) ChunkerConfig() string { return "" }
+
 // init registers the `static` scheme with engine/embed's constructor table
 // so an explicit GRAPHI_EMBEDDER=static:<model>@<revision> selector names it.
 // Mirroring engine/embed/ollama: registration from init, nothing constructed

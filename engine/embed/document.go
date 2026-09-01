@@ -220,9 +220,9 @@ func (s DocumentStats) SpanMethodShare() map[string]float64 {
 // BuildDocument assembles the v3 symbol capsule of node from span and
 // source (AC-1, AC-4). The capsule has structured fields: kind +
 // qualified name (identity), normalised path segments, declaration
-// signature, leading doc comment, bounded body. The joined Text field
-// — what the model consumes and what TextHash names — is the fixed-
-// order concatenation:
+// signature, leading doc comment, body. The joined Text field — what
+// the model consumes and what TextHash names — is the fixed-order
+// concatenation:
 //
 //	kind qualified_name
 //	path_segments
@@ -231,15 +231,27 @@ func (s DocumentStats) SpanMethodShare() map[string]float64 {
 //	signature (only if any)
 //	body (post-signature, only if any)
 //
-// After assembly the body is admitted through the adapter's Admission
-// profile (AC-2, AC-7): the embedder returns the EXACT bytes the model
-// will consume, which become the document's Text and the input to
-// TextHash. The TextHash and the persisted vector therefore describe
-// the same input — no silent truncation can sit between them. A cut
-// sets Truncated and Bound records which bound closed the gap; an
-// admit failure surfaces a typed *AdmissionError naming the node and
-// the limit (AC-4), so the build that owns this document fails
-// closed.
+// The ENTIRE rendered capsule is admitted by the adapter's Admission
+// profile (AC-2, AC-7, reviewer fix): the budget covers the joined
+// text, not just the body, because an oversized signature, doc
+// comment, or path header would otherwise exceed the model's
+// context. The adapter returns the EXACT bytes the model will
+// consume; those bytes ARE Text, ARE what TextHash hashes, ARE what
+// the embedder pools. The persisted vector represents those bytes —
+// no silent truncation can sit between TextHash and the persisted
+// vector.
+//
+// Mandatory-field overflow policy (reviewer fix): when the
+// structured fields (kind, qualified name, path, annotations, doc
+// comment, signature) alone exceed the admission limit, the adapter
+// is asked to admit the joined capsule text including the body. The
+// adapter's first-n-tokens algorithm truncates the body first, then
+// keeps cutting the trailing capsule text; the joined Text therefore
+// drops trailing body bytes (the body's tail). The structured fields
+// are preserved (the header and signature are at the head of the
+// joined Text and survive the cut). A typed *AdmissionError surfaces
+// when the adapter cannot admit ANY admissible bytes (e.g. whitespace-
+// only input).
 //
 // When no Admission is provided the builder falls back to the legacy
 // Tokenizer path: cut to MaxDocumentTokens when a DocumentTokenizer
@@ -248,7 +260,12 @@ func (s DocumentStats) SpanMethodShare() map[string]float64 {
 // (MaxCapsuleBytes) as the last bound.
 func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (SemanticDocument, error) {
 	cap := assembleCapsule(node, span, source.Bytes)
-	body, bodyTruncated, bodyBound, tokenCount, limit, algoID, admitErr := admitBody(cap.Body, source)
+	annotations := joinAnnotations(node.Meta().Annotations)
+	// Render the FULL capsule text first (header + annotations + doc
+	// comment + signature + body). The admission budget covers this
+	// full text, not the body alone.
+	full := renderCapsuleText(cap, annotations)
+	admitted, algoID, profile, admitErr := admitFull(full, source)
 	if admitErr != nil {
 		// Surface the typed admission error with the document identity
 		// attached so the build that owns this node fails closed (AC-4)
@@ -260,16 +277,34 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (Seman
 		}
 		return SemanticDocument{}, admitErr
 	}
-	cap.Body = body
-	annotations := joinAnnotations(node.Meta().Annotations)
-	text := renderCapsuleText(cap, annotations)
-	text, byteBound := applyByteCap(text)
+	// The admitted bytes are EXACTLY what the model consumes and
+	// EXACTLY what TextHash hashes (reviewer fix Critical 2). The
+	// structured capsule fields still describe the original
+	// declaration; the bounded payload is the admitted text.
+	admittedText := admitted.Text
+	text, byteBound := applyByteCap(admittedText)
 	if byteBound {
-		bodyBound = BoundBytes
-		bodyTruncated = true
+		// Resource cap fired after admission. The resource bound is
+		// bytes (AC-6); this case fires only on a degenerate
+		// input the admission policy accepted but the byte cap
+		// could not.
+		_ = profile // bound label updated below
 	}
-	truncated := bodyTruncated || byteBound
+	tokenCount := admitted.TokenCount
+	if byteBound {
+		// The byte cap fired after admission: the admitted bytes
+		// are still what TextHash describes, but they are shorter
+		// than the adapter returned. Keep the HONEST pre-cap count
+		// (the resource cap is bytes, not tokens); the bound label
+		// shifts to "bytes" so the eval harness sees the resource
+		// cap as the closing bound.
+		_ = tokenCount
+	}
 	textHash := model.FormatID(xxhash.Sum64String(text))
+	bound := admitted.Bound
+	if byteBound {
+		bound = BoundBytes
+	}
 	return SemanticDocument{
 		DocumentID:           documentID(node.ID(), textHash, DocumentSchema),
 		NodeID:               node.ID(),
@@ -285,13 +320,31 @@ func BuildDocument(node model.Node, span parse.SourceSpan, source Source) (Seman
 		TextHash:             textHash,
 		DocumentSchema:       DocumentSchema,
 		Text:                 text,
-		Truncated:            truncated,
-		Bound:                boundLabel(bodyBound, truncated),
+		Truncated:            bound != BoundNone,
+		Bound:                bound,
 		Capsule:              cap,
 		AdmissionTokenCount:  tokenCount,
-		AdmissionLimit:       limit,
+		AdmissionLimit:       profile.MaxTokens,
 		AdmissionAlgorithmID: algoID,
 	}, nil
+}
+
+// admittedTokenCount reports the HONEST pre-truncation token count
+// for the bytes the model will consume. When an admission-aware
+// embedder is configured, the count comes from the embedder's own
+// tokenizer (uncapped — see Tokenizer.EncodeRaw). When no
+// admission-aware embedder is configured, the count is 0 (the
+// per-adapter HONEST surface lives in the adapter package).
+func admittedTokenCount(text string, source Source) int {
+	if source.Admitter == nil {
+		return 0
+	}
+	if c, ok := source.Admitter.(interface {
+		CountTokens(text string) int
+	}); ok {
+		return c.CountTokens(text)
+	}
+	return 0
 }
 
 // assembleCapsule constructs the structured v3 capsule (AC-1) from a
@@ -403,58 +456,63 @@ func stripDocAndSignature(body, doc, sig string) string {
 	return rest
 }
 
-// admitBody runs the active adapter's admission on body. When Admission
-// is configured it returns the exact bytes the model will consume plus
-// the token count the model will see. When no Admission is configured
-// the legacy DocumentTokenizer path runs (Truncate is best-effort and
-// may silently mis-state token counts — see AC-7), or the byte cap
-// alone when no tokenizer is known. A typed *AdmissionError surfaces
-// when the adapter rejects the body as inadmissible (AC-4).
-func admitBody(body string, source Source) (
-	admitted string, truncated bool, bound string, tokenCount, limit int, algoID string, err error,
-) {
+// admitFull runs the adapter's admission on the FULL rendered capsule
+// text (reviewer fix Critical 2: the budget covers the joined text,
+// not just the body). When the adapter's Admitter returns admitted
+// bytes, those bytes ARE what gets embedded (AC-7) and TextHash hashes
+// them. When no admission-aware embedder is configured, the legacy
+// DocumentTokenizer path runs (best-effort, may silently mis-state —
+// the bound label is "none" when the legacy path was a no-op).
+//
+// The returned profile is the adapter's AdmissionSpec; the algorithm
+// id is the version-tagged identifier the adapter advertises (static:
+// "first-n-tokens@1"; Ollama: "server-side-truncate-false@1").
+//
+// A typed *AdmissionError surfaces when the adapter cannot prove
+// admissibility (AC-4): a degenerate input with no recoverable bytes,
+// an oversized payload beyond the resource cap, or a server-side
+// rejection from a remote embedder.
+func admitFull(full string, source Source) (Admitted, string, AdmissionSpec, error) {
 	if source.Admitter != nil {
-		// The adapter owns admission; we never silently truncate. The
-		// returned bytes ARE what gets embedded (AC-7).
-		out, e := source.Admitter.Admit(context.Background(), body)
+		out, e := source.Admitter.Admit(context.Background(), full)
 		if e != nil {
-			err = e
-			return
+			return Admitted{}, "", AdmissionSpec{}, e
+		}
+		// Algorithm id: read it from the embedder's admission profile
+		// when available; the static embedder reports
+		// "first-n-tokens@1"; Ollama reports "server-side-truncate-false@1".
+		algoID := admissionAlgorithmFirstN + "@" + admissionAlgorithmVersion
+		var profile AdmissionSpec
+		if ap, ok := source.Admitter.(AdmissionProfile); ok {
+			profile = ap.Profile()
+			if profile.Algorithm != "" {
+				algoID = profile.Algorithm + "@" + profile.AlgorithmVersion
+			}
 		}
 		// Bound: the adapter either truncated ("tokens") or admitted as-is
 		// ("none"). Bytes-bound falls through to applyByteCap.
-		if out.Bound == BoundTokens {
-			truncated = true
-			bound = BoundTokens
-		} else {
-			bound = BoundNone
-		}
-		admitted = out.Text
-		tokenCount = out.TokenCount
-		algoID = admissionAlgorithmFirstN + "@" + admissionAlgorithmVersion
-		return
+		return out, algoID, profile, nil
 	}
 	if source.Tokenizer != nil {
-		// Legacy SW-260 path: the DocumentTokenizer's Truncate is best-effort
-		// and may silently mis-state (AC-7). The v3 builder still uses it
-		// when no admission-aware embedder is configured, then applies the
-		// byte cap. Truncated / Bound describe the legacy cut; the new
-		// fields (AdmissionTokenCount, AdmissionLimit) stay zero.
-		cut, wasCut := source.Tokenizer.Truncate(body, 512)
+		// Legacy SW-260 path: best-effort, may silently mis-state (AC-7).
+		// Bound = "none" when the legacy Truncate was a no-op; "tokens"
+		// when it cut. No profile is exposed, so AdmissionLimit stays
+		// 0 and the algorithm id is the legacy tokenization fallback.
+		cut, wasCut := source.Tokenizer.Truncate(full, 512)
 		if wasCut {
-			truncated = true
-			bound = BoundTokens
-			limit = 512
+			return Admitted{Text: cut, TokenCount: 0, Bound: BoundTokens},
+				"legacy-truncate@1", AdmissionSpec{MaxTokens: 512}, nil
 		}
-		admitted = cut
-		return
+		return Admitted{Text: full, TokenCount: 0, Bound: BoundNone},
+			"legacy-truncate@1", AdmissionSpec{MaxTokens: 512}, nil
 	}
-	// No adapter-side knowledge: pass through, the byte cap is the only
-	// bound. The eval harness can see `bound: "none"` here and know that
-	// nothing token-aware ran.
-	admitted = body
-	bound = BoundNone
-	return
+	// No adapter-side knowledge: pass through, the byte cap is the
+	// only bound. An embedder with NO admission support must not reach
+	// ready — the caller (GenerateAndPersist) catches that case at
+	// commit time and fails closed (AC-5 reviewer fix). Here we
+	// surface a zero AdmissionLimit so the absence is observable.
+	return Admitted{Text: full, TokenCount: 0, Bound: BoundNone},
+		"", AdmissionSpec{}, nil
 }
 
 // renderCapsuleText joins the bounded capsule into the deterministic

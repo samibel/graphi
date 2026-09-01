@@ -108,18 +108,26 @@ func (s AdmissionSpec) String() string {
 // AdmissionError is the typed error Admission returns when a document
 // cannot be admitted within the configured limit. NodeID and Path let
 // the operator locate the offending document; Limit and Actual are the
-// numbers that closed the gap. The build that surfaced this error
-// aborts (AC-4) so a generation with inadmissible documents never
-// reaches StateReady.
+// numbers that closed the gap. Reason is an optional adapter-supplied
+// explanation (e.g. the daemon's failure message verbatim); Limit
+// is -1 when the limit comes from a server-side authoritative check
+// the adapter does not know in advance. The build that surfaced this
+// error aborts (AC-4) so a generation with inadmissible documents
+// never reaches StateReady.
 type AdmissionError struct {
 	NodeID  string
 	Path    string
 	Limit   int
 	Actual  int
 	Profile AdmissionSpec
+	Reason  string
 }
 
 func (e *AdmissionError) Error() string {
+	if e.Reason != "" {
+		return fmt.Sprintf("embed: admission: node %s (%s): %s (profile=%s, actual=%d)",
+			e.NodeID, e.Path, e.Reason, e.Profile.TokenizerID, e.Actual)
+	}
 	return fmt.Sprintf("embed: admission: node %s (%s): token count %d exceeds limit %d (profile=%s)",
 		e.NodeID, e.Path, e.Actual, e.Limit, e.Profile.TokenizerID)
 }

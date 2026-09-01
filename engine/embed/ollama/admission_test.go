@@ -64,9 +64,14 @@ func TestOllama_AdmitBytesBound(t *testing.T) {
 // adapter POSTs to /api/embed (not /api/embeddings) with
 // `truncate:false` so the daemon is the final authority on input
 // admission. The test asserts the request body carries the
-// truncate:false field and the URL targets /api/embed.
+// truncate:false field and the URL targets /api/embed, AND the
+// request shape matches the real /api/embed contract (reviewer
+// fix Critical 3: `input` field, not `prompt`; response is
+// `embeddings` plural, an array of vectors).
 func TestOllama_EmbedUsesApiEmbedWithTruncateFalse(t *testing.T) {
 	var sawTruncateFalse bool
+	var sawInputField bool
+	var sawPromptField bool
 	var sawEndpoint string
 	var sawPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +83,15 @@ func TestOllama_EmbedUsesApiEmbedWithTruncateFalse(t *testing.T) {
 			if t, ok := req["truncate"].(bool); ok && !t {
 				sawTruncateFalse = true
 			}
+			if _, ok := req["input"]; ok {
+				sawInputField = true
+			}
+			if _, ok := req["prompt"]; ok {
+				sawPromptField = true
+			}
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"embedding": []float32{0.1, 0.2}})
+		// Real /api/embed response shape (reviewer fix Critical 3).
+		_ = json.NewEncoder(w).Encode(map[string]any{"embeddings": [][]float32{{0.1, 0.2}}})
 	}))
 	defer srv.Close()
 	host := strings.TrimPrefix(srv.URL, "http://")
@@ -93,6 +105,12 @@ func TestOllama_EmbedUsesApiEmbedWithTruncateFalse(t *testing.T) {
 	if !sawTruncateFalse {
 		t.Error("server saw request without truncate:false; AC-4 requires truncate:false for fail-closed admission")
 	}
+	if !sawInputField {
+		t.Error("server saw request without `input` field; /api/embed expects `input`, not `prompt` (reviewer Critical 3)")
+	}
+	if sawPromptField {
+		t.Error("server saw `prompt` field; /api/embed does not accept `prompt` (reviewer Critical 3)")
+	}
 	if sawPath != "/api/embed" {
 		t.Errorf("server saw path %q, want /api/embed (AC-4: switch from /api/embeddings)", sawPath)
 	}
@@ -101,10 +119,13 @@ func TestOllama_EmbedUsesApiEmbedWithTruncateFalse(t *testing.T) {
 	}
 }
 
-// TestOllama_EmbedFailsClosedOn400 pins AC-4: the daemon's
-// "input exceeds context length" rejection surfaces as a typed
-// error so the calling build aborts rather than publishes a
-// partial generation as ready (AC-5).
+// TestOllama_EmbedFailsClosedOn400 pins AC-4 / reviewer Critical 3:
+// the daemon's "input exceeds context length" rejection surfaces as
+// a typed *embed.AdmissionError (not a plain fmt.Errorf), naming
+// the node and the limit so the calling build aborts rather than
+// publishes a partial generation as ready (AC-5). The daemon's
+// error message must be present in the typed error so the operator
+// can diagnose.
 func TestOllama_EmbedFailsClosedOn400(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -119,6 +140,9 @@ func TestOllama_EmbedFailsClosedOn400(t *testing.T) {
 	_, err = e.Embed(context.Background(), []string{"hello"})
 	if err == nil {
 		t.Fatal("Embed succeeded against a 400 daemon; AC-4 says the embedder must surface the typed error")
+	}
+	if !embed.IsAdmissionError(err) {
+		t.Errorf("Embed error type = %T, want *embed.AdmissionError (reviewer Critical 3)", err)
 	}
 	if !strings.Contains(err.Error(), "input exceeds context length") {
 		t.Errorf("Embed error = %q, want it to surface the daemon's failure message verbatim", err.Error())

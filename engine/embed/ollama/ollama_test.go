@@ -73,11 +73,16 @@ func TestOllama_OptInNonLoopbackFailsClosed(t *testing.T) {
 
 // When configured, Embed dials the loopback endpoint only (asserted by pointing
 // the embedder at a loopback httptest server and confirming it is reached).
+// The mock reproduces the real /api/embed wire shape (reviewer fix
+// Critical 3: `embeddings` plural, an array of vectors, one per input).
 func TestOllama_DialsLoopbackOnly(t *testing.T) {
 	var hits int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits++
-		_ = json.NewEncoder(w).Encode(map[string]any{"embedding": []float32{0.1, 0.2, 0.3}})
+		// Real /api/embed response shape: `embeddings: number[][]`, one
+		// vector per input. A mock that agrees with the code but
+		// disagrees with the server is worse than no test.
+		_ = json.NewEncoder(w).Encode(map[string]any{"embeddings": [][]float32{{0.1, 0.2, 0.3}}})
 	}))
 	defer srv.Close()
 	// httptest binds 127.0.0.1; strip scheme for the host:port.
@@ -111,11 +116,17 @@ func TestOllama_DialsLoopbackOnly(t *testing.T) {
 // dim is updated from 0 to the real value, (c) the probe is not
 // re-sent on a second call (idempotency), and (d) the embedder
 // satisfies the embed.DimDiscoverer contract the runtime probes.
+//
+// The mock reproduces the real /api/embed wire shape (reviewer fix
+// Critical 3): the response carries `embeddings: number[][]`, an
+// array of vectors. A mock that returns singular `embedding` is the
+// wrong shape.
 func TestOllama_ProbeDimLearnsDimBeforeFingerprint(t *testing.T) {
 	var hits int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits++
-		_ = json.NewEncoder(w).Encode(map[string]any{"embedding": []float32{1, 2, 3, 4, 5}})
+		// Real /api/embed response shape (reviewer fix Critical 3).
+		_ = json.NewEncoder(w).Encode(map[string]any{"embeddings": [][]float32{{1, 2, 3, 4, 5}}})
 	}))
 	defer srv.Close()
 	host := strings.TrimPrefix(srv.URL, "http://")

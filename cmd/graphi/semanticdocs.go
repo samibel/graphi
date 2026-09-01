@@ -70,6 +70,38 @@ func newFileDocumentSource(ctx context.Context, root string, emb embed.Embedder)
 	}
 }
 
+// Result implements embed.ResultDocumentSource (reviewer fix
+// Critical 4). The structured Result distinguishes between
+// legitimately excluded nodes (file/package/external kinds,
+// generated paths, no_span) and nodes the source could not
+// produce a document for (read/parse failure, source bytes
+// missing, admission failure). The coverage invariant treats
+// Failed nodes as build-aborting errors — silently Skipped
+// coverage failures is exactly what AC-5 / Critical 4 forbids.
+func (s *fileDocumentSource) Result(n model.Node) embed.DocumentResult {
+	switch n.Kind() {
+	case parse.KindFile, parse.KindPackage, parse.KindExternal:
+		return embed.DocumentExcluded
+	}
+	path := n.SourcePath()
+	if path == "" {
+		return embed.DocumentExcluded // no_span (legitimate)
+	}
+	if path != s.cur {
+		s.load(path)
+	}
+	if s.curGen {
+		return embed.DocumentExcluded // generated_path (legitimate)
+	}
+	if s.curFailed {
+		return embed.DocumentFailed // read/parse failure (coverage failure)
+	}
+	if _, ok := s.curDocs[n.ID()]; !ok {
+		return embed.DocumentExcluded // no_span (legitimate)
+	}
+	return embed.DocumentEmbedded
+}
+
 // Document implements embed.DocumentSource.
 func (s *fileDocumentSource) Document(n model.Node) (embed.SemanticDocument, bool) {
 	switch n.Kind() {

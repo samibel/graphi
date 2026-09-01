@@ -78,6 +78,38 @@ type DocumentSource interface {
 	Document(node model.Node) (SemanticDocument, bool)
 }
 
+// DocumentResult is the structured outcome of asking a DocumentSource for
+// a node's document. The reviewer fix for Critical 4 replaces the
+// silent Skipped counter with three explicit outcomes:
+//
+//	Embedded: the node has an admitted document (will be embedded or
+//	          carried forward).
+//	Excluded: the node was deliberately excluded (file/package/external,
+//	          generated path, no_span). A legitimately empty graph
+//	          may have zero Embedded and zero Failed rows.
+//	Failed:   the source could not produce a document for a node that
+//	          MUST have one (read/parse failure, source bytes missing,
+//	          admission failure). The build aborts.
+type DocumentResult int
+
+const (
+	DocumentEmbedded DocumentResult = iota
+	DocumentExcluded
+	DocumentFailed
+)
+
+// ResultDocumentSource is the OPTIONAL richer interface that lets a
+// DocumentSource report which outcome (Embedded/Excluded/Failed)
+// applies to each node. The default DocumentSource above always
+// returns ok=false for failed cases, so the runtime treats every
+// Skipped node as a coverage failure under the reviewer's fix
+// (reviewer Critical 4: exact set equality between persisted rows
+// and eligible declaration IDs; unexpected omission fails).
+type ResultDocumentSource interface {
+	DocumentSource
+	Result(node model.Node) DocumentResult
+}
+
 // V1DocumentSource yields the v1 name-only text (NodeText) in the document
 // shape, tagged document_schema "v1".
 //
@@ -111,19 +143,30 @@ type GenerateResult struct {
 	// Embedded is the number of node vectors generated and persisted.
 	// A node whose prior row is carried forward increments Reused ONLY
 	// — not Embedded — so the documented invariant holds:
-	// Embedded + Reused + Skipped == len(nodes). A previous revision
-	// double-counted carried rows; the test that pinned the wrong count
-	// is fixed in the same change.
+	// Embedded + Reused + Excluded == len(nodes) − Failed. Failed
+	// nodes abort the build (reviewer fix Critical 4: exact set
+	// equality between persisted rows and eligible declaration IDs).
+	// A previous revision double-counted carried rows; the test that
+	// pinned the wrong count is fixed in the same change.
 	Embedded int
-	// Skipped is the number of nodes the DocumentSource had no document for
-	// (excluded artefacts, generated paths, unreadable sources). They get no
-	// vector rather than a name-only stand-in.
-	Skipped int
+	// Excluded is the number of nodes the DocumentSource deliberately
+	// excluded (file/package/external kinds, generated paths, no_span).
+	// They get no vector — the legitimate exclusions the coverage
+	// invariant allows. A legitimately empty graph may have zero
+	// Embedded and zero Failed rows; the build commits a zero-row
+	// generation (reviewer fix Critical 4).
+	Excluded int
+	// Failed is the number of nodes the DocumentSource could not
+	// produce a document for, where the absence is a coverage failure
+	// (read/parse error, missing source bytes, admission failure). The
+	// build aborts on any Failed node: the build does not reach
+	// ready and no partial generation is published.
+	Failed int
 	// Reused is the number of nodes whose prior vector was carried forward
 	// without re-embedding (AC-4). Carried-forward rows do NOT increment
 	// Embedded — a previous revision double-counted them, contradicting
-	// the documented invariant. The total of Embedded + Reused + Skipped
-	// equals the number of nodes visited.
+	// the documented invariant. The total of Embedded + Reused + Excluded
+	// equals the number of nodes visited minus Failed.
 	Reused int
 	// Purged is the number of prior-generation rows dropped because their
 	// node_id is no longer in the graph (AC-4 prune). The purge happens at
@@ -347,9 +390,52 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		}
 		chunkNodes, texts, carry = chunkNodes[:0], texts[:0], carry[:0]
 		for _, n := range nodes[start:end] {
+			// Reviewer fix Critical 4: the coverage invariant is
+			// exact set equality between persisted rows and eligible
+			// declaration IDs. The DocumentSource now reports a
+			// structured Result (Embedded/Excluded/Failed). Failed
+			// nodes are coverage failures — they must abort the
+			// build, not be silently counted as Skipped (which the
+			// previous code did, leading to partial generations
+			// being published as Ready).
+			//
+			// Backward compat: when the source does NOT implement
+			// ResultDocumentSource (the legacy DocumentSource
+			// interface — V1DocumentSource, etc.), we fall back to
+			// Document's bool result. ok=false counts as Excluded
+			// (legacy semantics). A build that wires the production
+			// fileDocumentSource uses the structured Result path.
+			rds, hasRDS := docs.(ResultDocumentSource)
+			if hasRDS {
+				result := rds.Result(n)
+				switch result {
+				case DocumentExcluded:
+					res.Excluded++
+					continue
+				case DocumentFailed:
+					res.Failed++
+					if build != nil {
+						_ = build.Abort(ctx)
+					}
+					return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): document source failed (coverage failure)", n.ID(), n.SourcePath())
+				}
+			}
 			d, ok := docs.Document(n)
 			if !ok {
-				res.Skipped++
+				if hasRDS {
+					// The richer Result said Embedded but the
+					// legacy Document returned false. Treat this
+					// as a coverage failure too — the source is
+					// inconsistent with itself, and silently
+					// skipping is exactly what AC-5 forbids.
+					res.Failed++
+					if build != nil {
+						_ = build.Abort(ctx)
+					}
+					return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): document source returned Excluded/Embedded inconsistent result", n.ID(), n.SourcePath())
+				}
+				// Legacy path: ok=false means Excluded.
+				res.Excluded++
 				continue
 			}
 			// AC-4 carry-forward: lookup the prior row by NodeID via the
@@ -359,7 +445,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			// call. Carry-forward counts ONLY as Reused (a previous
 			// revision double-counted it under both Embedded and
 			// Reused, contradicting the documented Embedded + Reused +
-			// Skipped invariant).
+			// Excluded invariant).
 			if hasPrior {
 				if priorRow, exists, lerr := store.LoadRow(ctx, priorID, n.ID()); lerr == nil && exists && priorRow.TextHash == d.TextHash {
 					row := Row{

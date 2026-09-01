@@ -321,8 +321,8 @@ func TestContract_CarryForward(t *testing.T) {
 			if res.Embedded != 1 {
 				t.Fatalf("second pass Embedded = %d, want 1 (only the re-embedded b)", res.Embedded)
 			}
-			if res.Skipped != 0 {
-				t.Fatalf("second pass Skipped = %d, want 0", res.Skipped)
+			if res.Excluded != 0 {
+				t.Fatalf("second pass Excluded = %d, want 0", res.Excluded)
 			}
 
 			// The carried-forward vectors are byte-identical to the prior.
@@ -1159,8 +1159,8 @@ func TestContract_PurgedCountsReembeddedNotPinned(t *testing.T) {
 			if res.Reused != 2 {
 				t.Fatalf("Reused = %d, want 2", res.Reused)
 			}
-			if res.Skipped != 0 {
-				t.Fatalf("Skipped = %d, want 0", res.Skipped)
+			if res.Excluded != 0 {
+				t.Fatalf("Excluded = %d, want 0", res.Excluded)
 			}
 			if res.Purged != 0 {
 				t.Fatalf("Purged = %d, want 0 (no prior row was dropped; b was re-embedded, a/c were reused)", res.Purged)
@@ -1179,9 +1179,9 @@ func TestContract_PurgedCountsReembeddedNotPinned(t *testing.T) {
 			if err != nil {
 				t.Fatalf("third GenerateAndPersist: %v", err)
 			}
-			if res3.Embedded != 1 || res3.Reused != 1 || res3.Skipped != 0 {
+			if res3.Embedded != 1 || res3.Reused != 1 || res3.Excluded != 0 {
 				t.Fatalf("third pass shape = (%d, %d, %d), want (1, 1, 0)",
-					res3.Embedded, res3.Reused, res3.Skipped)
+					res3.Embedded, res3.Reused, res3.Excluded)
 			}
 			if res3.Purged != 1 {
 				t.Fatalf("Purged = %d, want 1 (c was dropped because its node is no longer in the graph)", res3.Purged)

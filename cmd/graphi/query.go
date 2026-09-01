@@ -364,8 +364,8 @@ func runIndexAt(cwd string, args []string) int {
 	// counted them and reported reused rows as freshly embedded.
 	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
 	share := docs.stats.SpanMethodShare()
-	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
-		embed.DocumentSchema, res.Embedded, res.Reused, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
+	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d excluded, %d failed (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
+		embed.DocumentSchema, res.Embedded, res.Reused, res.Excluded, res.Failed, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
 	return 0
 }
 

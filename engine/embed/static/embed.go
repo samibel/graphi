@@ -140,16 +140,22 @@ func (m *Model) Truncate(text string, maxTokens int) (string, bool) {
 // pool). The bound label is "tokens" when the truncation cut
 // anything and "none" otherwise.
 //
-// The HONEST surface: the token count is post-unk, post-cap (what
-// model2vec pools). A build that wires Admit into BuildDocument
-// therefore gets a Text that is exactly the bytes the model sees —
-// no silent truncation can sit between TextHash and the persisted
-// vector.
+// The HONEST surface (reviewer fix): the token count is post-unk,
+// PRE-cap (uncapped) so the overflow check is structurally reachable
+// for the pinned tokenizer. The returned TokenCount is the FULL input
+// count, not the cap — the build that wants the cap reports
+// MaxAdmissionTokens, the build that wants the honest count reports
+// the pre-cap number. The two are equal only when the input exactly
+// hits the cap.
+//
+// A build that wires Admit into BuildDocument therefore gets a Text
+// that is exactly the bytes the model sees — no silent truncation
+// can sit between TextHash and the persisted vector.
 func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 	if text == "" {
 		return embed.Admitted{Text: text, TokenCount: 0, Bound: embed.BoundNone}, nil
 	}
-	ids := m.rawIDs(text)
+	ids := m.rawIDs(text) // uncapped post-unk — see rawIDs / EncodeRaw
 	if len(ids) <= MaxAdmissionTokens {
 		return embed.Admitted{Text: text, TokenCount: len(ids), Bound: embed.BoundNone}, nil
 	}
@@ -169,7 +175,7 @@ func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 			Profile: embed.AdmissionSpec{
 				TokenizerID:      "model2vec-wordpiece",
 				TokenizerSHA256:  m.tokenHash(),
-				TokenizerVersion: "1",
+				TokenizerVersion: tokenizerVersion,
 				MaxTokens:        MaxAdmissionTokens,
 				Reserve:          SpecialTokenReserve,
 				Algorithm:        "first-n-tokens",
@@ -179,19 +185,39 @@ func (m *Model) Admit(_ context.Context, text string) (embed.Admitted, error) {
 	}
 	return embed.Admitted{
 		Text:       cut,
-		TokenCount: MaxAdmissionTokens,
+		TokenCount: len(ids), // pre-cap HONEST count (reviewer fix)
 		Bound:      embed.BoundTokens,
 	}, nil
 }
 
-// rawIDs returns the model's post-unk, pre-cap token ids for text. It
-// is the HONEST token count Admit uses; InferenceIDs caps at maxLength
-// silently so it would lie about overflow.
+// CountTokens is the OPTIONAL CountTokens hook the document builder
+// uses to populate AdmissionTokenCount with the HONEST pre-cap
+// number after admission has produced the admitted bytes. The
+// production adapter implements it; embedders that don't can omit
+// it (the document builder falls back to 0).
+func (m *Model) CountTokens(text string) int {
+	return len(m.rawIDs(text))
+}
+
+// tokenizerVersion is the tokenizers JSON format version of the
+// pinned tokenizer (loaded from the artifact's "version" field; the
+// loader rejects anything else).
+const tokenizerVersion = "1.0"
+
+// rawIDs returns the model's post-unk, PRE-CAP token ids for text.
+// It is the HONEST token count Admit uses: EncodeRaw emits every
+// token the tokenizer would produce (without the right-truncation
+// cap Encode applies), and rawIDs then drops unk ids so the count is
+// what model2vec's StaticModel.encode would pool. The uncapped
+// count makes the overflow check structurally reachable — the
+// previous shape called Tokenizer.Encode, which truncates to
+// maxLength internally, so len(ids) was never greater than
+// MaxAdmissionTokens for the pinned tokenizer.
 func (m *Model) rawIDs(text string) []int {
 	if m.tok == nil {
 		return nil
 	}
-	ids := m.tok.Encode(text)
+	ids := m.tok.EncodeRaw(text)
 	kept := ids[:0]
 	for _, id := range ids {
 		if id != m.tok.unkID {
