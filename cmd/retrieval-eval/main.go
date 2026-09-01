@@ -52,6 +52,11 @@ import (
 	// -embedder selector. Importing for side effects only; the blank
 	// identifier silences the unused-import lint.
 	_ "github.com/samibel/graphi/engine/embed/ollama"
+	// Importing the static package registers the SW-262
+	// `static:<model>@<revision>` scheme (engine/embed/static's init).
+	// Without it, the production static embedder is unreachable from this
+	// harness even when its artifact is installed and verified.
+	_ "github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 )

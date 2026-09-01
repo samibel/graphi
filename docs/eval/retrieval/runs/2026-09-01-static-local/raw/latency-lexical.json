@@ -1,0 +1,344 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "latency",
+  "baseline": "lexical",
+  "collected": true,
+  "samples": 120,
+  "queries": [
+    {
+      "id": "cb-01",
+      "samples_us": [
+        319,
+        122,
+        113
+      ]
+    },
+    {
+      "id": "cb-02",
+      "samples_us": [
+        94,
+        87,
+        84
+      ]
+    },
+    {
+      "id": "cb-03",
+      "samples_us": [
+        88,
+        84,
+        84
+      ]
+    },
+    {
+      "id": "cb-04",
+      "samples_us": [
+        86,
+        86,
+        83
+      ]
+    },
+    {
+      "id": "cb-05",
+      "samples_us": [
+        87,
+        81,
+        81
+      ]
+    },
+    {
+      "id": "cb-06",
+      "samples_us": [
+        83,
+        79,
+        79
+      ]
+    },
+    {
+      "id": "cb-07",
+      "samples_us": [
+        203,
+        181,
+        178
+      ]
+    },
+    {
+      "id": "cb-08",
+      "samples_us": [
+        232,
+        226,
+        220
+      ]
+    },
+    {
+      "id": "cb-09",
+      "samples_us": [
+        186,
+        177,
+        176
+      ]
+    },
+    {
+      "id": "cb-10",
+      "samples_us": [
+        183,
+        172,
+        168
+      ]
+    },
+    {
+      "id": "cb-11",
+      "samples_us": [
+        275,
+        268,
+        266
+      ]
+    },
+    {
+      "id": "cb-12",
+      "samples_us": [
+        320,
+        304,
+        309
+      ]
+    },
+    {
+      "id": "cb-13",
+      "samples_us": [
+        182,
+        183,
+        189
+      ]
+    },
+    {
+      "id": "cb-14",
+      "samples_us": [
+        326,
+        321,
+        316
+      ]
+    },
+    {
+      "id": "cb-15",
+      "samples_us": [
+        174,
+        178,
+        181
+      ]
+    },
+    {
+      "id": "cb-16",
+      "samples_us": [
+        169,
+        174,
+        159
+      ]
+    },
+    {
+      "id": "cb-17",
+      "samples_us": [
+        358,
+        359,
+        345
+      ]
+    },
+    {
+      "id": "cb-18",
+      "samples_us": [
+        269,
+        268,
+        278
+      ]
+    },
+    {
+      "id": "cb-19",
+      "samples_us": [
+        458,
+        420,
+        418
+      ]
+    },
+    {
+      "id": "cb-20",
+      "samples_us": [
+        272,
+        270,
+        273
+      ]
+    },
+    {
+      "id": "cb-21",
+      "samples_us": [
+        311,
+        314,
+        305
+      ]
+    },
+    {
+      "id": "cb-22",
+      "samples_us": [
+        252,
+        250,
+        248
+      ]
+    },
+    {
+      "id": "cb-23",
+      "samples_us": [
+        337,
+        336,
+        339
+      ]
+    },
+    {
+      "id": "cb-24",
+      "samples_us": [
+        236,
+        258,
+        254
+      ]
+    },
+    {
+      "id": "cb-25",
+      "samples_us": [
+        264,
+        264,
+        268
+      ]
+    },
+    {
+      "id": "cb-26",
+      "samples_us": [
+        163,
+        170,
+        161
+      ]
+    },
+    {
+      "id": "cb-27",
+      "samples_us": [
+        188,
+        188,
+        187
+      ]
+    },
+    {
+      "id": "cb-28",
+      "samples_us": [
+        227,
+        231,
+        243
+      ]
+    },
+    {
+      "id": "cb-29",
+      "samples_us": [
+        227,
+        229,
+        226
+      ]
+    },
+    {
+      "id": "cb-30",
+      "samples_us": [
+        274,
+        270,
+        268
+      ]
+    },
+    {
+      "id": "cb-31",
+      "samples_us": [
+        267,
+        250,
+        252
+      ]
+    },
+    {
+      "id": "cb-32",
+      "samples_us": [
+        152,
+        112,
+        110
+      ]
+    },
+    {
+      "id": "cb-33",
+      "samples_us": [
+        145,
+        140,
+        139
+      ]
+    },
+    {
+      "id": "cb-34",
+      "samples_us": [
+        111,
+        112,
+        106
+      ]
+    },
+    {
+      "id": "cb-35",
+      "samples_us": [
+        242,
+        237,
+        241
+      ]
+    },
+    {
+      "id": "cb-36",
+      "samples_us": [
+        106,
+        106,
+        111
+      ]
+    },
+    {
+      "id": "cb-37",
+      "samples_us": [
+        120,
+        132,
+        115
+      ]
+    },
+    {
+      "id": "cb-38",
+      "samples_us": [
+        92,
+        92,
+        91
+      ]
+    },
+    {
+      "id": "cb-39",
+      "samples_us": [
+        140,
+        139,
+        143
+      ]
+    },
+    {
+      "id": "cb-40",
+      "samples_us": [
+        145,
+        144,
+        139
+      ]
+    }
+  ],
+  "index_ms": {
+    "status": "measured",
+    "value": 198,
+    "unit": "ms"
+  },
+  "peak_rss_mb": {
+    "status": "measured",
+    "value": 438.625,
+    "unit": "MB"
+  },
+  "vector_sidecar_bytes": {
+    "status": "not_applicable",
+    "reason": "no vector sidecar: this baseline ranks without vectors"
+  }
+}
