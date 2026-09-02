@@ -1053,7 +1053,32 @@ func (d *Direct) SymbolContext(ctx context.Context, p SymbolContextParams) ([]by
 
 // TaskContext implements Client via the shared engine/agenttools/taskctx
 // package, so CLI, MCP, and HTTP emit the same canonical bytes.
+//
+// Version dispatch (SW-264):
+//   - version==0 or version==1: today Assemble path (v1).
+//   - version==2: AssembleV2 path, which uses Deps.Retrieval as its seed
+//     source and stamps claim_type=source_match / graph_relation on
+//     evidence. With no retrieval wired or a non-ready generation, /2
+//     falls back to /1's lexical seeding path (AC-8) and stamps
+//     `degradation` on the summary.
+//
+// task_context is NOT migrated onto the executor seam (AC-7): the contract
+// is environment-dependent (snippet bytes depend on the caller's working
+// directory), so the dual-run divergence recorder cannot prove byte parity.
 func (d *Direct) TaskContext(ctx context.Context, p TaskContextParams) ([]byte, error) {
+	if p.Version == 2 {
+		res, err := taskctx.AssembleV2(ctx, taskctx.Params{
+			Task:        p.Task,
+			TokenBudget: p.TokenBudget,
+			MaxItems:    p.MaxItems,
+			Deps:        d.agentDeps(),
+			Reader:      d.snippetReader(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return contract.Serialize(res)
+	}
 	res, err := taskctx.Assemble(ctx, taskctx.Params{
 		Task:        p.Task,
 		TokenBudget: p.TokenBudget,
@@ -1083,7 +1108,28 @@ func (d *Direct) RepoOverview(ctx context.Context, p RepoOverviewParams) ([]byte
 
 // SearchHybrid implements Client via the shared engine/agenttools/hybridsearch
 // package, so CLI, MCP, and HTTP emit the same canonical bytes.
+//
+// Version dispatch (SW-264):
+//   - version==0 or version==1: today Search path (v1). Byte-identical to
+//     the SW-257 §7.2 golden for the SQLite "hello greeter" query.
+//   - version==2: SearchV2 path, which renders retrieval.Result rows
+//     with the explain breakdown in every reason and the summary
+//     fingerprints (retrieval version, weights hash, model/index
+//     fingerprints, strategy). With no retrieval wired or a non-ready
+//     generation, /2 falls back to /1's bytes and stamps
+//     `degradation: <state>` on the summary (AC-8).
 func (d *Direct) SearchHybrid(ctx context.Context, p SearchHybridParams) ([]byte, error) {
+	if p.Version == 2 {
+		res, err := hybridsearch.SearchV2(ctx, hybridsearch.Params{
+			Query:    p.Query,
+			MaxItems: p.MaxItems,
+			Deps:     d.agentDeps(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return contract.Serialize(res)
+	}
 	res, err := hybridsearch.Search(ctx, hybridsearch.Params{
 		Query:    p.Query,
 		MaxItems: p.MaxItems,

@@ -413,6 +413,17 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			}
 			p.TokenBudget = v
 		}
+		// SW-264: optional `version` query param. 0/1 selects /1 (today's
+		// path); 2 selects /2 (retrieval-seeded with claim_type on every
+		// evidence item). A non-integer value is silently ignored — the
+		// HTTP surface stays lenient so a client can probe the parameter
+		// without breaking the request shape.
+		if v := q.Get("version"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err == nil {
+				p.Version = n
+			}
+		}
 		raw, err = s.client.TaskContext(r.Context(), p)
 	case "repo_overview":
 		migrated = &client.RepoOverviewArgs{
@@ -453,7 +464,18 @@ func (s *Server) handleAgentTool(w http.ResponseWriter, r *http.Request, name st
 			writeErr(w, http.StatusBadRequest, "bad_request", "query required")
 			return true
 		}
-		migrated = &client.SearchHybridArgs{Query: queryText, MaxItems: maxItems}
+		shArgs := &client.SearchHybridArgs{Query: queryText, MaxItems: maxItems}
+		// SW-264: optional `version` query param. 0/1 selects /1 (today's
+		// path, byte-identical to SW-257 §7.2); 2 selects /2 (retrieval-
+		// rendered with explain fields + summary fingerprints). A non-
+		// integer value is silently ignored.
+		if v := q.Get("version"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err == nil {
+				shArgs.Version = n
+			}
+		}
+		migrated = shArgs
 	case "architecture":
 		migrated = &client.ArchitectureArgs{MaxItems: maxItems}
 	case "architecture_violations":

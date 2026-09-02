@@ -1,0 +1,1829 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "query": {
+    "id": "cb-11",
+    "stratum": "nl_behaviour",
+    "language": "en",
+    "split": "dev",
+    "query": "where are required flags validated before a command runs",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 1146,
+        "end_line": 1168,
+        "anchor": "func (c *Command) ValidateRequiredFlags(",
+        "grade": 3,
+        "reason": "ValidateRequiredFlags walks the flag set and reports the missing required ones.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command.go",
+        "start_line": 874,
+        "end_line": 1013,
+        "anchor": "func (c *Command) execute(",
+        "grade": 2,
+        "reason": "execute calls ValidateRequiredFlags right before the Run hooks.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "shell_completions.go",
+        "start_line": 21,
+        "end_line": 26,
+        "anchor": "func (c *Command) MarkFlagRequired(",
+        "grade": 2,
+        "reason": "MarkFlagRequired sets the annotation the validation reads.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 319,
+        "end_line": 333,
+        "anchor": "### Required flags",
+        "grade": 1,
+        "reason": "User-guide prose on required flags; explains the feature, not where it runs.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command_test.go",
+        "start_line": 818,
+        "end_line": 834,
+        "anchor": "func TestRequiredFlags(",
+        "grade": 1,
+        "reason": "The test pins the behaviour but is not the implementation.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      }
+    ]
+  },
+  "grade3_judgements": [
+    {
+      "path": "command.go",
+      "start_line": 1146,
+      "end_line": 1168,
+      "anchor": "func (c *Command) ValidateRequiredFlags(",
+      "grade": 3,
+      "reason": "ValidateRequiredFlags walks the flag set and reports the missing required ones.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    }
+  ],
+  "retrieval": {
+    "Rows": [
+      {
+        "NodeID": "9b6bf88a941fea37",
+        "DocumentID": "37dc262dfa9609ab",
+        "Path": "command.go",
+        "Line": 1147,
+        "Span": "1147-1147",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 1,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "270294113953ddc9",
+        "DocumentID": "1830b54654398b4f",
+        "Path": "command.go",
+        "Line": 1643,
+        "Span": "1643-1643",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 1,
+          "SemanticRank": 2,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "7d36065e466013da",
+        "DocumentID": "a3c9c63253793153",
+        "Path": "flag_groups.go",
+        "Line": 49,
+        "Span": "49-49",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 3,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "79f18cfee1a0dceb",
+        "DocumentID": "2c97bec1f52d1471",
+        "Path": "flag_groups.go",
+        "Line": 33,
+        "Span": "33-33",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 4,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "3c8693954f41735c",
+        "DocumentID": "34092ca3da1b13b9",
+        "Path": "completions_test.go",
+        "Line": 810,
+        "Span": "810-810",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 5,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      }
+    ],
+    "Summary": {
+      "RetrievalVersion": "retrieval/2",
+      "Strategy": "semantic_first",
+      "WeightsHash": "92a8589c",
+      "ModelFingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "IndexFingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:68927b2c5e896dcf830785c35e39eee2",
+      "Query": "where are required flags validated before a command runs",
+      "Limit": 5,
+      "CandidateK": 50,
+      "RRFk": 60,
+      "RRFScale": 1000000,
+      "MaxPerFile": 3
+    },
+    "Degradation": "ready",
+    "Reason": ""
+  },
+  "bundle": {
+    "outcome": "partial",
+    "summary": "task_context/2: 5 seed(s) for \"where are required flags validated before a command runs\" — 8 related, 8 callers, 4 callees, 8 tests, 6 configs, 8 files, risk high (task_context/2; retrieval/2; weights 92a8589c; 500/1200 snippet tokens; strategy semantic_first; degradation: ready)",
+    "items": [
+      {
+        "ref_id": "270294113953ddc9",
+        "rank": 9437484,
+        "reason": "primary: method cobra.Command.Flags (command.go:1643) score 300 [seed 1, search]",
+        "evidence_ref_ids": [
+          "e1",
+          "e146"
+        ]
+      },
+      {
+        "ref_id": "3c8693954f41735c",
+        "rank": 9437444,
+        "reason": "primary: function cobra.TestRequiredFlagNameCompletionInGo (completions_test.go:810) score 260 [seed 2, search]",
+        "evidence_ref_ids": [
+          "e2",
+          "e147"
+        ]
+      },
+      {
+        "ref_id": "79f18cfee1a0dceb",
+        "rank": 9437404,
+        "reason": "primary: method cobra.Command.MarkFlagsRequiredTogether (flag_groups.go:33) score 220 [seed 3, search]",
+        "evidence_ref_ids": [
+          "e3",
+          "e148"
+        ]
+      },
+      {
+        "ref_id": "7d36065e466013da",
+        "rank": 9437364,
+        "reason": "primary: method cobra.Command.MarkFlagsOneRequired (flag_groups.go:49) score 180 [seed 4, search]",
+        "evidence_ref_ids": [
+          "e4",
+          "e149"
+        ]
+      },
+      {
+        "ref_id": "9b6bf88a941fea37",
+        "rank": 9437324,
+        "reason": "primary: method cobra.Command.ValidateRequiredFlags (command.go:1147) score 140 [seed 5, search]",
+        "evidence_ref_ids": [
+          "e5",
+          "e150"
+        ]
+      },
+      {
+        "ref_id": "192bc73065333477",
+        "rank": 8388988,
+        "reason": "related: type cobra.Command (command.go:51) score 380 [calls 0, hierarchy 0, refs 350, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e6",
+          "e7",
+          "e8",
+          "e9",
+          "e10",
+          "e151"
+        ]
+      },
+      {
+        "ref_id": "785aed129e4d4aff",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.execute (command.go:874) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e152"
+        ]
+      },
+      {
+        "ref_id": "b3c9aee2c47183ce",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.mergePersistentFlags (command.go:1849) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e15",
+          "e16",
+          "e153"
+        ]
+      },
+      {
+        "ref_id": "17565096f7fd0123",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.HasAvailableFlags (command.go:1773) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e17"
+        ]
+      },
+      {
+        "ref_id": "1879a67fa2cb83f9",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.Traverse (command.go:790) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e18",
+          "e19"
+        ]
+      },
+      {
+        "ref_id": "3b78a2226440ec55",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.LocalFlags (command.go:1669) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e20",
+          "e21"
+        ]
+      },
+      {
+        "ref_id": "3d75b0d1626ca2e1",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.Name (command.go:1496) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "4c2017d065d88b2b",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.SetGlobalNormalizationFunc (command.go:364) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "785aed129e4d4aff",
+        "rank": 7340362,
+        "reason": "caller: method cobra.Command.execute (command.go:874) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e11",
+          "e12",
+          "e13",
+          "e14"
+        ]
+      },
+      {
+        "ref_id": "17565096f7fd0123",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.HasAvailableFlags (command.go:1773) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e17"
+        ]
+      },
+      {
+        "ref_id": "1879a67fa2cb83f9",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.Traverse (command.go:790) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e18",
+          "e19"
+        ]
+      },
+      {
+        "ref_id": "3b78a2226440ec55",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.LocalFlags (command.go:1669) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e20",
+          "e21"
+        ]
+      },
+      {
+        "ref_id": "4c2017d065d88b2b",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.SetGlobalNormalizationFunc (command.go:364) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "5270e37fbdabefc2",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.ParseFlags (command.go:1819) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e24",
+          "e25"
+        ]
+      },
+      {
+        "ref_id": "544c86d495793fa1",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.Flag (command.go:1795) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "5860ac9531308bf9",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.InitDefaultVersionFlag (command.go:1204) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e27",
+          "e28",
+          "e29",
+          "e30",
+          "e31"
+        ]
+      },
+      {
+        "ref_id": "b3c9aee2c47183ce",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.mergePersistentFlags (command.go:1849) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e15",
+          "e16"
+        ]
+      },
+      {
+        "ref_id": "3d75b0d1626ca2e1",
+        "rank": 6291636,
+        "reason": "callee: method cobra.Command.Name (command.go:1496) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "4ec037bedcc6019b",
+        "rank": 6291536,
+        "reason": "callee: method cobra.Command.PersistentFlags (command.go:1726) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e67"
+        ]
+      },
+      {
+        "ref_id": "ec40e8ae10c56a4b",
+        "rank": 6291536,
+        "reason": "callee: method cobra.Command.AddCommand (command.go:1303) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e81"
+        ]
+      },
+      {
+        "ref_id": "4db190f3949ac892",
+        "rank": 5242980,
+        "reason": "test: function cobra.assertNoErr (cobra_test.go:22) score 100 [calls 100, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e56"
+        ]
+      },
+      {
+        "ref_id": "b402d57d25455917",
+        "rank": 5242980,
+        "reason": "test: function cobra.TestValidateFlagGroups (flag_groups_test.go:22) score 100 [calls 100, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e57",
+          "e58",
+          "e59",
+          "e60"
+        ]
+      },
+      {
+        "ref_id": "d23966a0fce1d0a4",
+        "rank": 5242980,
+        "reason": "test: function cobra.executeCommand (command_test.go:32) score 100 [calls 100, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e61"
+        ]
+      },
+      {
+        "ref_id": "0589a68066e0ac6f",
+        "rank": 5242960,
+        "reason": "test: function cobra.TestDefaultCompletionCmd (completions_test.go:2427) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e62"
+        ]
+      },
+      {
+        "ref_id": "25f619ae3a1239b2",
+        "rank": 5242960,
+        "reason": "test: function cobra.TestNoCmdNameCompletionInGo (completions_test.go:156) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e63",
+          "e64"
+        ]
+      },
+      {
+        "ref_id": "2b15e0998e9af9f3",
+        "rank": 5242960,
+        "reason": "test: function cobra.TestCompletionForMutuallyExclusiveFlags (completions_test.go:3039) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e65"
+        ]
+      },
+      {
+        "ref_id": "4a0ac10eca446e75",
+        "rank": 5242960,
+        "reason": "test: function cobra.TestCompleteWithDisableFlagParsing (completions_test.go:2706) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e66"
+        ]
+      },
+      {
+        "ref_id": "6e7db7a4b5f5cafe",
+        "rank": 5242960,
+        "reason": "test: function cobra.TestFlagNameCompletionRepeat (completions_test.go:673) score 80 [calls 50, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e68"
+        ]
+      },
+      {
+        "ref_id": "config:.github/dependabot.yml",
+        "rank": 4194305,
+        "reason": "config: .github/dependabot.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e124"
+        ]
+      },
+      {
+        "ref_id": "config:.github/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e125"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e126"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/size-labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/size-labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e127"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/test.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/test.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e128"
+        ]
+      },
+      {
+        "ref_id": "config:.golangci.yml",
+        "rank": 4194305,
+        "reason": "config: .golangci.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e129"
+        ]
+      },
+      {
+        "ref_id": "file:command.go",
+        "rank": 3148968,
+        "reason": "file: command.go score 3240 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e130"
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "ref_id": "e1",
+        "path": "command.go",
+        "line": 1643,
+        "span": "1643-1643",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e2",
+        "path": "completions_test.go",
+        "line": 810,
+        "span": "810-810",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e3",
+        "path": "flag_groups.go",
+        "line": 33,
+        "span": "33-33",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e4",
+        "path": "flag_groups.go",
+        "line": 49,
+        "span": "49-49",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e5",
+        "path": "command.go",
+        "line": 1147,
+        "span": "1147-1147",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e6",
+        "path": "command.go",
+        "line": 1643,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e7",
+        "path": "completions_test.go",
+        "line": 811,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e8",
+        "path": "flag_groups.go",
+        "line": 33,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e9",
+        "path": "flag_groups.go",
+        "line": 49,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e10",
+        "path": "command.go",
+        "line": 1147,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e11",
+        "path": "command.go",
+        "line": 895,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e12",
+        "path": "command.go",
+        "line": 909,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e13",
+        "path": "command.go",
+        "line": 931,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e14",
+        "path": "command.go",
+        "line": 975,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e15",
+        "path": "flag_groups.go",
+        "line": 34,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e16",
+        "path": "flag_groups.go",
+        "line": 50,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e17",
+        "path": "command.go",
+        "line": 1774,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e18",
+        "path": "command.go",
+        "line": 799,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e19",
+        "path": "command.go",
+        "line": 803,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e20",
+        "path": "command.go",
+        "line": 1679,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e21",
+        "path": "command.go",
+        "line": 1690,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e22",
+        "path": "command.go",
+        "line": 1645,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e23",
+        "path": "command.go",
+        "line": 365,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e24",
+        "path": "command.go",
+        "line": 1831,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e25",
+        "path": "command.go",
+        "line": 1833,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e26",
+        "path": "command.go",
+        "line": 1796,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e27",
+        "path": "command.go",
+        "line": 1210,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e28",
+        "path": "command.go",
+        "line": 1217,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e29",
+        "path": "command.go",
+        "line": 1218,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e30",
+        "path": "command.go",
+        "line": 1220,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e31",
+        "path": "command.go",
+        "line": 1222,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e32",
+        "path": "command.go",
+        "line": 871,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e33",
+        "path": "flag_groups.go",
+        "line": 230,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e34",
+        "path": "flag_groups.go",
+        "line": 234,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e35",
+        "path": "flag_groups.go",
+        "line": 283,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e36",
+        "path": "command.go",
+        "line": 650,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e37",
+        "path": "command.go",
+        "line": 689,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e38",
+        "path": "flag_groups.go",
+        "line": 68,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e39",
+        "path": "flag_groups.go",
+        "line": 73,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e40",
+        "path": "flag_groups.go",
+        "line": 86,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e41",
+        "path": "completions.go",
+        "line": 320,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e42",
+        "path": "completions.go",
+        "line": 327,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e43",
+        "path": "completions.go",
+        "line": 349,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e44",
+        "path": "shell_completions.go",
+        "line": 45,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e45",
+        "path": "completions.go",
+        "line": 842,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e46",
+        "path": "shell_completions.go",
+        "line": 25,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e47",
+        "path": "completions.go",
+        "line": 745,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e48",
+        "path": "completions.go",
+        "line": 784,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e49",
+        "path": "completions.go",
+        "line": 809,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e50",
+        "path": "completions.go",
+        "line": 835,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e51",
+        "path": "shell_completions.go",
+        "line": 55,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e52",
+        "path": "flag_groups.go",
+        "line": 40,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e53",
+        "path": "flag_groups.go",
+        "line": 56,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e54",
+        "path": "completions_test.go",
+        "line": 813,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e55",
+        "path": "command.go",
+        "line": 1153,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e56",
+        "path": "completions_test.go",
+        "line": 826,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e57",
+        "path": "flag_groups_test.go",
+        "line": 168,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e58",
+        "path": "flag_groups_test.go",
+        "line": 177,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e59",
+        "path": "flag_groups_test.go",
+        "line": 171,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e60",
+        "path": "flag_groups_test.go",
+        "line": 180,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e61",
+        "path": "completions_test.go",
+        "line": 840,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e62",
+        "path": "completions_test.go",
+        "line": 2507,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e63",
+        "path": "completions_test.go",
+        "line": 161,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e64",
+        "path": "completions_test.go",
+        "line": 172,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e65",
+        "path": "completions_test.go",
+        "line": 3057,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e66",
+        "path": "completions_test.go",
+        "line": 2722,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e67",
+        "path": "completions_test.go",
+        "line": 829,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e68",
+        "path": "completions_test.go",
+        "line": 685,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e69",
+        "path": "completions_test.go",
+        "line": 504,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e70",
+        "path": "completions_test.go",
+        "line": 506,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e71",
+        "path": "completions_test.go",
+        "line": 1133,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e72",
+        "path": "completions_test.go",
+        "line": 2963,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e73",
+        "path": "completions_test.go",
+        "line": 1802,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e74",
+        "path": "completions_test.go",
+        "line": 2019,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e75",
+        "path": "completions_test.go",
+        "line": 2158,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e76",
+        "path": "completions_test.go",
+        "line": 3185,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e77",
+        "path": "completions_test.go",
+        "line": 3189,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e78",
+        "path": "completions_test.go",
+        "line": 3193,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e79",
+        "path": "completions_test.go",
+        "line": 3196,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e80",
+        "path": "completions_test.go",
+        "line": 1595,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e81",
+        "path": "completions_test.go",
+        "line": 823,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e82",
+        "path": "completions_test.go",
+        "line": 2863,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e83",
+        "path": "command.go",
+        "line": 1155,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e84",
+        "path": "completions_test.go",
+        "line": 810,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e85",
+        "path": "command_test.go",
+        "line": 2382,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e86",
+        "path": "completions_test.go",
+        "line": 819,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e87",
+        "path": "bash_completions_test.go",
+        "line": 249,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e88",
+        "path": "command_test.go",
+        "line": 2427,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e89",
+        "path": "command_test.go",
+        "line": 669,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e90",
+        "path": "command_test.go",
+        "line": 2450,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e91",
+        "path": "command_test.go",
+        "line": 2456,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e92",
+        "path": "doc/man_docs_test.go",
+        "line": 155,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e93",
+        "path": "command_test.go",
+        "line": 842,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e94",
+        "path": "command_test.go",
+        "line": 845,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e95",
+        "path": "command_test.go",
+        "line": 2249,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e96",
+        "path": "command_test.go",
+        "line": 2211,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e97",
+        "path": "command_test.go",
+        "line": 2214,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e98",
+        "path": "command_test.go",
+        "line": 2365,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e99",
+        "path": "completions_test.go",
+        "line": 818,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e100",
+        "path": "bash_completions_test.go",
+        "line": 126,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e101",
+        "path": "bash_completions_test.go",
+        "line": 91,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e102",
+        "path": "active_help_test.go",
+        "line": 237,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e103",
+        "path": "command_test.go",
+        "line": 1247,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e104",
+        "path": "command_test.go",
+        "line": 739,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e105",
+        "path": "doc/cmd_test.go",
+        "line": 32,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e106",
+        "path": "doc/cmd_test.go",
+        "line": 36,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e107",
+        "path": "doc/cmd_test.go",
+        "line": 40,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e108",
+        "path": "command_test.go",
+        "line": 2189,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e109",
+        "path": "command_test.go",
+        "line": 2193,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e110",
+        "path": "command_test.go",
+        "line": 2403,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e111",
+        "path": "command_test.go",
+        "line": 2233,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e112",
+        "path": "command_test.go",
+        "line": 2177,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e113",
+        "path": "command_test.go",
+        "line": 2165,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e114",
+        "path": "completions_test.go",
+        "line": 814,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e115",
+        "path": "active_help_test.go",
+        "line": 302,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e116",
+        "path": "command_test.go",
+        "line": 503,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e117",
+        "path": "command_test.go",
+        "line": 796,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e118",
+        "path": "command_test.go",
+        "line": 587,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e119",
+        "path": "bash_completions_test.go",
+        "line": 233,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e120",
+        "path": "command_test.go",
+        "line": 820,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e121",
+        "path": "command_test.go",
+        "line": 2140,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e122",
+        "path": "command_test.go",
+        "line": 533,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e123",
+        "path": "command_test.go",
+        "line": 938,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e124",
+        "path": ".github/dependabot.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e125",
+        "path": ".github/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e126",
+        "path": ".github/workflows/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e127",
+        "path": ".github/workflows/size-labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e128",
+        "path": ".github/workflows/test.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e129",
+        "path": ".golangci.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e130",
+        "path": "command.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e131",
+        "path": "command_test.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e132",
+        "path": "completions_test.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e133",
+        "path": "flag_groups.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e134",
+        "path": "completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e135",
+        "path": "shell_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e136",
+        "path": "bash_completions_test.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e137",
+        "path": "active_help_test.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e138",
+        "path": "command.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e139",
+        "path": "completions_test.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e140",
+        "path": "flag_groups.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e141",
+        "path": "command_test.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e142",
+        "path": "completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e143",
+        "path": "shell_completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e144",
+        "path": "bash_completions_test.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e145",
+        "path": "active_help_test.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e146",
+        "path": "command.go",
+        "line": 1637,
+        "span": "1637-1649",
+        "role": "snippet",
+        "snippet": "func (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}\n\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)",
+        "text_hash": "ca6f72851904fbe5"
+      },
+      {
+        "ref_id": "e147",
+        "path": "completions_test.go",
+        "line": 804,
+        "span": "804-816",
+        "role": "snippet",
+        "snippet": "\n\tif output != expected {\n\t\tt.Errorf(\"expected: %q, got: %q\", expected, output)\n\t}\n}\n\nfunc TestRequiredFlagNameCompletionInGo(t *testing.T) {\n\trootCmd := \u0026Command{\n\t\tUse:       \"root\",\n\t\tValidArgs: []string{\"realArg\"},\n\t\tRun:       emptyRun,\n\t}\n\tchildCmd := \u0026Command{",
+        "text_hash": "a82b7d9f0267e66c"
+      },
+      {
+        "ref_id": "e148",
+        "path": "flag_groups.go",
+        "line": 27,
+        "span": "27-39",
+        "role": "snippet",
+        "snippet": "\toneRequired       = \"cobra_annotation_one_required\"\n\tmutuallyExclusive = \"cobra_annotation_mutually_exclusive\"\n)\n\n// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors\n// if the command is invoked with a subset (but not all) of the given flags.\nfunc (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being required in a flag group\", v))\n\t\t}",
+        "text_hash": "deb500d8517d58e0"
+      },
+      {
+        "ref_id": "e149",
+        "path": "flag_groups.go",
+        "line": 43,
+        "span": "43-55",
+        "role": "snippet",
+        "snippet": "\t\t}\n\t}\n}\n\n// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors\n// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))\n\t\t}",
+        "text_hash": "42b046f2f30f8134"
+      },
+      {
+        "ref_id": "e150",
+        "path": "command.go",
+        "line": 1141,
+        "span": "1141-1153",
+        "role": "snippet",
+        "snippet": "\t\treturn ArbitraryArgs(c, args)\n\t}\n\treturn c.Args(c, args)\n}\n\n// ValidateRequiredFlags validates all required flags are present and returns an error otherwise\nfunc (c *Command) ValidateRequiredFlags() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()\n\tmissingFlagNames := []string{}",
+        "text_hash": "08eed11eb03e959f"
+      },
+      {
+        "ref_id": "e151",
+        "path": "command.go",
+        "line": 45,
+        "span": "45-57",
+        "role": "snippet",
+        "snippet": "}\n\n// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.",
+        "text_hash": "5a579e11e79bcd78"
+      },
+      {
+        "ref_id": "e152",
+        "path": "command.go",
+        "line": 868,
+        "span": "868-880",
+        "role": "snippet",
+        "snippet": "// ArgsLenAtDash will return the length of c.Flags().Args at the moment\n// when a -- was found during args parsing.\nfunc (c *Command) ArgsLenAtDash() int {\n\treturn c.Flags().ArgsLenAtDash()\n}\n\nfunc (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")\n\t}\n\n\tif len(c.Deprecated) \u003e 0 {\n\t\tc.Printf(\"Command %q is deprecated, %s\\n\", c.Name(), c.Deprecated)",
+        "text_hash": "1422c691d9167ca4"
+      },
+      {
+        "ref_id": "e153",
+        "path": "command.go",
+        "line": 1843,
+        "span": "1843-1855",
+        "role": "snippet",
+        "snippet": "func (c *Command) Parent() *Command {\n\treturn c.parent\n}\n\n// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}\n\n// updateParentsPflags updates c.parentsPflags by adding",
+        "text_hash": "e0b6c29358f124cb"
+      }
+    ],
+    "confidence": {
+      "distribution": {
+        "confirmed": 0.3684210526315789,
+        "derived": 0.08421052631578947,
+        "heuristic": 0.5473684210526316
+      },
+      "top": "heuristic",
+      "method": "edge_tiers"
+    },
+    "limits": {
+      "cap_applied": 40,
+      "total_available": 56,
+      "dropped": 16,
+      "truncated": true,
+      "next": ""
+    }
+  },
+  "score": {
+    "covered": true,
+    "item_count": 40,
+    "evidence_citation_count": 153,
+    "snippet_count": 8,
+    "emitted_snippet_whitespace_tokens": 500,
+    "engine_reported_snippet_tokens": 500,
+    "engine_reported_token_budget": 1200,
+    "engine_minus_emitted_snippet_tokens": 0,
+    "item_cap_applied": 40,
+    "items_available": 56,
+    "items_dropped": 16,
+    "truncated": true,
+    "grade3_judgements": 1,
+    "matches": [
+      {
+        "evidence_ref_id": "e5",
+        "evidence_path": "command.go",
+        "evidence_line": 1147,
+        "evidence_span": "1147-1147",
+        "evidence_role": "primary",
+        "evidence_claim_type": "source_match",
+        "judgement_path": "command.go",
+        "judgement_start_line": 1146,
+        "judgement_end_line": 1168,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e10",
+        "evidence_path": "command.go",
+        "evidence_line": 1147,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 1146,
+        "judgement_end_line": 1168,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e55",
+        "evidence_path": "command.go",
+        "evidence_line": 1153,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 1146,
+        "judgement_end_line": 1168,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e83",
+        "evidence_path": "command.go",
+        "evidence_line": 1155,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 1146,
+        "judgement_end_line": 1168,
+        "judgement_grade": 3
+      }
+    ]
+  }
+}

@@ -244,17 +244,22 @@ func (a *RepoOverviewArgs) invoke(ctx context.Context, c Client) ([]byte, error)
 }
 
 // SearchHybridArgs are the arguments of the Labs embedding-free hybrid search
-// (SW-228).
+// (SW-228). Version is SW-264: 0/1 selects /1 (the shipped default, byte-
+// identical to today's output); 2 selects /2 (the retrieval-rendered path).
+// The dispatcher's "legacy" branch forces version=1 so the AC-6 dual-run
+// comparison is between /1 and /2 bytes; the executor branch honors the
+// caller's version.
 type SearchHybridArgs struct {
 	Query    string `json:"query"`
 	MaxItems int    `json:"max_items"`
+	Version  int    `json:"version,omitempty"`
 }
 
 // Operation names the catalog operation.
 func (a *SearchHybridArgs) Operation() string { return "search_hybrid" }
 
 func (a *SearchHybridArgs) invoke(ctx context.Context, c Client) ([]byte, error) {
-	return c.SearchHybrid(ctx, SearchHybridParams{Query: a.Query, MaxItems: a.MaxItems})
+	return c.SearchHybrid(ctx, SearchHybridParams{Query: a.Query, MaxItems: a.MaxItems, Version: a.Version})
 }
 
 // TestImpactArgs are the arguments of the Labs test_impact buckets (SW-228).

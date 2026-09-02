@@ -884,7 +884,13 @@ func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, e
 		// error check — to the path it replaces. It is the shipped default
 		// (SW-228), which is why this early return is the hot path and why the
 		// mode lookup above must stay lock-free.
-		return args.invoke(ctx, c)
+		//
+		// SW-264 search_hybrid seam: the legacy path forces version=1 so the
+		// AC-6 rollback test ("legacy + restart restores today's path") sees
+		// /1 bytes regardless of the caller's requested version. The seam is
+		// closed-set per the AX-04 design — adding a per-operation override
+		// here would surface a second hand-maintained dispatch table.
+		return legacyInvoke(ctx, c, args)
 	}
 
 	if mode == CanaryModeShadow {
@@ -898,7 +904,11 @@ func DispatchOperation(ctx context.Context, c Client, args Arguments) ([]byte, e
 		// here, before the legacy call, and it is not free (it resolves the
 		// frozen catalog and builds the adapter map); nothing about it has to
 		// happen before the caller is answered.
-		legacyBytes, legacyErr := args.invoke(ctx, c)
+		//
+		// SW-264 search_hybrid seam: legacyInvoke forces version=1 for the
+		// legacy branch so the deferred executor call (which uses caller's
+		// version) compares /1 vs /2 when the caller asked for v2.
+		legacyBytes, legacyErr := legacyInvoke(ctx, c, args)
 		deferCanaryComparison(ctx, c, args, operation, legacyBytes, legacyErr)
 		return legacyBytes, legacyErr
 	}
@@ -923,6 +933,30 @@ func executeCanary(ctx context.Context, executor *Executor, args Arguments) ([]b
 		return nil, err
 	}
 	return executor.Execute(ctx, req)
+}
+
+// legacyInvoke is the seam's legacy-path entry point. It is the same call
+// the legacy mode used to make (args.invoke(ctx, c)) plus a SW-264 search_hybrid
+// override: the legacy branch forces version=1 so "the legacy path produces
+// today's bytes" is true regardless of the caller's requested version. The
+// executor path uses the caller's version via the normal adapter path.
+//
+// The override is per-operation because the seam is closed-set and search_hybrid
+// is the only operation whose semantics differ across versions; for every
+// other migrated operation the override is a no-op and args.invoke runs as
+// before.
+//
+// An adapter that does not implement *SearchHybridArgs falls through to the
+// standard invoke — no surface other than search_hybrid sees this branch.
+func legacyInvoke(ctx context.Context, c Client, args Arguments) ([]byte, error) {
+	if sa, ok := args.(*SearchHybridArgs); ok {
+		// Copy so the caller's args are not mutated (they may be re-used on
+		// the deferred executor path).
+		copyArgs := *sa
+		copyArgs.Version = 1
+		return copyArgs.invoke(ctx, c)
+	}
+	return args.invoke(ctx, c)
 }
 
 // compareCanaryOutcomes is the dual-run comparison: canonical bytes AND error

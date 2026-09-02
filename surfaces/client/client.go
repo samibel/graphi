@@ -684,10 +684,17 @@ type SymbolContextParams struct {
 
 // TaskContextParams carries the task_context inputs. Zero values select the
 // engine defaults (token budget 1200, item cap 40).
+//
+// Version is SW-264: zero selects /1 (the shipped default, byte-identical to
+// today). A value of 2 selects /2, which uses the post-ingest retrieval
+// instance (Deps.Retrieval) as its seed source. /2 falls back to /1's
+// lexical seeding path when retrieval is nil or reports a non-ready state
+// (AC-8), so the same code path handles every shipped binding.
 type TaskContextParams struct {
 	Task        string
 	MaxItems    int
 	TokenBudget int
+	Version     int
 }
 
 // RepoOverviewParams carries the repo_overview inputs. Communities opts into
@@ -717,9 +724,18 @@ type ChangeImpactParams struct {
 }
 
 // SearchHybridParams carries the search_hybrid inputs.
+//
+// Version is SW-264: zero selects /1 (the shipped default, byte-identical to
+// the SW-257 §7.2 golden for "hello greeter" on SQLite — 1590 bytes,
+// sha256 0ec5fd56cf662defc4efe69ff9f7be2fe68645bc71bcc5e102535bed5888ae40).
+// A value of 2 selects /2, which uses the post-ingest retrieval instance
+// (Deps.Retrieval) for the ranking and renders retrieval.Explain fields
+// per row. /2 falls back to /1's bytes when retrieval is nil or reports a
+// non-ready state (AC-8).
 type SearchHybridParams struct {
 	Query    string
 	MaxItems int
+	Version  int
 }
 
 // ArchitectureParams carries the architecture inputs.

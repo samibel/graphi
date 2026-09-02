@@ -31,6 +31,12 @@ func TestExportedSurface_ListsExactlyTheNamedTypes(t *testing.T) {
 		"StateGenerationMissing": true, "StateGenerationStale": true, "StateGenerationCorrupt": true,
 		"Explain": true, "Row": true, "Summary": true, "Result": true,
 		"New": true,
+		// SW-264: the v2 path of search_hybrid and task_context stamps these
+		// audit values in the summary so a reader of the bytes can verify
+		// which retrieval module version produced the result and which weight
+		// model was active. They are constants, not constructors; the
+		// package stays a deep module.
+		"Version": true, "WeightsHash": true,
 	}
 
 	_, thisFile, _, ok := runtime.Caller(0)
