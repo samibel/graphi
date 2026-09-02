@@ -1,12 +1,12 @@
-package main
+package embedsource
 
-// SW-267 reviewer fix C4: the production fileDocumentSource must
+// SW-267 reviewer fix C4: the file-backed DocumentSource MUST
 // NOT launder admission errors into legitimate exclusions. The
 // previous shape discarded the error from BuildDocuments with `_`,
 // then classified every missing declaration as no_span (Excluded).
 // The build would silently publish a partial generation as Ready.
 //
-// The test below exercises the regression path: a fileDocumentSource
+// The test below exercises the regression path: a FileDocumentSource
 // wired to an Admitter that fails on a specific input sees its
 // nodes' Result return DocumentFailed, NOT DocumentExcluded. A
 // DocumentExcluded classification would let GenerateAndPersist
@@ -35,7 +35,7 @@ func (a alwaysFailAdmitter) Admit(_ context.Context, _ string) (embed.Admitted, 
 
 // TestFileDocumentSource_AdmissionFailureIsFailedNotExcluded is
 // the regression test for reviewer fix C4. It writes a Go file with
-// a single declaration, wires a fileDocumentSource with an Admitter
+// a single declaration, wires a FileDocumentSource with an Admitter
 // that fails every input, and asserts:
 //   - The node's Result is DocumentFailed (NOT DocumentExcluded).
 //   - The Document method returns false (no document was produced).
@@ -56,9 +56,10 @@ func TestFileDocumentSource_AdmissionFailureIsFailedNotExcluded(t *testing.T) {
 	}
 
 	// Result triggers load(), which parses the real file and calls
-	// BuildDocuments with the failing admitter. If load discards the returned
-	// error, this exact node is misclassified as a no_span exclusion.
-	srcFS := newFileDocumentSource(context.Background(), root, failingEmbedder{
+	// BuildDocuments with the failing admitter. If load discards the
+	// returned error, this exact node is misclassified as a no_span
+	// exclusion.
+	srcFS := NewFileDocumentSource(context.Background(), root, failingEmbedder{
 		adm: alwaysFailAdmitter{tokenLimit: 8},
 	})
 	n, _ := model.NewNode("function", "pkg.Fails", "pkg/input.go", 3, 6)
@@ -95,7 +96,7 @@ func TestFileDocumentSource_AdmissionFailureIsFailedNotExcluded(t *testing.T) {
 // (no_span). The C4 fix only changes what happens when curAdmit is
 // true — the no_span path remains.
 func TestFileDocumentSource_NoCurAdmitMeansExcluded(t *testing.T) {
-	srcFS := &fileDocumentSource{
+	srcFS := &FileDocumentSource{
 		cur:     "x/y.go",
 		curDocs: nil, // empty — no documents produced
 	}
@@ -112,7 +113,7 @@ func TestFileDocumentSource_NoCurAdmitMeansExcluded(t *testing.T) {
 // how MISSING declarations are classified, not how declared
 // exclusions are.
 func TestFileDocumentSource_DeclaredExclusionStaysExcluded(t *testing.T) {
-	srcFS := &fileDocumentSource{
+	srcFS := &FileDocumentSource{
 		cur:     "x/y.go",
 		curDocs: nil,
 	}
@@ -137,9 +138,9 @@ func TestFileDocumentSource_DeclaredExclusionStaysExcluded(t *testing.T) {
 	}
 }
 
-// failingEmbedder and alwaysFailAdmitter are used by the unit tests
-// above; the package main entry point above references them through
-// the fileDocumentSource unit-test path.
+// failingEmbedder is used by the unit tests above; it implements
+// embed.Embedder AND embed.Admission so the file-backed source
+// plumbs the admission surface through BuildDocuments.
 type failingEmbedder struct{ adm embed.Admission }
 
 func (f failingEmbedder) ID() string { return "failing" }

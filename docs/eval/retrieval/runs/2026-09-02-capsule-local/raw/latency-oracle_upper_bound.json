@@ -1,0 +1,343 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "latency",
+  "baseline": "oracle_upper_bound",
+  "collected": true,
+  "samples": 120,
+  "queries": [
+    {
+      "id": "cb-01",
+      "samples_us": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "cb-02",
+      "samples_us": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "cb-03",
+      "samples_us": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "cb-04",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-05",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-06",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-07",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-08",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-09",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-10",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-11",
+      "samples_us": [
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "cb-12",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-13",
+      "samples_us": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-14",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-15",
+      "samples_us": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-16",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-17",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-18",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-19",
+      "samples_us": [
+        1,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "cb-20",
+      "samples_us": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "cb-21",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-22",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-23",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-24",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-25",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-26",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-27",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-28",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-29",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-30",
+      "samples_us": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-31",
+      "samples_us": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-32",
+      "samples_us": [
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "cb-33",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-34",
+      "samples_us": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-35",
+      "samples_us": [
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "cb-36",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-37",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-38",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-39",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "cb-40",
+      "samples_us": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "index_ms": {
+    "status": "not_applicable",
+    "reason": "the oracle ranks the judged spans and builds no index"
+  },
+  "peak_rss_mb": {
+    "status": "measured",
+    "value": 445.328125,
+    "unit": "MB"
+  },
+  "vector_sidecar_bytes": {
+    "status": "not_applicable",
+    "reason": "the oracle ranks the judged spans and builds no index"
+  }
+}

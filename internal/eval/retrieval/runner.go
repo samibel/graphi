@@ -2,6 +2,7 @@ package retrieval
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/retrieval"
 	"github.com/samibel/graphi/engine/search"
+	"github.com/samibel/graphi/internal/embedsource"
 	"github.com/samibel/graphi/internal/eval"
 )
 
@@ -390,7 +392,7 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 		store.Close()
 		return nil, fmt.Errorf("retrieval: index of %s produced no nodes", root)
 	}
-	svc, svcErr := buildSearchService(ctx, store, metaDir, embedderSelector, log)
+	svc, svcErr := buildSearchService(ctx, root, store, metaDir, embedderSelector, log)
 	if svcErr != nil {
 		store.Close()
 		return nil, svcErr
@@ -429,7 +431,7 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 // produced a reproducible-looking three-semantic-baselines-unavailable
 // report that exited 0; the orchestrator published exactly that and
 // only the `CandidateSHA` check caught the issue.
-func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, error) {
+func buildSearchService(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, error) {
 	if strings.TrimSpace(selector) == "" {
 		// Omitted selector: intentional unavailable baselines; exit 0 is fine.
 		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store), nil
@@ -457,13 +459,26 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 	if gerr != nil {
 		return nil, fmt.Errorf("retrieval-eval: generation store open: %v (SW-263 fail-closed)", gerr)
 	}
-	res, err := embed.GenerateAndPersist(ctx, reg, nodes, embed.V2DocumentSource{}, index, genStore, embed.GraphGenerationPlaceholder)
+	// SW-263 AC-12 (shipped-baseline fidelity): the document source MUST be
+	// the production file-backed one, not the metadata/path-only V2DocumentSource
+	// the eval harness previously used. Nodes are sorted by source path so the
+	// document source visits each file exactly once; the production caller
+	// (`graphi index --semantic` via cmd/graphi -> runtime.BuildSemanticGeneration)
+	// uses the same visit order and the same builder, so the emitted
+	// SemanticDocument rows for a given NodeID are byte-identical.
+	embedsource.SortNodesByPath(nodes)
+	docs := embedsource.NewFileDocumentSource(ctx, root, emb)
+	graphGen, gerr := graphGenerationFromStore(ctx, store)
+	if gerr != nil {
+		return nil, fmt.Errorf("retrieval-eval: read graph identity: %v (SW-263 fail-closed: a non-empty -embedder with no fingerprintable graph identity cannot produce a generation that reloads as Ready)", gerr)
+	}
+	res, err := embed.GenerateAndPersist(ctx, reg, nodes, docs, index, genStore, graphGen)
 	_ = genStore.Close()
 	if err != nil {
 		return nil, fmt.Errorf("retrieval-eval: generate+persist: %v (SW-263 fail-closed)", err)
 	}
-	fmt.Fprintf(log, "retrieval-eval: generation pass embedded=%d reused=%d skipped=%d purged=%d (id=%s)\n",
-		res.Embedded, res.Reused, res.Skipped, res.Purged, res.EmbedderID)
+	fmt.Fprintf(log, "retrieval-eval: generation pass embedded=%d reused=%d excluded=%d failed=%d purged=%d (id=%s)\n",
+		res.Embedded, res.Reused, res.Excluded, res.Failed, res.Purged, res.EmbedderID)
 	// Reload the durable generation into a fresh in-memory index so the
 	// search path serves from a stable, fingerprinted set (mirrors the
 	// production runtime's reload pattern in cmd/internal/runtime).
@@ -476,7 +491,7 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 		ModelID:         emb.ID(),
 		Dim:             emb.Dim(),
 		DocumentSchema:  embed.DocumentSchema,
-		GraphGeneration: embed.GraphGenerationPlaceholder,
+		GraphGeneration: graphGen,
 	}
 	if fp.Dim == 0 {
 		if d, ok, derr := reloadStore.DimForModel(ctx, emb.ID()); derr == nil && ok {
@@ -502,6 +517,38 @@ func buildSearchService(ctx context.Context, store graphstore.Graphstore, metaDi
 		WithSemanticState(search.SemanticState{State: embed.StateReady})
 	fmt.Fprintf(log, "retrieval-eval: semantic ready (model=%s, dim=%d, rows=%d)\n", emb.ID(), emb.Dim(), len(rows))
 	return svc, nil
+}
+
+// graphGenerationFromStore mirrors cmd/internal/runtime.graphGenerationFromStore:
+// read the graphstore's "index.commit_generation" key first, fall back to
+// "index.full_ingest_generation" for older stores, and finally to the
+// documented placeholder so a still-fresh store is visibly flagged. The eval
+// harness fingerprints its semantic generation with this value so the
+// generation reloads as StateReady against the SAME identity production
+// fingerprints — the SW-263 AC-12 guard compares those bytes below.
+//
+// The helper is local rather than imported because cmd/internal/runtime is
+// layer-sideways from this package and the implementation is small enough
+// that duplicating it is cheaper than introducing a layer edge. The order
+// MUST stay in sync with the production reader; an out-of-order helper
+// would fingerprint against a stale identity and the reload would read as
+// StateStale.
+func graphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) (string, error) {
+	v, err := store.Metadata(ctx, "index.commit_generation")
+	if err == nil && v != "" {
+		return v, nil
+	}
+	if err != nil && !errors.Is(err, graphstore.ErrNotFound) {
+		return "", err
+	}
+	v, err = store.Metadata(ctx, "index.full_ingest_generation")
+	if err == nil && v != "" {
+		return v, nil
+	}
+	if err != nil && !errors.Is(err, graphstore.ErrNotFound) {
+		return "", err
+	}
+	return embed.GraphGenerationPlaceholder, nil
 }
 
 // rawHit is what an executor returns before tokens are charged.
