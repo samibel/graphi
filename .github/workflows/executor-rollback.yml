@@ -23,7 +23,7 @@
 # is AC-4's evidence that the rollback still works against it. Two legs had to
 # change and neither weakened:
 #
-#   * the round-trip now asserts `10 shadow` and `shadow (compiled-in default)`,
+#   * the round-trip now asserts `11 shadow` and `shadow (compiled-in default)`,
 #     because that is what the shipped configuration now is. Asserting `10
 #     legacy` after the flip would have been asserting that the rollback FAILED
 #     to round-trip.
@@ -152,7 +152,7 @@ jobs:
           set -e
           jq -e -r '.checks[] | select(.id=="executor-seam") | .message' \
             < "$RUNNER_TEMP/doctor.json" | tee "$RUNNER_TEMP/seam-message.txt"
-          grep -q '0 legacy, 10 shadow, 0 active' "$RUNNER_TEMP/seam-message.txt"
+          grep -q '0 legacy, 11 shadow, 0 active' "$RUNNER_TEMP/seam-message.txt"
           jq -e -r '.checks[] | select(.id=="executor-seam") | .detail' \
             < "$RUNNER_TEMP/doctor.json" > "$RUNNER_TEMP/seam-detail.txt"
           cat "$RUNNER_TEMP/seam-detail.txt"

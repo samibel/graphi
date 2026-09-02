@@ -155,11 +155,11 @@ overrode it. Run it **in the same environment as the server**:
 ```sh
 $ graphi doctor
 …
-executor-seam  10 migrated operation(s): 0 legacy, 10 shadow, 0 active;
+executor-seam  11 migrated operation(s): 0 legacy, 11 shadow, 0 active;
                NONE of the 11 dual-running operation(s) is reachable through `graphi mcp`
 ```
 
-That line — `10 shadow` — is what an install with **nothing set** reports. After
+That line — `11 shadow` — is what an install with **nothing set** reports. After
 a rollback it reads `10 legacy, 0 shadow, 0 active`. The clause after the
 semicolon is SW-248: the counts say what is **configured**, and it says what a
 client can **call**. On a stock install the answer is *none of it* — see §5.
@@ -449,7 +449,7 @@ pull request: it forces `GRAPHI_CANARY_ALL=legacy`, runs the parity and
 characterization suites in that position, asserts the divergence read path is
 honest, and then asserts the round trip — that unsetting the variable returns
 every operation to the compiled-in default, which since SW-244 the workflow
-checks is **`10 shadow`**. A rollback that stopped working would fail CI rather
+checks is **`11 shadow`**. A rollback that stopped working would fail CI rather
 than fail an operator.
 
 Since SW-248 it also runs the reachability gate (`go run ./cmd/seamreach -check`)
