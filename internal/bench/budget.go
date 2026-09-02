@@ -38,6 +38,39 @@ type Manifest struct {
 	Metrics         map[string]MetricBudget
 }
 
+// EnvironmentIndependentManifest projects a benchmark manifest onto the
+// metrics whose values do not depend on wall-clock scheduling. The list is
+// intentionally closed: admitting a new metric to the release gate requires a
+// review of its measurement semantics, not merely a convenient unit suffix.
+// Every listed metric must remain budgeted or the projection fails closed.
+func EnvironmentIndependentManifest(man *Manifest) (*Manifest, error) {
+	if man == nil {
+		return nil, fmt.Errorf("bench: nil manifest")
+	}
+	projected := &Manifest{
+		Version:         man.Version,
+		BaselineVersion: man.BaselineVersion,
+		FixtureDigest:   man.FixtureDigest,
+		Metrics:         make(map[string]MetricBudget),
+	}
+	for _, name := range []string{
+		"binary_size_bytes",
+		"fast_db_size_bytes",
+		"fast_edge_count",
+		"balanced_db_size_bytes",
+		"balanced_edge_count",
+		"deep_db_size_bytes",
+		"deep_edge_count",
+	} {
+		budget, ok := man.Metrics[name]
+		if !ok {
+			return nil, fmt.Errorf("bench: manifest missing environment-independent metric %q", name)
+		}
+		projected.Metrics[name] = budget
+	}
+	return projected, nil
+}
+
 // LoadManifest reads and schema-validates the bench-budget manifest at path.
 func LoadManifest(path string) (*Manifest, error) {
 	data, err := os.ReadFile(path)

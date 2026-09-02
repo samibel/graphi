@@ -154,6 +154,62 @@ func TestGate_UnmeasuredBudgetedMetricFails(t *testing.T) {
 	}
 }
 
+func TestEnvironmentIndependentProjectionExcludesEveryTiming(t *testing.T) {
+	metrics := Metrics{
+		ColdStartP95MS:       1_000_000,
+		FullIndexMS:          1_000_000,
+		FreshnessLagMS:       1_000_000,
+		BinarySizeBytes:      90,
+		IncrementalTenFileMS: 1_000_000,
+		BranchSwitchSimMS:    1_000_000,
+		MCPStartupMS:         1_000_000,
+		SymbolLookupMS:       1_000_000,
+		CallersQueryMS:       1_000_000,
+		ContextQueryMS:       1_000_000,
+		IndexHeapAllocBytes:  1_000_000,
+		ProfileMetrics: map[string]ProfileMetric{
+			"fast":     {IndexMS: 1_000_000, DBSizeBytes: 80, EdgeCount: 8, QueryLatencyMS: 1_000_000},
+			"balanced": {IndexMS: 1_000_000, DBSizeBytes: 90, EdgeCount: 9, QueryLatencyMS: 1_000_000},
+			"deep":     {IndexMS: 1_000_000, DBSizeBytes: 100, EdgeCount: 10, QueryLatencyMS: 1_000_000},
+		},
+	}
+	got := metrics.EnvironmentIndependentMap()
+	want := map[string]float64{
+		"binary_size_bytes":      90,
+		"fast_db_size_bytes":     80,
+		"fast_edge_count":        8,
+		"balanced_db_size_bytes": 90,
+		"balanced_edge_count":    9,
+		"deep_db_size_bytes":     100,
+		"deep_edge_count":        10,
+	}
+	if len(got) != len(want) {
+		t.Fatalf("environment-independent metrics = %v, want exactly %v", got, want)
+	}
+	for name, value := range want {
+		if got[name] != value {
+			t.Errorf("%s = %v, want %v", name, got[name], value)
+		}
+	}
+	for _, forbidden := range []string{
+		"cold_start_p95_ms", "full_index_ms", "freshness_lag_ms",
+		"incremental_ten_file_ms", "branch_switch_sim_ms", "mcp_startup_ms",
+		"symbol_lookup_ms", "callers_query_ms", "context_query_ms",
+		"index_heap_alloc_bytes", "fast_index_ms", "fast_query_latency_ms",
+	} {
+		if _, ok := got[forbidden]; ok {
+			t.Errorf("wall-clock/live metric %q leaked into release-gate projection", forbidden)
+		}
+	}
+}
+
+func TestEnvironmentIndependentManifestFailsClosedWhenBinarySizeIsUnbudgeted(t *testing.T) {
+	man := &Manifest{BaselineVersion: "v1", Metrics: map[string]MetricBudget{}}
+	if _, err := EnvironmentIndependentManifest(man); err == nil || !strings.Contains(err.Error(), "binary_size_bytes") {
+		t.Fatalf("missing binary-size budget error = %v, want metric named", err)
+	}
+}
+
 func TestP95AndMedian(t *testing.T) {
 	s := []time.Duration{1, 2, 3, 4, 5, 6, 7, 8, 9, 10} // ms-ish
 	if p := P95(s); p != 10 && p != 9 {                 // nearest-rank: index ~ ceil(9.5)-1 = 9 -> 10
@@ -197,6 +253,44 @@ func TestRun_RealHarnessProducesFourMetrics(t *testing.T) {
 	}
 	if metrics.BuildCGOEnabled != "0" {
 		t.Errorf("BuildCGOEnabled = %q, want 0", metrics.BuildCGOEnabled)
+	}
+}
+
+func TestRunEnvironmentIndependentProducesNoTimingMeasurements(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping real invariant harness in -short mode")
+	}
+	if os.Getenv("BENCH_SKIP_HARNESS") == "1" {
+		t.Skip("BENCH_SKIP_HARNESS=1")
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	metrics, err := RunEnvironmentIndependent(context.Background(), HarnessConfig{BinaryPath: exe})
+	if err != nil {
+		t.Fatalf("RunEnvironmentIndependent: %v", err)
+	}
+	got := metrics.EnvironmentIndependentMap()
+	if len(got) != 7 {
+		t.Fatalf("environment-independent metric count = %d, want 7: %v", len(got), got)
+	}
+	for name, value := range got {
+		if value <= 0 {
+			t.Errorf("environment-independent metric %s = %v, want > 0", name, value)
+		}
+	}
+	if metrics.ColdStartP95MS != 0 || metrics.FullIndexMS != 0 || metrics.FreshnessLagMS != 0 ||
+		metrics.IncrementalTenFileMS != 0 || metrics.BranchSwitchSimMS != 0 || metrics.IndexHeapAllocBytes != 0 {
+		t.Fatalf("invariant harness populated a live measurement: %+v", metrics)
+	}
+	for name, profile := range metrics.ProfileMetrics {
+		if profile.IndexMS != 0 || profile.QueryLatencyMS != 0 {
+			t.Errorf("profile %s populated timings: %+v", name, profile)
+		}
+	}
+	if metrics.BuildContract != ExternalBinaryBuildContract {
+		t.Errorf("BuildContract = %q, want external binary contract", metrics.BuildContract)
 	}
 }
 

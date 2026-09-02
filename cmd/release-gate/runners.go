@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samibel/graphi/internal/bench"
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
@@ -39,12 +40,11 @@ func DefaultGates() map[string]Runner {
 			timeout: 5 * time.Minute,
 			score:   100,
 		},
-		"bench-budget": &shellRunner{
-			name:    "bench-budget",
-			cmd:     "go",
-			args:    []string{"run", "./cmd/bench", "-budget", "bench/bench-budget.yml"},
-			timeout: 10 * time.Minute,
-			score:   100,
+		"bench-budget": &invariantBenchRunner{
+			budgetPath: "bench/bench-budget.yml",
+			timeout:    10 * time.Minute,
+			score:      100,
+			run:        bench.RunEnvironmentIndependent,
 		},
 	}
 }
@@ -174,6 +174,39 @@ type shellRunner struct {
 	env     []string
 	timeout time.Duration
 	score   float64
+}
+
+type invariantBenchRunner struct {
+	budgetPath string
+	timeout    time.Duration
+	score      float64
+	run        func(context.Context, bench.HarnessConfig) (bench.Metrics, error)
+}
+
+func (r *invariantBenchRunner) Run() (float64, error) {
+	manifest, err := bench.LoadManifest(r.budgetPath)
+	if err != nil {
+		return 0, fmt.Errorf("bench-budget: load manifest: %w", err)
+	}
+	projected, err := bench.EnvironmentIndependentManifest(manifest)
+	if err != nil {
+		return 0, fmt.Errorf("bench-budget: project manifest: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+	metrics, err := r.run(ctx, bench.HarnessConfig{})
+	if err != nil {
+		return 0, fmt.Errorf("bench-budget: measure environment-independent metrics: %w", err)
+	}
+	if manifest.FixtureDigest != "" && manifest.FixtureDigest != metrics.FixtureDigest {
+		return 0, fmt.Errorf("bench-budget: fixture digest mismatch — measured %s != pinned %s",
+			metrics.FixtureDigest, manifest.FixtureDigest)
+	}
+	report := bench.Gate(metrics.EnvironmentIndependentMap(), projected)
+	if !report.Pass {
+		return 0, fmt.Errorf("bench-budget: %s", strings.TrimSpace(report.FormatFailure()))
+	}
+	return r.score, nil
 }
 
 func (r *shellRunner) Run() (float64, error) {

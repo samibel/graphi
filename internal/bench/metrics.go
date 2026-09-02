@@ -81,6 +81,21 @@ func (m Metrics) Map() map[string]float64 {
 	return out
 }
 
+// EnvironmentIndependentMap returns only artifact sizes and graph counts.
+// Wall-clock durations and live heap observations are deliberately absent:
+// they are meaningful in the dedicated benchmark job, but not when repeated
+// on a shared release-gate runner whose scheduling load is uncontrolled.
+func (m Metrics) EnvironmentIndependentMap() map[string]float64 {
+	out := map[string]float64{
+		"binary_size_bytes": float64(m.BinarySizeBytes),
+	}
+	for name, pm := range m.ProfileMetrics {
+		out[name+"_db_size_bytes"] = float64(pm.DBSizeBytes)
+		out[name+"_edge_count"] = float64(pm.EdgeCount)
+	}
+	return out
+}
+
 // P95 returns the 95th-percentile duration (nearest-rank) of samples. Empty
 // input returns zero.
 func P95(samples []time.Duration) time.Duration {
