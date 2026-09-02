@@ -268,6 +268,7 @@ type fakeGit struct {
 	commits map[string]bool
 }
 
+func (g fakeGit) HasAnyTag() (bool, error)           { return len(g.tags) > 0, nil }
 func (g fakeGit) TagExists(tag string) (bool, error) { _, ok := g.tags[tag]; return ok, nil }
 func (g fakeGit) FileAtTag(tag, path string) ([]byte, error) {
 	c, ok := g.tags[tag]
@@ -587,8 +588,8 @@ func TestAX14_ReleaseLineNeedsAnExistingTagWithTheOpOnTheSeam(t *testing.T) {
 	src := baseSources()
 	src.Git = fakeGit{tags: map[string]string{}, commits: map[string]bool{"4f14966": true}}
 	a := evalDecl(t, fullDecl, src)
-	if r := rowOf(t, a, "dead_code", "c1"); r.State != StateUnknown {
-		t.Fatalf("c1 with a missing tag = %s, want UNKNOWN (%s)", r.State, r.Reason)
+	if r := rowOf(t, a, "dead_code", "c1"); r.State != StateUnknown || r.Reason != "cannot confirm declared tags: this checkout has none; fetch full history" {
+		t.Fatalf("c1 with a tagless checkout = %s, %q; want UNKNOWN with the checkout diagnostic", r.State, r.Reason)
 	}
 	// Tag exists but the op was NOT on the seam there → FAIL: a positive
 	// finding that the declaration is wrong.
