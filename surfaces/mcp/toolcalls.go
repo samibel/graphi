@@ -59,6 +59,14 @@ type callParams struct {
 		Task        string `json:"task"`
 		Communities bool   `json:"communities"`
 		MaxCommits  *int   `json:"max_commits"`
+		// SW-264: the optional version flag for the two Labs tools that
+		// opted into a v2 rendering behind the same surface tool name
+		// (search_hybrid, task_context). 0/1 selects the shipped default;
+		// 2 selects the retrieval-seeded / retrieval-rendered path. The
+		// MCP descriptor's inputSchema advertises the integer property
+		// (descriptors.go), so an MCP client that doesn't set it sees no
+		// change to today's bytes.
+		Version *int `json:"version"`
 		// EP-012 memory arguments.
 		Op           string   `json:"op"`
 		Scope        string   `json:"scope"`
@@ -352,7 +360,7 @@ var migratedTools = map[string]migratedTool{
 			if p.Arguments.Query == "" {
 				return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
 			}
-			return &client.SearchHybridArgs{Query: p.Arguments.Query, MaxItems: derefInt(p.Arguments.Limit)}, nil
+			return &client.SearchHybridArgs{Query: p.Arguments.Query, MaxItems: derefInt(p.Arguments.Limit), Version: derefInt(p.Arguments.Version)}, nil
 		},
 	},
 	ToolTestImpact: {
@@ -821,6 +829,11 @@ func (s *Server) symbolContextCall(ctx context.Context, p callParams) (any, *rpc
 // token-budgeted task-context bundle in the C1 contract shape through the
 // shared client.TaskContext composition (ONE assembly, ONE encoder — byte
 // parity with `graphi task-context`).
+//
+// version is SW-264's opt-in: 0/1 selects the lexical-seeded /1 path; 2
+// selects the retrieval-seeded /2 path with claim_type on every evidence
+// item. /2 falls back to /1's bytes with a degradation trailer when
+// Deps.Retrieval is nil or reports a non-ready state (AC-8).
 func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcError) {
 	if p.Arguments.Task == "" {
 		return nil, &rpcError{Code: -32602, Message: "missing required argument: task"}
@@ -829,6 +842,7 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		Task:        p.Arguments.Task,
 		MaxItems:    derefInt(p.Arguments.Limit),
 		TokenBudget: derefInt(p.Arguments.TokenBudget),
+		Version:     derefInt(p.Arguments.Version),
 	})
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}

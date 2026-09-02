@@ -692,12 +692,19 @@ func RunSymbolContext(ctx context.Context, c client.AgentIntelPort, args []strin
 //
 // Usage:
 //
-//	task-context [-max-items n] [-token-budget n] <task text>
+//	task-context [-max-items n] [-token-budget n] [-version 1|2] <task text>
+//
+// version is SW-264's opt-in to the retrieval-seeded path. /1 (the default)
+// uses the lexical seeding resolve.Seeds provides; /2 uses the post-ingest
+// retrieval instance and stamps claim_type on evidence items. With no
+// retrieval wired or a non-ready generation, /2 falls back to /1's bytes
+// and stamps `degradation` on the summary.
 func RunTaskContext(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("task-context", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
 	tokenBudget := fs.Int("token-budget", 0, "snippet token budget (0 = default; negative disables snippets)")
+	version := fs.Int("version", 0, "task_context version: 0/1 = lexical seeding (default), 2 = retrieval-seeded")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -709,6 +716,7 @@ func RunTaskContext(ctx context.Context, c client.AgentIntelPort, args []string,
 		Task:        task,
 		MaxItems:    *maxItems,
 		TokenBudget: *tokenBudget,
+		Version:     *version,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)
@@ -932,11 +940,19 @@ func RunHotspots(ctx context.Context, c client.AgentIntelPort, args []string, ou
 //
 // Usage:
 //
-//	search-hybrid [-max-items n] <query text>
+//	search-hybrid [-max-items n] [-version 1|2] <query text>
+//
+// version is SW-264's opt-in to the retrieval-rendered path. /1 (the
+// default) uses the existing lexical + identifier + path + degree ranking
+// with byte-identical output to SW-257 §7.2's golden. /2 uses the post-ingest
+// retrieval instance and stamps the explain fields + summary fingerprints
+// on the result. With no retrieval wired or a non-ready generation, /2
+// falls back to /1's bytes and stamps `degradation` on the summary.
 func RunSearchHybrid(ctx context.Context, c client.AgentIntelPort, args []string, out, errOut io.Writer) error {
 	fs := flag.NewFlagSet("search-hybrid", flag.ContinueOnError)
 	fs.SetOutput(errOut)
 	maxItems := fs.Int("max-items", 0, "maximum items in the response (0 = default cap)")
+	version := fs.Int("version", 0, "search_hybrid version: 0/1 = lexical (default), 2 = retrieval-rendered")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("cli: %w", err)
 	}
@@ -946,6 +962,7 @@ func RunSearchHybrid(ctx context.Context, c client.AgentIntelPort, args []string
 	b, err := c.SearchHybrid(ctx, client.SearchHybridParams{
 		Query:    strings.Join(fs.Args(), " "),
 		MaxItems: *maxItems,
+		Version:  *version,
 	})
 	if err != nil {
 		return fmt.Errorf("cli: %w", err)

@@ -1,0 +1,865 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "query": {
+    "id": "cb-14",
+    "stratum": "nl_behaviour",
+    "language": "en",
+    "split": "dev",
+    "query": "how does the shell completion request get dispatched to the completion logic",
+    "judgements": [
+      {
+        "path": "completions.go",
+        "start_line": 193,
+        "end_line": 264,
+        "anchor": "func (c *Command) initCompleteCmd(",
+        "grade": 3,
+        "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "completions.go",
+        "start_line": 266,
+        "end_line": 520,
+        "anchor": "func (c *Command) getCompletions(",
+        "grade": 3,
+        "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "completions.go",
+        "start_line": 26,
+        "end_line": 33,
+        "anchor": "ShellCompRequestCmd",
+        "grade": 2,
+        "reason": "The constants naming the hidden request commands.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      }
+    ]
+  },
+  "grade3_judgements": [
+    {
+      "path": "completions.go",
+      "start_line": 193,
+      "end_line": 264,
+      "anchor": "func (c *Command) initCompleteCmd(",
+      "grade": 3,
+      "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    },
+    {
+      "path": "completions.go",
+      "start_line": 266,
+      "end_line": 520,
+      "anchor": "func (c *Command) getCompletions(",
+      "grade": 3,
+      "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    }
+  ],
+  "retrieval": {
+    "Rows": [
+      {
+        "NodeID": "77f51209539ada60",
+        "DocumentID": "723c220e78da52bb",
+        "Path": "completions.go",
+        "Line": 29,
+        "Span": "29-29",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 2,
+          "SemanticRank": 1,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "755a04785098a1e2",
+        "DocumentID": "dcbcc1e5470b90a2",
+        "Path": "site/content/completions/zsh.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 40,
+          "SemanticRank": 2,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "e80604946e1c6ad0",
+        "DocumentID": "7e70566331d77acb",
+        "Path": "site/content/completions/_index.md",
+        "Line": 13,
+        "Span": "13-13",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 3,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "e631f5e7f158189c",
+        "DocumentID": "13cadc8ed3add282",
+        "Path": "site/content/completions/_index.md",
+        "Line": 117,
+        "Span": "117-117",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 44,
+          "SemanticRank": 4,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "091b471b1f1fa20a",
+        "DocumentID": "603986a84c4ab3b2",
+        "Path": "site/content/completions/_index.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 32,
+          "SemanticRank": 5,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      }
+    ],
+    "Summary": {
+      "RetrievalVersion": "retrieval/2",
+      "Strategy": "semantic_first",
+      "WeightsHash": "92a8589c",
+      "ModelFingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "IndexFingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:68927b2c5e896dcf830785c35e39eee2",
+      "Query": "how does the shell completion request get dispatched to the completion logic",
+      "Limit": 5,
+      "CandidateK": 50,
+      "RRFk": 60,
+      "RRFScale": 1000000,
+      "MaxPerFile": 3
+    },
+    "Degradation": "ready",
+    "Reason": ""
+  },
+  "bundle": {
+    "outcome": "found",
+    "summary": "task_context/2: 5 seed(s) for \"how does the shell completion request get dispatched to the completion logic\" — 8 related, 0 callers, 0 callees, 0 tests, 6 configs, 7 files, risk medium (task_context/2; retrieval/2; weights 92a8589c; 403/1200 snippet tokens; strategy semantic_first; degradation: ready)",
+    "items": [
+      {
+        "ref_id": "091b471b1f1fa20a",
+        "rank": 9437484,
+        "reason": "primary: type completions.Generating shell completions (site/content/completions/_index.md:1) score 300 [seed 1, search]",
+        "evidence_ref_ids": [
+          "e1",
+          "e38"
+        ]
+      },
+      {
+        "ref_id": "755a04785098a1e2",
+        "rank": 9437444,
+        "reason": "primary: type completions.. (site/content/completions/zsh.md:1) score 260 [seed 2, search]",
+        "evidence_ref_ids": [
+          "e2",
+          "e39"
+        ]
+      },
+      {
+        "ref_id": "77f51209539ada60",
+        "rank": 9437404,
+        "reason": "primary: constant cobra.ShellCompRequestCmd (completions.go:29) score 220 [seed 3, search]",
+        "evidence_ref_ids": [
+          "e3",
+          "e40"
+        ]
+      },
+      {
+        "ref_id": "e631f5e7f158189c",
+        "rank": 9437364,
+        "reason": "primary: type completions.Customizing completions (site/content/completions/_index.md:117) score 180 [seed 4, search]",
+        "evidence_ref_ids": [
+          "e4",
+          "e41"
+        ]
+      },
+      {
+        "ref_id": "e80604946e1c6ad0",
+        "rank": 9437324,
+        "reason": "primary: type completions.Creating your own completion command (site/content/completions/_index.md:13) score 140 [seed 5, search]",
+        "evidence_ref_ids": [
+          "e5",
+          "e42"
+        ]
+      },
+      {
+        "ref_id": "e9a16971e14be503",
+        "rank": 8388728,
+        "reason": "related: file site/content/completions/_index.md (site/content/completions/_index.md:1) score 120 [calls 0, hierarchy 0, refs 0, other 90, same-file 30]",
+        "evidence_ref_ids": [
+          "e6",
+          "e7",
+          "e8",
+          "e38"
+        ]
+      },
+      {
+        "ref_id": "f9d7155c601ea8a7",
+        "rank": 8388713,
+        "reason": "related: method cobra.Command.initCompleteCmd (completions.go:194) score 105 [calls 0, hierarchy 0, refs 75, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e9",
+          "e10",
+          "e11",
+          "e43"
+        ]
+      },
+      {
+        "ref_id": "69192dcb6f33ae7e",
+        "rank": 8388683,
+        "reason": "related: function cobra.genBashComp (bash_completionsV2.go:31) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e12",
+          "e44"
+        ]
+      },
+      {
+        "ref_id": "7c0b8d04ca258149",
+        "rank": 8388683,
+        "reason": "related: function cobra.genZshComp (zsh_completions.go:87) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e13"
+        ]
+      },
+      {
+        "ref_id": "992616769cb3da8e",
+        "rank": 8388683,
+        "reason": "related: function cobra.genFishComp (fish_completions.go:25) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e14"
+        ]
+      },
+      {
+        "ref_id": "b67fd942b8152c62",
+        "rank": 8388683,
+        "reason": "related: function cobra.genPowerShellComp (powershell_completions.go:28) score 75 [calls 0, hierarchy 0, refs 75, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e15"
+        ]
+      },
+      {
+        "ref_id": "30f2f59972f2bb1d",
+        "rank": 8388668,
+        "reason": "related: file site/content/completions/zsh.md (site/content/completions/zsh.md:1) score 60 [calls 0, hierarchy 0, refs 0, other 30, same-file 30]",
+        "evidence_ref_ids": [
+          "e16"
+        ]
+      },
+      {
+        "ref_id": "7d0d556e19d2f3f2",
+        "rank": 8388668,
+        "reason": "related: file completions.go (completions.go:1) score 60 [calls 0, hierarchy 0, refs 0, other 30, same-file 30]",
+        "evidence_ref_ids": [
+          "e17"
+        ]
+      },
+      {
+        "ref_id": "config:.github/dependabot.yml",
+        "rank": 4194305,
+        "reason": "config: .github/dependabot.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e18"
+        ]
+      },
+      {
+        "ref_id": "config:.github/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e19"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e20"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/size-labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/size-labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e21"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/test.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/test.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "config:.golangci.yml",
+        "rank": 4194305,
+        "reason": "config: .golangci.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "file:completions.go",
+        "rank": 3145893,
+        "reason": "file: completions.go score 165 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e24"
+        ]
+      },
+      {
+        "ref_id": "file:site/content/completions/_index.md",
+        "rank": 3145848,
+        "reason": "file: site/content/completions/_index.md score 120 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e25"
+        ]
+      },
+      {
+        "ref_id": "file:bash_completionsV2.go",
+        "rank": 3145803,
+        "reason": "file: bash_completionsV2.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "file:fish_completions.go",
+        "rank": 3145803,
+        "reason": "file: fish_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e27"
+        ]
+      },
+      {
+        "ref_id": "file:powershell_completions.go",
+        "rank": 3145803,
+        "reason": "file: powershell_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e28"
+        ]
+      },
+      {
+        "ref_id": "file:zsh_completions.go",
+        "rank": 3145803,
+        "reason": "file: zsh_completions.go score 75 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e29"
+        ]
+      },
+      {
+        "ref_id": "file:site/content/completions/zsh.md",
+        "rank": 3145788,
+        "reason": "file: site/content/completions/zsh.md score 60 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e30"
+        ]
+      },
+      {
+        "ref_id": "risk",
+        "rank": 2097152,
+        "reason": "risk: medium — fan-in 10, 4 dependent file(s)",
+        "evidence_ref_ids": [
+          "e1"
+        ]
+      },
+      {
+        "ref_id": "read-1",
+        "rank": 1048583,
+        "reason": "read 1: site/content/completions/_index.md",
+        "evidence_ref_ids": [
+          "e31"
+        ]
+      },
+      {
+        "ref_id": "read-2",
+        "rank": 1048582,
+        "reason": "read 2: site/content/completions/zsh.md",
+        "evidence_ref_ids": [
+          "e32"
+        ]
+      },
+      {
+        "ref_id": "read-3",
+        "rank": 1048581,
+        "reason": "read 3: completions.go",
+        "evidence_ref_ids": [
+          "e33"
+        ]
+      },
+      {
+        "ref_id": "read-4",
+        "rank": 1048580,
+        "reason": "read 4: bash_completionsV2.go",
+        "evidence_ref_ids": [
+          "e34"
+        ]
+      },
+      {
+        "ref_id": "read-5",
+        "rank": 1048579,
+        "reason": "read 5: fish_completions.go",
+        "evidence_ref_ids": [
+          "e35"
+        ]
+      },
+      {
+        "ref_id": "read-6",
+        "rank": 1048578,
+        "reason": "read 6: powershell_completions.go",
+        "evidence_ref_ids": [
+          "e36"
+        ]
+      },
+      {
+        "ref_id": "read-7",
+        "rank": 1048577,
+        "reason": "read 7: zsh_completions.go",
+        "evidence_ref_ids": [
+          "e37"
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "ref_id": "e1",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e2",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "span": "1-1",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e3",
+        "path": "completions.go",
+        "line": 29,
+        "span": "29-29",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e4",
+        "path": "site/content/completions/_index.md",
+        "line": 117,
+        "span": "117-117",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e5",
+        "path": "site/content/completions/_index.md",
+        "line": 13,
+        "span": "13-13",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e6",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e7",
+        "path": "site/content/completions/_index.md",
+        "line": 117,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e8",
+        "path": "site/content/completions/_index.md",
+        "line": 13,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e9",
+        "path": "completions.go",
+        "line": 196,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e10",
+        "path": "completions.go",
+        "line": 204,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e11",
+        "path": "completions.go",
+        "line": 256,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e12",
+        "path": "bash_completionsV2.go",
+        "line": 32,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e13",
+        "path": "zsh_completions.go",
+        "line": 88,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e14",
+        "path": "fish_completions.go",
+        "line": 31,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e15",
+        "path": "powershell_completions.go",
+        "line": 34,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e16",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e17",
+        "path": "completions.go",
+        "line": 29,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e18",
+        "path": ".github/dependabot.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e19",
+        "path": ".github/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e20",
+        "path": ".github/workflows/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e21",
+        "path": ".github/workflows/size-labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e22",
+        "path": ".github/workflows/test.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e23",
+        "path": ".golangci.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e24",
+        "path": "completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e25",
+        "path": "site/content/completions/_index.md",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e26",
+        "path": "bash_completionsV2.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e27",
+        "path": "fish_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e28",
+        "path": "powershell_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e29",
+        "path": "zsh_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e30",
+        "path": "site/content/completions/zsh.md",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e31",
+        "path": "site/content/completions/_index.md",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e32",
+        "path": "site/content/completions/zsh.md",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e33",
+        "path": "completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e34",
+        "path": "bash_completionsV2.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e35",
+        "path": "fish_completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e36",
+        "path": "powershell_completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e37",
+        "path": "zsh_completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e38",
+        "path": "site/content/completions/_index.md",
+        "line": 1,
+        "span": "1-7",
+        "role": "snippet",
+        "snippet": "# Generating shell completions\n\nCobra can generate shell completions for multiple shells.\nThe currently supported shells are:\n- Bash\n- Zsh\n- fish",
+        "text_hash": "2139e7a29b837bb7"
+      },
+      {
+        "ref_id": "e39",
+        "path": "site/content/completions/zsh.md",
+        "line": 1,
+        "span": "1-7",
+        "role": "snippet",
+        "snippet": "## Generating Zsh Completion For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n\n## Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backwards-compatible, some small changes in behavior were introduced.",
+        "text_hash": "154ac2dc05a1901e"
+      },
+      {
+        "ref_id": "e40",
+        "path": "completions.go",
+        "line": 23,
+        "span": "23-35",
+        "role": "snippet",
+        "snippet": "\t\"github.com/spf13/pflag\"\n)\n\nconst (\n\t// ShellCompRequestCmd is the name of the hidden command that is used to request\n\t// completion results from the program.  It is used by the shell completion scripts.\n\tShellCompRequestCmd = \"__complete\"\n\t// ShellCompNoDescRequestCmd is the name of the hidden command that is used to request\n\t// completion results without their description.  It is used by the shell completion scripts.\n\tShellCompNoDescRequestCmd = \"__completeNoDesc\"\n)\n\n// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it.",
+        "text_hash": "c2b100de57e6a10e"
+      },
+      {
+        "ref_id": "e41",
+        "path": "site/content/completions/_index.md",
+        "line": 111,
+        "span": "111-123",
+        "role": "snippet",
+        "snippet": "\nTo tell Cobra to completely disable descriptions for completions:\n```\nrootCmd.CompletionOptions.DisableDescriptions = true\n```\n\n# Customizing completions\n\nThe generated completion scripts will automatically handle completing commands and flags.  However, you can make your completions much more powerful by providing information to complete your program's nouns and flag values.\n\n## Completion of nouns\n\n### Static completion of nouns",
+        "text_hash": "bba9fc3cb1912676"
+      },
+      {
+        "ref_id": "e42",
+        "path": "site/content/completions/_index.md",
+        "line": 7,
+        "span": "7-19",
+        "role": "snippet",
+        "snippet": "- fish\n- PowerShell\n\nCobra will automatically provide your program with a fully functional `completion` command,\nsimilarly to how it provides the `help` command.\n\n## Creating your own completion command\n\nIf you do not wish to use the default `completion` command, you can choose to\nprovide your own, which will take precedence over the default one. (This also provides\nbackwards-compatibility with programs that already have their own `completion` command.)\n\nIf you are using the `cobra-cli` generator,",
+        "text_hash": "9b1946b83603521a"
+      },
+      {
+        "ref_id": "e43",
+        "path": "completions.go",
+        "line": 188,
+        "span": "188-200",
+        "role": "snippet",
+        "snippet": "\t\treturn fmt.Sprintf(\"ERROR: unexpected ShellCompDirective value: %d\", d)\n\t}\n\treturn strings.Join(directives, \", \")\n}\n\n// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := \u0026Command{\n\t\tUse:                   fmt.Sprintf(\"%s [command-line]\", ShellCompRequestCmd),\n\t\tAliases:               []string{ShellCompNoDescRequestCmd},\n\t\tDisableFlagsInUseLine: true,\n\t\tHidden:                true,\n\t\tDisableFlagParsing:    true,",
+        "text_hash": "4a9b37aaaaf3f154"
+      },
+      {
+        "ref_id": "e44",
+        "path": "bash_completionsV2.go",
+        "line": 25,
+        "span": "25-37",
+        "role": "snippet",
+        "snippet": "\tbuf := new(bytes.Buffer)\n\tgenBashComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}\n\nfunc genBashComp(buf io.StringWriter, name string, includeDesc bool) {\n\tcompCmd := ShellCompRequestCmd\n\tif !includeDesc {\n\t\tcompCmd = ShellCompNoDescRequestCmd\n\t}\n\n\tWriteStringAndCheck(buf, fmt.Sprintf(`# bash completion V2 for %-36[1]s -*- shell-script -*-",
+        "text_hash": "558dc9a7195138f5"
+      }
+    ],
+    "confidence": {
+      "distribution": {
+        "confirmed": 1
+      },
+      "top": "confirmed",
+      "method": "edge_tiers"
+    },
+    "limits": {
+      "cap_applied": 40,
+      "total_available": 34,
+      "dropped": 0,
+      "truncated": false,
+      "next": ""
+    }
+  },
+  "score": {
+    "covered": true,
+    "item_count": 34,
+    "evidence_citation_count": 44,
+    "snippet_count": 7,
+    "emitted_snippet_whitespace_tokens": 380,
+    "engine_reported_snippet_tokens": 403,
+    "engine_reported_token_budget": 1200,
+    "engine_minus_emitted_snippet_tokens": 23,
+    "item_cap_applied": 40,
+    "items_available": 34,
+    "items_dropped": 0,
+    "truncated": false,
+    "grade3_judgements": 2,
+    "matches": [
+      {
+        "evidence_ref_id": "e9",
+        "evidence_path": "completions.go",
+        "evidence_line": 196,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e10",
+        "evidence_path": "completions.go",
+        "evidence_line": 204,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e11",
+        "evidence_path": "completions.go",
+        "evidence_line": 256,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "completions.go",
+        "judgement_start_line": 193,
+        "judgement_end_line": 264,
+        "judgement_grade": 3
+      }
+    ]
+  }
+}

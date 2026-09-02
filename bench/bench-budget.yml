@@ -216,7 +216,65 @@ version: 1
 # no `severity` key and therefore still gates at `fail` (internal/bench/budget.go
 # :186,191). bench/lang-budget.md, the per-language attribution ledger, is NOT
 # touched — the SW-177/SW-203 refusals stand.
-baseline_version: "2026-08-28-sw243-baseline-decision-go1.26.6-linux-amd64-release"
+#
+# 2026-09-02-sw264-budget-raise: binary_size_bytes' BUDGET IS RAISED for the
+# first time since it was pinned, from 36,100,000 B to 37,000,000 B, and the
+# baseline re-pinned to 36,248,410 B. Only this metric moves. The raise is taken
+# under R3's own trigger, not around it.
+#
+# WHY NOW — R3 SAYS SO. R3 set the condition in its own words: a raise is honest
+# once "headroom no longer exceeds 10x the largest measured toolchain-noise event
+# (88,540 B)", and it computed the trigger as a measured `main` at about
+# 36,011,000 B, calling it "660 kB of growth away". That growth has happened.
+# Measured `main` @ 1bfd5ba is 36,062,373 B (bench-report.json of the 2026-09-02
+# main run), leaving 37,627 B of headroom — 0.42x the noise event, not 10x. Below
+# that line the gate can no longer separate justified growth from a compiler
+# patch release: a go1.26.5 → go1.26.6 bump alone moved an unchanged tree by
+# 8,854 B, and 37,627 B is only 4.2 of those. The ratchet had stopped ratcheting
+# and started blocking every story regardless of its size.
+#
+# R1 — ATTRIBUTION, same method as SW-243. Same-method before/after release build
+# from a real checkout (linux/amd64, GOAMD64=v1, CGO_ENABLED=0): `main` vs
+# sw-264-surface-wiring. Total binary delta +186,037 B (CI: 36,062,373 →
+# 36,248,410). `go tool nm -size` rollup of the symbol delta (+109,104 B; the
+# remainder is non-symbol sections, chiefly pclntab):
+#     engine/agenttools/taskctx                        +37,317 B
+#     go:func.* (compiler metadata for the new funcs)  +23,928 B
+#     engine/retrieval.(*engine)                       +19,112 B
+#     engine/agenttools/shape.(*EvidenceSet)            +5,126 B
+#     engine/agenttools/hybridsearch                    +4,383 B
+#     engine/retrieval.(*hybridSearchBridge)            +3,957 B
+#     engine/retrieval + (*searchServiceBridge)         +4,883 B
+#     cmd/internal/runtime.retrievalAdapter             +2,628 B
+#     everything else                                   <1,000 B each
+# Every growing symbol is graphi's own SW-264 code — task_context/2, the
+# retrieval bridges, and the evidence set that carries claim_type. `go.mod` and
+# `go.sum` are byte-unchanged and no grammar tag was added, so no external
+# dependency and no new grammar blob contributes.
+#
+# R2 — DOES NOT APPLY. `go list -deps ./cmd/graphi` is identical before and
+# after: zero newly linked packages. R2 governs a raise caused by newly linked
+# existing dependencies (SW-243's yaml.v3 case); there is no such case here.
+#
+# R4 — RESPECTED. 37,000,000 B is 3,000,000 B below R4's 40,000,000 B line and
+# 13,000,000 B below the < 50 MB hard ceiling of
+# docs/adr/0001-parser-tier1-and-sizing.md:22. No ADR amendment is required.
+#
+# WHY 37,000,000 AND NOT MORE. The new headroom is 751,590 B over the re-pinned
+# baseline — deliberately the same order as the 748,694 B SW-243 left, so the
+# ratchet keeps the same grip rather than being loosened while it is open. A
+# raise sized to "make room for a while" is the failure R3 was written against.
+#
+# THE NEXT REFUSAL LINE. R1, R2 and R4 stand unchanged. R3 is restated against
+# the new budget: the next legitimate raise conversation starts when a measured
+# `main` comes within 88,540 B of 37,000,000 B, i.e. at about 36,911,000 B. Until
+# then a failing gate means the story is too large, not that the budget is.
+#
+# NOTHING ELSE MOVES. binary_size_bytes' baseline and budget are the only values
+# edited. No metric is added, removed, re-severitied or soft-failed; it carries
+# no `severity` key and still gates at `fail` (internal/bench/budget.go:186,191).
+# bench/lang-budget.md is NOT touched — the SW-177/SW-203 refusals stand.
+baseline_version: "2026-09-02-sw264-budget-raise-go1.26.6-linux-amd64-release"
 fixture_digest: "50f9966c5b0ef60515a94f2015326ce07fa034f3b63128e8444335bf236c57f4"
 
 metrics:
@@ -233,13 +291,18 @@ metrics:
     budget: 2000
     unit: ms
   binary_size_bytes:
-    # Baseline re-pinned 2026-08-28 (SW-243) to the measured canonical release
-    # build of main @ ebe0e87. The BUDGET IS UNCHANGED AND DELIBERATELY SO —
-    # see the 2026-08-28-sw243-baseline-decision note above for the measurement,
-    # the attribution, the projection for SW-238/SW-244, and the four standing
-    # refusals that say when this budget may move next.
-    baseline: 35351306
-    budget: 36100000
+    # SUPERSEDED 2026-09-02 by SW-264, kept for the record: baseline re-pinned
+    # 2026-08-28 (SW-243) to the measured canonical release build of main @
+    # ebe0e87, with the budget deliberately left at 36,100,000 B because headroom
+    # was then 84.6x the toolchain-noise event. R3 named the condition that would
+    # end that stance, and it has since been met — see below.
+    # Baseline and budget re-pinned 2026-09-02 (SW-264) under R3's own trigger:
+    # measured main @ 1bfd5ba was 36,062,373 B, leaving 37,627 B of headroom —
+    # 0.42x the 88,540 B toolchain-noise event, well under R3's 10x line. See the
+    # 2026-09-02-sw264-budget-raise note above for the R1 attribution, the R2/R4
+    # checks, and the restated refusal line at ~36,911,000 B.
+    baseline: 36248410
+    budget: 37000000
     unit: bytes
   # EP-022 profile-aware metrics (warn-only until calibrated).
   fast_index_ms:
