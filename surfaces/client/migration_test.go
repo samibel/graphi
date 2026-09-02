@@ -19,12 +19,12 @@ package client
 //     operation with TWO different argument values and requires the LEGACY bytes
 //     to differ before it will accept the parity evidence for that operation.
 //
-// The second gate is why `memory` and `search_semantic` are named in the
-// backlog: with no memory store wired, Direct.Memory short-circuits to
+// The second gate is why `memory` remains in the backlog: with no memory store
+// wired, Direct.Memory short-circuits to
 // ErrMemoryUnavailable before it reads Op or Scope, so mutating the argument
 // changes nothing and the parity case proves the sentinel rather than the
-// arguments. Neither is migrated by this story, and this test is what would
-// catch a later story migrating them while that gap is still open.
+// arguments. SW-239 supplied an argument-sensitive semantic fixture; SW-265's
+// four deterministic state fixtures are what permit search_semantic to migrate.
 
 import (
 	"bytes"
@@ -227,6 +227,23 @@ func fidelityPairs(ids map[string]model.NodeId) []fidelityPair {
 			},
 		},
 		{
+			// SW-265 AC-8: the search_semantic fidelity pair. Mutating the
+			// query must produce different bytes (the wire document carries
+			// the query verbatim); mutating the limit must produce different
+			// bytes (when the index has more rows than the cap). The
+			// fidelityFixture wires the mock embedder so the configured
+			// path actually runs.
+			operation: "search_semantic",
+			a:         &SemanticSearchArgs{Query: "p.A", Limit: 5},
+			b:         &SemanticSearchArgs{Query: "p.B", Limit: 1},
+			legacyA: func(ctx context.Context, cl Client) ([]byte, error) {
+				return cl.SemanticSearch(ctx, "p.A", 5)
+			},
+			legacyB: func(ctx context.Context, cl Client) ([]byte, error) {
+				return cl.SemanticSearch(ctx, "p.B", 1)
+			},
+		},
+		{
 			operation: "find_clones",
 			a:         &FindClonesArgs{Config: `{"threshold":0.8}`},
 			b:         &FindClonesArgs{Config: `{"threshold":0.95}`},
@@ -286,6 +303,23 @@ func fidelityPairs(ids map[string]model.NodeId) []fidelityPair {
 			},
 			legacyB: func(ctx context.Context, cl Client) ([]byte, error) {
 				return cl.SearchHybrid(ctx, SearchHybridParams{Query: "p.C", MaxItems: 3})
+			},
+		},
+		{
+			// SW-265 (AC-8): search_semantic argument fidelity. Two
+			// different queries hash to different mock vectors and
+			// rank hits differently; the Limit=1 truncation surfaces a
+			// different top hit per query, so the legacy pair's bytes
+			// differ. The pair proves the adapter carries both Query
+			// and Limit to the engine rather than discarding them.
+			operation: "search_semantic",
+			a:         &SemanticSearchArgs{Query: "p.B", Limit: 1},
+			b:         &SemanticSearchArgs{Query: "p.A", Limit: 1},
+			legacyA: func(ctx context.Context, cl Client) ([]byte, error) {
+				return cl.SemanticSearch(ctx, "p.B", 1)
+			},
+			legacyB: func(ctx context.Context, cl Client) ([]byte, error) {
+				return cl.SemanticSearch(ctx, "p.A", 1)
 			},
 		},
 		{
@@ -382,7 +416,6 @@ func TestAX08_ExcludedOperationsAreRejectedByName(t *testing.T) {
 		reason    string
 	}{
 		{"memory", &MemoryArgs{MemoryRequest{Op: "list"}}, "no argument-fidelity evidence: Direct.Memory short-circuits before reading Op"},
-		{"search_semantic", &SemanticSearchArgs{Query: "p."}, "no argument-fidelity evidence for Limit on an embedder-free fixture"},
 		{"agent_brief", &BriefArgs{Topic: "p.B"}, "Client.Brief returns two byte slices; the executor transports only the canonical one"},
 		{"savings", &SavingsArgs{}, "determinism environment-dependent (ledger state)"},
 		{"analyze", &AnalyzeArgs{AnalyzeParams{Name: "impact"}}, "determinism environment-dependent"},
@@ -401,13 +434,16 @@ func TestAX08_ExcludedOperationsAreRejectedByName(t *testing.T) {
 	}
 }
 
-// TestSW257_SearchSemanticIsNotMigrated pins search_semantic outside the
-// migrated set (SW-257); SW-265 owns the migration decision, gated on
-// deterministic configured|unavailable|stale|corrupt fixtures.
-func TestSW257_SearchSemanticIsNotMigrated(t *testing.T) {
-	if isMigratedOperation("search_semantic") {
-		t.Fatalf("search_semantic dispatches through the executor, but its " +
-			"migration is SW-265's decision, gated on deterministic " +
-			"configured|unavailable|stale|corrupt fixtures")
+// TestSW265_SearchSemanticIsMigrated pins search_semantic INSIDE the
+// migrated set (SW-265). The AC-8 four-state determinism fixtures
+// (TestExecutorParity_SearchSemanticFourStates) are the gate: each must be byte-stable
+// across 10 runs before this assertion holds. A regression that
+// reintroduces non-determinism on any state must take search_semantic
+// off the seam by removing it from `migratedOperations`.
+func TestSW265_SearchSemanticIsMigrated(t *testing.T) {
+	if !isMigratedOperation("search_semantic") {
+		t.Fatalf("search_semantic is NOT in migratedOperations; SW-265 AC-8 " +
+			"determinism fixtures must fail (a state is non-deterministic) " +
+			"before this id is removed from the migrated set")
 	}
 }

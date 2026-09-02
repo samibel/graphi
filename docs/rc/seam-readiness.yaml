@@ -122,5 +122,7 @@ operations:
     criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: search_hybrid
     criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
+  - operation: search_semantic
+    criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}
   - operation: test_impact
     criteria: {c1: *release_line, c2: *divergence, c3: *argument_fidelity, c5: *parity, c6: *rollback}

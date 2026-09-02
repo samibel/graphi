@@ -110,6 +110,14 @@ const (
 	// Labs-only. It adds no Stable operation and changes no Stable schema.
 	ToolStrictQuery = "strict_query"
 
+	// SW-265: semantic_status, the Labs typed-status verb the optional
+	// semantic search exposes. The wire document is the shared
+	// surfaces/client.SemanticStatus composition (byte-identical to
+	// `graphi semantic status --json` and `GET /semantic/status`).
+	// Tool NAMES are frozen wire identifiers — adding this constant is
+	// the addition; the wire bytes follow the shared encoder.
+	ToolSemanticStatus = "semantic_status"
+
 	// P0 agent intelligence: the unified single-call symbol view (definition
 	// with optional token-budgeted snippet, hierarchy, callers/callees/
 	// references, covering tests, risk level). Labs-only; the frozen Stable-12
@@ -214,6 +222,7 @@ var singletonToolNames = []string{
 	ToolAgentBrief,
 	ToolGraphHealth,
 	ToolStrictQuery,
+	ToolSemanticStatus,
 	ToolSymbolContext,
 	ToolTaskContext,
 	ToolRepoOverview,

@@ -201,7 +201,10 @@ type GenerateResult struct {
 	Configured bool
 	// EmbedderID is the active embedder's ID (empty on the graceful-skip path).
 	EmbedderID string
-	// Embedded is the number of node vectors generated and persisted.
+	// GenerationID is the concrete generation built by this pass. Empty
+	// when no durable GenerationStore was supplied.
+	GenerationID GenerationID
+	// Embedded is the number of document vectors generated and persisted.
 	// A node whose prior row is carried forward increments Reused ONLY
 	// — not Embedded — so the documented invariant holds:
 	// Embedded + Reused + Excluded == len(nodes) − Failed. Failed
@@ -238,6 +241,17 @@ type GenerateResult struct {
 	// active generation's rows for those nodes are unreachable).
 	Purged int
 }
+
+// GenerationProgress reports document-count progress for one generation.
+// It is independent of embedder request batching: Done advances once for
+// each source document considered, whether embedded, reused, or excluded.
+type GenerationProgress struct {
+	GenerationID GenerationID
+	Done         int
+	Total        int
+}
+
+type GenerationProgressFunc func(GenerationProgress)
 
 // GenerateAndPersist runs the embedding-GENERATION pass for `graphi index
 // --semantic`. It is gated STRICTLY on reg.Configured(): with no embedder it
@@ -278,27 +292,18 @@ func GenerateAndPersist(ctx context.Context, reg *Registry, nodes []model.Node, 
 	return GenerateAndPersistWithProgress(ctx, reg, nodes, docs, index, store, nil, graphGeneration)
 }
 
-// embedChunkSize bounds how many node texts each Embed call carries. It sets
-// the progress-callback granularity AND caps the in-flight vector slice to a
-// chunk (the whole-set call held every vector of the repo simultaneously).
-// Small enough that a slow per-text embedder (Ollama does one HTTP round-trip
-// per text) reports progress every few seconds; large enough that the chunk
-// bookkeeping is noise.
-const embedChunkSize = 64
-
 // GenerateAndPersistWithProgress is GenerateAndPersist with a progress seam:
-// onProgress (nil-safe) is invoked from THIS goroutine after each embedded and
-// persisted chunk with the running (done, total) node counts — the final call
-// is (total, total). The embedding-generation pass previously produced no
+// onProgress (nil-safe) is invoked from THIS goroutine at generation start and
+// after each document with the generation id and running document counts. The
+// final call is (total, total). The embedding-generation pass previously produced no
 // output between its start and its summary line, which on thousands of nodes
 // via a per-text HTTP embedder reads as a hang.
 //
-// Documents are obtained chunk by chunk, so a DocumentSource that cuts them
-// from source files needs to hold only the chunk's worth (and its current
-// file) in memory rather than every document of the repo.
+// Documents are obtained one at a time, so a DocumentSource that cuts them
+// from source files needs to hold only the current document (and file).
 //
-// Chunking changes one failure-path detail, deliberately: an Embed error in
-// chunk k leaves the rows of chunks < k already persisted (the whole-set
+// Streaming changes one failure-path detail, deliberately: an Embed error on
+// document k leaves prior rows already persisted (the whole-set
 // call persisted nothing on an embed error). Vector rows are derived state
 // keyed by NodeId — a re-run overwrites them idempotently — so partial
 // progress is strictly recoverable.
@@ -316,7 +321,7 @@ const embedChunkSize = 64
 // graphGeneration is the current-graph identity the fingerprint embeds.
 // Empty substitutes the placeholder so in-process tests stay
 // fingerprint-compatible.
-func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, onProgress func(done, total int), graphGeneration string) (GenerateResult, error) {
+func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []model.Node, docs DocumentSource, index VectorIndex, store GenerationStore, onProgress GenerationProgressFunc, graphGeneration string) (GenerateResult, error) {
 	if reg == nil || !reg.Configured() {
 		return GenerateResult{Configured: false}, nil // graceful skip: no embed, no dial, no write
 	}
@@ -412,6 +417,10 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			if err != nil {
 				return GenerateResult{}, err
 			}
+			res.GenerationID = b.ID()
+			if onProgress != nil {
+				onProgress(GenerationProgress{GenerationID: b.ID(), Total: 0})
+			}
 			if cerr := b.Commit(ctx); cerr != nil {
 				return GenerateResult{}, cerr
 			}
@@ -429,12 +438,12 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	// which the operator found misleading. The wantIDs bookkeeping
 	// was dead code (written but never read); removed in the same
 	// change.
-	chunkNodes := make([]model.Node, 0, embedChunkSize)
-	texts := make([]string, 0, embedChunkSize)
+	chunkNodes := make([]model.Node, 0, 1)
+	texts := make([]string, 0, 1)
 	// Used for carry-forward inside a chunk: the nodes whose documents
 	// match the prior text_hash. They skip the embed call but still
 	// produce a Row whose Vector is the prior row's Vector.
-	carry := make([]Row, 0, embedChunkSize)
+	carry := make([]Row, 0, 1)
 
 	var build Build
 	if store != nil {
@@ -443,13 +452,14 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			return GenerateResult{}, err
 		}
 		build = b
+		res.GenerationID = b.ID()
+		if onProgress != nil {
+			onProgress(GenerationProgress{GenerationID: b.ID(), Total: len(nodes)})
+		}
 	}
 
-	for start := 0; start < len(nodes); start += embedChunkSize {
-		end := start + embedChunkSize
-		if end > len(nodes) {
-			end = len(nodes)
-		}
+	for start := 0; start < len(nodes); start++ {
+		end := start + 1
 		chunkNodes, texts, carry = chunkNodes[:0], texts[:0], carry[:0]
 		for _, n := range nodes[start:end] {
 			// Reviewer fix Critical 4: the coverage invariant is
@@ -611,7 +621,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			}
 		}
 		if onProgress != nil {
-			onProgress(end, len(nodes))
+			onProgress(GenerationProgress{GenerationID: res.GenerationID, Done: end, Total: len(nodes)})
 		}
 	}
 	if build != nil {

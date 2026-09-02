@@ -99,6 +99,7 @@ type SemanticHit struct {
 type SemanticResponse struct {
 	Query     string        `json:"query"`
 	Available bool          `json:"available"`
+	State     embed.State   `json:"state"`
 	Reason    string        `json:"reason,omitempty"`
 	Hits      []SemanticHit `json:"hits"`
 }
@@ -127,16 +128,16 @@ type SemanticResponse struct {
 func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (SemanticResponse, error) {
 	if s.embedReg == nil || !s.embedReg.Configured() {
 		// Graceful skip: no embedder, no network, no error.
-		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
+		return SemanticResponse{Query: query, Available: false, State: embed.StateMissing, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
 	}
 	emb, ok := s.embedReg.Active()
 	if !ok {
-		return SemanticResponse{Query: query, Available: false, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
+		return SemanticResponse{Query: query, Available: false, State: embed.StateMissing, Reason: UnavailableReason, Hits: []SemanticHit{}}, nil
 	}
 	if checker, ok := emb.(embed.AvailabilityChecker); ok {
 		if err := checker.CheckAvailable(ctx); err != nil {
 			if repair := repairable(err); repair != "" {
-				return SemanticResponse{Query: query, Available: false, Reason: repair, Hits: []SemanticHit{}}, nil
+				return SemanticResponse{Query: query, Available: false, State: embed.StateMissing, Reason: repair, Hits: []SemanticHit{}}, nil
 			}
 			return SemanticResponse{}, err
 		}
@@ -148,13 +149,13 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 		// so an agent can act on it. The byte shape (query, available=false,
 		// reason, hits=[]) is identical to the no-embedder graceful
 		// skip — only the Reason differs.
-		return SemanticResponse{Query: query, Available: false, Reason: s.semanticState.Reason, Hits: []SemanticHit{}}, nil
+		return SemanticResponse{Query: query, Available: false, State: s.semanticState.State, Reason: s.semanticState.Reason, Hits: []SemanticHit{}}, nil
 	}
 	if limit <= 0 {
 		limit = DefaultResultLimit
 	}
 	if query == "" {
-		return SemanticResponse{Query: query, Available: true, Hits: []SemanticHit{}}, nil
+		return SemanticResponse{Query: query, Available: true, State: embed.StateReady, Hits: []SemanticHit{}}, nil
 	}
 	vecs, err := emb.Embed(ctx, []string{query})
 	if err != nil {
@@ -166,12 +167,12 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 		// error, for example) and continues to surface as a non-nil
 		// error; the typed case is opt-in.
 		if u := repairable(err); u != "" {
-			return SemanticResponse{Query: query, Available: false, Reason: u, Hits: []SemanticHit{}}, nil
+			return SemanticResponse{Query: query, Available: false, State: embed.StateMissing, Reason: u, Hits: []SemanticHit{}}, nil
 		}
 		return SemanticResponse{}, err
 	}
 	if len(vecs) == 0 {
-		return SemanticResponse{Query: query, Available: true, Hits: []SemanticHit{}}, nil
+		return SemanticResponse{Query: query, Available: true, State: embed.StateReady, Hits: []SemanticHit{}}, nil
 	}
 	raw := s.index.Search(vecs[0], limit)
 
@@ -198,7 +199,7 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 	// that straddles the rank-50 cutoff in the index must not be
 	// re-resolved on a difference the AC-3 contract says is not there.
 	// The defensive sort that lived here previously is removed.
-	return SemanticResponse{Query: query, Available: true, Hits: hits}, nil
+	return SemanticResponse{Query: query, Available: true, State: embed.StateReady, Hits: hits}, nil
 }
 
 // MarshalSemantic serializes a SemanticResponse to stable, compact JSON with

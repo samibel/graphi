@@ -63,6 +63,7 @@ func TestCharacterization_ToolNames_Snapshot(t *testing.T) {
 		"search_ast",
 		"search_hybrid",
 		"search_semantic",
+		"semantic_status",
 		"skillgen",
 		"strict_query",
 		"subtypes",

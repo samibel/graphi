@@ -1110,7 +1110,7 @@ func BuildSemanticGeneration(
 	nodes []model.Node,
 	docs embed.DocumentSource,
 	index embed.VectorIndex,
-	progress func(done, total int),
+	progress embed.GenerationProgressFunc,
 ) (embed.GenerateResult, error) {
 	if ing == nil {
 		return embed.GenerateResult{}, fmt.Errorf("runtime: BuildSemanticGeneration: nil ingester")

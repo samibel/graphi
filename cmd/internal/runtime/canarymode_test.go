@@ -83,7 +83,7 @@ func TestEnvCanaryMode_MatchesTheDerivedName(t *testing.T) {
 }
 
 // TestApplyCanaryMode_EveryMigratedOperationHasAVariable is the AX-08 widening:
-// ten operations dispatch through the seam, so ten switches must reach the
+// every migrated operation dispatches through the seam, so every switch must reach the
 // composition root. A migrated operation with no environment variable is an
 // operation that cannot be rolled back without a release.
 func TestApplyCanaryMode_EveryMigratedOperationHasAVariable(t *testing.T) {

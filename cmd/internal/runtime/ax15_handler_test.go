@@ -36,8 +36,8 @@ func TestAX15_TheCompositionClientCarriesTheModuleHandler(t *testing.T) {
 		t.Fatal("no composition")
 	}
 	contributions := comp.Contributions()
-	if got := contributions.Operations().Len(); got != 56 {
-		t.Fatalf("catalog holds %d operations, want 56 unchanged", got)
+	if got := contributions.Operations().Len(); got != 57 {
+		t.Fatalf("catalog holds %d operations, want 57 unchanged (SW-265 added semantic_status)", got)
 	}
 	found := map[string]bool{}
 	for _, m := range comp.Modules() {

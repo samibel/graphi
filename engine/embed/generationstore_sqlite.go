@@ -43,8 +43,10 @@ import (
 // different id, so its rows do not collide with the prior's rows, and
 // Abort cleanly removes just the staging build's rows.
 type SQLiteGenerationStore struct {
-	db    *sql.DB
-	ownDB bool
+	db             *sql.DB
+	ownDB          bool
+	schemaPresent  bool
+	hasCommittedAt bool
 
 	// buildMu serialises the Begin → Commit/Abort lifecycle within THIS
 	// process (AC-6). Without it, two goroutines can race through their
@@ -86,6 +88,16 @@ CREATE TABLE IF NOT EXISTS generations (
     is_active       INTEGER NOT NULL DEFAULT 0,
     is_staging      INTEGER NOT NULL DEFAULT 0
 );`
+
+// SW-265: additive committed_at column for the status surface's built_at
+// field. The column is nullable so a pre-existing sidecar loads cleanly;
+// the active-generation query coalesces NULL into "" so the wire shape
+// stays empty-string-stable. Applied as a separate statement because the
+// primary DDL is wrapped in a CREATE TABLE IF NOT EXISTS, which would
+// silently ignore a new column on a fresh install. ALTER TABLE ADD COLUMN
+// is idempotent only at the SQL level when guarded by a name probe.
+const generationCommittedAtColumnDDL = `
+ALTER TABLE generations ADD COLUMN committed_at TEXT NOT NULL DEFAULT '';`
 
 // rowsDDL is the idempotent schema for the rows table. The PK is
 // (generation_id, node_id) so a single generation holds one row per node.
@@ -138,13 +150,22 @@ func NewSQLiteGenerationStoreDB(ctx context.Context, db *sql.DB) (*SQLiteGenerat
 			return nil, fmt.Errorf("embed: init generations schema: %w", err)
 		}
 	}
+	// SW-265: idempotent column addition for committed_at. ALTER TABLE ADD
+	// COLUMN is not idempotent on its own; the probe short-circuits the
+	// second open. SQLite stores the column in sqlite_schema (no
+	// information_schema), so the probe is a single-row query.
+	if err := ensureCommittedAtColumn(ctx, db); err != nil {
+		return nil, fmt.Errorf("embed: ensure committed_at column: %w", err)
+	}
 	if _, err := MigrateFromLegacyVectors(ctx, db); err != nil {
 		return nil, fmt.Errorf("embed: legacy migration: %w", err)
 	}
 	return &SQLiteGenerationStore{
-		db:         db,
-		ownDB:      false,
-		liveBuilds: map[GenerationID]struct{}{},
+		db:             db,
+		ownDB:          false,
+		schemaPresent:  true,
+		hasCommittedAt: true,
+		liveBuilds:     map[GenerationID]struct{}{},
 	}, nil
 }
 
@@ -172,15 +193,65 @@ func OpenSQLiteGenerationStore(ctx context.Context, metaDir string) (*SQLiteGene
 			return nil, fmt.Errorf("embed: init generations schema: %w", err)
 		}
 	}
+	// SW-265: idempotent column addition (see NewSQLiteGenerationStoreDB).
+	if err := ensureCommittedAtColumn(ctx, db); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("embed: ensure committed_at column: %w", err)
+	}
 	if _, err := MigrateFromLegacyVectors(ctx, db); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("embed: legacy migration: %w", err)
 	}
 	return &SQLiteGenerationStore{
-		db:         db,
-		ownDB:      true,
-		liveBuilds: map[GenerationID]struct{}{},
+		db:             db,
+		ownDB:          true,
+		schemaPresent:  true,
+		hasCommittedAt: true,
+		liveBuilds:     map[GenerationID]struct{}{},
 	}, nil
+}
+
+// OpenSQLiteGenerationStoreReadOnly opens an existing ingest-meta sidecar
+// without creating a file, table, column, WAL, or migration. Status is an
+// observer, so it must never turn "not indexed" into a write.
+func OpenSQLiteGenerationStoreReadOnly(ctx context.Context, metaDir string) (*SQLiteGenerationStore, error) {
+	if metaDir == "" {
+		return nil, fmt.Errorf("embed: empty meta dir")
+	}
+	dbPath := filepath.Join(metaDir, "ingest-meta.db")
+	db, err := sql.Open("sqlite", "file:"+filepath.ToSlash(dbPath)+"?mode=ro&_pragma=query_only(1)&_pragma=busy_timeout(5000)")
+	if err != nil {
+		return nil, fmt.Errorf("embed: open meta db read-only: %w", err)
+	}
+	store := &SQLiteGenerationStore{db: db, ownDB: true, liveBuilds: map[GenerationID]struct{}{}}
+	var n int
+	if err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='generations'`).Scan(&n); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("embed: probe generations schema: %w", err)
+	}
+	store.schemaPresent = n > 0
+	if !store.schemaPresent {
+		return store, nil
+	}
+	rows, err := db.QueryContext(ctx, `PRAGMA table_info(generations)`)
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("embed: inspect generations schema: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notnull, pk int
+		var name, typ string
+		var dflt any
+		if err := rows.Scan(&cid, &name, &typ, &notnull, &dflt, &pk); err != nil {
+			_ = db.Close()
+			return nil, fmt.Errorf("embed: scan generations schema: %w", err)
+		}
+		if name == "committed_at" {
+			store.hasCommittedAt = true
+		}
+	}
+	return store, rows.Err()
 }
 
 // newGenerationID mints a 16-hex-char opaque id for a generation. The
@@ -194,6 +265,32 @@ func newGenerationID() (GenerationID, error) {
 		return "", fmt.Errorf("embed: mint generation id: %w", err)
 	}
 	return GenerationID("g-" + hex.EncodeToString(buf[:])), nil
+}
+
+// ensureCommittedAtColumn is the SW-265 idempotent schema migration that
+// adds the `committed_at` column to the generations table. SQLite stores
+// the column in sqlite_schema; the probe looks it up by name and runs the
+// ALTER only when absent, so an existing sidecar is upgraded exactly
+// once. The probe uses a parameterised SELECT against sqlite_schema,
+// which keeps the path consistent with the migration helper's shape.
+//
+// A pre-existing sidecar that lacks the column reads as committed_at = ”
+// after the migration, which is the documented empty-string rendering
+// (`active_generation.built_at`); the wire shape stays stable.
+func ensureCommittedAtColumn(ctx context.Context, db *sql.DB) error {
+	var n int
+	err := db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name = 'generations' AND sql LIKE '%committed_at%'`).Scan(&n)
+	if err != nil {
+		return fmt.Errorf("embed: probe committed_at: %w", err)
+	}
+	if n > 0 {
+		return nil
+	}
+	if _, err := db.ExecContext(ctx, generationCommittedAtColumnDDL); err != nil {
+		return fmt.Errorf("embed: add committed_at column: %w", err)
+	}
+	return nil
 }
 
 // Begin implements GenerationStore. AC-5 / AC-6 / the AC-1 typed-error
@@ -272,6 +369,8 @@ type sqliteBuild struct {
 	id    GenerationID
 	fp    Fingerprint
 }
+
+func (b *sqliteBuild) ID() GenerationID { return b.id }
 
 func (b *sqliteBuild) Upsert(ctx context.Context, r Row) error {
 	if r.GenerationID != "" && r.GenerationID != b.id {
@@ -408,8 +507,8 @@ func (b *sqliteBuild) Commit(ctx context.Context) error {
 	// detect the failure INSIDE the transaction so the demote is rolled
 	// back along with the failed promotion.
 	promoteRes, err := tx.ExecContext(ctx,
-		`UPDATE generations SET is_active = 1, is_staging = 0, row_count = ? WHERE id = ? AND is_staging = 1`,
-		n, string(b.id))
+		`UPDATE generations SET is_active = 1, is_staging = 0, row_count = ?, committed_at = ? WHERE id = ? AND is_staging = 1`,
+		n, commitTimestamp(), string(b.id))
 	if err != nil {
 		return fmt.Errorf("embed: promote staging: %w", err)
 	}
@@ -459,18 +558,22 @@ func (b *sqliteBuild) Abort(ctx context.Context) error {
 // Active implements GenerationStore. The active generation is the one whose
 // canonical fingerprint matches the requested fingerprint AND has is_active=1.
 func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, nodes NodeReferencer) (Generation, State, error) {
+	if !s.schemaPresent {
+		return Generation{Fingerprint: fp}, StateMissing, nil
+	}
 	var (
-		id        string
-		canonical string
-		dim       int
-		schema    string
-		rowCount  int
+		id          string
+		canonical   string
+		dim         int
+		schema      string
+		rowCount    int
+		committedAt sql.NullString
 	)
-	err := s.db.QueryRowContext(ctx, `
-        SELECT id, fingerprint, fingerprint_dim, document_schema, row_count
-        FROM generations
-        WHERE is_active = 1
-        LIMIT 1`).Scan(&id, &canonical, &dim, &schema, &rowCount)
+	columns := "id, fingerprint, fingerprint_dim, document_schema, row_count, ''"
+	if s.hasCommittedAt {
+		columns = "id, fingerprint, fingerprint_dim, document_schema, row_count, committed_at"
+	}
+	err := s.db.QueryRowContext(ctx, `SELECT `+columns+` FROM generations WHERE is_active = 1 LIMIT 1`).Scan(&id, &canonical, &dim, &schema, &rowCount, &committedAt)
 	if err == sql.ErrNoRows {
 		return Generation{ID: "", Fingerprint: fp}, StateMissing, nil
 	}
@@ -478,11 +581,15 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
 		return Generation{}, StateMissing, fmt.Errorf("embed: read active generation: %w", err)
 	}
 	storedFP := fingerprintFromCanonical(canonical, dim, schema)
+	committedAtStr := ""
+	if committedAt.Valid {
+		committedAtStr = committedAt.String
+	}
 	if storedFP.Canonical() != fp.Canonical() {
 		// Active exists but its fingerprint differs from the requested
 		// one → StateStale (AC-7). The fingerprint comparison sees every
 		// field; a single-field drift is enough to mark stale.
-		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 			StateStale, nil
 	}
 	// AC-7 `corrupt` checks. We re-count rows and dims and (when a
@@ -491,11 +598,11 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
 	if err := s.db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM generation_rows WHERE generation_id = ?`,
 		id).Scan(&counted); err != nil {
-		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 			StateCorrupt, fmt.Errorf("embed: re-count rows: %w", err)
 	}
 	if counted != rowCount {
-		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+		return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 			StateCorrupt,
 			&ValidationFailedError{Reason: fmt.Sprintf("row count drift: metadata=%d persisted=%d", rowCount, counted)}
 	}
@@ -519,7 +626,7 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
             ORDER BY node_id`,
 			id)
 		if err != nil {
-			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 				StateCorrupt, fmt.Errorf("embed: stream rows for dim check: %w", err)
 		}
 		for rows.Next() {
@@ -529,19 +636,19 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
 			)
 			if err := rows.Scan(&nid, &blob); err != nil {
 				rows.Close()
-				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 					StateCorrupt, fmt.Errorf("embed: scan row for dim check: %w", err)
 			}
 			if len(blob) != fp.Dim*4 {
 				rows.Close()
-				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 					StateCorrupt,
 					&ValidationFailedError{Reason: fmt.Sprintf("vector dim drift at node %s: persisted=%d expected=%d", nid, len(blob)/4, fp.Dim)}
 			}
 		}
 		if err := rows.Err(); err != nil {
 			rows.Close()
-			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 				StateCorrupt, fmt.Errorf("embed: dim-check row iteration: %w", err)
 		}
 		rows.Close()
@@ -554,29 +661,29 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
             SELECT node_id FROM generation_rows WHERE generation_id = ? ORDER BY node_id`,
 			id)
 		if err != nil {
-			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 				StateCorrupt, fmt.Errorf("embed: stream rows for validation: %w", err)
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var nid string
 			if err := rows.Scan(&nid); err != nil {
-				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 					StateCorrupt, fmt.Errorf("embed: scan node id: %w", err)
 			}
 			exists, nerr := nodes.NodeExists(ctx, model.NodeId(nid))
 			if nerr != nil {
-				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 					StateCorrupt, nerr
 			}
 			if !exists {
-				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+				return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 					StateCorrupt,
 					&ValidationFailedError{Reason: "row references unknown node: " + nid}
 			}
 		}
 		if err := rows.Err(); err != nil {
-			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim},
+			return Generation{ID: GenerationID(id), Fingerprint: storedFP, RowCount: rowCount, Dim: dim, CommittedAt: committedAtStr},
 				StateCorrupt, err
 		}
 	}
@@ -585,12 +692,42 @@ func (s *SQLiteGenerationStore) Active(ctx context.Context, fp Fingerprint, node
 		Fingerprint: storedFP,
 		RowCount:    rowCount,
 		Dim:         dim,
+		CommittedAt: committedAtStr,
 	}, StateReady, nil
+}
+
+// Previous returns the most recently committed inactive generation.
+func (s *SQLiteGenerationStore) Previous(ctx context.Context, activeID GenerationID) (Generation, bool, error) {
+	if !s.schemaPresent {
+		return Generation{}, false, nil
+	}
+	columns := "id, fingerprint, fingerprint_dim, document_schema, row_count, ''"
+	if s.hasCommittedAt {
+		columns = "id, fingerprint, fingerprint_dim, document_schema, row_count, committed_at"
+	}
+	var id, canonical, schema string
+	var dim, rowCount int
+	var committedAt sql.NullString
+	err := s.db.QueryRowContext(ctx, `SELECT `+columns+` FROM generations WHERE is_active=0 AND is_staging=0 AND id<>? ORDER BY rowid DESC LIMIT 1`, string(activeID)).Scan(&id, &canonical, &dim, &schema, &rowCount, &committedAt)
+	if err == sql.ErrNoRows {
+		return Generation{}, false, nil
+	}
+	if err != nil {
+		return Generation{}, false, fmt.Errorf("embed: read previous generation: %w", err)
+	}
+	builtAt := ""
+	if committedAt.Valid {
+		builtAt = committedAt.String
+	}
+	return Generation{ID: GenerationID(id), Fingerprint: fingerprintFromCanonical(canonical, dim, schema), RowCount: rowCount, Dim: dim, CommittedAt: builtAt}, true, nil
 }
 
 // Load implements GenerationStore. Returns rows in canonical
 // (node_id, document_id) order. An unknown id is an empty slice.
 func (s *SQLiteGenerationStore) Load(ctx context.Context, id GenerationID) ([]Row, error) {
+	if !s.schemaPresent {
+		return nil, nil
+	}
 	rows, err := s.db.QueryContext(ctx, `
         SELECT document_id, node_id, text_hash, path, start_line, end_line, span_method, vector
         FROM generation_rows
@@ -646,7 +783,7 @@ func (s *SQLiteGenerationStore) Load(ctx context.Context, id GenerationID) ([]Ro
 // generation. See the interface doc for why the reload path needs this and
 // what it deliberately does not detect.
 func (s *SQLiteGenerationStore) DimForModel(ctx context.Context, modelID string) (int, bool, error) {
-	if modelID == "" {
+	if modelID == "" || !s.schemaPresent {
 		return 0, false, nil
 	}
 	var (
@@ -677,6 +814,9 @@ func (s *SQLiteGenerationStore) DimForModel(ctx context.Context, modelID string)
 }
 
 func (s *SQLiteGenerationStore) LoadRow(ctx context.Context, id GenerationID, nodeID model.NodeId) (Row, bool, error) {
+	if !s.schemaPresent {
+		return Row{}, false, nil
+	}
 	var (
 		docID, nID, hash, path, span string
 		startLine, endLine           int

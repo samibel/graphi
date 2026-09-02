@@ -26,9 +26,9 @@ row is tagged stable or one is dropped.
 
 **The 12 stable operations (frozen):** `index`, `agent_brief`, `callees`, `callers`, `change_risk`, `definition`, `explain_symbol`, `impact`, `neighborhood`, `references`, `related_files`, `search`.
 
-**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **56-tool** union (45 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
+**MCP profiles:** the default in-process `graphi mcp` binding advertises exactly **11 Stable tools**. Every binding then removes operations its concrete transport cannot execute; the current daemon binding exposes seven and honestly omits its four unwired agent-tool RPCs. `graphi mcp -labs` explicitly opts into the capability-gated Labs catalog; this matrix records its maximal **57-tool** union (46 Labs, 0 disabled), not a promise that every optional service or transport is wired. `index` is Stable lifecycle, not an MCP tool.
 
-Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
+Total capabilities: **176**. See [`architecture-plan.md`](architecture-plan.md) for the design context.
 
 ## Parsers (23)
 
@@ -85,7 +85,7 @@ Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) 
 | `triage-prs` | 🧪 labs | ✅ shipped | EP-018 | SW-105: single-pass graph-derived multi-PR triage ranking; reuses the EP-007 pr-risk kernel over an enumerated PR set (zero engine egress; forge enumeration stays at the surface). |
 | `watcher-status` | 🧪 labs | ✅ shipped | EP-017 | SW-104: SW-101 filesystem-watcher health (honest per-root errors) surfaced behind the single dispatch table. |
 
-## MCP tools (56)
+## MCP tools (57)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -135,6 +135,7 @@ Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) 
 | `search_ast` | 🧪 labs | ✅ shipped | EP-013 | structural AST pattern query over the indexed graph (G3). |
 | `search_hybrid` | 🧪 labs | ✅ shipped | - | P3 repository search: embedding-free hybrid ranking for multi-token queries — lexical retrieval re-ranked by identifier-segment matching (camelCase/snake_case aware), path relevance, and bounded graph degree; deterministic integer weight model, hash-stamped in every summary; no vector database, no egress; the optional search_semantic opt-in is untouched; byte-parity with `graphi search-hybrid`; Labs-only. |
 | `search_semantic` | 🧪 labs | ✅ shipped | EP-001 | optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061). |
+| `semantic_status` | 🧪 labs | ✅ shipped | EP-001 | typed semantic-status document (SW-265): installed/configured/indexed/fresh + lifecycle state + active generation + language validation map + exact repair command; byte-identical to `graphi semantic status --json` and `GET /semantic/status`. Similarity is a RANKING signal, not evidence. |
 | `skillgen` | 🧪 labs | ✅ shipped | EP-012 | deterministic skill generation from a procedure description. |
 | `strict_query` | 🧪 labs | ✅ shipped | - | P1 strict query (PRD v1.0 §8 Phase 9): runs a Stable structural query unchanged, then withholds result edges below `minimum_tier` (confirmed\|derived\|heuristic) and reports the withheld count; a result emptied by the filter always carries an explicit limitation, so filtered emptiness never reads as proven emptiness. Optional fail-closed policy preflight blocks before the query runs. Byte-parity with `graphi query-strict` through the single client.ComposeStrictQuery composition; operations closed to the Stable structural set; Labs-only. |
 | `subtypes` | 🧪 labs | ✅ shipped | EP-011 | structural query: subtypes (inherits+implements composed) (G2). |
@@ -158,7 +159,7 @@ Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) 
 | `vscode` | 🧪 labs | ✅ shipped | EP-008 | VS Code extension (extensions/vscode). |
 | `web` | 🧪 labs | ✅ shipped | EP-008 | React + Sigma web client (web/). |
 
-## CLI subcommands (60)
+## CLI subcommands (61)
 
 | id | tier | status | epic | note |
 |---|---|---|---|---|
@@ -206,6 +207,7 @@ Total capabilities: **174**. See [`architecture-plan.md`](architecture-plan.md) 
 | `search` | 🧪 labs | ✅ shipped | - | lexical search; -semantic runs the optional embedding search |
 | `search-ast` | 🧪 labs | ✅ shipped | - | structural AST pattern query |
 | `search-hybrid` | 🧪 labs | ✅ shipped | - | P3 repository search: embedding-free hybrid search (identifier segments + path + bounded graph degree); byte-parity with the search_hybrid MCP tool |
+| `semantic` | 🧪 labs | ✅ shipped | - | labs — report the canonical typed-status document (`semantic status [--json]`); byte-identical to MCP `semantic_status` and `GET /semantic/status` |
 | `setup` | 🧪 labs | ✅ shipped | - | register the MCP stdio server into local MCP clients' configs |
 | `setup-embedder` | 🧪 labs | ✅ shipped | - | print the opt-in semantic-search instructions (offline) |
 | `skillgen` | 🧪 labs | ✅ shipped | - | deterministic skill generation |

@@ -1,0 +1,1 @@
+{"query":"ZZZ_NO_MATCH_IN_MOCK_INDEX_ZZZ","available":false,"state":"missing","reason":"no embedder configured; run `graphi setup-embedder ...`","hits":[]}

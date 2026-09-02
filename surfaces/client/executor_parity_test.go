@@ -640,3 +640,72 @@ func TestExecutor_GracefulSkipStaysGraceful(t *testing.T) {
 		t.Fatal("no embedder is wired, so the typed response must report available=false")
 	}
 }
+
+// TestExecutorParity_SearchSemanticFourStates is the SW-265 AC-8 migration
+// gate. It exercises both the hand-written legacy call and Executor.Execute ten
+// times for each state; parity alone is insufficient, so each fixture also
+// asserts the state and whether configured has real hits.
+func TestExecutorParity_SearchSemanticFourStates(t *testing.T) {
+	type fixture struct {
+		name      string
+		wantState embed.State
+		available bool
+		build     func(*testing.T) *Direct
+	}
+	withState := func(t *testing.T, state embed.State, reason string) *Direct {
+		store := graphstore.NewMemStore()
+		t.Cleanup(func() { _ = store.Close() })
+		reg := embed.NewRegistry()
+		if err := reg.Register(embed.NewMockEmbedder(8)); err != nil {
+			t.Fatal(err)
+		}
+		service := search.New(store).WithSemantic(reg, embed.NewIndex(), store).
+			WithSemanticState(search.SemanticState{State: state, Reason: reason})
+		return NewDirect(query.New(store), service)
+	}
+	cases := []fixture{
+		{name: "configured", wantState: embed.StateReady, available: true, build: func(t *testing.T) *Direct { direct, _ := executorParityFixture(t); return direct }},
+		{name: "unavailable", wantState: embed.StateMissing, build: func(t *testing.T) *Direct { direct, _ := executorFixture(t); return direct }},
+		{name: "stale", wantState: embed.StateStale, build: func(t *testing.T) *Direct { return withState(t, embed.StateStale, search.ReasonStale) }},
+		{name: "corrupt", wantState: embed.StateCorrupt, build: func(t *testing.T) *Direct { return withState(t, embed.StateCorrupt, search.ReasonCorrupt) }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			direct := tc.build(t)
+			executor, err := NewExecutor(direct)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req, err := executor.NewRequest(&SemanticSearchArgs{Query: "p.A", Limit: 3})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var firstLegacy, firstExecutor []byte
+			for run := 0; run < 10; run++ {
+				legacy, legacyErr := direct.SemanticSearch(context.Background(), "p.A", 3)
+				got, gotErr := executor.Execute(context.Background(), req)
+				assertSameOutcome(t, "legacy/executor", legacy, legacyErr, got, gotErr)
+				if run == 0 {
+					firstLegacy = append([]byte(nil), legacy...)
+					firstExecutor = append([]byte(nil), got...)
+				} else if !bytes.Equal(firstLegacy, legacy) || !bytes.Equal(firstExecutor, got) {
+					t.Fatalf("run %d varied:\nlegacy first=%s now=%s\nexecutor first=%s now=%s", run, firstLegacy, legacy, firstExecutor, got)
+				}
+			}
+			var response struct {
+				Available bool                 `json:"available"`
+				State     embed.State          `json:"state"`
+				Hits      []search.SemanticHit `json:"hits"`
+			}
+			if err := json.Unmarshal(firstExecutor, &response); err != nil {
+				t.Fatal(err)
+			}
+			if response.State != tc.wantState || response.Available != tc.available {
+				t.Fatalf("state=%s available=%v, want %s/%v: %s", response.State, response.Available, tc.wantState, tc.available, firstExecutor)
+			}
+			if tc.name == "configured" && len(response.Hits) == 0 {
+				t.Fatalf("configured fixture is vacuous: no hits: %s", firstExecutor)
+			}
+		})
+	}
+}

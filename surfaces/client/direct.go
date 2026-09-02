@@ -35,6 +35,7 @@ import (
 	"github.com/samibel/graphi/engine/diagnostic"
 	"github.com/samibel/graphi/engine/distill"
 	"github.com/samibel/graphi/engine/edit"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/extpack"
 	"github.com/samibel/graphi/engine/ledger"
 	"github.com/samibel/graphi/engine/memory"
@@ -394,6 +395,7 @@ func (d *Direct) SemanticSearch(ctx context.Context, q string, limit int) ([]byt
 		return search.MarshalSemantic(search.SemanticResponse{
 			Query:     q,
 			Available: false,
+			State:     embed.StateMissing,
 			Reason:    search.UnavailableReason,
 			Hits:      []search.SemanticHit{},
 		})

@@ -1,6 +1,6 @@
 {
   "package": "surfaces/client",
-  "ceiling": 44,
+  "ceiling": 45,
   "allowed_imports": [
     {
       "path": "core/graphstore",
@@ -25,7 +25,7 @@
     {
       "path": "engine/agenttools/archintel",
       "category": "engine-handler",
-      "reason": "architecture-intel operation (arch rules, layer map) — Direct.archRules feeds it extpack rules; the Direct client calls the engine package itself because no engine-side handler exists yet"
+      "reason": "architecture-intel operation (arch rules, layer map) \u2014 Direct.archRules feeds it extpack rules; the Direct client calls the engine package itself because no engine-side handler exists yet"
     },
     {
       "path": "engine/agenttools/brief",
@@ -133,9 +133,14 @@
       "reason": "refactor/inline/safe-delete ops, Applier and ChangeRecorder (WithEditor) for the edit operations"
     },
     {
+      "path": "engine/embed",
+      "category": "engine-handler",
+      "reason": "embed.Registry and embed.Status types consumed by the SW-265 typed-status composition (the shared semantics_status surface); both are leaf-boundary types, no engine internals leak through"
+    },
+    {
       "path": "engine/extpack",
       "category": "engine-handler",
-      "reason": "extpack.Load of the repo's declarative rule packs (tier A) to feed archintel ArchRules; kernel seam added beside the façade by SW-229"
+      "reason": "extpack.Load of the repo's declarative rule packs (tier A) to feed archintel ArchRules; kernel seam added beside the fa\u00e7ade by SW-229"
     },
     {
       "path": "engine/ingest",
@@ -160,7 +165,7 @@
     {
       "path": "engine/opcatalog",
       "category": "compat-adapter",
-      "reason": "operation catalog (Shadow, OperationSpec, ports, permissions, determinism) consulted by the executor seam and canary contribution checks; kernel seam added beside the façade by SW-224"
+      "reason": "operation catalog (Shadow, OperationSpec, ports, permissions, determinism) consulted by the executor seam and canary contribution checks; kernel seam added beside the fa\u00e7ade by SW-224"
     },
     {
       "path": "engine/query",
@@ -195,7 +200,7 @@
     {
       "path": "engine/trust",
       "category": "engine-handler",
-      "reason": "trust document types, verdicts, scope facts and marshalling shared by every trust surface (CLI/HTTP/direct); the contract-§2 wire shape"
+      "reason": "trust document types, verdicts, scope facts and marshalling shared by every trust surface (CLI/HTTP/direct); the contract-\u00a72 wire shape"
     },
     {
       "path": "internal/freshness",

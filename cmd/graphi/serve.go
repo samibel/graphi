@@ -14,6 +14,7 @@ import (
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/core/profile"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
@@ -55,6 +56,10 @@ func runMCP(args []string) int {
 		options = append(options, mcp.WithLabs())
 	}
 	var srv *mcp.Server
+	// SW-265: the semantic_status MCP tool resolves the same embedder
+	// registry the cmd rank resolves. Constructing it once here keeps the
+	// three surfaces reading the same configured-vs-unconfigured answer.
+	options = append(options, mcp.WithEmbedderRegistry(runtimeEmbedderRegistryFromEnv(os.Getenv(embed.EnvSelector))))
 	if dbPath != "" || socket != "" {
 		rt, err := rtime.Attach(dbPath, socket, metaDir)
 		if err != nil {
@@ -402,7 +407,8 @@ func runHTTP(args []string) int {
 	fmt.Printf("graphi http listening on %s (schema_version=%d)\n", ln.Addr(), httpsrv.SchemaVersion)
 	// Inject the analyzer names so /contract can advertise them for client
 	// capability negotiation without the http package importing engine/analysis.
-	srv := httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
+	srv := httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names()).
+		WithEmbedderRegistry(runtimeEmbedderRegistryFromEnv(os.Getenv(embed.EnvSelector)))
 	if err := srv.ServeContext(runCtx, ln); err != nil {
 		fmt.Fprintf(os.Stderr, "graphi: http serve: %v\n", err)
 		return 1

@@ -81,6 +81,7 @@ func (s *Server) routes() []route {
 		{"POST /find-clones", fixedCapability("find_clones"), s.schemaGuard(s.handleFindClones)},
 		{"GET /search", fixedCapability("search"), s.schemaGuard(s.handleSearch)},
 		{"GET /search/semantic", fixedCapability("search_semantic"), s.schemaGuard(s.handleSemanticSearch)},
+		{"GET /semantic/status", fixedCapability("semantic_status"), s.handleSemanticStatus},
 		{"GET /analyze/{analyzer}", analyzerCapability, s.schemaGuard(s.handleAnalyze)},
 		{"GET /prs", fixedCapability("list_prs"), s.schemaGuard(s.handleListPRs)},
 		{"GET /prs/triage", fixedCapability("triage_prs"), s.schemaGuard(s.handleTriagePRs)},

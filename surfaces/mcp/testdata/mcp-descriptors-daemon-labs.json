@@ -237,7 +237,7 @@
     {
       "name": "search_semantic",
       "tier": "labs",
-      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default). Similarity is a ranking signal, not evidence.",
       "inputSchema": {
         "properties": {
           "depth": {

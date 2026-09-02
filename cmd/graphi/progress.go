@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/ingest"
 )
 
@@ -309,7 +310,7 @@ func (p *ingestProgress) elapsed() string {
 // its final "embedded N nodes" line — on thousands of nodes through a
 // per-text HTTP embedder that silence reads as a hang. Same conventions as
 // ingestProgress: on a TTY one throttled in-place status line, on a non-TTY
-// sparse 25%-bucket milestone lines. Handle is the onProgress func passed to
+// a generation-start line plus sparse 25%-bucket milestone lines. Handle is the onProgress func passed to
 // embed.GenerateAndPersistWithProgress (invoked serially from the calling
 // goroutine); Finish clears the TTY line so the summary prints cleanly.
 type embedProgress struct {
@@ -321,6 +322,7 @@ type embedProgress struct {
 	lastBucket int // non-TTY: last 25%-bucket announced (0 = none)
 	drew       bool
 	now        func() time.Time
+	generation embed.GenerationID
 }
 
 func newEmbedProgress(w io.Writer, tty bool) *embedProgress {
@@ -329,26 +331,37 @@ func newEmbedProgress(w io.Writer, tty bool) *embedProgress {
 
 // Handle renders one (done, total) progress step. Serial by contract (the
 // generation pass calls it from one goroutine), so no lock is needed.
-func (p *embedProgress) Handle(done, total int) {
-	if total <= 0 {
-		return
-	}
-	if !p.tty {
-		// Milestone lines only: one per completed 25% bucket, max 4 lines.
-		bucket := done * 4 / total
-		if bucket > p.lastBucket {
-			p.lastBucket = bucket
-			fmt.Fprintf(p.w, "graphi: embedding nodes… %d%% (%d/%d)\n", bucket*25, done, total)
+func (p *embedProgress) Handle(ev embed.GenerationProgress) {
+	p.generation = ev.GenerationID
+	if ev.Total <= 0 {
+		if !p.tty && ev.GenerationID != "" && !p.drew {
+			fmt.Fprintf(p.w, "graphi: generation %s: embedding documents… 0/0\n", ev.GenerationID)
+			p.drew = true
 		}
 		return
 	}
-	if done < total && p.now().Sub(p.lastDraw) < redrawMinGap {
+	if !p.tty {
+		if ev.Done == 0 && !p.drew {
+			fmt.Fprintf(p.w, "graphi: generation %s: embedding documents… 0%% (0/%d)\n", ev.GenerationID, ev.Total)
+			p.drew = true
+			return
+		}
+		// After the generation-start line, emit one completed 25% bucket,
+		// at most four milestone lines.
+		bucket := ev.Done * 4 / ev.Total
+		if bucket > p.lastBucket {
+			p.lastBucket = bucket
+			fmt.Fprintf(p.w, "graphi: generation %s: embedding documents… %d%% (%d/%d)\n", ev.GenerationID, bucket*25, ev.Done, ev.Total)
+		}
+		return
+	}
+	if ev.Done < ev.Total && p.now().Sub(p.lastDraw) < redrawMinGap {
 		return
 	}
 	p.lastDraw = p.now()
 	p.frame = (p.frame + 1) % len(spinnerFrames)
-	fmt.Fprintf(p.w, "\r\x1b[2K%c embedding nodes %d/%d (%d%%)",
-		spinnerFrames[p.frame], done, total, done*100/total)
+	fmt.Fprintf(p.w, "\r\x1b[2K%c generation %s: embedding documents %d/%d (%d%%)",
+		spinnerFrames[p.frame], ev.GenerationID, ev.Done, ev.Total, ev.Done*100/ev.Total)
 	p.drew = true
 }
 

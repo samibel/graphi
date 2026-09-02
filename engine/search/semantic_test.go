@@ -140,7 +140,7 @@ func TestSemanticSearch_ConfiguredRanksHits(t *testing.T) {
 
 // MarshalSemantic produces stable JSON and a nil Hits slice serializes as [].
 func TestMarshalSemantic_Stable(t *testing.T) {
-	r := search.SemanticResponse{Query: "q", Available: false, Reason: search.UnavailableReason}
+	r := search.SemanticResponse{Query: "q", Available: false, State: embed.StateMissing, Reason: search.UnavailableReason}
 	b, err := search.MarshalSemantic(r)
 	if err != nil {
 		t.Fatalf("MarshalSemantic: %v", err)
