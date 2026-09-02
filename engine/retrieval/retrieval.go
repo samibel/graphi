@@ -53,6 +53,11 @@ import (
 // every reader of the bytes gets when shipped behaviour moves.
 const retrievalVersion = "retrieval/2"
 
+// Version is the exported form of retrievalVersion. SW-264 stamps it on
+// every search_hybrid/2 and task_context/2 summary so a reader of the
+// bytes can verify the audit signal against the SW-263 release.
+const Version = retrievalVersion
+
 // Pinned arithmetic constants from the spec ("Arithmetic that is fixed and
 // must not be 'improved'"). They are named so reviewers and tests see them
 // as contracts, not magic numbers.
@@ -406,6 +411,11 @@ func weightsHash() string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])[:8]
 }
+
+// WeightsHash is the exported form of weightsHash. SW-264 stamps it on
+// every search_hybrid/2 and task_context/2 summary so a reader of the
+// bytes can verify the audit weights have not changed under the read.
+func WeightsHash() string { return weightsHash() }
 
 // weightsSortedCopy returns the rerank weights sorted by JSON field name
 // (so the SHA in weightsHash is independent of struct field order).

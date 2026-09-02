@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -45,6 +46,78 @@ func (s *EvidenceSet) Add(path string, line int, role string) string {
 	return id
 }
 
+// AddWithSpan is the SW-264 add-path for retrieval rows: the row carries a
+// span ("start-end") that the citation needs to round-trip exactly. Add
+// drops the span, AddSnippet adds a snippet body — neither matches what a
+// retrieval row produces. The dedup key matches Add's so a single
+// source/citation is one item regardless of which overload added it.
+func (s *EvidenceSet) AddWithSpan(path string, line int, role, span string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{RefID: id, Path: path, Line: line, Role: role, Span: span})
+	return id
+}
+
+// AddSourceMatch records a claim_type="source_match" citation: an evidence
+// item whose span came from a retrieval row. SW-264 uses it for `task_context/2`
+// seeds — claim_type stamps "source_match" so a reader of the bytes can tell
+// the matching v1 row's "primary" Role is sourced from the retrieval module,
+// not from a free-text resolution. The dedup key matches Add's.
+func (s *EvidenceSet) AddSourceMatch(path string, line int, role string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{RefID: id, Path: path, Line: line, Role: role, ClaimType: "source_match"})
+	return id
+}
+
+// AddSourceMatchWithSpan is the SW-264 path for retrieval rows whose span
+// ("start-end") must round-trip exactly. AddSourceMatch stamps only the line;
+// this overload stamps both the line and the span on the same evidence item
+// (the dedup key matches), so the cited range is exact, not a point match.
+func (s *EvidenceSet) AddSourceMatchWithSpan(path string, line int, role, span string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{
+		RefID:     id,
+		Path:      path,
+		Line:      line,
+		Role:      role,
+		Span:      span,
+		ClaimType: "source_match",
+	})
+	return id
+}
+
+// AddGraphRelation records a claim_type="graph_relation" citation with the
+// edge's provenance tier, used by SW-264's `task_context/2` for neighbours
+// reached via a bounded hop. ClaimType stamps "graph_relation" so a semantic
+// score is never presented as proof; EdgeTier lets the consumer tell the
+// kind of evidence behind a hop without consulting the source graph.
+// The dedup key matches Add's and AddSourceMatch's — a single source/citation
+// is one item, regardless of which claim_type label applies.
+func (s *EvidenceSet) AddGraphRelation(path string, line int, role, edgeTier string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{RefID: id, Path: path, Line: line, Role: role, ClaimType: "graph_relation", EdgeTier: edgeTier})
+	return id
+}
+
 // AddRef parses a model-edge evidence string ("path:line") and records it.
 // Unparseable refs are cited verbatim with line 0 so no citation is dropped.
 func (s *EvidenceSet) AddRef(ref, role string) string {
@@ -64,6 +137,44 @@ func (s *EvidenceSet) AddSnippet(path string, line int, role, span, snippet stri
 	s.index[key] = id
 	s.entries = append(s.entries, contract.Evidence{RefID: id, Path: path, Line: line, Role: role, Span: span, Snippet: snippet})
 	return id
+}
+
+// AddSnippetWithHash is the SW-264 variant of AddSnippet that also stamps the
+// xxhash64 hex of the snippet text on the resulting evidence item. It exists
+// so `task_context/2` can verify the snippet bytes without re-reading the
+// source file. A non-canonical text_hash is rejected at hash time (always 16
+// hex chars). On a dedup hit the existing ref id wins; the text_hash field
+// is NOT back-filled, because the first insertion is the cited text.
+func (s *EvidenceSet) AddSnippetWithHash(path string, line int, role, span, snippet string) string {
+	key := path + ":" + strconv.Itoa(line) + ":" + role
+	if id, ok := s.index[key]; ok {
+		return id
+	}
+	id := "e" + strconv.Itoa(len(s.entries)+1)
+	s.index[key] = id
+	s.entries = append(s.entries, contract.Evidence{
+		RefID:    id,
+		Path:     path,
+		Line:     line,
+		Role:     role,
+		Span:     span,
+		Snippet:  snippet,
+		TextHash: TextHash(snippet),
+	})
+	return id
+}
+
+// TextHash returns the xxhash64 hex (16 chars) of text. It is exported for
+// callers that need to stamp the same hash outside AddSnippetWithHash — for
+// example a tool that hashes the snippet text it built by hand before adding
+// the citation. The hex width is fixed at 8 bytes = 16 chars and is the same
+// audit discipline core/model uses for graph node ids (core/model/id.go).
+func TextHash(text string) string {
+	if text == "" {
+		return ""
+	}
+	h := xxhash.Sum64String(text)
+	return fmt.Sprintf("%016x", h)
 }
 
 // List returns the accumulated evidence in insertion order.

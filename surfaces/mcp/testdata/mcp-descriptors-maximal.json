@@ -1189,6 +1189,10 @@
           "token_budget": {
             "description": "snippet token budget (default 1200; negative disables snippets)",
             "type": "integer"
+          },
+          "version": {
+            "description": "task_context version: 0/1 = lexical-seeded (default), 2 = retrieval-seeded with claim_type on every evidence item (SW-264)",
+            "type": "integer"
           }
         },
         "required": [
@@ -1328,6 +1332,10 @@
           "query": {
             "description": "free-text multi-token query",
             "type": "string"
+          },
+          "version": {
+            "description": "search_hybrid version: 0/1 = lexical (default, byte-identical to SW-257 §7.2), 2 = retrieval-rendered with explain fields + summary fingerprints (SW-264)",
+            "type": "integer"
           }
         },
         "required": [

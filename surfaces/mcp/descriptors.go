@@ -722,6 +722,7 @@ func legacyMaximalToolDescriptors() []map[string]any {
 				"task":         map[string]any{"type": "string", "description": "free-text task description, or an exact symbol/path"},
 				"limit":        map[string]any{"type": "integer", "description": "item cap (default 40)"},
 				"token_budget": map[string]any{"type": "integer", "description": "snippet token budget (default 1200; negative disables snippets)"},
+				"version":      map[string]any{"type": "integer", "description": "task_context version: 0/1 = lexical-seeded (default), 2 = retrieval-seeded with claim_type on every evidence item (SW-264)"},
 			},
 			"required": []string{"task"},
 		},
@@ -797,8 +798,9 @@ func legacyMaximalToolDescriptors() []map[string]any {
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"query": map[string]any{"type": "string", "description": "free-text multi-token query"},
-				"limit": map[string]any{"type": "integer", "description": "item cap (default 20)"},
+				"query":   map[string]any{"type": "string", "description": "free-text multi-token query"},
+				"limit":   map[string]any{"type": "integer", "description": "item cap (default 20)"},
+				"version": map[string]any{"type": "integer", "description": "search_hybrid version: 0/1 = lexical (default, byte-identical to SW-257 §7.2), 2 = retrieval-rendered with explain fields + summary fingerprints (SW-264)"},
 			},
 			"required": []string{"query"},
 		},

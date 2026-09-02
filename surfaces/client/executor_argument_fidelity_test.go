@@ -144,6 +144,7 @@ func argumentMutations(ids map[string]model.NodeId) map[string][]fieldMutation {
 		"search_hybrid": {
 			observable("query", func(a Arguments) { a.(*SearchHybridArgs).Query = "p.C" }),
 			observable("max_items", func(a Arguments) { a.(*SearchHybridArgs).MaxItems = 1 }),
+			observable("version", func(a Arguments) { a.(*SearchHybridArgs).Version = 2 }),
 		},
 		"test_impact": {
 			observable("target", func(a Arguments) { a.(*TestImpactArgs).Target = other }),

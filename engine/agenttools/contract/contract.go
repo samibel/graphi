@@ -43,13 +43,34 @@ func (o Outcome) Valid() bool { return validOutcomes[o] }
 // Snippet optionally carries token-budgeted source text whose exact citation
 // is Path/Line (+Span "start-end"). It is additive and omitempty: the frozen
 // stable operations never set it, so their serialized bytes are unchanged.
+//
+// ClaimType, TextHash and EdgeTier are SW-264 additions for the v2 versions
+// of `search_hybrid` and `task_context`. They are additive omitempty fields
+// so v1 callers do not emit them and the SW-257 byte-identical golden for
+// `search_hybrid/1` stays byte-identical:
+//
+//   - ClaimType names how an evidence item entered the bundle:
+//     "source_match" when the span came from a retrieval row, "graph_relation"
+//     when it was reached via a graph edge. SW-264 renders the matching v1
+//     rows with Role="match" / "primary" / etc. (existing vocabulary), and
+//     stamps ClaimType verbatim on top.
+//   - TextHash is the xxhash64 of the cited text in hex (16 chars). For
+//     snippet-bearing items it hashes Snippet; for citation-only items it is
+//     the empty string. A reader of the bytes can verify the snippet bytes
+//     without re-reading the source.
+//   - EdgeTier is the edge's provenance tier ("confirmed" / "derived" /
+//     "heuristic"), stamped on graph_relation items so the consumer can tell
+//     the kind of evidence behind a hop without consulting the source graph.
 type Evidence struct {
-	RefID   string `json:"ref_id"`
-	Path    string `json:"path"`
-	Line    int    `json:"line"`
-	Span    string `json:"span,omitempty"`
-	Role    string `json:"role"`
-	Snippet string `json:"snippet,omitempty"`
+	RefID     string `json:"ref_id"`
+	Path      string `json:"path"`
+	Line      int    `json:"line"`
+	Span      string `json:"span,omitempty"`
+	Role      string `json:"role"`
+	Snippet   string `json:"snippet,omitempty"`
+	ClaimType string `json:"claim_type,omitempty"`
+	TextHash  string `json:"text_hash,omitempty"`
+	EdgeTier  string `json:"edge_tier,omitempty"`
 }
 
 // Item is a single ranked result row.

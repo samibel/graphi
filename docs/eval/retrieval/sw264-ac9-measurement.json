@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "story": "SW-264",
+  "ac": "AC-9",
+  "description": "Grade-3 span coverage for task_context/2 at budget 1200 on a 5-query representative of the SW-258 nl_behaviour stratum. Measured on the SW-257 fixture (corpus/fixtures/go) with no embedder wired (default build; AC-8 fallback). Recorded per the 2026-09-02 amendment — the gate is DEFERRED to SW-266 because the threshold field does not exist in docs/eval/retrieval-targets.json.",
+  "budget": 1200,
+  "total_queries": 5,
+  "grade3_covered": 2,
+  "grade3_coverage": 0.4,
+  "queries": [
+    {
+      "id": "hero-nl-01",
+      "stratum": "nl_behaviour",
+      "query": "where is the hello function defined",
+      "outcome": "found",
+      "evidence_count": 6,
+      "item_count": 9,
+      "grade3_covered": true,
+      "expected_path": "sample.go",
+      "expected_line": 4,
+      "tokens_total": 40
+    },
+    {
+      "id": "hero-nl-02",
+      "stratum": "nl_behaviour",
+      "query": "how is the Greeter interface implemented",
+      "outcome": "found",
+      "evidence_count": 6,
+      "item_count": 7,
+      "grade3_covered": true,
+      "expected_path": "sample.go",
+      "expected_line": 9,
+      "tokens_total": 40
+    },
+    {
+      "id": "hero-nl-03",
+      "stratum": "nl_behaviour",
+      "query": "where do the call chain functions live",
+      "outcome": "found",
+      "evidence_count": 8,
+      "item_count": 9,
+      "grade3_covered": false,
+      "expected_path": "sample.go",
+      "expected_line": 25,
+      "tokens_total": 40
+    },
+    {
+      "id": "hero-nl-04",
+      "stratum": "nl_behaviour",
+      "query": "where is the taint source",
+      "outcome": "found",
+      "evidence_count": 7,
+      "item_count": 10,
+      "grade3_covered": false,
+      "expected_path": "sample.go",
+      "expected_line": 32,
+      "tokens_total": 40
+    },
+    {
+      "id": "hero-nl-05",
+      "stratum": "nl_behaviour",
+      "query": "where is the sink function",
+      "outcome": "found",
+      "evidence_count": 5,
+      "item_count": 7,
+      "grade3_covered": false,
+      "expected_path": "sample.go",
+      "expected_line": 36,
+      "tokens_total": 40
+    }
+  ],
+  "note": "AMENDMENT 2026-09-02: AC-9's gate deferred to SW-266. This is a record, not a gate. The threshold SW-266 sets is read from this file, not the other way around."
+}
