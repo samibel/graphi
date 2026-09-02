@@ -1,4 +1,4 @@
-package static_test
+package static
 
 // SW-267 reviewer fix Critical 1: the HONESTY test.
 //
@@ -35,26 +35,14 @@ import (
 )
 
 // TestStatic_AdmitReportsOverflowOnWritePreamble is the FAIL-WITHOUT-
-// THE-FIX test for Critical 1. It loads the pinned artifact (if
-// available) and feeds `writePreamble` through Admit. Without the
+// THE-FIX test for Critical 1. It feeds `writePreamble` through the
+// production Embedder and Model admission paths using the synthetic
+// tokenizer fixture from exact_consumption_test.go. Without the
 // uncapped-encode fix, this test fails: Admit returns Bound="none"
 // because the silent cap eats the overflow before the check can fire.
 func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
-	ctors := embed.DefaultConstructors()
-	make := ctors["static"]
-	if make == nil {
-		t.Fatal("the `static` scheme is not registered")
-	}
-	emb, err := make(pinnedModel + "@" + pinnedRevision)
-	if err != nil {
-		t.Fatalf("constructor: %v", err)
-	}
-	m, ok := emb.(interface {
-		Admit(ctx context.Context, text string) (embed.Admitted, error)
-	})
-	if !ok {
-		t.Fatal("embedder does not implement Admission (AC-2 requires it)")
-	}
+	staticModel := buildSyntheticModelForAdmit(t)
+	emb := &Embedder{loaded: true, loadedM: staticModel}
 
 	// Load the writePreamble fixture.
 	src, err := os.ReadFile("../testdata/cobra/writePreamble.go")
@@ -69,11 +57,7 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	// the exact useful-id count for the returned bytes.
 	n, _ := model.NewNode("function", "cobra.writePreamble", "writePreamble.go", 1, 1)
 	s := parse.SourceSpan{StartByte: 0, EndByte: len(src), StartLine: 1, EndLine: 367, Method: parse.SpanMethodAST}
-	var admitter embed.Admission
-	if a, ok := emb.(embed.Admission); ok {
-		admitter = a
-	}
-	d, err := embed.BuildDocument(n, s, embed.Source{Language: "go", Bytes: src, Admitter: admitter})
+	d, err := embed.BuildDocument(n, s, embed.Source{Language: "go", Bytes: src, Admitter: emb})
 	if err != nil {
 		t.Fatalf("BuildDocument: %v", err)
 	}
@@ -103,7 +87,7 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	}
 
 	// Direct Admit call asserts the exact pooled-id count.
-	admitted, err := m.Admit(context.Background(), string(src))
+	admitted, err := emb.Admit(context.Background(), string(src))
 	if err != nil {
 		t.Fatalf("Admit: %v", err)
 	}
