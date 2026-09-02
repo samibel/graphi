@@ -189,12 +189,12 @@ func (d *Direct) SupportsCapability(name string) bool {
 	case "symbol_context", "task_context", "repo_overview", "test_impact", "change_impact", "hotspots", "search_hybrid", "architecture", "architecture_violations", "dead_code", "framework_map":
 		// Labs agent intelligence: same typed-unavailable degradation contract.
 		return true
-	case "trust_report", "graph_health":
+	case "trust_report", "graph_health", "semantic_status":
 		// The trust-report composition is self-contained ("trust_report" is the
-		// operation, "graph_health" its P1 Labs MCP tool name): it opens the
-		// auto-managed store read-only itself and fails closed to the valid
-		// UNAVAILABLE document when no graph exists, so the operation is
-		// always executable in-process.
+		// operation, "graph_health" its P1 Labs MCP tool name). semantic_status
+		// follows the same surface-owned pattern over the embed generation store.
+		// Both open auto-managed state read-only and fail closed to a valid status
+		// document when state is absent, so they are always executable in-process.
 		return true
 	case "strict_query":
 		// The P1 strict-query wrapper runs a structural query underneath and
