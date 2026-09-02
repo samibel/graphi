@@ -52,4 +52,20 @@ jobs:
         run: go test ./core/parse/ -run 'TestAssertPureGoDefaults'
 
       - name: cgo-free-conformance (named check)
-        run: go run ./cmd/cgoconformance -target ./cmd/graphi/ -test-target ./... -cgo 0
+        # SW-265: the gate's own default is 10 minutes for EVERYTHING it does,
+        # including the full `go test ./...` it runs last, and the suite has grown
+        # past it. Evidence rather than a guess: this same job took 10m57s and
+        # passed on PR #197 (SW-264) — already at the edge — and hit the 600s
+        # ceiling exactly on the next story. The local suite measures 306s wall
+        # clock at 133 packages (0 failures), and a runner with fewer cores is
+        # comfortably past 600s. The three heaviest packages are internal/release
+        # (247s), internal/audit (221s) and internal/bench (121s); none of them
+        # is touched by the story that tipped it, so this is accumulated growth,
+        # not a regression to chase.
+        #
+        # This is a WALL-CLOCK budget, not a correctness gate: raising it weakens
+        # no assertion. Every check this job makes — static linkage, the cgo
+        # import scan, the graphi-broad exclusion and the full suite — still has
+        # to pass. 20m is ~2x the observed CI edge; if it is ever hit again the
+        # answer is to look at what got slower, not to raise it reflexively.
+        run: go run ./cmd/cgoconformance -target ./cmd/graphi/ -test-target ./... -cgo 0 -timeout 20m
