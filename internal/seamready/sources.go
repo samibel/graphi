@@ -117,6 +117,14 @@ func (g repoGit) run(args ...string) ([]byte, error) {
 	return cmd.Output()
 }
 
+func (g repoGit) HasAnyTag() (bool, error) {
+	out, err := g.run("tag", "--list")
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(out)) != "", nil
+}
+
 func (g repoGit) TagExists(tag string) (bool, error) {
 	out, err := g.run("tag", "--list", "--", tag)
 	if err != nil {

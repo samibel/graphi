@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samibel/graphi/internal/bench"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,6 +41,143 @@ func TestShellRunnerHelperProcess(t *testing.T) {
 	fmt.Fprintln(os.Stdout, "stdout diagnostic")
 	fmt.Fprintln(os.Stderr, "stderr diagnostic")
 	os.Exit(1)
+}
+
+func TestDefaultBenchGateDoesNotRemeasureWallClockTimings(t *testing.T) {
+	runner, ok := DefaultGates()["bench-budget"]
+	if !ok {
+		t.Fatal("DefaultGates omits bench-budget")
+	}
+	if shell, ok := runner.(*shellRunner); ok {
+		t.Fatalf("bench-budget still shells out to the full timing harness: %s %v", shell.cmd, shell.args)
+	}
+	invariant, ok := runner.(*invariantBenchRunner)
+	if !ok {
+		t.Fatalf("bench-budget runner = %T, want invariantBenchRunner", runner)
+	}
+	gomod, err := exec.Command("go", "env", "GOMOD").Output()
+	if err != nil {
+		t.Fatalf("go env GOMOD: %v", err)
+	}
+	manifest, err := bench.LoadManifest(filepath.Join(filepath.Dir(strings.TrimSpace(string(gomod))), invariant.budgetPath))
+	if err != nil {
+		t.Fatalf("load repository benchmark manifest: %v", err)
+	}
+	projected, err := bench.EnvironmentIndependentManifest(manifest)
+	if err != nil {
+		t.Fatalf("project repository benchmark manifest: %v", err)
+	}
+	if len(projected.Metrics) != 7 {
+		t.Fatalf("projected metric count = %d, want 7", len(projected.Metrics))
+	}
+	if binary := projected.Metrics["binary_size_bytes"]; binary.Severity != bench.SeverityFail {
+		t.Fatalf("binary_size_bytes severity = %q, want %q", binary.Severity, bench.SeverityFail)
+	}
+	for _, timing := range []string{"cold_start_p95_ms", "full_index_ms", "balanced_index_ms"} {
+		if _, ok := projected.Metrics[timing]; ok {
+			t.Fatalf("release-gate manifest projection contains timing %q", timing)
+		}
+	}
+}
+
+func TestInvariantBenchRunnerIgnoresTimingsButEnforcesSizesAndCounts(t *testing.T) {
+	dir := t.TempDir()
+	budgetPath := filepath.Join(dir, "bench-budget.yml")
+	manifest := `version: 1
+baseline_version: "test"
+fixture_digest: "fixture"
+metrics:
+  cold_start_p95_ms:
+    baseline: 1
+    budget: 1
+    unit: ms
+  binary_size_bytes:
+    baseline: 90
+    budget: 100
+    unit: bytes
+  fast_db_size_bytes:
+    baseline: 80
+    budget: 100
+    unit: bytes
+  fast_edge_count:
+    baseline: 8
+    budget: 10
+    unit: count
+  balanced_db_size_bytes:
+    baseline: 80
+    budget: 100
+    unit: bytes
+  balanced_edge_count:
+    baseline: 8
+    budget: 10
+    unit: count
+  deep_db_size_bytes:
+    baseline: 80
+    budget: 100
+    unit: bytes
+  deep_edge_count:
+    baseline: 8
+    budget: 10
+    unit: count
+`
+	if err := os.WriteFile(budgetPath, []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	base := func() bench.Metrics {
+		return bench.Metrics{
+			ColdStartP95MS:       1_000_000,
+			FullIndexMS:          1_000_000,
+			FreshnessLagMS:       1_000_000,
+			BinarySizeBytes:      90,
+			IncrementalTenFileMS: 1_000_000,
+			BranchSwitchSimMS:    1_000_000,
+			FixtureDigest:        "fixture",
+			ProfileMetrics: map[string]bench.ProfileMetric{
+				"fast":     {IndexMS: 1_000_000, DBSizeBytes: 80, EdgeCount: 8, QueryLatencyMS: 1_000_000},
+				"balanced": {IndexMS: 1_000_000, DBSizeBytes: 80, EdgeCount: 8, QueryLatencyMS: 1_000_000},
+				"deep":     {IndexMS: 1_000_000, DBSizeBytes: 80, EdgeCount: 8, QueryLatencyMS: 1_000_000},
+			},
+		}
+	}
+	tests := []struct {
+		name    string
+		mutate  func(*bench.Metrics)
+		wantErr string
+	}{
+		{name: "catastrophic timings do not block", mutate: func(*bench.Metrics) {}},
+		{name: "binary size still blocks", mutate: func(m *bench.Metrics) { m.BinarySizeBytes = 101 }, wantErr: "binary_size_bytes"},
+		{name: "graph count still blocks when manifest severity is fail", mutate: func(m *bench.Metrics) {
+			pm := m.ProfileMetrics["fast"]
+			pm.EdgeCount = 11
+			m.ProfileMetrics["fast"] = pm
+		}, wantErr: "fast_edge_count"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metrics := base()
+			tt.mutate(&metrics)
+			runner := &invariantBenchRunner{
+				budgetPath: budgetPath,
+				timeout:    time.Second,
+				score:      100,
+				run: func(context.Context, bench.HarnessConfig) (bench.Metrics, error) {
+					return metrics, nil
+				},
+			}
+			score, err := runner.Run()
+			switch {
+			case tt.wantErr == "" && err != nil:
+				t.Fatalf("timing-only regression blocked invariant gate: %v", err)
+			case tt.wantErr != "" && (err == nil || !strings.Contains(err.Error(), tt.wantErr)):
+				t.Fatalf("runner error = %v, want %q named", err, tt.wantErr)
+			case tt.wantErr == "" && score != 100:
+				t.Fatalf("score = %v, want 100", score)
+			}
+			if err != nil && strings.Contains(err.Error(), "cold_start_p95_ms") {
+				t.Fatalf("timing metric leaked into invariant verdict: %v", err)
+			}
+		})
+	}
 }
 
 func readReleaseGateWorkflow(t *testing.T) string {

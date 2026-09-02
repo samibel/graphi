@@ -150,9 +150,6 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	if p.Name == ToolImpact {
 		return s.impactCall(ctx, p)
 	}
-	if p.Name == ToolSearchSemantic {
-		return s.semanticSearchCall(ctx, p)
-	}
 	if p.Name == ToolSavings {
 		return s.savingsCall(ctx)
 	}
@@ -235,6 +232,9 @@ func (s *Server) toolsCall(ctx context.Context, raw json.RawMessage) (any, *rpcE
 	}
 	if p.Name == ToolStrictQuery {
 		return s.strictQueryCall(ctx, p)
+	}
+	if p.Name == ToolSemanticStatus {
+		return s.semanticStatusCall(ctx, p)
 	}
 	// P0 agent intelligence (labs): these ride the labs client facade —
 	// routing them through the stable port would advertise a labs capability
@@ -377,6 +377,28 @@ var migratedTools = map[string]migratedTool{
 			}, nil
 		},
 	},
+	ToolSearchSemantic: {
+		// SW-265: search_semantic migrated (AC-8 deterministic fixtures for
+		// configured|unavailable|stale|corrupt). The legacy method carries a
+		// typed graceful-skip response when no embedder is configured; the
+		// adapter passes both through unchanged.
+		//
+		// The MCP wire for search_semantic takes the legacy descriptor's
+		// `symbol` field as the free-text query (the surface name is a
+		// holdover from the symbol-query convention) and `depth` as the
+		// result cap. The mapping below renames them to Query/Limit so the
+		// engine receives the right names.
+		failure: -32603,
+		args: func(p callParams) (client.Arguments, *rpcError) {
+			if p.Arguments.Symbol == "" {
+				return nil, &rpcError{Code: -32602, Message: "missing required argument: symbol"}
+			}
+			return &client.SemanticSearchArgs{
+				Query: p.Arguments.Symbol,
+				Limit: derefInt(p.Arguments.Depth),
+			}, nil
+		},
+	},
 }
 
 // executorCall is the generic executor branch: validate and map the arguments
@@ -475,30 +497,6 @@ func (s *Server) searchCall(ctx context.Context, p callParams) (any, *rpcError) 
 		limit = *p.Arguments.Depth
 	}
 	b, err := s.stableClient().Search(ctx, p.Arguments.Symbol, limit)
-	if err != nil {
-		return nil, &rpcError{Code: -32603, Message: err.Error()}
-	}
-	return map[string]any{
-		"content": []map[string]any{{"type": "text", "text": string(b)}},
-		"isError": false,
-	}, nil
-}
-
-// semanticSearchCall dispatches the OPTIONAL semantic-search tool (SW-059). It
-// returns the canonical serialized SemanticResponse from the shared client. When
-// no embedder is configured it cleanly reports the typed graceful-skip
-// "unavailable" response (Available=false) WITHOUT an error — byte-identical to
-// the CLI and HTTP surfaces (parity by construction through the single client
-// seam).
-func (s *Server) semanticSearchCall(ctx context.Context, p callParams) (any, *rpcError) {
-	if p.Arguments.Symbol == "" {
-		return nil, &rpcError{Code: -32602, Message: "missing required argument: query"}
-	}
-	limit := search.DefaultResultLimit
-	if p.Arguments.Depth != nil && *p.Arguments.Depth > 0 {
-		limit = *p.Arguments.Depth
-	}
-	b, err := s.client().SemanticSearch(ctx, p.Arguments.Symbol, limit)
 	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
@@ -1024,6 +1022,32 @@ func (s *Server) strictQueryCall(ctx context.Context, p callParams) (any, *rpcEr
 	case errors.Is(err, client.ErrStrictQueryInput), errors.Is(err, trust.ErrPolicyUnknown):
 		return nil, &rpcError{Code: -32602, Message: err.Error()}
 	case err != nil:
+		return nil, &rpcError{Code: -32603, Message: err.Error()}
+	}
+	return textResult(b), nil
+}
+
+// semanticStatusCall (SW-265) returns the canonical typed-status document
+// for the optional semantic search. It rides the shared
+// client.SemanticStatus composition so the returned bytes are
+// byte-identical to `graphi semantic status --json` for the same store
+// and to `GET /semantic/status` over the HTTP route.
+//
+// Like graphHealthCall and strictQueryCall, this server-side handler is a
+// thin wrapper around the shared composition: it constructs the per-call
+// options from the bound repository (Root/DBPath/MetaDir) and dispatches.
+// Any non-nil error is operational (-32603) — the composition fails
+// closed to a typed Status document, never to an error.
+func (s *Server) semanticStatusCall(ctx context.Context, _ callParams) (any, *rpcError) {
+	repo := s.repository()
+	reg := s.embedderRegistryForCall()
+	b, _, err := client.SemanticStatus(ctx, client.SemanticStatusOptions{
+		Root:     repo.Root,
+		DBPath:   repo.DBPath,
+		MetaDir:  repo.MetaDir,
+		Embedder: reg,
+	})
+	if err != nil {
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	return textResult(b), nil

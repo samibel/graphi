@@ -11,6 +11,7 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -213,6 +214,64 @@ func TestLabsProfile_AlsoFiltersBoundClientCapabilities(t *testing.T) {
 		if !containsTool(got, want) {
 			t.Errorf("Labs catalog lost supported capability %q", want)
 		}
+	}
+}
+
+// TestLabsProfile_BoundToolsListAdvertisesSemanticStatus is the SW-265
+// reachability regression: a real MCP client discovers tools through the
+// tools/list protocol method, not by calling the handler directly. Keep this
+// on the bound Direct profile used by graphi mcp -labs so capability narrowing
+// cannot silently hide a registered, callable tool.
+func TestLabsProfile_BoundToolsListAdvertisesSemanticStatus(t *testing.T) {
+	list := func(t *testing.T, server *Server) []string {
+		t.Helper()
+		response, isNotification, serverRequest := server.handle(context.Background(), rpcRequest{
+			JSONRPC: "2.0",
+			ID:      json.RawMessage("1"),
+			Method:  "tools/list",
+		})
+		if isNotification || serverRequest != nil || response.Error != nil {
+			t.Fatalf("tools/list response = %+v isNotification=%v serverRequest=%+v", response, isNotification, serverRequest)
+		}
+		result, ok := response.Result.(map[string]any)
+		if !ok {
+			t.Fatalf("tools/list result type = %T, want map[string]any", response.Result)
+		}
+		tools, ok := result["tools"].([]map[string]any)
+		if !ok {
+			t.Fatalf("tools/list tools type = %T, want []map[string]any", result["tools"])
+		}
+		return descriptorNames(tools)
+	}
+
+	registry := embed.NewRegistry()
+	if err := registry.Register(embed.NewMockEmbedder(8)); err != nil {
+		t.Fatal(err)
+	}
+	registry.Freeze()
+	for _, tc := range []struct {
+		name string
+		opts []ServerOption
+	}{
+		{name: "without embedder registry", opts: []ServerOption{WithLabs()}},
+		{name: "with configured embedder registry", opts: []ServerOption{WithLabs(), WithEmbedderRegistry(registry)}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			labs := list(t, NewServerWithClient(fullyWiredDirect(t), tc.opts...))
+			for _, want := range []string{ToolSemanticStatus, ToolSearchSemantic, ToolSearchHybrid, ToolTaskContext} {
+				if !containsTool(labs, want) {
+					t.Errorf("bound Labs tools/list omitted %q: %v", want, labs)
+				}
+			}
+		})
+	}
+
+	stable := list(t, NewServerWithClient(fullyWiredDirect(t)))
+	if got, want := stable, StableMCPToolNames(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Stable tools/list changed:\n got: %v\nwant: %v", got, want)
+	}
+	if len(stable) != 11 || containsTool(stable, ToolSemanticStatus) {
+		t.Fatalf("Stable tools/list must remain exactly 11 tools without semantic_status: %v", stable)
 	}
 }
 

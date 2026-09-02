@@ -150,7 +150,7 @@ func (b *searchServiceBridge) search(ctx context.Context, query string, limit in
 		return semanticOutcome{}, err
 	}
 	if !resp.Available {
-		state := stateFromReason(resp.Reason)
+		state := stateFromSemanticResponse(resp.State, resp.Reason)
 		return semanticOutcome{Available: false, Reason: resp.Reason, State: state}, nil
 	}
 	hits := make([]semanticHit, len(resp.Hits))
@@ -167,6 +167,24 @@ func (b *searchServiceBridge) search(ctx context.Context, query string, limit in
 		}
 	}
 	return semanticOutcome{Available: true, Reason: "", State: StateReady, Hits: hits}, nil
+}
+
+func stateFromSemanticResponse(state embed.State, reason string) State {
+	switch state {
+	case embed.StateReady:
+		return StateReady
+	case embed.StateStale:
+		return StateGenerationStale
+	case embed.StateCorrupt:
+		return StateGenerationCorrupt
+	case embed.StateMissing:
+		if reason == search.UnavailableReason {
+			return StateLexicalOnly
+		}
+		return StateGenerationMissing
+	default:
+		return stateFromReason(reason)
+	}
 }
 
 // stateFromReason maps the SW-261 typed reason text back to the

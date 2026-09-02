@@ -364,7 +364,15 @@ func runIndexAt(cwd string, args []string) int {
 	// prior row's text_hash differed). Carried-forward rows show up in
 	// res.Reused, NOT in res.Embedded — the previous revision double-
 	// counted them and reported reused rows as freshly embedded.
-	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
+	fmt.Printf("graphi index --semantic: embedded %d documents (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
+	_, resultingState, statusErr := client.SemanticStatus(ctx, client.SemanticStatusOptions{
+		Root: target.root, DBPath: target.dbPath, MetaDir: target.metaDir, Embedder: reg,
+	})
+	if statusErr != nil {
+		fmt.Fprintf(os.Stderr, "graphi: index --semantic: read resulting state: %v\n", statusErr)
+		return 1
+	}
+	fmt.Printf("graphi index --semantic: generation %s state %s\n", res.GenerationID, resultingState)
 	share := docs.Stats().SpanMethodShare()
 	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d excluded, %d failed (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
 		embed.DocumentSchema, res.Embedded, res.Reused, res.Excluded, res.Failed, docs.Unreadable(), 100*share["ast"], 100*share["window"], docs.Stats().Truncated)

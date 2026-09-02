@@ -31,11 +31,15 @@ type MemGenerationStore struct {
 	generations map[GenerationID]memGeneration // by id, for Load + Commit
 	active      GenerationID                   // "" when none
 	staging     GenerationID                   // "" when none
+	history     []GenerationID                 // successful commits, oldest first
 }
 
 type memGeneration struct {
 	fingerprint Fingerprint
 	rows        map[model.NodeId]Row // keyed by node id; one row per node
+	// committedAt is the RFC3339 UTC timestamp Build.Commit stamped the
+	// generation with. Empty for builds predating SW-265.
+	committedAt string
 }
 
 // NewMemGenerationStore returns an empty store with no active generation.
@@ -75,6 +79,8 @@ type memBuild struct {
 	store *MemGenerationStore
 	id    GenerationID
 }
+
+func (b *memBuild) ID() GenerationID { return b.id }
 
 func (b *memBuild) Upsert(_ context.Context, r Row) error {
 	if r.GenerationID != "" && r.GenerationID != b.id {
@@ -130,9 +136,30 @@ func (b *memBuild) Commit(_ context.Context) error {
 	// graph). The prior active generation's rows are kept in the map for
 	// diagnostics; the new active id takes over.
 	_ = gen
+	gen.committedAt = commitTimestamp()
+	b.store.generations[b.id] = gen
 	b.store.active = b.id
+	b.store.history = append(b.store.history, b.id)
 	b.store.staging = ""
 	return nil
+}
+
+// Previous returns the newest committed generation other than activeID.
+func (s *MemGenerationStore) Previous(_ context.Context, activeID GenerationID) (Generation, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := len(s.history) - 1; i >= 0; i-- {
+		id := s.history[i]
+		if id == activeID {
+			continue
+		}
+		gen, ok := s.generations[id]
+		if !ok {
+			continue
+		}
+		return Generation{ID: id, Fingerprint: gen.fingerprint, RowCount: len(gen.rows), Dim: gen.fingerprint.Dim, CommittedAt: gen.committedAt}, true, nil
+	}
+	return Generation{}, false, nil
 }
 
 func (b *memBuild) Abort(_ context.Context) error {
@@ -167,6 +194,7 @@ func (s *MemGenerationStore) Active(_ context.Context, fp Fingerprint, nodes Nod
 			Fingerprint: gen.fingerprint,
 			RowCount:    len(gen.rows),
 			Dim:         gen.fingerprint.Dim,
+			CommittedAt: gen.committedAt,
 		}, StateStale, nil
 	}
 	// Same fingerprint: run the consistency checks (AC-7 corrupt case).
@@ -176,6 +204,7 @@ func (s *MemGenerationStore) Active(_ context.Context, fp Fingerprint, nodes Nod
 			Fingerprint: gen.fingerprint,
 			RowCount:    len(gen.rows),
 			Dim:         gen.fingerprint.Dim,
+			CommittedAt: gen.committedAt,
 		}, StateCorrupt, err
 	}
 	return Generation{
@@ -183,6 +212,7 @@ func (s *MemGenerationStore) Active(_ context.Context, fp Fingerprint, nodes Nod
 		Fingerprint: gen.fingerprint,
 		RowCount:    len(gen.rows),
 		Dim:         gen.fingerprint.Dim,
+		CommittedAt: gen.committedAt,
 	}, StateReady, nil
 }
 

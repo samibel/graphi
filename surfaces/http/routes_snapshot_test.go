@@ -25,6 +25,7 @@ func TestCharacterization_HTTPRoutes_Snapshot(t *testing.T) {
 		"POST /find-clones",
 		"GET /search",
 		"GET /search/semantic",
+		"GET /semantic/status",
 		"GET /analyze/{analyzer}",
 		"GET /prs",
 		"GET /prs/triage",

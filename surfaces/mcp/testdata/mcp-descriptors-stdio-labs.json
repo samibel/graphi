@@ -1,7 +1,7 @@
 {
   "profile": "stdio-labs",
   "note": "bound stdio `-labs` profile: fully wired client.Direct, maximal catalog narrowed by Direct.SupportsCapability.",
-  "tool_count": 44,
+  "tool_count": 45,
   "tools": [
     {
       "name": "callers",
@@ -237,7 +237,7 @@
     {
       "name": "search_semantic",
       "tier": "labs",
-      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "description": "[labs] optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default). Similarity is a ranking signal, not evidence.",
       "inputSchema": {
         "properties": {
           "depth": {
@@ -791,6 +791,21 @@
           "operation",
           "symbol"
         ],
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "semantic_status",
+      "tier": "labs",
+      "description": "[labs] semantic_status: return the canonical typed-status document for the optional semantic (embedding) search — installed, configured, indexed, fresh, typed lifecycle state (missing|stale|corrupt|ready), the active generation's identity and document/node counts, the language validation map (Go is validated, every other indexed language is unvalidated), and the exact `graphi ...` repair command the operator runs to leave that state. Purpose: distinguish the five real situations a user can be in (no embedder selector, no model artifact, model present but no index, generation stale vs fingerprint, generation corrupt) — `state: ready` with zero hits is NOT the same as `state: missing`. When to use: before a search_semantic / task_context / agent_brief call when the answer is empty, to learn whether retrieval is unusable vs the index has no matches; with --json for byte-stable machine consumption. When NOT to use: for the lexical search index state (use `graphi status`) or to run the search itself. Input shape: none (the document is read-only and idempotent against the live durable store). Read-only: true — never indexes, never dials a network, never starts a daemon. Similarity is a RANKING signal; an empty `hits` list on `state: ready` is filtered, not proven empty.",
+      "inputSchema": {
+        "properties": {},
         "type": "object"
       },
       "annotations": {

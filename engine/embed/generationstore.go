@@ -103,11 +103,20 @@ type GenerationID string
 // The row count and dim are the values the build recorded on Commit; the
 // fingerprint is what the build was constructed under (Active reconciles it
 // against the requested fingerprint to compute the state).
+//
+// CommittedAt is the RFC3339 UTC timestamp Build.Commit ran. The field is
+// additive (zero-value "" means the sidecar predates the column); the
+// status surface uses it to render the wire "built_at" without a second
+// store read.
 type Generation struct {
 	ID          GenerationID
 	Fingerprint Fingerprint
 	RowCount    int
 	Dim         int
+	// CommittedAt is the RFC3339 UTC stamp the Build's Commit ran. Empty
+	// for generations written before SW-265; the encoder renders the empty
+	// string as `""` so the wire shape is stable.
+	CommittedAt string
 }
 
 // Row is one persisted (generation_id, document) row. The fields are the wire
@@ -160,6 +169,10 @@ type NodeReferencer interface {
 // (validate + atomically publish) or Abort (drop the staging rows).
 // Implementations are NOT safe for concurrent use — Begin serialises.
 type Build interface {
+	// ID is the generation being built. Progress surfaces use it so an
+	// operator can correlate document progress with the generation that is
+	// eventually published.
+	ID() GenerationID
 	// Upsert inserts or replaces a row in the staging generation. The same
 	// (GenerationID, NodeID) MAY be upserted more than once (the latest
 	// write wins); a generation typically holds one row per NodeId.

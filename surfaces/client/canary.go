@@ -295,6 +295,7 @@ var migratedOperations = []string{
 	"repo_overview",
 	"search_ast",
 	"search_hybrid",
+	"search_semantic", // SW-265: AC-8 deterministic fixtures for configured/unavailable/stale/corrupt.
 	"test_impact",
 }
 

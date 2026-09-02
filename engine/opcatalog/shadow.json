@@ -930,6 +930,30 @@
       "ports_evidence": "surfaces/client/direct.go Direct.TrustReport -> composeTrustReport: deliberately independent of the wired query service; it opens the repository's durable auto-managed store READ-ONLY itself and fails closed to the UNAVAILABLE document."
     },
     {
+      "id": "semantic_status",
+      "version": "1",
+      "tier": "labs",
+      "description": "semantic_status: return the canonical typed-status document for the optional semantic (embedding) search — installed, configured, indexed, fresh, typed lifecycle state (missing|stale|corrupt|ready), the active generation's identity and document/node counts, the language validation map (Go is validated, every other indexed language is unvalidated), and the exact `graphi ...` repair command the operator runs to leave that state. Purpose: distinguish the five real situations a user can be in (no embedder selector, no model artifact, model present but no index, generation stale vs fingerprint, generation corrupt) — `state: ready` with zero hits is NOT the same as `state: missing`. When to use: before a search_semantic / task_context / agent_brief call when the answer is empty, to learn whether retrieval is unusable vs the index has no matches; with --json for byte-stable machine consumption. When NOT to use: for the lexical search index state (use `graphi status`) or to run the search itself. Input shape: none (the document is read-only and idempotent against the live durable store). Read-only: true — never indexes, never dials a network, never starts a daemon. Similarity is a RANKING signal; an empty `hits` list on `state: ready` is filtered, not proven empty.",
+      "input_schema": {
+        "properties": {},
+        "type": "object"
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "ports": [
+        "embed.vector"
+      ],
+      "permissions": [
+        "graph.read"
+      ],
+      "determinism": "deterministic",
+      "ports_evidence": "surfaces/client/semantic_status.go composeSemanticStatus -> engine/embed.LoadStatus: reads the embedder registry the wire dispatch already constructed and the durable GenerationStore; never constructs or dials an embedder."
+    },
+    {
       "id": "hotspots",
       "version": "1",
       "tier": "labs",
@@ -1618,7 +1642,7 @@
       "id": "search_semantic",
       "version": "1",
       "tier": "labs",
-      "description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+      "description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default). Similarity is a ranking signal, not evidence.",
       "input_schema": {
         "properties": {
           "depth": {

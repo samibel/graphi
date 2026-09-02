@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/ingest"
 )
 
@@ -302,16 +303,18 @@ func TestIngestProgress_NoTimingsWithoutEnv(t *testing.T) {
 }
 
 // TestEmbedProgress_NonTTYMilestones pins the sparse non-TTY contract of the
-// semantic embedding renderer: one line per completed 25% bucket, at most 4
-// lines total, no escape sequences.
+// semantic embedding renderer: a generation-start line followed by one line
+// per completed 25% bucket, no escape sequences.
 func TestEmbedProgress_NonTTYMilestones(t *testing.T) {
 	var buf bytes.Buffer
 	p := newEmbedProgress(&buf, false)
 	total := 800
+	generation := embed.GenerationID("g-ac6")
+	p.Handle(embed.GenerationProgress{GenerationID: generation, Total: total})
 	for done := 64; done < total; done += 64 {
-		p.Handle(done, total)
+		p.Handle(embed.GenerationProgress{GenerationID: generation, Done: done, Total: total})
 	}
-	p.Handle(total, total)
+	p.Handle(embed.GenerationProgress{GenerationID: generation, Done: total, Total: total})
 	p.Finish()
 
 	out := buf.String()
@@ -319,10 +322,10 @@ func TestEmbedProgress_NonTTYMilestones(t *testing.T) {
 		t.Fatalf("non-TTY output must carry no escapes: %q", out)
 	}
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if len(lines) != 4 {
-		t.Fatalf("non-TTY milestone lines = %d, want 4:\n%s", len(lines), out)
+	if len(lines) != 5 {
+		t.Fatalf("non-TTY progress lines = %d, want generation start plus 4 milestones:\n%s", len(lines), out)
 	}
-	for _, want := range []string{"25%", "50%", "75%", "100% (800/800)"} {
+	for _, want := range []string{"generation g-ac6", "embedding documents", "25%", "50%", "75%", "100% (800/800)"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("milestones missing %q:\n%s", want, out)
 		}
@@ -338,10 +341,10 @@ func TestEmbedProgress_TTYInPlace(t *testing.T) {
 	p := newEmbedProgress(&buf, true)
 	p.now = clk.now
 
-	p.Handle(64, 800)  // first draw
-	p.Handle(128, 800) // throttled: same instant, must not draw
+	p.Handle(embed.GenerationProgress{GenerationID: "g-ac6", Done: 64, Total: 800})  // first draw
+	p.Handle(embed.GenerationProgress{GenerationID: "g-ac6", Done: 128, Total: 800}) // throttled: same instant, must not draw
 	clk.advance(redrawMinGap)
-	p.Handle(192, 800) // draws again
+	p.Handle(embed.GenerationProgress{GenerationID: "g-ac6", Done: 192, Total: 800}) // draws again
 	p.Finish()
 
 	out := buf.String()
@@ -351,10 +354,10 @@ func TestEmbedProgress_TTYInPlace(t *testing.T) {
 	if got := strings.Count(out, "\r\x1b[2K"); got != 3 { // 2 draws + Finish clear
 		t.Fatalf("in-place redraw sequences = %d, want 3 (throttle must swallow the middle step): %q", got, out)
 	}
-	if !strings.Contains(out, "embedding nodes 192/800") {
+	if !strings.Contains(out, "generation g-ac6: embedding documents 192/800") {
 		t.Fatalf("last draw missing from output: %q", out)
 	}
-	if strings.Contains(out, "embedding nodes 128/800") {
+	if strings.Contains(out, "embedding documents 128/800") {
 		t.Fatalf("throttled step leaked into output: %q", out)
 	}
 }

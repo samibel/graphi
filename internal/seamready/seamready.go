@@ -201,6 +201,7 @@ func Reduce(states []State) Verdict {
 // the tool is not running inside a checkout, and every git-backed criterion
 // reads UNKNOWN.
 type Git interface {
+	HasAnyTag() (bool, error)
 	TagExists(tag string) (bool, error)
 	FileAtTag(tag, path string) ([]byte, error)
 	CommitExists(sha string) (bool, error)
@@ -337,6 +338,13 @@ func evalReleaseLine(op string, art Artifact, git Git) Row {
 	}
 	if git == nil {
 		return Row{State: StateUnknown, Reason: "not inside a git checkout; declared tags cannot be confirmed"}
+	}
+	hasTags, err := git.HasAnyTag()
+	if err != nil {
+		return Row{State: StateUnknown, Reason: fmt.Sprintf("git tag listing failed: %v", err)}
+	}
+	if !hasTags {
+		return Row{State: StateUnknown, Reason: "cannot confirm declared tags: this checkout has none; fetch full history"}
 	}
 	opLine := regexp.MustCompile(`(?m)^\s*"` + regexp.QuoteMeta(op) + `",\s*$`)
 	var confirmed, unconfirmed []string

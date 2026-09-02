@@ -136,6 +136,24 @@ flowchart TD
   G -->|all in budget| P[PASS: emit metrics artifact]
 ```
 
+### Measurement ownership in the release gate
+
+The dedicated `bench-budget-gate` job is the sole authority for wall-clock
+metrics. It runs the full harness in a short, isolated job and uploads
+`bench-report.json`; cold start, indexing, freshness, incremental updates, MCP
+startup, and query latency gate there against the pinned manifest.
+
+`cmd/release-gate` deliberately does not repeat those timings. A long shared CI
+job cannot reproduce the load conditions against which the timing budgets were
+calibrated, so treating a second wall-clock sample as a release verdict would
+turn runner scheduling into product evidence. Its `bench-budget` constituent
+instead measures and gates the environment-independent projection: canonical
+binary size plus the fast/balanced/deep database sizes and edge counts. The
+projection keeps each metric's manifest severity, so `binary_size_bytes`
+remains a hard ratchet. A future size/count metric enters this closed projection
+only through a reviewed code change; its manifest severity then controls whether
+it blocks. Removing any projected metric from the manifest fails closed.
+
 ### Hermeticity
 
 The suite reuses the egress/telemetry posture established for the CI gates

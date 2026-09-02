@@ -1,6 +1,6 @@
 {
   "note": "AX-00 baseline freeze: the ordered HTTP route table with each route's resolved product capability and its tier. Tier comes from surfaces/mcp.IsStableOperation — the same membership check capabilityGuard applies at runtime. Mixed routes are probed at both tiers.",
-  "route_count": 22,
+  "route_count": 23,
   "patterns": [
     "GET /healthz",
     "GET /contract",
@@ -10,6 +10,7 @@
     "POST /find-clones",
     "GET /search",
     "GET /search/semantic",
+    "GET /semantic/status",
     "GET /analyze/{analyzer}",
     "GET /prs",
     "GET /prs/triage",
@@ -78,6 +79,12 @@
       "pattern": "GET /search/semantic",
       "probe_path": "/search/semantic",
       "capability": "search_semantic",
+      "tier": "labs"
+    },
+    {
+      "pattern": "GET /semantic/status",
+      "probe_path": "/semantic/status",
+      "capability": "semantic_status",
       "tier": "labs"
     },
     {

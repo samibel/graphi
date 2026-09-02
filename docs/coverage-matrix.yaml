@@ -674,6 +674,12 @@ capabilities:
     tier: labs
     epic: EP-001
     note: "optional embedding search; `graphi index --semantic` generates+persists vectors, search reloads them (no re-embed); reports 'unavailable' cleanly when no embedder (OFF by default, FU-3 / SW-059+SW-061)."
+  - id: semantic_status
+    category: mcp-tool
+    status: shipped
+    tier: labs
+    epic: EP-001
+    note: "typed semantic-status document (SW-265): installed/configured/indexed/fresh + lifecycle state + active generation + language validation map + exact repair command; byte-identical to `graphi semantic status --json` and `GET /semantic/status`. Similarity is a RANKING signal, not evidence."
   - id: distill
     category: mcp-tool
     status: shipped
@@ -1205,6 +1211,12 @@ capabilities:
     tier: labs
     epic: "-"
     note: "print the opt-in semantic-search instructions (offline)"
+  - id: semantic
+    category: cli-subcommand
+    status: shipped
+    tier: labs
+    epic: "-"
+    note: "labs — report the canonical typed-status document (`semantic status [--json]`); byte-identical to MCP `semantic_status` and `GET /semantic/status`"
   - id: skillgen
     category: cli-subcommand
     status: shipped

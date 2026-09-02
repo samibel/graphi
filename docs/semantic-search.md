@@ -267,3 +267,57 @@ correctly re-embedded row is not counted as purged.
   import-graph scan and a registration-level no-CGO guard).
 - **Brute-force cosine** over an in-memory index is intentional for this first cut;
   HNSW / approximate-nearest-neighbour indexing is an explicit follow-up.
+
+## Status verb (SW-265)
+
+The typed-status verb distinguishes the five real situations a user can be in.
+The wire document is composed once in `surfaces/client/semantic_status.go` and
+served identically by all three surfaces:
+
+| Surface | Invocation |
+|---|---|
+| CLI    | `graphi semantic status [--json]` |
+| MCP    | `semantic_status` (Labs, `-labs` profile) |
+| HTTP   | `GET /semantic/status` |
+
+The document is a flat JSON object with these wire fields (every field is
+always present; the canonical encoder produces them in this order):
+
+| Field | Meaning |
+|---|---|
+| `schema_version` | Document version (bumped only on breaking wire changes) |
+| `installed` | Whether the binary carries the semantic-search code paths |
+| `configured` | Whether an embedder selector resolves to a registered Embedder |
+| `indexed` | Whether an active generation exists (including stale/corrupt) |
+| `fresh` | Whether the active generation's fingerprint matches the requested one |
+| `state` | Closed vocabulary: `missing` \| `stale` \| `corrupt` \| `ready` |
+| `model.{id,revision,sha256}` | Identity of the configured embedder |
+| `active_generation.{id,fingerprint,documents,nodes,span_method_share,built_at}` | The current, served generation |
+| `last_generation.*` | The generation that was active before the current one |
+| `languages` | `{lang: "validated"\|"unvalidated"}` — Go is `validated`, every other indexed language is `unvalidated` |
+| `repair` | The exact `graphi ...` command the operator runs to leave this state |
+
+### The five situations
+
+| Situation | `configured` | `state` | `repair` |
+|---|---|---|---|
+| (a) first run / no embedder selector | `false` | `missing` | `graphi setup-embedder` |
+| (b) selector set, model artifact absent | `true` | `missing` | `graphi setup-embedder <selector>` (from the typed error) |
+| (c) model present, no generation | `true` | `missing` | `graphi index --semantic` |
+| (d) generation stale vs fingerprint | `true` | `stale` | `graphi index --semantic` |
+| (e) generation corrupt | `true` | `corrupt` | `graphi index --semantic` |
+
+The CLI exit code mirrors `graphi status`: `0` = ready, `1` = actionable
+(missing/stale), `2` = corrupt or error. The MCP and HTTP surfaces return
+`200` with the typed document for every state — `state: corrupt` is still
+a successful response, not an HTTP error, because the document IS the
+verdict.
+
+### Similarity is a ranking signal, not evidence
+
+The verb reports the typed status and the generation's identity so an
+operator can decide whether the answer to a query was empty because the
+index is usable but matched nothing, or because the index is unusable.
+Similarity scores are reported in the search response for ranking
+context only — they are NEVER evidence that two pieces of code are
+related.

@@ -53,6 +53,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/wiki"
@@ -128,6 +129,31 @@ type Server struct {
 	wikiOnce      sync.Once
 	wikiErr       error
 	wikiGenerated wiki.Wiki
+
+	// embedderRegistry is the embed.Registry the /semantic/status route
+	// resolves through the shared surfaces/client.SemanticStatus composition
+	// (SW-265). nil falls back to a process-env resolver that mirrors the
+	// cmd rank and the MCP server's accessor.
+	embedderRegistry *embed.Registry
+}
+
+// embedderRegistry accessor mirrors cmd/internal/runtime and the MCP
+// server's fallback: nil falls back to a fresh registry constructed from
+// the GRAPHI_EMBEDDER env selector, with an unset selector reading as
+// graceful skip.
+func (s *Server) embedRegistry() *embed.Registry {
+	if s.embedderRegistry != nil {
+		return s.embedderRegistry
+	}
+	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
+	if err != nil || emb == nil {
+		return embed.NewRegistry()
+	}
+	reg := embed.NewRegistry()
+	if rerr := reg.Register(emb); rerr != nil {
+		return embed.NewRegistry()
+	}
+	return reg
 }
 
 // LabsEnvVar is the explicit operator opt-in for the Labs HTTP routes (SW-112 /
@@ -157,6 +183,15 @@ func (s *Server) WithWiki(store graphstore.Graphstore) *Server {
 // /contract. Returns the receiver for chaining.
 func (s *Server) WithDescriptors(analyzers []string) *Server {
 	s.analyzers = analyzers
+	return s
+}
+
+// WithEmbedderRegistry records the embed.Registry the /semantic/status route
+// resolves through the shared surfaces/client.SemanticStatus composition
+// (SW-265). cmd/graphi passes the registry constructed from GRAPHI_EMBEDDER
+// here; nil falls back to the same env-driven resolver at request time.
+func (s *Server) WithEmbedderRegistry(reg *embed.Registry) *Server {
+	s.embedderRegistry = reg
 	return s
 }
 

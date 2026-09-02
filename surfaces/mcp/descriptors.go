@@ -368,7 +368,7 @@ func legacyMaximalToolDescriptors() []map[string]any {
 	// (typed graceful-skip) when no embedder is configured.
 	tools = append(tools, map[string]any{
 		"name":        ToolSearchSemantic,
-		"description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default)",
+		"description": "optional semantic (embedding) search over the indexed graph; reports 'unavailable' cleanly when no embedder is configured (OFF by default). Similarity is a ranking signal, not evidence.",
 		"inputSchema": map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -685,6 +685,23 @@ func legacyMaximalToolDescriptors() []map[string]any {
 				"policy":       map[string]any{"type": "string", "enum": trust.PolicyIDs(), "description": "optional fail-closed trust preflight; a non-PASS/WARN verdict blocks the query"},
 			},
 			"required": []string{"operation", "symbol"},
+		},
+		"annotations": readOnlyToolAnnotations(),
+	})
+	// SW-265: semantic_status, the Labs typed-status verb the optional
+	// semantic search exposes. The wire document is the shared
+	// surfaces/client.SemanticStatus composition (byte-identical to
+	// `graphi semantic status --json` and `GET /semantic/status`).
+	// Read-only annotations hold: the composition reads the embedder
+	// registry the wire dispatch already constructed and the durable
+	// GenerationStore READ-ONLY; it never dials, never indexes, never
+	// starts a daemon.
+	tools = append(tools, map[string]any{
+		"name":        ToolSemanticStatus,
+		"description": "semantic_status: return the canonical typed-status document for the optional semantic (embedding) search — installed, configured, indexed, fresh, typed lifecycle state (missing|stale|corrupt|ready), the active generation's identity and document/node counts, the language validation map (Go is validated, every other indexed language is unvalidated), and the exact `graphi ...` repair command the operator runs to leave that state. Purpose: distinguish the five real situations a user can be in (no embedder selector, no model artifact, model present but no index, generation stale vs fingerprint, generation corrupt) — `state: ready` with zero hits is NOT the same as `state: missing`. When to use: before a search_semantic / task_context / agent_brief call when the answer is empty, to learn whether retrieval is unusable vs the index has no matches; with --json for byte-stable machine consumption. When NOT to use: for the lexical search index state (use `graphi status`) or to run the search itself. Input shape: none (the document is read-only and idempotent against the live durable store). Read-only: true — never indexes, never dials a network, never starts a daemon. Similarity is a RANKING signal; an empty `hits` list on `state: ready` is filtered, not proven empty.",
+		"inputSchema": map[string]any{
+			"type":       "object",
+			"properties": map[string]any{},
 		},
 		"annotations": readOnlyToolAnnotations(),
 	})

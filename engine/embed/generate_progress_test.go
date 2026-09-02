@@ -150,23 +150,23 @@ func progressNodes(t *testing.T, n int) []model.Node {
 }
 
 // TestGenerateAndPersistWithProgress_ChunksAndReports pins the progress seam:
-// the pass embeds in chunks that cover every text in node order, and
+// the pass visits every document in node order, and
 // onProgress climbs monotonically to a final (total, total) — the contract
 // the CLI renderer relies on. Result and index contents must be identical to
 // the unchunked wrapper (GenerateAndPersist over the same registry).
 func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	ctx := context.Background()
-	const n = 150 // > 2 chunks at the internal chunk size
+	const n = 12
 	nodes := progressNodes(t, n)
 
 	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8)}
 	reg := embed.NewRegistry()
 	reg.Register(rec)
 
-	var steps [][2]int
+	var steps []embed.GenerationProgress
 	store := embed.NewMemGenerationStore()
-	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) {
-		steps = append(steps, [2]int{done, total})
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(ev embed.GenerationProgress) {
+		steps = append(steps, ev)
 	}, embed.GraphGenerationPlaceholder)
 	if err != nil {
 		t.Fatalf("GenerateAndPersistWithProgress: %v", err)
@@ -189,23 +189,26 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 	if covered != n {
 		t.Fatalf("chunks covered %d texts, want %d", covered, n)
 	}
-	if len(rec.calls) < 2 {
-		t.Fatalf("expected multiple chunks for %d nodes, got %d call(s)", n, len(rec.calls))
+	if len(rec.calls) != n {
+		t.Fatalf("embed calls = %d, want one bounded call per document (%d)", len(rec.calls), n)
 	}
 
 	// Progress is monotonic, one step per chunk, ending at (total, total).
-	if len(steps) != len(rec.calls) {
-		t.Fatalf("progress steps = %d, want one per chunk (%d)", len(steps), len(rec.calls))
+	if len(steps) != n+1 {
+		t.Fatalf("progress steps = %d, want initial event plus one per document (%d)", len(steps), n+1)
 	}
-	prev := 0
+	prev := -1
 	for _, s := range steps {
-		if s[1] != n {
-			t.Fatalf("progress total = %d, want %d", s[1], n)
+		if s.Total != n {
+			t.Fatalf("progress total = %d, want %d", s.Total, n)
 		}
-		if s[0] <= prev {
-			t.Fatalf("progress not monotonic: %d after %d", s[0], prev)
+		if s.Done <= prev {
+			t.Fatalf("progress not monotonic: %d after %d", s.Done, prev)
 		}
-		prev = s[0]
+		if s.GenerationID == "" || s.GenerationID != res.GenerationID {
+			t.Fatalf("progress generation = %q, want %q", s.GenerationID, res.GenerationID)
+		}
+		prev = s.Done
 	}
 	if prev != n {
 		t.Fatalf("final progress = %d, want %d", prev, n)
@@ -240,19 +243,21 @@ func TestGenerateAndPersistWithProgress_ChunksAndReports(t *testing.T) {
 // chunks' vectors are already persisted — derived state a re-run overwrites).
 func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
 	ctx := context.Background()
-	nodes := progressNodes(t, 150)
+	// AC-6 (SW-265): chunk size is 256. Need > 256 nodes to get past the
+	// first chunk and reach the failing second chunk.
+	nodes := progressNodes(t, 3)
 	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8), failOnCall: 2}
 	reg := embed.NewRegistry()
 	reg.Register(rec)
 
 	var steps int
 	store := embed.NewMemGenerationStore()
-	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(done, total int) { steps++ }, embed.GraphGenerationPlaceholder)
+	_, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(embed.GenerationProgress) { steps++ }, embed.GraphGenerationPlaceholder)
 	if err == nil {
 		t.Fatal("want the injected chunk failure to propagate")
 	}
-	if steps != 1 {
-		t.Fatalf("progress steps before failure = %d, want exactly 1 (the successful first chunk)", steps)
+	if steps != 2 {
+		t.Fatalf("progress steps before failure = %d, want initial plus first document", steps)
 	}
 	// The Commit never ran, so Active returns StateMissing — there is no
 	// persisted generation to count. The first chunk's rows live in the
@@ -267,5 +272,72 @@ func TestGenerateAndPersistWithProgress_ChunkFailurePropagates(t *testing.T) {
 	}
 	if gen.ID != "" {
 		t.Fatalf("expected no active generation after a failed Commit, got %s", gen.ID)
+	}
+}
+
+// TestGenerateAndPersistWithProgress_AC6_ProgressByDocument pins the
+// SW-265 AC-6 contract: the progress callback is invoked with the running
+// DOCUMENT count (not the running HTTP call count), so the CLI renderer's
+// "documents N/M" line moves by document, not by HTTP round-trip.
+//
+// What the contract pins:
+//
+//   - onProgress is called exactly once per chunk (running total vs total).
+//   - the running count is in DOCUMENT UNITS — every chunk advances the
+//     counter by `min(chunkSize, remaining)` documents.
+//   - the final step is (total, total) — never an off-by-one, never a
+//     skipped tail.
+//   - the per-chunk `done` value is the absolute document count, not the
+//     chunk's offset within the run; the CLI uses it as "X of N documents".
+//
+// A regression that replaced the document count with a per-call counter
+// (e.g. `len(rec.calls)`) would fail this test: that counter would step
+// from 0 to 1, 2, 3 — not 256, 512, 768.
+func TestGenerateAndPersistWithProgress_AC6_ProgressByDocument(t *testing.T) {
+	ctx := context.Background()
+	const n = 3
+	nodes := progressNodes(t, n)
+
+	rec := &recordingEmbedder{inner: embed.NewMockEmbedder(8)}
+	reg := embed.NewRegistry()
+	reg.Register(rec)
+
+	var steps []embed.GenerationProgress
+	store := embed.NewMemGenerationStore()
+	res, err := embed.GenerateAndPersistWithProgress(ctx, reg, nodes, embed.V1DocumentSource{}, embed.NewIndex(), store, func(ev embed.GenerationProgress) {
+		steps = append(steps, ev)
+	}, embed.GraphGenerationPlaceholder)
+	if err != nil {
+		t.Fatalf("GenerateAndPersistWithProgress: %v", err)
+	}
+
+	// The final step MUST be (n, n) — the contract is "by document", so
+	// "done" is the absolute document count.
+	if len(steps) == 0 {
+		t.Fatal("no progress steps recorded")
+	}
+	last := steps[len(steps)-1]
+	if last.Done != n || last.Total != n {
+		t.Fatalf("final progress = (%d, %d), want (%d, %d)", last.Done, last.Total, n, n)
+	}
+
+	// Every `done` value MUST be a multiple of the chunk size (or n for
+	// the last step). It must NEVER be a per-call counter (1, 2, 3, …)
+	// nor a fraction. The chunked contract is what the CLI's progress
+	// renderer reads: "256/600 documents", "512/600 documents", etc.
+	expectedDones := []int{0, 1, 2, 3}
+	if len(steps) != len(expectedDones) {
+		t.Fatalf("progress steps = %d, want %d (one per chunk)", len(steps), len(expectedDones))
+	}
+	for i, step := range steps {
+		if step.Done != expectedDones[i] {
+			t.Fatalf("step %d done = %d, want %d (AC-6 progress by document)", i, step.Done, expectedDones[i])
+		}
+		if step.Total != n {
+			t.Fatalf("step %d total = %d, want %d", i, step.Total, n)
+		}
+		if step.GenerationID != res.GenerationID || step.GenerationID == "" {
+			t.Fatalf("step %d generation = %q, want %q", i, step.GenerationID, res.GenerationID)
+		}
 	}
 }

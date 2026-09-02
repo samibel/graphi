@@ -62,6 +62,87 @@ func (c *HarnessConfig) defaults() {
 	}
 }
 
+type preparedHarness struct {
+	cfg             HarnessConfig
+	fixture         string
+	digest          string
+	binPath         string
+	builtInternally bool
+	binarySize      int64
+	provenance      binaryBuildProvenance
+	buildContract   string
+}
+
+func prepareHarness(ctx context.Context, cfg HarnessConfig) (preparedHarness, func(), error) {
+	cfg.defaults()
+	cleanup := func() {}
+	modRoot, err := moduleRoot()
+	if err != nil {
+		return preparedHarness{}, cleanup, err
+	}
+	fixture := cfg.FixtureDir
+	if !filepath.IsAbs(fixture) {
+		fixture = filepath.Join(modRoot, "bench", "fixture")
+	}
+	if _, err := os.Stat(fixture); err != nil {
+		return preparedHarness{}, cleanup, fmt.Errorf("bench: fixture dir: %w", err)
+	}
+	digest, err := fixtureDigestSHA256(fixture)
+	if err != nil {
+		return preparedHarness{}, cleanup, err
+	}
+
+	binPath := cfg.BinaryPath
+	builtInternally := binPath == ""
+	if builtInternally {
+		tmp, err := os.MkdirTemp("", "graphi-bench-bin-*")
+		if err != nil {
+			return preparedHarness{}, cleanup, err
+		}
+		cleanup = func() { _ = os.RemoveAll(tmp) }
+		binPath = filepath.Join(tmp, "graphi")
+		if out, err := buildBinary(ctx, cfg.BinaryTarget, binPath, cfg.CGOEnabled, modRoot, cfg.BuildTags); err != nil {
+			cleanup()
+			return preparedHarness{}, func() {}, fmt.Errorf("bench: build binary: %w (%s)", err, strings.TrimSpace(string(out)))
+		}
+	}
+	info, err := os.Stat(binPath)
+	if err != nil {
+		cleanup()
+		return preparedHarness{}, func() {}, fmt.Errorf("bench: stat binary: %w", err)
+	}
+	provenance, err := readBinaryBuildProvenance(binPath)
+	if err != nil {
+		cleanup()
+		return preparedHarness{}, func() {}, fmt.Errorf("bench: read binary build provenance: %w", err)
+	}
+	return preparedHarness{
+		cfg:             cfg,
+		fixture:         fixture,
+		digest:          digest,
+		binPath:         binPath,
+		builtInternally: builtInternally,
+		binarySize:      info.Size(),
+		provenance:      provenance,
+		buildContract:   classifyBuildContract(cfg, provenance, builtInternally),
+	}, cleanup, nil
+}
+
+func (h preparedHarness) baseMetrics() Metrics {
+	return Metrics{
+		BinarySizeBytes:  h.binarySize,
+		BuildContract:    h.buildContract,
+		BuildGoVersion:   h.provenance.goVersion,
+		BuildGOOS:        h.provenance.settings["GOOS"],
+		BuildGOARCH:      h.provenance.settings["GOARCH"],
+		BuildGOAMD64:     h.provenance.settings["GOAMD64"],
+		BuildCGOEnabled:  h.provenance.settings["CGO_ENABLED"],
+		BuildVCSRevision: h.provenance.settings["vcs.revision"],
+		BuildVCSModified: h.provenance.settings["vcs.modified"],
+		FixtureDigest:    h.digest,
+	}
+}
+
 // fixtureDigestSHA256 returns the hex sha256 of the concatenation of all fixture
 // file contents (sorted by relative path), pinning the frozen workload.
 func fixtureDigestSHA256(dir string) (string, error) {
@@ -100,48 +181,13 @@ func fixtureDigestSHA256(dir string) (string, error) {
 // is hermetic: every store/meta dir is a temp dir removed at the end; the binary
 // is built under CGO_ENABLED=0; no network I/O is performed.
 func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
-	cfg.defaults()
-	modRoot, err := moduleRoot()
+	h, cleanup, err := prepareHarness(ctx, cfg)
 	if err != nil {
 		return Metrics{}, err
 	}
-	fixture := cfg.FixtureDir
-	if !filepath.IsAbs(fixture) {
-		fixture = filepath.Join(modRoot, "bench", "fixture")
-	}
-	if _, err := os.Stat(fixture); err != nil {
-		return Metrics{}, fmt.Errorf("bench: fixture dir: %w", err)
-	}
-	digest, err := fixtureDigestSHA256(fixture)
-	if err != nil {
-		return Metrics{}, err
-	}
-
-	// (1) Binary size: build the default binary under CGO_ENABLED=0 and stat it.
-	binPath := cfg.BinaryPath
-	ownedBin := ""
-	builtInternally := binPath == ""
-	if binPath == "" {
-		tmp, err := os.MkdirTemp("", "graphi-bench-bin-*")
-		if err != nil {
-			return Metrics{}, err
-		}
-		defer os.RemoveAll(tmp)
-		ownedBin = filepath.Join(tmp, "graphi")
-		if out, err := buildBinary(ctx, cfg.BinaryTarget, ownedBin, cfg.CGOEnabled, modRoot, cfg.BuildTags); err != nil {
-			return Metrics{}, fmt.Errorf("bench: build binary: %w (%s)", err, strings.TrimSpace(string(out)))
-		}
-		binPath = ownedBin
-	}
-	info, err := os.Stat(binPath)
-	if err != nil {
-		return Metrics{}, fmt.Errorf("bench: stat binary: %w", err)
-	}
-	provenance, err := readBinaryBuildProvenance(binPath)
-	if err != nil {
-		return Metrics{}, fmt.Errorf("bench: read binary build provenance: %w", err)
-	}
-	buildContract := classifyBuildContract(cfg, provenance, builtInternally)
+	defer cleanup()
+	cfg = h.cfg
+	fixture := h.fixture
 
 	// (2) Cold-start P95 + full-index median over N samples (warmup discarded).
 	coldSamples := make([]time.Duration, 0, cfg.Samples)
@@ -167,8 +213,8 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 	// branch switch, named query latencies, heap footprint, MCP startup over
 	// the measured binary). MCP startup is skipped for external binaries —
 	// their MCP capability is unverified, like their build contract.
-	mcpBinary := binPath
-	if !builtInternally {
+	mcpBinary := h.binPath
+	if !h.builtInternally {
 		mcpBinary = ""
 	}
 	incr, err := measureIncremental(ctx, fixture, mcpBinary)
@@ -176,42 +222,44 @@ func Run(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
 		return Metrics{}, fmt.Errorf("bench: incremental suite: %w", err)
 	}
 
-	return Metrics{
-		ColdStartP95MS:  ms(P95(coldSamples)),
-		FullIndexMS:     ms(Median(idxSamples)),
-		FreshnessLagMS:  ms(fresh),
-		BinarySizeBytes: info.Size(),
-
-		IncrementalTenFileMS: incr.TenFileMS,
-		BranchSwitchSimMS:    incr.BranchSwitchMS,
-		MCPStartupMS:         incr.MCPStartupMS,
-		SymbolLookupMS:       incr.SymbolLookupMS,
-		CallersQueryMS:       incr.CallersQueryMS,
-		ContextQueryMS:       incr.ContextQueryMS,
-		IndexHeapAllocBytes:  incr.HeapAllocBytes,
-
-		BuildContract:    buildContract,
-		BuildGoVersion:   provenance.goVersion,
-		BuildGOOS:        provenance.settings["GOOS"],
-		BuildGOARCH:      provenance.settings["GOARCH"],
-		BuildGOAMD64:     provenance.settings["GOAMD64"],
-		BuildCGOEnabled:  provenance.settings["CGO_ENABLED"],
-		BuildVCSRevision: provenance.settings["vcs.revision"],
-		BuildVCSModified: provenance.settings["vcs.modified"],
-		FixtureDigest:    digest,
-		Samples:          cfg.Samples,
-		ProfileMetrics:   measureProfileMetrics(ctx, fixture),
-	}, nil
+	metrics := h.baseMetrics()
+	metrics.ColdStartP95MS = ms(P95(coldSamples))
+	metrics.FullIndexMS = ms(Median(idxSamples))
+	metrics.FreshnessLagMS = ms(fresh)
+	metrics.IncrementalTenFileMS = incr.TenFileMS
+	metrics.BranchSwitchSimMS = incr.BranchSwitchMS
+	metrics.MCPStartupMS = incr.MCPStartupMS
+	metrics.SymbolLookupMS = incr.SymbolLookupMS
+	metrics.CallersQueryMS = incr.CallersQueryMS
+	metrics.ContextQueryMS = incr.ContextQueryMS
+	metrics.IndexHeapAllocBytes = incr.HeapAllocBytes
+	metrics.Samples = cfg.Samples
+	metrics.ProfileMetrics = measureProfileMetrics(ctx, fixture, true)
+	return metrics, nil
 }
 
-// measureProfileMetrics indexes the fixture once per profile and collects
-// index time, DB size, edge count, and a simple query latency. It is best-effort:
-// any individual profile failure is logged and skipped so the overall bench run
-// is not aborted.
-func measureProfileMetrics(ctx context.Context, fixture string) map[string]ProfileMetric {
+// RunEnvironmentIndependent measures only canonical binary size plus profile
+// database sizes and edge counts. It performs no wall-clock or live-heap
+// measurement; the dedicated benchmark job remains the sole timing authority.
+func RunEnvironmentIndependent(ctx context.Context, cfg HarnessConfig) (Metrics, error) {
+	h, cleanup, err := prepareHarness(ctx, cfg)
+	if err != nil {
+		return Metrics{}, err
+	}
+	defer cleanup()
+	metrics := h.baseMetrics()
+	metrics.ProfileMetrics = measureProfileMetrics(ctx, h.fixture, false)
+	return metrics, nil
+}
+
+// measureProfileMetrics indexes the fixture once per profile and always
+// collects DB size and edge count. The full benchmark additionally collects
+// index and query timings. It is best-effort: any individual profile failure
+// is logged and skipped so the overall bench run is not aborted.
+func measureProfileMetrics(ctx context.Context, fixture string, includeTimings bool) map[string]ProfileMetric {
 	out := make(map[string]ProfileMetric)
 	for _, p := range []profile.Profile{profile.Fast, profile.Balanced, profile.Deep} {
-		pm, err := measureOneProfile(ctx, fixture, p)
+		pm, err := measureOneProfile(ctx, fixture, p, includeTimings)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "bench: profile %s metrics skipped: %v\n", p, err)
 			continue
@@ -221,7 +269,7 @@ func measureProfileMetrics(ctx context.Context, fixture string) map[string]Profi
 	return out
 }
 
-func measureOneProfile(ctx context.Context, fixture string, p profile.Profile) (ProfileMetric, error) {
+func measureOneProfile(ctx context.Context, fixture string, p profile.Profile, includeTimings bool) (ProfileMetric, error) {
 	tmp, err := os.MkdirTemp("", "graphi-bench-profile-*")
 	if err != nil {
 		return ProfileMetric{}, err
@@ -242,18 +290,23 @@ func measureOneProfile(ctx context.Context, fixture string, p profile.Profile) (
 	defer ing.Close()
 	ing.WithProfile(p)
 
-	ti0 := time.Now()
+	var ti0 time.Time
+	if includeTimings {
+		ti0 = time.Now()
+	}
 	if err := ing.IngestAll(ctx, fixture); err != nil {
 		return ProfileMetric{}, err
 	}
-	index := time.Since(ti0)
-
-	c := client.NewDirect(query.New(store), search.New(store))
-	q0 := time.Now()
-	if _, err := c.Query(ctx, "callers", "", 0); err != nil {
-		return ProfileMetric{}, err
+	var index, queryLatency time.Duration
+	if includeTimings {
+		index = time.Since(ti0)
+		c := client.NewDirect(query.New(store), search.New(store))
+		q0 := time.Now()
+		if _, err := c.Query(ctx, "callers", "", 0); err != nil {
+			return ProfileMetric{}, err
+		}
+		queryLatency = time.Since(q0)
 	}
-	ql := time.Since(q0)
 
 	edges, err := store.Edges(ctx, graphstore.Query{})
 	if err != nil {
@@ -269,7 +322,7 @@ func measureOneProfile(ctx context.Context, fixture string, p profile.Profile) (
 		IndexMS:        ms(index),
 		DBSizeBytes:    info.Size(),
 		EdgeCount:      int64(len(edges)),
-		QueryLatencyMS: ms(ql),
+		QueryLatencyMS: ms(queryLatency),
 	}, nil
 }
 

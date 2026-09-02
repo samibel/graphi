@@ -165,9 +165,9 @@ func TestAX05_PerBindingNarrowing_SurvivesProjection(t *testing.T) {
 		want    int
 	}{
 		{"stable", 11},
-		{"maximal", 56},
+		{"maximal", 57},
 		{"stdio-stable", 11},
-		{"stdio-labs", 44},
+		{"stdio-labs", 45},
 		{"daemon-stable", 7},
 		{"daemon-labs", 25},
 	} {

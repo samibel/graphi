@@ -17,10 +17,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/surfaces/client"
@@ -128,6 +130,12 @@ type Server struct {
 	// (WithRepository); the binder path carries it per Binding instead.
 	initialRepo client.Repository
 
+	// embedderRegistry is the embed.Registry the semantic_status tool call
+	// (SW-265) resolves through the shared surfaces/client.SemanticStatus
+	// composition. nil falls back to a process-env resolver that mirrors
+	// the cmd rank's accessor.
+	embedderRegistry *embed.Registry
+
 	catalogMu      sync.Mutex
 	catalogBinding *boundClient
 	catalog        []map[string]any
@@ -203,6 +211,39 @@ func NewServerWithClient(c client.Client, opts ...ServerOption) *Server {
 	}
 	s.bound.Store(&boundClient{client: c, stable: client.AsStable(c), repo: s.initialRepo})
 	return s
+}
+
+// WithEmbedderRegistry records the embed.Registry the wire dispatch already
+// constructed for this server. The semantic_status tool (SW-265) consumes it
+// through the shared surfaces/client.SemanticStatus composition, which
+// reads the same registry the cmd rank and the HTTP route read. A nil
+// registry reads as the unconfigured state (the composition's
+// Configured=false); an unset registry falls back to reading GRAPHI_EMBEDDER
+// from the process environment, mirroring the cmd rank's accessor.
+func WithEmbedderRegistry(reg *embed.Registry) ServerOption {
+	return func(s *Server) { s.embedderRegistry = reg }
+}
+
+// embedderRegistryForCall is the server's accessor for the embed.Registry
+// the semantic_status tool call resolves. It returns the configured
+// registry when one was supplied; otherwise it falls back to a fresh
+// registry constructed from GRAPHI_EMBEDDER. The fallback is the
+// cmd-rank resolution: an unset/empty selector reads as graceful skip, a
+// known selector resolves to its registered embedder. Tests that
+// exercise a specific state inject the registry via WithEmbedderRegistry.
+func (s *Server) embedderRegistryForCall() *embed.Registry {
+	if s.embedderRegistry != nil {
+		return s.embedderRegistry
+	}
+	emb, err := embed.Constructor(os.Getenv(embed.EnvSelector), embed.DefaultConstructors())
+	if err != nil || emb == nil {
+		return embed.NewRegistry() // graceful skip
+	}
+	reg := embed.NewRegistry()
+	if rerr := reg.Register(emb); rerr != nil {
+		return embed.NewRegistry()
+	}
+	return reg
 }
 
 // NewServerWithBinder constructs an initially-unbound MCP server. The binder is

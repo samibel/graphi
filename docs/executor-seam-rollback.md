@@ -25,8 +25,17 @@ back.
 
 ## 1. The operations on the seam
 
-Ten operations dispatch through the seam. Every one of them is Labs; none is
+Eleven operations dispatch through the seam. Every one of them is Labs; none is
 part of the frozen Stable 12.
+
+`search_semantic` joined the seam in SW-265 (2026-09-02). Its four-state
+determinism fixtures — `configured | unavailable | stale | corrupt` — pinned
+every path as byte-stable across runs, and the per-operation kill switch
+`GRAPHI_CANARY_SEARCH_SEMANTIC` defaults to `shadow`. The contract is identical
+to the existing ten: legacy bytes are what the caller receives, the executor
+path is compared and recorded but never returned, and a deterministic-regress
+test (`TestExecutorParity_SearchSemanticFourStates`) must fail before the id is removed from
+`migratedOperations`.
 
 | Operation | Kill-switch variable |
 |---|---|
@@ -39,6 +48,7 @@ part of the frozen Stable 12.
 | `repo_overview` | `GRAPHI_CANARY_REPO_OVERVIEW` |
 | `search_ast` | `GRAPHI_CANARY_SEARCH_AST` |
 | `search_hybrid` | `GRAPHI_CANARY_SEARCH_HYBRID` |
+| `search_semantic` | `GRAPHI_CANARY_SEARCH_SEMANTIC` |
 | `test_impact` | `GRAPHI_CANARY_TEST_IMPACT` |
 
 The variable name is always `GRAPHI_CANARY_` + the operation id in upper case.
@@ -76,7 +86,7 @@ went away.
   **1.26×** under a back-to-back single-caller loop and **1.89×** at
   `GOMAXPROCS=1`.
 
-It does **not** double the work of a graphi session: the ten operations are Labs,
+It does **not** double the work of a graphi session: the eleven operations are Labs,
 and nothing else on any surface is on this seam.
 
 Because the comparison is deferred, it is also **bounded**: at most 64 comparisons
@@ -145,11 +155,11 @@ overrode it. Run it **in the same environment as the server**:
 ```sh
 $ graphi doctor
 …
-executor-seam  10 migrated operation(s): 0 legacy, 10 shadow, 0 active;
-               NONE of the 10 dual-running operation(s) is reachable through `graphi mcp`
+executor-seam  11 migrated operation(s): 0 legacy, 11 shadow, 0 active;
+               NONE of the 11 dual-running operation(s) is reachable through `graphi mcp`
 ```
 
-That line — `10 shadow` — is what an install with **nothing set** reports. After
+That line — `11 shadow` — is what an install with **nothing set** reports. After
 a rollback it reads `10 legacy, 0 shadow, 0 active`. The clause after the
 semicolon is SW-248: the counts say what is **configured**, and it says what a
 client can **call**. On a stock install the answer is *none of it* — see §5.
@@ -193,7 +203,7 @@ executor-seam divergence record (executor-divergence-v1)
   segments:   3 recorded, 0 unreadable, 0 pruned
   totals:     3 observation(s), 0 mismatch(es)
   coverage:   3 of 3 dispatch(es) compared (100%) — no sampling, nothing dropped
-  reachable:  NONE of the 10 operation(s) on the seam is reachable through `graphi mcp` (the profile a stock install binds)
+  reachable:  NONE of the 11 operation(s) on the seam is reachable through `graphi mcp` (the profile a stock install binds)
 
 OPERATION      DISPATCHES  OBSERVATIONS  SKIPPED  MISMATCHES  STATE                   REACHABLE VIA     …
 dead_code      1           1             0        0           NO-DIVERGENCE-OBSERVED  graphi mcp -labs  …
@@ -245,7 +255,7 @@ than reporting a bare `UNKNOWN`:
 ```
 
 ```
-THIS RECORD CANNOT FILL in `graphi mcp`: not one of the 10 operation(s) on the seam is
+THIS RECORD CANNOT FILL in `graphi mcp`: not one of the 11 operation(s) on the seam is
 reachable there. Its emptiness is therefore evidence about the PROFILE, not about
 the two paths, and waiting longer will not change it.
 ```
@@ -439,7 +449,7 @@ pull request: it forces `GRAPHI_CANARY_ALL=legacy`, runs the parity and
 characterization suites in that position, asserts the divergence read path is
 honest, and then asserts the round trip — that unsetting the variable returns
 every operation to the compiled-in default, which since SW-244 the workflow
-checks is **`10 shadow`**. A rollback that stopped working would fail CI rather
+checks is **`11 shadow`**. A rollback that stopped working would fail CI rather
 than fail an operator.
 
 Since SW-248 it also runs the reachability gate (`go run ./cmd/seamreach -check`)

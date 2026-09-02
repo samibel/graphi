@@ -238,6 +238,34 @@ func (s *Server) handleSemanticSearch(w http.ResponseWriter, r *http.Request) {
 	writeEnvelope(w, raw)
 }
 
+// handleSemanticStatus serves `GET /semantic/status` (SW-265). It is the
+// HTTP half of the canonical typed-status surface: the same composition
+// surfaces/client.SemanticStatus drives CLI (`graphi semantic status --json`)
+// and MCP (`semantic_status`), so the three surfaces emit byte-identical
+// documents for the same store by construction.
+//
+// The route accepts optional `?root=`, `?db=`, `?meta=` query parameters,
+// matching the CLI's flag surface. An empty set falls back to the
+// auto-managed locations the composition itself resolves (the env-driven
+// default that mirrors `graphi status`). Like /healthz, the route is
+// read-only and fails closed to the typed missing state on an empty
+// repository, never to an error.
+func (s *Server) handleSemanticStatus(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	b, _, err := client.SemanticStatus(r.Context(), client.SemanticStatusOptions{
+		Root:     q.Get("root"),
+		DBPath:   q.Get("db"),
+		MetaDir:  q.Get("meta"),
+		Embedder: s.embedRegistry(),
+	})
+	if err != nil {
+		writeErrSanitized(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write(b)
+}
+
 func (s *Server) handleAnalyze(w http.ResponseWriter, r *http.Request) {
 	analyzer := r.PathValue("analyzer")
 	if analyzer == "" {

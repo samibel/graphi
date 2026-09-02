@@ -6,8 +6,8 @@ profile advertises has moved. Read the summary line before approving it.
 
 PROFILES
   ID           INVOCATION        DEFAULT  REACHES
-  mcp-default  graphi mcp        yes      0 of 10 seam operation(s)
-  mcp-labs     graphi mcp -labs  no       10 of 10 seam operation(s)
+  mcp-default  graphi mcp        yes      0 of 11 seam operation(s)
+  mcp-labs     graphi mcp -labs  no       11 of 11 seam operation(s)
 
 OPERATIONS
   OPERATION                MODE    IN DEFAULT PROFILE  REACHABLE VIA
@@ -20,11 +20,12 @@ OPERATIONS
   repo_overview            shadow  no                  graphi mcp -labs
   search_ast               shadow  no                  graphi mcp -labs
   search_hybrid            shadow  no                  graphi mcp -labs
+  search_semantic          shadow  no                  graphi mcp -labs
   test_impact              shadow  no                  graphi mcp -labs
 
 SUMMARY
-  10 operation(s) on the seam, 10 dual-running (shadow or active).
-  0 of the 10 dual-running operation(s) are reachable through `graphi mcp`,
+  11 operation(s) on the seam, 11 dual-running (shadow or active).
+  0 of the 11 dual-running operation(s) are reachable through `graphi mcp`,
   the profile a stock install binds.
   So a client bound to the default profile records NO dual-run evidence at all:
   the divergence record's emptiness is a fact about the profile, not about the

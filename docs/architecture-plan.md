@@ -392,10 +392,10 @@ choice that does not exist while inviting untested combinations.
 | Fact | Value | Command |
 |---|---|---|
 | Operations on the executor seam | **10**, all Labs: `architecture`, `architecture_violations`, `compound`, `dead_code`, `find_clones`, `framework_map`, `repo_overview`, `search_ast`, `search_hybrid`, `test_impact` | `go run ./cmd/seamreach` |
-| Canary positions | **0 legacy / 10 shadow / 0 active**, every one at the compiled-in default | `go run ./cmd/graphi doctor` (the `[executor-seam]` line) |
+| Canary positions | **0 legacy / 11 shadow / 0 active**, every one at the compiled-in default | `go run ./cmd/graphi doctor` (the `[executor-seam]` line) |
 | `surfaces/client` direct internal import fan-out | **44** against the AX-00 baseline of **41** (+3: `core/registry`, `engine/extpack`, `engine/opcatalog`); reported, not gated (SW-220) | `CGO_ENABLED=0 go test -v ./internal/importfanout` (baseline: [`rc/ax00-import-fanout.json`](rc/ax00-import-fanout.json)) |
 | Divergence record | `state: UNKNOWN-AND-UNOBSERVABLE`, 0 observations, 0 mismatches, `reachable_in_default: 0` | `go run ./cmd/graphi doctor -divergence --json` |
-| Seam reachability | 0 of 10 dual-running operations reachable through `graphi mcp`; 10 of 10 through `graphi mcp -labs`; gate PASS | `go run ./cmd/seamreach -check` (declaration: `internal/seamreach/reachability.txt`) |
+| Seam reachability | 0 of 11 dual-running operations reachable through `graphi mcp`; 11 of 11 through `graphi mcp -labs`; gate PASS | `go run ./cmd/seamreach -check` (declaration: `internal/seamreach/reachability.txt`) |
 
 **In one sentence:** the ten migrated operations are Labs and unreachable
 through the default MCP profile, so a stock install records no dual-run

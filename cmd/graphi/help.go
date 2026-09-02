@@ -287,6 +287,11 @@ var subcommandHelp = map[string]subHelp{
 		"graphi setup-embedder [<selector>] | graphi setup-embedder static:<model>@<revision> [--local <dir>] [--cache-dir <dir>]",
 		"graphi setup-embedder " + static.PinnedSelector,
 	},
+	"semantic": {
+		"report the canonical semantic status document (installed, configured, indexed, fresh, typed state, active generation, languages, exact repair); byte-identical to `semantic_status` MCP tool and `GET /semantic/status`",
+		"graphi semantic status [--json] [-root <repo>] [-db path] [-meta dir]",
+		"graphi semantic status --json",
+	},
 	"privacy-audit": {
 		"report this binary's build-time privacy evidence + live egress check; --source scans a developer checkout instead; non-zero on violation or unverified evidence",
 		"graphi privacy-audit [--source [--target ./...]]",

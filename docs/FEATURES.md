@@ -176,7 +176,7 @@ flowchart LR
 
 | MCP tools | CLI subcommands | HTTP endpoints | Analyzers |
 |---|---|---|---|
-| Stable default: `callers`, `callees`, `references`, `definition`, `neighborhood`; Labs: `implementers`, `implements`, `overrides`, `subtypes`, `supertypes` | `graphi parse`, `graphi query <op>`, `graphi search`, `graphi setup-embedder` | `GET /query/{op}`, `GET /search`, `GET /search/semantic`, `GET /contract`, `GET /healthz` | (foundational — consumed by all analyzers) |
+| Stable default: `callers`, `callees`, `references`, `definition`, `neighborhood`; Labs: `implementers`, `implements`, `overrides`, `subtypes`, `supertypes`, `semantic_status` | `graphi parse`, `graphi query <op>`, `graphi search`, `graphi setup-embedder`, `graphi semantic status` | `GET /query/{op}`, `GET /search`, `GET /search/semantic`, `GET /semantic/status`, `GET /contract`, `GET /healthz` | (foundational — consumed by all analyzers) |
 
 ### EP-004 — Impact & semantic queries
 

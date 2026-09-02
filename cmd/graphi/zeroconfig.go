@@ -13,6 +13,7 @@ import (
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/analysis"
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/ingest"
 	"github.com/samibel/graphi/engine/observe"
 	"github.com/samibel/graphi/engine/query"
@@ -118,7 +119,8 @@ func setupZeroConfig(cwd string, progress func(ingest.ProgressEvent), banner io.
 
 	asvc := analysis.NewDefaultService(store).Freeze()
 	c = client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
-	srv = httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names())
+	srv = httpsrv.New(c, broker).WithWiki(store).WithDescriptors(asvc.Names()).
+		WithEmbedderRegistry(runtimeEmbedderRegistryFromEnv(os.Getenv(embed.EnvSelector)))
 	url = "http://" + ln.Addr().String() + "/"
 	return srv, ln, url, c, store, cleanup, false, nil
 }

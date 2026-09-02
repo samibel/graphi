@@ -163,6 +163,8 @@ func main() {
 		os.Exit(runExtension(os.Args[2:]))
 	case "setup-embedder":
 		os.Exit(runSetupEmbedder(os.Args[2:]))
+	case "semantic":
+		os.Exit(runSemantic(os.Args[2:]))
 	case "privacy-audit":
 		os.Exit(runPrivacyAudit(os.Args[2:]))
 	case "upgrade":

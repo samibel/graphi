@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/trust"
@@ -188,6 +189,7 @@ func (c *DaemonClient) SemanticSearch(ctx context.Context, q string, limit int) 
 	return search.MarshalSemantic(search.SemanticResponse{
 		Query:     q,
 		Available: false,
+		State:     embed.StateMissing,
 		Reason:    search.UnavailableReason,
 		Hits:      []search.SemanticHit{},
 	})

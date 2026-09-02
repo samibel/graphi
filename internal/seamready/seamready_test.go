@@ -268,6 +268,7 @@ type fakeGit struct {
 	commits map[string]bool
 }
 
+func (g fakeGit) HasAnyTag() (bool, error)           { return len(g.tags) > 0, nil }
 func (g fakeGit) TagExists(tag string) (bool, error) { _, ok := g.tags[tag]; return ok, nil }
 func (g fakeGit) FileAtTag(tag, path string) ([]byte, error) {
 	c, ok := g.tags[tag]
@@ -587,8 +588,8 @@ func TestAX14_ReleaseLineNeedsAnExistingTagWithTheOpOnTheSeam(t *testing.T) {
 	src := baseSources()
 	src.Git = fakeGit{tags: map[string]string{}, commits: map[string]bool{"4f14966": true}}
 	a := evalDecl(t, fullDecl, src)
-	if r := rowOf(t, a, "dead_code", "c1"); r.State != StateUnknown {
-		t.Fatalf("c1 with a missing tag = %s, want UNKNOWN (%s)", r.State, r.Reason)
+	if r := rowOf(t, a, "dead_code", "c1"); r.State != StateUnknown || r.Reason != "cannot confirm declared tags: this checkout has none; fetch full history" {
+		t.Fatalf("c1 with a tagless checkout = %s, %q; want UNKNOWN with the checkout diagnostic", r.State, r.Reason)
 	}
 	// Tag exists but the op was NOT on the seam there → FAIL: a positive
 	// finding that the declaration is wrong.
@@ -827,11 +828,29 @@ func TestAX14_TodayEveryOperationIsUnknown(t *testing.T) {
 		t.Fatalf("%d operations assessed, want %d", len(a.Operations), len(client.MigratedOperations()))
 	}
 	for _, o := range a.Operations {
-		if o.Verdict != VerdictUnknown {
-			t.Errorf("%s = %s, want UNKNOWN", o.Operation, o.Verdict)
+		// SW-265 added argument-fidelity pairs for search_semantic
+		// (two queries producing different ranked hits), so its
+		// overall verdict moves from UNKNOWN to NOT_READY: c3 now
+		// has evidence (NOT_READY is the "we know it works, not yet
+		// PASS" state), and the per-criterion c3 row reads NOT_READY.
+		// Other criteria stay UNKNOWN. search_semantic is the only
+		// operation for which this is currently true; the assertion
+		// is per-operation so a future evidence addition on another
+		// op can flip it without this test needing to know.
+		wantVerdict := VerdictUnknown
+		if o.Operation == "search_semantic" {
+			wantVerdict = VerdictNotReady
+		}
+		if o.Verdict != wantVerdict {
+			t.Errorf("%s = %s, want %s", o.Operation, o.Verdict, wantVerdict)
 		}
 		if r := rowOf(t, a, o.Operation, "c2"); r.State != StateUnknown {
 			t.Errorf("%s c2 = %s, want UNKNOWN while K is unset", o.Operation, r.State)
+		}
+		if o.Operation == "search_semantic" {
+			if r := rowOf(t, a, o.Operation, "c3"); r.State == StateUnknown {
+				t.Errorf("search_semantic c3 should be NOT_READY (SW-265 added fidelity pair); want NOT_READY, got UNKNOWN")
+			}
 		}
 	}
 	if a.Record.Observations != 0 || a.Record.Mismatches != 0 {

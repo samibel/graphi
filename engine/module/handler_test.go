@@ -305,8 +305,8 @@ func TestBuiltinsCarryTheHandlerModules(t *testing.T) {
 	if err != nil {
 		t.Fatalf("opcatalog.Shadow: %v", err)
 	}
-	if got, wantLen := comp.Operations().Len(), shadow.Len(); got != wantLen || got != 56 {
-		t.Fatalf("catalog size = %d, shadow = %d, want 56", got, wantLen)
+	if got, wantLen := comp.Operations().Len(), shadow.Len(); got != wantLen || got != 57 {
+		t.Fatalf("catalog size = %d, shadow = %d, want 57 (SW-265 added semantic_status)", got, wantLen)
 	}
 	if got, wantIDs := comp.Operations().IDs(), shadow.IDs(); !reflect.DeepEqual(got, wantIDs) {
 		t.Fatalf("operation ids diverged from the shadow catalog\n  module set: %v\n  shadow:     %v", got, wantIDs)

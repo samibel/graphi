@@ -380,6 +380,7 @@ func TestAX08_MigratedOperationsAgreeInEveryPosition(t *testing.T) {
 		"repo_overview":           {},
 		"search_ast":              {"pattern": `{"kind":"function"}`},
 		"search_hybrid":           {"query": "reader"},
+		"search_semantic":         {"symbol": "reader", "depth": 20},
 		"test_impact":             {"target": "char.Reader"},
 	}
 	migrated := client.MigratedOperations()
