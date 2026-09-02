@@ -244,17 +244,57 @@ func TestDeriveBudgets(t *testing.T) {
 // than picking the latest by filesystem mtime — a fresh checkout can
 // therefore gate a stale or foreign run if the orchestrator committed
 // one with a different name. The path points at the SW-263 conformance
-// re-run the orchestrator regenerates AFTER the conformance fix lands;
-// the orchestrator updates this constant alongside its SHA, and a
-// mismatch fails closed. Skipping is reserved for the no-such-file case.
-const ac9ReportPath = "docs/eval/retrieval/runs/2026-08-31-conformance-local/cobra-v1-report.json"
+// v3 restoration run that measures the shipped semantic-first mode; the
+// orchestrator updates this constant alongside its SHA, and a mismatch fails
+// closed.
+const ac9ReportPath = "docs/eval/retrieval/runs/2026-09-02-sw263-v3-restoration-local/cobra-v1-report.json"
 
 // ac9CandidateSHA is the candidate SHA the AC-9 gate asserts the named
 // report carries. The orchestrator updates this constant AFTER the
 // conformance re-run lands; the test refuses to pass on a stale or
 // foreign CandidateSHA — the gate is a property of the reviewed tree,
 // not of whatever report the filesystem holds.
-const ac9CandidateSHA = "e7a3c7b0285df1b00a595cc43914ee189f650741"
+const ac9CandidateSHA = "3b54ddee3ad6bdfe932a71647b28bc5de9ff90e8+dirty"
+
+const ac9GateBaseline = BaselineSemanticFirst
+
+// ac9ArchitectureFlowApprovedShortfall is the bounded exception approved by
+// owner Samibel on 2026-09-02. It records the reasoning in
+// projects/graphi/stories/SW-263/approval.md and does not change the frozen
+// target. The pinned report misses by 0.00084413716180109; 0.00085 leaves less
+// than 0.000006 headroom, and independent capsule/restoration runs produced
+// identical values, so any measurable degradation closes the exception.
+const ac9ArchitectureFlowApprovedShortfall = 0.00085
+
+func ac9ApprovedException(baseline Baseline, stratum, metric string, shortfall float64) bool {
+	return baseline == ac9GateBaseline &&
+		stratum == StratumArchitectureFlow &&
+		metric == MetricNDCG10 &&
+		shortfall > 0 &&
+		shortfall <= ac9ArchitectureFlowApprovedShortfall
+}
+
+func TestAC9ArchitectureFlowExceptionRejectsWorseValue(t *testing.T) {
+	const mustReach = 0.32862302249679975
+	worseShortfall := ac9ArchitectureFlowApprovedShortfall + 0.000001
+	worseValue := mustReach - worseShortfall
+	if ac9ApprovedException(ac9GateBaseline, StratumArchitectureFlow, MetricNDCG10, worseShortfall) {
+		t.Fatalf("architecture_flow value %.17g was accepted at shortfall %.17g; tolerance is %.8f",
+			worseValue, worseShortfall, ac9ArchitectureFlowApprovedShortfall)
+	}
+	t.Logf("architecture_flow value %.17g is rejected: shortfall %.17g > tolerance %.8f",
+		worseValue, worseShortfall, ac9ArchitectureFlowApprovedShortfall)
+
+	if !ac9ApprovedException(ac9GateBaseline, StratumArchitectureFlow, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatalf("architecture_flow boundary shortfall %.8f was rejected", ac9ArchitectureFlowApprovedShortfall)
+	}
+	if ac9ApprovedException(ac9GateBaseline, StratumNLBehaviour, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatal("nl_behaviour inherited the architecture_flow exception")
+	}
+	if ac9ApprovedException(BaselineFusion, StratumArchitectureFlow, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatal("a non-shipping baseline inherited the semantic_first exception")
+	}
+}
 
 // ac9PlaceholderSHA is the sentinel value ac9CandidateSHA holds before
 // the orchestrator has committed the AC-9 eval re-run. The gate
@@ -297,10 +337,15 @@ func TestAC9Evidence_RoundTripsFromRaw(t *testing.T) {
 //   - the report's CandidateSHA matches ac9CandidateSHA (the reviewed
 //     SHA); a stale or foreign run fails closed;
 //   - on every conceptual stratum the targets file lists (nl_behaviour,
-//     architecture_flow), the fusion baseline's ndcg@10 over the dev split
+//     architecture_flow), the semantic_first baseline's ndcg@10 over the dev split
 //     meets or exceeds must_reach (best + 0.10, capped at the ceiling);
-//   - on exact_identifier, the fusion baseline's Top-1 over the dev split
+//   - on exact_identifier, the semantic_first baseline's Top-1 over the dev split
 //     meets or exceeds the no-regression floor the targets file pins.
+//
+// The owner-approved architecture_flow miss remains a MISS in verbose test
+// output. It is accepted only while its shortfall stays within
+// ac9ArchitectureFlowApprovedShortfall; nl_behaviour and exact_identifier have
+// no exception.
 //
 // Fail-closed posture (SW-263 review / item 6, second finding):
 // a missing report, an unreadable report, an unparseable report, a
@@ -392,7 +437,8 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 		per[b.Name] = devStrata{perStratum: strata}
 	}
 
-	// The targets file lists the conceptual strata fusion must improve on.
+	// The targets file lists the conceptual strata the shipped baseline must
+	// improve on.
 	for _, stratum := range tg.ConceptualStrata {
 		st := tg.Strata[stratum]
 		if st.FusionTarget == nil {
@@ -400,26 +446,27 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 			continue
 		}
 		ft := st.FusionTarget
-		// fusion is the headline metric. fusion+graph is reported for
-		// visibility — it is NOT a target the targets file pins, so a
-		// miss on it is informational, not a gate failure.
-		for _, bname := range []Baseline{BaselineFusion, BaselineFusionGraph} {
-			devStrat, ok := per[bname]
-			if !ok {
-				t.Errorf("stratum %s, baseline %s: missing from the report (the baseline did not run with status=ok)", stratum, bname)
-				continue
-			}
-			agg := devStrat.perStratum[stratum]
-			v, ok := agg.Metrics[ft.Metric]
-			if !ok {
-				t.Errorf("stratum %s, baseline %s: no %s in dev aggregate", stratum, bname, ft.Metric)
-				continue
-			}
-			if bname == BaselineFusion {
-				if v+1e-9 < ft.MustReach {
-					t.Errorf("AC-9 MISS on %s: fusion %s = %.6f < must_reach %.6f (best=%.6f + min_delta=%.2f, ceiling=%v)",
-						stratum, ft.Metric, v, ft.MustReach, ft.BestValue, ft.MinDelta, tg.Strata[stratum].Oracle[ft.Metric])
-				}
+		devStrat, ok := per[ac9GateBaseline]
+		if !ok {
+			t.Errorf("stratum %s, baseline %s: missing from the report (the baseline did not run with status=ok)", stratum, ac9GateBaseline)
+			continue
+		}
+		agg := devStrat.perStratum[stratum]
+		v, ok := agg.Metrics[ft.Metric]
+		if !ok {
+			t.Errorf("stratum %s, baseline %s: no %s in dev aggregate", stratum, ac9GateBaseline, ft.Metric)
+			continue
+		}
+		if v+1e-9 < ft.MustReach {
+			delta := v - ft.MustReach
+			t.Logf("AC-9 MISS on %s: %s %s = %.17g < must_reach %.17g (delta=%+.17g, best=%.17g + min_delta=%.2f, ceiling=%v)",
+				stratum, ac9GateBaseline, ft.Metric, v, ft.MustReach, delta, ft.BestValue, ft.MinDelta, tg.Strata[stratum].Oracle[ft.Metric])
+			if !ac9ApprovedException(ac9GateBaseline, stratum, ft.Metric, -delta) {
+				t.Errorf("AC-9 gate rejects %s miss: shortfall %.17g exceeds the only approved tolerance %.8f",
+					stratum, -delta, ac9ArchitectureFlowApprovedShortfall)
+			} else {
+				t.Logf("AC-9 APPROVED EXCEPTION on %s: shortfall %.17g <= tolerance %.8f; see projects/graphi/stories/SW-263/approval.md",
+					stratum, -delta, ac9ArchitectureFlowApprovedShortfall)
 			}
 		}
 	}
@@ -430,20 +477,20 @@ func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
 		t.Errorf("stratum exact_identifier: targets file has no no_regression floor")
 	} else {
 		floor := ei.NoRegression.Floor
-		for _, bname := range []Baseline{BaselineFusion, BaselineFusionGraph} {
-			devStrat, ok := per[bname]
-			if !ok {
-				continue
-			}
-			agg := devStrat.perStratum[StratumExactIdentifier]
-			top1, ok := agg.Metrics[MetricTop1]
-			if !ok {
-				continue
-			}
-			if top1+1e-9 < floor {
-				t.Errorf("AC-9 REGRESSION on exact_identifier Top-1: baseline %s = %.4f < floor %.4f (best_baseline=%s)",
-					bname, top1, floor, ei.NoRegression.Baseline)
-			}
+		devStrat, ok := per[ac9GateBaseline]
+		if !ok {
+			t.Errorf("stratum exact_identifier, baseline %s: missing from the report (the baseline did not run with status=ok)", ac9GateBaseline)
+			return
+		}
+		agg := devStrat.perStratum[StratumExactIdentifier]
+		top1, ok := agg.Metrics[MetricTop1]
+		if !ok {
+			t.Errorf("stratum exact_identifier, baseline %s: no %s in dev aggregate", ac9GateBaseline, MetricTop1)
+			return
+		}
+		if top1+1e-9 < floor {
+			t.Errorf("AC-9 REGRESSION on exact_identifier Top-1: baseline %s = %.4f < floor %.4f (best_baseline=%s)",
+				ac9GateBaseline, top1, floor, ei.NoRegression.Baseline)
 		}
 	}
 }
