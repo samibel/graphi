@@ -9,6 +9,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
+	"github.com/samibel/graphi/engine/retrieval"
 	"github.com/samibel/graphi/engine/search"
 )
 
@@ -71,6 +72,9 @@ func TestComposeRetrieval_PreservesProductionIdentityAndExplain(t *testing.T) {
 	if got.Rows[0].DocumentID != "doc-target-v2" {
 		t.Errorf("DocumentID = %q, want persisted semantic identity", got.Rows[0].DocumentID)
 	}
+	if got.Rows[0].Region != "semantic_prefix" || got.Summary.Strategy != "semantic_first" {
+		t.Errorf("semantic-first provenance was not preserved through the production adapter: row=%+v summary=%+v", got.Rows[0], got.Summary)
+	}
 	if got.Rows[0].Explain.SemanticRank == 0 || got.Rows[0].Explain.Final != got.Rows[0].Final {
 		t.Errorf("explain was not preserved through the composition adapter: %+v", got.Rows[0])
 	}
@@ -82,5 +86,13 @@ func TestComposeRetrieval_PreservesProductionIdentityAndExplain(t *testing.T) {
 	}
 	if got.Summary.WeightsHash == "" || got.Summary.CandidateK != 50 || got.Summary.RRFk != 60 {
 		t.Errorf("summary was not preserved through the composition adapter: %+v", got.Summary)
+	}
+}
+
+func TestProductionRetrievalMode_ExperimentalFusionIsUnreachable(t *testing.T) {
+	for _, mode := range []retrieval.Mode{retrieval.ModeFusionNoGraph, retrieval.ModeFusionGraph} {
+		if got := productionRetrievalMode(int(mode)); got != retrieval.ModeAuto {
+			t.Errorf("productionRetrievalMode(%d) = %d, want ModeAuto", mode, got)
+		}
 	}
 }

@@ -18,7 +18,7 @@ type row struct {
 	lexicalRank   int    // 1-based, 0 when not in lexical candidates
 	semanticRank  int    // 1-based, 0 when not in semantic candidates
 	lexicalScore  int    // provider's rerank score for this row (e.g. hybridsearch's audit score), 0 when unranked
-	semanticScore int    // quantised cosine, 0 when semantic-only candidate or absent
+	semanticScore int    // quantised cosine, 0 when absent
 	rrfScore      int    // rrfScale/(rrfK+rank) summed over the sources that contributed; 0 when only one source contributed (lexical-only byte-parity path)
 	graphScore    int    // bounded rerank contribution; for the byte-parity lexical-only path this equals lexicalHit.Score
 	classScore    int    // classification penalty (negative or zero)
@@ -26,16 +26,19 @@ type row struct {
 	pathClass     string // "vendor", "generated", "" otherwise (the integer penalty comes from pathClass)
 	isDefinition  bool   // "function" / "method" / "type" kind — bonus path (default weight 0)
 	ineligible    bool   // true when the row has no resolvable source path — filtered out of the top Limit before truncation (AC-2 eligibility)
+	region        string // AC-11 audit tag: how this row entered the result (semantic_prefix / lexical_backfill / lexical_only / lexical_path_override / fused)
 }
 
-// toRow projects an internal row to the public Row shape (AC-1). The Span
-// is engine-owned: "start-end" when both are known, "" otherwise.
+// toRow projects an internal row to the public Row shape (AC-1, AC-11).
+// The Span is engine-owned: "start-end" when both are known, "" otherwise.
+// The Region tag is the AC-11 audit field the row carries verbatim.
 func (r row) toRow() Row {
 	return Row{
 		NodeID:     r.nodeID,
 		DocumentID: r.documentID,
 		Path:       r.path,
 		Span:       r.span,
+		Region:     r.region,
 		Explain: Explain{
 			LexicalRank:    r.lexicalRank,
 			SemanticRank:   r.semanticRank,

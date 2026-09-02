@@ -30,7 +30,9 @@ import (
 // Baseline names one ranking method the runner can execute (AC-3).
 type Baseline string
 
-// The seven baselines. They are executed by name and in this order.
+// The baseline vocabulary. AllBaselines below is the default report set;
+// evaluator-only experiments may remain explicitly selectable without being
+// part of that default set.
 const (
 	// BaselineLexical is engine/search.Service.Search: the store's FTS5
 	// (SQLite) ranking over qualified names.
@@ -58,19 +60,39 @@ const (
 	// when -embedder is set); without one the baseline is unavailable with
 	// the typed reason.
 	BaselineFusion Baseline = "fusion"
-	// BaselineFusionGraph is the SW-263 retrieval module in default ModeAuto:
-	// full union + RRF + bounded rerank + classification + diversify. The
-	// AC-9 "fusion+graph" ablation. Requires an embedder for the same
-	// reason as fusion.
+	// BaselineFusionGraph is the SW-263 retrieval module in the
+	// evaluator-only ModeFusionGraph: full union + RRF + bounded rerank
+	// + classification + diversify. The AC-9 "fusion+graph" ablation.
+	// Requires an embedder for the same reason as fusion.
 	BaselineFusionGraph Baseline = "fusion+graph"
+	// BaselineSemanticFirst is the SHIPPED semantic-first pipeline
+	// (SW-263 owner decision 2026-09-01): the AC-3 quantised semantic
+	// prefix is the result prefix, lexical only backfills unfilled
+	// positions, and the AC-5 cap is a backfill-admission threshold
+	// seeded from the prefix. This is the production retrieval path
+	// through the production-composed module — the harness drives
+	// `retrieval.New(deps, idx.search, idx.store)` with the production
+	// static embedder and the production document source, then asks
+	// for ModeAuto. Requires an embedder.
+	BaselineSemanticFirst Baseline = "semantic_first"
 )
 
-// AllBaselines in report order. The three SW-263 retrieval ablations
-// (chunk_only, fusion, fusion+graph) follow the SW-258 baselines so a
-// reader of the report sees them as the addition this story is about.
-var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineFusionGraph}
+// AllBaselines is the seven-baseline default report set. semantic_first
+// occupies the slot that previously labelled ModeAuto as fusion+graph: it is
+// the shipped ModeAuto strategy and therefore must be measured by a no-flag
+// run. fusion+graph remains available by explicit name as an evaluator-only
+// experiment, just like its ModeFusionGraph implementation.
+var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineSemanticFirst}
+
+// legacyBaselines is the exact default universe used by reports written
+// before semantic_first replaced fusion+graph in AllBaselines. The aggregate
+// reader accepts this one historical closed world so existing evidence keeps
+// reproducing; new runs use AllBaselines.
+var legacyBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineFusionGraph}
 
 // ParseBaselines resolves names to baselines, refusing an unknown one.
+// The evaluator-only fusion+graph experiment is accepted by explicit name
+// even though it is not part of the default shipped-mode report.
 func ParseBaselines(names []string) ([]Baseline, error) {
 	if len(names) == 0 {
 		return append([]Baseline(nil), AllBaselines...), nil
@@ -79,6 +101,7 @@ func ParseBaselines(names []string) ([]Baseline, error) {
 	for _, b := range AllBaselines {
 		known[b] = true
 	}
+	known[BaselineFusionGraph] = true
 	var out []Baseline
 	seen := map[Baseline]bool{}
 	for _, n := range names {
@@ -95,10 +118,11 @@ func ParseBaselines(names []string) ([]Baseline, error) {
 }
 
 func baselineNames() string {
-	names := make([]string, 0, len(AllBaselines))
+	names := make([]string, 0, len(AllBaselines)+1)
 	for _, b := range AllBaselines {
 		names = append(names, string(b))
 	}
+	names = append(names, string(BaselineFusionGraph))
 	return strings.Join(names, ", ")
 }
 
@@ -795,16 +819,30 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 		}, method: func() string { return method }}, nil
 	case BaselineFusionGraph:
 		if reason := semanticReadyReason(idx); reason != "" {
-			return fixedExecutor(unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeAuto) — requires configured embedder"), nil
+			return fixedExecutor(unavailableExecutor(reason), "engine/retrieval (fusion+graph, ModeFusionGraph) — requires configured embedder"), nil
 		}
 		r := retrieval.New(deps, idx.search, idx.store)
-		method := "engine/retrieval (fusion+graph, ModeAuto)"
+		method := "engine/retrieval (fusion+graph, ModeFusionGraph)"
+		return baselineExecutor{run: func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeFusionGraph})
+			if err != nil {
+				return nil, "", err
+			}
+			method = retrievalMethod("fusion+graph, ModeFusionGraph", res.Summary)
+			return retrievalToRaws(ctx, idx, res), "", nil
+		}, method: func() string { return method }}, nil
+	case BaselineSemanticFirst:
+		if reason := semanticReadyReason(idx); reason != "" {
+			return fixedExecutor(unavailableExecutor(reason), "engine/retrieval (semantic_first, ModeAuto) — requires configured embedder"), nil
+		}
+		r := retrieval.New(deps, idx.search, idx.store)
+		method := "engine/retrieval (semantic_first, ModeAuto)"
 		return baselineExecutor{run: func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: TopK, Mode: retrieval.ModeAuto})
 			if err != nil {
 				return nil, "", err
 			}
-			method = retrievalMethod("fusion+graph, ModeAuto", res.Summary)
+			method = retrievalMethod("semantic_first, ModeAuto", res.Summary)
 			return retrievalToRaws(ctx, idx, res), "", nil
 		}, method: func() string { return method }}, nil
 	case BaselineOracle:

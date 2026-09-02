@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -408,7 +409,17 @@ func TestRun_FailsClosed(t *testing.T) {
 		}
 		bs, err := ParseBaselines(nil)
 		if err != nil || len(bs) != 7 {
-			t.Errorf("ParseBaselines(nil) = %v, %v", bs, err)
+			t.Errorf("ParseBaselines(nil) = %v, %v (the default baseline set is fixed at 7)", bs, err)
+		}
+		if !slices.Contains(bs, BaselineSemanticFirst) {
+			t.Errorf("ParseBaselines(nil) = %v, want the shipped semantic_first baseline", bs)
+		}
+		if slices.Contains(bs, BaselineFusionGraph) {
+			t.Errorf("ParseBaselines(nil) = %v, fusion+graph must be opt-in evaluator-only", bs)
+		}
+		bsFG, err := ParseBaselines([]string{"fusion+graph"})
+		if err != nil || len(bsFG) != 1 || bsFG[0] != BaselineFusionGraph {
+			t.Errorf("ParseBaselines([fusion+graph]) = %v, %v", bsFG, err)
 		}
 	})
 	t.Run("a missing repository root is an error", func(t *testing.T) {

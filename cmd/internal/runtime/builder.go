@@ -272,7 +272,7 @@ func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverReq
 		Query:      req.Query,
 		Limit:      req.Limit,
 		BudgetHint: req.Budget,
-		Mode:       retrieval.Mode(req.Mode),
+		Mode:       productionRetrievalMode(req.Mode),
 	}
 	res, err := a.eng.Retrieve(ctx, rreq)
 	if err != nil {
@@ -280,9 +280,11 @@ func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverReq
 	}
 	out := resolve.RetrieverResult{
 		Degradation: string(res.Degradation),
+		Reason:      res.Reason,
 		Rows:        make([]resolve.RetrieverRow, len(res.Rows)),
 		Summary: resolve.RetrieverSummary{
 			RetrievalVersion: res.Summary.RetrievalVersion,
+			Strategy:         res.Summary.Strategy,
 			WeightsHash:      res.Summary.WeightsHash,
 			ModelFingerprint: res.Summary.ModelFingerprint,
 			IndexFingerprint: res.Summary.IndexFingerprint,
@@ -301,6 +303,7 @@ func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverReq
 			Path:       row.Path,
 			Line:       lineFromSpan(row.Span),
 			Span:       row.Span,
+			Region:     row.Region,
 			Explain: resolve.RetrieverExplain{
 				LexicalRank:    row.Explain.LexicalRank,
 				SemanticRank:   row.Explain.SemanticRank,
@@ -313,6 +316,21 @@ func (a retrievalAdapter) Retrieve(ctx context.Context, req resolve.RetrieverReq
 		}
 	}
 	return out, nil
+}
+
+// productionRetrievalMode is the production request boundary. Only shipped
+// modes have a mapping here; evaluator-only fusion modes cannot be selected
+// by an integer passed through resolve.Deps. Unknown values fail closed to
+// ModeAuto, whose ready strategy is semantic-first.
+func productionRetrievalMode(mode int) retrieval.Mode {
+	switch mode {
+	case int(retrieval.ModeLexicalOnly):
+		return retrieval.ModeLexicalOnly
+	case int(retrieval.ModeSemanticRequired):
+		return retrieval.ModeSemanticRequired
+	default:
+		return retrieval.ModeAuto
+	}
 }
 
 // lineFromSpan parses the engine-owned "start-end" span string back

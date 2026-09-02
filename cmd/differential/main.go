@@ -243,7 +243,7 @@ func run(repoDir, datasetPath, newRunDir, prevRunDir string, w io.Writer) error 
 		if err != nil {
 			return err
 		}
-		fgRes, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: 10, Mode: retrieval.ModeAuto})
+		fgRes, err := r.Retrieve(ctx, retrieval.Request{Query: q.Text, Limit: 10, Mode: retrieval.ModeFusionGraph})
 		if err != nil {
 			return err
 		}

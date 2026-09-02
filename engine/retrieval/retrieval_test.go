@@ -24,7 +24,8 @@ import (
 // lists it.
 func TestExportedSurface_ListsExactlyTheNamedTypes(t *testing.T) {
 	allowedPackageNames := map[string]bool{
-		"Mode": true, "ModeAuto": true, "ModeLexicalOnly": true, "ModeSemanticRequired": true, "ModeFusionNoGraph": true,
+		"Mode": true, "ModeAuto": true, "ModeLexicalOnly": true, "ModeSemanticRequired": true,
+		"ModeFusionNoGraph": true, "ModeFusionGraph": true,
 		"Request": true,
 		"State":   true, "StateReady": true, "StateLexicalOnly": true,
 		"StateGenerationMissing": true, "StateGenerationStale": true, "StateGenerationCorrupt": true,
@@ -131,6 +132,12 @@ func TestModeVocabulary_IsClosed(t *testing.T) {
 	}
 	if retrieval.ModeFusionNoGraph == retrieval.ModeSemanticRequired || retrieval.ModeFusionNoGraph == retrieval.ModeLexicalOnly {
 		t.Errorf("ModeFusionNoGraph aliases another mode")
+	}
+	if retrieval.ModeFusionGraph == retrieval.ModeFusionNoGraph ||
+		retrieval.ModeFusionGraph == retrieval.ModeSemanticRequired ||
+		retrieval.ModeFusionGraph == retrieval.ModeLexicalOnly ||
+		retrieval.ModeFusionGraph == retrieval.ModeAuto {
+		t.Errorf("ModeFusionGraph aliases another mode")
 	}
 }
 

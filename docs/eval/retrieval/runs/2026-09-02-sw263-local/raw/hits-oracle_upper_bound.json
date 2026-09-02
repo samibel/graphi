@@ -1,0 +1,1189 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "hits",
+  "baseline": "oracle_upper_bound",
+  "collected": true,
+  "samples": 123,
+  "queries": [
+    {
+      "id": "cb-01",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1051,
+          "kind": "span",
+          "qualified_name": "command.go:1051-1137",
+          "tokens": 156
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1035,
+          "kind": "span",
+          "qualified_name": "command.go:1035-1041",
+          "tokens": 177
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1043,
+          "kind": "span",
+          "qualified_name": "command.go:1043-1049",
+          "tokens": 167
+        }
+      ]
+    },
+    {
+      "id": "cb-02",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "flag_groups.go",
+          "line": 63,
+          "kind": "span",
+          "qualified_name": "flag_groups.go:63-77",
+          "tokens": 208
+        },
+        {
+          "rank": 2,
+          "path": "flag_groups.go",
+          "line": 188,
+          "kind": "span",
+          "qualified_name": "flag_groups.go:188-207",
+          "tokens": 203
+        },
+        {
+          "rank": 3,
+          "path": "flag_groups_test.go",
+          "line": 22,
+          "kind": "span",
+          "qualified_name": "flag_groups_test.go:22-195",
+          "tokens": 134
+        }
+      ]
+    },
+    {
+      "id": "cb-03",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/md_docs.go",
+          "line": 119,
+          "kind": "span",
+          "qualified_name": "doc/md_docs.go:119-129",
+          "tokens": 211
+        },
+        {
+          "rank": 2,
+          "path": "doc/md_docs.go",
+          "line": 131,
+          "kind": "span",
+          "qualified_name": "doc/md_docs.go:131-158",
+          "tokens": 110
+        },
+        {
+          "rank": 3,
+          "path": "doc/md_docs_test.go",
+          "line": 95,
+          "kind": "span",
+          "qualified_name": "doc/md_docs_test.go:95-110",
+          "tokens": 104
+        }
+      ]
+    },
+    {
+      "id": "cb-04",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 132,
+          "kind": "span",
+          "qualified_name": "completions.go:132-146",
+          "tokens": 169
+        },
+        {
+          "rank": 2,
+          "path": "completions.go",
+          "line": 148,
+          "kind": "span",
+          "qualified_name": "completions.go:148-160",
+          "tokens": 147
+        },
+        {
+          "rank": 3,
+          "path": "completions.go",
+          "line": 35,
+          "kind": "span",
+          "qualified_name": "completions.go:35-36",
+          "tokens": 231
+        }
+      ]
+    },
+    {
+      "id": "cb-05",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1146,
+          "kind": "span",
+          "qualified_name": "command.go:1146-1168",
+          "tokens": 185
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        }
+      ]
+    },
+    {
+      "id": "cb-06",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "zsh_completions.go",
+          "line": 40,
+          "kind": "span",
+          "qualified_name": "zsh_completions.go:40-44",
+          "tokens": 194
+        },
+        {
+          "rank": 2,
+          "path": "zsh_completions.go",
+          "line": 29,
+          "kind": "span",
+          "qualified_name": "zsh_completions.go:29-33",
+          "tokens": 213
+        },
+        {
+          "rank": 3,
+          "path": "zsh_completions.go",
+          "line": 80,
+          "kind": "span",
+          "qualified_name": "zsh_completions.go:80-85",
+          "tokens": 109
+        }
+      ]
+    },
+    {
+      "id": "cb-07",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "flag_groups.go",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "flag_groups.go:1-290",
+          "tokens": 198
+        }
+      ]
+    },
+    {
+      "id": "cb-08",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/man_docs.go",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:1-246",
+          "tokens": 196
+        }
+      ]
+    },
+    {
+      "id": "cb-09",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "shell_completions.go",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "shell_completions.go:1-98",
+          "tokens": 230
+        }
+      ]
+    },
+    {
+      "id": "cb-10",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "active_help.go",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "active_help.go:1-67",
+          "tokens": 229
+        },
+        {
+          "rank": 2,
+          "path": "active_help_test.go",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "active_help_test.go:1-400",
+          "tokens": 167
+        }
+      ]
+    },
+    {
+      "id": "cb-11",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1146,
+          "kind": "span",
+          "qualified_name": "command.go:1146-1168",
+          "tokens": 185
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        },
+        {
+          "rank": 3,
+          "path": "shell_completions.go",
+          "line": 21,
+          "kind": "span",
+          "qualified_name": "shell_completions.go:21-26",
+          "tokens": 258
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 818,
+          "kind": "span",
+          "qualified_name": "command_test.go:818-834",
+          "tokens": 127
+        },
+        {
+          "rank": 5,
+          "path": "site/content/user_guide.md",
+          "line": 319,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:319-333",
+          "tokens": 208
+        }
+      ]
+    },
+    {
+      "id": "cb-12",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 724,
+          "kind": "span",
+          "qualified_name": "command.go:724-748",
+          "tokens": 154
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 767,
+          "kind": "span",
+          "qualified_name": "command.go:767-786",
+          "tokens": 177
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 788,
+          "kind": "span",
+          "qualified_name": "command.go:788-829",
+          "tokens": 174
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 643,
+          "kind": "span",
+          "qualified_name": "command.go:643-679",
+          "tokens": 161
+        }
+      ]
+    },
+    {
+      "id": "cb-13",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 831,
+          "kind": "span",
+          "qualified_name": "command.go:831-850",
+          "tokens": 146
+        },
+        {
+          "rank": 2,
+          "path": "cobra.go",
+          "line": 187,
+          "kind": "span",
+          "qualified_name": "cobra.go:187-221",
+          "tokens": 147
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 750,
+          "kind": "span",
+          "qualified_name": "command.go:750-765",
+          "tokens": 139
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 1296,
+          "kind": "span",
+          "qualified_name": "command_test.go:1296-1341",
+          "tokens": 122
+        },
+        {
+          "rank": 5,
+          "path": "site/content/user_guide.md",
+          "line": 694,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:694-734",
+          "tokens": 181
+        }
+      ]
+    },
+    {
+      "id": "cb-14",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 193,
+          "kind": "span",
+          "qualified_name": "completions.go:193-264",
+          "tokens": 219
+        },
+        {
+          "rank": 2,
+          "path": "completions.go",
+          "line": 266,
+          "kind": "span",
+          "qualified_name": "completions.go:266-520",
+          "tokens": 276
+        },
+        {
+          "rank": 3,
+          "path": "completions.go",
+          "line": 26,
+          "kind": "span",
+          "qualified_name": "completions.go:26-33",
+          "tokens": 229
+        }
+      ]
+    },
+    {
+      "id": "cb-15",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1200,
+          "kind": "span",
+          "qualified_name": "command.go:1200-1224",
+          "tokens": 189
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 598,
+          "kind": "span",
+          "qualified_name": "command.go:598-609",
+          "tokens": 117
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        },
+        {
+          "rank": 4,
+          "path": "site/content/user_guide.md",
+          "line": 592,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:592-598",
+          "tokens": 231
+        },
+        {
+          "rank": 5,
+          "path": "command_test.go",
+          "line": 1051,
+          "kind": "span",
+          "qualified_name": "command_test.go:1051-1060",
+          "tokens": 130
+        }
+      ]
+    },
+    {
+      "id": "cb-16",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "cobra.go",
+          "line": 187,
+          "kind": "span",
+          "qualified_name": "cobra.go:187-221",
+          "tokens": 147
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 831,
+          "kind": "span",
+          "qualified_name": "command.go:831-850",
+          "tokens": 146
+        }
+      ]
+    },
+    {
+      "id": "cb-17",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 497,
+          "kind": "span",
+          "qualified_name": "command.go:497-511",
+          "tokens": 143
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 316,
+          "kind": "span",
+          "qualified_name": "command.go:316-320",
+          "tokens": 188
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 2083,
+          "kind": "span",
+          "qualified_name": "command_test.go:2083-2098",
+          "tokens": 125
+        }
+      ]
+    },
+    {
+      "id": "cb-18",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1560,
+          "kind": "span",
+          "qualified_name": "command.go:1560-1576",
+          "tokens": 175
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1615,
+          "kind": "span",
+          "qualified_name": "command.go:1615-1629",
+          "tokens": 173
+        },
+        {
+          "rank": 3,
+          "path": "command_test.go",
+          "line": 1770,
+          "kind": "span",
+          "qualified_name": "command_test.go:1770-1776",
+          "tokens": 121
+        }
+      ]
+    },
+    {
+      "id": "cb-19",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1051,
+          "kind": "span",
+          "qualified_name": "command.go:1051-1137",
+          "tokens": 156
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1035,
+          "kind": "span",
+          "qualified_name": "command.go:1035-1041",
+          "tokens": 177
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1015,
+          "kind": "span",
+          "qualified_name": "command.go:1015-1025",
+          "tokens": 173
+        },
+        {
+          "rank": 5,
+          "path": "site/content/user_guide.md",
+          "line": 605,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:605-693",
+          "tokens": 214
+        }
+      ]
+    },
+    {
+      "id": "cb-20",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1847,
+          "kind": "span",
+          "qualified_name": "command.go:1847-1853",
+          "tokens": 118
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1855,
+          "kind": "span",
+          "qualified_name": "command.go:1855-1874",
+          "tokens": 94
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1695,
+          "kind": "span",
+          "qualified_name": "command.go:1695-1718",
+          "tokens": 127
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1725,
+          "kind": "span",
+          "qualified_name": "command.go:1725-1735",
+          "tokens": 140
+        },
+        {
+          "rank": 5,
+          "path": "site/content/user_guide.md",
+          "line": 270,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:270-279",
+          "tokens": 164
+        }
+      ]
+    },
+    {
+      "id": "cb-21",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1302,
+          "kind": "span",
+          "qualified_name": "command.go:1302-1329",
+          "tokens": 161
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1361,
+          "kind": "span",
+          "qualified_name": "command.go:1361-1393",
+          "tokens": 158
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1842,
+          "kind": "span",
+          "qualified_name": "command.go:1842-1845",
+          "tokens": 128
+        }
+      ]
+    },
+    {
+      "id": "cb-22",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/md_docs.go",
+          "line": 131,
+          "kind": "span",
+          "qualified_name": "doc/md_docs.go:131-158",
+          "tokens": 110
+        },
+        {
+          "rank": 2,
+          "path": "doc/man_docs.go",
+          "line": 46,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:46-80",
+          "tokens": 144
+        },
+        {
+          "rank": 3,
+          "path": "doc/rest_docs.go",
+          "line": 143,
+          "kind": "span",
+          "qualified_name": "doc/rest_docs.go:143-170",
+          "tokens": 159
+        },
+        {
+          "rank": 4,
+          "path": "doc/yaml_docs.go",
+          "line": 59,
+          "kind": "span",
+          "qualified_name": "doc/yaml_docs.go:59-85",
+          "tokens": 149
+        }
+      ]
+    },
+    {
+      "id": "cb-23",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 678,
+          "kind": "span",
+          "qualified_name": "completions.go:678-839",
+          "tokens": 177
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1051,
+          "kind": "span",
+          "qualified_name": "command.go:1051-1137",
+          "tokens": 156
+        },
+        {
+          "rank": 3,
+          "path": "completions.go",
+          "line": 104,
+          "kind": "span",
+          "qualified_name": "completions.go:104-116",
+          "tokens": 213
+        }
+      ]
+    },
+    {
+      "id": "cb-24",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "flag_groups.go",
+          "line": 220,
+          "kind": "span",
+          "qualified_name": "flag_groups.go:220-290",
+          "tokens": 250
+        },
+        {
+          "rank": 2,
+          "path": "completions.go",
+          "line": 266,
+          "kind": "span",
+          "qualified_name": "completions.go:266-520",
+          "tokens": 276
+        },
+        {
+          "rank": 3,
+          "path": "flag_groups.go",
+          "line": 79,
+          "kind": "span",
+          "qualified_name": "flag_groups.go:79-109",
+          "tokens": 144
+        }
+      ]
+    },
+    {
+      "id": "cb-25",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 104,
+          "kind": "span",
+          "qualified_name": "completions.go:104-116",
+          "tokens": 213
+        },
+        {
+          "rank": 2,
+          "path": "site/content/completions/_index.md",
+          "line": 92,
+          "kind": "span",
+          "qualified_name": "site/content/completions/_index.md:92-116",
+          "tokens": 194
+        },
+        {
+          "rank": 3,
+          "path": "site/content/docgen/_index.md",
+          "line": 15,
+          "kind": "span",
+          "qualified_name": "site/content/docgen/_index.md:15-17",
+          "tokens": 12
+        }
+      ]
+    },
+    {
+      "id": "cb-26",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "active_help.go",
+          "line": 59,
+          "kind": "span",
+          "qualified_name": "active_help.go:59-67",
+          "tokens": 67
+        },
+        {
+          "rank": 2,
+          "path": "site/content/active_help.md",
+          "line": 88,
+          "kind": "span",
+          "qualified_name": "site/content/active_help.md:88-131",
+          "tokens": 355
+        },
+        {
+          "rank": 3,
+          "path": "active_help.go",
+          "line": 24,
+          "kind": "span",
+          "qualified_name": "active_help.go:24-31",
+          "tokens": 275
+        },
+        {
+          "rank": 4,
+          "path": "active_help.go",
+          "line": 46,
+          "kind": "span",
+          "qualified_name": "active_help.go:46-57",
+          "tokens": 136
+        }
+      ]
+    },
+    {
+      "id": "cb-27",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "cobra.go",
+          "line": 52,
+          "kind": "span",
+          "qualified_name": "cobra.go:52-55",
+          "tokens": 265
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 767,
+          "kind": "span",
+          "qualified_name": "command.go:767-786",
+          "tokens": 177
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1524,
+          "kind": "span",
+          "qualified_name": "command.go:1524-1538",
+          "tokens": 172
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 305,
+          "kind": "span",
+          "qualified_name": "command_test.go:305-332",
+          "tokens": 126
+        }
+      ]
+    },
+    {
+      "id": "cb-28",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 41,
+          "kind": "span",
+          "qualified_name": "command.go:41-45",
+          "tokens": 288
+        },
+        {
+          "rank": 2,
+          "path": "site/content/user_guide.md",
+          "line": 533,
+          "kind": "span",
+          "qualified_name": "site/content/user_guide.md:533-540",
+          "tokens": 219
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1170,
+          "kind": "span",
+          "qualified_name": "command.go:1170-1181",
+          "tokens": 205
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1356,
+          "kind": "span",
+          "qualified_name": "command.go:1356-1359",
+          "tokens": 154
+        }
+      ]
+    },
+    {
+      "id": "cb-29",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "cobra.go",
+          "line": 61,
+          "kind": "span",
+          "qualified_name": "cobra.go:61-62",
+          "tokens": 241
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1876,
+          "kind": "span",
+          "qualified_name": "command.go:1876-1885",
+          "tokens": 40
+        },
+        {
+          "rank": 3,
+          "path": "command_test.go",
+          "line": 1343,
+          "kind": "span",
+          "qualified_name": "command_test.go:1343-1434",
+          "tokens": 79
+        }
+      ]
+    },
+    {
+      "id": "cb-30",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/man_docs.go",
+          "line": 33,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:33-44",
+          "tokens": 194
+        },
+        {
+          "rank": 2,
+          "path": "site/content/docgen/man.md",
+          "line": 1,
+          "kind": "span",
+          "qualified_name": "site/content/docgen/man.md:1-31",
+          "tokens": 75
+        },
+        {
+          "rank": 3,
+          "path": "doc/man_docs.go",
+          "line": 46,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:46-80",
+          "tokens": 144
+        },
+        {
+          "rank": 4,
+          "path": "doc/man_docs.go",
+          "line": 82,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:82-88",
+          "tokens": 183
+        }
+      ]
+    },
+    {
+      "id": "cb-31",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "bash_completions.go",
+          "line": 685,
+          "kind": "span",
+          "qualified_name": "bash_completions.go:685-697",
+          "tokens": 86
+        },
+        {
+          "rank": 2,
+          "path": "doc/man_docs.go",
+          "line": 103,
+          "kind": "span",
+          "qualified_name": "doc/man_docs.go:103-116",
+          "tokens": 163
+        },
+        {
+          "rank": 3,
+          "path": "doc/md_docs.go",
+          "line": 51,
+          "kind": "span",
+          "qualified_name": "doc/md_docs.go:51-54",
+          "tokens": 129
+        },
+        {
+          "rank": 4,
+          "path": "doc/rest_docs.go",
+          "line": 56,
+          "kind": "span",
+          "qualified_name": "doc/rest_docs.go:56-59",
+          "tokens": 119
+        },
+        {
+          "rank": 5,
+          "path": "doc/yaml_docs.go",
+          "line": 87,
+          "kind": "span",
+          "qualified_name": "doc/yaml_docs.go:87-90",
+          "tokens": 111
+        }
+      ]
+    },
+    {
+      "id": "cb-32",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1035,
+          "kind": "span",
+          "qualified_name": "command.go:1035-1041",
+          "tokens": 177
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 874,
+          "kind": "span",
+          "qualified_name": "command.go:874-1013",
+          "tokens": 171
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1027,
+          "kind": "span",
+          "qualified_name": "command.go:1027-1033",
+          "tokens": 173
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1043,
+          "kind": "span",
+          "qualified_name": "command.go:1043-1049",
+          "tokens": 167
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 1051,
+          "kind": "span",
+          "qualified_name": "command.go:1051-1137",
+          "tokens": 156
+        }
+      ]
+    },
+    {
+      "id": "cb-33",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1641,
+          "kind": "span",
+          "qualified_name": "command.go:1641-1653",
+          "tokens": 138
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1668,
+          "kind": "span",
+          "qualified_name": "command.go:1668-1693",
+          "tokens": 129
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1695,
+          "kind": "span",
+          "qualified_name": "command.go:1695-1718",
+          "tokens": 127
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1725,
+          "kind": "span",
+          "qualified_name": "command.go:1725-1735",
+          "tokens": 140
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 1751,
+          "kind": "span",
+          "qualified_name": "command.go:1751-1754",
+          "tokens": 194
+        }
+      ]
+    },
+    {
+      "id": "cb-34",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 443,
+          "kind": "span",
+          "qualified_name": "command.go:443-448",
+          "tokens": 171
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 424,
+          "kind": "span",
+          "qualified_name": "command.go:424-441",
+          "tokens": 171
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 478,
+          "kind": "span",
+          "qualified_name": "command.go:478-495",
+          "tokens": 133
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 543,
+          "kind": "span",
+          "qualified_name": "command.go:543-582",
+          "tokens": 136
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 515,
+          "kind": "span",
+          "qualified_name": "command.go:515-521",
+          "tokens": 132
+        }
+      ]
+    },
+    {
+      "id": "cb-35",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 678,
+          "kind": "span",
+          "qualified_name": "completions.go:678-839",
+          "tokens": 177
+        },
+        {
+          "rank": 2,
+          "path": "bash_completions.go",
+          "line": 685,
+          "kind": "span",
+          "qualified_name": "bash_completions.go:685-697",
+          "tokens": 86
+        },
+        {
+          "rank": 3,
+          "path": "fish_completions.go",
+          "line": 275,
+          "kind": "span",
+          "qualified_name": "fish_completions.go:275-281",
+          "tokens": 67
+        },
+        {
+          "rank": 4,
+          "path": "powershell_completions.go",
+          "line": 310,
+          "kind": "span",
+          "qualified_name": "powershell_completions.go:310-314",
+          "tokens": 73
+        },
+        {
+          "rank": 5,
+          "path": "zsh_completions.go",
+          "line": 29,
+          "kind": "span",
+          "qualified_name": "zsh_completions.go:29-33",
+          "tokens": 213
+        }
+      ]
+    },
+    {
+      "id": "cb-36",
+      "hits": []
+    },
+    {
+      "id": "cb-37",
+      "hits": []
+    },
+    {
+      "id": "cb-38",
+      "hits": []
+    },
+    {
+      "id": "cb-39",
+      "hits": []
+    },
+    {
+      "id": "cb-40",
+      "hits": []
+    }
+  ]
+}

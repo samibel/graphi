@@ -11,12 +11,11 @@ import "regexp"
 // "GenMarkdownTree" or "RegisterFlagCompletionFunc" matches — every
 // `exact_identifier` query in the SW-258 dev set is a bare name, and the
 // previous `+`-anchored rule was vacuous on the stratum it exists to
-// protect (SW-263 Amendments, AC-6 widening). The pattern is exported
-// so a test can assert the rule is byte-identical across revisions and
-// so a surface can render the rule verbatim.
+// protect (SW-263 Amendments, AC-6 widening). The package-private pattern
+// remains directly visible to the package tests, which pin it byte-for-byte.
 var exactIdentifierPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
 
-// ExactPathPattern is the constant regex the AC-6 exact-path rule applies.
+// exactPathPattern is the constant regex the AC-6 exact-path rule applies.
 // It matches a non-empty path that contains at least one "/" and otherwise
 // only POSIX-safe characters.
 var exactPathPattern = regexp.MustCompile(`^[A-Za-z0-9_./-]+/[A-Za-z0-9_./-]+$`)
@@ -34,9 +33,9 @@ func isExactPath(query string) bool {
 	return exactPathPattern.MatchString(query)
 }
 
-// isExactQuery is the AC-6 verdict: an exact query is one that matches
-// either rule. Exact queries must be lexical-dominant: semantic
-// contributes at most as a tie-break.
+// isExactQuery retains the old exact-query classifier for evaluator-only RRF
+// modes. Shipped ModeAuto calls isExactPath directly and deliberately does not
+// apply the identifier half.
 func isExactQuery(query string) bool {
 	return isExactIdentifier(query) || isExactPath(query)
 }

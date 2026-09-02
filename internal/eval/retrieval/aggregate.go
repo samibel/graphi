@@ -81,8 +81,8 @@ type AggregateReport struct {
 // AggregateMethod states the arithmetic inline.
 const AggregateMethod = "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared " +
 	"EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); " +
-	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, fusion+graph, oracle_upper_bound — " +
-	"seven baselines; the SW-263 review flagged the previous four-baseline framing as stale) and the report's " +
+	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, semantic_first, oracle_upper_bound — " +
+	"seven baselines), or the exact legacy seven-baseline universe with fusion+graph in semantic_first's slot, and the report's " +
 	"baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. " +
 	"So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report " +
 	"still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that " +
@@ -215,13 +215,16 @@ const runLevel Baseline = "run"
 // checkRun is the closed-world check: the report's dataset citation must be
 // the run directory's dataset, and the baseline universe on every side must
 // be the harness constant — not whatever the report happens to list.
+//
+// New reports use AllBaselines. Reports produced before semantic_first became
+// the shipped ModeAuto baseline use legacyBaselines. These are two exact
+// closed worlds; arbitrary subsets remain discrepancies.
 func (r *reproducer) checkRun() {
 	published := r.run.Report.Reproducible.Dataset
 	// Rebuilt from the dataset copy; its SHA256 was recomputed from the bytes
 	// by LoadDataset. File is carried from the report, not compared.
 	r.exact(runLevel, "dataset", normalizeDatasetRef(published), normalizeDatasetRef(DatasetRefOf(r.run.Dataset, published.File)))
 
-	universe := baselineSet(AllBaselines)
 	var results, blocks []Baseline
 	for _, b := range r.run.Report.Reproducible.Baselines {
 		results = append(results, b.Name)
@@ -229,8 +232,15 @@ func (r *reproducer) checkRun() {
 	for _, p := range r.run.Report.Performance {
 		blocks = append(blocks, p.Baseline)
 	}
-	r.exact(runLevel, "baseline_set", baselineSet(results), universe)
-	r.exact(runLevel, "performance_set", baselineSet(blocks), universe)
+
+	// The report itself chooses only between the two versioned, exact
+	// universes. Presence of semantic_first identifies the current universe;
+	// its absence identifies the historical one.
+	resultsSet := baselineSet(results)
+	blocksSet := baselineSet(blocks)
+	universe := expectedBaselineUniverse(resultsSet)
+	r.exact(runLevel, "baseline_set", resultsSet, universe)
+	r.exact(runLevel, "performance_set", blocksSet, universe)
 	// The raw side is what the run index LISTS: a listed file that is absent
 	// is INCOMPLETE (MissingRaw), a series the index never had is a
 	// discrepancy.
@@ -241,8 +251,18 @@ func (r *reproducer) checkRun() {
 				listed = append(listed, ref.Baseline)
 			}
 		}
-		r.exact(runLevel, "raw."+series+".series_set", baselineSet(listed), universe)
+		listedSet := baselineSet(listed)
+		r.exact(runLevel, "raw."+series+".series_set", listedSet, universe)
 	}
+}
+
+func expectedBaselineUniverse(published []string) []string {
+	for _, name := range published {
+		if name == string(BaselineSemanticFirst) {
+			return baselineSet(AllBaselines)
+		}
+	}
+	return baselineSet(legacyBaselines)
 }
 
 // checkBaseline checks one published baseline. The raw records decide what

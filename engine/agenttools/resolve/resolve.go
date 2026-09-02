@@ -56,6 +56,7 @@ type RetrieverResult struct {
 	Rows        []RetrieverRow
 	Summary     RetrieverSummary
 	Degradation string
+	Reason      string
 }
 
 // RetrieverRow mirrors engine/retrieval.Row.
@@ -65,6 +66,7 @@ type RetrieverRow struct {
 	Path       string
 	Line       int
 	Span       string
+	Region     string
 	Explain    RetrieverExplain
 	Final      int
 }
@@ -86,6 +88,7 @@ type RetrieverExplain struct {
 // while retrieval retains its narrow package interface.
 type RetrieverSummary struct {
 	RetrievalVersion string
+	Strategy         string
 	WeightsHash      string
 	ModelFingerprint string
 	IndexFingerprint string
