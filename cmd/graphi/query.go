@@ -331,8 +331,9 @@ func runIndexAt(cwd string, args []string) int {
 	// hang (a user killed exactly this pass believing it dead).
 	fmt.Fprintf(os.Stderr, "graphi: embedding via %s…\n", emb.ID())
 	eprog := newEmbedProgress(os.Stderr, isTerminal(os.Stderr))
-	// SW-260: embed SemanticDocument v2 text (declaration body + doc comment +
-	// path, cut at the parser's exact span or the bounded window fallback)
+	// SW-267: embed SemanticDocument v3 capsule text (identity, path,
+	// annotations, doc comment, signature, and bounded body, cut at the
+	// parser's exact span or the bounded window fallback)
 	// instead of the v1 name-only text. Documents are cut file by file from
 	// the repository, so nodes are visited in path order.
 	docs := newFileDocumentSource(ctx, target.root, emb)
@@ -364,8 +365,8 @@ func runIndexAt(cwd string, args []string) int {
 	// counted them and reported reused rows as freshly embedded.
 	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
 	share := docs.stats.SpanMethodShare()
-	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d skipped (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
-		embed.DocumentSchema, res.Embedded, res.Reused, res.Skipped, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
+	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d excluded, %d failed (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
+		embed.DocumentSchema, res.Embedded, res.Reused, res.Excluded, res.Failed, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
 	return 0
 }
 

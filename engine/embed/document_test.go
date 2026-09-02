@@ -17,7 +17,8 @@ import (
 	"github.com/samibel/graphi/internal/goldenfile"
 )
 
-// SW-260 SemanticDocument v2 builder tests (AC-4 … AC-7).
+// SemanticDocument v3 builder tests (SW-260 span coverage, SW-267 capsule and
+// admission contracts).
 
 const docGoFixture = `package shop
 
@@ -103,7 +104,9 @@ func marshalDocs(t *testing.T, docs []embed.SemanticDocument) []byte {
 
 // TestBuildDocument_FieldsAndTextOrder pins AC-4: every listed field, the
 // schema tag, the two hashes and the fixed text order kind → qualified name →
-// path segments → docs/annotations → body.
+// path segments → annotations → doc_comment → signature → body. SW-267 v3
+// adds the structured Capsule field with the same components; the joined
+// Text preserves the deterministic field order when the body fits.
 func TestBuildDocument_FieldsAndTextOrder(t *testing.T) {
 	src := "// Hello says hi.\nfunc Hello() {}\n"
 	n, err := model.NewNode("function", "greet.Hello", "internal/greet/hello.go", 2, 1)
@@ -112,14 +115,17 @@ func TestBuildDocument_FieldsAndTextOrder(t *testing.T) {
 	}
 	n = n.WithMeta(model.NewNodeMeta([]string{"Deprecated", "Beta"}, []string{"static"}))
 	span := parse.SourceSpan{StartByte: 0, EndByte: len(src) - 1, StartLine: 1, EndLine: 2, Method: parse.SpanMethodAST}
-	d := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(src)})
+	d, err := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(src)})
+	if err != nil {
+		t.Fatalf("BuildDocument: %v", err)
+	}
 
 	wantText := "function greet.Hello\ninternal greet hello.go\nBeta Deprecated\n// Hello says hi.\nfunc Hello() {}"
 	if d.Text != wantText {
 		t.Fatalf("text =\n%q\nwant\n%q", d.Text, wantText)
 	}
-	if d.DocumentSchema != "v2" || embed.DocumentSchema != "v2" {
-		t.Errorf("document_schema = %q, want v2", d.DocumentSchema)
+	if d.DocumentSchema != "v3" || embed.DocumentSchema != "v3" {
+		t.Errorf("document_schema = %q, want v3", d.DocumentSchema)
 	}
 	if d.NodeID != n.ID() || d.Language != "go" || d.Kind != "function" || d.QualifiedName != "greet.Hello" || d.Path != "internal/greet/hello.go" {
 		t.Errorf("identity fields = %+v", d)
@@ -131,16 +137,31 @@ func TestBuildDocument_FieldsAndTextOrder(t *testing.T) {
 	if d.TextHash != wantHash {
 		t.Errorf("text_hash = %s, want xxhash64(text) %s", d.TextHash, wantHash)
 	}
-	wantID := model.FormatID(xxhash.Sum64String(string(n.ID()) + d.TextHash + "v2"))
+	wantID := model.FormatID(xxhash.Sum64String(string(n.ID()) + d.TextHash + "v3"))
 	if d.DocumentID != wantID {
 		t.Errorf("document_id = %s, want xxhash64(node_id+text_hash+schema) %s", d.DocumentID, wantID)
 	}
 	if d.Truncated {
 		t.Error("a small document must not read truncated")
 	}
-	// Wire shape: the JSON keys are the AC-4 names.
+	// Capsule (v3, AC-1) carries the structured fields used to render Text.
+	if d.Capsule.Kind != "function" || d.Capsule.QualifiedName != "greet.Hello" || d.Capsule.PathSegments != "internal greet hello.go" {
+		t.Errorf("capsule identity = %+v", d.Capsule)
+	}
+	if d.Capsule.DocComment != "// Hello says hi." {
+		t.Errorf("capsule doc comment = %q, want %q", d.Capsule.DocComment, "// Hello says hi.")
+	}
+	if d.Capsule.Signature != "func Hello() {}" {
+		t.Errorf("capsule signature = %q, want %q", d.Capsule.Signature, "func Hello() {}")
+	}
+	if d.Capsule.Body != "" {
+		t.Errorf("capsule body = %q, want \"\" (signature consumed the whole body)", d.Capsule.Body)
+	}
+	// Wire shape: the JSON keys are the AC-4 names. v3 adds capsule and
+	// admission fields; the v2 keys are still present for downstream
+	// consumers that read the legacy shape.
 	raw, _ := json.Marshal(d)
-	for _, key := range []string{`"document_id"`, `"node_id"`, `"language"`, `"kind"`, `"qualified_name"`, `"path"`, `"start_byte"`, `"end_byte"`, `"start_line"`, `"end_line"`, `"span_method"`, `"text_hash"`, `"document_schema"`, `"text"`, `"truncated"`} {
+	for _, key := range []string{`"document_id"`, `"node_id"`, `"language"`, `"kind"`, `"qualified_name"`, `"path"`, `"start_byte"`, `"end_byte"`, `"start_line"`, `"end_line"`, `"span_method"`, `"text_hash"`, `"document_schema"`, `"text"`, `"truncated"`, `"capsule"`, `"admission_token_count"`, `"admission_limit"`} {
 		if !bytes.Contains(raw, []byte(key)) {
 			t.Errorf("wire form lacks %s: %s", key, raw)
 		}
@@ -162,12 +183,18 @@ func TestBuildDocuments_Golden(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			res := parseFixture(t, tc.path, tc.src)
-			docs, stats := embed.BuildDocuments(fileSource(res, tc.src))
+			docs, stats, err := embed.BuildDocuments(fileSource(res, tc.src))
+			if err != nil {
+				t.Fatalf("BuildDocuments: %v", err)
+			}
 			if stats.Documents != len(docs) || stats.SpanMethods["ast"] != len(docs) {
 				t.Errorf("stats = %+v for %d documents", stats, len(docs))
 			}
 			first := marshalDocs(t, docs)
-			again, _ := embed.BuildDocuments(fileSource(parseFixture(t, tc.path, tc.src), tc.src))
+			again, _, err := embed.BuildDocuments(fileSource(parseFixture(t, tc.path, tc.src), tc.src))
+			if err != nil {
+				t.Fatalf("BuildDocuments: %v", err)
+			}
 			if !bytes.Equal(first, marshalDocs(t, again)) {
 				t.Error("two runs over identical source produced different document bytes")
 			}
@@ -177,7 +204,10 @@ func TestBuildDocuments_Golden(t *testing.T) {
 
 	t.Run("go: no leak, nested included, docs present", func(t *testing.T) {
 		res := parseFixture(t, "shop/cart.go", docGoFixture)
-		docs, _ := embed.BuildDocuments(fileSource(res, docGoFixture))
+		docs, _, err := embed.BuildDocuments(fileSource(res, docGoFixture))
+		if err != nil {
+			t.Fatalf("BuildDocuments: %v", err)
+		}
 		outer := docByQN(t, docs, "shop.outer")
 		if !strings.Contains(outer.Text, "inner := func() int { return TaxRate }") {
 			t.Errorf("outer lost its nested func literal: %q", outer.Text)
@@ -207,7 +237,10 @@ func TestBuildDocuments_Golden(t *testing.T) {
 
 	t.Run("typescript: decorators and doc comment present, no leak", func(t *testing.T) {
 		res := parseFixture(t, "pkg/a.ts", docTSFixture)
-		docs, _ := embed.BuildDocuments(fileSource(res, docTSFixture))
+		docs, _, err := embed.BuildDocuments(fileSource(res, docTSFixture))
+		if err != nil {
+			t.Fatalf("BuildDocuments: %v", err)
+		}
 		f := docByQN(t, docs, "pkg.f")
 		if !strings.Contains(f.Text, "/** doc for f */") || strings.Contains(f.Text, "Component") {
 			t.Errorf("f document = %q", f.Text)
@@ -234,7 +267,10 @@ func TestBuildDocuments_WindowFallbackIsBounded(t *testing.T) {
 	if res.Spans != nil {
 		t.Fatalf("precondition: python emits no spans")
 	}
-	docs, stats := embed.BuildDocuments(fileSource(res, docPyFixture))
+	docs, stats, err := embed.BuildDocuments(fileSource(res, docPyFixture))
+	if err != nil {
+		t.Fatalf("BuildDocuments: %v", err)
+	}
 	if len(docs) != 3 || stats.SpanMethods["window"] != 3 || stats.SpanMethods["ast"] != 0 {
 		t.Fatalf("docs = %d, stats = %+v", len(docs), stats)
 	}
@@ -271,9 +307,12 @@ func TestBuildDocuments_Exclusions(t *testing.T) {
 	for _, path := range []string{"vendor/x/y.go", "api/thing_pb.go", "gen/thing.gen.go", "internal/generated/z.go", "node_modules/a/b.ts"} {
 		t.Run(path, func(t *testing.T) {
 			n, _ := model.NewNode("function", "v.Gen", path, 4, 1)
-			docs, stats := embed.BuildDocuments(embed.FileSource{
+			docs, stats, err := embed.BuildDocuments(embed.FileSource{
 				Source: embed.Source{Language: "go", Bytes: []byte(src)}, Path: path, Nodes: []model.Node{n},
 			})
+			if err != nil {
+				t.Fatalf("BuildDocuments: %v", err)
+			}
 			if len(docs) != 0 || stats.Excluded != 1 || stats.ExcludedByReason[embed.ExcludeGeneratedPath] != 1 {
 				t.Errorf("docs = %d, stats = %+v", len(docs), stats)
 			}
@@ -284,10 +323,13 @@ func TestBuildDocuments_Exclusions(t *testing.T) {
 		pkg, _ := model.NewNode(parse.KindPackage, "com.x", "", 0, 0)
 		ext, _ := model.NewNode(parse.KindExternal, "database/sql.DB.Query", "", 0, 0)
 		fn, _ := model.NewNode("function", "b.Real", "a/b.go", 2, 1)
-		docs, stats := embed.BuildDocuments(embed.FileSource{
+		docs, stats, err := embed.BuildDocuments(embed.FileSource{
 			Source: embed.Source{Language: "go", Bytes: []byte("package b\nfunc Real() {}\n")},
 			Path:   "a/b.go", Nodes: []model.Node{file, pkg, ext, fn},
 		})
+		if err != nil {
+			t.Fatalf("BuildDocuments: %v", err)
+		}
 		if len(docs) != 1 || docs[0].QualifiedName != "b.Real" {
 			t.Fatalf("docs = %+v", docs)
 		}
@@ -325,23 +367,21 @@ func (runeTokenizer) Truncate(text string, max int) (string, bool) {
 	return string(r[:max]), true
 }
 
-// TestBuildDocument_Truncation pins AC-6: text is bounded to MaxDocumentTokens
-// of the embedder's tokenizer when one is known, otherwise to MaxDocumentBytes
-// alone (no whitespace-token approximation), and a large declaration stays ONE
-// document marked truncated. SW-260 review round 1: the prior "whitespace
-// tokens" fallback was an invented approximation; the byte-cap-only path
-// records `bound: "bytes"` so the eval harness can see which bound carried
-// the weight.
+// TestBuildDocument_Truncation pins AC-6: text is bounded to MaxCapsuleBytes
+// when no admission-aware embedder is configured, and the legacy DocumentTokenizer
+// path bounds at 512 tokens when only a DocumentTokenizer is known. SW-267:
+// the resource cap is the byte bound (AC-6: bytes vs model admission are
+// distinct), and a large declaration stays ONE document marked truncated.
 func TestBuildDocument_Truncation(t *testing.T) {
-	if embed.MaxDocumentTokens != 512 {
-		t.Fatalf("MaxDocumentTokens = %d, want 512", embed.MaxDocumentTokens)
+	if embed.MaxCapsuleBytes != 16*1024 {
+		t.Fatalf("MaxCapsuleBytes = %d, want %d", embed.MaxCapsuleBytes, 16*1024)
 	}
 	big := "package big\n\nfunc Big() {\n" + strings.Repeat("\tcall(one, two, three, four)\n", 400) + "}\n"
 	n, _ := model.NewNode("function", "big.Big", "big/big.go", 3, 1)
 	span := parse.SourceSpan{StartByte: 13, EndByte: len(big) - 1, StartLine: 3, EndLine: 403, Method: parse.SpanMethodAST}
 
 	t.Run("byte cap only when no tokenizer", func(t *testing.T) {
-		// A declaration larger than MaxDocumentBytes with NO tokenizer: no token
+		// A declaration larger than MaxCapsuleBytes with NO tokenizer: no token
 		// bound runs, only the byte cap. The document is marked truncated
 		// because the byte cap closed the gap; bound must read "bytes" (no
 		// invented tokens). The source is intentionally >16 KiB so the byte
@@ -349,12 +389,15 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		huge := "package big\n\nfunc Big() {\n" + strings.Repeat("\tcall(one, two, three, four)\n", 800) + "}\n"
 		hn, _ := model.NewNode("function", "big.Big", "big/big.go", 3, 1)
 		hs := parse.SourceSpan{StartByte: 13, EndByte: len(huge) - 1, StartLine: 3, EndLine: 803, Method: parse.SpanMethodAST}
-		d := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
+		d, err := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
 		if !d.Truncated || d.Bound != embed.BoundBytes {
 			t.Fatalf("truncated=%v bound=%q, want truncated=true bound=%q", d.Truncated, d.Bound, embed.BoundBytes)
 		}
-		if len(d.Text) > embed.MaxDocumentBytes {
-			t.Errorf("text = %d bytes, want <= %d", len(d.Text), embed.MaxDocumentBytes)
+		if len(d.Text) > embed.MaxCapsuleBytes {
+			t.Errorf("text = %d bytes, want <= %d", len(d.Text), embed.MaxCapsuleBytes)
 		}
 		if !strings.HasPrefix(d.Text, "function big.Big\nbig big.go\nfunc Big() {") {
 			t.Errorf("truncation cut the header: %q", d.Text[:min(len(d.Text), 60)])
@@ -364,9 +407,15 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		}
 	})
 	t.Run("embedder tokenizer wins when known", func(t *testing.T) {
-		d := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(big), Tokenizer: runeTokenizer{}})
-		if !d.Truncated || len([]rune(d.Text)) != embed.MaxDocumentTokens {
-			t.Errorf("rune-tokenized text = %d runes, truncated=%v", len([]rune(d.Text)), d.Truncated)
+		d, err := embed.BuildDocument(n, span, embed.Source{Language: "go", Bytes: []byte(big), Tokenizer: runeTokenizer{}})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
+		// The legacy SW-260 tokenizer path is bounded by 512 tokens in the v3 builder.
+		// The full Text includes the header (~40 runes), so the bound is approximate.
+		const legacyMaxTokens = 512
+		if !d.Truncated || len([]rune(d.Text)) > legacyMaxTokens+50 {
+			t.Errorf("rune-tokenized text = %d runes, truncated=%v, want truncated and <= %d runes (header + bounded body)", len([]rune(d.Text)), d.Truncated, legacyMaxTokens+50)
 		}
 		if d.Bound != embed.BoundTokens {
 			t.Errorf("bound = %q, want %q (embedder tokenizer closed the gap)", d.Bound, embed.BoundTokens)
@@ -374,13 +423,18 @@ func TestBuildDocument_Truncation(t *testing.T) {
 	})
 	t.Run("byte cap", func(t *testing.T) {
 		// 300 whitespace tokens but each 100 bytes long: under the token bound,
-		// over the byte cap — with a multi-byte rune straddling the cut.
+		// over the byte cap — with a multi-byte rune straddling the cut. Keep
+		// the oversized bytes in a function body so the mandatory signature
+		// itself remains admissible.
 		word := strings.Repeat("é", 50) // 100 bytes
-		huge := "package h\n\nvar H = `" + strings.Repeat(word+" ", 300) + "`\n"
-		hn, _ := model.NewNode("variable", "h.H", "h/h.go", 3, 1)
-		hs := parse.SourceSpan{StartByte: 11, EndByte: len(huge) - 1, StartLine: 3, EndLine: 3, Method: parse.SpanMethodAST}
-		d := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
-		if !d.Truncated || len(d.Text) > embed.MaxDocumentBytes || !json.Valid([]byte(fmt.Sprintf("%q", d.Text))) {
+		huge := "package h\n\nfunc H() {\n\t_ = `" + strings.Repeat(word+" ", 300) + "`\n}\n"
+		hn, _ := model.NewNode("function", "h.H", "h/h.go", 3, 6)
+		hs := parse.SourceSpan{StartByte: 11, EndByte: len(huge) - 1, StartLine: 3, EndLine: 5, Method: parse.SpanMethodAST}
+		d, err := embed.BuildDocument(hn, hs, embed.Source{Language: "go", Bytes: []byte(huge)})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
+		if !d.Truncated || len(d.Text) > embed.MaxCapsuleBytes || !json.Valid([]byte(fmt.Sprintf("%q", d.Text))) {
 			t.Errorf("byte-capped text: %d bytes, truncated=%v", len(d.Text), d.Truncated)
 		}
 		if !strings.ContainsRune(d.Text, 'é') || strings.ContainsRune(d.Text, '�') {
@@ -395,10 +449,13 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		// pinning the "one document per node, truncated" contract end-to-end.
 		huge := "package big\n\nfunc Big() {\n" + strings.Repeat("\tcall(one, two, three, four)\n", 800) + "}\n"
 		hspan := parse.SourceSpan{StartByte: 13, EndByte: len(huge) - 1, StartLine: 3, EndLine: 803, Method: parse.SpanMethodAST}
-		docs, stats := embed.BuildDocuments(embed.FileSource{
+		docs, stats, err := embed.BuildDocuments(embed.FileSource{
 			Source: embed.Source{Language: "go", Bytes: []byte(huge)}, Path: "big/big.go",
 			Nodes: []model.Node{n}, Spans: map[model.NodeId]parse.SourceSpan{n.ID(): hspan},
 		})
+		if err != nil {
+			t.Fatalf("BuildDocuments: %v", err)
+		}
 		if len(docs) != 1 || !docs[0].Truncated || stats.Truncated != 1 {
 			t.Errorf("docs = %d, stats = %+v", len(docs), stats)
 		}
@@ -407,11 +464,17 @@ func TestBuildDocument_Truncation(t *testing.T) {
 		small := "package s\n\nfunc S() {}\n"
 		sn, _ := model.NewNode("function", "s.S", "s/s.go", 3, 1)
 		ss := parse.SourceSpan{StartByte: 12, EndByte: len(small) - 1, StartLine: 3, EndLine: 4, Method: parse.SpanMethodAST}
-		dNoTok := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small)})
+		dNoTok, err := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small)})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
 		if dNoTok.Truncated || dNoTok.Bound != embed.BoundNone {
 			t.Errorf("no-tokenizer small doc: truncated=%v bound=%q, want false/%q", dNoTok.Truncated, dNoTok.Bound, embed.BoundNone)
 		}
-		dWithTok := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small), Tokenizer: runeTokenizer{}})
+		dWithTok, err := embed.BuildDocument(sn, ss, embed.Source{Language: "go", Bytes: []byte(small), Tokenizer: runeTokenizer{}})
+		if err != nil {
+			t.Fatalf("BuildDocument: %v", err)
+		}
 		if dWithTok.Truncated || dWithTok.Bound != embed.BoundNone {
 			t.Errorf("tokenizer small doc: truncated=%v bound=%q, want false/%q", dWithTok.Truncated, dWithTok.Bound, embed.BoundNone)
 		}

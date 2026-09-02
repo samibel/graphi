@@ -38,6 +38,8 @@ package static
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -255,20 +257,21 @@ func splitStaticSelector(arg string) (model, rev string, ok bool) {
 
 // ID implements embed.Embedder. The format is
 //
-//	static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>
+//	static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>:<admission_sha256[:12]>
 //
 // The first three segments are the user-facing identity: scheme,
 // model@revision, and the SHA-256 (first 12 hex digits) of the actual
 // model.safetensors file. Pooling and normalization are the literal AC-2
 // fields. The tokenizer and config hashes bind the remaining verified
-// inference inputs. The final segment is `inferenceContractID` —
-// "embedeach-f16-tree" — the
-// implementation-contract identity (EmbedEach batch-invariance, F16
-// rounding points, fixed pairwise summation tree) that the SW-259
-// carry-forwards pinned; a change to the rounding tree or the pooling
-// strategy changes this segment, so SW-261's fingerprint reads the new
-// generation as a different embedding space.
+// inference inputs. The impl_contract segment is `inferenceContractID` —
+// "embedeach-f16-tree" — the implementation-contract identity (EmbedEach
+// batch-invariance, F16 rounding points, fixed pairwise summation tree).
 //
+// The SW-267 AC-3 / AC-8 final segment is the SHA-256 (first 12 hex
+// digits) of the canonicalized admission profile (tokenizer identity,
+// limit, reserve, preparation algorithm and version). A change to any
+// admission-profile field changes this segment, so the GenerationStore's
+// typed state reads the new generation as a different fingerprint.
 // The on-disk SHA values are the inference-configuration identity AC-2
 // promises: a structurally valid replacement of the weights or the
 // tokenizer that changes the file hashes changes the ID, and the
@@ -299,7 +302,23 @@ func (e *Embedder) ID() string {
 		}
 		normalize = loaded.normalize
 	}
-	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + poolingID + ":" + strconv.FormatBool(normalize) + ":" + tokHash + ":" + configHash + ":" + inferenceContractID
+	profile := e.Profile()
+	profileHash := shortHash(profile.String(), 12)
+	return Scheme + ":" + e.model + "@" + e.revision + ":" + modelHash + ":" + poolingID + ":" + strconv.FormatBool(normalize) + ":" + tokHash + ":" + configHash + ":" + inferenceContractID + ":" + profileHash
+}
+
+// shortHash returns the first n hex characters of sha256(s). Used by
+// ID() to expose the admission-profile identity in 12 hex chars (the
+// shape every other ID segment uses). sha256 is collision-resistant in
+// practice at this length for the spec-distinguishing workload the
+// fingerprint does.
+func shortHash(s string, n int) string {
+	sum := sha256.Sum256([]byte(s))
+	hex := hex.EncodeToString(sum[:])
+	if n > len(hex) {
+		n = len(hex)
+	}
+	return hex[:n]
 }
 
 // Dim implements embed.Embedder. The dimension is read from the artifact and
@@ -636,7 +655,119 @@ var (
 	_ embed.Embedder            = (*Embedder)(nil)
 	_ embed.DimDiscoverer       = (*Embedder)(nil)
 	_ embed.AvailabilityChecker = (*Embedder)(nil)
+	_ embed.TokenizingEmbedder  = (*Embedder)(nil)
+	_ embed.Admission           = (*Embedder)(nil)
+	_ embed.AdmissionProfile    = (*Embedder)(nil)
 )
+
+// Tokenizer returns the active tokenizer so the production embedder
+// satisfies embed.TokenizingEmbedder (AC-7). The lazy-load shape holds
+// a nil tokenizer until the artifact is reachable; the builder's
+// TokenizingEmbedder path then sees a nil and falls back to the byte
+// cap alone (the same fail-closed posture the legacy SW-260 path had).
+// The returned DocumentTokenizer observes the tokenizer's uncapped raw stream,
+// including UNK ids, so it can detect the same pre-drop cap inference applies.
+func (e *Embedder) Tokenizer() embed.DocumentTokenizer {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.loadedM == nil {
+		return nil
+	}
+	return tokenizerAdapter{e.loadedM.tok}
+}
+
+// tokenizerAdapter wraps a *Tokenizer so the production embedder can
+// return embed.DocumentTokenizer from Tokenizer() (AC-7). The adapter
+// delegates to (*Tokenizer).truncate, the uncapped raw-token path.
+type tokenizerAdapter struct{ t *Tokenizer }
+
+func (a tokenizerAdapter) Truncate(text string, maxTokens int) (string, bool) {
+	return a.t.truncate(text, maxTokens)
+}
+
+// Admit implements embed.Admission (AC-2, AC-7). The first call loads
+// the artifact (a typed unavailable error surfaces on missing files);
+// subsequent calls run on the cached Model. Inputs beyond the character or
+// raw-token boundary are reduced to the exact byte prefix inference consumes;
+// an input for which no token-aligned prefix can be proved fails closed.
+func (e *Embedder) Admit(ctx context.Context, text string) (embed.Admitted, error) {
+	m, err := e.load(ctx)
+	if err != nil {
+		return embed.Admitted{}, err
+	}
+	return m.Admit(ctx, text)
+}
+
+// Profile implements embed.AdmissionProfile (AC-3, AC-8). The spec
+// pins the tokenizer identity (algorithm + file hash + version), the
+// usable limit (MaxAdmissionTokens = 512), the special-token reserve
+// (0 for the pinned model2vec static embedder), and the preparation
+// algorithm ("first-n-tokens@1"). A profile change invalidates stored
+// generations by fingerprint. When the artifact is not loaded the
+// tokenizer hash is empty; the fingerprint then names an unloaded
+// profile so the next reload sees a distinct identity.
+func (e *Embedder) Profile() embed.AdmissionSpec {
+	e.mu.Lock()
+	m := e.loadedM
+	e.mu.Unlock()
+	hash := ""
+	ver := ""
+	if m != nil && m.FileHashes != nil {
+		hash = m.FileHashes[FileTokenizer]
+		// Tokenizer version is encoded by the artifact: 1.0 (tokenizers
+		// JSON version). The model's tokenizer.json declares "version":
+		// "1.0"; we surface that as the TokenizerVersion. The loader
+		// rejects anything else, so the value is always "1.0" when the
+		// artifact loaded successfully.
+		ver = supportedTokenizerVersion
+	}
+	return embed.AdmissionSpec{
+		TokenizerID:      "model2vec-wordpiece",
+		TokenizerSHA256:  hash,
+		TokenizerVersion: ver,
+		MaxTokens:        MaxAdmissionTokens,
+		Reserve:          SpecialTokenReserve,
+		Algorithm:        "first-n-tokens",
+		AlgorithmVersion: "1",
+	}
+}
+
+// Revision implements the optional embedder introspection hook the
+// fingerprint builder reads (SW-267 AC-8). The static embedder's
+// pinned revision lives in its constructor argument; the production
+// embedder advertises it explicitly so the fingerprint carries a
+// real value rather than the empty placeholder.
+func (e *Embedder) Revision() string { return e.revision }
+
+// ModelSHA256 returns the model's safetensors SHA-256 (lowercase hex)
+// when the artifact has been loaded; "" otherwise. The fingerprint
+// carries it as a real value (reviewer fix Major 1).
+func (e *Embedder) ModelSHA256() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.loadedM == nil || e.loadedM.FileHashes == nil {
+		return ""
+	}
+	return e.loadedM.FileHashes[FileSafetensors]
+}
+
+// TokenizerSHA256 returns the tokenizer.json SHA-256 (lowercase hex)
+// when the artifact has been loaded; "" otherwise. The fingerprint
+// carries it as a real value (reviewer fix Major 1).
+func (e *Embedder) TokenizerSHA256() string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.loadedM == nil || e.loadedM.FileHashes == nil {
+		return ""
+	}
+	return e.loadedM.FileHashes[FileTokenizer]
+}
+
+// ChunkerConfig returns the chunker configuration ("" for the
+// whole-document path). graphi embeds the whole document per node so
+// the field is the literal ""; a future chunk-and-index-every-chunk
+// design would surface a description here.
+func (e *Embedder) ChunkerConfig() string { return "" }
 
 // init registers the `static` scheme with engine/embed's constructor table
 // so an explicit GRAPHI_EMBEDDER=static:<model>@<revision> selector names it.

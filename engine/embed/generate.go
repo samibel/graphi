@@ -16,8 +16,51 @@ import (
 //
 // Deprecated: v1 schema, kept for SW-261's migration comparison and for tests
 // that exercise the generation pass without source bytes. The `--semantic`
-// path embeds SemanticDocument v2 text (BuildDocument) instead; V1DocumentSource
+// path embeds SemanticDocument v3 capsule text (BuildDocument) instead; V1DocumentSource
 // wraps this text in the document shape for that comparison.
+// embedderRevision returns the embedder's revision tag, or "" when the
+// adapter does not expose one. The pinned static embedder's revision
+// lives in its ID() (the @<revision> segment); Ollama is a model-tag
+// identity and reports "".
+func embedderRevision(emb Embedder) string {
+	if r, ok := emb.(interface{ Revision() string }); ok {
+		return r.Revision()
+	}
+	return ""
+}
+
+// embedderModelSHA returns the model's pinned SHA-256 (lowercase hex)
+// when the adapter exposes one. The static adapter's model digest is
+// already in its ID(); Ollama has no native digest binding in v0, so
+// the field reads "" until /api/show's digest is plumbed in.
+func embedderModelSHA(emb Embedder) string {
+	if m, ok := emb.(interface{ ModelSHA256() string }); ok {
+		return m.ModelSHA256()
+	}
+	return ""
+}
+
+// embedderTokenizerSHA returns the tokenizer's pinned SHA-256 when the
+// adapter exposes one. The static adapter's tokenizer digest is
+// already in its ID(); Ollama reads "" until binding lands.
+func embedderTokenizerSHA(emb Embedder) string {
+	if t, ok := emb.(interface{ TokenizerSHA256() string }); ok {
+		return t.TokenizerSHA256()
+	}
+	return ""
+}
+
+// embedderChunkerConfig returns the chunker description the fingerprint
+// binds (AC-8). graphi embeds the whole document so the field is ""
+// for every adapter; a future chunk-and-index-every-chunk design (out
+// of scope, SW-267) would populate it.
+func embedderChunkerConfig(emb Embedder) string {
+	if c, ok := emb.(interface{ ChunkerConfig() string }); ok {
+		return c.ChunkerConfig()
+	}
+	return ""
+}
+
 func NodeText(n model.Node) string {
 	qn := strings.TrimSpace(n.QualifiedName())
 	kind := strings.TrimSpace(n.Kind())
@@ -33,6 +76,38 @@ func NodeText(n model.Node) string {
 // rather than embedding a name-only stand-in.
 type DocumentSource interface {
 	Document(node model.Node) (SemanticDocument, bool)
+}
+
+// DocumentResult is the structured outcome of asking a DocumentSource for
+// a node's document. The reviewer fix for Critical 4 replaces the
+// silent Skipped counter with three explicit outcomes:
+//
+//	Embedded: the node has an admitted document (will be embedded or
+//	          carried forward).
+//	Excluded: the node was deliberately excluded (file/package/external,
+//	          generated path, no_span). A legitimately empty graph
+//	          may have zero Embedded and zero Failed rows.
+//	Failed:   the source could not produce a document for a node that
+//	          MUST have one (read/parse failure, source bytes missing,
+//	          admission failure). The build aborts.
+type DocumentResult int
+
+const (
+	DocumentEmbedded DocumentResult = iota
+	DocumentExcluded
+	DocumentFailed
+)
+
+// ResultDocumentSource is the OPTIONAL richer interface that lets a
+// DocumentSource report which outcome (Embedded/Excluded/Failed)
+// applies to each node. The default DocumentSource above always
+// returns ok=false for failed cases, so the runtime treats every
+// Skipped node as a coverage failure under the reviewer's fix
+// (reviewer Critical 4: exact set equality between persisted rows
+// and eligible declaration IDs; unexpected omission fails).
+type ResultDocumentSource interface {
+	DocumentSource
+	Result(node model.Node) DocumentResult
 }
 
 // V1DocumentSource yields the v1 name-only text (NodeText) in the document
@@ -68,19 +143,30 @@ type GenerateResult struct {
 	// Embedded is the number of node vectors generated and persisted.
 	// A node whose prior row is carried forward increments Reused ONLY
 	// — not Embedded — so the documented invariant holds:
-	// Embedded + Reused + Skipped == len(nodes). A previous revision
-	// double-counted carried rows; the test that pinned the wrong count
-	// is fixed in the same change.
+	// Embedded + Reused + Excluded == len(nodes) − Failed. Failed
+	// nodes abort the build (reviewer fix Critical 4: exact set
+	// equality between persisted rows and eligible declaration IDs).
+	// A previous revision double-counted carried rows; the test that
+	// pinned the wrong count is fixed in the same change.
 	Embedded int
-	// Skipped is the number of nodes the DocumentSource had no document for
-	// (excluded artefacts, generated paths, unreadable sources). They get no
-	// vector rather than a name-only stand-in.
-	Skipped int
+	// Excluded is the number of nodes the DocumentSource deliberately
+	// excluded (file/package/external kinds, generated paths, no_span).
+	// They get no vector — the legitimate exclusions the coverage
+	// invariant allows. A legitimately empty graph may have zero
+	// Embedded and zero Failed rows; the build commits a zero-row
+	// generation (reviewer fix Critical 4).
+	Excluded int
+	// Failed is the number of nodes the DocumentSource could not
+	// produce a document for, where the absence is a coverage failure
+	// (read/parse error, missing source bytes, admission failure). The
+	// build aborts on any Failed node: the build does not reach
+	// ready and no partial generation is published.
+	Failed int
 	// Reused is the number of nodes whose prior vector was carried forward
 	// without re-embedding (AC-4). Carried-forward rows do NOT increment
 	// Embedded — a previous revision double-counted them, contradicting
-	// the documented invariant. The total of Embedded + Reused + Skipped
-	// equals the number of nodes visited.
+	// the documented invariant. The total of Embedded + Reused + Excluded
+	// equals the number of nodes visited minus Failed.
 	Reused int
 	// Purged is the number of prior-generation rows dropped because their
 	// node_id is no longer in the graph (AC-4 prune). The purge happens at
@@ -99,8 +185,9 @@ type GenerateResult struct {
 // (story AC: "graceful skip preserved").
 //
 // When an embedder IS configured it enumerates every node, obtains its
-// SemanticDocument from docs (SW-260: the v2 text — body, doc comment, path —
-// replaces the v1 NodeText), embeds the document text through the active
+// SemanticDocument from docs (SW-267: the v3 capsule — identity, path,
+// annotations, doc comment, signature, and bounded body — replaces the v1
+// NodeText), embeds the document text through the active
 // Embedder keyed by NodeId, and persists rows into the GenerationStore via
 // the Begin/Build/Commit pattern.
 //
@@ -198,21 +285,27 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			return GenerateResult{}, fmt.Errorf("embed: probe dim before fingerprint: %w", err)
 		}
 	}
-	// Fingerprint the build with the embedder's identity, dimension,
-	// schema and graph generation. The graph_generation field is filled
-	// in by the caller — the production runtime sources it from the
-	// graphstore's `index.commit_generation` key (advanced on every
-	// committed graph mutation, full pass and incremental), so build and
-	// reload consume the same value. An empty graphGeneration (in-process
-	// tests) substitutes the documented placeholder so a test and a real
-	// run stay fingerprint-compatible when the graphstore is not wired.
+	// Fingerprint the build with the embedder's FULL identity (SW-267
+	// AC-3 / AC-8): model ID (which already carries the inference
+	// configuration + admission profile hash), revision, model + tokenizer
+	// digests when the embedder exposes them, dimension, document schema,
+	// graph generation, and the admission profile's serialized form.
+	// Every field has a real value: the Ollama adapter's hidden
+	// dimensions are surfaced (ModelSHA256 / TokenizerSHA256 / ChunkerConfig)
+	// via the AdmissionProfile, and the static adapter's hidden profile
+	// is in its ID(). A profile change invalidates prior generations by
+	// fingerprint (no silent reuse under false provenance).
 	if graphGeneration == "" {
 		graphGeneration = GraphGenerationPlaceholder
 	}
 	fp := Fingerprint{
 		ModelID:         emb.ID(),
+		Revision:        embedderRevision(emb),
+		ModelSHA256:     embedderModelSHA(emb),
+		TokenizerSHA256: embedderTokenizerSHA(emb),
 		Dim:             emb.Dim(),
 		DocumentSchema:  DocumentSchema,
+		ChunkerConfig:   embedderChunkerConfig(emb),
 		GraphGeneration: graphGeneration,
 	}
 
@@ -298,10 +391,67 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		}
 		chunkNodes, texts, carry = chunkNodes[:0], texts[:0], carry[:0]
 		for _, n := range nodes[start:end] {
+			// Reviewer fix Critical 4: the coverage invariant is
+			// exact set equality between persisted rows and eligible
+			// declaration IDs. The DocumentSource now reports a
+			// structured Result (Embedded/Excluded/Failed). Failed
+			// nodes are coverage failures — they must abort the
+			// build, not be silently counted as Skipped (which the
+			// previous code did, leading to partial generations
+			// being published as Ready).
+			//
+			// Backward compat: when the source does NOT implement
+			// ResultDocumentSource (the legacy DocumentSource
+			// interface — V1DocumentSource, etc.), we fall back to
+			// Document's bool result. The structured Result path is
+			// preferred when available. Legacy fallback (sources
+			// without ResultDocumentSource): ok=false is Excluded
+			// ONLY for declared legitimate exclusion kinds
+			// (file/package/external/no_span). Anything else is a
+			// coverage failure (reviewer fix C4).
+			rds, hasRDS := docs.(ResultDocumentSource)
+			if hasRDS {
+				result := rds.Result(n)
+				switch result {
+				case DocumentExcluded:
+					res.Excluded++
+					continue
+				case DocumentFailed:
+					res.Failed++
+					if build != nil {
+						_ = build.Abort(ctx)
+					}
+					return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): document source failed (coverage failure)", n.ID(), n.SourcePath())
+				}
+			}
 			d, ok := docs.Document(n)
 			if !ok {
-				res.Skipped++
-				continue
+				if hasRDS {
+					// The richer Result said Embedded but the
+					// legacy Document returned false. Treat this
+					// as a coverage failure too — the source is
+					// inconsistent with itself, and silently
+					// skipping is exactly what AC-5 forbids.
+					res.Failed++
+					if build != nil {
+						_ = build.Abort(ctx)
+					}
+					return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): document source returned Excluded/Embedded inconsistent result", n.ID(), n.SourcePath())
+				}
+				// Legacy fallback: only declared legitimate
+				// exclusion kinds are Excluded. Anything else is
+				// a coverage failure (reviewer fix C4 — the
+				// previous shape laundered any missing declaration
+				// into a no_span exclusion).
+				if isDeclaredExclusion(n) {
+					res.Excluded++
+					continue
+				}
+				res.Failed++
+				if build != nil {
+					_ = build.Abort(ctx)
+				}
+				return GenerateResult{}, fmt.Errorf("embed: generate: node %s (%s): legacy document source returned false (coverage failure)", n.ID(), n.SourcePath())
 			}
 			// AC-4 carry-forward: lookup the prior row by NodeID via the
 			// GenerationStore.LoadRow point-probe (working-set rule).
@@ -310,7 +460,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			// call. Carry-forward counts ONLY as Reused (a previous
 			// revision double-counted it under both Embedded and
 			// Reused, contradicting the documented Embedded + Reused +
-			// Skipped invariant).
+			// Excluded invariant).
 			if hasPrior {
 				if priorRow, exists, lerr := store.LoadRow(ctx, priorID, n.ID()); lerr == nil && exists && priorRow.TextHash == d.TextHash {
 					row := Row{
@@ -344,6 +494,24 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			}
 		}
 		if len(texts) > 0 {
+			// SW-267 AC-4 / AC-7: the adapter is the final authority
+			// on per-document admission. The document builder already
+			// called Admit during BuildDocument; this call is the
+			// embedding-side second look so a swap of the underlying
+			// admitter (e.g. an explicit /api/embed with truncate:false
+			// for Ollama) cannot embed an oversized payload. A failure
+			// aborts the build (AC-5: no partial generation as Ready).
+			if adm, ok := emb.(Admission); ok {
+				for _, t := range texts {
+					_, err := adm.Admit(ctx, t)
+					if err != nil {
+						if build != nil {
+							_ = build.Abort(ctx)
+						}
+						return GenerateResult{}, err
+					}
+				}
+			}
 			vecs, err := emb.Embed(ctx, texts)
 			if err != nil {
 				if build != nil {

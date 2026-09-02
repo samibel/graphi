@@ -1,0 +1,102 @@
+package static
+
+// SW-267 reviewer fix Critical 1: the HONESTY test.
+//
+// This test FAILS without the fix that exposes an uncapped encode
+// path. The previous shape called Tokenizer.Encode, which truncates
+// to maxLength internally; therefore `len(EncodeRaw(text))` was never
+// greater than MaxAdmissionTokens for the pinned tokenizer, and the
+// Admit overflow check was structurally unreachable.
+//
+// The test feeds the real `writePreamble` fixture (12,447 bytes,
+// well over the 512-token admission limit) through Admit and
+// asserts:
+//   - Truncated == true (the adapter cut the body)
+//   - Bound == "tokens" (the token bound closed the gap)
+//   - AdmissionTokenCount is the exact number of useful ids pooled
+//   - The admitted text length is bounded below MaxCapsuleBytes
+//   - The admitted text contains the function signature (the
+//     header survives the cut)
+//
+// Without the fix, Admit returns Bound="none" and Truncated=false
+// because Tokenizer.Encode already silently capped at 512 and the
+// overflow check never fires. With the fix, Admit returns
+// Bound="tokens" and Truncated=true.
+
+import (
+	"context"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/core/parse"
+	"github.com/samibel/graphi/engine/embed"
+)
+
+// TestStatic_AdmitReportsOverflowOnWritePreamble is the FAIL-WITHOUT-
+// THE-FIX test for Critical 1. It feeds `writePreamble` through the
+// production Embedder and Model admission paths using the synthetic
+// tokenizer fixture from exact_consumption_test.go. Without the
+// uncapped-encode fix, this test fails: Admit returns Bound="none"
+// because the silent cap eats the overflow before the check can fire.
+func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
+	staticModel := buildSyntheticModelForAdmit(t)
+	emb := &Embedder{loaded: true, loadedM: staticModel}
+
+	// Load the writePreamble fixture.
+	src, err := os.ReadFile("../testdata/cobra/writePreamble.go")
+	if err != nil {
+		t.Fatalf("read writePreamble fixture: %v", err)
+	}
+	if len(src) < 12000 {
+		t.Fatalf("writePreamble fixture = %d bytes, want >= 12000", len(src))
+	}
+	// Build the document using the production admission path. Admission
+	// inspects the uncapped raw stream to make overflow reachable and reports
+	// the exact useful-id count for the returned bytes.
+	n, _ := model.NewNode("function", "cobra.writePreamble", "writePreamble.go", 1, 1)
+	s := parse.SourceSpan{StartByte: 0, EndByte: len(src), StartLine: 1, EndLine: 367, Method: parse.SpanMethodAST}
+	d, err := embed.BuildDocument(n, s, embed.Source{Language: "go", Bytes: src, Admitter: emb})
+	if err != nil {
+		t.Fatalf("BuildDocument: %v", err)
+	}
+
+	// Critical 1 assertions — each one fails without the fix:
+	if !d.Truncated {
+		t.Errorf("writePreamble Truncated = false; want true. The pinned tokenizer caps at 512 tokens internally; without an uncapped encode path the overflow check is unreachable and Truncated stays false.")
+	}
+	if d.Bound != "tokens" {
+		t.Errorf("writePreamble Bound = %q, want %q. The adapter's admit must report the token bound that closed the gap.", d.Bound, embed.BoundTokens)
+	}
+	// The discriminating assertion is that Bound="tokens" and
+	// Truncated=true; TokenCount describes what inference pools after the cut.
+	if d.AdmissionLimit != 512 {
+		t.Errorf("writePreamble AdmissionLimit = %d, want 512 (the production MaxAdmissionTokens)", d.AdmissionLimit)
+	}
+	if d.AdmissionTokenCount <= 0 {
+		t.Errorf("writePreamble AdmissionTokenCount = %d, want > 0 (useful ids pooled for the admitted text)", d.AdmissionTokenCount)
+	}
+	// The admitted Text must be bounded by the resource cap.
+	if len(d.Text) > embed.MaxCapsuleBytes {
+		t.Errorf("writePreamble Text = %d bytes, want <= %d", len(d.Text), embed.MaxCapsuleBytes)
+	}
+	// The signature must survive the cut.
+	if !strings.Contains(d.Text, "func writePreamble(") {
+		t.Errorf("writePreamble Text does not contain the signature; AC-1 says the signature survives the bound")
+	}
+
+	// Direct Admit call asserts the exact pooled-id count.
+	admitted, err := emb.Admit(context.Background(), string(src))
+	if err != nil {
+		t.Fatalf("Admit: %v", err)
+	}
+	if admitted.Bound != embed.BoundTokens {
+		t.Errorf("Admit Bound = %q, want %q", admitted.Bound, embed.BoundTokens)
+	}
+	// The count is for the returned text and cannot exceed maxLength.
+	if admitted.TokenCount <= 0 || admitted.TokenCount > 512 {
+		t.Errorf("Admit TokenCount = %d, want 0 < n <= 512 useful ids", admitted.TokenCount)
+	}
+	_ = admitted
+}

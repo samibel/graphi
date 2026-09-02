@@ -67,10 +67,13 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	docs, _ := embed.BuildDocuments(embed.FileSource{
+	docs, _, err := embed.BuildDocuments(embed.FileSource{
 		Source: embed.Source{Language: res.Meta.Language, Bytes: []byte(src)},
 		Path:   res.Meta.Path, Nodes: res.Nodes, Spans: res.Spans,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	source := docSource{}
 	for _, d := range docs {
 		source[d.NodeID] = d
@@ -85,8 +88,8 @@ func TestGenerateAndPersist_EmbedsV2DocumentText(t *testing.T) {
 		t.Fatalf("GenerateAndPersist: %v", err)
 	}
 	// The file node has no document: skipped, not embedded.
-	if got.Embedded != 1 || got.Skipped != 1 {
-		t.Fatalf("result = %+v, want Embedded=1 Skipped=1 (file node has no document)", got)
+	if got.Embedded != 1 || got.Excluded != 1 {
+		t.Fatalf("result = %+v, want Embedded=1 Excluded=1 (file node has no document)", got)
 	}
 	if len(rec.calls) != 1 || len(rec.calls[0]) != 1 {
 		t.Fatalf("embed calls = %v", rec.calls)

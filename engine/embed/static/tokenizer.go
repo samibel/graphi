@@ -399,12 +399,20 @@ func (t *Tokenizer) MaxLength() int { return t.maxLength }
 // validation is observable.
 func (t *Tokenizer) Padding() (enabled bool, padID int) { return t.padEnabled, t.padID }
 
-// Encode is tokenizers' Tokenizer.encode(text, add_special_tokens=False).ids:
-// added-token extraction → normalisation → pre-tokenisation → WordPiece →
-// right truncation. Unknown words yield the unk id (they are NOT removed
-// here; Model2Vec drops them one stage later, see Model.InferenceIDs). No
-// padding is applied: a single encoding is its own longest.
-func (t *Tokenizer) Encode(text string) []int {
+// encodeRaw is the WordPiece encoding pipeline WITHOUT the right-
+// truncation step Encode applies. It returns every token the
+// tokenizer would emit (including unk ids). The pre-truncation count
+// is the HONEST surface the v3 admission contract requires
+// (SW-267 AC-7): a previous shape called Tokenizer.Encode and compared
+// the length against MaxAdmissionTokens, but Encode already truncates
+// to maxLength internally, so the overflow check was structurally
+// unreachable for the pinned tokenizer.
+//
+// Both Encode (the post-truncation shape used by model2vec's
+// StaticModel.encode) and EncodeRaw (the pre-truncation shape used
+// by Admission for the honest count) share this implementation; the
+// only difference is the final cap step.
+func (t *Tokenizer) encodeRaw(text string) []int {
 	ids := []int{}
 	for _, seg := range splitAdded([]rune(text), t.rawAdded) {
 		if seg.id >= 0 {
@@ -421,10 +429,35 @@ func (t *Tokenizer) Encode(text string) []int {
 			}
 		}
 	}
+	return ids
+}
+
+// Encode is tokenizers' Tokenizer.encode(text, add_special_tokens=False).ids:
+// added-token extraction → normalisation → pre-tokenisation → WordPiece →
+// right truncation. Unknown words yield the unk id (they are NOT removed
+// here; Model2Vec drops them one stage later, see Model.InferenceIDs). No
+// padding is applied: a single encoding is its own longest.
+//
+// This is the POST-truncation shape: ids are capped at t.maxLength
+// before return. Callers that need the HONEST pre-truncation count
+// must use EncodeRaw (or Model.Admit's raw count).
+func (t *Tokenizer) Encode(text string) []int {
+	ids := t.encodeRaw(text)
 	if t.maxLength > 0 && len(ids) > t.maxLength {
 		ids = ids[:t.maxLength]
 	}
 	return ids
+}
+
+// EncodeRaw is the pre-truncation tokenization pipeline (SW-267 AC-7).
+// Returns every token the tokenizer would emit (with unk ids),
+// uncapped. The pinned tokenizer's maxLength is 512, so for any
+// input that the v3 admission policy would admit, len(EncodeRaw) is
+// at most the model's context length. For inputs that exceed the
+// admission limit, len(EncodeRaw) is the HONEST count the build uses
+// to decide Bound="tokens" and Truncated=true.
+func (t *Tokenizer) EncodeRaw(text string) []int {
+	return t.encodeRaw(text)
 }
 
 // Tokens renders ids back to their vocabulary strings (diagnostics only).

@@ -20,7 +20,7 @@ import (
 // shape pass a gate written for the stronger one.
 const (
 	FormatVersion  = 2
-	HarnessVersion = "retrieval-eval/1"
+	HarnessVersion = "retrieval-eval/2"
 	ScorerVersion  = "retrieval-aggregate/1"
 )
 
@@ -74,7 +74,7 @@ type Reproducible struct {
 	RelevantMinGrade      int    `json:"relevant_min_grade"`
 	MatchingRule          string `json:"matching_rule"`
 
-	// SpanMethodShare (SW-260 AC-9) is the fraction of SemanticDocument v2
+	// SpanMethodShare (SW-260 AC-9) is the fraction of SemanticDocument v3
 	// documents per span method — keys `ast` (exact parser span) and `window`
 	// (the bounded fallback) — over the indexed files, so the fallback share is
 	// visible in every eval run. Computed by the runner from the same parsers

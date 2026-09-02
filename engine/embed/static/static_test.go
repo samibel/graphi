@@ -314,9 +314,11 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	}
 	id := emb.ID()
 	parts := strings.Split(id, ":")
-	// Format: static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>
-	if got, want := len(parts), 8; got != want {
-		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>)", id, got, want)
+	// SW-267 v3 format: 9 colon-separated segments. The 9th is the
+	// admission profile sha256[:12] (AC-3, AC-8) so a profile change
+	// invalidates stored generations by fingerprint.
+	if got, want := len(parts), 9; got != want {
+		t.Fatalf("ID() = %q has %d colon-separated segments, want %d (static:<model>@<revision>:<model_sha256[:12]>:<pooling>:<normalize>:<tokenizer_sha256[:12]>:<config_sha256[:12]>:<impl_contract>:<admission_sha256[:12]>)", id, got, want)
 	}
 	if parts[0] != "static" {
 		t.Fatalf("ID() = %q: scheme segment %q, want \"static\"", id, parts[0])
@@ -344,6 +346,10 @@ func TestStatic_ID_FormatIncludesInferenceConfiguration(t *testing.T) {
 	}
 	if parts[7] != "embedeach-f16-tree" {
 		t.Fatalf("ID() = %q: inference-contract segment %q, want \"embedeach-f16-tree\" (EmbedEach batch-invariance + F16 rounding + fixed pairwise summation tree; any change to the rounding tree or pooling strategy changes this segment, AC-2/AC-6)", id, parts[7])
+	}
+	// SW-267 AC-3/AC-8: admission profile sha256[:12].
+	if len(parts[8]) != 12 {
+		t.Fatalf("ID() = %q: admission profile sha256[:12] segment %q is %d chars, want 12", id, parts[8], len(parts[8]))
 	}
 }
 

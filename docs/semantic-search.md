@@ -82,8 +82,8 @@ own `graphi index --semantic` repair reason is returned.
 `graphi index --semantic` embeds the eligible symbol nodes of the graph
 (keyed by `node_id`) and persists the vectors to a durable `vectors` table in
 the `-meta` sidecar, tagged with the embedder identity + dimension. The set
-of eligible nodes is exactly the set the v2 builder produces (see "Document
-schema (v2)" below); generated paths and the file/package/external artefact
+of eligible nodes is exactly the set the v3 builder produces (see "Document
+schema (v3)" below); generated paths and the file/package/external artefact
 nodes are deliberately excluded so the durable set cannot serve a vector for
 a node the rest of the engine treats as unsearchable. `graphi search -semantic`
 then reloads those vectors from that sidecar on startup — a pure local read,
@@ -92,11 +92,11 @@ With **no** embedder configured, `graphi index --semantic` reports
 `unavailable — no embedder configured` (no error, no network) and lexical
 indexing/search is unaffected.
 
-## Document schema (v2)
+## Document schema (v3)
 
 `graphi index --semantic` no longer embeds the name-only v1 text (`Kind + " " +
 QualifiedName`, `engine/embed.NodeText`, now deprecated and kept only for the SW-261
-migration comparison). It embeds one **`SemanticDocument` v2** per symbol node
+migration comparison). It embeds one **`SemanticDocument` v3** per symbol node
 (`engine/embed.BuildDocument`), cut from the parser's **`SourceSpan`** — a non-identity
 sidecar on `core/parse.ParseResult.Spans` keyed by node id. Node identity, the graph and
 every default-path byte are unchanged; **only the `--semantic` path consumes spans.**
@@ -104,31 +104,38 @@ every default-path byte are unchanged; **only the `--semantic` path consumes spa
 Fields: `document_id` (xxhash64 over `node_id + text_hash + document_schema`), `node_id`,
 `language`, `kind`, `qualified_name`, `path`, `start_byte`/`end_byte` (0-based, end
 exclusive), `start_line`/`end_line` (1-based, inclusive), `span_method`, `text_hash`
-(xxhash64 of `text`), `document_schema` (`"v2"`), `text`, `truncated`, `bound` (one of
-`tokens`, `bytes`, `none` — which bound closed the gap, see Bounds below).
+(xxhash64 of `text`), `document_schema` (`"v3"`), `text`, `truncated`, `bound` (one of
+`tokens`, `bytes`, `none` — which bound closed the gap), the structured `capsule`,
+and admission metadata (`admission_token_count`, `admission_limit`,
+`admission_algorithm_id`). `document_schema` is `"v3"`.
 
 `text` is assembled in a fixed order so identical source yields byte-identical documents:
 
 1. `kind qualified_name`
 2. the path split on `/` and joined by spaces (`internal greet hello.go`)
 3. the node's annotations (decorator/annotation names from node metadata), when any
-4. the body: the span's bytes — the full declaration **including its leading doc comment
-   and attached decorators**, trailing whitespace trimmed
+4. the leading doc comment, when any
+5. the parser-provided declaration signature (including attached decorators), when any
+6. the post-signature body, when any
 
-Bounds: `MaxDocumentTokens` = 512 tokens of the active embedder's tokenizer
-when the embedder exposes one (`embed.TokenizingEmbedder`); when it does not,
-the byte cap alone runs (no whitespace-token approximation), and the document
-records which bound closed the gap in its `bound` field (`tokens`, `bytes`,
-`none`). A hard `MaxDocumentBytes` = 16 KiB cap always runs. A cut sets
-`truncated: true`; a large declaration stays **one** document (multi-chunk is
-backlog until an eval gap is measured).
+Bounds: the active adapter's `embed.Admission` implementation owns tokenization,
+the usable token limit, and the exact bytes inference consumes. The pinned static
+adapter applies the model's character boundary and its uncapped raw-token stream
+before returning a prefix of at most 512 tokenizer tokens; Ollama sends
+`truncate:false` and treats the server as final authority. A hard
+`MaxCapsuleBytes` = 16 KiB resource cap always runs. Body bytes may be cut, but
+the header, annotations, doc comment, and signature are an indivisible mandatory
+prefix: if that prefix cannot fit, the build fails with a typed admission error
+instead of indexing a partial signature. A cut sets `truncated: true`; a large
+declaration stays **one** document (chunk-and-index remains out of scope).
 
 Span methods:
 
-- `ast` — exact. Go (`go/ast`: `Doc.Pos()` … `End()`; a multi-spec `var (...)`/`const (...)`
-  block yields per-spec spans with each spec's own doc) and TypeScript (tree-sitter node
-  bounds widened to the enclosing `export_statement`, preceding sibling decorators and an
-  adjacent leading doc comment).
+- `ast` — exact. Go (`go/ast`: `Doc.Pos()` … `End()` plus parser-owned doc and
+  signature sub-spans; multiline function/type signatures end just after their
+  opening brace) and TypeScript (tree-sitter declaration bounds widened to the
+  enclosing `export_statement`, attached decorators and adjacent leading doc
+  comments, with separate doc/signature sub-spans).
 - `window` — the fallback for every other parser: from the node's line, at most
   `SpanWindowMaxLines` (40) lines, clipped at the next declaration's start line and at end
   of file. **Same-line clipping** — when the next declaration shares the line, the

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -54,8 +55,10 @@ type Embedder struct {
 	// dim is discovered from the first successful response and is written by
 	// two paths (ProbeDim and Embed), so it is guarded: embed.Embedder
 	// requires implementations to be safe for concurrent use.
-	dimMu sync.RWMutex
-	dim   int
+	dimMu     sync.RWMutex
+	dim       int
+	dimCtx    int    // effective context length, surfaced by the admission profile
+	dimDigest string // model digest, surfaced by the admission profile when available
 
 	client *http.Client
 }
@@ -129,20 +132,20 @@ const DimProbeText = "graphi-dim-probe"
 // reports dim only after a successful call; without this probe, the
 // fingerprint's dim field is 0 until the first real Embed call — and a
 // fingerprint built with dim=0 cannot detect a real dim change
-// (SW-261 review round 2 MAJOR 5). The probe uses the same /api/
-// embeddings endpoint, the same model, and the same loopback
-// validation as a real call. A probe failure surfaces the error verbatim
-// so the build fails closed rather than silently fingerprinting with
-// dim=0.
+// (SW-261 review round 2 MAJOR 5). The probe uses the same /api/embed
+// endpoint (the SW-267 AC-4 fail-closed path), the same model, and
+// the same loopback validation as a real call. A probe failure
+// surfaces the error verbatim so the build fails closed rather than
+// silently fingerprinting with dim=0.
 //
 // The probe is safe to call concurrently with Embed: the discovered
 // dimension is guarded by dimMu and recorded once (see setDimOnce).
 func (e *Embedder) ProbeDim(ctx context.Context) error {
-	body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Prompt: DimProbeText})
+	body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Input: DimProbeText, Truncate: false})
 	if err != nil {
 		return fmt.Errorf("ollama: probe marshal: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+e.endpoint+"/api/embeddings", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+e.endpoint+"/api/embed", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("ollama: probe build request: %w", err)
 	}
@@ -153,41 +156,62 @@ func (e *Embedder) ProbeDim(ctx context.Context) error {
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ollama: probe endpoint returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("ollama: probe endpoint returned status %d: %s", resp.StatusCode, string(body))
 	}
 	var decoded ollamaEmbedResponse
 	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
 		return fmt.Errorf("ollama: probe decode response: %w", err)
 	}
-	if len(decoded.Embedding) == 0 {
+	if len(decoded.Embeddings) == 0 || len(decoded.Embeddings[0]) == 0 {
 		return fmt.Errorf("ollama: probe returned empty embedding")
 	}
 	if e.Dim() == 0 {
-		e.setDimOnce(len(decoded.Embedding))
+		e.setDimOnce(len(decoded.Embeddings[0]))
 	}
 	return nil
 }
 
-// ollamaEmbedRequest / ollamaEmbedResponse model the Ollama /api/embeddings shape.
+// ollamaEmbedRequest models the Ollama /api/embed request shape
+// (SW-267 reviewer fix Critical 3: the legacy /api/embeddings
+// `prompt` field is wrong; the /api/embed endpoint expects `input`,
+// which may be a single string or an array of strings).
+//
+// Truncate:false (SW-267 AC-4) is the FAIL-CLOSED admission call: the
+// daemon rejects inputs that exceed its effective context instead of
+// silently truncating them. The runtime surfaces the rejection as a
+// typed error so the build never publishes a partial generation.
 type ollamaEmbedRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
+	Model    string `json:"model"`
+	Input    string `json:"input"`
+	Truncate bool   `json:"truncate"`
 }
 
+// ollamaEmbedResponse models the Ollama /api/embed response shape
+// (SW-267 reviewer fix Critical 3: the legacy /api/embeddings singular
+// `embedding` field is wrong; /api/embed returns `embeddings`, an
+// array of vectors, one per input — for a single-string input the
+// array has length 1).
 type ollamaEmbedResponse struct {
-	Embedding []float32 `json:"embedding"`
+	Embeddings [][]float32 `json:"embeddings"`
 }
 
 // Embed implements embed.Embedder. It POSTs each text to the loopback Ollama
-// /api/embeddings endpoint and returns the vectors in input order. On any
-// transport or decode failure it returns a clean typed error and NEVER falls back
-// to another host. Endpoint loopback was already enforced fail-closed at
-// construction, so this method dials loopback only.
+// /api/embed endpoint with `truncate:false` (SW-267 AC-4) so the daemon is
+// the final authority on input admission. The request body uses the
+// real /api/embed wire shape (reviewer fix Critical 3: `input`, not
+// `prompt`; the response is `embeddings` plural, an array of one
+// vector per input). Any non-200 status, including the daemon's
+// "input exceeds context length" response, surfaces as a TYPED
+// *embed.AdmissionError (reviewer fix Critical 3: not a plain
+// fmt.Errorf) naming the node and the limit so the calling build
+// fails closed. Endpoint loopback was already enforced fail-closed
+// at construction, so this method dials loopback only.
 func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, error) {
 	out := make([][]float32, 0, len(texts))
-	url := "http://" + e.endpoint + "/api/embeddings"
+	url := "http://" + e.endpoint + "/api/embed"
 	for _, t := range texts {
-		body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Prompt: t})
+		body, err := json.Marshal(ollamaEmbedRequest{Model: e.model, Input: t, Truncate: false})
 		if err != nil {
 			return nil, fmt.Errorf("ollama: marshal request: %w", err)
 		}
@@ -200,12 +224,21 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		if err != nil {
 			return nil, fmt.Errorf("ollama: request to %s failed: %w", e.endpoint, err)
 		}
-		// Check the HTTP status BEFORE decoding: a non-200 (e.g. 404/500 with an
-		// HTML body) must report the actual status, not a misleading JSON decode
-		// error from trying to parse the error page.
+		// Check the HTTP status BEFORE decoding: a non-200 (e.g. 400/500
+		// for an oversize input) must report the actual status and the
+		// server's error message, not a misleading JSON decode error from
+		// trying to parse the error page. SW-267 AC-4 fail-closed.
 		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 			_ = resp.Body.Close()
-			return nil, fmt.Errorf("ollama: endpoint returned status %d", resp.StatusCode)
+			return nil, &embed.AdmissionError{
+				NodeID:  "", // caller fills in via BuildDocument / GenerateAndPersist
+				Path:    "",
+				Limit:   -1, // server-controlled, not the adapter's MaxTokens
+				Actual:  len(t),
+				Profile: e.Profile(),
+				Reason:  fmt.Sprintf("ollama: server returned status %d: %s", resp.StatusCode, string(body)),
+			}
 		}
 		var decoded ollamaEmbedResponse
 		decErr := json.NewDecoder(resp.Body).Decode(&decoded)
@@ -213,16 +246,95 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 		if decErr != nil {
 			return nil, fmt.Errorf("ollama: decode response: %w", decErr)
 		}
-		if len(decoded.Embedding) == 0 {
-			return nil, fmt.Errorf("ollama: empty embedding for input")
+		// Reviewer fix Critical 3: each request sends ONE input, so
+		// the response always has its vector at embeddings[0],
+		// regardless of the outer batch index. The previous
+		// implementation read embeddings[i] and broke on the
+		// second text. A test with a batch of two or more texts
+		// catches it; a one-text batch cannot.
+		if len(decoded.Embeddings) == 0 || len(decoded.Embeddings[0]) == 0 {
+			return nil, &embed.AdmissionError{
+				NodeID:  "",
+				Path:    "",
+				Limit:   -1,
+				Actual:  len(t),
+				Profile: e.Profile(),
+				Reason:  "ollama: server returned no embedding for the input",
+			}
 		}
 		if e.Dim() == 0 {
-			e.setDimOnce(len(decoded.Embedding))
+			e.setDimOnce(len(decoded.Embeddings[0]))
 		}
-		out = append(out, decoded.Embedding)
+		out = append(out, decoded.Embeddings[0])
 	}
 	return out, nil
 }
+
+// Compile-time interface assertions: ollama.Embedder satisfies the
+// runtime's DimDiscoverer, Admission (fail-closed per-document), and
+// AdmissionProfile (the SW-267 AC-3 / AC-8 contract) contracts.
+var (
+	_ embed.DimDiscoverer    = (*Embedder)(nil)
+	_ embed.Admission        = (*Embedder)(nil)
+	_ embed.AdmissionProfile = (*Embedder)(nil)
+)
+
+// Profile implements embed.AdmissionProfile.
+func (e *Embedder) Profile() embed.AdmissionSpec {
+	return embed.AdmissionSpec{
+		TokenizerID:      "ollama-server-bound",
+		TokenizerSHA256:  e.digest(),
+		TokenizerVersion: "1",
+		MaxTokens:        e.contextLen(),
+		Reserve:          0,
+		Algorithm:        "server-side-truncate-false",
+		AlgorithmVersion: "1",
+	}
+}
+
+// contextLen returns the model's effective context length from the
+// most recent response, or 0 when the daemon has not been queried yet.
+func (e *Embedder) contextLen() int {
+	e.dimMu.RLock()
+	defer e.dimMu.RUnlock()
+	return e.dimCtx
+}
+
+// digest returns the model digest the embedder last saw, or "" when the
+// daemon has not been queried yet. Future Ollama digest binding (when
+// available) plugs in here.
+func (e *Embedder) digest() string {
+	e.dimMu.RLock()
+	defer e.dimMu.RUnlock()
+	return e.dimDigest
+}
+
+// Admit implements embed.Admission (SW-267 AC-2, AC-7). Ollama's
+// /api/embed endpoint is the AUTHORITATIVE admission call when the
+// embedder is configured with `truncate:false` (the SW-267 AC-4
+// fail-closed posture): the daemon validates the input against its
+// own tokenizer + effective context and returns a typed error if it
+// does not fit. Admit here applies the byte-resource cap (AC-6) and
+// returns the input unchanged; a server-side rejection surfaces as a
+// real *embed.AdmissionError from the Embed call, so the build fails
+// closed without ever admitting an oversized document.
+func (e *Embedder) Admit(_ context.Context, text string) (embed.Admitted, error) {
+	if len(text) > maxOllamaPayloadBytes {
+		return embed.Admitted{}, &embed.AdmissionError{
+			Limit:   maxOllamaPayloadBytes,
+			Actual:  len(text),
+			Profile: e.Profile(),
+		}
+	}
+	return embed.Admitted{Text: text, TokenCount: 0, Bound: embed.BoundNone}, nil
+}
+
+// maxOllamaPayloadBytes caps the byte budget the Ollama adapter admits
+// without consulting the server. Larger payloads are rejected here so
+// a misconfigured daemon never sees them; the server-side
+// authoritative check is the per-request Embed call (with
+// truncate:false).
+const maxOllamaPayloadBytes = embed.MaxCapsuleBytes
 
 // assertLoopbackEndpoint is the fail-closed positive loopback allowlist. It
 // accepts only a host that is "localhost", an IPv4 in 127.0.0.0/8, or IPv6 ::1;

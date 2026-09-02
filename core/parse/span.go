@@ -33,10 +33,40 @@ const SpanWindowMaxLines = 40
 // every NodeId and every existing golden stay byte-identical whether or not a
 // parser emits spans. Offsets are 0-based bytes into the parsed source
 // (EndByte exclusive); lines are 1-based and inclusive, matching Node.Line.
+//
+// SW-267: optional parser-provided spans for the signature and doc comment.
+// The capsule builder uses these when present (the parser's view is
+// authoritative) and falls back to a line heuristic when absent. The
+// heuristic is rigorously tested against the three shapes that break naive
+// extraction: decorators (TypeScript/Python), multiline declarations
+// (Go), and block comments (Go /* ... */). A parser that emits these
+// spans bypasses the heuristic for that declaration.
+//
+// SignatureSpan: the declaration line(s) of the node, ending with the
+// opening brace for functions/types (or the full line for var/const).
+// DocSpan: the leading doc comment block (// for Go, /** for block).
+// Both are byte ranges within src[StartByte:EndByte]. EndByte exclusive.
 type SourceSpan struct {
 	StartByte, EndByte int
 	StartLine, EndLine int
 	Method             SpanMethod
+	// SignatureSpan optionally names the declaration's signature
+	// bytes (the line through the opening brace for a function/type).
+	// SW-267: when non-nil, the capsule uses these bytes as
+	// Signature verbatim and skips the heuristic.
+	SignatureSpan *ByteSpan
+	// DocSpan optionally names the leading doc comment bytes.
+	// SW-267: when non-nil, the capsule uses these bytes as
+	// DocComment verbatim and skips the heuristic.
+	DocSpan *ByteSpan
+}
+
+// ByteSpan is a half-open byte range within a source file
+// (StartByte inclusive, EndByte exclusive). SW-267 helper for
+// parser-provided sub-spans (signature, doc comment) that name
+// portions of a SourceSpan.
+type ByteSpan struct {
+	StartByte, EndByte int
 }
 
 // DeriveWindowSpans is the single window fallback (AC-3) for parsers whose
