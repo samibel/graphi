@@ -67,6 +67,11 @@ type Direct struct {
 	reviewFetcher forge.ReviewFetcher
 	repoRoot      string
 	gitProvider   githistory.GitProvider
+	// retrieval is the SW-263 deep retrieval module, composed once at
+	// Composition.Client() and surfaced through resolve.Deps. The narrow
+	// interface type comes from engine/agenttools/resolve so this layer
+	// does not import engine/retrieval.
+	retrieval resolve.Retriever
 	// handlers is the module-handler table the composition root installs
 	// (SW-255 / AX-15): the engine-side handlers the module set contributed,
 	// keyed by operation id. Reachable only through OperationHandler and
@@ -83,6 +88,17 @@ func NewDirect(q *query.Service, s *search.Service) *Direct {
 // executor (SW-255 / AX-15) through the composition root's existing
 // Composition.Client() wiring rather than through a global.
 var _ OperationHandlerProvider = (*Direct)(nil)
+
+// WithRetrieval attaches the SW-263 deep retrieval module, composed once at
+// Composition.Client() after the semantic reload (AC-10). It is the SINGLE
+// place the engine/retrieval instance is wired into the surface layer; the
+// resolve.Deps every agent tool consumes carries it through agentDeps().
+// nil leaves the graceful "no retrieval" state — agent tools that consult
+// Deps.Retrieval degrade to the contract's unavailable outcome.
+func (d *Direct) WithRetrieval(r resolve.Retriever) *Direct {
+	d.retrieval = r
+	return d
+}
 
 // WithOperationHandlers installs the module-handler table the composition
 // root built from engine/module's Composition. The map is COPIED: the caller
@@ -985,7 +1001,7 @@ func (d *Direct) Brief(ctx context.Context, topic string) ([]byte, []byte, error
 // wired services. Missing services degrade to the contract's "unavailable"
 // outcome inside the tools rather than erroring here.
 func (d *Direct) agentDeps() resolve.Deps {
-	return resolve.Deps{Query: d.querySvc, Search: d.searchSvc}
+	return resolve.Deps{Query: d.querySvc, Search: d.searchSvc, Retrieval: d.retrieval}
 }
 
 // ExplainSymbol implements Client via the shared engine/agenttools/explain

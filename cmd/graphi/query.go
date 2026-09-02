@@ -18,6 +18,7 @@ import (
 	"github.com/samibel/graphi/engine/memory"
 	"github.com/samibel/graphi/engine/search"
 	"github.com/samibel/graphi/engine/skillgen"
+	"github.com/samibel/graphi/internal/embedsource"
 	"github.com/samibel/graphi/internal/state"
 	"github.com/samibel/graphi/surfaces/cli"
 	"github.com/samibel/graphi/surfaces/client"
@@ -336,7 +337,7 @@ func runIndexAt(cwd string, args []string) int {
 	// parser's exact span or the bounded window fallback)
 	// instead of the v1 name-only text. Documents are cut file by file from
 	// the repository, so nodes are visited in path order.
-	docs := newFileDocumentSource(ctx, target.root, emb)
+	docs := embedsource.NewFileDocumentSource(ctx, target.root, emb)
 	// SW-261 cross-process guarantee: hold the cross-process ingest lock
 	// across the entire semantic Begin/Commit sequence so a second
 	// graphi process on the same meta directory cannot observe a live
@@ -364,9 +365,9 @@ func runIndexAt(cwd string, args []string) int {
 	// res.Reused, NOT in res.Embedded — the previous revision double-
 	// counted them and reported reused rows as freshly embedded.
 	fmt.Printf("graphi index --semantic: embedded %d nodes (%d reused) via %s\n", res.Embedded, res.Reused, res.EmbedderID)
-	share := docs.stats.SpanMethodShare()
+	share := docs.Stats().SpanMethodShare()
 	fmt.Fprintf(os.Stderr, "graphi: documents %s: %d embedded, %d reused, %d excluded, %d failed (%d unreadable); span methods ast %.0f%% window %.0f%%; %d truncated\n",
-		embed.DocumentSchema, res.Embedded, res.Reused, res.Excluded, res.Failed, docs.unreadable, 100*share["ast"], 100*share["window"], docs.stats.Truncated)
+		embed.DocumentSchema, res.Embedded, res.Reused, res.Excluded, res.Failed, docs.Unreadable(), 100*share["ast"], 100*share["window"], docs.Stats().Truncated)
 	return 0
 }
 

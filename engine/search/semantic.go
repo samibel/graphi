@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/engine/embed"
@@ -73,9 +72,14 @@ func ReasonForState(state embed.State) string {
 
 // SemanticHit is one ranked semantic-search result: the node identity (cited by
 // NodeId) plus its cosine score. The node provenance fields mirror Match so a
-// hit traces back to its source.
+// hit traces back to its source. DocumentID is the embedding-space document id
+// the GenerationStore persisted with the vector (SW-260
+// SemanticDocument.DocumentID); the retrieval module's hierarchical dedupe key
+// (AC-2) consumes it. Empty when the indexed row had no document id (a
+// legacy fixture path).
 type SemanticHit struct {
 	NodeID        string  `json:"node_id"`
+	DocumentID    string  `json:"document_id,omitempty"`
 	Kind          string  `json:"kind"`
 	QualifiedName string  `json:"qualified_name"`
 	SourcePath    string  `json:"source_path"`
@@ -173,7 +177,7 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 
 	hits := make([]SemanticHit, 0, len(raw))
 	for _, h := range raw {
-		hit := SemanticHit{NodeID: string(h.NodeID), Score: h.Score}
+		hit := SemanticHit{NodeID: string(h.NodeID), DocumentID: h.DocumentID, Score: h.Score}
 		// Enrich with provenance when the node is resolvable; a missing node still
 		// yields a NodeId+score citation (never blocks the path).
 		if s.nodeReader != nil {
@@ -187,13 +191,13 @@ func (s *Service) SemanticSearch(ctx context.Context, query string, limit int) (
 		}
 		hits = append(hits, hit)
 	}
-	// Defensive: re-establish deterministic order at the service boundary.
-	sort.SliceStable(hits, func(i, j int) bool {
-		if hits[i].Score != hits[j].Score {
-			return hits[i].Score > hits[j].Score
-		}
-		return hits[i].NodeID < hits[j].NodeID
-	})
+	// AC-3: the in-memory index already orders by QUANTISED cosine
+	// (int(round(cos*10000))) with canonical NodeId as the tie-break, and
+	// the truncation to `limit` already happened after that order, so a
+	// re-order here would be both redundant and unsafe: a quantised tie
+	// that straddles the rank-50 cutoff in the index must not be
+	// re-resolved on a difference the AC-3 contract says is not there.
+	// The defensive sort that lived here previously is removed.
 	return SemanticResponse{Query: query, Available: true, Hits: hits}, nil
 }
 

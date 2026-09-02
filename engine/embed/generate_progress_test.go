@@ -39,7 +39,7 @@ func loadRows(t *testing.T, s embed.GenerationStore, fp embed.Fingerprint) []emb
 	}
 	out := make([]embed.Vector, len(rows))
 	for i, r := range rows {
-		out[i] = embed.Vector{NodeID: r.NodeID, Values: r.Vector}
+		out[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	return out
 }

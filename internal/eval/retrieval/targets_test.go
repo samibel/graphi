@@ -2,6 +2,9 @@ package retrieval
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -234,4 +237,303 @@ func TestDeriveBudgets(t *testing.T) {
 			t.Errorf("index budget = %+v, want none", b2.Fixtures[FixtureSmall].IndexMS)
 		}
 	})
+}
+
+// ac9ReportPath is the explicit named report the AC-9 gate reads.
+// SW-263 review / item 6 binds the gate to a fixed report path rather
+// than picking the latest by filesystem mtime — a fresh checkout can
+// therefore gate a stale or foreign run if the orchestrator committed
+// one with a different name. The path points at the SW-263 conformance
+// v3 restoration run that measures the shipped semantic-first mode; the
+// orchestrator updates this constant alongside its SHA, and a mismatch fails
+// closed.
+const ac9ReportPath = "docs/eval/retrieval/runs/2026-09-02-sw263-v3-restoration-local/cobra-v1-report.json"
+
+// ac9CandidateSHA is the candidate SHA the AC-9 gate asserts the named
+// report carries. The orchestrator updates this constant AFTER the
+// conformance re-run lands; the test refuses to pass on a stale or
+// foreign CandidateSHA — the gate is a property of the reviewed tree,
+// not of whatever report the filesystem holds.
+const ac9CandidateSHA = "3b54ddee3ad6bdfe932a71647b28bc5de9ff90e8+dirty"
+
+const ac9GateBaseline = BaselineSemanticFirst
+
+// ac9ArchitectureFlowApprovedShortfall is the bounded exception approved by
+// owner Samibel on 2026-09-02. It records the reasoning in
+// projects/graphi/stories/SW-263/approval.md and does not change the frozen
+// target. The pinned report misses by 0.00084413716180109; 0.00085 leaves less
+// than 0.000006 headroom, and independent capsule/restoration runs produced
+// identical values, so any measurable degradation closes the exception.
+const ac9ArchitectureFlowApprovedShortfall = 0.00085
+
+func ac9ApprovedException(baseline Baseline, stratum, metric string, shortfall float64) bool {
+	return baseline == ac9GateBaseline &&
+		stratum == StratumArchitectureFlow &&
+		metric == MetricNDCG10 &&
+		shortfall > 0 &&
+		shortfall <= ac9ArchitectureFlowApprovedShortfall
+}
+
+func TestAC9ArchitectureFlowExceptionRejectsWorseValue(t *testing.T) {
+	const mustReach = 0.32862302249679975
+	worseShortfall := ac9ArchitectureFlowApprovedShortfall + 0.000001
+	worseValue := mustReach - worseShortfall
+	if ac9ApprovedException(ac9GateBaseline, StratumArchitectureFlow, MetricNDCG10, worseShortfall) {
+		t.Fatalf("architecture_flow value %.17g was accepted at shortfall %.17g; tolerance is %.8f",
+			worseValue, worseShortfall, ac9ArchitectureFlowApprovedShortfall)
+	}
+	t.Logf("architecture_flow value %.17g is rejected: shortfall %.17g > tolerance %.8f",
+		worseValue, worseShortfall, ac9ArchitectureFlowApprovedShortfall)
+
+	if !ac9ApprovedException(ac9GateBaseline, StratumArchitectureFlow, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatalf("architecture_flow boundary shortfall %.8f was rejected", ac9ArchitectureFlowApprovedShortfall)
+	}
+	if ac9ApprovedException(ac9GateBaseline, StratumNLBehaviour, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatal("nl_behaviour inherited the architecture_flow exception")
+	}
+	if ac9ApprovedException(BaselineFusion, StratumArchitectureFlow, MetricNDCG10, ac9ArchitectureFlowApprovedShortfall) {
+		t.Fatal("a non-shipping baseline inherited the semantic_first exception")
+	}
+}
+
+// ac9PlaceholderSHA is the sentinel value ac9CandidateSHA holds before
+// the orchestrator has committed the AC-9 eval re-run. The gate
+// refuses to pass while the placeholder is in place — a green suite
+// that asserts nothing is the same failure mode the SW-263 reviewer
+// already rejected twice (silent skip on a missing file; silent pass
+// on a stale SHA). The placeholder is therefore a hard failure with a
+// message that names the only legitimate fix path: update
+// ac9CandidateSHA to the SHA the orchestrator just committed.
+const ac9PlaceholderSHA = "PENDING_REVIEW_RUN_SHA"
+
+// TestAC9Evidence_RoundTripsFromRaw is the fail-closed evidence-integrity
+// check for the exact run selected by the AC-9 gate. A digest-consistent
+// run.json is not sufficient: the indexed report must be the gate's named
+// report, and every published hit list, metric and performance measure must
+// reproduce from dataset.json and raw/. This test stays independently green
+// when the evidence is sound even though the score gate below honestly fails.
+func TestAC9Evidence_RoundTripsFromRaw(t *testing.T) {
+	reportPath := resolveRepoPath(t, ac9ReportPath)
+	dir := filepath.Dir(reportPath)
+	run, err := ReadRunDir(dir)
+	if err != nil {
+		t.Fatalf("AC-9 evidence directory is unreadable: %v", err)
+	}
+	if run.Index.Report != filepath.Base(reportPath) {
+		t.Fatalf("AC-9 evidence index names report %q, but the gate reads %q; one report artifact must serve both aggregation and gating", run.Index.Report, filepath.Base(reportPath))
+	}
+	agg := Reproduce(run)
+	if agg.ExitCode() != ExitReproduced {
+		t.Fatalf("AC-9 evidence does not round-trip: status=%s checked=%d reproduced=%d discrepant=%d unknown=%d discrepancies=%v",
+			agg.Status, agg.Checked, agg.Reproduced, agg.Discrepant, agg.Unknown, agg.Discrepancies)
+	}
+}
+
+// TestReport_MeetsAC9GateAgainstTargetsFile is the AC-9 comparison test: it
+// loads the IMMUTABLE docs/eval/retrieval-targets.json (the SW-258 pin
+// that this story may NOT edit) and the EXPLICIT NAMED AC-9 evaluation
+// report at ac9ReportPath, and asserts:
+//
+//   - the report's CandidateSHA matches ac9CandidateSHA (the reviewed
+//     SHA); a stale or foreign run fails closed;
+//   - on every conceptual stratum the targets file lists (nl_behaviour,
+//     architecture_flow), the semantic_first baseline's ndcg@10 over the dev split
+//     meets or exceeds must_reach (best + 0.10, capped at the ceiling);
+//   - on exact_identifier, the semantic_first baseline's Top-1 over the dev split
+//     meets or exceeds the no-regression floor the targets file pins.
+//
+// The owner-approved architecture_flow miss remains a MISS in verbose test
+// output. It is accepted only while its shortfall stays within
+// ac9ArchitectureFlowApprovedShortfall; nl_behaviour and exact_identifier have
+// no exception.
+//
+// Fail-closed posture (SW-263 review / item 6, second finding):
+// a missing report, an unreadable report, an unparseable report, a
+// version mismatch, a CandidateSHA mismatch, AND the placeholder
+// ac9CandidateSHA ALL fail the test loudly. A passing gate that
+// skipped its checks is the same defect the reviewer rejected on
+// the missing-report path earlier in this track; extending it to
+// every other way the gate could silently no-op is the same fix.
+//
+// The path and SHA are fixed. The orchestrator renames the report
+// (and updates the SHA) only when a new AC-9 run lands. SW-263
+// review / item 6 makes the gate a property of the reviewed tree,
+// not of filesystem mtime.
+//
+// This is the test pattern AC-9 calls for ("extend the existing
+// internal/eval/retrieval/targets_test.go pattern rather than inventing a
+// parallel one"); the same fixtures and the same DeriveTargets derivation
+// it pins are reused.
+func TestReport_MeetsAC9GateAgainstTargetsFile(t *testing.T) {
+	targetsPath := resolveRepoPath(t, "docs/eval/retrieval-targets.json")
+	targetsRaw, err := os.ReadFile(targetsPath)
+	if err != nil {
+		t.Fatalf("read %s: %v", targetsPath, err)
+	}
+	var tg Targets
+	if err := json.Unmarshal(targetsRaw, &tg); err != nil {
+		t.Fatalf("json.Unmarshal targets(%s): %v", targetsPath, err)
+	}
+	if tg.FusionMinDelta != FusionMinDelta {
+		t.Errorf("targets fusion_min_delta = %v, want %v (drift between files)", tg.FusionMinDelta, FusionMinDelta)
+	}
+
+	// The placeholder SHA must fail loudly before any file IO. A green
+	// gate on PENDING_REVIEW_RUN_SHA is exactly the silent-pass defect
+	// the reviewer rejected: the test would assert nothing about the
+	// review, but the orchestrator would see PASS and ship the story.
+	// Refuse the placeholder explicitly.
+	if ac9CandidateSHA == ac9PlaceholderSHA {
+		t.Fatalf("AC-9 gate CandidateSHA is still the placeholder %q. The orchestrator must update ac9CandidateSHA in internal/eval/retrieval/targets_test.go to the SHA of the committed AC-9 re-run BEFORE this gate can pass; a placeholder pass is the silent-skip defect the SW-263 reviewer already rejected.",
+			ac9PlaceholderSHA)
+	}
+
+	reportPath := resolveRepoPath(t, ac9ReportPath)
+	reportRaw, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatalf("AC-9 report %s unreadable: %v. The gate is a property of the reviewed tree (SW-263 review / item 6); a missing report fails closed — the orchestrator regenerates the report under the named path, not at the latest mtime, and a missing report is a build error, not a skip.",
+			reportPath, err)
+	}
+	var rep Report
+	if err := json.Unmarshal(reportRaw, &rep); err != nil {
+		t.Fatalf("json.Unmarshal report(%s): %v", reportPath, err)
+	}
+	if err := CheckReportVersion(&rep); err != nil {
+		t.Fatalf("report version: %v", err)
+	}
+
+	// Bind the gate to the reviewed candidate SHA. A stale or foreign
+	// CandidateSHA fails closed: the report is whatever the filesystem
+	// holds, but the gate is a property of the reviewed tree, not a
+	// property of the filesystem (SW-263 review / item 6).
+	if rep.Reproducible.CandidateSHA != ac9CandidateSHA {
+		t.Fatalf("AC-9 gate CandidateSHA mismatch: report = %q, gate = %q. The report was generated against a different tree; re-run the eval against the reviewed commit or update the gate constant alongside the new report.",
+			rep.Reproducible.CandidateSHA, ac9CandidateSHA)
+	}
+
+	// Confirm the report cites the dataset the targets were derived from.
+	if rep.Reproducible.Dataset.ID != "cobra-v1" {
+		t.Errorf("report dataset = %q, want cobra-v1", rep.Reproducible.Dataset.ID)
+	}
+
+	// Collect the per-baseline dev-split strata aggregates the test compares
+	// against, indexed by baseline name. A baseline that did not run (status
+	// != ok) is absent and the test fails with the typed reason.
+	type devStrata struct {
+		perStratum map[string]AggregateMetrics
+	}
+	per := map[Baseline]devStrata{}
+	for _, b := range rep.Reproducible.Baselines {
+		if b.Status != BaselineStatusOK {
+			continue
+		}
+		var dev []QueryResult
+		for _, q := range b.Queries {
+			if q.Split == SplitDev {
+				dev = append(dev, q)
+			}
+		}
+		_, strata, _ := AggregateAll(dev, rep.Reproducible.TokenBudgets)
+		per[b.Name] = devStrata{perStratum: strata}
+	}
+
+	// The targets file lists the conceptual strata the shipped baseline must
+	// improve on.
+	for _, stratum := range tg.ConceptualStrata {
+		st := tg.Strata[stratum]
+		if st.FusionTarget == nil {
+			t.Errorf("stratum %s: targets file has no fusion_target (the SW-258 derivation set one for every conceptual stratum)", stratum)
+			continue
+		}
+		ft := st.FusionTarget
+		devStrat, ok := per[ac9GateBaseline]
+		if !ok {
+			t.Errorf("stratum %s, baseline %s: missing from the report (the baseline did not run with status=ok)", stratum, ac9GateBaseline)
+			continue
+		}
+		agg := devStrat.perStratum[stratum]
+		v, ok := agg.Metrics[ft.Metric]
+		if !ok {
+			t.Errorf("stratum %s, baseline %s: no %s in dev aggregate", stratum, ac9GateBaseline, ft.Metric)
+			continue
+		}
+		if v+1e-9 < ft.MustReach {
+			delta := v - ft.MustReach
+			t.Logf("AC-9 MISS on %s: %s %s = %.17g < must_reach %.17g (delta=%+.17g, best=%.17g + min_delta=%.2f, ceiling=%v)",
+				stratum, ac9GateBaseline, ft.Metric, v, ft.MustReach, delta, ft.BestValue, ft.MinDelta, tg.Strata[stratum].Oracle[ft.Metric])
+			if !ac9ApprovedException(ac9GateBaseline, stratum, ft.Metric, -delta) {
+				t.Errorf("AC-9 gate rejects %s miss: shortfall %.17g exceeds the only approved tolerance %.8f",
+					stratum, -delta, ac9ArchitectureFlowApprovedShortfall)
+			} else {
+				t.Logf("AC-9 APPROVED EXCEPTION on %s: shortfall %.17g <= tolerance %.8f; see projects/graphi/stories/SW-263/approval.md",
+					stratum, -delta, ac9ArchitectureFlowApprovedShortfall)
+			}
+		}
+	}
+
+	// exact_identifier Top-1 must not regress.
+	ei := tg.Strata[StratumExactIdentifier]
+	if ei.NoRegression == nil {
+		t.Errorf("stratum exact_identifier: targets file has no no_regression floor")
+	} else {
+		floor := ei.NoRegression.Floor
+		devStrat, ok := per[ac9GateBaseline]
+		if !ok {
+			t.Errorf("stratum exact_identifier, baseline %s: missing from the report (the baseline did not run with status=ok)", ac9GateBaseline)
+			return
+		}
+		agg := devStrat.perStratum[StratumExactIdentifier]
+		top1, ok := agg.Metrics[MetricTop1]
+		if !ok {
+			t.Errorf("stratum exact_identifier, baseline %s: no %s in dev aggregate", ac9GateBaseline, MetricTop1)
+			return
+		}
+		if top1+1e-9 < floor {
+			t.Errorf("AC-9 REGRESSION on exact_identifier Top-1: baseline %s = %.4f < floor %.4f (best_baseline=%s)",
+				ac9GateBaseline, top1, floor, ei.NoRegression.Baseline)
+		}
+	}
+}
+
+// listRunDirs lists every <date>-<runner>-local run directory under
+// docs/eval/retrieval/runs/. Kept as a small helper the gate could
+// fall back to (the named-path gate above is the one the SW-263 review
+// requires; this list is for diagnostic messages only).
+func listRunDirs(t *testing.T) []string {
+	t.Helper()
+	root := resolveRepoPath(t, "docs/eval/retrieval/runs")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("read %s: %v", root, err)
+	}
+	var out []string
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasSuffix(e.Name(), "-local") {
+			continue
+		}
+		out = append(out, e.Name())
+	}
+	sort.Strings(out)
+	return out
+}
+
+// resolveRepoPath walks up from the test cwd to the directory holding
+// go.mod and returns the absolute path of the given repo-relative path.
+// It mirrors the helpers in engine/retrieval/byte_parity_test.go.
+func resolveRepoPath(t *testing.T, rel string) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return filepath.Join(dir, rel)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("could not find go.mod walking up from %s", dir)
+		}
+		dir = parent
+	}
 }

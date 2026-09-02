@@ -1,0 +1,761 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/1",
+  "series": "hits",
+  "baseline": "lexical",
+  "collected": true,
+  "samples": 64,
+  "queries": [
+    {
+      "id": "cb-01",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command_test.go",
+          "line": 32,
+          "node_id": "d23966a0fce1d0a4",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommand",
+          "tokens": 108
+        },
+        {
+          "rank": 2,
+          "path": "command_test.go",
+          "line": 48,
+          "node_id": "12923566782a85fa",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandC",
+          "tokens": 112
+        },
+        {
+          "rank": 3,
+          "path": "command_test.go",
+          "line": 37,
+          "node_id": "61c29681dfde5092",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandWithContext",
+          "tokens": 108
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 59,
+          "node_id": "12defe65cd865e8c",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandWithContextC",
+          "tokens": 128
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 1052,
+          "node_id": "18cb88eba73cd7c5",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteC",
+          "tokens": 152
+        },
+        {
+          "rank": 6,
+          "path": "command.go",
+          "line": 1030,
+          "node_id": "8b8c959482c30486",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteContext",
+          "tokens": 170
+        },
+        {
+          "rank": 7,
+          "path": "command.go",
+          "line": 1046,
+          "node_id": "6a91a0c16e7604db",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteContextC",
+          "tokens": 151
+        }
+      ]
+    },
+    {
+      "id": "cb-02",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "flag_groups.go",
+          "line": 65,
+          "node_id": "eeb2cad3bd1cbee9",
+          "kind": "method",
+          "qualified_name": "cobra.Command.MarkFlagsMutuallyExclusive",
+          "tokens": 182
+        }
+      ]
+    },
+    {
+      "id": "cb-03",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/md_docs.go",
+          "line": 125,
+          "node_id": "9f2c8164b739ba69",
+          "kind": "function",
+          "qualified_name": "doc.GenMarkdownTree",
+          "tokens": 141
+        },
+        {
+          "rank": 2,
+          "path": "doc/md_docs.go",
+          "line": 133,
+          "node_id": "efa8d40a58669060",
+          "kind": "function",
+          "qualified_name": "doc.GenMarkdownTreeCustom",
+          "tokens": 95
+        }
+      ]
+    },
+    {
+      "id": "cb-04",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "completions.go",
+          "line": 133,
+          "node_id": "4f568d03ac3d83c3",
+          "kind": "method",
+          "qualified_name": "cobra.Command.RegisterFlagCompletionFunc",
+          "tokens": 158
+        }
+      ]
+    },
+    {
+      "id": "cb-05",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 1147,
+          "node_id": "9b6bf88a941fea37",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ValidateRequiredFlags",
+          "tokens": 177
+        }
+      ]
+    },
+    {
+      "id": "cb-06",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "zsh_completions.go",
+          "line": 42,
+          "node_id": "f99e84f7559cfc4e",
+          "kind": "method",
+          "qualified_name": "cobra.Command.GenZshCompletionNoDesc",
+          "tokens": 190
+        }
+      ]
+    },
+    {
+      "id": "cb-07",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "flag_groups.go",
+          "line": 1,
+          "node_id": "45b3e249c53a804a",
+          "kind": "file",
+          "qualified_name": "flag_groups.go",
+          "tokens": 198
+        }
+      ]
+    },
+    {
+      "id": "cb-08",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "doc/man_docs.go",
+          "line": 1,
+          "node_id": "2a670fbc63283a78",
+          "kind": "file",
+          "qualified_name": "doc/man_docs.go",
+          "tokens": 196
+        }
+      ]
+    },
+    {
+      "id": "cb-09",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "shell_completions.go",
+          "line": 1,
+          "node_id": "1398922a805ca15a",
+          "kind": "file",
+          "qualified_name": "shell_completions.go",
+          "tokens": 230
+        }
+      ]
+    },
+    {
+      "id": "cb-10",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "active_help.go",
+          "line": 1,
+          "node_id": "05f3b967aa3ca19c",
+          "kind": "file",
+          "qualified_name": "active_help.go",
+          "tokens": 229
+        }
+      ]
+    },
+    {
+      "id": "cb-11",
+      "hits": []
+    },
+    {
+      "id": "cb-12",
+      "hits": []
+    },
+    {
+      "id": "cb-13",
+      "hits": []
+    },
+    {
+      "id": "cb-14",
+      "hits": []
+    },
+    {
+      "id": "cb-15",
+      "hits": []
+    },
+    {
+      "id": "cb-16",
+      "hits": []
+    },
+    {
+      "id": "cb-17",
+      "hits": []
+    },
+    {
+      "id": "cb-18",
+      "hits": []
+    },
+    {
+      "id": "cb-19",
+      "hits": []
+    },
+    {
+      "id": "cb-20",
+      "hits": []
+    },
+    {
+      "id": "cb-21",
+      "hits": []
+    },
+    {
+      "id": "cb-22",
+      "hits": []
+    },
+    {
+      "id": "cb-23",
+      "hits": []
+    },
+    {
+      "id": "cb-24",
+      "hits": []
+    },
+    {
+      "id": "cb-25",
+      "hits": []
+    },
+    {
+      "id": "cb-26",
+      "hits": []
+    },
+    {
+      "id": "cb-27",
+      "hits": []
+    },
+    {
+      "id": "cb-28",
+      "hits": []
+    },
+    {
+      "id": "cb-29",
+      "hits": []
+    },
+    {
+      "id": "cb-30",
+      "hits": []
+    },
+    {
+      "id": "cb-31",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "bash_completions.go",
+          "line": 655,
+          "node_id": "0e2d8f342c8517b4",
+          "kind": "function",
+          "qualified_name": "cobra.gen",
+          "tokens": 115
+        },
+        {
+          "rank": 2,
+          "path": "bash_completionsV2.go",
+          "line": 31,
+          "node_id": "69192dcb6f33ae7e",
+          "kind": "function",
+          "qualified_name": "cobra.genBashComp",
+          "tokens": 173
+        },
+        {
+          "rank": 3,
+          "path": "fish_completions.go",
+          "line": 25,
+          "node_id": "992616769cb3da8e",
+          "kind": "function",
+          "qualified_name": "cobra.genFishComp",
+          "tokens": 172
+        },
+        {
+          "rank": 4,
+          "path": "powershell_completions.go",
+          "line": 28,
+          "node_id": "b67fd942b8152c62",
+          "kind": "function",
+          "qualified_name": "cobra.genPowerShellComp",
+          "tokens": 150
+        },
+        {
+          "rank": 5,
+          "path": "zsh_completions.go",
+          "line": 87,
+          "node_id": "7c0b8d04ca258149",
+          "kind": "function",
+          "qualified_name": "cobra.genZshComp",
+          "tokens": 145
+        },
+        {
+          "rank": 6,
+          "path": "doc/man_docs.go",
+          "line": 105,
+          "node_id": "22966295edc8a6ab",
+          "kind": "function",
+          "qualified_name": "doc.GenMan",
+          "tokens": 148
+        },
+        {
+          "rank": 7,
+          "path": "doc/man_docs.go",
+          "line": 94,
+          "node_id": "3315e40405bd08f7",
+          "kind": "type",
+          "qualified_name": "doc.GenManHeader",
+          "tokens": 155
+        },
+        {
+          "rank": 8,
+          "path": "doc/man_docs.go",
+          "line": 38,
+          "node_id": "39446c2979fbd37b",
+          "kind": "function",
+          "qualified_name": "doc.GenManTree",
+          "tokens": 135
+        },
+        {
+          "rank": 9,
+          "path": "doc/man_docs.go",
+          "line": 48,
+          "node_id": "f48720bc299730bd",
+          "kind": "function",
+          "qualified_name": "doc.GenManTreeFromOpts",
+          "tokens": 127
+        },
+        {
+          "rank": 10,
+          "path": "doc/man_docs.go",
+          "line": 84,
+          "node_id": "27f9ef4f24944ff3",
+          "kind": "type",
+          "qualified_name": "doc.GenManTreeOptions",
+          "tokens": 176
+        }
+      ]
+    },
+    {
+      "id": "cb-32",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command_test.go",
+          "line": 32,
+          "node_id": "d23966a0fce1d0a4",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommand",
+          "tokens": 108
+        },
+        {
+          "rank": 2,
+          "path": "command_test.go",
+          "line": 48,
+          "node_id": "12923566782a85fa",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandC",
+          "tokens": 112
+        },
+        {
+          "rank": 3,
+          "path": "command_test.go",
+          "line": 37,
+          "node_id": "61c29681dfde5092",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandWithContext",
+          "tokens": 108
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 59,
+          "node_id": "12defe65cd865e8c",
+          "kind": "function",
+          "qualified_name": "cobra.executeCommandWithContextC",
+          "tokens": 128
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 1038,
+          "node_id": "efc1349b7e0b2236",
+          "kind": "method",
+          "qualified_name": "cobra.Command.Execute",
+          "tokens": 155
+        },
+        {
+          "rank": 6,
+          "path": "command.go",
+          "line": 1052,
+          "node_id": "18cb88eba73cd7c5",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteC",
+          "tokens": 152
+        },
+        {
+          "rank": 7,
+          "path": "command.go",
+          "line": 1030,
+          "node_id": "8b8c959482c30486",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteContext",
+          "tokens": 170
+        },
+        {
+          "rank": 8,
+          "path": "command.go",
+          "line": 1046,
+          "node_id": "6a91a0c16e7604db",
+          "kind": "method",
+          "qualified_name": "cobra.Command.ExecuteContextC",
+          "tokens": 151
+        },
+        {
+          "rank": 9,
+          "path": "command.go",
+          "line": 874,
+          "node_id": "785aed129e4d4aff",
+          "kind": "method",
+          "qualified_name": "cobra.Command.execute",
+          "tokens": 171
+        }
+      ]
+    },
+    {
+      "id": "cb-33",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "README.md",
+          "line": 68,
+          "node_id": "6425fe532fa9eb2a",
+          "kind": "type",
+          "qualified_name": "README.Flags",
+          "tokens": 176
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 34,
+          "node_id": "9d570815eca53451",
+          "kind": "constant",
+          "qualified_name": "cobra.FlagSetByCobraAnnotation",
+          "tokens": 279
+        },
+        {
+          "rank": 3,
+          "path": ".github/labeler.yml",
+          "line": 9,
+          "node_id": "b793df90b4bdd1bb",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/flags\"",
+          "tokens": 17
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 1643,
+          "node_id": "270294113953ddc9",
+          "kind": "method",
+          "qualified_name": "cobra.Command.Flags",
+          "tokens": 119
+        },
+        {
+          "rank": 5,
+          "path": "site/content/user_guide.md",
+          "line": 280,
+          "node_id": "1878ba7e69255c71",
+          "kind": "type",
+          "qualified_name": "content.Local Flags",
+          "tokens": 155
+        },
+        {
+          "rank": 6,
+          "path": "site/content/user_guide.md",
+          "line": 270,
+          "node_id": "2ebf8a24970ff50b",
+          "kind": "type",
+          "qualified_name": "content.Persistent Flags",
+          "tokens": 164
+        },
+        {
+          "rank": 7,
+          "path": "site/content/user_guide.md",
+          "line": 319,
+          "node_id": "b7656a625b0367ad",
+          "kind": "type",
+          "qualified_name": "content.Required flags",
+          "tokens": 208
+        },
+        {
+          "rank": 8,
+          "path": "site/content/completions/_index.md",
+          "line": 272,
+          "node_id": "efc235804b8c7485",
+          "kind": "type",
+          "qualified_name": "completions.Completions for flags",
+          "tokens": 193
+        },
+        {
+          "rank": 9,
+          "path": "site/content/user_guide.md",
+          "line": 253,
+          "node_id": "c9bbf0a272f7f167",
+          "kind": "type",
+          "qualified_name": "content.Working with Flags",
+          "tokens": 186
+        },
+        {
+          "rank": 10,
+          "path": "site/content/completions/_index.md",
+          "line": 274,
+          "node_id": "ba0e0d549ce0c4c6",
+          "kind": "type",
+          "qualified_name": "completions.Mark flags as required",
+          "tokens": 191
+        }
+      ]
+    },
+    {
+      "id": "cb-34",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "README.md",
+          "line": 95,
+          "node_id": "3e9c8c055970ca8c",
+          "kind": "type",
+          "qualified_name": "README.Usage",
+          "tokens": 90
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 446,
+          "node_id": "eff2191a6c4aa293",
+          "kind": "method",
+          "qualified_name": "cobra.Command.Usage",
+          "tokens": 151
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 426,
+          "node_id": "dfb49659eaf139d8",
+          "kind": "method",
+          "qualified_name": "cobra.Command.UsageFunc",
+          "tokens": 154
+        },
+        {
+          "rank": 4,
+          "path": "command.go",
+          "line": 516,
+          "node_id": "c03a42b4aae5a9da",
+          "kind": "method",
+          "qualified_name": "cobra.Command.UsagePadding",
+          "tokens": 125
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 479,
+          "node_id": "96b8e0e795d784e3",
+          "kind": "method",
+          "qualified_name": "cobra.Command.UsageString",
+          "tokens": 130
+        },
+        {
+          "rank": 6,
+          "path": "command.go",
+          "line": 544,
+          "node_id": "42071a1f8dc86cce",
+          "kind": "method",
+          "qualified_name": "cobra.Command.UsageTemplate",
+          "tokens": 128
+        },
+        {
+          "rank": 7,
+          "path": "site/content/user_guide.md",
+          "line": 554,
+          "node_id": "c65dd1881df23199",
+          "kind": "type",
+          "qualified_name": "content.Usage Message",
+          "tokens": 170
+        },
+        {
+          "rank": 8,
+          "path": "site/content/user_guide.md",
+          "line": 583,
+          "node_id": "3949517e09ca9593",
+          "kind": "type",
+          "qualified_name": "content.Defining your own usage",
+          "tokens": 245
+        }
+      ]
+    },
+    {
+      "id": "cb-35",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "site/content/completions/bash.md",
+          "line": 1,
+          "node_id": "168632ba1678a841",
+          "kind": "type",
+          "qualified_name": "completions..",
+          "tokens": 226
+        },
+        {
+          "rank": 2,
+          "path": "site/content/completions/fish.md",
+          "line": 1,
+          "node_id": "521da19e190926c0",
+          "kind": "type",
+          "qualified_name": "completions..",
+          "tokens": 14
+        },
+        {
+          "rank": 3,
+          "path": "site/content/completions/zsh.md",
+          "line": 1,
+          "node_id": "755a04785098a1e2",
+          "kind": "type",
+          "qualified_name": "completions..",
+          "tokens": 384
+        },
+        {
+          "rank": 4,
+          "path": "site/content/completions/powershell.md",
+          "line": 1,
+          "node_id": "c629066100fd8965",
+          "kind": "type",
+          "qualified_name": "completions..",
+          "tokens": 15
+        },
+        {
+          "rank": 5,
+          "path": "site/content/completions/_index.md",
+          "line": 396,
+          "node_id": "1f01de63a3c9c534",
+          "kind": "type",
+          "qualified_name": "completions.Bash completions",
+          "tokens": 261
+        },
+        {
+          "rank": 6,
+          "path": "site/content/completions/_index.md",
+          "line": 117,
+          "node_id": "e631f5e7f158189c",
+          "kind": "type",
+          "qualified_name": "completions.Customizing completions",
+          "tokens": 189
+        },
+        {
+          "rank": 7,
+          "path": "site/content/completions/_index.md",
+          "line": 517,
+          "node_id": "efc8e78c92ec0bf5",
+          "kind": "type",
+          "qualified_name": "completions.PowerShell completions",
+          "tokens": 279
+        },
+        {
+          "rank": 8,
+          "path": "site/content/completions/_index.md",
+          "line": 452,
+          "node_id": "81fa78007aae75ab",
+          "kind": "type",
+          "qualified_name": "completions.Zsh completions",
+          "tokens": 313
+        },
+        {
+          "rank": 9,
+          "path": "site/content/completions/_index.md",
+          "line": 487,
+          "node_id": "15ec7803c5f94fae",
+          "kind": "type",
+          "qualified_name": "completions.fish completions",
+          "tokens": 354
+        },
+        {
+          "rank": 10,
+          "path": "site/content/completions/_index.md",
+          "line": 421,
+          "node_id": "1ae506878d93ca1b",
+          "kind": "type",
+          "qualified_name": "completions.Bash completion V2",
+          "tokens": 345
+        }
+      ]
+    },
+    {
+      "id": "cb-36",
+      "hits": []
+    },
+    {
+      "id": "cb-37",
+      "hits": []
+    },
+    {
+      "id": "cb-38",
+      "hits": []
+    },
+    {
+      "id": "cb-39",
+      "hits": []
+    },
+    {
+      "id": "cb-40",
+      "hits": []
+    }
+  ]
+}

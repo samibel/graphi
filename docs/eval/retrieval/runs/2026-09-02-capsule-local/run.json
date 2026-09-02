@@ -1,0 +1,135 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "scorer_version": "retrieval-aggregate/1",
+  "date": "2026-09-02",
+  "runner_class": "local",
+  "repo": "cobra",
+  "report": "cobra-v1-report.json",
+  "report_sha256": "39efeb6f8ba7635e2459ae117e8659e1516a36796ade5d7ddd3607cc90a10ff0",
+  "dataset": "dataset.json",
+  "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
+  "raw": [
+    {
+      "series": "hits",
+      "baseline": "lexical",
+      "file": "raw/hits-lexical.json",
+      "sha256": "d9792aa5f4f0a39a0b1d80775e7e6191da28a035ed6197dd91cced86bfaa68fa",
+      "collected": true,
+      "samples": 64
+    },
+    {
+      "series": "latency",
+      "baseline": "lexical",
+      "file": "raw/latency-lexical.json",
+      "sha256": "c71a5a3c5eae94b36595feb861543586ba791244e2445fc3748b3c4f326ffaaf",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "hybrid_v1",
+      "file": "raw/hits-hybrid_v1.json",
+      "sha256": "9524a31c03091aa1ded92a346345e0af7370cc0c07810bb0bbc62856160a65df",
+      "collected": true,
+      "samples": 270
+    },
+    {
+      "series": "latency",
+      "baseline": "hybrid_v1",
+      "file": "raw/latency-hybrid_v1.json",
+      "sha256": "0c2d745d9a5ff0162100b653e2e7c508c90097888bd9d0f2cbf51026ea65c47c",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "semantic_name_only",
+      "file": "raw/hits-semantic_name_only.json",
+      "sha256": "a2978a5d09cdca6b4e647cbd209384dadbae46e1bcdef5b1fb02b7035655c6be",
+      "collected": true,
+      "samples": 400
+    },
+    {
+      "series": "latency",
+      "baseline": "semantic_name_only",
+      "file": "raw/latency-semantic_name_only.json",
+      "sha256": "09718d466fb90f169a6034fe7f0c68349bee0837c1194b95b5a7f81c1a96cef4",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "oracle_upper_bound",
+      "file": "raw/hits-oracle_upper_bound.json",
+      "sha256": "79279e57f4939273f171d4f7accf252e50dc724058ddb81e029d2de7a0829999",
+      "collected": true,
+      "samples": 123
+    },
+    {
+      "series": "latency",
+      "baseline": "oracle_upper_bound",
+      "file": "raw/latency-oracle_upper_bound.json",
+      "sha256": "18f18b1926e5a28c68cef07d1901d79a4e3509530d402727287d17dc03c6f0c1",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "chunk_only",
+      "file": "raw/hits-chunk_only.json",
+      "sha256": "934c20ad96f62760290ae6f4ca425e313a1c52014e86f58a13bff4c79eacf8f6",
+      "collected": true,
+      "samples": 270
+    },
+    {
+      "series": "latency",
+      "baseline": "chunk_only",
+      "file": "raw/latency-chunk_only.json",
+      "sha256": "83b9d2deae676f0dd1605dd7b790d74b553b843c3256392514f757e906f3af22",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "fusion",
+      "file": "raw/hits-fusion.json",
+      "sha256": "898ef84314ae5f9992ed07554429139fa9536b4093efe5272def6c6ec3dc0739",
+      "collected": true,
+      "samples": 400
+    },
+    {
+      "series": "latency",
+      "baseline": "fusion",
+      "file": "raw/latency-fusion.json",
+      "sha256": "9104885920472cfe33a55e9bc53f7e5d786caea1a280d16ded0e289038f029c1",
+      "collected": true,
+      "samples": 120
+    },
+    {
+      "series": "hits",
+      "baseline": "fusion+graph",
+      "file": "raw/hits-fusion+graph.json",
+      "sha256": "0afefe4d6fdf085add9779c5fe3af582445968a74918b6d16fc268abfa62d9f7",
+      "collected": true,
+      "samples": 400
+    },
+    {
+      "series": "latency",
+      "baseline": "fusion+graph",
+      "file": "raw/latency-fusion+graph.json",
+      "sha256": "afb1d188ee3c3645132868d4cf311f003a1d0a2e123b1cec25c24f766c2cd56c",
+      "collected": true,
+      "samples": 120
+    }
+  ],
+  "environment": {
+    "generated_at": "2026-09-02T06:02:10Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  },
+  "notes": "SW-258 retrieval-eval run directory: the dataset-qualified report named by run.json is the single published artifact, dataset.json the exact judged bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
+}

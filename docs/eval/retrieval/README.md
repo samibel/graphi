@@ -14,13 +14,16 @@ number that does not follow from its samples is an error, not a rounding note.
 
 ## What is measured
 
-Four baselines, executed by name and in this order:
+Seven baselines, executed by name and in this order:
 
 | Baseline | Seam | Notes |
 |---|---|---|
 | `lexical` | `engine/search.Service.Search` | the store's FTS5 bm25 ranking over qualified names (SQLite, the shipped backend) |
 | `hybrid_v1` | `engine/agenttools/hybridsearch.Search` (`search_hybrid/1`) | lexical retrieval + identifier/path/degree signals, no vectors; the weights hash is stamped in `method` |
-| `semantic_name_only` | `engine/search.Service.SemanticSearch` | over the name-only documents; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
+| `semantic_name_only` | `engine/search.Service.SemanticSearch` | over the v1 name-only documents; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
+| `chunk_only` | `engine/retrieval.Retrieve` (`ModeLexicalOnly`) | the SW-263 lexical-only pipeline; no semantic candidates consulted |
+| `fusion` | `engine/retrieval.Retrieve` (`ModeFusionNoGraph`) | the SW-263 fused pipeline; integer RRF over lexical + semantic, no graph rerank |
+| `fusion+graph` | `engine/retrieval.Retrieve` (`ModeAuto`) | the SW-263 fused pipeline with the bounded graph rerank on top |
 | `oracle_upper_bound` | the judged spans themselves, grade ≥ 1 ranked by grade | the ceiling the scorer can reach; proves the metric code, not a retriever |
 
 Per baseline, per query: the top-10 hits, then **Top-1, Recall@5, Recall@10, MRR@10, NDCG@10,
@@ -166,12 +169,17 @@ Hit fields under repository control (`path`, `node_id`, `qualified_name`) are bo
 `trust.MaxPathLength` (240 bytes) with a visible `…[truncated]` marker before they enter the report
 or the raw files (`context/standards.md`); scoring runs over the canonical value.
 
-Run directory (`-export-raw`): `run.json` (index with per-file sha256), `report.json`,
-`dataset.json` (the exact judged bytes), `raw/hits-<baseline>.json` (every ranking, nothing
+Run directory (`-export-raw`): `run.json` (index with per-file sha256),
+`<dataset-id>-report.json` (the single published report), `dataset.json` (the exact judged bytes),
+`raw/hits-<baseline>.json` (every ranking, nothing
 derived), `raw/latency-<baseline>.json` (every timed execution + the single-sample measures
 `index_ms` / `peak_rss_mb` / `vector_sidecar_bytes` with their status and reason). An unavailable
 baseline's raw records say `collected: false` and carry the typed `reason` — the only thing that can
 justify `unavailable` in the report.
+
+`run.json.report` is authoritative. New exports use the dataset-qualified name so the AC gate and
+`-aggregate` read the same bytes without retaining a byte-identical `report.json` alias. The reader
+still accepts historical directories whose index names `report.json`.
 
 Every raw file is read **twice-identified**: `run.json` says which series and baseline a file is,
 and the file says the same about itself (`format_version`, `harness_version`, `series`, `baseline`,
@@ -211,6 +219,34 @@ time, worst indexed-baseline query p95 and peak RSS with the measurement each ca
 budget = measured × 2.0; a class with no measurement reads `UNKNOWN`. Both carry `date`,
 `derived_from` (report path + sha256) and `immutable_until: "SW-266"`. The reports they were derived
 from are checked in under `docs/eval/retrieval/runs/`.
+
+## SW-263 AC-9 evaluation runs
+
+The `chunk_only`, `fusion` and `fusion+graph` baselines in this harness
+are the SW-263 retrieval ablations (`engine/retrieval` in
+`ModeLexicalOnly`, `ModeFusionNoGraph`, and `ModeAuto` respectively).
+The AC-9 gate in `internal/eval/retrieval/targets_test.go`
+(`TestReport_MeetsAC9GateAgainstTargetsFile`) compares the most recent
+checked-in cobra run's fusion ndcg@10 against the targets file's
+`fusion_target.must_reach` on `nl_behaviour` and `architecture_flow`,
+and the fusion top1 against the `no_regression.floor` on
+`exact_identifier`.
+
+**Embedder caveat (read this before citing fusion numbers):** the fusion
+ablations require a configured embedder; the SW-258 targets were derived
+without one (so `semantic_name_only` was `unavailable` there). The AC-9
+runs that exercise fusion therefore use `ollama:nomic-embed-text` —
+**not** the static code embedder the spec eventually wants
+(`static:potion-code-16M-v2`, SW-262, deliberately not built yet). The
+fusion numbers are model-dependent and will move when the static embedder
+lands. Do not present AC-9 numbers as the spec's final numbers.
+
+The 2026-08-31 cobra run (`docs/eval/retrieval/runs/2026-08-31-local/`)
+is the SW-263 AC-9 evaluation: the `README.md` in that directory records
+the actual numbers and the embedder id, and the verdict against the
+targets (gate PASS / MISS). Per the story, if the target is missed the
+story does not go to review and the miss is reported with the actual
+per-stratum numbers.
 
 ## What this harness does not do
 

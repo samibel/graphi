@@ -30,8 +30,11 @@ type VectorIndex interface {
 	Rebuild(ctx context.Context, rows []Vector) error
 	// Put inserts/updates a single vector (incremental embed path).
 	Put(id model.NodeId, values []float32)
-	// Search returns up to limit hits ranked by cosine similarity, score
-	// DESCENDING with a deterministic NodeId-ascending tie-break.
+	// Search returns up to limit hits ranked by QUANTISED cosine similarity
+	// (AC-3), score DESCENDING with a deterministic NodeId-ascending
+	// tie-break. The quantisation factor is 10000 (the engine-wide AC-3
+	// contract: two floats within 5e-5 are ties that resolve on canonical
+	// NodeId). See engine/embed/index.go for the factor's origin.
 	Search(query []float32, limit int) []Hit
 	// Len returns the number of indexed vectors.
 	Len() int
@@ -146,8 +149,12 @@ func NewVectorIndex(cfg VectorIndexConfig) (VectorIndex, error) {
 
 // hnswNode is one indexed vector plus its per-layer adjacency. neighbors[l] holds
 // the NodeIds linked at layer l; index 0 is the base layer present for every node.
+// docID is the embedding-space document id the GenerationStore persisted with
+// this row (SW-260 SemanticDocument.DocumentID); empty when the row carried
+// none (legacy fixture path).
 type hnswNode struct {
 	id        model.NodeId
+	docID     string
 	vec       []float32
 	norm      float64
 	level     int
@@ -199,26 +206,31 @@ func NewHNSWIndex(p HNSWParams) *HNSWIndex {
 
 // Rebuild replaces the graph from the given rows. Vectors are loaded from a
 // GenerationStore at the call site; the index itself does not touch the
-// store, so this method is a pure function of the input.
+// store, so this method is a pure function of the input. The DocumentID
+// on each Vector is the v2 embedding-space identity the GenerationStore
+// persisted alongside the vector; the retrieval module consumes it for
+// the AC-2 hierarchical dedupe key.
 func (h *HNSWIndex) Rebuild(_ context.Context, rows []Vector) error {
 	h.nodes = make(map[model.NodeId]*hnswNode, len(rows))
 	h.order = h.order[:0]
 	h.entry, h.hasEnt = "", false
 	for _, v := range rows {
-		h.insert(v.NodeID, v.Values)
+		h.insert(v.NodeID, v.Values, v.DocumentID)
 	}
 	return nil
 }
 
 // Put inserts/updates a single vector. On update the node is removed and
-// re-inserted so its adjacency is rebuilt consistently.
+// re-inserted so its adjacency is rebuilt consistently. Put does not take
+// a DocumentID: the incremental path carries it through Upsert to the
+// durable store and the next Rebuild reads it back.
 func (h *HNSWIndex) Put(id model.NodeId, values []float32) {
 	if _, exists := h.nodes[id]; exists {
 		h.remove(id)
 	}
 	cp := make([]float32, len(values))
 	copy(cp, values)
-	h.insert(id, cp)
+	h.insert(id, cp, "")
 }
 
 // Len returns the number of indexed vectors.
@@ -240,13 +252,16 @@ func (h *HNSWIndex) levelFor(id model.NodeId) int {
 
 // insert adds id with its vector, wiring neighbors layer by layer following the
 // standard HNSW greedy-descent + ef_construction beam search, with all tie-breaks
-// resolved by NodeId so the result is order-independent.
-func (h *HNSWIndex) insert(id model.NodeId, vec []float32) {
+// resolved by NodeId so the result is order-independent. docID is the
+// embedding-space document id the GenerationStore persisted with this row;
+// empty when the row carried none.
+func (h *HNSWIndex) insert(id model.NodeId, vec []float32, docID string) {
 	cp := make([]float32, len(vec))
 	copy(cp, vec)
 	lvl := h.levelFor(id)
 	n := &hnswNode{
 		id:        id,
+		docID:     docID,
 		vec:       cp,
 		norm:      norm(cp),
 		level:     lvl,
@@ -415,10 +430,13 @@ func (h *HNSWIndex) searchLayer(q []float32, entries []model.NodeId, l, ef int) 
 	return out
 }
 
-// Search ranks indexed vectors by cosine similarity to query, returning up to
-// limit hits (score desc, NodeId asc). It runs greedy descent to layer 0 then a
-// beam search with ef = max(EfSearch, limit), so recall is bounded by ef. Empty
-// index returns no hits; a non-positive limit returns all beam results.
+// Search ranks indexed vectors by QUANTISED cosine similarity (AC-3),
+// returning up to limit hits (quantised-score desc, NodeId asc). It runs
+// greedy descent to layer 0 then a beam search with ef = max(EfSearch,
+// limit), so recall is bounded by ef. Empty index returns no hits; a
+// non-positive limit returns all beam results. The DocumentID for each
+// hit comes from the indexed vector the row persisted; an empty
+// DocumentID means the row carried none (legacy fixture path).
 func (h *HNSWIndex) Search(query []float32, limit int) []Hit {
 	if !h.hasEnt || len(h.nodes) == 0 {
 		return nil
@@ -435,12 +453,21 @@ func (h *HNSWIndex) Search(query []float32, limit int) []Hit {
 	cands := h.searchLayer(query, []model.NodeId{ep}, 0, ef)
 	hits := make([]Hit, 0, len(cands))
 	for _, c := range cands {
-		hits = append(hits, Hit{NodeID: c.id, Score: c.score})
+		docID := ""
+		if n, ok := h.nodes[c.id]; ok {
+			docID = n.docID
+		}
+		hits = append(hits, Hit{NodeID: c.id, DocumentID: docID, Score: c.score})
 	}
-	// cands already (score desc, NodeId asc); enforce defensively at the boundary.
+	// AC-3: order by quantised cosine (int(round(cos*10000))) desc, then
+	// canonical NodeId asc — the same key the brute-force Index uses.
+	// Truncation to `limit` follows so a quantised tie that straddles
+	// the limit selects by NodeId rather than by a difference the
+	// contract says is not there.
 	sort.SliceStable(hits, func(i, j int) bool {
-		if hits[i].Score != hits[j].Score {
-			return hits[i].Score > hits[j].Score
+		qi, qj := quantiseCosine(hits[i].Score), quantiseCosine(hits[j].Score)
+		if qi != qj {
+			return qi > qj
 		}
 		return hits[i].NodeID < hits[j].NodeID
 	})

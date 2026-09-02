@@ -133,6 +133,67 @@ func (V1DocumentSource) Document(n model.Node) (SemanticDocument, bool) {
 	}, true
 }
 
+// V2DocumentSource yields the v2 document shape (`document_schema: "v2"`)
+// from node metadata alone (no source bytes). It is the
+// eval-and-test analogue of the production fileDocumentSource, for
+// callers that have no root + parser available — the v2 schema tag and
+// the (document_id, node_id) identity are what the retrieval module's
+// hierarchical dedupe key (AC-2) consumes; the absence of a body is the
+// production-side difference the fileDocumentSource adds (body+doc
+// text). Two nodes that share a body+doc would share a DocumentID under
+// the fileDocumentSource and would NOT under V2DocumentSource — a test
+// that needs the shared-document semantics wires a real fileDocumentSource
+// via cmd/graphi.
+//
+// SW-263 review / item 6: the eval harness uses V2DocumentSource rather
+// than V1DocumentSource so the production document source is exercised
+// end-to-end: v2 schema tag, the document_id formula the hierarchical
+// dedupe key reads, and the quantised-cosine ordering that pre-dates
+// the per-source truncation.
+type V2DocumentSource struct{}
+
+// Document implements DocumentSource with the v2 schema. The text is the
+// v1 NodeText-equivalent plus the normalised path segments so the
+// document identity mirrors the production body+doc shape minus the
+// file body. Two distinct nodes that would share a body+doc under the
+// production source do NOT share a document under V2DocumentSource —
+// callers that need the shared case use a fileDocumentSource.
+func (V2DocumentSource) Document(n model.Node) (SemanticDocument, bool) {
+	var b strings.Builder
+	if kind := strings.TrimSpace(n.Kind()); kind != "" {
+		b.WriteString(kind)
+		b.WriteByte(' ')
+	}
+	if qn := strings.TrimSpace(n.QualifiedName()); qn != "" {
+		b.WriteString(qn)
+	}
+	if path := strings.TrimSpace(n.SourcePath()); path != "" {
+		b.WriteByte('\n')
+		// Normalise the path: split on "/", join with spaces, drop empty
+		// segments. Mirrors pathSegments in BuildDocument.
+		segs := strings.Split(path, "/")
+		out := segs[:0]
+		for _, s := range segs {
+			if s != "" {
+				out = append(out, s)
+			}
+		}
+		b.WriteString(strings.Join(out, " "))
+	}
+	text := b.String()
+	hash := model.FormatID(xxhash.Sum64String(text))
+	return SemanticDocument{
+		DocumentID:     documentID(n.ID(), hash, DocumentSchema),
+		NodeID:         n.ID(),
+		Kind:           n.Kind(),
+		QualifiedName:  n.QualifiedName(),
+		Path:           n.SourcePath(),
+		TextHash:       hash,
+		DocumentSchema: DocumentSchema,
+		Text:           text,
+	}, true
+}
+
 // GenerateResult summarizes an embedding-generation pass.
 type GenerateResult struct {
 	// Configured reports whether an embedder was active. When false the pass is a
