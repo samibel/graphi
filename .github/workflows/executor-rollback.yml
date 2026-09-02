@@ -158,7 +158,7 @@ jobs:
           cat "$RUNNER_TEMP/seam-detail.txt"
           defaults=$(grep -c 'shadow (compiled-in default)' "$RUNNER_TEMP/seam-detail.txt" || true)
           pinned=$(grep -c '(GRAPHI_CANARY_' "$RUNNER_TEMP/seam-detail.txt" || true)
-          if [ "$defaults" != "10" ] || [ "$pinned" != "0" ]; then
+          if [ "$defaults" != "11" ] || [ "$pinned" != "0" ]; then
             echo "::error::round-trip failed: $defaults operation(s) on the compiled-in default, $pinned still pinned by a variable"
             exit 1
           fi
