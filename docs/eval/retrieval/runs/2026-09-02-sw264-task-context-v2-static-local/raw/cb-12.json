@@ -1,0 +1,1687 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "query": {
+    "id": "cb-12",
+    "stratum": "nl_behaviour",
+    "language": "en",
+    "split": "dev",
+    "query": "how does cobra find the subcommand for the given arguments",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 724,
+        "end_line": 748,
+        "anchor": "func (c *Command) Find(",
+        "grade": 3,
+        "reason": "Find walks the arguments down the command tree and returns the matched command.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command.go",
+        "start_line": 767,
+        "end_line": 786,
+        "anchor": "func (c *Command) findNext(",
+        "grade": 2,
+        "reason": "findNext matches one argument against names, aliases and prefixes.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command.go",
+        "start_line": 788,
+        "end_line": 829,
+        "anchor": "func (c *Command) Traverse(",
+        "grade": 2,
+        "reason": "Traverse is the flag-parsing variant of the same lookup.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command.go",
+        "start_line": 643,
+        "end_line": 679,
+        "anchor": "func stripFlags(",
+        "grade": 1,
+        "reason": "stripFlags removes flags before the lookup; supporting, not the lookup itself.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      }
+    ]
+  },
+  "grade3_judgements": [
+    {
+      "path": "command.go",
+      "start_line": 724,
+      "end_line": 748,
+      "anchor": "func (c *Command) Find(",
+      "grade": 3,
+      "reason": "Find walks the arguments down the command tree and returns the matched command.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    }
+  ],
+  "retrieval": {
+    "Rows": [
+      {
+        "NodeID": "f21a64459558a11d",
+        "DocumentID": "143a266e6dfa0a74",
+        "Path": "args.go",
+        "Line": 28,
+        "Span": "28-28",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 1,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "e6d3046bf2018131",
+        "DocumentID": "a71d960288d53f57",
+        "Path": "command.go",
+        "Line": 726,
+        "Span": "726-726",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 1,
+          "SemanticRank": 2,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "09d2122b47b1204d",
+        "DocumentID": "7cd508943ddd20a7",
+        "Path": "completions.go",
+        "Line": 266,
+        "Span": "266-266",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 28,
+          "SemanticRank": 3,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "8821bed31f420e96",
+        "DocumentID": "15baa52a39fb009c",
+        "Path": "command.go",
+        "Line": 1229,
+        "Span": "1229-1229",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 4,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      },
+      {
+        "NodeID": "e909af5513ea2ba6",
+        "DocumentID": "cb0f2c6e9e8b3547",
+        "Path": "site/content/user_guide.md",
+        "Line": 492,
+        "Span": "492-492",
+        "Region": "semantic_prefix",
+        "Explain": {
+          "LexicalRank": 0,
+          "SemanticRank": 5,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 0
+        },
+        "Final": 0
+      }
+    ],
+    "Summary": {
+      "RetrievalVersion": "retrieval/2",
+      "Strategy": "semantic_first",
+      "WeightsHash": "92a8589c",
+      "ModelFingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "IndexFingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:68927b2c5e896dcf830785c35e39eee2",
+      "Query": "how does cobra find the subcommand for the given arguments",
+      "Limit": 5,
+      "CandidateK": 50,
+      "RRFk": 60,
+      "RRFScale": 1000000,
+      "MaxPerFile": 3
+    },
+    "Degradation": "ready",
+    "Reason": ""
+  },
+  "bundle": {
+    "outcome": "partial",
+    "summary": "task_context/2: 5 seed(s) for \"how does cobra find the subcommand for the given arguments\" — 8 related, 6 callers, 8 callees, 2 tests, 6 configs, 8 files, risk medium (task_context/2; retrieval/2; weights 92a8589c; 605/1200 snippet tokens; strategy semantic_first; degradation: ready)",
+    "items": [
+      {
+        "ref_id": "09d2122b47b1204d",
+        "rank": 9437484,
+        "reason": "primary: method cobra.Command.getCompletions (completions.go:266) score 300 [seed 1, search]",
+        "evidence_ref_ids": [
+          "e1",
+          "e122"
+        ]
+      },
+      {
+        "ref_id": "8821bed31f420e96",
+        "rank": 9437444,
+        "reason": "primary: method cobra.Command.InitDefaultHelpCmd (command.go:1229) score 260 [seed 2, search]",
+        "evidence_ref_ids": [
+          "e2",
+          "e123"
+        ]
+      },
+      {
+        "ref_id": "e6d3046bf2018131",
+        "rank": 9437404,
+        "reason": "primary: method cobra.Command.Find (command.go:726) score 220 [seed 3, search]",
+        "evidence_ref_ids": [
+          "e3",
+          "e124"
+        ]
+      },
+      {
+        "ref_id": "e909af5513ea2ba6",
+        "rank": 9437364,
+        "reason": "primary: type content.Help Command (site/content/user_guide.md:492) score 180 [seed 4, search]",
+        "evidence_ref_ids": [
+          "e4",
+          "e125"
+        ]
+      },
+      {
+        "ref_id": "f21a64459558a11d",
+        "rank": 9437324,
+        "reason": "primary: function cobra.legacyArgs (args.go:28) score 140 [seed 5, search]",
+        "evidence_ref_ids": [
+          "e5",
+          "e126"
+        ]
+      },
+      {
+        "ref_id": "085c68594070e1f5",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.RemoveCommand (command.go:1362) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e6",
+          "e7",
+          "e127"
+        ]
+      },
+      {
+        "ref_id": "18cb88eba73cd7c5",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.ExecuteC (command.go:1052) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e8",
+          "e9",
+          "e128"
+        ]
+      },
+      {
+        "ref_id": "192bc73065333477",
+        "rank": 8388938,
+        "reason": "related: type cobra.Command (command.go:51) score 330 [calls 0, hierarchy 0, refs 300, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e10",
+          "e11",
+          "e12",
+          "e13",
+          "e14",
+          "e15",
+          "e16",
+          "e17",
+          "e18",
+          "e19",
+          "e20",
+          "e129"
+        ]
+      },
+      {
+        "ref_id": "1b7d7b255aa691cb",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.InitDefaultHelpFlag (command.go:1186) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e21",
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "21021a29c3b6d343",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.HasSubCommands (command.go:1556) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23",
+          "e24"
+        ]
+      },
+      {
+        "ref_id": "2320e6ccb55ff14c",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.IsAvailableCommand (command.go:1562) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e25",
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "2356443441d4d409",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.Commands (command.go:1293) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e27",
+          "e28",
+          "e29"
+        ]
+      },
+      {
+        "ref_id": "3d75b0d1626ca2e1",
+        "rank": 8388938,
+        "reason": "related: method cobra.Command.Name (command.go:1496) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e30",
+          "e31",
+          "e32",
+          "e33",
+          "e34"
+        ]
+      },
+      {
+        "ref_id": "18cb88eba73cd7c5",
+        "rank": 7340362,
+        "reason": "caller: method cobra.Command.ExecuteC (command.go:1052) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e8",
+          "e9"
+        ]
+      },
+      {
+        "ref_id": "f9d7155c601ea8a7",
+        "rank": 7340362,
+        "reason": "caller: method cobra.Command.initCompleteCmd (completions.go:194) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e45",
+          "e46"
+        ]
+      },
+      {
+        "ref_id": "14f1d2c84525f783",
+        "rank": 7340182,
+        "reason": "caller: function doc.GenMarkdownCustom (doc/md_docs.go:57) score 150 [calls 150, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e78"
+        ]
+      },
+      {
+        "ref_id": "594601ff8ec57f62",
+        "rank": 7340182,
+        "reason": "caller: function doc.genMan (doc/man_docs.go:202) score 150 [calls 150, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e79"
+        ]
+      },
+      {
+        "ref_id": "638bf972d660d0ca",
+        "rank": 7340182,
+        "reason": "caller: function doc.GenYamlCustom (doc/yaml_docs.go:93) score 150 [calls 150, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e80"
+        ]
+      },
+      {
+        "ref_id": "6b21e7f0705119bb",
+        "rank": 7340182,
+        "reason": "caller: function doc.GenReSTCustom (doc/rest_docs.go:62) score 150 [calls 150, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e81"
+        ]
+      },
+      {
+        "ref_id": "085c68594070e1f5",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.RemoveCommand (command.go:1362) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e6",
+          "e7"
+        ]
+      },
+      {
+        "ref_id": "1b7d7b255aa691cb",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.InitDefaultHelpFlag (command.go:1186) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e21",
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "21021a29c3b6d343",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.HasSubCommands (command.go:1556) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23",
+          "e24"
+        ]
+      },
+      {
+        "ref_id": "2320e6ccb55ff14c",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.IsAvailableCommand (command.go:1562) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e25",
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "2356443441d4d409",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.Commands (command.go:1293) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e27",
+          "e28",
+          "e29"
+        ]
+      },
+      {
+        "ref_id": "3d75b0d1626ca2e1",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.Name (command.go:1496) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e30",
+          "e31",
+          "e32",
+          "e33",
+          "e34"
+        ]
+      },
+      {
+        "ref_id": "5860ac9531308bf9",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.InitDefaultVersionFlag (command.go:1204) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e35",
+          "e36"
+        ]
+      },
+      {
+        "ref_id": "7895637f693c31c6",
+        "rank": 6291786,
+        "reason": "callee: method cobra.Command.Root (command.go:861) score 330 [calls 300, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e37",
+          "e38",
+          "e39",
+          "e40",
+          "e41",
+          "e42",
+          "e43",
+          "e44"
+        ]
+      },
+      {
+        "ref_id": "0589a68066e0ac6f",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestDefaultCompletionCmd (completions_test.go:2427) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e98"
+        ]
+      },
+      {
+        "ref_id": "ea20057a396b611b",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestFind (command_test.go:2658) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e99"
+        ]
+      },
+      {
+        "ref_id": "config:.github/dependabot.yml",
+        "rank": 4194305,
+        "reason": "config: .github/dependabot.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e100"
+        ]
+      },
+      {
+        "ref_id": "config:.github/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e101"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e102"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/size-labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/size-labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e103"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/test.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/test.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e104"
+        ]
+      },
+      {
+        "ref_id": "config:.golangci.yml",
+        "rank": 4194305,
+        "reason": "config: .golangci.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e105"
+        ]
+      },
+      {
+        "ref_id": "file:command.go",
+        "rank": 3151998,
+        "reason": "file: command.go score 6270 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e106"
+        ]
+      },
+      {
+        "ref_id": "file:completions.go",
+        "rank": 3148193,
+        "reason": "file: completions.go score 2465 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e107"
+        ]
+      },
+      {
+        "ref_id": "file:bash_completions.go",
+        "rank": 3145878,
+        "reason": "file: bash_completions.go score 150 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e108"
+        ]
+      },
+      {
+        "ref_id": "file:cobra.go",
+        "rank": 3145878,
+        "reason": "file: cobra.go score 150 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e109"
+        ]
+      },
+      {
+        "ref_id": "file:doc/man_docs.go",
+        "rank": 3145878,
+        "reason": "file: doc/man_docs.go score 150 [neighbor roll-up]",
+        "evidence_ref_ids": [
+          "e110"
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "ref_id": "e1",
+        "path": "completions.go",
+        "line": 266,
+        "span": "266-266",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e2",
+        "path": "command.go",
+        "line": 1229,
+        "span": "1229-1229",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e3",
+        "path": "command.go",
+        "line": 726,
+        "span": "726-726",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e4",
+        "path": "site/content/user_guide.md",
+        "line": 492,
+        "span": "492-492",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e5",
+        "path": "args.go",
+        "line": 28,
+        "span": "28-28",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e6",
+        "path": "completions.go",
+        "line": 287,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e7",
+        "path": "command.go",
+        "line": 1273,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e8",
+        "path": "command.go",
+        "line": 1068,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e9",
+        "path": "command.go",
+        "line": 1090,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e10",
+        "path": "completions.go",
+        "line": 266,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e11",
+        "path": "completions.go",
+        "line": 272,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e12",
+        "path": "completions.go",
+        "line": 503,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e13",
+        "path": "command.go",
+        "line": 1229,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e14",
+        "path": "command.go",
+        "line": 1235,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e15",
+        "path": "command.go",
+        "line": 1240,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e16",
+        "path": "command.go",
+        "line": 1259,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e17",
+        "path": "command.go",
+        "line": 726,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e18",
+        "path": "command.go",
+        "line": 727,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e19",
+        "path": "command.go",
+        "line": 729,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e20",
+        "path": "args.go",
+        "line": 28,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e21",
+        "path": "completions.go",
+        "line": 304,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e22",
+        "path": "command.go",
+        "line": 1265,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e23",
+        "path": "command.go",
+        "line": 1230,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e24",
+        "path": "args.go",
+        "line": 30,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e25",
+        "path": "completions.go",
+        "line": 456,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e26",
+        "path": "command.go",
+        "line": 1251,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e27",
+        "path": "completions.go",
+        "line": 286,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e28",
+        "path": "completions.go",
+        "line": 455,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e29",
+        "path": "command.go",
+        "line": 1250,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e30",
+        "path": "completions.go",
+        "line": 457,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e31",
+        "path": "completions.go",
+        "line": 458,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e32",
+        "path": "command.go",
+        "line": 1239,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e33",
+        "path": "command.go",
+        "line": 1252,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e34",
+        "path": "command.go",
+        "line": 1253,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e35",
+        "path": "completions.go",
+        "line": 305,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e36",
+        "path": "command.go",
+        "line": 1266,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e37",
+        "path": "completions.go",
+        "line": 277,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e38",
+        "path": "completions.go",
+        "line": 278,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e39",
+        "path": "completions.go",
+        "line": 285,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e40",
+        "path": "completions.go",
+        "line": 440,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e41",
+        "path": "command.go",
+        "line": 1242,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e42",
+        "path": "command.go",
+        "line": 1248,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e43",
+        "path": "command.go",
+        "line": 1260,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e44",
+        "path": "command.go",
+        "line": 1263,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e45",
+        "path": "completions.go",
+        "line": 206,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e46",
+        "path": "completions.go",
+        "line": 255,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e47",
+        "path": "completions.go",
+        "line": 343,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e48",
+        "path": "completions.go",
+        "line": 420,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e49",
+        "path": "completions.go",
+        "line": 460,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e50",
+        "path": "completions.go",
+        "line": 478,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e51",
+        "path": "command.go",
+        "line": 1244,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e52",
+        "path": "command.go",
+        "line": 1257,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e53",
+        "path": "completions.go",
+        "line": 415,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e54",
+        "path": "completions.go",
+        "line": 443,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e55",
+        "path": "completions.go",
+        "line": 442,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e56",
+        "path": "completions.go",
+        "line": 320,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e57",
+        "path": "completions.go",
+        "line": 327,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e58",
+        "path": "completions.go",
+        "line": 349,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e59",
+        "path": "completions.go",
+        "line": 400,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e60",
+        "path": "completions.go",
+        "line": 342,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e61",
+        "path": "completions.go",
+        "line": 390,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e62",
+        "path": "completions.go",
+        "line": 466,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e63",
+        "path": "completions.go",
+        "line": 273,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "derived"
+      },
+      {
+        "ref_id": "e64",
+        "path": "command.go",
+        "line": 736,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e65",
+        "path": "completions.go",
+        "line": 377,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e66",
+        "path": "completions.go",
+        "line": 319,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e67",
+        "path": "completions.go",
+        "line": 323,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e68",
+        "path": "command.go",
+        "line": 1267,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e69",
+        "path": "command.go",
+        "line": 1262,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e70",
+        "path": "args.go",
+        "line": 36,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e71",
+        "path": "args.go",
+        "line": 35,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e72",
+        "path": "completions.go",
+        "line": 407,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e73",
+        "path": "completions.go",
+        "line": 312,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e74",
+        "path": "command.go",
+        "line": 730,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e75",
+        "path": "command.go",
+        "line": 745,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e76",
+        "path": "command.go",
+        "line": 738,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e77",
+        "path": "command.go",
+        "line": 1274,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e78",
+        "path": "doc/md_docs.go",
+        "line": 58,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e79",
+        "path": "doc/man_docs.go",
+        "line": 203,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e80",
+        "path": "doc/yaml_docs.go",
+        "line": 94,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e81",
+        "path": "doc/rest_docs.go",
+        "line": 63,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e82",
+        "path": "completions.go",
+        "line": 380,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e83",
+        "path": "completions.go",
+        "line": 294,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e84",
+        "path": "completions.go",
+        "line": 324,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e85",
+        "path": "completions.go",
+        "line": 336,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e86",
+        "path": "completions.go",
+        "line": 435,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e87",
+        "path": "completions.go",
+        "line": 506,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e88",
+        "path": "completions.go",
+        "line": 335,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e89",
+        "path": "completions.go",
+        "line": 424,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e90",
+        "path": "completions.go",
+        "line": 357,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e91",
+        "path": "completions.go",
+        "line": 369,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e92",
+        "path": "completions.go",
+        "line": 372,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e93",
+        "path": "completions.go",
+        "line": 505,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e94",
+        "path": "completions.go",
+        "line": 507,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e95",
+        "path": "completions.go",
+        "line": 366,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e96",
+        "path": "completions.go",
+        "line": 354,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e97",
+        "path": "site/content/user_guide.md",
+        "line": 492,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e98",
+        "path": "completions_test.go",
+        "line": 2504,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e99",
+        "path": "command_test.go",
+        "line": 2731,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e100",
+        "path": ".github/dependabot.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e101",
+        "path": ".github/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e102",
+        "path": ".github/workflows/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e103",
+        "path": ".github/workflows/size-labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e104",
+        "path": ".github/workflows/test.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e105",
+        "path": ".golangci.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e106",
+        "path": "command.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e107",
+        "path": "completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e108",
+        "path": "bash_completions.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e109",
+        "path": "cobra.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e110",
+        "path": "doc/man_docs.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e111",
+        "path": "doc/md_docs.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e112",
+        "path": "doc/rest_docs.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e113",
+        "path": "doc/yaml_docs.go",
+        "line": 0,
+        "role": "file",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e114",
+        "path": "completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e115",
+        "path": "command.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e116",
+        "path": "site/content/user_guide.md",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e117",
+        "path": "args.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e118",
+        "path": "bash_completions.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e119",
+        "path": "cobra.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e120",
+        "path": "doc/man_docs.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e121",
+        "path": "doc/md_docs.go",
+        "line": 0,
+        "role": "read",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e122",
+        "path": "completions.go",
+        "line": 260,
+        "span": "260-272",
+        "role": "snippet",
+        "snippet": "\t\t// cobra program that only consists of the root command, since this\n\t\t// command would cause the root command to suddenly have a subcommand.\n\t\tc.RemoveCommand(completeCmd)\n\t}\n}\n\nfunc (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {\n\t// The last argument, which is not completely typed by the user,\n\t// should not be part of the list of arguments\n\ttoComplete := args[len(args)-1]\n\ttrimmedArgs := args[:len(args)-1]\n\n\tvar finalCmd *Command",
+        "text_hash": "8d400d767b57b456"
+      },
+      {
+        "ref_id": "e123",
+        "path": "command.go",
+        "line": 1223,
+        "span": "1223-1235",
+        "role": "snippet",
+        "snippet": "\t}\n}\n\n// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tif c.helpCommand == nil {\n\t\tc.helpCommand = \u0026Command{",
+        "text_hash": "20629ff21316634f"
+      },
+      {
+        "ref_id": "e124",
+        "path": "command.go",
+        "line": 720,
+        "span": "720-732",
+        "role": "snippet",
+        "snippet": "\treturn ((len(arg) \u003e= 3 \u0026\u0026 arg[0:2] == \"--\") ||\n\t\t(len(arg) \u003e= 2 \u0026\u0026 arg[0] == '-' \u0026\u0026 arg[1] != '-'))\n}\n\n// Find the target command given the args and command tree\n// Meant to be run on the highest node. Only searches down.\nfunc (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n\n\tinnerfind = func(c *Command, innerArgs []string) (*Command, []string) {\n\t\targsWOflags := stripFlags(innerArgs, c)\n\t\tif len(argsWOflags) == 0 {\n\t\t\treturn c, innerArgs",
+        "text_hash": "e2d837b7f7bfb93b"
+      },
+      {
+        "ref_id": "e125",
+        "path": "site/content/user_guide.md",
+        "line": 486,
+        "span": "486-498",
+        "role": "snippet",
+        "snippet": "  rootCmd.Execute()\n}\n```\n\nFor a more complete example of a larger application, please checkout [Hugo](https://gohugo.io/).\n\n## Help Command\n\nCobra automatically adds a help command to your application when you have subcommands.\nThis will be called when a user runs 'app help'. Additionally, help will also\nsupport all other commands as input. Say, for instance, you have a command called\n'create' without any additional configuration; Cobra will work when 'app help\ncreate' is called.  Every command will automatically have the '--help' flag added.",
+        "text_hash": "64d85aeca2ab917f"
+      },
+      {
+        "ref_id": "e126",
+        "path": "args.go",
+        "line": 22,
+        "span": "22-34",
+        "role": "snippet",
+        "snippet": "type PositionalArgs func(cmd *Command, args []string) error\n\n// legacyArgs validation has the following behaviour:\n// - root commands with no subcommands can take arbitrary arguments\n// - root commands with subcommands will do subcommand validity checking\n// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {\n\t// no subcommand, always take args\n\tif !cmd.HasSubCommands() {\n\t\treturn nil\n\t}\n\n\t// root command with subcommands, do subcommand checking.",
+        "text_hash": "0ac4048fd415b99d"
+      },
+      {
+        "ref_id": "e127",
+        "path": "command.go",
+        "line": 1356,
+        "span": "1356-1368",
+        "role": "snippet",
+        "snippet": "// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}\n\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {\n\t\tfor _, cmd := range cmds {\n\t\t\tif command == cmd {\n\t\t\t\tcommand.parent = nil",
+        "text_hash": "147a2e46f5a2116e"
+      },
+      {
+        "ref_id": "e128",
+        "path": "command.go",
+        "line": 1046,
+        "span": "1046-1058",
+        "role": "snippet",
+        "snippet": "func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}\n\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {",
+        "text_hash": "217521ba893cd210"
+      },
+      {
+        "ref_id": "e129",
+        "path": "command.go",
+        "line": 45,
+        "span": "45-57",
+        "role": "snippet",
+        "snippet": "}\n\n// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:\n\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the\n\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.",
+        "text_hash": "5a579e11e79bcd78"
+      }
+    ],
+    "confidence": {
+      "distribution": {
+        "confirmed": 0.8395061728395061,
+        "derived": 0.037037037037037035,
+        "heuristic": 0.12345679012345678
+      },
+      "top": "confirmed",
+      "method": "edge_tiers"
+    },
+    "limits": {
+      "cap_applied": 40,
+      "total_available": 52,
+      "dropped": 12,
+      "truncated": true,
+      "next": ""
+    }
+  },
+  "score": {
+    "covered": true,
+    "item_count": 40,
+    "evidence_citation_count": 129,
+    "snippet_count": 8,
+    "emitted_snippet_whitespace_tokens": 605,
+    "engine_reported_snippet_tokens": 605,
+    "engine_reported_token_budget": 1200,
+    "engine_minus_emitted_snippet_tokens": 0,
+    "item_cap_applied": 40,
+    "items_available": 52,
+    "items_dropped": 12,
+    "truncated": true,
+    "grade3_judgements": 1,
+    "matches": [
+      {
+        "evidence_ref_id": "e3",
+        "evidence_path": "command.go",
+        "evidence_line": 726,
+        "evidence_span": "726-726",
+        "evidence_role": "primary",
+        "evidence_claim_type": "source_match",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e17",
+        "evidence_path": "command.go",
+        "evidence_line": 726,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e18",
+        "evidence_path": "command.go",
+        "evidence_line": 727,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e19",
+        "evidence_path": "command.go",
+        "evidence_line": 729,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e64",
+        "evidence_path": "command.go",
+        "evidence_line": 736,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e74",
+        "evidence_path": "command.go",
+        "evidence_line": 730,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e75",
+        "evidence_path": "command.go",
+        "evidence_line": 745,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e76",
+        "evidence_path": "command.go",
+        "evidence_line": 738,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 724,
+        "judgement_end_line": 748,
+        "judgement_grade": 3
+      }
+    ]
+  }
+}

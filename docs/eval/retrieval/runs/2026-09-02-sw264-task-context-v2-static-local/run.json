@@ -1,0 +1,46 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "measurement": "measurement.json",
+  "dataset": "dataset-dev-nl-behaviour.json",
+  "files": [
+    {
+      "file": "README.md",
+      "sha256": "453d15dced9c4d6a5af589007adddd272c14bfdb4732076d9d8830935921056d"
+    },
+    {
+      "file": "dataset-dev-nl-behaviour.json",
+      "sha256": "5f4ae505c4801952c3c466b8528abde4aea824c6d31b5c1a48a8b04b69bd63a6"
+    },
+    {
+      "file": "measurement.json",
+      "sha256": "eab39d4038711ceecc0af5f7ca4e54a7c394cda483a938a8733c48c87a019696"
+    },
+    {
+      "file": "raw/cb-11.json",
+      "sha256": "8782811195fb3f64126ef4db5fbd98aaace98ba383f30689d2651b2226df8055"
+    },
+    {
+      "file": "raw/cb-12.json",
+      "sha256": "95a9bc89fbce09903580caea308f28216d9cfb8b2ff33ebc0891a6a0802db23c"
+    },
+    {
+      "file": "raw/cb-13.json",
+      "sha256": "69a5bc18ba51fe38aa7f43daa9d0038d98d215627491088b92cf574d3b8ae449"
+    },
+    {
+      "file": "raw/cb-14.json",
+      "sha256": "9fd2243c1a6eee6d7e84fc7ebbdb7097efd22173f6bcce3f583348933f907f4b"
+    },
+    {
+      "file": "raw/cb-15.json",
+      "sha256": "b8c2e9cbfe50c923385478932526c492b2b448fdf651cb340b3af709373cc5e4"
+    },
+    {
+      "file": "raw/cb-16.json",
+      "sha256": "e633b8a1cb53b06ac8535179ca36cbd262a626827cb88936f0a900369157cac7"
+    }
+  ],
+  "notes": "SW-264 task_context/2 AC-9 run directory. measurement.json is the aggregate and provenance record; dataset-dev-nl-behaviour.json contains only the measured dev stratum; raw/\u003cquery\u003e.json contains the exact bundle and SpanMatches pairs. File digests are over the bytes on disk."
+}
