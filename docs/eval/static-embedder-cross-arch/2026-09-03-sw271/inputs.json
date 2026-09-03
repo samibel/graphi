@@ -1,0 +1,21 @@
+{
+  "format_version": 1,
+  "inputs": [
+    {
+      "id": "embedder-api",
+      "text": "func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, error)"
+    },
+    {
+      "id": "artifact-flow",
+      "text": "Where does setup-embedder verify and install the pinned model artifact?"
+    },
+    {
+      "id": "unicode-normalization",
+      "text": "café = café; Straße; λ"
+    },
+    {
+      "id": "architecture-query",
+      "text": "Trace the architecture flow from CLI dispatch through retrieval to vector search."
+    }
+  ]
+}

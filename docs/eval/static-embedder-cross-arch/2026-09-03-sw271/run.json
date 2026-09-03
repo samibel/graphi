@@ -1,0 +1,53 @@
+{
+  "format_version": 1,
+  "story": "SW-271",
+  "date": "2026-09-03",
+  "source": {
+    "branch": "sw-271-pin-governance",
+    "base_sha": "55c8a8a76cf2f847ded21e074c5a2bd5f7000dd2"
+  },
+  "model": {
+    "selector": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "artifact_sha256": {
+      "config.json": "148e5691a6fcc553437156859701fba017a1ba5d340b170f17e0f3668fb861a7",
+      "model.safetensors": "75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c",
+      "modules.json": "a68dcbed0429dcdd5bfdca92b0b03cc30d09122c0a3fcf4758787d4b244e45b2",
+      "tokenizer.json": "107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45"
+    },
+    "handoff": "one verified local directory used by both executions"
+  },
+  "inputs": {
+    "file": "inputs.json",
+    "sha256": "423e73ff774b6f2affe9555ff4267f5ef91274d9dada4d1f26106b511479c63c",
+    "count": 4
+  },
+  "executions": [
+    {
+      "goos": "darwin",
+      "goarch": "arm64",
+      "execution": "native",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.6",
+      "vector_count": 4,
+      "dimensions": 256,
+      "output_sha256": "cc40f422aff6cf1cce6963e391149be0d6f21fcdd592d297469e06fd9f3c0434"
+    },
+    {
+      "goos": "darwin",
+      "goarch": "amd64",
+      "execution": "Rosetta via arch -x86_64",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.6",
+      "vector_count": 4,
+      "dimensions": 256,
+      "output_sha256": "cc40f422aff6cf1cce6963e391149be0d6f21fcdd592d297469e06fd9f3c0434"
+    }
+  ],
+  "result": {
+    "status": "byte_exact",
+    "components_compared": 1024,
+    "canonical_vectors": "vectors.json",
+    "canonical_vectors_sha256": "cc40f422aff6cf1cce6963e391149be0d6f21fcdd592d297469e06fd9f3c0434",
+    "comparison_output": "static embedder cross-architecture vectors: byte-exact (4 inputs x 256 dimensions, sha256 cc40f422aff6cf1cce6963e391149be0d6f21fcdd592d297469e06fd9f3c0434)"
+  }
+}
