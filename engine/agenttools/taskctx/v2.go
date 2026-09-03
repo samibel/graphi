@@ -632,8 +632,8 @@ func buildV2Summary(seeds int, task string, related, callers, callees, tests, co
 	if versionStamp == "" {
 		versionStamp = "retrieval/0"
 	}
-	base := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s (%s; %s; weights %s; %s",
-		seeds, task, related, callers, callees, tests, configs, files, riskLevel, MethodVersionV2, versionStamp, retrieval.WeightsHash, snippetSummary)
+	base := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s (%s; %s; weights %s; model %s; index %s; %s",
+		seeds, task, related, callers, callees, tests, configs, files, riskLevel, MethodVersionV2, versionStamp, retrieval.WeightsHash, retrieval.ModelFingerprint, retrieval.IndexFingerprint, snippetSummary)
 	if retrieval.Strategy != "" {
 		base += "; strategy " + retrieval.Strategy
 	}

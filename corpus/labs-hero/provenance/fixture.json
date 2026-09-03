@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "scenario_id": "labs-hero-01-task-context-v2",
+  "fixture_ref": "retrieval-fixture-v1",
+  "fixture_root": "internal/eval/retrieval/testdata/fixture-repo",
+  "dataset": {
+    "path": "internal/eval/retrieval/testdata/datasets/fixture-v1.json",
+    "sha256": "671324c375af0e4ba0582378e1901ac53d461e95310ef9b91c8faf7cdbed2d2e",
+    "query_id": "fx-03"
+  },
+  "answer_span": {
+    "path": "auth/token.go",
+    "start_line": 43,
+    "end_line": 46,
+    "sha256": "26125a4963462252201604b9cff972f522a3e757ac59c649d111e89adc32e558"
+  },
+  "required_snippet_paths": [
+    "auth/token_test.go",
+    "httpapi/handler.go"
+  ],
+  "embedder": {
+    "selector": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "revision": "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "files": {
+      "config.json": "148e5691a6fcc553437156859701fba017a1ba5d340b170f17e0f3668fb861a7",
+      "model.safetensors": "75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c",
+      "modules.json": "a68dcbed0429dcdd5bfdca92b0b03cc30d09122c0a3fcf4758787d4b244e45b2",
+      "tokenizer.json": "107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45"
+    }
+  },
+  "files": [
+    {"path": "auth/token.go", "sha256": "b718914cb48745570d3504b3f37f87f5422a7e4d1764f939914aca343bc42645"},
+    {"path": "auth/token_test.go", "sha256": "4777f2dfe15aee45bf0eadaf14537e0e37b3841c12a44ed71b42f9c7ac0af7a9"},
+    {"path": "cmd/app/main.go", "sha256": "d991f3a9bde6520047730fd7372ee7004cd89b52e7df46f4e2d6756b7e13ec2a"},
+    {"path": "config/loader.go", "sha256": "082b41b6155e97be07d37eea54b1e12aa2ea9af404c138e31c210af7c4b757e8"},
+    {"path": "config/loader_test.go", "sha256": "e3096d76c7ace10e05f1da05617baa7657157483df97e3e1d9c26a21d8859ca4"},
+    {"path": "doc.go", "sha256": "d17d5ddb4bdf3804374f11716d27f69525e43e0a37437d83c6c0a8865c758af9"},
+    {"path": "go.mod", "sha256": "4495a00127dea1206f0ec822f98276a8f324b6e140e58fc0ef0dfac859e35f80"},
+    {"path": "httpapi/handler.go", "sha256": "a318777f3d5adc65eecafd1952abb3925d745baa28c2ef324ba58074f4b14b72"},
+    {"path": "store/file.go", "sha256": "26f96046a0062fee6e58ecb3a84e8c0f47301d02ad795f195927f3aed8594e96"},
+    {"path": "store/memory.go", "sha256": "e8eb419d70632766cc3a8de13d58db3717c0e7f9e81e9f8b0e3d7f64acf29544"},
+    {"path": "store/store.go", "sha256": "8e00da9c06ba7a87cd5ec29d939e7b36f2b70b9a533e17e4c8ed290a9148658f"},
+    {"path": "store/store_test.go", "sha256": "748195286238fb4f897699a5da3338ed6a02d46ccd70001818847c26a532da15"}
+  ]
+}
