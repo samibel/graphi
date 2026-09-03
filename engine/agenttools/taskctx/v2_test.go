@@ -5,11 +5,17 @@
 // reports a non-ready state, /2 falls back to the v1 lexical seeding path
 // and stamps `degradation` on the summary (AC-8).
 //
-// AC-3: every evidence item carries `path, start_line, end_line, text_hash,
-// claim_type` (path/start_line already in `Evidence.Path` / `Evidence.Line`
-// / `Evidence.Span`; `text_hash` / `claim_type` are SW-264 Evidence
-// additions). Seeds get claim_type=source_match; graph hops get
-// claim_type=graph_relation with the edge's provenance tier on EdgeTier.
+// AC-3 (amended by SW-268): every evidence item is one of two disjoint
+// kinds, and each kind carries the fields its own contract promises.
+// Claim-typed citations carry `path`, `line` (+ `span` for retrieval rows),
+// `role`, `claim_type ∈ {source_match, graph_relation}`; on
+// graph_relation, additionally `edge_tier`. Snippet entries carry
+// `path`, `line`, `span`, `snippet`, `text_hash`. The two kinds are
+// exhaustive; no item carries both `claim_type` and `text_hash`, no item
+// carries neither. The SW-268 per-item test in v2_evidence_contract_test.go
+// asserts this family-membership rule across the bundle; this file's
+// AC-3 tests assert the per-family presence the original criterion
+// actually held for.
 //
 // AC-4: bundle order is answer span → definition → callers/callees →
 // tests/config; bundle.Tokens <= Budget for any 1200-token budget fixture.

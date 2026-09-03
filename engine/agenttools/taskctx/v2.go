@@ -198,7 +198,9 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 	ev := shape.NewEvidenceSet()
 	var items []contract.Item
 
-	// Band 9: primary symbols (the seeds) — claim_type=source_match (AC-3).
+	// Band 9: primary symbols (the seeds) — claim_type=source_match
+	// (AC-3 amended by SW-268: these are claim-typed citations; they
+	// do not carry text_hash).
 	seedScore := func(i int) int {
 		if method.Exact() {
 			return defaultWeights.SeedExact
@@ -244,7 +246,9 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		})
 	}
 
-	// Bands 8..5: related, callers, callees, tests — claim_type=graph_relation (AC-3).
+	// Bands 8..5: related, callers, callees, tests —
+	// claim_type=graph_relation (AC-3 amended by SW-268: these are
+	// claim-typed citations; they carry EdgeTier but not text_hash).
 	related, callers, callees, tests := 0, 0, 0, 0
 	for _, ns := range ranked {
 		n, ok := nodeByID[ns.id]
@@ -416,7 +420,9 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		})
 	}
 
-	// Token-budgeted snippets. /2 stamps text_hash on each snippet (AC-3).
+	// Token-budgeted snippets. /2 stamps text_hash on each snippet
+	// (AC-3 amended by SW-268: these are snippet entries; they carry
+	// snippet+text_hash but not claim_type).
 	budget := p.tokenBudget()
 	snippetSummary := "snippets disabled"
 	snippetHint := ""

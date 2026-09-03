@@ -407,22 +407,66 @@ type taskContextIndex struct {
 	persistedVectors int
 }
 
-type taskContextEngine interface {
+// TaskContextEngine is the production retrieval instance the adapter
+// composes. It is the same engine/retrieval.Engine the measurement uses; the
+// interface is the minimum shape the adapter needs from it so a unit test
+// can wire a non-nil retrieval instance into Deps.Retrieval without
+// duplicating the production adapter's translation logic.
+//
+// The interface is exported because it is the seam SW-268's per-item
+// contract test uses: AC-5 of SW-268 says the check must run against the
+// real task_context/2 path with a non-nil retrieval instance, not a
+// hand-built fixture. NewTaskContextRetriever is the same constructor the
+// measurement harness calls — reusing it here keeps the producer single-
+// sourced so a future change to the engine→resolve translation can't drift
+// between the harness and the test.
+type TaskContextEngine interface {
 	Retrieve(context.Context, engineretrieval.Request) (engineretrieval.Result, error)
 }
 
-// taskContextRetriever is the measurement's mechanical composition adapter.
-// It records the concrete engine's last response so the harness can reject
-// taskctx's intentional fallback after the call instead of mistaking it for a
-// ready-path measurement.
-type taskContextRetriever struct {
-	engine taskContextEngine
+// TaskContextRetriever is the production composition adapter. It is
+// engine/retrieval.New wrapped behind engine/agenttools/resolve.Retriever so
+// taskctx.AssembleV2 can drive it through Deps.Retrieval unchanged. The
+// adapter records the concrete engine's last response so a caller (the
+// measurement harness, or a SW-268 per-item contract test) can reject
+// taskctx's intentional fallback after the call instead of mistaking it
+// for a ready-path measurement.
+//
+// Callers that want to assert the engine was hit (and how) read LastResult
+// and CalledCount. The fields are unexported on purpose — the harness and
+// the SW-268 test both sit in tests that already trust the package, and
+// exporting the adapter as a value (rather than via an "observe" seam)
+// keeps the production adapter a value, not a fixture-builder.
+type TaskContextRetriever struct {
+	engine TaskContextEngine
 	called int
 	result resolve.RetrieverResult
 	err    error
 }
 
-func (a *taskContextRetriever) Retrieve(ctx context.Context, req resolve.RetrieverRequest) (resolve.RetrieverResult, error) {
+// NewTaskContextRetriever wraps the given engine in the same adapter the
+// measurement harness uses. engine must be the return value of
+// engine/retrieval.New (or any value satisfying the same shape) — passing a
+// stub here would re-create the fixture-vs-production divergence AC-5 of
+// SW-268 is meant to prevent.
+func NewTaskContextRetriever(engine TaskContextEngine) *TaskContextRetriever {
+	return &TaskContextRetriever{engine: engine}
+}
+
+// Called reports how many times the wrapped engine was invoked. A correct
+// /2 ready-path call records exactly 1; a fallback records 0.
+func (a *TaskContextRetriever) Called() int { return a.called }
+
+// LastResult returns the engine's last result, recorded before the resolve
+// adapter returned it. Empty when the engine was never invoked.
+func (a *TaskContextRetriever) LastResult() resolve.RetrieverResult { return a.result }
+
+// LastErr returns the engine's last error, recorded before the resolve
+// adapter returned it. nil when the engine was never invoked or returned
+// nil.
+func (a *TaskContextRetriever) LastErr() error { return a.err }
+
+func (a *TaskContextRetriever) Retrieve(ctx context.Context, req resolve.RetrieverRequest) (resolve.RetrieverResult, error) {
 	a.called++
 	res, err := a.engine.Retrieve(ctx, engineretrieval.Request{
 		Query:      req.Query,
@@ -651,7 +695,7 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 	}{}
 	for _, q := range queries {
 		observed.Queries++
-		adapter := &taskContextRetriever{engine: realEngine}
+		adapter := NewTaskContextRetriever(realEngine)
 		queryDeps := deps
 		queryDeps.Retrieval = adapter
 		bundle, err := taskctx.AssembleV2(ctx, taskctx.Params{
@@ -663,31 +707,32 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 		if err != nil {
 			return nil, fmt.Errorf("task-context eval: query %s AssembleV2: %w", q.ID, err)
 		}
-		calledOnce := adapter.called == 1
+		calledOnce := adapter.Called() == 1
 		if calledOnce {
 			observed.RetrievalCalledOnce++
 		}
 		if !calledOnce {
-			return nil, fmt.Errorf("task-context eval: query %s called the real retrieval instance %d times, want exactly 1", q.ID, adapter.called)
+			return nil, fmt.Errorf("task-context eval: query %s called the real retrieval instance %d times, want exactly 1", q.ID, adapter.Called())
 		}
-		if adapter.err != nil {
-			return nil, fmt.Errorf("task-context eval: query %s retrieval errored (%v); AssembleV2 would have fallen back", q.ID, adapter.err)
+		if adapter.LastErr() != nil {
+			return nil, fmt.Errorf("task-context eval: query %s retrieval errored (%v); AssembleV2 would have fallen back", q.ID, adapter.LastErr())
 		}
-		retrievalReady := adapter.result.Degradation == string(engineretrieval.StateReady)
+		lastResult := adapter.LastResult()
+		retrievalReady := lastResult.Degradation == string(engineretrieval.StateReady)
 		if retrievalReady {
 			observed.RetrievalReady++
 		}
 		if !retrievalReady {
-			return nil, fmt.Errorf("task-context eval: query %s retrieval state is %q, want ready; refusing fallback bundle", q.ID, adapter.result.Degradation)
+			return nil, fmt.Errorf("task-context eval: query %s retrieval state is %q, want ready; refusing fallback bundle", q.ID, lastResult.Degradation)
 		}
-		semanticFirst := adapter.result.Summary.RetrievalVersion == engineretrieval.Version && adapter.result.Summary.Strategy == "semantic_first"
+		semanticFirst := lastResult.Summary.RetrievalVersion == engineretrieval.Version && lastResult.Summary.Strategy == "semantic_first"
 		if semanticFirst {
 			observed.SemanticFirst++
 		}
 		if !semanticFirst {
-			return nil, fmt.Errorf("task-context eval: query %s method is %s/%s, want %s/semantic_first", q.ID, adapter.result.Summary.RetrievalVersion, adapter.result.Summary.Strategy, engineretrieval.Version)
+			return nil, fmt.Errorf("task-context eval: query %s method is %s/%s, want %s/semantic_first", q.ID, lastResult.Summary.RetrievalVersion, lastResult.Summary.Strategy, engineretrieval.Version)
 		}
-		retrievalFingerprinted := adapter.result.Summary.ModelFingerprint != "" && adapter.result.Summary.IndexFingerprint != ""
+		retrievalFingerprinted := lastResult.Summary.ModelFingerprint != "" && lastResult.Summary.IndexFingerprint != ""
 		if retrievalFingerprinted {
 			observed.RetrievalFingerprinted++
 		}
@@ -749,7 +794,7 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 		run.Raw = append(run.Raw, TaskContextRawQuery{
 			FormatVersion: TaskContextFormatVersion, HarnessVersion: TaskContextHarnessVersion,
 			ScorerVersion: TaskContextScorerVersion, Query: q, Grade3: grade3,
-			Retrieval: adapter.result, Bundle: bundle, Score: score,
+			Retrieval: lastResult, Bundle: bundle, Score: score,
 		})
 		observed.RawRecords++
 		measurement.Dataset.QueryIDs = append(measurement.Dataset.QueryIDs, q.ID)
@@ -763,8 +808,8 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 			ItemsDropped: score.ItemsDropped, Truncated: score.Truncated, Grade3Judgements: score.Grade3Judgements,
 			MatchCount: len(score.Matches),
 		})
-		version, strategy = adapter.result.Summary.RetrievalVersion, adapter.result.Summary.Strategy
-		state = adapter.result.Degradation
+		version, strategy = lastResult.Summary.RetrievalVersion, lastResult.Summary.Strategy
+		state = lastResult.Degradation
 	}
 	measurement.Retrieval.State = state
 	measurement.Retrieval.Version = version

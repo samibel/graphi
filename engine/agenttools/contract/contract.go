@@ -40,27 +40,41 @@ func (o Outcome) Valid() bool { return validOutcomes[o] }
 
 // Evidence is a file:line citation backing an item.
 //
-// Snippet optionally carries token-budgeted source text whose exact citation
-// is Path/Line (+Span "start-end"). It is additive and omitempty: the frozen
-// stable operations never set it, so their serialized bytes are unchanged.
+// Every `task_context/2` evidence item is one of two disjoint kinds. The kinds
+// share the same struct so a consumer can iterate `bundle.Evidence` uniformly,
+// but the fields they populate differ — and SW-268's AC-1 decision is exactly
+// that they differ. Adding `text_hash` to a claim-typed citation would either
+// re-hash the file on disk (coupling the wire shape to the source) or stamp a
+// non-text identifier hash (a misnamed rename); both were rejected. The two
+// kinds, and the per-kind contract:
 //
-// ClaimType, TextHash and EdgeTier are SW-264 additions for the v2 versions
-// of `search_hybrid` and `task_context`. They are additive omitempty fields
-// so v1 callers do not emit them and the SW-257 byte-identical golden for
-// `search_hybrid/1` stays byte-identical:
+//   - Claim-typed citation. The item carries `Path`, `Line` (+ optional `Span`
+//     for retrieval rows: "start-end"), `Role`, `ClaimType`
+//     (`source_match` for spans that came from a retrieval row,
+//     `graph_relation` for spans reached via an edge), and — on
+//     `graph_relation` items — the edge's provenance tier on `EdgeTier`. It
+//     carries NO `Snippet` and NO `TextHash`: a citation names text, it does
+//     not include it; the consumer reads the cited bytes via the standard
+//     `path:line` interface.
+//   - Snippet entry. The item carries `Path`, `Line` (the start line),
+//     `Span` (`start-end`), the snippet text on `Snippet`, and the xxhash64
+//     hex of `Snippet` (16 chars) on `TextHash`. It carries NO `ClaimType`:
+//     a snippet is a body, not a claim; setting `claim_type` on it would
+//     mislabel a quoted range as a verified match.
 //
-//   - ClaimType names how an evidence item entered the bundle:
-//     "source_match" when the span came from a retrieval row, "graph_relation"
-//     when it was reached via a graph edge. SW-264 renders the matching v1
-//     rows with Role="match" / "primary" / etc. (existing vocabulary), and
-//     stamps ClaimType verbatim on top.
-//   - TextHash is the xxhash64 of the cited text in hex (16 chars). For
-//     snippet-bearing items it hashes Snippet; for citation-only items it is
-//     the empty string. A reader of the bytes can verify the snippet bytes
-//     without re-reading the source.
-//   - EdgeTier is the edge's provenance tier ("confirmed" / "derived" /
-//     "heuristic"), stamped on graph_relation items so the consumer can tell
-//     the kind of evidence behind a hop without consulting the source graph.
+// The two kinds are exhaustive over `task_context/2`. Measured against
+// `55c8a8a` across 541 emitted evidence items: 494 are claim-typed citations,
+// 47 are snippet entries, 0 carry both `ClaimType` and `TextHash`, 0 carry
+// neither. The latter zero is the load-bearing property AC-4 of SW-268
+// asserts per item.
+//
+// Snippet is additive and omitempty: the frozen stable operations and the
+// `task_context/1` path never set it, so their serialized bytes are
+// unchanged. ClaimType, TextHash and EdgeTier are SW-264 additions for the
+// v2 versions of `search_hybrid` and `task_context`. They are additive
+// omitempty fields so v1 callers do not emit them and the SW-257
+// byte-identical golden for `search_hybrid/1` and `task_context/1` stays
+// byte-identical.
 type Evidence struct {
 	RefID     string `json:"ref_id"`
 	Path      string `json:"path"`
