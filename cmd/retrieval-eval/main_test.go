@@ -5,11 +5,19 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 )
+
+func init() {
+	embed.RegisterScheme("field-parity-mock", func(string) (embed.Embedder, error) {
+		return embed.NewMockEmbedder(8), nil
+	})
+}
 
 // repoRoot is the repository root; the binary's relative defaults (the
 // fixture path, corpus/manifest.json) are anchored there.
@@ -152,6 +160,53 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 			t.Errorf("budgets = %+v", bg.Fixtures)
 		}
 	})
+}
+
+func TestRetrievalEval_FieldParitySelectsOnlyDevNLBehaviour(t *testing.T) {
+	chdirRoot(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "report.json")
+	runDir := filepath.Join(dir, "run")
+	var stderr bytes.Buffer
+	code := run([]string{
+		"-field-parity", "-manifest", "corpus/manifest.json", "-repo", FixtureRepoName,
+		"-dataset", fixtureDataset, "-out", out, "-export-raw", runDir,
+		"-runner-class", "test", "-repeats", "1", "-date", "2026-09-03",
+		"-embedder", "field-parity-mock",
+	}, &bytes.Buffer{}, &stderr)
+	if code != exitOK {
+		t.Fatalf("field-parity run exit %d\n%s", code, stderr.String())
+	}
+	loaded, err := retrieval.ReadRunDir(runDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Report.Reproducible.Dataset.Queries != 1 || loaded.Report.Reproducible.Dataset.Dev != 1 || loaded.Report.Reproducible.Dataset.Holdout != 0 {
+		t.Errorf("field-parity dataset citation = %+v", loaded.Report.Reproducible.Dataset)
+	}
+	if got := loaded.Report.Reproducible.RelevantMinGrade; got != retrieval.GradeMax {
+		t.Errorf("field-parity relevant grade = %d, want exact grade %d", got, retrieval.GradeMax)
+	}
+	var got []retrieval.Baseline
+	for _, baseline := range loaded.Report.Reproducible.Baselines {
+		got = append(got, baseline.Name)
+	}
+	if !reflect.DeepEqual(got, retrieval.FieldParityBaselines) {
+		t.Errorf("field-parity baselines = %v, want %v", got, retrieval.FieldParityBaselines)
+	}
+	agg := retrieval.Reproduce(loaded)
+	if agg.ExitCode() != retrieval.ExitReproduced {
+		t.Fatalf("field-parity aggregate = %s, discrepancies=%v, unknown=%d", agg.Status, agg.Discrepancies, agg.Unknown)
+	}
+
+	stderr.Reset()
+	code = run([]string{
+		"-field-parity", "-baseline", "lexical", "-repo", FixtureRepoName,
+		"-dataset", fixtureDataset, "-out", filepath.Join(dir, "invalid.json"),
+	}, &bytes.Buffer{}, &stderr)
+	if code != exitUsage || !strings.Contains(stderr.String(), "cannot be combined") {
+		t.Errorf("field-parity plus baseline exit %d, stderr %q", code, stderr.String())
+	}
 }
 
 // readJSON / writeJSON are the run-directory file helpers the tamper below

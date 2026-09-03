@@ -82,7 +82,9 @@ type AggregateReport struct {
 const AggregateMethod = "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared " +
 	"EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); " +
 	"the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, semantic_first, oracle_upper_bound — " +
-	"seven baselines), or the exact legacy seven-baseline universe with fusion+graph in semantic_first's slot, and the report's " +
+	"seven baselines), the exact legacy seven-baseline universe with fusion+graph in semantic_first's slot, or the evaluator-only SW-272 field-parity " +
+	"universe (lexical, fts5_or_control, semantic_name_only, lexical_full_document, fts5_or_control_full_document, semantic_first); " +
+	"lexical_full_document selects only that diagnostic universe. The report's " +
 	"baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. " +
 	"So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report " +
 	"still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that " +
@@ -257,6 +259,11 @@ func (r *reproducer) checkRun() {
 }
 
 func expectedBaselineUniverse(published []string) []string {
+	for _, name := range published {
+		if name == string(BaselineLexicalFullDocument) {
+			return baselineSet(FieldParityBaselines)
+		}
+	}
 	for _, name := range published {
 		if name == string(BaselineSemanticFirst) {
 			return baselineSet(AllBaselines)

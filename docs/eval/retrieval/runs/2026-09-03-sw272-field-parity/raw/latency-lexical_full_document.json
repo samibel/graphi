@@ -1,0 +1,72 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "latency",
+  "baseline": "lexical_full_document",
+  "collected": true,
+  "samples": 18,
+  "queries": [
+    {
+      "id": "cb-11",
+      "samples_us": [
+        781,
+        718,
+        703
+      ]
+    },
+    {
+      "id": "cb-12",
+      "samples_us": [
+        377,
+        367,
+        363
+      ]
+    },
+    {
+      "id": "cb-13",
+      "samples_us": [
+        207,
+        205,
+        202
+      ]
+    },
+    {
+      "id": "cb-14",
+      "samples_us": [
+        497,
+        483,
+        477
+      ]
+    },
+    {
+      "id": "cb-15",
+      "samples_us": [
+        272,
+        268,
+        264
+      ]
+    },
+    {
+      "id": "cb-16",
+      "samples_us": [
+        173,
+        173,
+        170
+      ]
+    }
+  ],
+  "index_ms": {
+    "status": "measured",
+    "value": 242,
+    "unit": "ms"
+  },
+  "peak_rss_mb": {
+    "status": "measured",
+    "value": 432.015625,
+    "unit": "MB"
+  },
+  "vector_sidecar_bytes": {
+    "status": "not_applicable",
+    "reason": "no vector sidecar: this baseline ranks without vectors"
+  }
+}

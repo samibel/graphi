@@ -1,0 +1,119 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "scorer_version": "retrieval-aggregate/1",
+  "date": "2026-09-03",
+  "runner_class": "static-local",
+  "repo": "cobra",
+  "report": "cobra-v1-dev-nl-behaviour-field-parity-report.json",
+  "report_sha256": "e8e3cd887469bfd8cd8341c2f8e33ee9a39f66161c247c47e4166ba750e80d26",
+  "dataset": "dataset.json",
+  "dataset_sha256": "871f9a51244c31c378334e39957082cfa67bd2794a3d7d11349fedb27c23fb1e",
+  "raw": [
+    {
+      "series": "hits",
+      "baseline": "lexical",
+      "file": "raw/hits-lexical.json",
+      "sha256": "a9cbf85fb5a78130755280c84282e3523c1f16b6affadf2784df1fab3454a722",
+      "collected": true,
+      "samples": 0
+    },
+    {
+      "series": "latency",
+      "baseline": "lexical",
+      "file": "raw/latency-lexical.json",
+      "sha256": "d580cecbcfe787e7eb34abc0ac1a245d27b3f248687af554db84e839fc0d33ce",
+      "collected": true,
+      "samples": 18
+    },
+    {
+      "series": "hits",
+      "baseline": "fts5_or_control",
+      "file": "raw/hits-fts5_or_control.json",
+      "sha256": "4267fe96215729d40fc5927bca8da3b905e6d028898d9050ef23e632be4effea",
+      "collected": true,
+      "samples": 56
+    },
+    {
+      "series": "latency",
+      "baseline": "fts5_or_control",
+      "file": "raw/latency-fts5_or_control.json",
+      "sha256": "6c044ce1e131070a7c7e045b6d82a22e1863ccb51e79606f3a728c9729985099",
+      "collected": true,
+      "samples": 18
+    },
+    {
+      "series": "hits",
+      "baseline": "semantic_name_only",
+      "file": "raw/hits-semantic_name_only.json",
+      "sha256": "43d46bcdde491e9ced7b51bfadbc07a7e651b515f09eaa27e9f0633888bcb909",
+      "collected": true,
+      "samples": 60
+    },
+    {
+      "series": "latency",
+      "baseline": "semantic_name_only",
+      "file": "raw/latency-semantic_name_only.json",
+      "sha256": "df35b88ebcbdef215709c8a75342e8c8cbe96d5063d9f4535819bcdf402c472e",
+      "collected": true,
+      "samples": 18
+    },
+    {
+      "series": "hits",
+      "baseline": "lexical_full_document",
+      "file": "raw/hits-lexical_full_document.json",
+      "sha256": "7fb35b9240c300141d5d9c7375a34477c2120ffbeb46b8451657383f1b383e01",
+      "collected": true,
+      "samples": 0
+    },
+    {
+      "series": "latency",
+      "baseline": "lexical_full_document",
+      "file": "raw/latency-lexical_full_document.json",
+      "sha256": "6a857a118ee68efcf966bd6bb8fc48ced8e71aae0496eadaac6f27056433d477",
+      "collected": true,
+      "samples": 18
+    },
+    {
+      "series": "hits",
+      "baseline": "fts5_or_control_full_document",
+      "file": "raw/hits-fts5_or_control_full_document.json",
+      "sha256": "20f0a7d626a2e039f6b3864fe97f5c708cdf488a490e035766679f728d264b83",
+      "collected": true,
+      "samples": 60
+    },
+    {
+      "series": "latency",
+      "baseline": "fts5_or_control_full_document",
+      "file": "raw/latency-fts5_or_control_full_document.json",
+      "sha256": "14d4b53eaaf397b833d675896d49830fc044d5634f5bafc19a9e7707faa81fea",
+      "collected": true,
+      "samples": 18
+    },
+    {
+      "series": "hits",
+      "baseline": "semantic_first",
+      "file": "raw/hits-semantic_first.json",
+      "sha256": "7c59a0c11160ab965dcb127e9d1cb2c1cff2408ec09782d741c8b939f227f928",
+      "collected": true,
+      "samples": 60
+    },
+    {
+      "series": "latency",
+      "baseline": "semantic_first",
+      "file": "raw/latency-semantic_first.json",
+      "sha256": "7c0eca8c81bfc11c39de4205e50ba2e10a70118a1e7c9e371c0dabd02cd0e22b",
+      "collected": true,
+      "samples": 18
+    }
+  ],
+  "environment": {
+    "generated_at": "2026-09-03T07:20:24Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  },
+  "notes": "SW-258 retrieval-eval run directory: the dataset-qualified report named by run.json is the single published artifact, dataset.json the exact judged bytes it was scored against, raw/hits-<baseline>.json every ranking (the scorer's input, nothing derived) and raw/latency-<baseline>.json every timed execution plus the single-sample measures (index_ms, peak_rss_mb, vector_sidecar_bytes) with their status and reason; an unavailable baseline's records say collected: false and carry the typed reason. `go run ./cmd/retrieval-eval -aggregate <dir>` recomputes every published statistic from these and exits non-zero on a discrepancy."
+}

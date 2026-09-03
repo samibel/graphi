@@ -1,6 +1,7 @@
 package retrieval
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -101,6 +102,87 @@ func TestAggregate_RoundTripReproducesEveryPublishedNumber(t *testing.T) {
 	}
 	if got := run.Report.Reproducible.Dataset; len(got.QueryIDs) != fixtureQueries || got.SHA256 != run.Dataset.SHA256 {
 		t.Errorf("dataset citation = %+v, want %d sorted query ids and the recomputed sha256 %s", got, fixtureQueries, run.Dataset.SHA256)
+	}
+}
+
+func TestAggregate_FieldParityClosedWorldReproduces(t *testing.T) {
+	source, err := LoadDataset(fixtureDataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ds, err := SelectFieldParityDevNLBehaviour(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := ds.Dataset.MinGrade(); got != GradeMax {
+		t.Fatalf("field-parity relevant grade = %d, want exact grade %d", got, GradeMax)
+	}
+	for _, query := range ds.Dataset.Queries {
+		for _, judgement := range query.Judgements {
+			if judgement.Grade != GradeMax {
+				t.Fatalf("field-parity query %s retained grade-%d judgement; exact-grade-%d scoring must exclude it", query.ID, judgement.Grade, GradeMax)
+			}
+		}
+	}
+	if len(ds.Dataset.Queries) != 1 || ds.Dataset.Queries[0].Split != SplitDev || ds.Dataset.Queries[0].Stratum != StratumNLBehaviour {
+		t.Fatalf("field-parity dataset = %+v, want the sole fixture dev/nl_behaviour query", ds.Dataset.Queries)
+	}
+	res, err := Run(context.Background(), Options{
+		RepoRoot: fixtureRepo, RepoName: "fixture", Dataset: ds,
+		Baselines: append([]Baseline(nil), FieldParityBaselines...), EmbedderSelector: "mock",
+		RunnerClass: "test", CandidateSHA: "test-sha", Repeats: 1, WorkDir: t.TempDir(), Now: fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	provenance := res.Report.Reproducible.FieldParity
+	if provenance == nil {
+		t.Fatal("field-parity report has no operator-control provenance")
+	}
+	if provenance.ControlStatement == "" || !strings.Contains(provenance.ControlStatement, "NOT a CoIR-compatible reference") {
+		t.Errorf("control statement = %q", provenance.ControlStatement)
+	}
+	if len(provenance.Queries) != 1 || provenance.Queries[0].AllTermsPrefix == provenance.Queries[0].ExplicitOR {
+		t.Errorf("query transformations = %+v", provenance.Queries)
+	}
+	if provenance.QueryTransform.SourceFile == "" || len(provenance.QueryTransform.SourceSHA256) != 64 || provenance.QueryTransform.FrozenAtCommit != "test-sha" || provenance.QueryTransform.FrozenAtCandidate != "test-sha" {
+		t.Errorf("query transform provenance = %+v", provenance.QueryTransform)
+	}
+	if provenance.SQLite.ModulePath != "modernc.org/sqlite" || provenance.SQLite.ModuleVersion == "" || provenance.SQLite.ModuleSum == "" || provenance.SQLite.GoModSum == "" || provenance.SQLite.RuntimeVersion == "" {
+		t.Errorf("sqlite provenance = %+v", provenance.SQLite)
+	}
+	if provenance.NameOnly.Schema == "" || provenance.FullDocument.Schema == "" || provenance.NameOnly.QuerySQL == "" || provenance.FullDocument.QuerySQL == "" {
+		t.Errorf("fts schema/sql provenance is incomplete: name=%+v full=%+v", provenance.NameOnly, provenance.FullDocument)
+	}
+	if provenance.NameOnly.AllTermsQuerySQL != provenance.NameOnly.QuerySQL || provenance.FullDocument.AllTermsQuerySQL != provenance.FullDocument.QuerySQL {
+		t.Errorf("AND/OR SQL differs beyond the bound MATCH expression: name=%q/%q full=%q/%q",
+			provenance.NameOnly.AllTermsQuerySQL, provenance.NameOnly.QuerySQL,
+			provenance.FullDocument.AllTermsQuerySQL, provenance.FullDocument.QuerySQL)
+	}
+	for _, corpus := range []FieldParityCorpus{provenance.NameOnly, provenance.FullDocument} {
+		if corpus.TokenizerDeclaration == "" || len(corpus.Documents) == 0 {
+			t.Errorf("field-parity corpus provenance is incomplete: %+v", corpus)
+		}
+		for i, document := range corpus.Documents {
+			if document.NodeID == "" || len(document.TextSHA256) != 64 {
+				t.Errorf("document %d = %+v", i, document)
+			}
+			if i > 0 && corpus.Documents[i-1].NodeID > document.NodeID {
+				t.Errorf("documents not ordered by node id at %d: %q > %q", i, corpus.Documents[i-1].NodeID, document.NodeID)
+			}
+		}
+	}
+	dir := filepath.Join(t.TempDir(), "field-parity")
+	if _, err := WriteRunDir(dir, res, ds, "2026-09-03"); err != nil {
+		t.Fatalf("WriteRunDir: %v", err)
+	}
+	run, err := ReadRunDir(dir)
+	if err != nil {
+		t.Fatalf("ReadRunDir: %v", err)
+	}
+	agg := Reproduce(run)
+	if agg.ExitCode() != ExitReproduced || !agg.Publishable || agg.Discrepant != 0 || agg.Unknown != 0 {
+		t.Fatalf("field-parity aggregate = status %s exit %d discrepancies=%v unknown=%d", agg.Status, agg.ExitCode(), agg.Discrepancies, agg.Unknown)
 	}
 }
 

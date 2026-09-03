@@ -1,0 +1,72 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "latency",
+  "baseline": "semantic_first",
+  "collected": true,
+  "samples": 18,
+  "queries": [
+    {
+      "id": "cb-11",
+      "samples_us": [
+        4854,
+        4508,
+        4506
+      ]
+    },
+    {
+      "id": "cb-12",
+      "samples_us": [
+        5825,
+        5766,
+        5735
+      ]
+    },
+    {
+      "id": "cb-13",
+      "samples_us": [
+        3868,
+        3842,
+        3844
+      ]
+    },
+    {
+      "id": "cb-14",
+      "samples_us": [
+        4207,
+        4203,
+        4182
+      ]
+    },
+    {
+      "id": "cb-15",
+      "samples_us": [
+        3691,
+        3648,
+        3618
+      ]
+    },
+    {
+      "id": "cb-16",
+      "samples_us": [
+        1051,
+        1019,
+        1012
+      ]
+    }
+  ],
+  "index_ms": {
+    "status": "measured",
+    "value": 242,
+    "unit": "ms"
+  },
+  "peak_rss_mb": {
+    "status": "measured",
+    "value": 432.015625,
+    "unit": "MB"
+  },
+  "vector_sidecar_bytes": {
+    "status": "not_applicable",
+    "reason": "no vector sidecar: this baseline ranks without vectors"
+  }
+}

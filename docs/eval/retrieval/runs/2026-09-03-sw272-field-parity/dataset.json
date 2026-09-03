@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "id": "cobra-v1-dev-nl-behaviour-field-parity",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "go",
+  "evidence_class": "agent-annotated, human-reviewed",
+  "relevant_min_grade": 3,
+  "notes": "Derived exact-grade-3 field-parity population: every and only split=dev, stratum=nl_behaviour query from source dataset cobra-v1 at sha256 be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82; grade-1/2 qrels and holdout are excluded.",
+  "queries": [
+    {
+      "id": "cb-11",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where are required flags validated before a command runs",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1146,
+          "end_line": 1168,
+          "anchor": "func (c *Command) ValidateRequiredFlags(",
+          "grade": 3,
+          "reason": "ValidateRequiredFlags walks the flag set and reports the missing required ones.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-12",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does cobra find the subcommand for the given arguments",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 724,
+          "end_line": 748,
+          "anchor": "func (c *Command) Find(",
+          "grade": 3,
+          "reason": "Find walks the arguments down the command tree and returns the matched command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-13",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are unknown command suggestions computed",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 831,
+          "end_line": 850,
+          "anchor": "func (c *Command) SuggestionsFor(",
+          "grade": 3,
+          "reason": "SuggestionsFor ranks sibling commands by Levenshtein distance and explicit SuggestFor entries.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-14",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does the shell completion request get dispatched to the completion logic",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 193,
+          "end_line": 264,
+          "anchor": "func (c *Command) initCompleteCmd(",
+          "grade": 3,
+          "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 266,
+          "end_line": 520,
+          "anchor": "func (c *Command) getCompletions(",
+          "grade": 3,
+          "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-15",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how is the version flag handled",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1200,
+          "end_line": 1224,
+          "anchor": "func (c *Command) InitDefaultVersionFlag(",
+          "grade": 3,
+          "reason": "InitDefaultVersionFlag adds the --version flag when Command.Version is set.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-16",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where is the levenshtein distance computed",
+      "judgements": [
+        {
+          "path": "cobra.go",
+          "start_line": 187,
+          "end_line": 221,
+          "anchor": "func ld(",
+          "grade": 3,
+          "reason": "ld is the Levenshtein implementation.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    }
+  ]
+}

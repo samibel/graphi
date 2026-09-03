@@ -25,6 +25,10 @@ type Hit struct {
 	Kind          string `json:"kind,omitempty"`
 	QualifiedName string `json:"qualified_name,omitempty"`
 	Tokens        int    `json:"tokens"`
+	// BM25Score is the raw parameterless SQLite FTS5 bm25() value when
+	// the baseline is an FTS cell. It is evidentiary only: the scorer uses
+	// ranking order, not this value. Non-FTS baselines omit it.
+	BM25Score *float64 `json:"bm25_score,omitempty"`
 }
 
 // TruncationMarker ends a repository-controlled string that was cut at

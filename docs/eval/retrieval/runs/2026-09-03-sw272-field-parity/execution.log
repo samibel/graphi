@@ -1,0 +1,28 @@
+retrieval-eval: indexing $HOME/.cache/graphi/corpus/cobra
+retrieval-eval: embedder "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b" active; generating vectors
+retrieval-eval: generation pass embedded=768 reused=0 excluded=170 failed=0 purged=0 (id=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b)
+retrieval-eval: semantic ready (model=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b, dim=256, rows=768)
+retrieval-eval: name-only semantic control ready (model=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b, rows=768, universe=v3-eligible)
+retrieval-eval: evaluator-only full-document FTS5 control ready (schema=v3, rows=768)
+retrieval-eval: indexed 938 nodes, 4036 edges, 58 files in 242ms
+retrieval-eval: baseline lexical over 6 queries
+retrieval-eval: baseline fts5_or_control over 6 queries
+retrieval-eval: baseline semantic_name_only over 6 queries
+retrieval-eval: baseline lexical_full_document over 6 queries
+retrieval-eval: baseline fts5_or_control_full_document over 6 queries
+retrieval-eval: baseline semantic_first over 6 queries
+retrieval-eval: wrote /tmp/sw272-field-parity-grade3-report.json
+retrieval-eval: wrote the raw-sample run directory to docs/eval/retrieval/runs/2026-09-03-sw272-field-parity
+retrieval-eval: cobra @ a0a6ae020bb3899ff0276067863e50523f897370, dataset cobra-v1-dev-nl-behaviour-field-parity (6 queries), candidate 55c8a8a76cf2f847ded21e074c5a2bd5f7000dd2+dirty, runner static-local
+retrieval-eval:   lexical              top1 0.000  recall@5 0.000  recall@10 0.000  mrr@10 0.000  ndcg@10 0.000  (6/6 scored)
+retrieval-eval:   fts5_or_control      top1 0.000  recall@5 0.167  recall@10 0.167  mrr@10 0.083  ndcg@10 0.105  (6/6 scored)
+retrieval-eval:   semantic_name_only   top1 0.333  recall@5 0.667  recall@10 0.833  mrr@10 0.486  ndcg@10 0.570  (6/6 scored)
+retrieval-eval:   lexical_full_document top1 0.000  recall@5 0.000  recall@10 0.000  mrr@10 0.000  ndcg@10 0.000  (6/6 scored)
+retrieval-eval:   fts5_or_control_full_document top1 0.000  recall@5 0.917  recall@10 0.917  mrr@10 0.381  ndcg@10 0.494  (6/6 scored)
+retrieval-eval:   semantic_first       top1 0.500  recall@5 0.833  recall@10 0.833  mrr@10 0.667  ndcg@10 0.710  (6/6 scored)
+retrieval-eval:   lexical              index 242ms  p50 233us  p95 392us  rss 432.015625MB
+retrieval-eval:   fts5_or_control      index 242ms  p50 899us  p95 2345us  rss 432.015625MB
+retrieval-eval:   semantic_name_only   index 242ms  p50 651us  p95 723us  rss 432.015625MB
+retrieval-eval:   lexical_full_document index 242ms  p50 272us  p95 781us  rss 432.015625MB
+retrieval-eval:   fts5_or_control_full_document index 242ms  p50 3230us  p95 12411us  rss 432.015625MB
+retrieval-eval:   semantic_first       index 242ms  p50 3868us  p95 5825us  rss 432.015625MB

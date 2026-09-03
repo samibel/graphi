@@ -1,0 +1,12 @@
+=== RUN   TestRun_FTS5ORControlConformance
+=== RUN   TestRun_FTS5ORControlConformance/single_term_identical_fts5_or_control
+=== RUN   TestRun_FTS5ORControlConformance/single_term_identical_fts5_or_control_full_document
+=== RUN   TestRun_FTS5ORControlConformance/multi_term_OR_admits_name-proper-subset
+=== RUN   TestRun_FTS5ORControlConformance/multi_term_OR_admits_full-document-proper-subset
+--- PASS: TestRun_FTS5ORControlConformance (0.47s)
+    --- PASS: TestRun_FTS5ORControlConformance/single_term_identical_fts5_or_control (0.00s)
+    --- PASS: TestRun_FTS5ORControlConformance/single_term_identical_fts5_or_control_full_document (0.00s)
+    --- PASS: TestRun_FTS5ORControlConformance/multi_term_OR_admits_name-proper-subset (0.00s)
+    --- PASS: TestRun_FTS5ORControlConformance/multi_term_OR_admits_full-document-proper-subset (0.00s)
+PASS
+ok  	github.com/samibel/graphi/internal/eval/retrieval	1.118s

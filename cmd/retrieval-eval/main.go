@@ -30,6 +30,8 @@
 //
 //	go run ./cmd/retrieval-eval -manifest corpus/manifest.json -repo <name> -dataset <path> -out <report.json> \
 //	    [-baseline <name>]... [-export-raw <dir>] [-runner-class local] [-checkout <dir>] [-embedder <selector>]
+//	go run ./cmd/retrieval-eval -field-parity -manifest corpus/manifest.json -repo <name> -dataset <path> -out <report.json> \
+//	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
@@ -97,6 +99,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	var baselines multiFlag
 	fs.Var(&baselines, "baseline", "baseline to run (repeatable); default all of "+strings.Join(baselineNames(), ", "))
 	exportRaw := fs.String("export-raw", "", "after the run, write the raw-sample run directory here (report, dataset copy, raw/hits-*.json, raw/latency-*.json)")
+	fieldParity := fs.Bool("field-parity", false, "SW-272 evaluator-only control: select every and only dev/nl_behaviour query at exact grade 3 and run the fixed six-cell field-parity baseline set; cannot be combined with -baseline")
 	aggregate := fs.String("aggregate", "", "recompute every published metric in this run directory from its raw samples; exit 0 reproduced, 1 discrepancy, 2 unreadable, 3 incomplete")
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
@@ -137,7 +140,17 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "retrieval-eval: -repo, -dataset and -out are required (or use -aggregate <dir> / -derive)")
 		return exitUsage
 	}
-	names, err := retrieval.ParseBaselines(baselines)
+	if *fieldParity && len(baselines) > 0 {
+		fmt.Fprintln(stderr, "retrieval-eval: -field-parity selects its fixed six-baseline closed world and cannot be combined with -baseline")
+		return exitUsage
+	}
+	var names []retrieval.Baseline
+	var err error
+	if *fieldParity {
+		names = append([]retrieval.Baseline(nil), retrieval.FieldParityBaselines...)
+	} else {
+		names, err = retrieval.ParseBaselines(baselines)
+	}
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitUsage
@@ -151,6 +164,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if ds.Dataset.Repo != *repo {
 		fmt.Fprintf(stderr, "retrieval-eval: dataset %s is judged against repo %q, not %q\n", *dataset, ds.Dataset.Repo, *repo)
 		return exitUsage
+	}
+	if *fieldParity {
+		ds, err = retrieval.SelectFieldParityDevNLBehaviour(ds)
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitUsage
+		}
 	}
 
 	ctx := context.Background()

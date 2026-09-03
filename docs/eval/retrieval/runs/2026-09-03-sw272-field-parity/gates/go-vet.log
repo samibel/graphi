@@ -1,0 +1,5 @@
+$ export GOFLAGS=-buildvcs=false
+$ export GOCACHE=/tmp/graphi-sw272-go-cache
+$ CGO_ENABLED=0 go vet ./...
+[no output]
+exit 0

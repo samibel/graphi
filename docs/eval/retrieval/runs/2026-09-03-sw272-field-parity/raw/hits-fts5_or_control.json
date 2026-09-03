@@ -1,0 +1,600 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "hits",
+  "baseline": "fts5_or_control",
+  "collected": true,
+  "samples": 56,
+  "queries": [
+    {
+      "id": "cb-11",
+      "hits": [
+        {
+          "rank": 1,
+          "path": ".github/labeler.yml",
+          "line": 9,
+          "node_id": "b793df90b4bdd1bb",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/flags\"",
+          "tokens": 17,
+          "bm25_score": -11.22152905060331
+        },
+        {
+          "rank": 2,
+          "path": "site/content/user_guide.md",
+          "line": 319,
+          "node_id": "b7656a625b0367ad",
+          "kind": "type",
+          "qualified_name": "content.Required flags",
+          "tokens": 208,
+          "bm25_score": -9.03773705709684
+        },
+        {
+          "rank": 3,
+          "path": "site/content/completions/_index.md",
+          "line": 274,
+          "node_id": "ba0e0d549ce0c4c6",
+          "kind": "type",
+          "qualified_name": "completions.Mark flags as required",
+          "tokens": 191,
+          "bm25_score": -9.021916391668718
+        },
+        {
+          "rank": 4,
+          "path": ".github/labeler.yml",
+          "line": 5,
+          "node_id": "fa914ce0295293bf",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/cobra-command\"",
+          "tokens": 29,
+          "bm25_score": -7.740165557305576
+        },
+        {
+          "rank": 5,
+          "path": ".github/labeler.yml",
+          "line": 12,
+          "node_id": "96169ad77ae7c41f",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/github\"",
+          "tokens": 10,
+          "bm25_score": -7.50272616100756
+        },
+        {
+          "rank": 6,
+          "path": "bash_completions_test.go",
+          "line": 56,
+          "node_id": "a61abe06673278b2",
+          "kind": "function",
+          "qualified_name": "cobra.runShellCheck",
+          "tokens": 121,
+          "bm25_score": -7.173777467446374
+        },
+        {
+          "rank": 7,
+          "path": ".github/labeler.yml",
+          "line": 2,
+          "node_id": "41e1c18c898c169c",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/docs-generation\"",
+          "tokens": 38,
+          "bm25_score": -6.547689757943239
+        },
+        {
+          "rank": 8,
+          "path": ".github/labeler.yml",
+          "line": 15,
+          "node_id": "d2aeb22586640d9d",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/shell-completion\"",
+          "tokens": 3,
+          "bm25_score": -6.547689757943239
+        },
+        {
+          "rank": 9,
+          "path": "site/content/user_guide.md",
+          "line": 257,
+          "node_id": "f8626c8328f19f19",
+          "kind": "type",
+          "qualified_name": "content.Assign flags to a command",
+          "tokens": 180,
+          "bm25_score": -6.334927648556368
+        },
+        {
+          "rank": 10,
+          "path": "flag_groups.go",
+          "line": 26,
+          "node_id": "63cf7dc586b2cd88",
+          "kind": "constant",
+          "qualified_name": "cobra.requiredAsGroup",
+          "tokens": 230,
+          "bm25_score": -6.227228573238694
+        }
+      ]
+    },
+    {
+      "id": "cb-12",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "site/content/docgen/rest.md",
+          "line": 72,
+          "node_id": "58788de676be2a90",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 186,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 2,
+          "path": "site/content/docgen/md.md",
+          "line": 72,
+          "node_id": "813808cf16f1efdd",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 3,
+          "path": "site/content/docgen/yaml.md",
+          "line": 69,
+          "node_id": "f4500e94751a285c",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 4,
+          "path": "site/content/docgen/rest.md",
+          "line": 29,
+          "node_id": "8405b92a3de7b2a6",
+          "kind": "type",
+          "qualified_name": "docgen.Generate ReST docs for the entire command tree",
+          "tokens": 141,
+          "bm25_score": -6.761928615930298
+        },
+        {
+          "rank": 5,
+          "path": "site/content/docgen/md.md",
+          "line": 29,
+          "node_id": "6a6b293c5d59c17c",
+          "kind": "type",
+          "qualified_name": "docgen.Generate markdown docs for the entire command tree",
+          "tokens": 141,
+          "bm25_score": -6.761928615930298
+        },
+        {
+          "rank": 6,
+          "path": "site/content/docgen/yaml.md",
+          "line": 29,
+          "node_id": "138b1fc1b62418ca",
+          "kind": "type",
+          "qualified_name": "docgen.Generate yaml docs for the entire command tree",
+          "tokens": 145,
+          "bm25_score": -6.761928615930298
+        },
+        {
+          "rank": 7,
+          "path": "site/content/user_guide.md",
+          "line": 30,
+          "node_id": "acaee838354342c0",
+          "kind": "type",
+          "qualified_name": "content.Using the Cobra Generator",
+          "tokens": 176,
+          "bm25_score": -6.754444457218322
+        },
+        {
+          "rank": 8,
+          "path": "site/content/user_guide.md",
+          "line": 37,
+          "node_id": "fc59a66425df9e03",
+          "kind": "type",
+          "qualified_name": "content.Using the Cobra Library",
+          "tokens": 139,
+          "bm25_score": -6.754444457218322
+        },
+        {
+          "rank": 9,
+          "path": "site/content/user_guide.md",
+          "line": 191,
+          "node_id": "497298056481df26",
+          "kind": "type",
+          "qualified_name": "content.Organizing subcommands",
+          "tokens": 185,
+          "bm25_score": -6.1274208314157175
+        },
+        {
+          "rank": 10,
+          "path": "site/content/completions/_index.md",
+          "line": 92,
+          "node_id": "ee250d8942c5e1ed",
+          "kind": "type",
+          "qualified_name": "completions.Adapting the default completion command",
+          "tokens": 194,
+          "bm25_score": -6.069127943639203
+        }
+      ]
+    },
+    {
+      "id": "cb-13",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "site/content/user_guide.md",
+          "line": 694,
+          "node_id": "55c9ef71e98330be",
+          "kind": "type",
+          "qualified_name": "content.Suggestions when \"unknown command\" happens",
+          "tokens": 181,
+          "bm25_score": -9.136238244777408
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 832,
+          "node_id": "4ca50b1fea04ef7b",
+          "kind": "method",
+          "qualified_name": "cobra.Command.SuggestionsFor",
+          "tokens": 141,
+          "bm25_score": -7.006612254013278
+        },
+        {
+          "rank": 3,
+          "path": ".github/labeler.yml",
+          "line": 5,
+          "node_id": "fa914ce0295293bf",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/cobra-command\"",
+          "tokens": 29,
+          "bm25_score": -5.457138297304283
+        },
+        {
+          "rank": 4,
+          "path": ".github/labeler.yml",
+          "line": 9,
+          "node_id": "b793df90b4bdd1bb",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/flags\"",
+          "tokens": 17,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 5,
+          "path": ".github/labeler.yml",
+          "line": 12,
+          "node_id": "96169ad77ae7c41f",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/github\"",
+          "tokens": 10,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 6,
+          "path": ".github/labeler.yml",
+          "line": 2,
+          "node_id": "41e1c18c898c169c",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/docs-generation\"",
+          "tokens": 38,
+          "bm25_score": -4.264662497941946
+        },
+        {
+          "rank": 7,
+          "path": ".github/labeler.yml",
+          "line": 15,
+          "node_id": "d2aeb22586640d9d",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/shell-completion\"",
+          "tokens": 3,
+          "bm25_score": -4.264662497941946
+        },
+        {
+          "rank": 8,
+          "path": "command.go",
+          "line": 1426,
+          "node_id": "90e5969e41765259",
+          "kind": "method",
+          "qualified_name": "cobra.Command.CommandPath",
+          "tokens": 139,
+          "bm25_score": -1.907547095050778
+        },
+        {
+          "rank": 9,
+          "path": "command.go",
+          "line": 526,
+          "node_id": "339afd237a89e80f",
+          "kind": "method",
+          "qualified_name": "cobra.Command.CommandPathPadding",
+          "tokens": 131,
+          "bm25_score": -1.907547095050778
+        },
+        {
+          "rank": 10,
+          "path": "command.go",
+          "line": 1293,
+          "node_id": "2356443441d4d409",
+          "kind": "method",
+          "qualified_name": "cobra.Command.Commands",
+          "tokens": 152,
+          "bm25_score": -1.907547095050778
+        }
+      ]
+    },
+    {
+      "id": "cb-14",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "site/content/completions/_index.md",
+          "line": 92,
+          "node_id": "ee250d8942c5e1ed",
+          "kind": "type",
+          "qualified_name": "completions.Adapting the default completion command",
+          "tokens": 194,
+          "bm25_score": -11.742253104410615
+        },
+        {
+          "rank": 2,
+          "path": "site/content/completions/_index.md",
+          "line": 1,
+          "node_id": "091b471b1f1fa20a",
+          "kind": "type",
+          "qualified_name": "completions.Generating shell completions",
+          "tokens": 172,
+          "bm25_score": -10.014050148693387
+        },
+        {
+          "rank": 3,
+          "path": "shell_completions.go",
+          "line": 1,
+          "node_id": "1398922a805ca15a",
+          "kind": "file",
+          "qualified_name": "shell_completions.go",
+          "tokens": 230,
+          "bm25_score": -9.07769444016823
+        },
+        {
+          "rank": 4,
+          "path": "site/content/completions/_index.md",
+          "line": 334,
+          "node_id": "6f23311e98a2e542",
+          "kind": "type",
+          "qualified_name": "completions.Limit flag completions to directory names",
+          "tokens": 240,
+          "bm25_score": -8.161104220537812
+        },
+        {
+          "rank": 5,
+          "path": ".github/labeler.yml",
+          "line": 15,
+          "node_id": "d2aeb22586640d9d",
+          "kind": "variable",
+          "qualified_name": ".github.\"area/shell-completion\"",
+          "tokens": 3,
+          "bm25_score": -7.922177304102185
+        },
+        {
+          "rank": 6,
+          "path": "site/content/user_guide.md",
+          "line": 740,
+          "node_id": "964b524d65e17525",
+          "kind": "type",
+          "qualified_name": "content.Generating shell completions",
+          "tokens": 86,
+          "bm25_score": -7.922177304102185
+        },
+        {
+          "rank": 7,
+          "path": "site/content/docgen/rest.md",
+          "line": 72,
+          "node_id": "58788de676be2a90",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 186,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 8,
+          "path": "site/content/docgen/md.md",
+          "line": 72,
+          "node_id": "813808cf16f1efdd",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 9,
+          "path": "site/content/docgen/yaml.md",
+          "line": 69,
+          "node_id": "f4500e94751a285c",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -7.614229816383538
+        },
+        {
+          "rank": 10,
+          "path": "site/content/completions/bash.md",
+          "line": 1,
+          "node_id": "168632ba1678a841",
+          "kind": "type",
+          "qualified_name": "completions..",
+          "tokens": 226,
+          "bm25_score": -7.489898032669912
+        }
+      ]
+    },
+    {
+      "id": "cb-15",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "site/content/user_guide.md",
+          "line": 592,
+          "node_id": "25f008d2fc5cff19",
+          "kind": "type",
+          "qualified_name": "content.Version Flag",
+          "tokens": 231,
+          "bm25_score": -8.054608201623452
+        },
+        {
+          "rank": 2,
+          "path": ".github/dependabot.yml",
+          "line": 1,
+          "node_id": "0b718dd291bc5e27",
+          "kind": "variable",
+          "qualified_name": ".github.version",
+          "tokens": 23,
+          "bm25_score": -5.721183284721859
+        },
+        {
+          "rank": 3,
+          "path": "CONDUCT.md",
+          "line": 3,
+          "node_id": "02326410238efbaf",
+          "kind": "type",
+          "qualified_name": "CONDUCT.Versioning",
+          "tokens": 480,
+          "bm25_score": -5.721183284721859
+        },
+        {
+          "rank": 4,
+          "path": "command_test.go",
+          "line": 2571,
+          "node_id": "2a8a76fce48f0cf4",
+          "kind": "constant",
+          "qualified_name": "cobra.VersionFlag",
+          "tokens": 122,
+          "bm25_score": -5.721183284721859
+        },
+        {
+          "rank": 5,
+          "path": "command.go",
+          "line": 719,
+          "node_id": "f385a06926fdc7e4",
+          "kind": "function",
+          "qualified_name": "cobra.isFlagArg",
+          "tokens": 161,
+          "bm25_score": -5.721183284721859
+        },
+        {
+          "rank": 6,
+          "path": "command.go",
+          "line": 1583,
+          "node_id": "dc2976def459ba3f",
+          "kind": "method",
+          "qualified_name": "cobra.Command.IsAdditionalHelpTopicCommand",
+          "tokens": 209,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 7,
+          "path": "command.go",
+          "line": 1562,
+          "node_id": "2320e6ccb55ff14c",
+          "kind": "method",
+          "qualified_name": "cobra.Command.IsAvailableCommand",
+          "tokens": 182,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 8,
+          "path": "command.go",
+          "line": 599,
+          "node_id": "d90488a0475b213c",
+          "kind": "method",
+          "qualified_name": "cobra.Command.VersionTemplate",
+          "tokens": 111,
+          "bm25_score": -4.886699900886517
+        }
+      ]
+    },
+    {
+      "id": "cb-16",
+      "hits": [
+        {
+          "rank": 1,
+          "path": "command.go",
+          "line": 719,
+          "node_id": "f385a06926fdc7e4",
+          "kind": "function",
+          "qualified_name": "cobra.isFlagArg",
+          "tokens": 161,
+          "bm25_score": -5.721183284721859
+        },
+        {
+          "rank": 2,
+          "path": "command.go",
+          "line": 1583,
+          "node_id": "dc2976def459ba3f",
+          "kind": "method",
+          "qualified_name": "cobra.Command.IsAdditionalHelpTopicCommand",
+          "tokens": 209,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 3,
+          "path": "command.go",
+          "line": 1562,
+          "node_id": "2320e6ccb55ff14c",
+          "kind": "method",
+          "qualified_name": "cobra.Command.IsAvailableCommand",
+          "tokens": 182,
+          "bm25_score": -4.886699900886517
+        },
+        {
+          "rank": 4,
+          "path": "site/content/docgen/rest.md",
+          "line": 72,
+          "node_id": "58788de676be2a90",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 186,
+          "bm25_score": -3.807114908191769
+        },
+        {
+          "rank": 5,
+          "path": "site/content/docgen/md.md",
+          "line": 72,
+          "node_id": "813808cf16f1efdd",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -3.807114908191769
+        },
+        {
+          "rank": 6,
+          "path": "site/content/docgen/yaml.md",
+          "line": 69,
+          "node_id": "f4500e94751a285c",
+          "kind": "type",
+          "qualified_name": "docgen.Customize the output",
+          "tokens": 155,
+          "bm25_score": -3.807114908191769
+        },
+        {
+          "rank": 7,
+          "path": "site/content/user_guide.md",
+          "line": 30,
+          "node_id": "acaee838354342c0",
+          "kind": "type",
+          "qualified_name": "content.Using the Cobra Generator",
+          "tokens": 176,
+          "bm25_score": -3.3772218601867006
+        },
+        {
+          "rank": 8,
+          "path": "site/content/user_guide.md",
+          "line": 37,
+          "node_id": "fc59a66425df9e03",
+          "kind": "type",
+          "qualified_name": "content.Using the Cobra Library",
+          "tokens": 139,
+          "bm25_score": -3.3772218601867006
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+retrieval-eval: wrote the aggregate reproduction to docs/eval/retrieval/runs/2026-09-03-sw272-field-parity/aggregate.json
+retrieval-eval: aggregate PASS (harness retrieval-eval/2, scorer retrieval-aggregate/1): 197 metric(s) checked, 197 reproduced, 0 discrepant, 0 unknown
+retrieval-eval: PASS - all 197 published metric(s) reproduced from the raw data

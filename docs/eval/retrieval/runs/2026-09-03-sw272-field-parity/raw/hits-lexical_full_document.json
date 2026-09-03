@@ -1,0 +1,34 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "series": "hits",
+  "baseline": "lexical_full_document",
+  "collected": true,
+  "samples": 0,
+  "queries": [
+    {
+      "id": "cb-11",
+      "hits": []
+    },
+    {
+      "id": "cb-12",
+      "hits": []
+    },
+    {
+      "id": "cb-13",
+      "hits": []
+    },
+    {
+      "id": "cb-14",
+      "hits": []
+    },
+    {
+      "id": "cb-15",
+      "hits": []
+    },
+    {
+      "id": "cb-16",
+      "hits": []
+    }
+  ]
+}
