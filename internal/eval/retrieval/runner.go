@@ -37,12 +37,24 @@ const (
 	// BaselineLexical is engine/search.Service.Search: the store's FTS5
 	// (SQLite) ranking over qualified names.
 	BaselineLexical Baseline = "lexical"
+	// BaselineLexicalFullDocument is the evaluator-only field-parity control:
+	// SQLite FTS5/BM25 over the exact admitted SemanticDocument v3 Text bytes
+	// the production semantic path embeds. It is explicitly selectable but is
+	// intentionally absent from AllBaselines.
+	BaselineLexicalFullDocument Baseline = "lexical_full_document"
+	// BaselineFTS5ORControl changes only the production FTS5 MATCH operator:
+	// the same quoted prefix terms are joined by explicit OR. It is an
+	// evaluator-only operator control, not a reference implementation.
+	BaselineFTS5ORControl Baseline = "fts5_or_control"
+	// BaselineFTS5ORControlFullDocument applies that same sole operator
+	// change to the evaluator's exact admitted-v3-document FTS5 table.
+	BaselineFTS5ORControlFullDocument Baseline = "fts5_or_control_full_document"
 	// BaselineHybridV1 is search_hybrid/1 (engine/agenttools/hybridsearch):
 	// lexical retrieval plus identifier, path and degree signals, no vectors.
 	BaselineHybridV1 Baseline = "hybrid_v1"
-	// BaselineSemanticNameOnly is engine/search.Service.SemanticSearch over the
-	// name-only documents; on the default build it is the typed unavailable
-	// response (AC-6).
+	// BaselineSemanticNameOnly is engine/search.Service.SemanticSearch over v1
+	// NodeText for the production-v3-eligible node universe; on the default
+	// build it is the typed unavailable response (AC-6).
 	BaselineSemanticNameOnly Baseline = "semantic_name_only"
 	// BaselineOracle ranks the judged spans themselves by grade: the ceiling
 	// the metric code can reach, which proves the scorer rather than a
@@ -84,6 +96,13 @@ const (
 // experiment, just like its ModeFusionGraph implementation.
 var AllBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineSemanticFirst}
 
+// FieldParityBaselines is the evaluator-only 2x3 diagnostic closed world. Its
+// presence does not change AllBaselines or the default report set.
+var FieldParityBaselines = []Baseline{
+	BaselineLexical, BaselineFTS5ORControl, BaselineSemanticNameOnly,
+	BaselineLexicalFullDocument, BaselineFTS5ORControlFullDocument, BaselineSemanticFirst,
+}
+
 // legacyBaselines is the exact default universe used by reports written
 // before semantic_first replaced fusion+graph in AllBaselines. The aggregate
 // reader accepts this one historical closed world so existing evidence keeps
@@ -102,6 +121,9 @@ func ParseBaselines(names []string) ([]Baseline, error) {
 		known[b] = true
 	}
 	known[BaselineFusionGraph] = true
+	known[BaselineLexicalFullDocument] = true
+	known[BaselineFTS5ORControl] = true
+	known[BaselineFTS5ORControlFullDocument] = true
 	var out []Baseline
 	seen := map[Baseline]bool{}
 	for _, n := range names {
@@ -118,11 +140,14 @@ func ParseBaselines(names []string) ([]Baseline, error) {
 }
 
 func baselineNames() string {
-	names := make([]string, 0, len(AllBaselines)+1)
+	names := make([]string, 0, len(AllBaselines)+4)
 	for _, b := range AllBaselines {
 		names = append(names, string(b))
 	}
 	names = append(names, string(BaselineFusionGraph))
+	names = append(names, string(BaselineLexicalFullDocument))
+	names = append(names, string(BaselineFTS5ORControl))
+	names = append(names, string(BaselineFTS5ORControlFullDocument))
 	return strings.Join(names, ", ")
 }
 
@@ -270,11 +295,11 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 		workDir = dir
 	}
 
-	idx, err := buildIndex(ctx, o.RepoRoot, workDir, o.EmbedderSelector, o.Log)
+	idx, err := buildIndex(ctx, o.RepoRoot, workDir, o.EmbedderSelector, o.Baselines, o.Log)
 	if err != nil {
 		return nil, err
 	}
-	defer idx.store.Close()
+	defer idx.close()
 	// SW-260 AC-9: measured from the indexed files, not assumed.
 	spanShare, err := spanMethodShare(ctx, o.RepoRoot, idx.filePaths)
 	if err != nil {
@@ -309,6 +334,13 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 			Notes: "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; " +
 				"index_ms is the one cold IngestAll shared by every indexed baseline",
 		},
+	}
+	if sameBaselineSequence(o.Baselines, FieldParityBaselines) {
+		provenance, err := buildFieldParityProvenance(ctx, idx, ds, o.Dataset.SHA256, o.RepoSHA, o.CandidateSHA)
+		if err != nil {
+			return nil, err
+		}
+		report.Reproducible.FieldParity = provenance
 	}
 	raw := &RawSamples{Hits: map[Baseline]RawHitSet{}, Latency: map[Baseline]RawLatencySet{}}
 
@@ -355,16 +387,40 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 	return &Result{Report: report, Raw: raw}, nil
 }
 
+func sameBaselineSequence(got, want []Baseline) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // index is the one graph every indexed baseline shares.
 type index struct {
-	store   *graphstore.SQLiteStore
-	search  *search.Service
-	indexMS float64
-	nodes   int
-	edges   int
-	files   int
+	store               *graphstore.SQLiteStore
+	search              *search.Service
+	nameOnlySearch      *search.Service
+	nameOnlyFTS5Control *nameOnlyFTS5Control
+	fullDocumentLexical *fullDocumentLexical
+	indexMS             float64
+	nodes               int
+	edges               int
+	files               int
 	// filePaths are the indexed files (path order), the span-share input.
 	filePaths []string
+}
+
+func (i *index) close() {
+	if i == nil {
+		return
+	}
+	_ = i.nameOnlyFTS5Control.close()
+	_ = i.fullDocumentLexical.close()
+	_ = i.store.Close()
 }
 
 // buildIndex ingests root into a fresh SQLite store the way cmd/eval's full
@@ -375,9 +431,10 @@ type index struct {
 // it via embed.Constructor, generates + persists a GenerationStore under
 // metaDir, reloads it into a fresh in-memory index, and wires the search
 // service with WithSemantic + WithSemanticState(Ready) so the SW-263
-// retrieval ablations (fusion, fusion+graph) and the semantic_name_only
-// baseline can rank vectors end to end.
-func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log io.Writer) (*index, error) {
+// retrieval ablations can rank vectors end to end. When selected, the
+// semantic_name_only control receives its own v1-NodeText index over the same
+// eligible node IDs.
+func buildIndex(ctx context.Context, root, workDir, embedderSelector string, baselines []Baseline, log io.Writer) (*index, error) {
 	dbPath := filepath.Join(workDir, "retrieval-eval.db")
 	metaDir := filepath.Join(workDir, "retrieval-eval-meta")
 	store, err := graphstore.OpenSQLite(dbPath)
@@ -416,23 +473,49 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 		store.Close()
 		return nil, fmt.Errorf("retrieval: index of %s produced no nodes", root)
 	}
-	svc, svcErr := buildSearchService(ctx, root, store, metaDir, embedderSelector, log)
+	var nameOnlyControl *nameOnlyFTS5Control
+	if containsBaseline(baselines, BaselineFTS5ORControl) {
+		nameOnlyControl, err = newNameOnlyFTS5Control(dbPath)
+		if err != nil {
+			store.Close()
+			return nil, err
+		}
+	}
+	artifacts, svcErr := buildSearchArtifacts(ctx, root, store, metaDir, embedderSelector,
+		containsBaseline(baselines, BaselineSemanticNameOnly),
+		containsBaseline(baselines, BaselineLexicalFullDocument) || containsBaseline(baselines, BaselineFTS5ORControlFullDocument), log)
 	if svcErr != nil {
+		_ = nameOnlyControl.close()
 		store.Close()
 		return nil, svcErr
 	}
-	_ = svc
 	fmt.Fprintf(log, "retrieval-eval: indexed %d nodes, %d edges, %d files in %dms\n", stats.TotalNodes, stats.TotalEdges, len(stats.Files), elapsed.Milliseconds())
 	filePaths := make([]string, 0, len(stats.Files))
 	for _, f := range stats.Files {
 		filePaths = append(filePaths, f.Path)
 	}
 	return &index{
-		store: store, search: svc,
+		store: store, search: artifacts.production, nameOnlySearch: artifacts.nameOnly,
+		nameOnlyFTS5Control: nameOnlyControl, fullDocumentLexical: artifacts.fullDocumentLexical,
 		indexMS: float64(elapsed.Milliseconds()),
 		nodes:   stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
 		filePaths: filePaths,
 	}, nil
+}
+
+func containsBaseline(baselines []Baseline, want Baseline) bool {
+	for _, b := range baselines {
+		if b == want {
+			return true
+		}
+	}
+	return false
+}
+
+type searchArtifacts struct {
+	production          *search.Service
+	nameOnly            *search.Service
+	fullDocumentLexical *fullDocumentLexical
 }
 
 // buildSearchService wires the search service with or without a configured
@@ -456,20 +539,29 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, log
 // report that exited 0; the orchestrator published exactly that and
 // only the `CandidateSHA` check caught the issue.
 func buildSearchService(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, error) {
+	artifacts, err := buildSearchArtifacts(ctx, root, store, metaDir, selector, false, false, log)
+	if err != nil {
+		return nil, err
+	}
+	return artifacts.production, nil
+}
+
+func buildSearchArtifacts(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, needNameOnly, needFullDocumentLexical bool, log io.Writer) (searchArtifacts, error) {
 	if strings.TrimSpace(selector) == "" {
 		// Omitted selector: intentional unavailable baselines; exit 0 is fine.
-		return search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store), nil
+		svc := search.New(store).WithSemantic(embed.NewDefaultRegistry(), nil, store)
+		return searchArtifacts{production: svc, nameOnly: svc}, nil
 	}
 	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
 	if err != nil || emb == nil {
-		return nil, fmt.Errorf("retrieval-eval: embedder %q unavailable: %v (SW-263 fail-closed: a non-empty -embedder that fails to construct is fatal; either omit -embedder to opt into intentional unavailable baselines, or fix the selector)",
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: embedder %q unavailable: %v (SW-263 fail-closed: a non-empty -embedder that fails to construct is fatal; either omit -embedder to opt into intentional unavailable baselines, or fix the selector)",
 			selector, err)
 	}
 	fmt.Fprintf(log, "retrieval-eval: embedder %q active; generating vectors\n", emb.ID())
 
 	reg := embed.NewRegistry()
 	if rerr := reg.Register(emb); rerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: embedder register: %v (SW-263 fail-closed)", rerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: embedder register: %v (SW-263 fail-closed)", rerr)
 	}
 	reg.Freeze()
 	index := embed.NewIndex()
@@ -477,11 +569,11 @@ func buildSearchService(ctx context.Context, root string, store graphstore.Graph
 	// exactly what the index produced (one embedding per indexed node).
 	nodes, nerr := store.Nodes(ctx, graphstore.Query{})
 	if nerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: nodes enumerate: %v (SW-263 fail-closed)", nerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: nodes enumerate: %v (SW-263 fail-closed)", nerr)
 	}
 	genStore, gerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
 	if gerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: generation store open: %v (SW-263 fail-closed)", gerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: generation store open: %v (SW-263 fail-closed)", gerr)
 	}
 	// SW-263 AC-12 (shipped-baseline fidelity): the document source MUST be
 	// the production file-backed one, not the metadata/path-only V2DocumentSource
@@ -494,12 +586,12 @@ func buildSearchService(ctx context.Context, root string, store graphstore.Graph
 	docs := embedsource.NewFileDocumentSource(ctx, root, emb)
 	graphGen, gerr := graphGenerationFromStore(ctx, store)
 	if gerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: read graph identity: %v (SW-263 fail-closed: a non-empty -embedder with no fingerprintable graph identity cannot produce a generation that reloads as Ready)", gerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: read graph identity: %v (SW-263 fail-closed: a non-empty -embedder with no fingerprintable graph identity cannot produce a generation that reloads as Ready)", gerr)
 	}
 	res, err := embed.GenerateAndPersist(ctx, reg, nodes, docs, index, genStore, graphGen)
 	_ = genStore.Close()
 	if err != nil {
-		return nil, fmt.Errorf("retrieval-eval: generate+persist: %v (SW-263 fail-closed)", err)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: generate+persist: %v (SW-263 fail-closed)", err)
 	}
 	fmt.Fprintf(log, "retrieval-eval: generation pass embedded=%d reused=%d excluded=%d failed=%d purged=%d (id=%s)\n",
 		res.Embedded, res.Reused, res.Excluded, res.Failed, res.Purged, res.EmbedderID)
@@ -508,7 +600,7 @@ func buildSearchService(ctx context.Context, root string, store graphstore.Graph
 	// production runtime's reload pattern in cmd/internal/runtime).
 	reloadStore, rerr := embed.OpenSQLiteGenerationStore(ctx, metaDir)
 	if rerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: generation store reopen: %v (SW-263 fail-closed)", rerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: generation store reopen: %v (SW-263 fail-closed)", rerr)
 	}
 	defer func() { _ = reloadStore.Close() }()
 	fp := embed.Fingerprint{
@@ -524,23 +616,106 @@ func buildSearchService(ctx context.Context, root string, store graphstore.Graph
 	}
 	gen, _, aerr := reloadStore.Active(ctx, fp, nil)
 	if aerr != nil || gen.ID == "" {
-		return nil, fmt.Errorf("retrieval-eval: active generation lookup: aerr=%v (SW-263 fail-closed)", aerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: active generation lookup: aerr=%v (SW-263 fail-closed)", aerr)
 	}
 	rows, lerr := reloadStore.Load(ctx, gen.ID)
 	if lerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: reload generation: %v (SW-263 fail-closed)", lerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: reload generation: %v (SW-263 fail-closed)", lerr)
 	}
 	vecs := make([]embed.Vector, len(rows))
 	for i, r := range rows {
 		vecs[i] = embed.Vector{NodeID: r.NodeID, DocumentID: r.DocumentID, Values: r.Vector}
 	}
 	if rerr := index.Rebuild(ctx, vecs); rerr != nil {
-		return nil, fmt.Errorf("retrieval-eval: index rebuild: %v (SW-263 fail-closed)", rerr)
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: index rebuild: %v (SW-263 fail-closed)", rerr)
 	}
 	svc := search.New(store).WithSemantic(reg, index, store).
 		WithSemanticState(search.SemanticState{State: embed.StateReady})
 	fmt.Fprintf(log, "retrieval-eval: semantic ready (model=%s, dim=%d, rows=%d)\n", emb.ID(), emb.Dim(), len(rows))
-	return svc, nil
+	artifacts := searchArtifacts{production: svc}
+
+	eligible := make(map[model.NodeId]embed.Row, len(rows))
+	for _, row := range rows {
+		eligible[row.NodeID] = row
+	}
+	if needNameOnly {
+		nameOnlyIndex := embed.NewIndex()
+		nameOnlySource := eligibleNameOnlyDocumentSource{eligible: eligible}
+		nameOnlyResult, err := embed.GenerateAndPersist(ctx, reg, nodes, nameOnlySource, nameOnlyIndex, nil, graphGen)
+		if err != nil {
+			return searchArtifacts{}, fmt.Errorf("retrieval-eval: generate name-only field-parity vectors: %v", err)
+		}
+		if nameOnlyResult.Embedded != len(rows) {
+			return searchArtifacts{}, fmt.Errorf("retrieval-eval: name-only field-parity index embedded %d rows, want the production v3 universe of %d", nameOnlyResult.Embedded, len(rows))
+		}
+		artifacts.nameOnly = search.New(store).WithSemantic(reg, nameOnlyIndex, store).
+			WithSemanticState(search.SemanticState{State: embed.StateReady})
+		fmt.Fprintf(log, "retrieval-eval: name-only semantic control ready (model=%s, rows=%d, universe=v3-eligible)\n", emb.ID(), nameOnlyResult.Embedded)
+	}
+	if needFullDocumentLexical {
+		docs, err := exactProductionDocuments(ctx, root, emb, nodes, eligible)
+		if err != nil {
+			return searchArtifacts{}, err
+		}
+		fts, err := newFullDocumentLexical(ctx, filepath.Join(metaDir, "field-parity-full-document-fts.db"), docs, nodes)
+		if err != nil {
+			return searchArtifacts{}, err
+		}
+		artifacts.fullDocumentLexical = fts
+		fmt.Fprintf(log, "retrieval-eval: evaluator-only full-document FTS5 control ready (schema=%s, rows=%d)\n", embed.DocumentSchema, len(docs))
+	}
+	return artifacts, nil
+}
+
+// eligibleNameOnlyDocumentSource restores the semantic_name_only cell after
+// production moved to v3 documents. It embeds NodeText for exactly the node IDs
+// admitted by the production v3 generation, keeping the semantic row's node universe
+// fixed while changing only document text.
+type eligibleNameOnlyDocumentSource struct {
+	eligible map[model.NodeId]embed.Row
+}
+
+func (s eligibleNameOnlyDocumentSource) Result(n model.Node) embed.DocumentResult {
+	if _, ok := s.eligible[n.ID()]; ok {
+		return embed.DocumentEmbedded
+	}
+	return embed.DocumentExcluded
+}
+
+func (s eligibleNameOnlyDocumentSource) Document(n model.Node) (embed.SemanticDocument, bool) {
+	if _, ok := s.eligible[n.ID()]; !ok {
+		return embed.SemanticDocument{}, false
+	}
+	return (embed.V1DocumentSource{}).Document(n)
+}
+
+// exactProductionDocuments rebuilds the v3 source bytes and checks their
+// persisted identity before the evaluator indexes them lexically. A source
+// drift therefore aborts the control rather than comparing BM25 over different
+// bytes from those the semantic cell embedded.
+func exactProductionDocuments(ctx context.Context, root string, emb embed.Embedder, nodes []model.Node, eligible map[model.NodeId]embed.Row) ([]embed.SemanticDocument, error) {
+	source := embedsource.NewFileDocumentSource(ctx, root, emb)
+	docs := make([]embed.SemanticDocument, 0, len(eligible))
+	seen := make(map[model.NodeId]bool, len(eligible))
+	for _, n := range nodes {
+		doc, ok := source.Document(n)
+		row, eligibleNode := eligible[n.ID()]
+		if ok != eligibleNode {
+			return nil, fmt.Errorf("retrieval-eval: v3 document universe drift for node %s: rebuilt=%t persisted=%t", n.ID(), ok, eligibleNode)
+		}
+		if !ok {
+			continue
+		}
+		if doc.DocumentID != row.DocumentID || doc.TextHash != row.TextHash {
+			return nil, fmt.Errorf("retrieval-eval: v3 document identity drift for node %s: rebuilt document_id/text_hash %s/%s, persisted %s/%s", n.ID(), doc.DocumentID, doc.TextHash, row.DocumentID, row.TextHash)
+		}
+		docs = append(docs, doc)
+		seen[n.ID()] = true
+	}
+	if len(seen) != len(eligible) {
+		return nil, fmt.Errorf("retrieval-eval: rebuilt %d production v3 documents, want %d persisted rows", len(seen), len(eligible))
+	}
+	return docs, nil
 }
 
 // graphGenerationFromStore mirrors cmd/internal/runtime.graphGenerationFromStore:
@@ -579,6 +754,8 @@ func graphGenerationFromStore(ctx context.Context, store graphstore.Graphstore) 
 type rawHit struct {
 	path, nodeID, kind, qn string
 	line                   int
+	bm25Score              float64
+	hasBM25Score           bool
 }
 
 // executor runs one query. unavailable is the typed reason when the baseline
@@ -727,10 +904,34 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 			}
 			out := make([]rawHit, 0, len(resp.Matches))
 			for _, m := range resp.Matches {
-				out = append(out, rawHit{path: m.SourcePath, line: m.Line, nodeID: m.NodeID, kind: m.Kind, qn: m.QualifiedName})
+				out = append(out, rawHit{path: m.SourcePath, line: m.Line, nodeID: m.NodeID, kind: m.Kind, qn: m.QualifiedName, bm25Score: m.Rank, hasBM25Score: true})
 			}
 			return out, "", nil
 		}, "engine/search.Service.Search (sqlite fts5 bm25)"), nil
+	case BaselineFTS5ORControl:
+		if idx.nameOnlyFTS5Control == nil {
+			return baselineExecutor{}, fmt.Errorf("retrieval: evaluator-only name-only FTS5 OR control is not configured")
+		}
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			hits, err := idx.nameOnlyFTS5Control.search(ctx, q.Text, TopK)
+			return hits, "", err
+		}, "internal/eval/retrieval (evaluator-only production-table fts5_or_control; sole delta is explicit OR between quoted prefix terms; not a reference)"), nil
+	case BaselineLexicalFullDocument:
+		if idx.fullDocumentLexical == nil {
+			return fixedExecutor(unavailableExecutor("the evaluator-only full-document FTS5 control requires a configured embedder so it can index the exact model-admitted v3 bytes"), "internal/eval/retrieval (evaluator-only full-v3-document sqlite fts5 bm25)"), nil
+		}
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			hits, err := idx.fullDocumentLexical.search(ctx, q.Text, TopK, ftsAllTermsPrefix)
+			return hits, "", err
+		}, "internal/eval/retrieval (evaluator-only sqlite fts5 bm25 over exact admitted SemanticDocument v3 Text)"), nil
+	case BaselineFTS5ORControlFullDocument:
+		if idx.fullDocumentLexical == nil {
+			return fixedExecutor(unavailableExecutor("the evaluator-only full-document FTS5 OR control requires a configured embedder so it can index the exact model-admitted v3 bytes"), "internal/eval/retrieval (evaluator-only full-v3-document fts5_or_control)"), nil
+		}
+		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
+			hits, err := idx.fullDocumentLexical.search(ctx, q.Text, TopK, ftsExplicitOR)
+			return hits, "", err
+		}, "internal/eval/retrieval (evaluator-only full-v3-document fts5_or_control; sole delta is explicit OR between quoted prefix terms; not a reference)"), nil
 	case BaselineHybridV1:
 		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
 			res, err := hybridsearch.Search(ctx, hybridsearch.Params{Query: q.Text, MaxItems: TopK, Deps: deps})
@@ -762,8 +963,12 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 			return out, "", nil
 		}, hybridsearch.MethodVersion+" (engine/agenttools/hybridsearch, weights "+hybridsearch.WeightsHash()+")"), nil
 	case BaselineSemanticNameOnly:
+		nameOnly := idx.nameOnlySearch
+		if nameOnly == nil {
+			nameOnly = idx.search
+		}
 		return fixedExecutor(func(ctx context.Context, q Query) ([]rawHit, string, error) {
-			resp, err := idx.search.SemanticSearch(ctx, q.Text, TopK)
+			resp, err := nameOnly.SemanticSearch(ctx, q.Text, TopK)
 			if err != nil {
 				return nil, "", err
 			}
@@ -782,7 +987,7 @@ func executorFor(b Baseline, deps resolve.Deps, idx *index, ds *Dataset, minGrad
 				out = append(out, rawHit{path: h.SourcePath, line: h.Line, nodeID: h.NodeID, kind: h.Kind, qn: h.QualifiedName})
 			}
 			return out, "", nil
-		}, "engine/search.Service.SemanticSearch (name-only documents)"), nil
+		}, "engine/search.Service.SemanticSearch (v1 NodeText over production-v3-eligible node universe)"), nil
 	case BaselineChunkOnly:
 		// Wire a non-nil GraphReader over the store so semantic-only rows
 		// in any ModeAuto baseline receive the bounded degree signal
@@ -908,7 +1113,12 @@ func runBaseline(ctx context.Context, b Baseline, exec baselineExecutor, ds *Dat
 			if err != nil {
 				return res, hitSet, latSet, fmt.Errorf("retrieval: baseline %s query %s hit %d: %w", b, q.ID, i+1, err)
 			}
-			scored = append(scored, Hit{Rank: i + 1, Path: h.path, Line: h.line, NodeID: h.nodeID, Kind: h.kind, QualifiedName: h.qn, Tokens: n})
+			var bm25Score *float64
+			if h.hasBM25Score {
+				v := h.bm25Score
+				bm25Score = &v
+			}
+			scored = append(scored, Hit{Rank: i + 1, Path: h.path, Line: h.line, NodeID: h.nodeID, Kind: h.kind, QualifiedName: h.qn, Tokens: n, BM25Score: bm25Score})
 		}
 		published := make([]Hit, 0, len(scored))
 		for _, h := range scored {

@@ -20,11 +20,24 @@ Seven baselines, executed by name and in this order:
 |---|---|---|
 | `lexical` | `engine/search.Service.Search` | the store's FTS5 bm25 ranking over qualified names (SQLite, the shipped backend) |
 | `hybrid_v1` | `engine/agenttools/hybridsearch.Search` (`search_hybrid/1`) | lexical retrieval + identifier/path/degree signals, no vectors; the weights hash is stamped in `method` |
-| `semantic_name_only` | `engine/search.Service.SemanticSearch` | over the v1 name-only documents; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
+| `semantic_name_only` | `engine/search.Service.SemanticSearch` | v1 `NodeText` over exactly the production-v3-eligible node IDs; on the default build (no embedder) it is reported `unavailable` with the engine's typed reason — never zeros |
 | `chunk_only` | `engine/retrieval.Retrieve` (`ModeLexicalOnly`) | the SW-263 lexical-only pipeline; no semantic candidates consulted |
 | `fusion` | `engine/retrieval.Retrieve` (`ModeFusionNoGraph`) | the SW-263 fused pipeline; integer RRF over lexical + semantic, no graph rerank |
-| `fusion+graph` | `engine/retrieval.Retrieve` (`ModeAuto`) | the SW-263 fused pipeline with the bounded graph rerank on top |
+| `semantic_first` | `engine/retrieval.Retrieve` (`ModeAuto`) | the shipped semantic-first pipeline: semantic prefix with lexical backfill |
 | `oracle_upper_bound` | the judged spans themselves, grade ≥ 1 ranked by grade | the ceiling the scorer can reach; proves the metric code, not a retriever |
+
+Four evaluator-only baselines are selectable by explicit name and are absent from
+`AllBaselines`: `fusion+graph`, the historical bounded graph-rerank experiment;
+`lexical_full_document`, SQLite FTS5/BM25 over the exact admitted `SemanticDocument` v3
+`Text` bytes; and the SW-272 operator controls `fts5_or_control` and
+`fts5_or_control_full_document`. Each OR control uses the corresponding FTS5 table,
+tokenizer, document bytes, SQLite driver, and parameterless `bm25()` call; its sole delta is
+explicit `OR` between the same quoted prefix terms used by the all-terms query. These are
+controls, not reference implementations and not CoIR-compatible references. They live only in
+`internal/eval/retrieval`; production's graphstore continues to index qualified names, so the
+SW-272 control changes no shipped database or default report bytes. When a configured embedder
+is present, the runner also constructs a separate `semantic_name_only` index; this prevents the
+name-only label from accidentally querying the production v3 vector index after the v3 migration.
 
 Per baseline, per query: the top-10 hits, then **Top-1, Recall@5, Recall@10, MRR@10, NDCG@10,
 first-relevant-rank, and Recall under 600 / 1200 / 2000 context tokens**. Per baseline: index time,
@@ -117,7 +130,7 @@ the range. A stale judgement fails `go test ./internal/eval/retrieval`. The PR p
 ## Running
 
 ```bash
-# Hermetic PR-time run (the fixture repo, all four baselines, determinism, aggregate round-trip)
+# Hermetic PR-time run (the fixture repo, all seven default baselines, determinism, aggregate round-trip)
 go test ./internal/eval/retrieval
 
 # Dispatch: one pinned repo, one dataset, report + raw samples
@@ -134,6 +147,16 @@ go run ./cmd/retrieval-eval -aggregate docs/eval/retrieval/runs/<date>-<runner-c
 go run ./cmd/retrieval-eval -manifest corpus/manifest.json -repo grpc-go \
   -dataset internal/eval/retrieval/testdata/datasets/grpc-go-perf-v1.json \
   -out retrieval-grpc-go.json -export-raw <dir>
+
+# SW-272 field-parity diagnostic: fixed 2x3 cells, exact grade-3 scoring, and every/only
+# dev nl_behaviour query. -field-parity cannot be combined with -baseline or select holdout.
+GRAPHI_STATIC_MODEL_DIR=<pinned-model-dir> CGO_ENABLED=0 \
+go run ./cmd/retrieval-eval -field-parity -manifest corpus/manifest.json -repo cobra \
+  -checkout <pinned-cobra-checkout> \
+  -dataset internal/eval/retrieval/testdata/datasets/cobra-v1.json \
+  -embedder static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b \
+  -out /tmp/sw272-field-parity-report.json \
+  -export-raw docs/eval/retrieval/runs/<date>-sw272-field-parity
 
 # Regenerate the frozen files (only from reports checked in beside them; immutable until SW-266)
 go run ./cmd/retrieval-eval -derive -targets-report <cobra-report.json> \
@@ -192,7 +215,8 @@ only this check refuses it.
 `evidence_class`, counts, sorted `query_ids`) must equal the same citation rebuilt from
 `dataset.json` — whose sha256 is recomputed from its bytes, never read from `run.json` — and the
 baseline universe on every side (report results, performance blocks, raw hits series, raw latency
-series listed in `run.json`) must equal the harness constant of four baselines. A query removed
+series listed in `run.json`) must equal the harness's exact default, legacy, or field-parity
+closed-world baseline set. A query removed
 coherently from the dataset copy, the report and every raw series is therefore caught by the
 citation the report still carries; a tamperer who also rewrites that citation has produced a
 different report, and the `derived_from.sha256` in the targets/budgets files no longer matches it —
@@ -250,9 +274,8 @@ per-stratum numbers.
 
 ## What this harness does not do
 
-- It does not wire an opt-in embedder: `semantic_name_only` runs through the real
-  `SemanticSearch` seam with the default (empty, frozen) registry, so on every build to date it is
-  `unavailable`. SW-262 supplies the embedder; the baseline will then measure name-only documents
-  without a harness change.
+- It does not enable an embedder by default. With no `-embedder`, every semantic baseline remains
+  explicitly `unavailable`; an opt-in run builds production v3 vectors and, when selected, the
+  separate name-only control vectors.
 - It does not tune anything. The holdout split exists so that later stories cannot.
 - It does not compute the `grep+read` token baseline (SW-266).

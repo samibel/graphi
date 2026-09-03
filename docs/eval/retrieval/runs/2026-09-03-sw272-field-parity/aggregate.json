@@ -1,0 +1,1405 @@
+{
+  "format_version": 2,
+  "harness_version": "retrieval-eval/2",
+  "scorer_version": "retrieval-aggregate/1",
+  "repo": "cobra",
+  "runner_class": "static-local",
+  "environment": {
+    "generated_at": "2026-09-03T07:20:24Z",
+    "os": "darwin",
+    "arch": "arm64",
+    "go_version": "go1.26.6",
+    "cpu_count": 12,
+    "notes": "peak_rss_mb is the process-lifetime getrusage MAXRSS sampled after the baseline ran, so it is monotone across baselines within one run; index_ms is the one cold IngestAll shared by every indexed baseline"
+  },
+  "environment_complete": true,
+  "metrics": [
+    {
+      "baseline": "run",
+      "metric": "dataset",
+      "published": "cobra-v1-dev-nl-behaviour-field-parity sha256=871f9a51244c31c378334e39957082cfa67bd2794a3d7d11349fedb27c23fb1e evidence=\"agent-annotated, human-reviewed\" queries=6 dev=6 holdout=0 ids=cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cobra-v1-dev-nl-behaviour-field-parity sha256=871f9a51244c31c378334e39957082cfa67bd2794a3d7d11349fedb27c23fb1e evidence=\"agent-annotated, human-reviewed\" queries=6 dev=6 holdout=0 ids=cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "baseline_set",
+      "published": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "recomputed": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "performance_set",
+      "published": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "recomputed": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "raw.hits.series_set",
+      "published": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "recomputed": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "run",
+      "metric": "raw.latency.series_set",
+      "published": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "recomputed": "fts5_or_control,fts5_or_control_full_document,lexical,lexical_full_document,semantic_first,semantic_name_only",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-11.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-12.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-13.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-14.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-15.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-16.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_p50_us",
+      "published": "233us",
+      "recomputed": "233us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "query_p95_us",
+      "published": "392us",
+      "recomputed": "392us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-15.hits",
+      "published": "8 hit(s)",
+      "recomputed": "8 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-16.hits",
+      "published": "8 hit(s)",
+      "recomputed": "8 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.16666666666666666 first_relevant_rank_mean=2 mrr@10=0.08333333333333333 ndcg@10=0.10515495892857624 recall@10=0.16666666666666666 recall@1200tok=0.16666666666666666 recall@2000tok=0.16666666666666666 recall@5=0.16666666666666666 recall@600tok=0.16666666666666666 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query_p50_us",
+      "published": "899us",
+      "recomputed": "899us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "query_p95_us",
+      "published": "2345us",
+      "recomputed": "2345us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.25 ndcg=0.43067655807339306",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.25 ndcg=0.43067655807339306",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-16.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=1 mrr=0.16666666666666666 ndcg=0.3562071871080222",
+      "recomputed": "top1=0 r5=0 r10=1 mrr=0.16666666666666666 ndcg=0.3562071871080222",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=2.8 mrr@10=0.4861111111111111 ndcg@10=0.5696355831254788 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.6666666666666666 recall@600tok=0.6666666666666666 top1=0.3333333333333333",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_p50_us",
+      "published": "651us",
+      "recomputed": "651us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "query_p95_us",
+      "published": "723us",
+      "recomputed": "723us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_name_only",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-11.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-12.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-13.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-14.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-15.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-16.hits",
+      "published": "0 hit(s)",
+      "recomputed": "0 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0 mrr@10=0 ndcg@10=0 recall@10=0 recall@1200tok=0 recall@2000tok=0 recall@5=0 recall@600tok=0 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query_p50_us",
+      "published": "272us",
+      "recomputed": "272us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "query_p95_us",
+      "published": "781us",
+      "recomputed": "781us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "lexical_full_document",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.2 ndcg=0.38685280723454163",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.2 ndcg=0.38685280723454163",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.25 ndcg=0.43067655807339306",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.25 ndcg=0.43067655807339306",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.3868528072345416",
+      "recomputed": "top1=0 r5=0.5 r10=0.5 mrr=0.5 ndcg=0.3868528072345416",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-16.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.3333333333333333 ndcg=0.5",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.3333333333333333 ndcg=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=1 first_relevant_rank_mean=3 mrr@10=0.38055555555555554 ndcg@10=0.4943736132808985 recall@10=0.9166666666666666 recall@1200tok=0.9166666666666666 recall@2000tok=0.9166666666666666 recall@5=0.9166666666666666 recall@600tok=0.75 top1=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query_p50_us",
+      "published": "3230us",
+      "recomputed": "3230us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "query_p95_us",
+      "published": "12411us",
+      "recomputed": "12411us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "fts5_or_control_full_document",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "status",
+      "published": "ok",
+      "recomputed": "ok",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "raw.hits.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "raw.latency.query_set",
+      "published": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "recomputed": "cb-11,cb-12,cb-13,cb-14,cb-15,cb-16",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-11.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-11.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-12.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-12.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-13.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-13.metrics",
+      "published": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "recomputed": "top1=0 r5=1 r10=1 mrr=0.5 ndcg=0.6309297535714574",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-14.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-14.metrics",
+      "published": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "recomputed": "top1=0 r5=0 r10=0 mrr=0 ndcg=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-15.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-15.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-16.hits",
+      "published": "10 hit(s)",
+      "recomputed": "10 hit(s)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query.cb-16.metrics",
+      "published": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "recomputed": "top1=1 r5=1 r10=1 mrr=1 ndcg=1",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "overall",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.exact_identifier",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.exact_path",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.nl_behaviour",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.architecture_flow",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.config_docs",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.ambiguous",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "strata.no_hit",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "splits.dev",
+      "published": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "recomputed": "measured queries=6 scored=6 first_relevant_found=0.8333333333333334 first_relevant_rank_mean=1.4 mrr@10=0.6666666666666666 ndcg@10=0.7103099178571525 recall@10=0.8333333333333334 recall@1200tok=0.8333333333333334 recall@2000tok=0.8333333333333334 recall@5=0.8333333333333334 recall@600tok=0.8333333333333334 top1=0.5",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "splits.holdout",
+      "published": "UNKNOWN queries=0 scored=0",
+      "recomputed": "UNKNOWN queries=0 scored=0",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "index_ms",
+      "published": "242ms",
+      "recomputed": "242ms",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query_p50_us",
+      "published": "3868us",
+      "recomputed": "3868us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "query_p95_us",
+      "published": "5825us",
+      "recomputed": "5825us",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "peak_rss_mb",
+      "published": "432.015625MB",
+      "recomputed": "432.015625MB",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "vector_sidecar_bytes",
+      "published": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "recomputed": "not_applicable (no vector sidecar: this baseline ranks without vectors)",
+      "status": "reproduced"
+    },
+    {
+      "baseline": "semantic_first",
+      "metric": "latency_samples",
+      "published": "18",
+      "recomputed": "18",
+      "status": "reproduced"
+    }
+  ],
+  "metrics_checked": 197,
+  "metrics_reproduced": 197,
+  "metrics_discrepant": 0,
+  "metrics_unknown": 0,
+  "complete": true,
+  "publishable": true,
+  "status": "PASS",
+  "method": "Closed world first: report.reproducible.dataset (id, sha256, evidence class, query counts, sorted query ids) is compared EXACTLY with the same citation rebuilt from dataset.json, whose sha256 is recomputed from its bytes (never copied from run.json); the baseline universe is the harness constant (lexical, hybrid_v1, semantic_name_only, chunk_only, fusion, semantic_first, oracle_upper_bound — seven baselines), the exact legacy seven-baseline universe with fusion+graph in semantic_first's slot, or the evaluator-only SW-272 field-parity universe (lexical, fts5_or_control, semantic_name_only, lexical_full_document, fts5_or_control_full_document, semantic_first); lexical_full_document selects only that diagnostic universe. The report's baseline list, its performance blocks, and the raw hits and raw latency series the run index lists must each equal it exactly. So a query removed coherently from dataset.json, the report and every raw series is caught by the dataset citation the report still carries; a tamperer who also rewrites that citation has produced a different report, and the sha256 that docs/eval/retrieval-targets.json and -budgets.json record in derived_from no longer matches it - that provenance layer, not this aggregate, is what binds a checked-in artifact to the report it came from. For every published baseline the query-id set is compared for EXACT equality with dataset.json and, per raw series, with raw/hits-\u003cbaseline\u003e.json and raw/latency-\u003cbaseline\u003e.json: an omitted or extra query on any side is a discrepancy. Every per-query metric in report.reproducible is recomputed from the raw hits and dataset.json through the same Evaluate the run used; every aggregate through the same Aggregate over the RAW hit set in dataset order (not over the report's query list); every performance block through the same PerformanceFromRaw (nearest-rank PercentileInt64 over the timed executions; index_ms, peak_rss_mb and vector_sidecar_bytes from the record's own measures), each compared EXACTLY, status and reason included. The hit lists in the report are compared to the raw hit lists as well, so a report cannot be scored against samples it did not publish. A baseline may read `unavailable` only when BOTH its raw records say collected: false; then the report's reason, the hit record's reason and the latency record's reason must agree, both records must carry zero samples and an empty query set, and the report's empty query list, UNKNOWN aggregates and UNKNOWN measures are all checked against that; a collected record makes any other status a discrepancy. The environment block is checked for presence only. A metric whose raw samples are absent reads UNKNOWN and is never counted as reproduced."
+}

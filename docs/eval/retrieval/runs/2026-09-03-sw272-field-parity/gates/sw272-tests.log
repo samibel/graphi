@@ -1,0 +1,7 @@
+$ export GOFLAGS=-buildvcs=false
+$ export GOCACHE=/tmp/graphi-sw272-go-cache
+$ CGO_ENABLED=0 go test ./internal/eval/retrieval ./cmd/retrieval-eval ./engine/embed ./engine/embed/static -count=1
+ok  	github.com/samibel/graphi/internal/eval/retrieval	8.764s
+ok  	github.com/samibel/graphi/cmd/retrieval-eval	5.641s
+ok  	github.com/samibel/graphi/engine/embed	3.748s
+ok  	github.com/samibel/graphi/engine/embed/static	5.933s

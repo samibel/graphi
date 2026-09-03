@@ -84,7 +84,7 @@ func performance(t *testing.T, r *Report, name Baseline) BaselinePerformance {
 	return BaselinePerformance{}
 }
 
-// AC-3, AC-4, AC-6, AC-10: the four baselines over the hermetic fixture.
+// AC-3, AC-4, AC-6, AC-10: the seven default baselines over the hermetic fixture.
 func TestRun_FixtureRepoAllBaselines(t *testing.T) {
 	res := runFixture(t)
 	r := res.Report
@@ -417,9 +417,25 @@ func TestRun_FailsClosed(t *testing.T) {
 		if slices.Contains(bs, BaselineFusionGraph) {
 			t.Errorf("ParseBaselines(nil) = %v, fusion+graph must be opt-in evaluator-only", bs)
 		}
+		wantDefault := []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly, BaselineOracle, BaselineChunkOnly, BaselineFusion, BaselineSemanticFirst}
+		if !reflect.DeepEqual(bs, wantDefault) {
+			t.Errorf("ParseBaselines(nil) = %v, want unchanged default report set %v", bs, wantDefault)
+		}
+		if slices.Contains(bs, BaselineLexicalFullDocument) {
+			t.Errorf("ParseBaselines(nil) = %v, lexical_full_document must be opt-in evaluator-only", bs)
+		}
+		for _, control := range []Baseline{BaselineFTS5ORControl, BaselineFTS5ORControlFullDocument} {
+			if slices.Contains(bs, control) {
+				t.Errorf("ParseBaselines(nil) = %v, %s must be opt-in evaluator-only", bs, control)
+			}
+		}
 		bsFG, err := ParseBaselines([]string{"fusion+graph"})
 		if err != nil || len(bsFG) != 1 || bsFG[0] != BaselineFusionGraph {
 			t.Errorf("ParseBaselines([fusion+graph]) = %v, %v", bsFG, err)
+		}
+		bsFull, err := ParseBaselines([]string{"lexical_full_document"})
+		if err != nil || len(bsFull) != 1 || bsFull[0] != BaselineLexicalFullDocument {
+			t.Errorf("ParseBaselines([lexical_full_document]) = %v, %v", bsFull, err)
 		}
 	})
 	t.Run("a missing repository root is an error", func(t *testing.T) {
@@ -433,6 +449,131 @@ func TestRun_FailsClosed(t *testing.T) {
 			t.Errorf("baselines = %+v", res.Report.Reproducible.Baselines)
 		}
 	})
+}
+
+func TestRun_FullDocumentLexicalIsEvaluatorOnlyAndUsesV3Text(t *testing.T) {
+	ds, err := LoadDataset(fixtureDataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	derived := *ds
+	dataset := *ds.Dataset
+	query := dataset.Queries[0]
+	query.ID = "fx-field-parity"
+	query.Stratum = StratumNLBehaviour
+	query.Text = "single trust decision"
+	dataset.ID = "fixture-field-parity"
+	dataset.Queries = []Query{query}
+	derived.Dataset = &dataset
+
+	res, err := Run(context.Background(), Options{
+		RepoRoot: fixtureRepo, RepoName: "fixture", Dataset: &derived,
+		Baselines:   []Baseline{BaselineLexical, BaselineLexicalFullDocument},
+		RunnerClass: "test", CandidateSHA: "test-sha", EmbedderSelector: "mock",
+		Repeats: 1, WorkDir: t.TempDir(), Now: fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	lexical := baseline(t, res.Report, BaselineLexical)
+	if len(lexical.Queries) != 1 || len(lexical.Queries[0].Hits) != 0 {
+		t.Fatalf("name-only lexical unexpectedly matched body phrase: %+v", lexical.Queries)
+	}
+	full := baseline(t, res.Report, BaselineLexicalFullDocument)
+	if full.Status != BaselineStatusOK || len(full.Queries) != 1 || len(full.Queries[0].Hits) == 0 {
+		t.Fatalf("full-document lexical = %+v", full)
+	}
+	if got := full.Queries[0].Hits[0].QualifiedName; got != "auth.ValidateToken" {
+		t.Errorf("full-document lexical top hit = %q, want auth.ValidateToken", got)
+	}
+	if !strings.Contains(full.Method, "evaluator-only") || !strings.Contains(full.Method, "SemanticDocument v3 Text") {
+		t.Errorf("method = %q, want evaluator-only exact-v3 provenance", full.Method)
+	}
+}
+
+func TestRun_FTS5ORControlConformance(t *testing.T) {
+	ds, err := LoadDataset(fixtureDataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	derived := *ds
+	dataset := *ds.Dataset
+	base := dataset.Queries[0]
+	base.Stratum = StratumNLBehaviour
+	queries := make([]Query, 0, 3)
+	for _, tc := range []struct {
+		id, text string
+	}{
+		{id: "single-term", text: "ValidateToken"},
+		{id: "name-proper-subset", text: "ValidateToken term-that-does-not-exist"},
+		{id: "full-document-proper-subset", text: "single term-that-does-not-exist"},
+	} {
+		q := base
+		q.ID, q.Text = tc.id, tc.text
+		queries = append(queries, q)
+	}
+	dataset.ID = "fixture-fts5-or-control"
+	dataset.Queries = queries
+	derived.Dataset = &dataset
+
+	res, err := Run(context.Background(), Options{
+		RepoRoot: fixtureRepo, RepoName: "fixture", Dataset: &derived,
+		Baselines: []Baseline{
+			BaselineLexical, BaselineFTS5ORControl,
+			BaselineLexicalFullDocument, BaselineFTS5ORControlFullDocument,
+		},
+		RunnerClass: "test", CandidateSHA: "test-sha", EmbedderSelector: "mock",
+		Repeats: 1, WorkDir: t.TempDir(), Now: fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	raw := func(b Baseline, id string) []Hit {
+		t.Helper()
+		for _, q := range res.Raw.Hits[b].Queries {
+			if q.ID == id {
+				return q.Hits
+			}
+		}
+		t.Fatalf("baseline %s has no raw query %s", b, id)
+		return nil
+	}
+	for _, pair := range [][2]Baseline{
+		{BaselineLexical, BaselineFTS5ORControl},
+		{BaselineLexicalFullDocument, BaselineFTS5ORControlFullDocument},
+	} {
+		pair := pair
+		t.Run("single_term_identical_"+string(pair[1]), func(t *testing.T) {
+			andHits, orHits := raw(pair[0], "single-term"), raw(pair[1], "single-term")
+			if !reflect.DeepEqual(andHits, orHits) {
+				t.Errorf("single-term %s/%s rankings differ:\nAND=%+v\nOR=%+v", pair[0], pair[1], andHits, orHits)
+			}
+			for _, hit := range orHits {
+				if hit.BM25Score == nil {
+					t.Errorf("%s single-term hit has no raw BM25 score: %+v", pair[1], hit)
+				}
+			}
+		})
+	}
+	for _, tc := range []struct {
+		id      string
+		andCell Baseline
+		orCell  Baseline
+	}{
+		{id: "name-proper-subset", andCell: BaselineLexical, orCell: BaselineFTS5ORControl},
+		{id: "full-document-proper-subset", andCell: BaselineLexicalFullDocument, orCell: BaselineFTS5ORControlFullDocument},
+	} {
+		tc := tc
+		t.Run("multi_term_OR_admits_"+tc.id, func(t *testing.T) {
+			if got := raw(tc.andCell, tc.id); len(got) != 0 {
+				t.Errorf("%s AND ranking = %+v, want empty because no document has every term", tc.id, got)
+			}
+			if got := raw(tc.orCell, tc.id); len(got) == 0 {
+				t.Errorf("%s OR ranking is empty; want a document containing a proper subset", tc.id)
+			}
+		})
+	}
 }
 
 // TestBuildSearchService_ProductionDocumentSourceFidelity is the SW-263 AC-12
@@ -592,7 +733,7 @@ func TestBuildSearchService_ProductionDocumentSourceFidelity(t *testing.T) {
 	}
 
 	if idDrift > 0 || hashDrift > 0 || missing > 0 || extra > 0 {
-		t.Fatalf("SW-263 AC-12 byte-identity guard FAILED: %d DocumentID drifts, %d TextHash drifts, %d expected-but-missing, %d extra rows. The eval harness is NOT embedding the same SemanticDocument v2 bytes as production — every AC-9 figure in this story is suspect until this is fixed.",
+		t.Fatalf("SW-263 AC-12 byte-identity guard FAILED: %d DocumentID drifts, %d TextHash drifts, %d expected-but-missing, %d extra rows. The eval harness is NOT embedding the same production SemanticDocument bytes — every AC-9 figure in this story is suspect until this is fixed.",
 			idDrift, hashDrift, missing, extra)
 	}
 	// Schema drift would already have flipped DocumentID or TextHash because

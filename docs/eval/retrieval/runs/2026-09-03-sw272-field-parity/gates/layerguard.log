@@ -1,0 +1,5 @@
+$ export GOFLAGS=-buildvcs=false
+$ export GOCACHE=/tmp/graphi-sw272-go-cache
+$ go run ./cmd/layerguard
+layer-direction check PASS — verified allowed edges: [cmd→cmd, cmd→core, cmd→engine, cmd→surfaces, core→core, engine→core, engine→engine, surfaces→core, surfaces→engine, surfaces→surfaces]
+exit 0

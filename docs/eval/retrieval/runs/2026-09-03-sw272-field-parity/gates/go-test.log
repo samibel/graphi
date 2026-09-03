@@ -1,0 +1,26 @@
+$ export GOFLAGS=-buildvcs=false
+$ export GOCACHE=/tmp/graphi-sw272-go-cache
+$ CGO_ENABLED=0 go test ./... -count=1
+
+EXIT 1 — this managed sandbox refuses TCP and Unix-socket binds. Representative verbatim failures:
+
+--- FAIL: TestSetupZeroConfig_RepoServesLoopbackAndIndexes (0.02s)
+    zeroconfig_test.go:83: setupZeroConfig: listen tcp 127.0.0.1:0: bind: operation not permitted
+--- FAIL: TestOllama_EmbedUsesApiEmbedWithTruncateFalse (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+--- FAIL: TestControl_DaemonStopOverSocket (0.00s)
+    control_test.go:143: Start: daemon: listen /var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/g2055512441.sock/s: listen unix /var/folders/5p/jp7t5j6d7fz6cykfsmfkh0rm0000gn/T/g2055512441.sock/s: bind: operation not permitted
+
+Nested release/bench tests explicitly request VCS stamping or clear GOFLAGS, exposing the linked-worktree failure despite the outer workaround:
+
+error obtaining VCS status: exit status 128
+	Use -buildvcs=false to disable VCS stamping.
+--- FAIL: TestBuild_DefaultIsSubsetTagged_NotAll206 (153.88s)
+    build_test.go:125: default (subset-tagged) Build: exit status 1
+
+The resource-contended run also produced extension-host timeouts and one latency UNKNOWN. The complete terminal output ended with:
+
+FAIL	github.com/samibel/graphi/surfaces/mcp	3.400s
+FAIL
+
+This is not recorded as a passing gate. It must be rerun in an ordinary checkout/environment that permits local sockets.

@@ -21,7 +21,7 @@ import (
 // shape pass a gate written for the stronger one.
 //
 // HarnessVersion moved from `/1` to `/2` with the SW-263 repair pass:
-// the harness now exercises the production SemanticDocument v2
+// the harness now exercises the production SemanticDocument source
 // document source (not the name-only v1) and the production document
 // source the embedding space was built from, the retrieval module's
 // hierarchical (document_id, node_id) dedupe key is in scope, the
@@ -93,6 +93,11 @@ type Reproducible struct {
 	// and document builder `graphi index --semantic` uses (engine/embed);
 	// omitted only by a report written before the field existed.
 	SpanMethodShare map[string]float64 `json:"span_method_share,omitempty"`
+
+	// FieldParity is present only for the evaluator-only SW-272 2x3
+	// operator-control run. It records the lexical inputs and executable
+	// statements needed to audit that explicit OR was the sole delta.
+	FieldParity *FieldParityProvenance `json:"field_parity,omitempty"`
 
 	Baselines []BaselineResult `json:"baselines"`
 }

@@ -1,0 +1,4 @@
+$ export GOFLAGS=-buildvcs=false
+$ gofmt -l .
+[no output]
+exit 0
