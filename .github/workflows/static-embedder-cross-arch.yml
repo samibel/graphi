@@ -1,0 +1,130 @@
+# SW-271: execute the pure-Go static embedder natively on two GOARCH values.
+#
+# Artifact flow is intentionally single-producer. The prepare job performs the
+# only HuggingFace fetch, through cmd/graphi/staticfetch, verifies all four pins,
+# and uploads that one directory. Both architecture jobs consume the same
+# workflow artifact; neither has a download fallback or a skip path.
+name: static-embedder-cross-arch
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CGO_ENABLED: "0"
+
+jobs:
+  prepare-model:
+    name: prepare one verified static-model artifact
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Dependency acquisition is separate from the model fetch. Within the Go
+      # program, only cmd/graphi/staticfetch has network authority for the model.
+      - name: download Go modules
+        run: go mod download
+
+      - name: fetch pinned model once through the staticfetch boundary
+        run: |
+          selector="$(go run ./cmd/static-embedder-archcheck selector)"
+          go run ./cmd/graphi setup-embedder "$selector" --cache-dir "$RUNNER_TEMP/static-model"
+          go run ./cmd/static-embedder-archcheck verify -model-dir "$RUNNER_TEMP/static-model"
+
+      - name: hand off the one verified model directory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: static-model-${{ github.run_id }}
+          path: ${{ runner.temp }}/static-model/
+          if-no-files-found: error
+          retention-days: 1
+
+  record-vectors:
+    name: record vectors (${{ matrix.label }})
+    needs: prepare-model
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux/amd64
+            runner: ubuntu-24.04
+            goarch: amd64
+          - label: linux/arm64
+            runner: ubuntu-24.04-arm
+            goarch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: receive the shared pinned artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: static-model-${{ github.run_id }}
+          path: ${{ runner.temp }}/static-model
+
+      - name: assert native architecture and CGo-free build
+        run: |
+          test "$(go env GOARCH)" = "${{ matrix.goarch }}"
+          test "$(go env CGO_ENABLED)" = "0"
+          go run ./cmd/static-embedder-archcheck verify -model-dir "$RUNNER_TEMP/static-model"
+          go build -o "$RUNNER_TEMP/static-embedder-archcheck" ./cmd/static-embedder-archcheck
+
+      # No condition and no skip: absent or invalid artifact bytes make this
+      # command non-zero before a vector record can be uploaded.
+      - name: execute static embedder
+        run: |
+          "$RUNNER_TEMP/static-embedder-archcheck" record \
+            -model-dir "$RUNNER_TEMP/static-model" \
+            -inputs docs/eval/static-embedder-cross-arch/2026-09-03-sw271/inputs.json \
+            -out "$RUNNER_TEMP/vectors-${{ matrix.goarch }}.json"
+
+      - name: upload exact vector bits
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: static-vectors-${{ matrix.goarch }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/vectors-${{ matrix.goarch }}.json
+          if-no-files-found: error
+          retention-days: 7
+
+  compare-vectors:
+    name: compare static vectors byte-for-byte
+    needs: record-vectors
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: static-vectors-amd64-${{ github.run_id }}
+          path: ${{ runner.temp }}/amd64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: static-vectors-arm64-${{ github.run_id }}
+          path: ${{ runner.temp }}/arm64
+
+      - name: compare architectures and checked-in evidence
+        run: |
+          go build -o "$RUNNER_TEMP/static-embedder-archcheck" ./cmd/static-embedder-archcheck
+          "$RUNNER_TEMP/static-embedder-archcheck" compare \
+            -left "$RUNNER_TEMP/amd64/vectors-amd64.json" \
+            -right "$RUNNER_TEMP/arm64/vectors-arm64.json" | tee "$RUNNER_TEMP/comparison.txt"
+          "$RUNNER_TEMP/static-embedder-archcheck" compare \
+            -left "$RUNNER_TEMP/amd64/vectors-amd64.json" \
+            -right docs/eval/static-embedder-cross-arch/2026-09-03-sw271/vectors.json
+          cat "$RUNNER_TEMP/comparison.txt" >> "$GITHUB_STEP_SUMMARY"

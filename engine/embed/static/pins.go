@@ -31,9 +31,25 @@ const PinnedModel = "potion-code-16M-v2"
 
 // PinnedRevision is the HuggingFace commit SHA-1 `graphi setup-embedder`
 // downloads from and the one the production embedder pins. The pin table is
-// keyed by revision: a different revision requires a separate pin entry
-// (backlog: arbitrary Model2Vec models without a pin-table entry are
-// deliberately not supported — the story's Out-of-scope section says so).
+// keyed by revision: a different revision requires a separate pin entry.
+//
+// Rotation governance lives beside this pin in PIN_ROTATION.md and is enforced
+// by TestStatic_PinRotationGovernance. A repository maintainer responsible for
+// semantic-search evaluation must approve a rotation. The rotation record must
+// carry the new four-file hashes and upstream reason, a CGo-free byte-exact
+// cross-architecture vector run, regenerated oracle evidence, and fresh static
+// retrieval plus SW-264 task-context measurements. In particular, the current
+// pin owns these retrieval run records, which become stale on rotation:
+//
+//   - docs/eval/retrieval/runs/2026-09-01-static-local/
+//   - docs/eval/retrieval/runs/2026-09-02-capsule-local/
+//   - docs/eval/retrieval/runs/2026-09-02-sw263-local/
+//   - docs/eval/retrieval/runs/2026-09-02-sw263-v3-restoration-local/
+//   - docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/
+//
+// Do not change this constant until the new entry and evidence required by
+// PIN_ROTATION.md accompany it. Arbitrary Model2Vec models without a pin-table
+// entry remain deliberately unsupported.
 const PinnedRevision = "e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
 
 // PinnedNormalize is the normalize value in the pinned config.json. ID uses

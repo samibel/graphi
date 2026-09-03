@@ -57,6 +57,15 @@ export GRAPHI_EMBEDDER=onnx:/path/to/model.onnx
 # error, not a warning. No network is consulted.
 graphi setup-embedder static:potion-code-16M-v2@<rev> --local /mnt/artifacts/potion-code-16M-v2
 
+# Pin rotation is governed beside engine/embed/static/pins.go. A revision bump
+# requires maintainer approval, fresh retrieval + task-context measurements,
+# regenerated oracle evidence, and an exact two-GOARCH vector comparison. See
+# engine/embed/static/PIN_ROTATION.md for the named stale runs and required
+# record. CI fetches the pinned model once through cmd/graphi/staticfetch, hands
+# that one verified directory to native linux/amd64 and linux/arm64 jobs, and
+# fails (never skips) if the artifact is absent. The checked-in SW-271 evidence
+# is under docs/eval/static-embedder-cross-arch/2026-09-03-sw271/.
+
 # Then embed the graph and query (share one durable store + meta sidecar so the
 # generated vectors survive between the index and search invocations; these are
 # explicit teaching paths — graphi's auto-managed store lives at
