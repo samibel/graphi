@@ -30,11 +30,64 @@ import (
 // /1-shaped report cannot be read under a gate written for the
 // stronger shape — it is REFUSED rather than half-read, so a stale or
 // foreign run cannot gate a fresh checkout (SW-263 review / item 6).
+//
+// HarnessVersion moved from `/2` to `/3` with the SW-269 fail-loudly
+// contract. The runner stamps `reproducible.embedder_spec` on every
+// report it writes: either a fingerprinted embedder ID when the run
+// requested one, or an explicit `lexical_only` marker when it did not.
+// A /3-shaped report without that field cannot be safely read as
+// "semantic" or "lexical" — that ambiguity is precisely the SW-263
+// defect the story exists to remove — and `CheckEmbedderSpec` REFUSES
+// it rather than producing a best-effort answer. A /2-shaped report
+// pre-dates the contract and is accepted as legacy evidence, but the
+// aggregate it produces is no longer comparable with /3 numbers.
+//
+// On the reader side, isSupportedHarnessVersion enumerates the universe
+// this build can interpret; new readers add lines to the legacy list
+// when the universe grows, never to the runner-side HarnessVersion
+// constant (which is always the one the runner currently stamps).
 const (
 	FormatVersion  = 2
-	HarnessVersion = "retrieval-eval/2"
+	HarnessVersion = "retrieval-eval/3"
 	ScorerVersion  = "retrieval-aggregate/1"
 )
+
+// legacyHarnessVersions is the set of (older) HarnessVersion values this
+// build can interpret as evidence. Each entry maps to a closed-world
+// shape; an aggregate reader matching that shape accepts the version
+// without restructuring, and SW-269's CheckEmbedderSpec is a no-op for
+// them (the embedder_spec field did not exist). Adding to this list is
+// not a versioning shortcut: a reader that cannot reconstruct the
+// legacy aggregate over its raw samples must not silently accept it.
+var legacyHarnessVersions = []string{
+	"retrieval-eval/2",
+}
+
+// supportedHarnessVersions renders the set this build can interpret, in
+// stable order (current first, then legacy). The error messages below
+// quote this slice so the legitimate next step is named.
+func supportedHarnessVersions() []string {
+	out := make([]string, 0, 1+len(legacyHarnessVersions))
+	out = append(out, HarnessVersion)
+	out = append(out, legacyHarnessVersions...)
+	return out
+}
+
+// isSupportedHarnessVersion reports whether v is one this build
+// recognises. Legacy versions read as evidence; the current version
+// reads with full AC-5 enforcement. An unknown version is refused by
+// `CheckReportVersion` itself, not here.
+func isSupportedHarnessVersion(v string) bool {
+	if v == HarnessVersion {
+		return true
+	}
+	for _, l := range legacyHarnessVersions {
+		if v == l {
+			return true
+		}
+	}
+	return false
+}
 
 // TokenizerID stamps the counter every token figure was taken with:
 // internal/eval's whitespace tokenizer (strings.Fields).
@@ -98,8 +151,36 @@ type Reproducible struct {
 	// operator-control run. It records the lexical inputs and executable
 	// statements needed to audit that explicit OR was the sole delta.
 	FieldParity *FieldParityProvenance `json:"field_parity,omitempty"`
+	// EmbedderSpec (SW-269) records the resolved embedder identity this
+	// run actually used, so the report cannot later be read as "semantic"
+	// when it was not. Exactly one of the two markers is set:
+	//
+	//   - Fingerprint non-empty: a real embedder was configured and
+	//     resolved to engine/embed.Fingerprint.ID() — the (model,
+	//     tokenizer, schema, graph_generation) tuple that fingerprint
+	//     binder ties to one embedding space.
+	//   - LexicalOnly true: the run had no embedder on purpose; the
+	//     semantic baselines report unavailable with the typed reason.
+	//
+	// Empty / both-set / neither-set is rejected by CheckEmbedderSpec —
+	// the SW-269 fail-loudly contract. A v2 harness report predates the
+	// field and is read with no AC-5 enforcement.
+	EmbedderSpec *EmbedderSpec `json:"embedder_spec,omitempty"`
 
 	Baselines []BaselineResult `json:"baselines"`
+}
+
+// EmbedderSpec is the SW-269 marker a run stamps on its report. See
+// Reproducible.EmbedderSpec for the contract (one-of, both required).
+type EmbedderSpec struct {
+	// Fingerprint is the resolved embedder identity. Non-empty when a
+	// real embedder was configured; the value is
+	// `engine/embed.Fingerprint.ID()` so it ties the run to a single
+	// embedding space.
+	Fingerprint string `json:"fingerprint,omitempty"`
+	// LexicalOnly is true when no embedder was requested; the run's
+	// semantic baselines report unavailable and the harness exits 0.
+	LexicalOnly bool `json:"lexical_only,omitempty"`
 }
 
 // RepoRef names the measured checkout and the graph the index produced.
@@ -267,16 +348,57 @@ func marshalStable(v any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// CheckReportVersion refuses a report this build cannot interpret.
+// CheckReportVersion refuses a report this build cannot interpret. A
+// legacy harness_version is accepted here for evidence; the SW-269
+// embedder_spec enforcement is a separate, additive check
+// (CheckEmbedderSpec) so the two contracts cannot drift.
 func CheckReportVersion(r *Report) error {
 	if r.FormatVersion != FormatVersion {
 		return fmt.Errorf("retrieval: report format_version %d is not the supported %d", r.FormatVersion, FormatVersion)
 	}
-	if r.HarnessVersion != HarnessVersion {
-		return fmt.Errorf("retrieval: report harness_version %q is not %q; numbers from another method are not comparable", r.HarnessVersion, HarnessVersion)
+	if !isSupportedHarnessVersion(r.HarnessVersion) {
+		return fmt.Errorf("retrieval: report harness_version %q is not one of %v; numbers from another method are not comparable", r.HarnessVersion, supportedHarnessVersions())
 	}
 	if r.ScorerVersion != ScorerVersion {
 		return fmt.Errorf("retrieval: report scorer_version %q is not %q", r.ScorerVersion, ScorerVersion)
+	}
+	return nil
+}
+
+// CheckEmbedderSpec enforces the SW-269 fail-loudly contract on a /3
+// report: the report must record what the runner used at embedder time.
+// A legacy (/2) report predates the contract and is accepted without
+// the check; the older reports are explicitly NOT retrofitted with
+// fingerprints (story SW-269 out-of-scope). Anything else is an error.
+//
+// The wire contract is "exactly one": either Fingerprint or
+// LexicalOnly, never both, never neither. A silent accept on a missing
+// field is the exact defect the story exists to remove, so the refusal
+// is loud and names the only legitimate fix path.
+func CheckEmbedderSpec(r *Report) error {
+	if r == nil {
+		return fmt.Errorf("retrieval: cannot check embedder_spec of a nil report")
+	}
+	if r.HarnessVersion != HarnessVersion {
+		// /2 (or any future legacy version) is read as evidence without
+		// the AC-5 enforcement. The reader cannot say what embedder was
+		// used; the only honest path is to re-run, not to re-read.
+		return nil
+	}
+	spec := r.Reproducible.EmbedderSpec
+	if spec == nil {
+		return fmt.Errorf("retrieval: report harness_version %q requires an embedder_spec — every /3 report must record either the resolved embedder fingerprint or the explicit lexical_only marker; a silent accept is the exact defect SW-269 exists to remove",
+			r.HarnessVersion)
+	}
+	hasFP := spec.Fingerprint != ""
+	hasLO := spec.LexicalOnly
+	switch {
+	case hasFP && hasLO:
+		return fmt.Errorf("retrieval: report harness_version %q has an embedder_spec with BOTH a fingerprint (%q) and lexical_only=true; exactly one is permitted",
+			r.HarnessVersion, spec.Fingerprint)
+	case !hasFP && !hasLO:
+		return fmt.Errorf("retrieval: report harness_version %q has an empty embedder_spec (no fingerprint, lexical_only=false); exactly one of the two markers must be set",
+			r.HarnessVersion)
 	}
 	return nil
 }

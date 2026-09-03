@@ -63,8 +63,8 @@ func checkRefPayload(ref RawFileRef, got rawIdentity) error {
 	if got.formatVersion != FormatVersion {
 		return fmt.Errorf("retrieval: %s has format_version %d, not the supported %d", ref.File, got.formatVersion, FormatVersion)
 	}
-	if got.harnessVersion != HarnessVersion {
-		return fmt.Errorf("retrieval: %s was produced by harness %q, not %q", ref.File, got.harnessVersion, HarnessVersion)
+	if !isSupportedHarnessVersion(got.harnessVersion) {
+		return fmt.Errorf("retrieval: %s was produced by harness %q, not one of %v", ref.File, got.harnessVersion, supportedHarnessVersions())
 	}
 	if got.series != ref.Series {
 		return mismatch("series", ref.Series, got.series)
@@ -248,9 +248,12 @@ func ReadRunDir(dir string) (*RunDir, error) {
 		return nil, fmt.Errorf("retrieval: parse %s: %w", RunIndexFile, err)
 	}
 	idx := out.Index
-	if idx.FormatVersion != FormatVersion || idx.HarnessVersion != HarnessVersion || idx.ScorerVersion != ScorerVersion {
-		return nil, fmt.Errorf("retrieval: run index versions %d/%s/%s are not this build's %d/%s/%s",
-			idx.FormatVersion, idx.HarnessVersion, idx.ScorerVersion, FormatVersion, HarnessVersion, ScorerVersion)
+	if idx.FormatVersion != FormatVersion || idx.ScorerVersion != ScorerVersion {
+		return nil, fmt.Errorf("retrieval: run index versions %d/.../%s are not this build's %d/.../%s",
+			idx.FormatVersion, idx.ScorerVersion, FormatVersion, ScorerVersion)
+	}
+	if !isSupportedHarnessVersion(idx.HarnessVersion) {
+		return nil, fmt.Errorf("retrieval: run index harness_version %q is not one of %v", idx.HarnessVersion, supportedHarnessVersions())
 	}
 
 	reportBytes, err := os.ReadFile(filepath.Join(dir, idx.Report))
@@ -264,6 +267,12 @@ func ReadRunDir(dir string) (*RunDir, error) {
 		return nil, fmt.Errorf("retrieval: parse report: %w", err)
 	}
 	if err := CheckReportVersion(&out.Report); err != nil {
+		return nil, err
+	}
+	// SW-269 AC-5: every /3-shaped report must carry an embedder_spec
+	// (resolved fingerprint or lexical-only marker); otherwise reading
+	// the report is an error rather than a best-effort interpretation.
+	if err := CheckEmbedderSpec(&out.Report); err != nil {
 		return nil, err
 	}
 

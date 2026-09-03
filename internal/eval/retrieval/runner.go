@@ -324,6 +324,9 @@ func Run(ctx context.Context, o Options) (*Result, error) {
 			RelevantMinGrade:      minGrade,
 			MatchingRule:          MatchingRule,
 			SpanMethodShare:       spanShare,
+			// SW-269 AC-5: resolved embedder -> Fingerprint; omitted
+			// selector -> LexicalOnly. Never absent on a /3 report.
+			EmbedderSpec: specFromIndex(idx.embedderFingerprint),
 		},
 		Environment: Environment{
 			GeneratedAt: o.Now().UTC().Format(time.RFC3339),
@@ -412,6 +415,9 @@ type index struct {
 	files               int
 	// filePaths are the indexed files (path order), the span-share input.
 	filePaths []string
+	// embedderFingerprint (SW-269) is the resolved embedder identity this
+	// run actually used; empty means no selector was requested.
+	embedderFingerprint string
 }
 
 func (i *index) close() {
@@ -499,7 +505,7 @@ func buildIndex(ctx context.Context, root, workDir, embedderSelector string, bas
 		nameOnlyFTS5Control: nameOnlyControl, fullDocumentLexical: artifacts.fullDocumentLexical,
 		indexMS: float64(elapsed.Milliseconds()),
 		nodes:   stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
-		filePaths: filePaths,
+		filePaths: filePaths, embedderFingerprint: artifacts.embedderFP,
 	}, nil
 }
 
@@ -516,6 +522,11 @@ type searchArtifacts struct {
 	production          *search.Service
 	nameOnly            *search.Service
 	fullDocumentLexical *fullDocumentLexical
+	// embedderFP (SW-269 AC-5) is the canonical fingerprint of the
+	// generation this build was COMMITTED under. Empty means no selector
+	// was requested, which the report records as the explicit
+	// lexical_only marker rather than as an absent field.
+	embedderFP string
 }
 
 // buildSearchService wires the search service with or without a configured
@@ -538,12 +549,24 @@ type searchArtifacts struct {
 // produced a reproducible-looking three-semantic-baselines-unavailable
 // report that exited 0; the orchestrator published exactly that and
 // only the `CandidateSHA` check caught the issue.
-func buildSearchService(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, error) {
+func buildSearchService(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, log io.Writer) (*search.Service, string, error) {
 	artifacts, err := buildSearchArtifacts(ctx, root, store, metaDir, selector, false, false, log)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return artifacts.production, nil
+	return artifacts.production, artifacts.embedderFP, nil
+}
+
+// specFromIndex stamps the /3 report's embedder_spec. A non-empty
+// fingerprint records the identity the runner actually resolved; an empty
+// fingerprint is the legal omitted-selector case, which the marker
+// `lexical_only: true` makes explicit (and which CheckEmbedderSpec
+// REFUSES without).
+func specFromIndex(embedderFP string) *EmbedderSpec {
+	if embedderFP == "" {
+		return &EmbedderSpec{LexicalOnly: true}
+	}
+	return &EmbedderSpec{Fingerprint: embedderFP}
 }
 
 func buildSearchArtifacts(ctx context.Context, root string, store graphstore.Graphstore, metaDir, selector string, needNameOnly, needFullDocumentLexical bool, log io.Writer) (searchArtifacts, error) {
@@ -554,7 +577,11 @@ func buildSearchArtifacts(ctx context.Context, root string, store graphstore.Gra
 	}
 	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
 	if err != nil || emb == nil {
-		return searchArtifacts{}, fmt.Errorf("retrieval-eval: embedder %q unavailable: %v (SW-263 fail-closed: a non-empty -embedder that fails to construct is fatal; either omit -embedder to opt into intentional unavailable baselines, or fix the selector)",
+		// SW-269 AC-1: name the selector, the construction reason, AND the
+		// three accepted selector forms, so a user following the error
+		// message lands on a fix path rather than guessing. The SW-263
+		// fail-closed posture is preserved.
+		return searchArtifacts{}, fmt.Errorf("retrieval-eval: embedder selector %q unavailable: %v (SW-269 fail-closed: a non-empty -embedder that fails to construct is fatal; accepted forms are: omit -embedder for the unconfigured path, `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` under //go:build embed_onnx)",
 			selector, err)
 	}
 	fmt.Fprintf(log, "retrieval-eval: embedder %q active; generating vectors\n", emb.ID())
@@ -632,7 +659,11 @@ func buildSearchArtifacts(ctx context.Context, root string, store graphstore.Gra
 	svc := search.New(store).WithSemantic(reg, index, store).
 		WithSemanticState(search.SemanticState{State: embed.StateReady})
 	fmt.Fprintf(log, "retrieval-eval: semantic ready (model=%s, dim=%d, rows=%d)\n", emb.ID(), emb.Dim(), len(rows))
-	artifacts := searchArtifacts{production: svc}
+	// SW-269 AC-5: the fingerprint the build was COMMITTED under
+	// (gen.Fingerprint carries every adapter-defined field, unlike the
+	// partial reload-side lookup), so the runner stamps the full
+	// canonical identity on the report exactly once.
+	artifacts := searchArtifacts{production: svc, embedderFP: gen.Fingerprint.Canonical()}
 
 	eligible := make(map[model.NodeId]embed.Row, len(rows))
 	for _, row := range rows {
