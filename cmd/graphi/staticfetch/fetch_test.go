@@ -489,23 +489,34 @@ func TestStaticfetch_AirGapped_ValidatesLocalArtifact(t *testing.T) {
 }
 
 // AC-4/AC-5: the staticfetch package is the ONLY place in cmd/graphi that
-// imports network primitives, and setup.go is the ONLY production call site
-// allowed to invoke its supply-chain entry points. Both halves matter: the
+// imports network primitives. Each supply-chain entry point has one explicit
+// production caller: setup.go for the model, and cmd/retrieval-eval for the
+// eval tokenizer. Both halves matter: the
 // canary catches a direct dial in another command, while this call-site guard
 // catches a command that tries to reach the allowlisted downloader indirectly.
 //
 // The network-import check covers cmd/graphi. The supply-chain call-site check
 // covers the entire repository, so engine/search, MCP, HTTP, and future packages
 // cannot hide a dial by importing this allowlisted package. It follows import
-// aliases and rejects references (including function values) to Download or
-// InstallLocal outside cmd/graphi/setup.go. Dot imports are refused.
+// aliases and rejects references (including function values) to any guarded
+// download/install function outside its one named setup path. Dot imports are
+// refused.
 func TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join("..", "..", ".."))
 	cmdRoot := filepath.Join(repoRoot, "cmd", "graphi")
 	staticfetchRoot := filepath.Join(cmdRoot, "staticfetch")
 	setupPath := filepath.Join(cmdRoot, "setup.go")
+	tokenizerSetupPath := filepath.Join(repoRoot, "cmd", "retrieval-eval", "main.go")
 	banned := []string{`"net/http"`, `"net/http/httptest"`, `"net/url"`, `"crypto/tls"`, `"syscall/js"`}
-	wantCalls := map[string]int{"Download": 1, "InstallLocal": 1}
+	wantCalls := map[string]struct {
+		path  string
+		count int
+	}{
+		"Download":              {path: setupPath, count: 1},
+		"InstallLocal":          {path: setupPath, count: 1},
+		"DownloadTokenizer":     {path: tokenizerSetupPath, count: 1},
+		"InstallLocalTokenizer": {path: tokenizerSetupPath, count: 1},
+	}
 	gotCalls := map[string]int{}
 	err := filepath.WalkDir(repoRoot, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -566,11 +577,15 @@ func TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi(t *testing.T) {
 				return true
 			}
 			pkg, ok := sel.X.(*ast.Ident)
-			if !ok || !aliases[pkg.Name] || (sel.Sel.Name != "Download" && sel.Sel.Name != "InstallLocal") {
+			if !ok || !aliases[pkg.Name] {
 				return true
 			}
-			if path != setupPath {
-				t.Errorf("%s references staticfetch.%s; only setup.go may invoke the supply-chain surface", path, sel.Sel.Name)
+			want, guarded := wantCalls[sel.Sel.Name]
+			if !guarded {
+				return true
+			}
+			if path != want.path {
+				t.Errorf("%s references staticfetch.%s; only %s may invoke that supply-chain entry point", path, sel.Sel.Name, want.path)
 				return true
 			}
 			gotCalls[sel.Sel.Name]++
@@ -582,8 +597,8 @@ func TestStaticfetch_IsTheOnlyNetworkCallerInCmdGraphi(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, want := range wantCalls {
-		if got := gotCalls[name]; got != want {
-			t.Errorf("setup.go staticfetch.%s references = %d, want %d", name, got, want)
+		if got := gotCalls[name]; got != want.count {
+			t.Errorf("%s staticfetch.%s references = %d, want %d", want.path, name, got, want.count)
 		}
 	}
 }

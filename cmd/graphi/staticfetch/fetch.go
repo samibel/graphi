@@ -78,14 +78,18 @@ func InstallLocal(ctx context.Context, src, dest string) error {
 // client also pins a sane timeout so a slow-loris server does not
 // stall the install indefinitely.
 func newHTTPSOnlyClient() *http.Client {
+	return newHTTPSOnlyClientFor("staticfetch: setup-embedder", "AC-4: HTTPS-only on every hop")
+}
+
+func newHTTPSOnlyClientFor(operation, redirectPolicy string) *http.Client {
 	return &http.Client{
 		Timeout: 5 * 60 * 1e9, // 5 minutes; large artifacts over slow links
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if req.URL.Scheme != "https" {
-				return fmt.Errorf("staticfetch: setup-embedder: redirect to non-HTTPS URL %q refused (AC-4: HTTPS-only on every hop)", req.URL)
+				return fmt.Errorf("%s: redirect to non-HTTPS URL %q refused (%s)", operation, req.URL, redirectPolicy)
 			}
 			if len(via) >= 10 {
-				return fmt.Errorf("staticfetch: setup-embedder: too many redirects (>= 10)")
+				return fmt.Errorf("%s: too many redirects (>= 10)", operation)
 			}
 			return nil
 		},
@@ -242,6 +246,20 @@ func validateScheme(rawURL string) error {
 	return nil
 }
 
+func validateSchemeFor(rawURL, operation string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("%s: parse URL %q: %w", operation, rawURL, err)
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("%s: refusing non-HTTPS URL %q (HTTPS only)", operation, rawURL)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("%s: URL %q has no host", operation, rawURL)
+	}
+	return nil
+}
+
 // fetchAndVerifyFile downloads one pinned file into dest/<name>.tmp,
 // verifies its SHA-256, and atomically renames to dest/<name>. The
 // response body is wrapped in io.LimitReader(max+1) so a chunked or
@@ -249,26 +267,30 @@ func validateScheme(rawURL string) error {
 // truncated at the boundary, surfaced as a typed error, and the temp
 // file is removed.
 func fetchAndVerifyFile(ctx context.Context, client *http.Client, fullURL, dest, name, wantHash string) error {
+	return fetchAndVerifyPinnedFile(ctx, client, fullURL, dest, name, wantHash, MaxFileBytes, "staticfetch: setup-embedder")
+}
+
+func fetchAndVerifyPinnedFile(ctx context.Context, client *http.Client, fullURL, dest, name, wantHash string, maxBytes int64, operation string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
-		return fmt.Errorf("staticfetch: setup-embedder: build request for %s: %w", name, err)
+		return fmt.Errorf("%s: build request for %s: %w", operation, name, err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("staticfetch: setup-embedder: download %s: %w", name, err)
+		return fmt.Errorf("%s: download %s: %w", operation, name, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("staticfetch: setup-embedder: %s: HTTP %d", name, resp.StatusCode)
+		return fmt.Errorf("%s: %s: HTTP %d", operation, name, resp.StatusCode)
 	}
-	if resp.ContentLength > MaxFileBytes {
-		return fmt.Errorf("staticfetch: setup-embedder: %s: declared Content-Length %d exceeds per-file ceiling %d (AC-4)", name, resp.ContentLength, MaxFileBytes)
+	if resp.ContentLength > maxBytes {
+		return fmt.Errorf("%s: %s: declared Content-Length %d exceeds per-file ceiling %d", operation, name, resp.ContentLength, maxBytes)
 	}
-	limited := io.LimitReader(resp.Body, MaxFileBytes+1)
+	limited := io.LimitReader(resp.Body, maxBytes+1)
 	tmpPath := filepath.Join(dest, name+".tmp")
 	tmp, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
-		return fmt.Errorf("staticfetch: setup-embedder: open temp %s: %w", tmpPath, err)
+		return fmt.Errorf("%s: open temp %s: %w", operation, tmpPath, err)
 	}
 	h := sha256.New()
 	n, copyErr := io.Copy(tmp, io.TeeReader(limited, h))
@@ -276,29 +298,29 @@ func fetchAndVerifyFile(ctx context.Context, client *http.Client, fullURL, dest,
 	if copyErr != nil {
 		_ = os.Remove(tmpPath)
 		gotHash := hex.EncodeToString(h.Sum(nil))
-		return fmt.Errorf("staticfetch: setup-embedder: download %s: %w (truncated at %d bytes; expected %s, actual %s)", name, copyErr, n, wantHash, gotHash)
+		return fmt.Errorf("%s: download %s: %w (truncated at %d bytes; expected %s, actual %s)", operation, name, copyErr, n, wantHash, gotHash)
 	}
 	if closeErr != nil {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("staticfetch: setup-embedder: write %s: %w", name, closeErr)
+		return fmt.Errorf("%s: write %s: %w", operation, name, closeErr)
 	}
-	if n > MaxFileBytes {
+	if n > maxBytes {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("staticfetch: setup-embedder: %s: body exceeds per-file ceiling %d (received %d bytes; truncated download or wrong content)", name, MaxFileBytes, n)
+		return fmt.Errorf("%s: %s: body exceeds per-file ceiling %d (received %d bytes; truncated download or wrong content)", operation, name, maxBytes, n)
 	}
 	if resp.ContentLength >= 0 && n != resp.ContentLength {
 		_ = os.Remove(tmpPath)
 		gotHash := hex.EncodeToString(h.Sum(nil))
-		return fmt.Errorf("staticfetch: setup-embedder: %s: truncated download: server claimed %s bytes, received %d (the body is corrupt; expected SHA-256 %s, computed %s)", name, strconv.FormatInt(resp.ContentLength, 10), n, wantHash, gotHash)
+		return fmt.Errorf("%s: %s: truncated download: server claimed %s bytes, received %d (the body is corrupt; expected SHA-256 %s, computed %s)", operation, name, strconv.FormatInt(resp.ContentLength, 10), n, wantHash, gotHash)
 	}
 	got := hex.EncodeToString(h.Sum(nil))
 	if got != wantHash {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("staticfetch: setup-embedder: %s: SHA-256 mismatch: expected %s, actual %s", name, wantHash, got)
+		return fmt.Errorf("%s: %s: SHA-256 mismatch: expected %s, actual %s", operation, name, wantHash, got)
 	}
 	if err := os.Rename(tmpPath, filepath.Join(dest, name)); err != nil {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("staticfetch: setup-embedder: rename %s: %w", name, err)
+		return fmt.Errorf("%s: rename %s: %w", operation, name, err)
 	}
 	return nil
 }

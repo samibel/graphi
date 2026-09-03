@@ -114,6 +114,48 @@ including for an empty response. Validation recomputes SHA-256, bytes and both t
 from those slices through executable counters. A missing counter, vocabulary mismatch,
 reconstructed count or estimated count is an error.
 
+### Pinned real tokenizer
+
+The real counter is OpenAI's `cl100k_base` tokenizer in ordinary-text mode:
+
+- `tokenizer_id`: `tiktoken:cl100k_base:ordinary`
+- artifact: `cl100k_base.tiktoken`
+- vocabulary SHA-256: `223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7`
+- canonical source: `https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken`
+
+“Ordinary” is part of the identity: actor-visible response bytes are tokenized as text, so a
+literal special-token spelling in a JSON or source payload is byte-pair encoded rather than
+interpreted as a control token. The implementation in `internal/eval/tokenizer` freezes the
+cl100k pre-tokenizer and reads the mergeable BPE ranks in pure Go using only the standard library;
+it needs neither cgo nor a C tokenizer library. The retrieval package's `PayloadCounter` adapter
+carries the tokenizer ID and vocabulary digest from the same pin table the loader verified, and
+recomputes from each preserved byte slice on every call.
+
+Measurement never downloads. The explicit acquisition step is:
+
+```text
+go run ./cmd/retrieval-eval -setup-tokenizer
+```
+
+That command is the only new caller of the repository's existing
+`cmd/graphi/staticfetch` egress boundary. It fetches over HTTPS into a staging directory, verifies
+the pin, and atomically promotes the immutable digest-qualified cache directory. An air-gapped
+handoff uses `-tokenizer-local <dir>`; `-tokenizer-dir <dir>` selects a non-default destination.
+The offline loader resolves `GRAPHI_EVAL_TOKENIZER_DIR` first and otherwise uses
+`$XDG_CACHE_HOME/graphi/tokenizers/cl100k_base@<full-sha256>`. Absence, truncation, or corruption
+is fatal and names the file plus expected and actual digest; there is no whitespace fallback.
+The same byte-identical 1.68 MB artifact is checked in under
+`internal/eval/tokenizer/testdata/artifact/` solely so the golden and corruption gates execute in
+offline CI; the production resolver never searches that test directory. It can also be the
+source of the explicit air-gapped install command.
+
+Pin rotation is governed from the first adoption by
+`internal/eval/tokenizer/PIN_ROTATION.md`. Its gate binds the current digest to that record and
+scans `docs/eval/retrieval/runs/` for directories stamped with this tokenizer ID. Every discovered
+run must be listed as stale before a rotation can pass. The inventory is empty in this slice
+because SW-277 publishes no measurement; future counts, aggregates, intervals, and claim text are
+all invalidated together.
+
 ### Decision on the fixed 40-line window
 
 The value 40 survives as `GrepReadWindowLines`, the frozen size of an actual `read` operation:
