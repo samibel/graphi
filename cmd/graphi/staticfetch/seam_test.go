@@ -26,6 +26,12 @@ func InstallLocalForTest(src, dest string) error {
 	return InstallLocal(context.Background(), src, dest)
 }
 
+// DownloadTokenizerForTest exercises the tokenizer acquisition path with a
+// controllable transport and pin without opening a real socket.
+func DownloadTokenizerForTest(client *http.Client, sourceURL, dest, wantHash string) error {
+	return downloadTokenizerImpl(context.Background(), client, sourceURL, dest, wantHash)
+}
+
 // CheckRedirectForTest exercises the exact redirect policy installed on the
 // production download client without opening a localhost listener.
 func CheckRedirectForTest(rawURL string) error {

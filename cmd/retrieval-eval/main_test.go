@@ -11,6 +11,7 @@ import (
 
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/internal/eval/retrieval"
+	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // init registers two test-only embedder schemes so tests can drive a real
@@ -55,6 +56,27 @@ func chdirRoot(t *testing.T) {
 }
 
 const fixtureDataset = "internal/eval/retrieval/testdata/datasets/fixture-v1.json"
+
+func TestRetrievalEval_SetupTokenizerFromLocalArtifact(t *testing.T) {
+	src := filepath.Join(repoRoot(t), "internal", "eval", "tokenizer", "testdata", "artifact")
+	if _, err := os.Stat(filepath.Join(src, evaltokenizer.PinnedVocabularyFile)); err != nil {
+		t.Fatalf("checked-in real tokenizer artifact is absent: %v", err)
+	}
+	dest := filepath.Join(t.TempDir(), "tokenizer")
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"-setup-tokenizer", "-tokenizer-local", src, "-tokenizer-dir", dest}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("setup-tokenizer exit %d:\n%s", code, stderr.String())
+	}
+	if _, err := evaltokenizer.Load(dest); err != nil {
+		t.Fatalf("installed tokenizer does not load: %v", err)
+	}
+	for _, want := range []string{evaltokenizer.TokenizerID, evaltokenizer.PinnedVocabularySHA256, dest} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("setup output does not contain %q: %s", want, stdout.String())
+		}
+	}
+}
 
 // AC-5 / AC-10 end to end: the dispatch entry point runs the fixture through
 // the real seams, exports raw samples, and -aggregate reproduces them.

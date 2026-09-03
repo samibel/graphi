@@ -50,6 +50,7 @@
 //	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
+//	go run ./cmd/retrieval-eval -setup-tokenizer [-tokenizer-local <dir>] [-tokenizer-dir <dir>]
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
 package main
@@ -65,6 +66,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samibel/graphi/cmd/graphi/staticfetch"
 	// Importing the ollama package registers its loopback scheme into
 	// embed.DefaultConstructors via init(); the harness never constructs
 	// an embedder itself — the runner does, after resolving the
@@ -78,6 +80,7 @@ import (
 	_ "github.com/samibel/graphi/engine/embed/static"
 	"github.com/samibel/graphi/internal/corpus"
 	"github.com/samibel/graphi/internal/eval/retrieval"
+	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // FixtureRepoName is the built-in repository name for the hermetic fixture.
@@ -119,6 +122,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fieldParity := fs.Bool("field-parity", false, "SW-272 evaluator-only control: select every and only dev/nl_behaviour query at exact grade 3 and run the fixed six-cell field-parity baseline set; cannot be combined with -baseline")
 	aggregate := fs.String("aggregate", "", "recompute every published metric in this run directory from its raw samples; exit 0 reproduced, 1 discrepancy, 2 unreadable, 3 incomplete")
 	checkClaim := fs.String("check-claim", "", "validate a candidate savings sentence against the frozen scope contract; this checks wording only and never generates or publishes a claim")
+	setupTokenizer := fs.Bool("setup-tokenizer", false, "download and SHA-verify the pinned real-tokenizer artifact as a separate explicit setup step")
+	tokenizerLocal := fs.String("tokenizer-local", "", "setup-tokenizer mode: validate and install from a local artifact directory instead of downloading")
+	tokenizerDir := fs.String("tokenizer-dir", evaltokenizer.ArtifactDir(), "setup-tokenizer mode: destination directory (default $XDG_CACHE_HOME/graphi/tokenizers/<encoding@sha256>)")
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
@@ -142,6 +148,23 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	switch {
+	case *setupTokenizer:
+		var err error
+		if *tokenizerLocal != "" {
+			err = staticfetch.InstallLocalTokenizer(context.Background(), *tokenizerLocal, *tokenizerDir)
+		} else {
+			err = staticfetch.DownloadTokenizer(context.Background(), *tokenizerDir)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: setup tokenizer: %v\n", err)
+			return exitError
+		}
+		if _, err := evaltokenizer.Load(*tokenizerDir); err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: setup tokenizer: installed artifact failed final load: %v\n", err)
+			return exitError
+		}
+		fmt.Fprintf(stdout, "retrieval-eval: installed %s at %s (vocabulary_sha256=%s)\n", evaltokenizer.TokenizerID, *tokenizerDir, evaltokenizer.PinnedVocabularySHA256)
+		return exitOK
 	case *checkClaim != "":
 		if err := retrieval.CheckClaimSentence(*checkClaim); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
