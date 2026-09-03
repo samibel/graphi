@@ -259,11 +259,23 @@ and the fusion top1 against the `no_regression.floor` on
 **Embedder caveat (read this before citing fusion numbers):** the fusion
 ablations require a configured embedder; the SW-258 targets were derived
 without one (so `semantic_name_only` was `unavailable` there). The AC-9
-runs that exercise fusion therefore use `ollama:nomic-embed-text` —
-**not** the static code embedder the spec eventually wants
-(`static:potion-code-16M-v2`, SW-262, deliberately not built yet). The
-fusion numbers are model-dependent and will move when the static embedder
-lands. Do not present AC-9 numbers as the spec's final numbers.
+runs that exercise fusion therefore ran with the `-embedder` selector
+`ollama` (loopback default), whose construction lands the production
+embedder with the model `nomic-embed-text`. The **embedder ID the
+runner stamps in the report** for those runs is `ollama:nomic-embed-text`
+— note that this is the embedder's identity (`scheme:model`), **not** a
+selector form (`scheme:host:port` for `ollama`). The selector that
+produced the running embedder was the bare `-embedder ollama`, never
+`-embedder ollama:nomic-embed-text`: that selector is invalid because the
+segment after the colon is the endpoint, not the model name, and the
+loopback guard would refuse the non-IP host `nomic-embed-text`. The
+historical run directories under `docs/eval/retrieval/runs/<date>*/`
+that name "ollama:nomic-embed-text" are recording the embedder ID, not
+the selector — and the spec's eventual production embedder is the SW-262
+static path (`-embedder static:potion-code-16M-v2@<revision>`), not the
+loopback Ollama. The fusion numbers are model-dependent and will move
+when the static embedder lands. Do not present AC-9 numbers as the
+spec's final numbers.
 
 The 2026-08-31 cobra run (`docs/eval/retrieval/runs/2026-08-31-local/`)
 is the SW-263 AC-9 evaluation: the `README.md` in that directory records

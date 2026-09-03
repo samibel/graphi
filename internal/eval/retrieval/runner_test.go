@@ -660,7 +660,7 @@ func TestBuildSearchService_ProductionDocumentSourceFidelity(t *testing.T) {
 	// across runs. buildSearchService now uses the production file source
 	// and the real graph_generation; the rows it persists are what every
 	// semantic baseline in this story's reports consumes.
-	if _, err := buildSearchService(context.Background(), root, store, metaDir, "mock", io.Discard); err != nil {
+	if _, _, err := buildSearchService(context.Background(), root, store, metaDir, "mock", io.Discard); err != nil {
 		t.Fatalf("buildSearchService: %v (SW-263 fail-closed: a configured embedder that fails to generate is fatal)", err)
 	}
 

@@ -10,21 +10,37 @@
 // It never clones: a pinned repository is read from a local checkout that
 // must already sit at the pinned sha.
 //
-// Embedder selector grammar (`-embedder` / `GRAPHI_EMBEDDER`): the
-// scheme is `ollama` (loopback, model defaults to `nomic-embed-text`); an
-// optional `host:port` segment selects a non-default endpoint
-// (`ollama:127.0.0.1:11434` is the loopback default; anything non-loopback
-// fails closed at the embedder boundary). The model is NOT part of the
-// selector — `ollama:nomic-embed-text` is NOT a valid selector (the
-// segment after the colon is the endpoint, not a model name, and the
-// loopback guard refuses a non-IP host). An OMITTED `-embedder` means
-// intentional unavailable baselines (exit 0, semantic rows unavailable).
-// A NON-empty `-embedder` that fails to construct, register, generate,
-// reload, or serve causes exit 1 and NO publishable report is written
-// (SW-263 reviewer ruling: the help text previously advertised an
-// invalid form, and a non-empty selector that failed to construct was
-// silently downgraded to an unavailable semantic service and the run
-// exited zero).
+// Embedder selector grammar (`-embedder` / `GRAPHI_EMBEDDER`).
+//
+// Three accepted forms (AC-3, SW-269):
+//
+//   - omit `-embedder` (or pass empty) — the intentional lexical-only
+//     run; the report's `reproducible.embedder_spec` carries
+//     `lexical_only: true` and the run exits 0 with the semantic
+//     baselines reported as unavailable with the typed reason.
+//   - `ollama:host:port` — loopback-only Ollama endpoint
+//     (`127.0.0.1:11434` is the loopback default; a non-loopback host
+//     is REFUSED at construction, so the harness never dials off-box).
+//     The default model (`nomic-embed-text`) is the loopback server's
+//     choice, NOT a selector segment — what comes after the first
+//     colon is the endpoint, never a model name.
+//   - `static:<model>@<revision>` — the production static embedder
+//     (SW-262). The fixed `<model>` is `potion-code-16M-v2` and the
+//     fixed `<revision>` is the SHA-pinned commit digest (see
+//     engine/embed/static/pins.go); any other value is REFUSED.
+//   - `onnx:<model>` — build-tag-gated; ONLY present under
+//     `//go:build embed_onnx`, so the CGo-free default build has no
+//     constructor for it.
+//
+// A selector that does not match one of those three forms is
+// CONSTRUCTION FAILURE: the harness exits 1, names the selector and the
+// reason, and writes no publishable report. An empty `-embedder` is
+// the ONLY way to opt into unavailable semantic baselines — there is
+// no other silent downgrade path. (SW-263 reviewer ruling: the help
+// text previously advertised an invalid form, and a non-empty selector
+// that failed to construct was silently downgraded to an unavailable
+// semantic service and the run exited zero; that failure shape is
+// removed in SW-269, see story at projects/graphi/stories/SW-269.)
 //
 // Usage:
 //
@@ -104,7 +120,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
-	embedder := fs.String("embedder", "", "GRAPHI_EMBEDDER-style selector (e.g. `ollama`, `ollama:127.0.0.1:11434`); the model defaults to `nomic-embed-text` and is NOT a selector segment. Empty ⇒ no embedder ⇒ fusion/fusion+graph report unavailable; NON-empty that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
+	embedder := fs.String("embedder", "", "embedder selector — one of: empty (lexical-only by intent; fusion/semantic baselines report unavailable with the typed reason), `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` (under //go:build embed_onnx). A non-empty selector that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
 
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")

@@ -13,8 +13,19 @@ import (
 	"github.com/samibel/graphi/internal/eval/retrieval"
 )
 
+// init registers two test-only embedder schemes so tests can drive a real
+// selector path through the real harness without a loopback Ollama or a
+// pinned static artifact: `field-parity-mock` (SW-272's 2x3 control) and
+// `mock` (SW-269's AC-5 fingerprint test). Mirrors
+// internal/eval/retrieval/runner_test.go's test-only init: production wiring
+// goes through cmd/retrieval-eval/main.go's blank imports of the ollama and
+// static subpackages (their init()s call embed.RegisterScheme); this init
+// just layers the two extra schemes on top.
 func init() {
 	embed.RegisterScheme("field-parity-mock", func(string) (embed.Embedder, error) {
+		return embed.NewMockEmbedder(8), nil
+	})
+	embed.RegisterScheme("mock", func(_ string) (embed.Embedder, error) {
 		return embed.NewMockEmbedder(8), nil
 	})
 }
@@ -352,26 +363,29 @@ func TestRetrievalEval_UsageErrors(t *testing.T) {
 }
 
 // TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport
-// is the regression the SW-263 reviewer required: the previously-advertised
-// selector form `ollama:nomic-embed-text` was rejected by the loopback guard
-// at construction (the segment after the colon is treated as the endpoint,
-// not the model name), but the runner's earlier buildSearchService silently
-// downgraded a failed construction into an unavailable semantic service and
-// exited zero. A reproduction arrived as a published three-semantic-baselines-
-// unavailable report that exited 0; the fix is to fail closed: the run must
-// exit non-zero AND write no publishable report (neither -out nor the
-// -export-raw directory).
+// is the regression the SW-263 reviewer required (and SW-269 explicitly
+// hardens). Three checks the SW-269 AC-1 contract MUST satisfy at once:
 //
-// Two cases are pinned:
+//   - exit non-zero (the harness cannot silently downgrade);
+//   - stderr names the selector and the construction reason;
+//   - stderr enumerates the three accepted selector forms
+//     (`ollama:host:port`, `static:<model>@<revision>`, `onnx:<model>`)
+//     so a user following the error lands on a fix path rather than
+//     guessing;
+//   - no report file is written;
+//   - no publishable artefact lands in the export-raw directory.
 //
-//  1. The advertised-but-invalid form `ollama:nomic-embed-text`: the
-//     constructor rejects it ("non-IP host requires DNS and is off-box").
-//     The run exits 1; the report file is not written; the export-raw
-//     directory has no `cobra-v1-report.json`.
+// The two selector forms SW-269 tests:
 //
-//  2. An EMBEDDED selector that the loopback guard refuses for a different
-//     reason (`ollama:1.2.3.4:11434` — non-loopback). Same fail-closed
-//     posture: exit 1, no report, no export-raw.
+//  1. `ollama:nomic-embed-text` — the historic wrong form the
+//     pre-SW-263 help advertised (the segment after the colon is the
+//     endpoint, never the model name). The loopback guard rejects it
+//     as a non-IP host. The pre-fix harness silently downgraded the
+//     failure to "no embedder; semantic baselines: unavailable" and
+//     exited zero; that shape is what this test exists to keep dead.
+//
+//  2. `ollama:1.2.3.4:11434` — a non-loopback host; refused for a
+//     different reason but with the same fail-closed posture.
 //
 // The omitted-`-embedder` path is intentionally NOT tested here: it is the
 // "intentional unavailable baselines" mode and exits 0 by contract (see
@@ -408,17 +422,30 @@ func TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport(t *t
 				t.Errorf("run exit %d, want %d (the reviewer ruled that a non-empty -embedder that fails to construct must exit non-zero):\n%s",
 					code, exitError, stderr.String())
 			}
-			if !strings.Contains(stderr.String(), tc.wantMsg) {
-				t.Errorf("stderr does not mention %q:\n%s", tc.wantMsg, stderr.String())
+			errOut := stderr.String()
+			if !strings.Contains(errOut, tc.wantMsg) {
+				t.Errorf("stderr does not mention %q:\n%s", tc.wantMsg, errOut)
 			}
-			if !strings.Contains(stderr.String(), "SW-263") {
-				t.Errorf("stderr does not mention the SW-263 fail-closed marker:\n%s", stderr.String())
+			if !strings.Contains(errOut, tc.selector) {
+				t.Errorf("stderr does not name the failing selector %q:\n%s", tc.selector, errOut)
+			}
+			// SW-269 AC-1: the error message must enumerate the accepted
+			// selector forms so a copy-paste-following user lands on a fix
+			// path. None of the three forms has the failing selector in
+			// its exact text, but each is named in the printed guidance.
+			for _, want := range []string{"`ollama:host:port`", "`static:<model>@<revision>`", "`onnx:<model>`"} {
+				if !strings.Contains(errOut, want) {
+					t.Errorf("stderr does not enumerate the accepted form %s:\n%s", want, errOut)
+				}
+			}
+			if !strings.Contains(errOut, "SW-269") {
+				t.Errorf("stderr does not mention the SW-269 fail-loudly marker:\n%s", errOut)
 			}
 			// Publishable report MUST not exist: the harness failed before
 			// the report was written. -export-raw may exist (as a directory)
 			// but it MUST be empty — the inverted case is exactly the defect.
 			if _, err := os.Stat(out); !os.IsNotExist(err) {
-				t.Errorf("report file %s exists; expected it NOT to be written on a failed embedder:\n%s", out, stderr.String())
+				t.Errorf("report file %s exists; expected it NOT to be written on a failed embedder:\n%s", out, errOut)
 			}
 			if fi, err := os.Stat(raw); err == nil {
 				entries, _ := os.ReadDir(raw)
@@ -428,6 +455,147 @@ func TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport(t *t
 				}
 			}
 		})
+	}
+}
+
+// TestRetrievalEval_ReportStampsEmbedderSpecForUnconfiguredRun (AC-5)
+// pins the empty-selector leg of the SW-269 contract: a successful run
+// with no `-embedder` writes a report whose `reproducible.embedder_spec`
+// is the explicit `lexical_only` marker — NOT a fingerprint, NOT absent.
+// Reading the report under the /3 shape would otherwise silently
+// downgrade the run to ambiguous, the exact defect the SW-269 contract
+// removes.
+func TestRetrievalEval_ReportStampsEmbedderSpecForUnconfiguredRun(t *testing.T) {
+	chdirRoot(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "report.json")
+	var stderr bytes.Buffer
+	if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", fixtureDataset,
+		"-out", out, "-runner-class", "test", "-repeats", "1", "-date", "2026-08-30"}, &bytes.Buffer{}, &stderr); code != exitOK {
+		t.Fatalf("unconfigured run exit %d, want 0:\n%s", code, stderr.String())
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	var report retrieval.Report
+	if err := json.Unmarshal(b, &report); err != nil {
+		t.Fatalf("unmarshal report: %v", err)
+	}
+	spec := report.Reproducible.EmbedderSpec
+	if spec == nil {
+		t.Fatalf("report %s has no embedder_spec (a /3 unconfigured run MUST carry the lexical_only marker)", out)
+	}
+	if !spec.LexicalOnly || spec.Fingerprint != "" {
+		t.Errorf("unconfigured run embedder_spec = %+v, want LexicalOnly=true and empty Fingerprint", spec)
+	}
+	if err := retrieval.CheckEmbedderSpec(&report); err != nil {
+		t.Errorf("CheckEmbedderSpec(lexical-only report): %v", err)
+	}
+}
+
+// TestRetrievalEval_ReportStampsEmbedderSpecForConfiguredRun (AC-5)
+// pins the configured-embedder leg of SW-269: a successful run with
+// `-embedder mock` writes a report whose `reproducible.embedder_spec`
+// is a non-empty fingerprint, NOT a lexical-only marker, NOT absent.
+// Reading the report under the /3 shape would otherwise silently
+// downgrade the run to ambiguous, the exact defect the SW-269 contract
+// removes.
+//
+// The test also asserts CheckEmbedderSpec accepts the report outright:
+// the runner is the only path that stamps the spec, but a read-time
+// check is what enforces it; if either side regresses the other fails
+// too.
+func TestRetrievalEval_ReportStampsEmbedderSpecForConfiguredRun(t *testing.T) {
+	chdirRoot(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "report.json")
+	var stderr bytes.Buffer
+	if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", fixtureDataset,
+		"-out", out, "-runner-class", "test", "-repeats", "1", "-date", "2026-08-30",
+		"-embedder", "mock"}, &bytes.Buffer{}, &stderr); code != exitOK {
+		t.Fatalf("mock-configured run exit %d, want 0:\n%s", code, stderr.String())
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	var report retrieval.Report
+	if err := json.Unmarshal(b, &report); err != nil {
+		t.Fatalf("unmarshal report: %v", err)
+	}
+	spec := report.Reproducible.EmbedderSpec
+	if spec == nil {
+		t.Fatalf("report %s has no embedder_spec (a /3 configured run MUST carry the resolved fingerprint)", out)
+	}
+	if spec.LexicalOnly || spec.Fingerprint == "" {
+		t.Errorf("configured run embedder_spec = %+v, want LexicalOnly=false and non-empty Fingerprint", spec)
+	}
+	if err := retrieval.CheckEmbedderSpec(&report); err != nil {
+		t.Errorf("CheckEmbedderSpec(configured report): %v", err)
+	}
+	// The harness_version must be /3 — the runner stamps /3, the reader
+	// accepts /3 (current) and /2 (legacy); if the runner were to lapse
+	// to /2 this would catch the regression by failing the version pin
+	// in CheckReportVersion (the report must round-trip through /3
+	// without exiting legacy).
+	if report.HarnessVersion != retrieval.HarnessVersion {
+		t.Errorf("harness_version = %q, want %q", report.HarnessVersion, retrieval.HarnessVersion)
+	}
+}
+
+// TestRetrievalEval_ReaderRefusesReportWithoutEmbedderSpec (AC-5) is
+// the "reading without a fingerprint is an error" half of the SW-269
+// contract, expressed against the reader path the harness itself uses.
+// A /3-shaped report whose `embedder_spec` is silently dropped (the
+// defect the story removes) must be refused with a message that names
+// the field; the contract is enforced, not optional. The version of
+// the tampered report is left at /3 so the CheckReportVersion gate
+// accepts the shape and the CheckEmbedderSpec gate is what fires.
+func TestRetrievalEval_ReaderRefusesReportWithoutEmbedderSpec(t *testing.T) {
+	chdirRoot(t)
+	dir := t.TempDir()
+	out := filepath.Join(dir, "report.json")
+	var stderr bytes.Buffer
+	if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", fixtureDataset,
+		"-out", out, "-runner-class", "test", "-repeats", "1", "-date", "2026-08-30",
+		"-embedder", "mock"}, &bytes.Buffer{}, &stderr); code != exitOK {
+		t.Fatalf("configured run exit %d, want 0:\n%s", code, stderr.String())
+	}
+
+	// Tamper: drop the embedder_spec field and re-serialise. The bytes
+	// the reader sees match the digest in run.json only when this edit
+	// is done via a path the reader also stamps; for the unit-level
+	// assertion we don't need a full run directory, just a round-trip
+	// through marshal/unmarshal that proves CheckEmbedderSpec fires.
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report retrieval.Report
+	if err := json.Unmarshal(raw, &report); err != nil {
+		t.Fatal(err)
+	}
+	report.Reproducible.EmbedderSpec = nil
+	if err := retrieval.CheckEmbedderSpec(&report); err == nil {
+		t.Fatal("CheckEmbedderSpec(nil spec on /3 report) = nil error; want a refusal naming the field")
+	} else if !strings.Contains(err.Error(), "embedder_spec") {
+		t.Errorf("refusal does not name embedder_spec: %v", err)
+	}
+
+	// Both-set is symmetrically rejected — exactly one of the two markers
+	// is the contract; "best-effort interpretation" is what the story
+	// refuses to leave in place.
+	report.Reproducible.EmbedderSpec = &retrieval.EmbedderSpec{Fingerprint: "abc", LexicalOnly: true}
+	if err := retrieval.CheckEmbedderSpec(&report); err == nil || !strings.Contains(err.Error(), "BOTH") {
+		t.Errorf("BOTH-set refusal = %v; want an error naming 'BOTH'", err)
+	}
+	// Empty-both (neither marker set) is the silent-accept defect
+	// shape: the same fingerprint-less ambiguity as the nil case,
+	// surfaced through a different representation. Same refusal.
+	report.Reproducible.EmbedderSpec = &retrieval.EmbedderSpec{}
+	if err := retrieval.CheckEmbedderSpec(&report); err == nil || !strings.Contains(err.Error(), "empty") {
+		t.Errorf("empty embedder_spec refusal = %v; want an error naming 'empty'", err)
 	}
 }
 
