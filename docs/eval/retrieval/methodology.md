@@ -124,9 +124,88 @@ reopened window does **not** enter this savings estimand. In particular, no cand
 may be reconstructed as a hypothetical 40-line window, and no baseline response may be priced
 from source lines after the run instead of its preserved response bytes.
 
-Search limits, ordering, overlap, deduplication, errors and `MaxReads` remain part of the versioned
-`GrepRead` implementation owned by the next slice. This contract fixes their accounting boundary,
-not their as-yet-unimplemented behavior.
+## Deterministic `GrepRead/1`
+
+`GrepRead/1` is the fixed comparator implementation. Its complete execution API is:
+
+```go
+func GrepRead(repository fs.FS, query string) GrepReadTranscript
+```
+
+There is no options struct. In particular, the function cannot receive a judgement, qrel, answer
+span, recall target or stop-at-recall callback. `GrepRead` always produces the complete transcript
+before a scorer sees it. A later scorer may select the earliest whole-response prefix reaching a
+predeclared target, but it may neither alter execution nor discard the preserved suffix. Adding an
+oracle would therefore require an explicit change to this function signature or forbidden package
+state, plus a `GrepRead` version change; `TestGrepRead_IsStructurallyJudgementBlindAndDeterministic`
+pins the two-argument function type and poisons the judgements while holding its two inputs fixed.
+
+The algorithm is fully specified as follows:
+
+1. **Patterns.** Scan the query for maximal Unicode letter, digit or underscore runs, lowercase
+   each run, retain first-occurrence order and remove exact duplicates. If at least one run has
+   three or more Unicode code points, discard all shorter runs; otherwise retain the short runs as
+   a fallback so a short-identifier query is not erased. Match every retained pattern as a
+   case-insensitive literal substring, never as a regular expression. A query with no runs emits
+   the exact grep error response `grep:error:query:no_searchable_pattern\n` and then exhausts.
+2. **Files.** Include regular files whose cleaned repository-relative slash path ends in `.go`,
+   including `_test.go`. Exclude symlinks, non-Go files, and any path below `vendor` or a directory
+   whose name begins with `.`. There is no generated-file, filename or content exception. Included
+   paths are ordered by raw UTF-8 path bytes.
+3. **Search.** Visit included paths in that order and source lines in ascending order. A source
+   line matching multiple patterns is one hit. Its column is the leftmost match's one-based UTF-8
+   byte column. Serialize a hit as `<path>:<line>:<column>:<line text>\n`; remove the source line's
+   LF or CRLF before adding that response LF. The grep response contains the first
+   `GrepReadSearchLimit = 20` distinct matching lines. Read, UTF-8 and walk failures are serialized
+   before hits, in path order, as `grep:error:<path>:<read_failed|invalid_utf8|walk_failed>\n` and
+   do not consume the match limit. A successful no-hit grep response is an exact non-nil zero-byte
+   slice.
+4. **Reads and overlap.** Consider the limited hits in their canonical order. A read starts at the
+   hit line and requests `GrepReadWindowLines = 40` lines, clipped at the then-current end of file.
+   The response is the exact source byte slice, including its original line endings and lack of a
+   final newline. A later hit in the same file is skipped when its line lies inside an earlier
+   requested 40-line window; this covers same-line duplicates and overlapping reads. Windows in
+   different files never deduplicate. The requested window is considered covered even if its read
+   returns an error or an empty response.
+5. **Termination and errors.** Reopen the file for every read, so grep and read remain distinct
+   operations. A read failure emits `read:error:<path>:read_failed\n`; invalid UTF-8 emits
+   `read:error:<path>:invalid_utf8\n`; a file shortened past the requested line emits an exact
+   non-nil zero-byte response. These are ordinary charged responses, not top-level failures.
+   Continue through every uncovered limited hit or stop after `GrepReadMaxReads = 8`. Record only
+   `exhausted` or `max_reads`; recall cannot be a stop reason.
+
+The parameter choices were made without inspecting comparator or candidate scores. Twenty search
+lines keeps the single grep response bounded and directly inspectable without a paging protocol.
+Eight reads bounds a single query's follow-up work while allowing multiple files to be opened; it
+is an operation cap, not a quality threshold. Forty lines was frozen in the preceding measurement
+contract as the size of a real read operation. The three-code-point preference suppresses the
+high accidental collision rate of one- and two-character substrings without a language-specific
+stopword list, while the all-short fallback preserves legitimate short identifiers. Including all
+regular Go and Go-test files gives the comparator the same source-and-test scope for every query;
+the exclusions are repository hygiene rules rather than query- or dataset-specific tuning.
+
+### Exact-byte payload ledger
+
+`GrepRead` appends each response to `PayloadLedger` at the only point from which that response is
+returned. Each entry stores its sequence, boundary, operation, an owned copy of the exact bytes,
+SHA-256 and byte count. There is no ledger API accepting source coordinates, a window-derived
+count or already-counted tokens. Empty responses are stored as non-nil `[]byte{}`; serialized error
+responses are stored like successes.
+
+`PayloadLedger.Validate` recomputes every digest and byte count from the stored slices.
+`PayloadLedger.PreservedPayloads` later accepts the pinned real tokenizer implementation and
+recomputes both `whitespace-fields-v1` and real-tokenizer counts separately from every stored
+slice; the executable counter receives a copy and cannot mutate the ledger. It rejects a missing
+executable counter or invalid vocabulary identity. The ledger's total
+byte cost is the length of `ConcatenatedBytes`, which appends every response in sequence. The
+payload digest is SHA-256 of that concatenation. The transcript digest additionally covers the
+query, derived patterns, included files, read requests, stop reason, response boundaries and
+operations through the canonical JSON representation of `GrepReadTranscript`.
+
+`TestPayloadLedger_CostIsEveryCapturedResponse` compares that concatenation with a literal grep +
+read byte string and validates the exact total. Removing an intermediate response leaves a
+sequence hole; removing the last response makes the ledger length disagree with the transcript's
+read operations. Both mutations fail validation rather than silently lowering cost.
 
 ## Equal-recall comparison
 
@@ -197,10 +276,12 @@ rule already binds running code.
 | `no_hit` is excluded and `family_id` cannot cross development/holdout. | `TestValidateSavingsAggregateInput_EnforcesEqualRecallAndPopulation` |
 | A miss has no tokens-to-target, carries a recomputed complete-transcript censor bound, and makes every magnitude aggregate fail. | `TestValidateSavingsAggregateInput_RejectsCompleteCaseSubsetAndMisses` |
 | Both arms use the query's same predeclared exact rational grade-3 target; only whole-span counts reach it. | `TestValidateSavingsAggregateInput_EnforcesEqualRecallAndPopulation` |
-| Candidate preserves exactly one complete `task_context/2` response; GrepRead preserves initial grep plus reads and terminates only at exhaustion/`MaxReads`. | `TestValidateSavingsAggregateInput_RejectsReconstructedPayloadsAndCountDrift` (artifact shape); actual producer execution is **UNENFORCED** until the GrepRead/payload-ledger slice. |
+| Candidate preserves exactly one complete `task_context/2` response; GrepRead preserves initial grep plus reads and terminates only at exhaustion/`MaxReads`. | Candidate/artifact shape: `TestValidateSavingsAggregateInput_RejectsReconstructedPayloadsAndCountDrift`; actual GrepRead producer: `TestGrepRead_HandComputedGolden`, `TestGrepRead_SearchAndReadCapsAreDeterministic`. |
 | Preserved byte slices are mandatory; SHA-256, byte counts, whitespace counts, real-tokenizer counts and vocabulary identity must recompute exactly; serialization mutation moves identity and counts. | `TestValidateSavingsAggregateInput_RejectsReconstructedPayloadsAndCountDrift` |
-| The capture point is below the real MCP serializer and the GrepRead implementation emits the preserved baseline bytes. | **UNENFORCED** until the payload-ledger slice; this slice validates artifacts but has no instrument to prove the capture location. |
-| Forty lines controls the actual GrepRead read operation and is never a reconstructed accounting charge. | Constant identity: `TestMeasurementContract_IsFrozen`; actual baseline behavior is **UNENFORCED** until `GrepRead` exists. |
+| The GrepRead executor is structurally judgement-blind; judgement changes cannot move its complete transcript or payload digest. | `TestGrepRead_IsStructurallyJudgementBlindAndDeterministic` |
+| The GrepRead producer captures exact success, empty and error bytes at its response boundary, and every derived count recomputes from those bytes. Candidate MCP capture remains **UNENFORCED** until the release-composition slice owns the actual transport call. | `TestGrepRead_HandComputedGolden`, `TestGrepRead_LedgerPreservesErrorAndEmptyResponses`, `TestPayloadLedger_CostIsEveryCapturedResponse` |
+| Total GrepRead cost is the concatenation of initial grep plus every read response; deleting an intermediate or final response fails validation. | `TestPayloadLedger_CostIsEveryCapturedResponse` |
+| Forty lines controls the actual GrepRead read operation and is never a reconstructed accounting charge. | Constant identity: `TestMeasurementContract_IsFrozen`; execution and overlap behavior: `TestGrepRead_HandComputedGolden`. |
 | Answer-bearing source bytes/provenance, not a relation-only citation or nearby declaration, earn grade-3 credit; a span is credited once. | **UNENFORCED** until the equal-recall scorer slice; `ValidateSavingsAggregateInput` validates credited whole-span counts but does not trust itself to prove how they were obtained. |
 | Ties remain zero-valued paired observations; misses do not become finite penalties. | Miss half: `TestValidateSavingsAggregateInput_RejectsCompleteCaseSubsetAndMisses`; tie-to-zero arithmetic is **UNENFORCED** until the aggregate calculator exists. |
 | The family-cluster bootstrap executes exactly 10,000 seeded paired replicates and nearest-rank endpoints. | Method identity: `TestValidateSavingsAggregateInput_RequiresExactConfidenceMethod`; calculation is **UNENFORCED** until the aggregate calculator exists. |
