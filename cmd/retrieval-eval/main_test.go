@@ -362,6 +362,33 @@ func TestRetrievalEval_UsageErrors(t *testing.T) {
 	}
 }
 
+func TestRetrievalEval_CheckClaimRejectsUnsafeSentence(t *testing.T) {
+	unsafe := "Semantic search beats BM25 and the CoIR lexical baseline across Go repositories."
+	var stderr bytes.Buffer
+	if code := run([]string{"-check-claim", unsafe}, &bytes.Buffer{}, &stderr); code != exitError {
+		t.Fatalf("check-claim exit %d, want %d\n%s", code, exitError, stderr.String())
+	}
+	want := "retrieval-eval: retrieval claim rejected: " +
+		"claim_shape (\"not the frozen descriptive template\"); comparator_scope (\"BM25\"); comparator_scope (\"CoIR\"); comparator_scope (\"lexical baseline\"); " +
+		"population_scope (\"across Go repositories\"); population_scope (\"Go repositories\"); " +
+		"population_scope (\"missing frozen Cobra dataset scope\"); population_scope (\"missing required pinned-Cobra limitation\"); " +
+		"semantic_superiority (\"Semantic\")\n"
+	if stderr.String() != want {
+		t.Fatalf("check-claim output:\n%s\nwant exactly:\n%s", stderr.String(), want)
+	}
+}
+
+func TestRetrievalEval_CheckClaimAcceptsOnlyNarrowDescriptiveScope(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := run([]string{"-check-claim", retrieval.ClaimTemplateExample}, &bytes.Buffer{}, &stderr); code != exitOK {
+		t.Fatalf("check-claim exit %d, want %d\n%s", code, exitOK, stderr.String())
+	}
+	want := "retrieval-eval: claim accepted by " + retrieval.MeasurementContractVersion + "\n"
+	if stderr.String() != want {
+		t.Fatalf("check-claim output = %q, want %q", stderr.String(), want)
+	}
+}
+
 // TestRetrievalEval_InvalidEmbedderSelectorExitsNonZeroAndWritesNoReport
 // is the regression the SW-263 reviewer required (and SW-269 explicitly
 // hardens). Three checks the SW-269 AC-1 contract MUST satisfy at once:

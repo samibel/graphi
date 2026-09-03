@@ -49,6 +49,7 @@
 //	go run ./cmd/retrieval-eval -field-parity -manifest corpus/manifest.json -repo <name> -dataset <path> -out <report.json> \
 //	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
+//	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
 package main
@@ -117,6 +118,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	exportRaw := fs.String("export-raw", "", "after the run, write the raw-sample run directory here (report, dataset copy, raw/hits-*.json, raw/latency-*.json)")
 	fieldParity := fs.Bool("field-parity", false, "SW-272 evaluator-only control: select every and only dev/nl_behaviour query at exact grade 3 and run the fixed six-cell field-parity baseline set; cannot be combined with -baseline")
 	aggregate := fs.String("aggregate", "", "recompute every published metric in this run directory from its raw samples; exit 0 reproduced, 1 discrepancy, 2 unreadable, 3 incomplete")
+	checkClaim := fs.String("check-claim", "", "validate a candidate savings sentence against the frozen scope contract; this checks wording only and never generates or publishes a claim")
 	runnerClass := fs.String("runner-class", "local", "machine class stamped into the report")
 	repeats := fs.Int("repeats", retrieval.DefaultRepeats, "timed executions per query and baseline")
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
@@ -140,6 +142,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	switch {
+	case *checkClaim != "":
+		if err := retrieval.CheckClaimSentence(*checkClaim); err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		fmt.Fprintf(stderr, "retrieval-eval: claim accepted by %s\n", retrieval.MeasurementContractVersion)
+		return exitOK
 	case *aggregate != "":
 		return runAggregate(*aggregate, *out, stderr)
 	case *derive:
