@@ -128,3 +128,33 @@ jobs:
             -left "$RUNNER_TEMP/amd64/vectors-amd64.json" \
             -right docs/eval/static-embedder-cross-arch/2026-09-03-sw271/vectors.json
           cat "$RUNNER_TEMP/comparison.txt" >> "$GITHUB_STEP_SUMMARY"
+
+  # SW-278: the Labs hero is intentionally absent from an untagged `go test
+  # ./...`: requiring a machine-local model there would make every ordinary CI
+  # job red for an environmental prerequisite. This is its authoritative gate.
+  # It consumes the same single-producer artifact as the architecture jobs,
+  # verifies the four production pins again, and has no skip/fallback policy.
+  labs-hero:
+    name: execute task_context/2 Labs hero with production model
+    needs: prepare-model
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: receive the shared pinned artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: static-model-${{ github.run_id }}
+          path: ${{ runner.temp }}/static-model
+
+      - name: verify all production-model pins again
+        run: go run ./cmd/static-embedder-archcheck verify -model-dir "$RUNNER_TEMP/static-model"
+
+      - name: execute the model-backed Labs hero gate
+        env:
+          GRAPHI_STATIC_MODEL_DIR: ${{ runner.temp }}/static-model
+        run: go test -tags labs_hero ./cmd/eval -run '^TestLabsHeroSuite_' -count=1 -v

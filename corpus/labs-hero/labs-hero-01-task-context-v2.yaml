@@ -1,0 +1,25 @@
+id: labs-hero-01-task-context-v2
+description: >
+  One task_context/2 call answers where the auth token is validated with the
+  answer-bearing ValidateToken source, its HTTP caller, and its focused test.
+  The separate Labs suite requires ready semantic retrieval, audit
+  fingerprints, and the 1200-token bound; lexical fallback is a failure.
+fixture_ref: retrieval-fixture-v1
+operation:
+  name: task_context
+  args:
+    task: Where is the auth token validated?
+    version: "2"
+    token_budget: "1200"
+area: agent_mcp
+expect:
+  outcome: found
+  contains_path: auth/token.go
+  has_evidence: true
+  anchors:
+    - kind: file
+      value: auth/token.go
+      match: contains
+    - kind: file
+      value: auth/token_test.go
+      match: contains
