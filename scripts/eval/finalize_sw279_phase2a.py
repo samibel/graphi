@@ -1,109 +1,36 @@
 #!/usr/bin/env python3
-"""Materialize the completed SW-279 Phase 2a candidate ledger and Q seal."""
+"""Materialize the completed SW-279 Phase 2a candidate ledger and Q seal.
+
+The first cut of this script carried the 139-row semantic verdict inline, as a dict literal
+edited into the source by the same actor that had held the raw API envelopes. The verdict
+now arrives as a file written by an isolated classifier that never touched the network, and
+this script only validates and materialises it. Every check below exists so that a
+malformed or partial classification fails loudly instead of silently shrinking the ledger.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _access_ledger  # noqa: E402
 
-ROOT = Path("docs/eval/retrieval/harvests/sw-279-phase-2a")
-MANIFEST_SHA256 = "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17"
+
+ROOT = Path("docs/eval/retrieval/harvests/sw-279-phase-2a2")
+MANIFEST_SHA256 = "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4"
 RULE_COMMIT = "a0a13a757c66e8d4f0747d4a68955fe95d072573"
 RULE_SHA256 = "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c"
-SELECTOR = "Codex /root (SW-279 Phase 2a selector)"
+SELECTOR = "Claude Opus 5 (SW-279 Phase 2a isolated semantic classifier)"
+SELECTOR_ROLE = "labelled solo substitute for an independent selector"
+MATERIALIZER = "Claude Opus 5 (SW-279 Phase 2 orchestrator)"
 
-# Every syntactically eligible issue not named here is an explicit candidate.
-# The union is validated against semantic-review.jsonl before anything is written.
-REJECTIONS: dict[int, list[str]] = {
-    124: ["E2"],
-    206: ["E1"],
-    243: ["E1", "E2"],
-    298: ["E1"],
-    357: ["E1", "C3"],
-    489: ["E4"],
-    566: ["E2"],
-    587: ["E2"],
-    613: ["E1", "E4"],
-    678: ["E1", "E4"],
-    689: ["C2", "E4"],
-    692: ["E2"],
-    699: ["E5", "E2"],
-    710: ["E4"],
-    724: ["E1", "E4"],
-    725: ["E1", "E4"],
-    829: ["E1"],
-    835: ["C3"],
-    852: ["E4"],
-    910: ["E4"],
-    943: ["E1", "E4"],
-    1025: ["E1", "E4"],
-    1098: ["E1", "E4"],
-    1102: ["C2", "E4"],
-    1120: ["E1"],
-    1141: ["C2", "E4"],
-    1151: ["C3", "E4"],
-    1167: ["E1", "C3"],
-    1168: ["E4"],
-    1186: ["E2", "E4"],
-    1221: ["E1", "E4"],
-    1236: ["E4"],
-    1244: ["E5"],
-    1289: ["E4"],
-    1299: ["E1"],
-    1335: ["C2", "E4"],
-    1336: ["C2", "E4"],
-    1381: ["E2"],
-    1395: ["E1", "E4"],
-    1416: ["E4"],
-    1466: ["C2", "E4"],
-    1480: ["E1"],
-    1521: ["E2"],
-    1531: ["C3"],
-    1573: ["C2", "C3", "E4"],
-    1628: ["C1", "C3"],
-    1631: ["C3", "E1"],
-    1651: ["E1"],
-    1739: ["E2"],
-    1749: ["C2", "E4"],
-    1798: ["C2", "E4"],
-    1811: ["C2"],
-    1834: ["E1", "E4"],
-    1859: ["E3", "E5"],
-    1861: ["E1", "E4"],
-    1894: ["C3"],
-    1915: ["E1", "E4", "C3"],
-    1923: ["E4"],
-    1924: ["E4"],
-    1947: ["E1", "E4"],
-    1962: ["E1"],
-    2007: ["E1", "E4"],
-    2014: ["E1", "E4"],
-    2068: ["E2"],
-    2138: ["E1", "E4"],
-    2141: ["E1", "E4", "C3"],
-    2160: ["E4"],
-    2184: ["E4"],
-    2243: ["E2"],
-    2249: ["E1", "E4"],
-    2264: ["C2", "E4"],
-    2270: ["C2"],
-    2282: ["E2"],
-}
-
-REJECT_RATIONALES = {
-    "C1": "The opening text asks for subjective application design rather than an explanation of an existing Cobra fact, so C1 does not hold.",
-    "C2": "The opening text concerns Go, a shell, a terminal, or the reporter's application rather than Cobra's implementation, API, configuration, or repository documentation, so C2 does not hold.",
-    "C3": "The derived Q needs an omitted screenshot, linked example, or undefined referenced material to determine the requested fact, so C3 does not hold.",
-    "E1": "The opening text asserts an observed failure or actual-versus-expected discrepancy and asks for diagnosis or correction, so E1 applies.",
-    "E2": "The opening text asks to add or change Cobra behavior, API, output, or documentation, so E2 applies.",
-    "E3": "The opening text asks for a release action or version-policy outcome, so E3 applies.",
-    "E4": "Answering the opening request requires the reporter's command tree, callbacks, application code, environment, shell, filesystem, or runtime state, so E4 applies.",
-    "E5": "The opening text is project administration or a proposal rather than an information request about existing Cobra code, so E5 applies.",
-}
+LEGAL_CLAUSES = {"C1", "C2", "C3", "C4", "C5", "E1", "E2", "E3", "E4", "E5"}
+CANDIDATE_CLAUSES = ["C1", "C2", "C3", "C4", "C5"]
 
 
 def sha256(data: bytes) -> str:
@@ -125,12 +52,10 @@ def jsonl_bytes(rows: list[dict[str, object]]) -> bytes:
     )
 
 
-def reject_rationale(clauses: list[str]) -> str:
-    return REJECT_RATIONALES[clauses[0]]
-
-
 def main() -> None:
     semantic_path = ROOT / "semantic-review.jsonl"
+    classification_path = ROOT / "semantic-classification.jsonl"
+    attestation_path = ROOT / "semantic-classifier-attestation.json"
     mechanical_path = ROOT / "mechanical-candidate-ledger.jsonl"
     archive_path = ROOT / "issue-text.jsonl"
     decision_path = ROOT / "semantic-decisions.jsonl"
@@ -138,46 +63,70 @@ def main() -> None:
     questions_path = ROOT / "candidate-questions.jsonl"
     seal_path = ROOT / "candidate-question-seal.json"
     summary_path = ROOT / "phase-2a-summary.json"
-    attestation_path = ROOT / "selector-attestation.json"
     access_path = ROOT / "access-ledger.jsonl"
-    outputs = (decision_path, ledger_path, questions_path, seal_path, summary_path, attestation_path)
+    outputs = (decision_path, ledger_path, questions_path, seal_path, summary_path)
     if any(path.exists() for path in outputs):
         raise SystemExit("refusing to overwrite a finalized Phase 2a artifact")
+    if not classification_path.exists():
+        raise SystemExit(f"no semantic classification at {classification_path}")
+    if not attestation_path.exists():
+        raise SystemExit(f"no classifier attestation at {attestation_path}")
 
     semantic = read_jsonl(semantic_path)
-    eligible_numbers = {int(row["issue_number"]) for row in semantic}
-    unknown_rejections = set(REJECTIONS) - eligible_numbers
-    if unknown_rejections:
-        raise SystemExit(f"rejection decisions outside semantic review: {sorted(unknown_rejections)}")
+    classification = read_jsonl(classification_path)
+
+    # The classification must cover the syntactically eligible rows exactly: same numbers,
+    # same order, no additions, no omissions. Section 9 has no state for a dropped row.
+    eligible_numbers = [int(row["issue_number"]) for row in semantic]
+    classified_numbers = [int(row["issue_number"]) for row in classification]
+    if classified_numbers != eligible_numbers:
+        missing = sorted(set(eligible_numbers) - set(classified_numbers))
+        extra = sorted(set(classified_numbers) - set(eligible_numbers))
+        raise SystemExit(
+            "classification does not match the syntactically eligible set one-for-one and in order; "
+            f"missing={missing} unexpected={extra}"
+        )
 
     decided_at = now()
     semantic_decisions: list[dict[str, object]] = []
     decisions_by_number: dict[int, dict[str, object]] = {}
-    for row in semantic:
+    reject_count = 0
+    boundary_cases: list[int] = []
+    for row in classification:
         number = int(row["issue_number"])
-        clauses = REJECTIONS.get(number)
-        if clauses is None:
-            decision = {
-                "issue_number": number,
-                "selector": SELECTOR,
-                "verdict_at_utc": decided_at,
-                "state": "candidate",
-                "verdict": "candidate",
-                "primary_deciding_clause": "C1-C5",
-                "deciding_clauses": ["C1", "C2", "C3", "C4", "C5"],
-                "rationale": "The title and opening body ask one standalone English question about existing Cobra behavior or API whose answer is independent of the reporter's program state.",
-            }
+        verdict = str(row["verdict"])
+        clauses = [str(clause) for clause in row["deciding_clauses"]]
+        rationale = str(row["rationale"])
+        if verdict not in {"candidate", "reject"}:
+            raise SystemExit(f"issue {number}: illegal verdict {verdict!r}")
+        illegal = [clause for clause in clauses if clause not in LEGAL_CLAUSES]
+        if illegal:
+            raise SystemExit(f"issue {number}: illegal deciding clauses {illegal}")
+        if not clauses:
+            raise SystemExit(f"issue {number}: a verdict with no deciding clause is a Section 3 violation")
+        if not rationale.strip():
+            raise SystemExit(f"issue {number}: empty rationale")
+        if row.get("boundary_case"):
+            boundary_cases.append(number)
+        if verdict == "candidate":
+            if clauses != CANDIDATE_CLAUSES:
+                raise SystemExit(f"issue {number}: a candidate must record {CANDIDATE_CLAUSES}, got {clauses}")
+            state = "candidate"
         else:
-            decision = {
-                "issue_number": number,
-                "selector": SELECTOR,
-                "verdict_at_utc": decided_at,
-                "state": "reject:not_candidate",
-                "verdict": "reject",
-                "primary_deciding_clause": clauses[0],
-                "deciding_clauses": clauses,
-                "rationale": reject_rationale(clauses),
-            }
+            reject_count += 1
+            state = "reject:not_candidate"
+        decision = {
+            "issue_number": number,
+            "selector": SELECTOR,
+            "selector_role": SELECTOR_ROLE,
+            "verdict_at_utc": decided_at,
+            "state": state,
+            "verdict": verdict,
+            "primary_deciding_clause": clauses[0],
+            "deciding_clauses": clauses,
+            "rationale": rationale,
+            "boundary_case": bool(row.get("boundary_case", False)),
+        }
         semantic_decisions.append(decision)
         decisions_by_number[number] = decision
 
@@ -211,7 +160,7 @@ def main() -> None:
         raise SystemExit("final ledger does not match manifest one-for-one and in order")
     if len(decisions_by_number) != len(semantic):
         raise SystemExit("semantic decision count mismatch")
-    if len(questions) + len(REJECTIONS) != len(semantic):
+    if len(questions) + reject_count != len(semantic):
         raise SystemExit("semantic candidate/reject partition mismatch")
 
     ledger_bytes = jsonl_bytes(final_rows)
@@ -257,7 +206,9 @@ def main() -> None:
         "unresolved_count": state_counts["unresolved"],
         "syntactically_eligible_count": len(semantic),
         "mechanical_reject_count": len(final_rows) - len(semantic),
-        "semantic_reject_count": len(REJECTIONS),
+        "semantic_reject_count": reject_count,
+        "semantic_boundary_case_count": len(boundary_cases),
+        "semantic_boundary_case_issues": boundary_cases,
         "rejects_by_primary_clause_exclusive": dict(sorted(primary_counts.items())),
         "reject_clause_mentions_nonexclusive": dict(sorted(clause_counts.items())),
         "issue_text_archive_sha256": archive_sha,
@@ -265,42 +216,33 @@ def main() -> None:
         "candidate_ledger_sha256": ledger_sha,
         "candidate_questions_sha256": questions_sha,
         "sealed_at_utc": sealed_at,
+        "semantic_classifier": SELECTOR,
+        "semantic_classifier_role": SELECTOR_ROLE,
+        "semantic_classifier_attestation_sha256": attestation_sha,
     }
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    attestation = {
-        "schema": "sw-279-phase-2a-selector-attestation/v1",
-        "actor": SELECTOR,
-        "attested_at_utc": now(),
-        "input_population_manifest_sha256": MANIFEST_SHA256,
-        "output_candidate_ledger_sha256": ledger_sha,
-        "statements": [
-            "I used only issue number, author, creation time, title, and opening body for candidate classification.",
-            "I did not inspect any GitHub comment, maintainer reply, reaction, label, closing event, attachment target, linked pull request, or external-link target for selection.",
-            "I did not inspect the pinned Cobra source or perform candidate-directed source search.",
-            "I did not run or inspect candidate or baseline retrieval output, ranks, scores, bundles, metrics, traces, or saved hit lists.",
-            "I assigned no family, stratum, rubric, split, answerability verdict, judgement, or dataset row.",
-            "I did not edit docs/eval/retrieval-targets.json or any dataset file.",
-        ],
-    }
-    attestation_path.write_text(json.dumps(attestation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # The selector attestation is written by the isolated classifier itself, in its own
+    # words. This script does not compose one on its behalf; it only records its digest.
+    attestation_sha = sha256(attestation_path.read_bytes())
 
-    prior = read_jsonl(access_path)
-    if [row.get("sequence") for row in prior] != [1, 2]:
-        raise SystemExit("unexpected access-ledger state before classification event")
-    event = {
-        "sequence": 3,
-        "actor": SELECTOR,
-        "timestamp_utc": now(),
-        "command_tool_class": "local deterministic Section 2 transform plus allowed-text C1-C5/E1-E5 human classification",
-        "input_artifact": archive_path.as_posix(),
-        "input_sha256": archive_sha,
-        "output_artifact": ledger_path.as_posix(),
-        "output_sha256": ledger_sha,
-        "detail": "Complete-population candidate ledger and sealed T/Q artifact; no Cobra source, family, split, dataset, or retrieval access.",
-    }
-    with access_path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+    _access_ledger.append(
+        access_path,
+        actor=MATERIALIZER,
+        command_tool_class="local materialisation of the isolated classifier's verdict into the complete-population ledger",
+        input_artifact=classification_path.as_posix(),
+        input_sha256=sha256(classification_path.read_bytes()),
+        output_artifact=ledger_path.as_posix(),
+        output_sha256=ledger_sha,
+        detail=(
+            "Validated the 139-row semantic classification against the syntactically eligible set "
+            "one-for-one and in order, then materialised the complete-population candidate ledger "
+            "and the sealed T/Q artifact. No network, source, family, split, dataset or retrieval "
+            "access. The semantic verdicts were made by " + SELECTOR + " (" + SELECTOR_ROLE +
+            "), whose attestation is semantic-classifier-attestation.json, sha256 " +
+            attestation_sha + "."
+        ),
+    )
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 

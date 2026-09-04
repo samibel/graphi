@@ -1,0 +1,25 @@
+{
+  "schema": "sw-279-first-fetch-record/v1",
+  "repository": "spf13/cobra",
+  "phase_1_rule_commit": "a0a13a757c66e8d4f0747d4a68955fe95d072573",
+  "phase_1_rule_path": "docs/eval/retrieval/dataset-v2-inclusion-rule.md",
+  "phase_1_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "phase_1_commit_time_utc": "2026-09-03T22:57:37.000000Z",
+  "fetch_started_at_utc": "2026-09-04T21:53:49.192033Z",
+  "fetch_start_postdates_rule_commit": true,
+  "requested_fields": [
+    "number",
+    "createdAt"
+  ],
+  "explicitly_not_requested": [
+    "title",
+    "body",
+    "labels",
+    "reactions",
+    "comments",
+    "timeline",
+    "linkedPullRequests"
+  ],
+  "output_artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/issue-numbers.txt",
+  "output_sha256": "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4"
+}

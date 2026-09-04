@@ -13,8 +13,12 @@ from pathlib import Path
 
 RULE_COMMIT = "a0a13a757c66e8d4f0747d4a68955fe95d072573"
 RULE_PATH = Path("docs/eval/retrieval/dataset-v2-inclusion-rule.md")
-OUT_DIR = Path("docs/eval/retrieval/harvests/sw-279-phase-2a")
+OUT_DIR = Path("docs/eval/retrieval/harvests/sw-279-phase-2a2")
 CUTOFF_SOURCE = "committer timestamp of the frozen Phase 1 rule commit"
+# The actor label is the entity that actually runs this script. The first Phase 2a run
+# was superseded (see docs/eval/retrieval/harvests/SUPERSEDED.md); the re-harvest is run
+# by a different actor and the access ledger must say so rather than repeat a stale name.
+ACTOR = "Claude Opus 5 (SW-279 Phase 2 re-harvest fetcher)"
 EXPECTED_POPULATION = 1255
 
 QUERY = """
@@ -173,7 +177,7 @@ def main() -> int:
 
     access_event = {
         "sequence": 1,
-        "actor": "Codex /root (SW-279 Phase 2a selector)",
+        "actor": ACTOR,
         "timestamp_utc": timestamp(fetch_end),
         "command_tool_class": "gh api graphql: issue number and creation-time population fetch",
         "input_artifact": RULE_PATH.as_posix(),

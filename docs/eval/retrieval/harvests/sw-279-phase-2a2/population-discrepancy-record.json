@@ -1,0 +1,27 @@
+{
+  "schema": "sw-279-population-discrepancy-record/v1",
+  "resolved_at_utc": "2026-09-04T21:55:13.980265Z",
+  "resolved_by": "Claude Opus 5 (SW-279 Phase 2 re-harvest fetcher)",
+  "cutoff_utc": "2026-09-03T22:57:37.000000Z",
+  "expected_population_size": 1255,
+  "observed_population_size": 1256,
+  "superseded_manifest": "docs/eval/retrieval/harvests/sw-279-phase-2a-superseded/issue-numbers.txt",
+  "superseded_manifest_sha256": "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17",
+  "new_manifest": "docs/eval/retrieval/harvests/sw-279-phase-2a2/issue-numbers.txt",
+  "new_manifest_sha256": "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4",
+  "numbers_present_in_new_absent_from_superseded": [
+    1036
+  ],
+  "numbers_present_in_superseded_absent_from_new": [],
+  "new_is_strict_superset_of_superseded": true,
+  "probes": [
+    {
+      "issue_number": 1036,
+      "created_at": "2020-02-17T20:49:06Z",
+      "created_at_or_before_cutoff": true,
+      "classified_by_github_as": "issue (the GraphQL issues connection and issue(number:) field never return pull requests)"
+    }
+  ],
+  "selection_set": "issue(number:) { number createdAt }",
+  "issue_text_read": false
+}

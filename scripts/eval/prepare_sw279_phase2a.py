@@ -5,21 +5,30 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import unicodedata
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _access_ledger  # noqa: E402
 
-ROOT = Path("docs/eval/retrieval/harvests/sw-279-phase-2a")
+
+ROOT = Path("docs/eval/retrieval/harvests/sw-279-phase-2a2")
 MANIFEST = ROOT / "issue-numbers.txt"
+# The raw fetch output is an input this script never writes: the first cut read
+# issue-text.jsonl as a file it had not created and then overwrote it in place, which is
+# how a hand-assembled archive came to be indistinguishable from a fetched one.
+RAW = ROOT / "issue-text-raw.jsonl"
 ARCHIVE = ROOT / "issue-text.jsonl"
 ARCHIVE_META = ROOT / "issue-text-metadata.json"
 MECHANICAL = ROOT / "mechanical-candidate-ledger.jsonl"
 SEMANTIC_REVIEW = ROOT / "semantic-review.jsonl"
 ACCESS = ROOT / "access-ledger.jsonl"
-MANIFEST_SHA256 = "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17"
-SELECTOR = "Codex /root (SW-279 Phase 2a selector)"
+MANIFEST_SHA256 = "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4"
+SELECTOR = "scripts/eval/prepare_sw279_phase2a.py deterministic Section 2 transform"
+RUN_BY = "Claude Opus 5 (SW-279 Phase 2 re-harvest fetcher)"
 
 MARKERS = ("[question]:", "(question):", "question:", "[question]", "(question)")
 FIRST_TOKENS = {
@@ -96,10 +105,10 @@ def main() -> None:
         raise SystemExit("population manifest digest mismatch")
     numbers = [int(line) for line in manifest_bytes.decode("ascii").splitlines()]
 
-    raw_rows = [json.loads(line) for line in ARCHIVE.read_text(encoding="utf-8").splitlines()]
+    raw_rows = [json.loads(line) for line in RAW.read_text(encoding="utf-8").splitlines()]
     if [row["issue_number"] for row in raw_rows] != numbers:
         raise SystemExit("issue archive does not match the population manifest in order")
-    if ARCHIVE_META.exists() or MECHANICAL.exists() or SEMANTIC_REVIEW.exists():
+    if ARCHIVE.exists() or ARCHIVE_META.exists() or MECHANICAL.exists() or SEMANTIC_REVIEW.exists():
         raise SystemExit("refusing to overwrite a sealed/prepared Phase 2a artifact")
 
     prepared_at = timestamp()
@@ -114,6 +123,8 @@ def main() -> None:
         body = row["body"]
         if not isinstance(title, str) or not (body is None or isinstance(body, str)):
             raise SystemExit(f"invalid raw text type for issue {row['issue_number']}")
+        if not row.get("created_at"):
+            raise SystemExit(f"created_at is null for issue {row['issue_number']}")
         title_sha = digest(title.encode("utf-8"))
         body_sha = digest((body or "").encode("utf-8"))
         query, marker = derive_question(title)
@@ -208,22 +219,21 @@ def main() -> None:
     }
     ARCHIVE_META.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    prior = ACCESS.read_text(encoding="utf-8").splitlines()
-    if len(prior) != 1 or json.loads(prior[0]).get("sequence") != 1:
-        raise SystemExit("unexpected access-ledger state before allowed-text archive event")
-    event = {
-        "sequence": 2,
-        "actor": SELECTOR,
-        "timestamp_utc": timestamp(),
-        "command_tool_class": "installed GitHub connector: allowed opening issue text search plus exact-number author reads",
-        "input_artifact": MANIFEST.as_posix(),
-        "input_sha256": MANIFEST_SHA256,
-        "output_artifact": ARCHIVE.as_posix(),
-        "output_sha256": archive_sha,
-        "detail": "Projected only issue_number, author.login, created_at, title, and opening body. Connector-returned labels, comments, reactions, state, assignees, milestones, and other fields were discarded and were not used for selection.",
-    }
-    with ACCESS.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+    _access_ledger.append(
+        ACCESS,
+        actor=RUN_BY,
+        command_tool_class="local deterministic Section 2 transform over the fetched raw archive",
+        input_artifact=RAW.as_posix(),
+        input_sha256=digest(RAW.read_bytes()),
+        output_artifact=ARCHIVE.as_posix(),
+        output_sha256=archive_sha,
+        detail=(
+            "Sealed the allowed issue text (issue number, author login, creation time, title, "
+            "opening body) and applied the frozen Section 2 transform and syntactic eligibility "
+            "test. No network access, no source access, no retrieval access, and no semantic "
+            "verdict. Titles and bodies were not printed to an operator console."
+        ),
+    )
 
     print(json.dumps(metadata, ensure_ascii=False, indent=2))
 
