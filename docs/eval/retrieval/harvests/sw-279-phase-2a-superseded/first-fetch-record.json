@@ -1,0 +1,20 @@
+{
+  "schema": "sw-279-first-fetch-record/v1",
+  "repository": "spf13/cobra",
+  "phase_1_rule_commit": "a0a13a757c66e8d4f0747d4a68955fe95d072573",
+  "phase_1_rule_path": "docs/eval/retrieval/dataset-v2-inclusion-rule.md",
+  "phase_1_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "phase_1_commit_time_utc": "2026-09-03T22:57:37.000000Z",
+  "fetch_started_at_utc": "2026-09-03T23:07:53.583000Z",
+  "fetch_start_postdates_rule_commit": true,
+  "elapsed_after_rule_commit_seconds": 616.583,
+  "tool_class": "installed GitHub connector issue search",
+  "query_scope": "repo:spf13/cobra is:issue, partitioned by creation time",
+  "selector_projection": [
+    "issue_number",
+    "created_at"
+  ],
+  "transport_limitation": "The connector returned normalized envelopes containing additional fields. Before the manifest seal, code projected only issue_number and created_at; no title/body value was emitted to or inspected by the selector. Unused label/comment fields were discarded.",
+  "output_artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a/issue-numbers.txt",
+  "output_sha256": "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17"
+}

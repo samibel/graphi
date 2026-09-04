@@ -1,0 +1,36 @@
+{
+  "schema": "sw-279-allowed-issue-text-archive/v1",
+  "repository": "spf13/cobra",
+  "population_manifest_sha256": "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17",
+  "row_count": 1255,
+  "fields_fetched_for_archive": [
+    "issue_number",
+    "author.login",
+    "created_at",
+    "title",
+    "body"
+  ],
+  "null_body_digest_convention": "A null opening body is preserved as null, body_was_null is true, and body_sha256 hashes the empty byte sequence.",
+  "title_digest_convention": "SHA-256 of the raw title's UTF-8 bytes.",
+  "body_digest_convention": "SHA-256 of the raw opening body's UTF-8 bytes, or empty bytes when GitHub returned null.",
+  "row_order": "ascending issue_number, exactly matching issue-numbers.txt",
+  "archive_file": "issue-text.jsonl",
+  "archive_sha256": "faafa1df48ef45e00fb72a28bf97ba2adb3d520c25b4a89babd314bc85bdf073",
+  "mechanical_ledger_file": "mechanical-candidate-ledger.jsonl",
+  "mechanical_ledger_sha256": "258a24a36cd910ed74a2a8179a3ff6193815acc9fb215a14bfaf010bf3f26af2",
+  "semantic_review_file": "semantic-review.jsonl",
+  "semantic_review_sha256": "19a71f4468c8169d1292083ce9c684d77643a7a6b5bec1017d98892c226dddc1",
+  "prepared_at_utc": "2026-09-03T23:24:30.920309Z",
+  "syntactically_eligible_count": 139,
+  "mechanical_reject_count": 1116,
+  "mechanical_failure_counts_nonexclusive": {
+    "S2_CODEPOINT_COUNT": 1,
+    "S2_FIRST_TOKEN": 1116,
+    "S2_QUESTION_MARK": 1,
+    "S2_TOKEN_COUNT": 51
+  },
+  "removed_marker_counts": {
+    "[question]": 5,
+    "question:": 18
+  }
+}
