@@ -50,16 +50,7 @@ jobs:
       # blocks a release is decided in cmd/release-gate/policy.go, and this
       # standalone check is the duplicate full-suite execution the spec defers
       # to the release-DAG split.
-      #
-      # SW-275: -remeasure-unverified. On this runner the full parallel suite is
-      # itself the load that made the AX-06 latency gate unable to tell two
-      # byte-identical paths apart (UNVERIFIED, tail_control_above_ceiling) in
-      # roughly one trunk run in three — red for a measurement the gate said it
-      # could not make. With the flag, an UNVERIFIED run (and only an UNVERIFIED
-      # run: a failure is never re-run) re-measures the reporting gates'
-      # packages alone on the now-idle runner and reports THAT run's verdict.
-      # A re-measurement that is itself UNVERIFIED or fails is still red here.
       - name: strict all-green gate (full suite)
         run: |
           go build -o "$RUNNER_TEMP/testgate" ./cmd/testgate
-          "$RUNNER_TEMP/testgate" -remeasure-unverified
+          "$RUNNER_TEMP/testgate"

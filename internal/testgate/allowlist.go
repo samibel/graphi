@@ -133,12 +133,6 @@ type EvaluateResult struct {
 	SkippedPackages  []SkippedPackage `json:"skipped_packages,omitempty"`  // packages that reported "skip" as a whole, sorted by package
 	Unverified       []UnverifiedGate `json:"unverified,omitempty"`        // gates that demonstrated they could not measure, sorted by gate id
 	MarkerErrors     []string         `json:"marker_errors,omitempty"`     // fail-closed rejections on the UNVERIFIED channel
-	// Remeasured (SW-275) is the first run's UNVERIFIED report when cmd/testgate
-	// re-ran the reporting gates' packages alone and this result is that
-	// isolated re-run's own verdict. It is observational: it never affects the
-	// verdict, which the re-run earned by measuring, and it is never empty on a
-	// result that was not re-measured.
-	Remeasured []UnverifiedGate `json:"remeasured,omitempty"`
 }
 
 // decide applies the precedence the whole design turns on:
@@ -674,15 +668,6 @@ func FormatVerdict(res EvaluateResult) string {
 			if gate.Detail != "" {
 				fmt.Fprintf(&b, "      %s\n", gate.Detail)
 			}
-		}
-	}
-	if len(res.Remeasured) > 0 {
-		fmt.Fprintf(&b, "  re-measured in isolation: %d — under the full parallel suite these gates reported "+
-			"UNVERIFIED (below); their packages were then re-run alone and the verdict above is that "+
-			"isolated run's own measurement, not a downgrade of the report\n", len(res.Remeasured))
-		for _, gate := range res.Remeasured {
-			fmt.Fprintf(&b, "    - %s (%s.%s): %s %s\n",
-				gate.GateID, gate.Package, gate.Test, gate.ReasonCode, formatMeasurements(gate.Measurements))
 		}
 	}
 	if len(res.UnexpectedFails) > 0 {
