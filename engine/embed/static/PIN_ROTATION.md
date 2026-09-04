@@ -70,10 +70,11 @@ and become stale when `PinnedRevision` changes:
   the evidence that the gate is not decorative.
 - `docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule/` — SW-270's
   before/after measurement of the bare-filename exact-path rule on the SW-258
-  dev split (`before/` at `9bf9326`, `after/` at `71cba5e`). Its
-  `semantic_name_only` and `semantic_first` series on both sides are produced
-  by this pinned embedder; the `exact_path` 0.6667 → 1.0000 result and the
-  "every other stratum identical" finding are only valid for this revision.
+  dev split (`before/` at `9bf9326`, `after/` at `8ef5635` — the `.go`-only
+  rule from review round 1). Its `semantic_name_only` and `semantic_first`
+  series on both sides are produced by this pinned embedder; the `exact_path`
+  0.6667 → 1.0000 result and the "every other stratum identical" finding are
+  only valid for this revision.
 - `docs/eval/static-embedder-cross-arch/2026-09-03-sw271/` — the byte-exact
   `darwin/arm64` versus `darwin/amd64` vector record for this revision.
 

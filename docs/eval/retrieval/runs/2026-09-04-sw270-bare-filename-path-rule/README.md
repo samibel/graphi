@@ -2,25 +2,53 @@
 
 Two complete `cmd/retrieval-eval` runs over the pinned Cobra checkout, identical in every input
 except the candidate commit: `before/` at `9bf9326bb56e4f27ae330235d3c4687e2c0c445e` (main, the rule requires a
-`/`) and `after/` at `71cba5efc3a033012ba47d56ddadaeca6417ca2a` (the SW-270 change: a bare filename with a known
-source extension also matches). Every baseline in the harness default set ran both times; every
-stratum is reported below, not only the one the change targets (AC-4).
+`/`) and `after/` at `8ef56351a845bab8a938062822a25984ada3081d` (the SW-270 change as rebuilt in review round 1: a
+bare `.go` filename also matches; no other suffix does). Every baseline in the harness default set
+ran both times; every stratum is reported below, not only the one the change targets (AC-4).
+
+**Round 1 note.** The first build's `after/` was run at `71cba5e`, whose rule recognised every
+extension in the `engine/classify` catalog. Review found that breadth unmeasured and it was
+narrowed to `.go` only; `after/` was then re-run at the rebuilt commit `8ef5635` on the same
+dataset artifact, checkout, model and settings, and replaced wholesale. Every `raw/hits-*.json`
+under `after/` is byte-identical to the `71cba5e` run (git shows them unmodified); only the
+candidate stamp, the latency/RSS series, `run.json` and the report/aggregate hashes changed.
 
 **Resolution:** the dev split has 30 queries, 27 answerable (`no_hit` is excluded from aggregates).
 `exact_path` has **n=3; one query is 1/3 (33.3%) of that stratum.** Decimal places are retained for
 reproduction, not as a claim of statistical precision.
 
-## Population (AC-5: the holdout split was not read)
+## Population (AC-5 provenance, stated literally)
 
 The judged bytes are `dataset.json` in each run directory — a derived dataset `cobra-v1-dev`
 (sha256 `1436a29b6f1b2432f7c79266fbfcb80000105eaeefcc827489657dc553cec9d5`) containing every and only `split == "dev"` query of the
 frozen source `internal/eval/retrieval/testdata/datasets/cobra-v1.json` (sha256
 `be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82`). Judgements, grades and the
 source's relevance policy (`relevant_min_grade` 2) are inherited unchanged; only the
-`id` and `notes` fields differ and the 10 holdout queries are absent. Both reports cite
-`holdout_queries: 0` and their `splits.holdout` block reads `UNKNOWN`. No holdout query was
-executed, scored, or inspected for this story. The derivation was a mechanical `jq` filter (see
-Recompute); no ranking weight, threshold or target was tuned.
+`id` and `notes` fields differ and the 10 holdout queries are absent.
+
+What happened, exactly:
+
+- **The dev artifact was mechanically filtered from the combined `cobra-v1.json`.** That file
+  holds both splits; the `jq` filter (now `derive-dev.sh` in this directory) reads it whole and
+  emits only `split == "dev"` rows. This README does **not** claim the holdout file was never
+  read — a filter over the combined file necessarily reads bytes that contain holdout rows.
+  Whether that operational reading satisfies AC-5's "shall not be read" is an owner decision
+  that was still owed when this round was built (`projects/graphi/stories/SW-270/process-consult.md`,
+  owner question 1). Every prior dev-only run on this track derived its population the same way.
+- **No holdout row reached the harness.** Both `dataset.json` copies hash to `1436a29b…`;
+  `derive-dev.sh` asserts every emitted row is `split == "dev"` and reproduces that hash; both
+  reports cite `dev_queries: 30`, `holdout_queries: 0`, and their `splits.holdout` block reads
+  `UNKNOWN`. No holdout query was executed or scored on either side.
+- **`cb-10` had previously been exposed.** During the first build, a `jq` schema probe of the
+  already-committed SW-263 report (`2026-09-02-sw263-v3-restoration-local`) printed one holdout
+  row, `cb-10`, with its top-3 paths. It was not measured, scored or used for any decision, and
+  nothing in round 1 inspected any holdout row. `derive-dev.sh` prevents a repeat on the
+  derivation step; it does not erase that exposure, and its disposition is the owner's.
+- The `notes` string embedded in `dataset.json` still says the holdout split "is never read";
+  it is part of the pinned artifact (changing it would change the hash and invalidate the
+  before/after pairing) and is superseded by this section.
+
+No ranking weight, threshold or target was tuned.
 
 ## Result — ndcg@10 and top-1, every baseline × every stratum, dev split
 
@@ -113,10 +141,13 @@ any other stratum has the bare-filename shape, and none changed.
   lexical path override; otherwise the semantic-first prefix + lexical backfill. Method string in
   both reports: `engine/retrieval (semantic_first, ModeAuto, weights 92a8589c)` (weights hash unchanged: the change is in the rule, not the ranking).
 - Rule change: `exactPathPattern` in `engine/retrieval/rules.go` gains a second shape, a bare
-  filename whose last segment is one of the documented `exactPathExtensions` (lowercase, mirroring
-  the `engine/classify` parser catalog). Dotted and bare identifiers stay rejected; the slash-path
-  shape is unchanged. This is deliberately narrower than the broad path change SW-263 tried and
-  reverted.
+  filename ending in the literal lowercase `.go` (`[A-Za-z0-9_.-]+\.go`). No other suffix is
+  recognised — `theme.css`, `config.json`, `README.md` and the like stay identifier-shaped and on
+  the semantic-first path — and dotted and bare identifiers stay rejected; the slash-path shape is
+  unchanged. This is deliberately narrower than both the broad path change SW-263 tried and
+  reverted and the catalog-wide list the first SW-270 build carried (review round 1). The dev
+  split contains exactly two bare-filename queries (cb-07, cb-09), both `.go`, so `.go` is the only
+  suffix this measurement covers.
 - Embedder: `static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b` (the production
   static model from the default cache); `GRAPHI_EMBEDDER` was unset for both runs so only the
   explicit `-embedder` selector applied. The generation id and vector rows (768) are identical in
@@ -132,10 +163,14 @@ any other stratum has the bare-filename shape, and none changed.
 - `before-aggregate-output.log` / `after-aggregate-output.log`: `-aggregate` reproduced
   **565/565** metrics in each directory, 0 discrepant, 0 unknown (`aggregate.json` beside each).
 - `before-execution.log` / `after-execution.log`: the harness's verbatim stderr for each run.
+- `derive-dev.sh` re-derives the dev-only artifact from the combined source, asserts every emitted
+  row is `split == "dev"`, prints only counts and hashes, and fails unless the output hashes to
+  `1436a29b…`.
 - `SHA256SUMS` covers every file in this directory except itself.
 
 Report sha256: before `5ee0b3035d4dc12239e95396d2395a995b898390f937a1c5d0398ce2fd99f050`,
-after `763345ddf4241d6119c01a9a0ab7d1ed49fb8268ecbdf220a549f4f703d44020`.
+after `8d701bd66a1a3de0a0f6d514a68ff96b236d2f23a24198dce3f6333a0f11c6b0` (round 1, candidate
+`8ef5635`; the superseded `71cba5e` report hashed `763345dd…`).
 
 ## Limits
 
@@ -167,13 +202,10 @@ SW270_MODEL_DIR="${SW270_MODEL_DIR:?set to the verified static:potion-code-16M-v
 test "$(git -C "$SW270_COBRA_ROOT" rev-parse HEAD)" = a0a6ae020bb3899ff0276067863e50523f897370
 test -d "$SW270_MODEL_DIR"
 SW270_TMP="$(mktemp -d)"
-# the dev-only population, derived mechanically from the frozen source dataset
-SRC=internal/eval/retrieval/testdata/datasets/cobra-v1.json
-jq --arg sha "$(shasum -a 256 $SRC | cut -d' ' -f1)" \
-  '.id = "cobra-v1-dev" | .notes = ("SW-270 dev-only measurement population: every and only split=dev query from source dataset cobra-v1 at sha256 " + $sha + "; the holdout split is excluded so it is never read (AC-5). Judgements, grades and relevant_min_grade are inherited unchanged from the source.") | .queries |= map(select(.split == "dev"))' \
-  "$SRC" > "$SW270_TMP/cobra-v1-dev.json"
-test "$(shasum -a 256 "$SW270_TMP/cobra-v1-dev.json" | cut -d' ' -f1)" = 1436a29b6f1b2432f7c79266fbfcb80000105eaeefcc827489657dc553cec9d5
-# check out 9bf9326bb56e4f27ae330235d3c4687e2c0c445e for "before" or 71cba5efc3a033012ba47d56ddadaeca6417ca2a for "after", then:
+# the dev-only population, derived mechanically from the frozen COMBINED source dataset
+# (reads the whole file, emits only split=dev rows, prints counts and hashes only, verifies the sha)
+docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule/derive-dev.sh "$SW270_TMP/cobra-v1-dev.json"
+# check out 9bf9326bb56e4f27ae330235d3c4687e2c0c445e for "before" or 8ef56351a845bab8a938062822a25984ada3081d for "after", then:
 env -u GRAPHI_EMBEDDER GRAPHI_STATIC_MODEL_DIR="$SW270_MODEL_DIR" CGO_ENABLED=0 \
 go run ./cmd/retrieval-eval \
   -manifest corpus/manifest.json -repo cobra -checkout "$SW270_COBRA_ROOT" \

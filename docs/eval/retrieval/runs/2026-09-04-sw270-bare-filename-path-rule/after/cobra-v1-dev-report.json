@@ -3,7 +3,7 @@
   "harness_version": "retrieval-eval/3",
   "scorer_version": "retrieval-aggregate/1",
   "reproducible": {
-    "candidate_sha": "71cba5efc3a033012ba47d56ddadaeca6417ca2a",
+    "candidate_sha": "8ef56351a845bab8a938062822a25984ada3081d",
     "runner_class": "static-local",
     "repo": {
       "name": "cobra",
@@ -68,7 +68,7 @@
       "window": 0.17317708333333334
     },
     "embedder_spec": {
-      "fingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:60303bdba7551a97acd7bd7093dd3d54"
+      "fingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:2a0c6909c55509ba11e3891d13c3fe18"
     },
     "baselines": [
       {
@@ -20545,23 +20545,23 @@
       "baseline": "lexical",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 204,
+        "value": 208,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 348,
+        "value": 350,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.578125,
+        "value": 446.84375,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20573,23 +20573,23 @@
       "baseline": "hybrid_v1",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2172,
+        "value": 2208,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4479,
+        "value": 4561,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.578125,
+        "value": 446.875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20601,23 +20601,23 @@
       "baseline": "semantic_name_only",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 637,
+        "value": 638,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 687,
+        "value": 703,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.578125,
+        "value": 446.875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20644,7 +20644,7 @@
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.578125,
+        "value": 446.875,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20656,23 +20656,23 @@
       "baseline": "chunk_only",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2305,
+        "value": 2269,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 4499,
+        "value": 4643,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.578125,
+        "value": 446.90625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20684,23 +20684,23 @@
       "baseline": "fusion",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2860,
+        "value": 3055,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 5147,
+        "value": 5290,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.640625,
+        "value": 446.90625,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20712,23 +20712,23 @@
       "baseline": "semantic_first",
       "index_ms": {
         "status": "measured",
-        "value": 203,
+        "value": 224,
         "unit": "ms"
       },
       "query_p50_us": {
         "status": "measured",
-        "value": 2942,
+        "value": 2922,
         "unit": "us"
       },
       "query_p95_us": {
         "status": "measured",
-        "value": 5160,
+        "value": 5268,
         "unit": "us"
       },
       "latency_samples": 90,
       "peak_rss_mb": {
         "status": "measured",
-        "value": 458.984375,
+        "value": 447.375,
         "unit": "MB"
       },
       "vector_sidecar_bytes": {
@@ -20738,7 +20738,7 @@
     }
   ],
   "environment": {
-    "generated_at": "2026-09-04T07:07:00Z",
+    "generated_at": "2026-09-04T07:43:00Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",

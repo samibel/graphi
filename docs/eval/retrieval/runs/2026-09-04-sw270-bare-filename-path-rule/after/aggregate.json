@@ -5,7 +5,7 @@
   "repo": "cobra",
   "runner_class": "static-local",
   "environment": {
-    "generated_at": "2026-09-04T07:07:00Z",
+    "generated_at": "2026-09-04T07:43:00Z",
     "os": "darwin",
     "arch": "arm64",
     "go_version": "go1.26.6",
@@ -570,29 +570,29 @@
     {
       "baseline": "lexical",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "lexical",
       "metric": "query_p50_us",
-      "published": "204us",
-      "recomputed": "204us",
+      "published": "208us",
+      "recomputed": "208us",
       "status": "reproduced"
     },
     {
       "baseline": "lexical",
       "metric": "query_p95_us",
-      "published": "348us",
-      "recomputed": "348us",
+      "published": "350us",
+      "recomputed": "350us",
       "status": "reproduced"
     },
     {
       "baseline": "lexical",
       "metric": "peak_rss_mb",
-      "published": "458.578125MB",
-      "recomputed": "458.578125MB",
+      "published": "446.84375MB",
+      "recomputed": "446.84375MB",
       "status": "reproduced"
     },
     {
@@ -1130,29 +1130,29 @@
     {
       "baseline": "hybrid_v1",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "query_p50_us",
-      "published": "2172us",
-      "recomputed": "2172us",
+      "published": "2208us",
+      "recomputed": "2208us",
       "status": "reproduced"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "query_p95_us",
-      "published": "4479us",
-      "recomputed": "4479us",
+      "published": "4561us",
+      "recomputed": "4561us",
       "status": "reproduced"
     },
     {
       "baseline": "hybrid_v1",
       "metric": "peak_rss_mb",
-      "published": "458.578125MB",
-      "recomputed": "458.578125MB",
+      "published": "446.875MB",
+      "recomputed": "446.875MB",
       "status": "reproduced"
     },
     {
@@ -1690,29 +1690,29 @@
     {
       "baseline": "semantic_name_only",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "query_p50_us",
-      "published": "637us",
-      "recomputed": "637us",
+      "published": "638us",
+      "recomputed": "638us",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "query_p95_us",
-      "published": "687us",
-      "recomputed": "687us",
+      "published": "703us",
+      "recomputed": "703us",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_name_only",
       "metric": "peak_rss_mb",
-      "published": "458.578125MB",
-      "recomputed": "458.578125MB",
+      "published": "446.875MB",
+      "recomputed": "446.875MB",
       "status": "reproduced"
     },
     {
@@ -2271,8 +2271,8 @@
     {
       "baseline": "oracle_upper_bound",
       "metric": "peak_rss_mb",
-      "published": "458.578125MB",
-      "recomputed": "458.578125MB",
+      "published": "446.875MB",
+      "recomputed": "446.875MB",
       "status": "reproduced"
     },
     {
@@ -2810,29 +2810,29 @@
     {
       "baseline": "chunk_only",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "chunk_only",
       "metric": "query_p50_us",
-      "published": "2305us",
-      "recomputed": "2305us",
+      "published": "2269us",
+      "recomputed": "2269us",
       "status": "reproduced"
     },
     {
       "baseline": "chunk_only",
       "metric": "query_p95_us",
-      "published": "4499us",
-      "recomputed": "4499us",
+      "published": "4643us",
+      "recomputed": "4643us",
       "status": "reproduced"
     },
     {
       "baseline": "chunk_only",
       "metric": "peak_rss_mb",
-      "published": "458.578125MB",
-      "recomputed": "458.578125MB",
+      "published": "446.90625MB",
+      "recomputed": "446.90625MB",
       "status": "reproduced"
     },
     {
@@ -3370,29 +3370,29 @@
     {
       "baseline": "fusion",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "fusion",
       "metric": "query_p50_us",
-      "published": "2860us",
-      "recomputed": "2860us",
+      "published": "3055us",
+      "recomputed": "3055us",
       "status": "reproduced"
     },
     {
       "baseline": "fusion",
       "metric": "query_p95_us",
-      "published": "5147us",
-      "recomputed": "5147us",
+      "published": "5290us",
+      "recomputed": "5290us",
       "status": "reproduced"
     },
     {
       "baseline": "fusion",
       "metric": "peak_rss_mb",
-      "published": "458.640625MB",
-      "recomputed": "458.640625MB",
+      "published": "446.90625MB",
+      "recomputed": "446.90625MB",
       "status": "reproduced"
     },
     {
@@ -3930,29 +3930,29 @@
     {
       "baseline": "semantic_first",
       "metric": "index_ms",
-      "published": "203ms",
-      "recomputed": "203ms",
+      "published": "224ms",
+      "recomputed": "224ms",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_first",
       "metric": "query_p50_us",
-      "published": "2942us",
-      "recomputed": "2942us",
+      "published": "2922us",
+      "recomputed": "2922us",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_first",
       "metric": "query_p95_us",
-      "published": "5160us",
-      "recomputed": "5160us",
+      "published": "5268us",
+      "recomputed": "5268us",
       "status": "reproduced"
     },
     {
       "baseline": "semantic_first",
       "metric": "peak_rss_mb",
-      "published": "458.984375MB",
-      "recomputed": "458.984375MB",
+      "published": "447.375MB",
+      "recomputed": "447.375MB",
       "status": "reproduced"
     },
     {
