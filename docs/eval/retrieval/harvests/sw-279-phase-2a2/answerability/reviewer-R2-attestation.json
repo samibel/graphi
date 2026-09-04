@@ -1,0 +1,23 @@
+{
+  "schema": "sw-279-answerability-reviewer-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability reviewer R2)",
+  "role": "independent reviewer",
+  "attested_at_utc": "2026-09-04T22:51:05Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "reviewed_issue_numbers": [678, 689, 710, 724, 725, 771, 821, 827, 829, 835, 852, 920, 943, 1025, 1027, 1060, 1086, 1098, 1111],
+  "annotator_file_sha256": "54a47d1b421ce535a50d64a554f0240aa094c5aa003d8292a9af9aee938a897c",
+  "output_sha256": "b6d8f6646c759125b96501ed245c821c775c46183eb17fbf3469609691170c06",
+  "statements": [
+    "The first thing I did, before opening any file, was run git rev-parse HEAD in the pinned checkout; it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly. git status --porcelain was empty, so the bytes I read are the pinned bytes.",
+    "I opened and read every one of the 51 cited spans myself with sed over the pinned files, and every anchor_resolves value in my output is the result of that reading. I did not take any anchor, line range or description on the annotator's word. All 51 anchors occur verbatim inside their stated ranges, all four cited files (command.go, args.go, completions.go, cobra.go) are tracked and regular, and no range runs past end of file.",
+    "In several rows I read beyond the cited range to test the annotator's stated reason against the surrounding code - stripFlags in full for issue 1025, the execute() ordering for issue 827, TestSuggestions for issue 835 - and one of my two grade changes came out of that.",
+    "I ran no retrieval of any kind. No graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search service. I saw no rank, score, bundle, hit list, metric or trace. The only searching I did was grep and git grep inside the verified checkout, plus sed to read line ranges.",
+    "I made no GitHub request and no web request. I read no issue comment, label or pull request, and no repository other than the pinned Cobra checkout - in particular I did not read the graphi repository's own source, datasets or tests. The only files I read outside the checkout were the four named in my task: the review brief, the inclusion rule, batch-2-input.jsonl and annotations-2.jsonl.",
+    "No verdict or grade of mine turned on how hard anything was to find. I rejected nothing, and where I downgraded a span I did so because the bytes in the cited range do not contain the mechanism claimed for them, not because a better span was hard to locate.",
+    "I checked each of the three not_answerable rows for positive D-clause evidence and reproduced that evidence myself with git grep and git ls-files. None of the three rests on 'I could not find it', a time limit, or an expectation about retrieval.",
+    "There were no unresolved rows in the file I reviewed, so I had none to test for being a verdict in disguise.",
+    "I agree with all 19 verdicts and I disagree with 2 of the 51 grades. In my output the field 'agrees' means I accept the row exactly as annotated, verdict and grades together; it is false for issues 1025 and 1098, where my reviewer_verdict is nevertheless identical to the annotator's and the disagreement is purely a grade-3 that I would score 2. Both rows still satisfy A2 through a different grade-3 span that I accept.",
+    "I did not edit the annotator's file. annotations-2.jsonl still hashes to 54a47d1b421ce535a50d64a554f0240aa094c5aa003d8292a9af9aee938a897c, the value I was given.",
+    "I deviated from no prohibition in my task."
+  ]
+}

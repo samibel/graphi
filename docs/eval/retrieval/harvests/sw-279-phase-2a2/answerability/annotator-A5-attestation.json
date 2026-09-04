@@ -1,0 +1,43 @@
+{
+  "schema": "sw-279-answerability-annotator-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability annotator A5)",
+  "role": "source annotator",
+  "attested_at_utc": "2026-09-04T22:40:04Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "assigned_issue_numbers": [
+    1970,
+    1991,
+    2007,
+    2014,
+    2111,
+    2138,
+    2142,
+    2150,
+    2160,
+    2161,
+    2176,
+    2177,
+    2249,
+    2250,
+    2252,
+    2254,
+    2291,
+    2314
+  ],
+  "output_sha256": "17a1fede210d45b0d6b1bdd32f457bc050250ee2a6e44ff601d30b1e9369acd1",
+  "statements": [
+    "My first action in this task was to run git -C on the Cobra checkout and confirm HEAD printed exactly a0a6ae020bb3899ff0276067863e50523f897370; I opened no file in that tree before that check returned.",
+    "I ran no retrieval of any kind: no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search engine. I never saw a ranked list, a relevance score, a bundle, a saved hit list, a retrieval metric or a trace. My only search was plain grep and git grep inside the pinned checkout.",
+    "I made no GitHub request and no web request. I used no gh, no WebFetch, no WebSearch and no browser. I read no issue body, no issue comment, no label, no linked pull request and nothing a maintainer wrote; the sealed Q text in batch-5-input.jsonl was the whole of what I knew about each report.",
+    "The only repository I read was the pinned Cobra checkout at <cobra-checkout>. I did not read graphi's own source, its datasets, its tests, or any harvest directory other than the three files my task named.",
+    "Beyond those three files, the only file outside the pinned checkout that I read is my own output file annotations-5.jsonl, which I re-read solely to verify its JSON, its issue ordering and its anchors. I record this rather than omit it.",
+    "Every anchor I cite occurs inside its cited inclusive line range at the pin. I verified all 58 spans twice: once by reading the byte range directly, and once by re-extracting each range with sed -n START,ENDp and confirming the anchor substring is present. Both passes reported zero failures.",
+    "Every cited path is a tracked file at the pin, confirmed against git ls-files, and every answerable row carries at least one grade-3 span in a tracked, regular .go file.",
+    "No verdict of mine was decided by how long a search took, by how many files I had to open, by how deep an answer sat in a call chain, by identifier overlap, or by any expectation about how a retrieval system would perform on the question. I applied no time budget and no file-count budget.",
+    "I did not rewrite any sealed rubric, did not add bespoke expected-answer wording to any rubric, and did not change any answer mode. Where a sealed question was ambiguous I recorded the ambiguity in the row's note rather than narrowing or restating the question.",
+    "Both not_answerable rows name a disqualifier and give positive, cited evidence for it in the note; neither rests on failure to find something.",
+    "I returned no unresolved rows. Each of the 18 candidates finished with either reviewed grade-3 evidence satisfying A1-A4 or a positive D-clause finding, and I did not use unresolved as a substitute for either.",
+    "I ran two short Python verification scripts from a scratchpad directory. They executed only git rev-parse, git ls-files, sed and local file reads against the pinned checkout and my own output file; they performed no search, ranking, scoring or network access."
+  ],
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: dcfa31e162372f95d9114e8eb66bd8730766faaf383a5d8c3eb87b71bd84e71e."
+}

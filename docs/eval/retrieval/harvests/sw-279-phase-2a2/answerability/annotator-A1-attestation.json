@@ -1,0 +1,42 @@
+{
+  "schema": "sw-279-answerability-annotator-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability annotator A1)",
+  "role": "source annotator",
+  "attested_at_utc": "2026-09-04T22:38:00Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "assigned_issue_numbers": [
+    2,
+    43,
+    298,
+    316,
+    346,
+    365,
+    434,
+    467,
+    470,
+    471,
+    492,
+    509,
+    511,
+    533,
+    545,
+    563,
+    605,
+    656,
+    674
+  ],
+  "output_sha256": "5ac89bca2f16493ceae64ce850f08431b6e1cec1853e05403b067bb14fbf0818",
+  "statements": [
+    "Before opening any file I ran `git -C <cobra-checkout> rev-parse HEAD` and it printed a0a6ae020bb3899ff0276067863e50523f897370, the exact pin; every judgement below was made against that tree.",
+    "I ran no retrieval tool of any kind: no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search engine. I saw no ranked list, no score, no bundle, no saved hit list, no metric and no trace. My only search tools were plain grep, git grep and git ls-files inside the pinned checkout, plus reading files with cat/sed/awk.",
+    "I made no GitHub request and no web request. I ran no gh command, fetched no URL, opened no browser, and read no issue body, comment, label, linked pull request or maintainer statement. The sealed question text in batch-1-input.jsonl was the whole of what the reporter told me.",
+    "The only repository I read is the pinned Cobra checkout. Outside it I read exactly three files, all named in my task: the annotation brief, dataset-v2-inclusion-rule.md (I read its Section 4 and Section 6 verbatim, plus the heading list), and batch-1-input.jsonl. I read no graphi source, no graphi dataset, no graphi test and no other harvest directory.",
+    "Every anchor I cite was verified by re-reading the cited inclusive line range in the pinned file and checking the anchor string occurs inside it; the check was run mechanically over all judgements and all of them resolved before the file was written. Every cited path is a tracked file at the pin, checked against git ls-files.",
+    "No verdict of mine was decided by how long a search took, by how many files I had to open, by how deep an answer sat in a call chain, by identifier overlap, or by any expectation about retrieval performance. Where a question was hard I kept looking; where a question was easy I still checked the whole tree for a contradicting mechanism.",
+    "Every not_answerable row names a disqualifier and gives positive evidence for it in its note, citing pinned source; none of them rests on 'I could not find it'.",
+    "I did not rewrite any sealed rubric, did not add bespoke expected-answer wording to a rubric, and did not change any answer mode. The notes record my reading of the pinned source, not a restatement of the rubric.",
+    "I used no `unresolved` verdict: I was able to settle all nineteen candidates. Two judgements are close calls and I have flagged them rather than hidden them: issue 43, where the word 'deliberately' asks about maintainer intent that no source span can establish (I decided only the behavioural half, which the pin settles), and issue 434, whose wording admits two readings that I answered with spans covering both.",
+    "I deviated from no prohibition in my task."
+  ],
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: 4fb1e855d1a0664f72c1cda2d51d9efe9360a86b2cef5c684365855b2d596086."
+}

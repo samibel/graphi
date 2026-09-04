@@ -1,0 +1,42 @@
+{
+  "schema": "sw-279-answerability-reviewer-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability reviewer R3)",
+  "role": "independent reviewer",
+  "attested_at_utc": "2026-09-04T22:49:53Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "reviewed_issue_numbers": [
+    1120,
+    1133,
+    1148,
+    1151,
+    1168,
+    1202,
+    1221,
+    1222,
+    1236,
+    1289,
+    1300,
+    1343,
+    1358,
+    1368,
+    1408,
+    1416,
+    1457,
+    1461,
+    1466
+  ],
+  "annotator_file_sha256": "54a4745fe3c43e9726ec02c3f08e1abb38365ec0d3630c750e77ff63eaccb608",
+  "output_sha256": "09535217c0ec0dca72c75977a8b4f186ec830a9f8676174b408d43e6b878ee96",
+  "statements": [
+    "I ran `git -C <cobra checkout> rev-parse HEAD` before opening any file and it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly; every judgement below is made against that tree.",
+    "I opened and read every one of the 76 cited spans myself with the file's own bytes at the pin, and computed anchor containment mechanically against the exact start_line..end_line range rather than trusting any description in the annotator's file. All 76 anchors occur verbatim inside their stated ranges, every cited file is tracked and regular, and every range lies inside its file.",
+    "For the three rejections I did not accept the annotator's evidence on its word: I re-ran the deciding searches myself with git grep inside the checkout, and I report in the row notes three places where the annotator's stated evidence is factually wrong (the yaml_docs.go citation on 1120, the count and nature of the user_guide.md licence hits on 1457, and the 'glob' grep claim on 1466, which is the most serious of the three).",
+    "No verdict or grade of mine turned on how hard anything was to find, on how large the search area was, or on any expectation about what a retrieval system would return; where I disagreed I cite the specific pinned bytes that decide it.",
+    "I ran no retrieval tool of any kind. I did not invoke the graphi CLI or any mcp__graphi__* tool, did not use task_context, and saw no ranked, scored or bundled result, no hit list, no metric and no trace at any point in this review.",
+    "I made no GitHub request and no web request. I read no issue body, comment, label or pull request, and no version of Cobra other than the pinned checkout.",
+    "Outside the pinned checkout I read only the four files named in my task: the review brief, the frozen inclusion rule (Sections 4 and 6), batch-3-input.jsonl, and annotations-3.jsonl. I read no other harvest file, no graphi source, no dataset and no test.",
+    "I did not edit the annotator's file; I verified its sha256 matches the one I was given both before and after the review.",
+    "I agree with all 19 verdicts and I disagree with three grades (1202, 1236, 1343), each downgraded from 3 to 2 with the deciding bytes named. In every one of those three rows another grade-3 span in a tracked non-test .go file survives, so A2 still holds and no verdict changes.",
+    "One genuine ambiguity I could not resolve from the rule text: Section 4's D4 and D5 overlap on 1120, and Section 6's grade-3 definition ('contains answer-bearing bytes' versus 'merely pointing toward them') does not say whether a span may earn a 3 by contributing a necessary part of a multi-span answer or must be self-sufficient. I applied the self-sufficiency reading consistently across all 19 rows, and the three downgrades follow from it."
+  ]
+}

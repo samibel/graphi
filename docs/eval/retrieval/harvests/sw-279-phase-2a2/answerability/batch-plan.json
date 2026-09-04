@@ -1,0 +1,64 @@
+{
+  "schema": "sw-279-answerability-batch-plan/v1",
+  "harvest": "sw-279-phase-2a2",
+  "sealed_count": 94,
+  "batching_rule": "ascending issue number, contiguous blocks; not content-driven",
+  "reviewer_rule": "each batch is reviewed by a separate actor R<i> in its own session; no actor reviews its own judgements",
+  "batches": [
+    {
+      "batch": 1,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-1-input.jsonl",
+      "count": 19,
+      "first_issue": 2,
+      "last_issue": 674,
+      "annotator_slot": "A1",
+      "reviewer_slot": "R1",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-1.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-1.jsonl"
+    },
+    {
+      "batch": 2,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-2-input.jsonl",
+      "count": 19,
+      "first_issue": 678,
+      "last_issue": 1111,
+      "annotator_slot": "A2",
+      "reviewer_slot": "R2",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-2.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-2.jsonl"
+    },
+    {
+      "batch": 3,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-3-input.jsonl",
+      "count": 19,
+      "first_issue": 1120,
+      "last_issue": 1466,
+      "annotator_slot": "A3",
+      "reviewer_slot": "R3",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-3.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-3.jsonl"
+    },
+    {
+      "batch": 4,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-4-input.jsonl",
+      "count": 19,
+      "first_issue": 1499,
+      "last_issue": 1923,
+      "annotator_slot": "A4",
+      "reviewer_slot": "R4",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-4.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-4.jsonl"
+    },
+    {
+      "batch": 5,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-5-input.jsonl",
+      "count": 18,
+      "first_issue": 1970,
+      "last_issue": 2314,
+      "annotator_slot": "A5",
+      "reviewer_slot": "R5",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-5.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-5.jsonl"
+    }
+  ]
+}

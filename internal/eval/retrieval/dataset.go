@@ -61,6 +61,12 @@ const DefaultRelevantMinGrade = 2
 // agent and reviewed by the orchestrator (AC-2).
 const EvidenceClassAgentHumanReviewed = "agent-annotated, human-reviewed"
 
+// EvidenceClassAgentAgentReviewed labels a dataset whose annotator and
+// independent reviewer were both agents. It exists so that a dataset built
+// that way cannot be filed under the human-reviewed label: the review really
+// was independent of the annotator, and really was not a human.
+const EvidenceClassAgentAgentReviewed = "agent-annotated, agent-reviewed"
+
 // Dataset is one versioned query set against one pinned repository.
 type Dataset struct {
 	SchemaVersion int    `json:"schema_version"`
@@ -79,12 +85,22 @@ type Dataset struct {
 }
 
 // Query is one evaluation query with its graded judgements.
+//
+// FamilyID groups questions that are the same underlying task, so a paraphrase
+// cannot sit in dev while its twin sits in holdout. Provenance records where the
+// question came from - a GitHub issue, or an earlier dataset - so a reader can
+// tell a question written by a user from one written by the system under test.
+// Both are optional at the schema level because cobra-v1 predates them and is
+// frozen; Validate requires all-or-nothing within a single dataset, so a v2 file
+// cannot carry them for some queries and quietly omit them for others.
 type Query struct {
 	ID         string      `json:"id"`
 	Stratum    string      `json:"stratum"`
 	Language   string      `json:"language"`
 	Split      string      `json:"split"`
 	Text       string      `json:"query"`
+	FamilyID   string      `json:"family_id,omitempty"`
+	Provenance string      `json:"provenance,omitempty"`
 	Judgements []Judgement `json:"judgements"`
 }
 
@@ -222,6 +238,40 @@ func (d *Dataset) Validate() error {
 		case q.Stratum != StratumNoHit && relevant == 0:
 			return fmt.Errorf("query %q: no relevant (grade >= %d) span; every non-no_hit query needs one", q.ID, minGrade)
 		}
+	}
+	return d.validateFamilies()
+}
+
+// validateFamilies enforces the two properties family_id exists for. Either the
+// whole dataset carries family and provenance or none of it does - a file that
+// carries them for some queries would let an unlabelled paraphrase slip across
+// the split unnoticed, which is the exact failure the field prevents. And no
+// family may span dev and holdout, because a family that does has already leaked
+// its holdout answer into the set the system is tuned on.
+func (d *Dataset) validateFamilies() error {
+	labelled, unlabelled := 0, 0
+	for _, q := range d.Queries {
+		if strings.TrimSpace(q.FamilyID) == "" {
+			unlabelled++
+			continue
+		}
+		labelled++
+		if strings.TrimSpace(q.Provenance) == "" {
+			return fmt.Errorf("query %q: family_id is set but provenance is empty", q.ID)
+		}
+	}
+	if labelled == 0 {
+		return nil
+	}
+	if unlabelled > 0 {
+		return fmt.Errorf("%d of %d queries carry family_id and %d do not; a dataset carries family and provenance for every query or for none", labelled, len(d.Queries), unlabelled)
+	}
+	splitOf := make(map[string]string, labelled)
+	for _, q := range d.Queries {
+		if prior, seen := splitOf[q.FamilyID]; seen && prior != q.Split {
+			return fmt.Errorf("family %q crosses splits %s and %s; query %q", q.FamilyID, prior, q.Split, q.ID)
+		}
+		splitOf[q.FamilyID] = q.Split
 	}
 	return nil
 }

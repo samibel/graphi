@@ -1,0 +1,66 @@
+{
+  "schema": "sw-279-phase-2-outcome/v1",
+  "computed_at_utc": "2026-09-04T22:54:07.508851Z",
+  "harvest": "sw-279-phase-2a2",
+  "cobra_pin_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "sealed_candidates": 94,
+  "terminal_states": {
+    "accept": 71,
+    "reject:not_answerable": 23
+  },
+  "not_answerable_by_disqualifier": {
+    "D3": 5,
+    "D4": 14,
+    "D5": 4
+  },
+  "unresolved_issue_numbers": [],
+  "unresolved_blocks_completion": false,
+  "annotator_unresolved_resolved_by_reviewer": [
+    1780
+  ],
+  "reviewer_resolution_direction": "exclusionary only: unresolved -> not_answerable; never unresolved -> answerable",
+  "reviewer_disagreement_issue_numbers": [
+    1025,
+    1098,
+    1780
+  ],
+  "reviewer_regraded_issue_numbers": [
+    43,
+    434,
+    511,
+    1025,
+    1098,
+    1202,
+    1236,
+    1343,
+    1499,
+    1505,
+    1758,
+    1894,
+    2007,
+    2014,
+    2150,
+    2250,
+    2252
+  ],
+  "reviewer_regraded_span_count": 19,
+  "existing_answerable_carried_into_v2": {
+    "dev": 27,
+    "holdout": 7
+  },
+  "withdrawn_from_v2": [
+    "cb-05"
+  ],
+  "new_answerable_by_split": {
+    "dev": 14,
+    "holdout": 57
+  },
+  "final_answerable_dev": 41,
+  "final_answerable_holdout": 64,
+  "ac2_minimum_per_split": 30,
+  "ac2_dev_met": true,
+  "ac2_holdout_met": true,
+  "ac2_dev_shortfall": 0,
+  "ac2_holdout_shortfall": 0,
+  "answerability_ledger_sha256": "5ac94b3fc4961cd90dacfea05973f266a190ce267d46f617f6ad1e51e60b8418"
+}

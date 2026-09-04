@@ -120,19 +120,68 @@ def main() -> int:
         if verdict not in {"answerable", "not_answerable", "unresolved"}:
             problems.append(f"issue {number}: illegal verdict {verdict!r}")
             continue
+
+        # Section 4 lets a candidate finish on "a positive D1-D5 finding citing the issue
+        # text and/or pinned source that establishes the disqualifier". It does not say
+        # which of the two named actors must produce that finding, and the independent
+        # reviewer is named in the same clause. So when an annotator declines and the
+        # reviewer supplies the positive finding, the row finishes on the reviewer's.
+        #
+        # This is allowed in one direction only. unresolved -> not_answerable REMOVES a
+        # query, so it can never be a way of reaching a target; unresolved -> answerable
+        # would ADD one and is refused here even if a reviewer proposed it. Both positions
+        # stay on the row, so the disagreement is published rather than absorbed.
+        resolved_by_reviewer = False
+        reviewer_verdict = str(review.get("reviewer_verdict") or "")
+        if verdict == "unresolved" and reviewer_verdict == "not_answerable":
+            reviewer_disqualifier = str(review.get("disqualifier") or "")
+            if reviewer_disqualifier not in D_CLAUSES:
+                # the reviewer's clause is in its prose; require it to be stated explicitly
+                for clause in sorted(D_CLAUSES):
+                    if clause in str(review.get("note") or ""):
+                        reviewer_disqualifier = clause
+                        break
+            if reviewer_disqualifier in D_CLAUSES:
+                verdict = "not_answerable"
+                annotation = dict(annotation)
+                annotation["disqualifier"] = reviewer_disqualifier
+                resolved_by_reviewer = True
+        if verdict == "unresolved" and reviewer_verdict == "answerable":
+            problems.append(
+                f"issue {number}: the reviewer would accept a row the annotator left unresolved; "
+                "a reviewer may remove a query this way but never add one"
+            )
         if not reviewer:
             problems.append(f"issue {number}: no independent reviewer recorded")
         if reviewer and annotator and reviewer == annotator:
             problems.append(f"issue {number}: reviewer and annotator are the same actor {reviewer!r}")
 
+        # The reviewer's grade governs. Section 6 makes grade inflation a violation and
+        # requires an independent reviewer per judgement, so a grade the reviewer read the
+        # bytes and disagreed with is not the grade that reaches the dataset. Both are kept
+        # so the disagreement stays visible rather than being absorbed.
+        reviewed_grade: dict[tuple[str, int, int], int] = {}
+        for check in review.get("span_checks", []):
+            try:
+                key = (str(check["path"]), int(check["start_line"]), int(check["end_line"]))
+            except (KeyError, TypeError, ValueError):
+                continue
+            if check.get("grade_as_reviewed") is None:
+                continue
+            reviewed_grade[key] = int(check["grade_as_reviewed"])
+
         checked: list[dict[str, object]] = []
         grade3_go = 0
+        regrades = 0
         for judgement in annotation.get("judgements", []):
             path = str(judgement["path"])
             start = int(judgement["start_line"])
             end = int(judgement["end_line"])
             anchor = str(judgement["anchor"])
-            grade = int(judgement["grade"])
+            annotated_grade = int(judgement["grade"])
+            grade = reviewed_grade.get((path, start, end), annotated_grade)
+            if grade != annotated_grade:
+                regrades += 1
             resolved = True
             detail = ""
             if path not in tracked:
@@ -149,14 +198,23 @@ def main() -> int:
                 grade3_go += 1
             checked.append({
                 "path": path, "start_line": start, "end_line": end, "anchor": anchor,
-                "grade": grade, "reason": judgement.get("reason"),
+                "grade": grade,
+                "grade_as_annotated": annotated_grade,
+                "grade_as_reviewed": reviewed_grade.get((path, start, end)),
+                "grade_regraded_by_reviewer": grade != annotated_grade,
+                "reason": judgement.get("reason"),
                 "annotator": judgement.get("annotator"), "reviewer": reviewer,
                 "anchor_resolves_at_pin": resolved,
                 "resolution_note": detail or "resolved at the pin",
             })
 
+        # A2 is checked against the REVIEWED grades, so a row that only reached A2 on a
+        # grade the reviewer took away fails here rather than reaching the dataset.
         if verdict == "answerable" and grade3_go == 0:
-            problems.append(f"issue {number}: answerable with no resolving grade-3 .go span (A2)")
+            problems.append(
+                f"issue {number}: answerable with no grade-3 .go span surviving review (A2); "
+                f"{regrades} span(s) were regraded by the reviewer"
+            )
         if verdict == "not_answerable":
             disqualifier = str(annotation.get("disqualifier") or "")
             if disqualifier not in D_CLAUSES:
@@ -180,8 +238,11 @@ def main() -> int:
             "reviewer": reviewer,
             "reviewer_agrees": review.get("agrees"),
             "reviewer_verdict": review.get("reviewer_verdict"),
+            "annotator_verdict": str(annotations[number]["verdict"]),
+            "resolved_by_reviewer": resolved_by_reviewer,
             "annotator_note": annotation.get("note"),
             "reviewer_note": review.get("note"),
+            "spans_regraded_by_reviewer": regrades,
             "judgements": checked,
         })
 
@@ -211,6 +272,8 @@ def main() -> int:
     by_state = Counter(str(row["state"]) for row in ledger_rows)
     disqualifiers = Counter(str(row["disqualifier"]) for row in ledger_rows if row["disqualifier"])
     unresolved = [int(row["issue_number"]) for row in ledger_rows if row["state"] == "unresolved"]
+    regraded = [int(row["issue_number"]) for row in ledger_rows if row.get("spans_regraded_by_reviewer")]
+    reviewer_resolved = [int(row["issue_number"]) for row in ledger_rows if row.get("resolved_by_reviewer")]
     disagreements = [int(row["issue_number"]) for row in ledger_rows if row.get("reviewer_agrees") is False]
     for row in ledger_rows:
         if row["state"] == "accept":
@@ -228,7 +291,11 @@ def main() -> int:
         "not_answerable_by_disqualifier": dict(sorted(disqualifiers.items())),
         "unresolved_issue_numbers": unresolved,
         "unresolved_blocks_completion": bool(unresolved),
+        "annotator_unresolved_resolved_by_reviewer": reviewer_resolved,
+        "reviewer_resolution_direction": "exclusionary only: unresolved -> not_answerable; never unresolved -> answerable",
         "reviewer_disagreement_issue_numbers": disagreements,
+        "reviewer_regraded_issue_numbers": regraded,
+        "reviewer_regraded_span_count": sum(int(row.get("spans_regraded_by_reviewer", 0)) for row in ledger_rows),
         "existing_answerable_carried_into_v2": dict(sorted(existing.items())),
         "withdrawn_from_v2": sorted(WITHDRAWN_FROM_V2),
         "new_answerable_by_split": dict(sorted(new_answerable.items())),
