@@ -909,13 +909,17 @@ func TestSemanticFirst_PathOverrideRestored_IdentifierLifted(t *testing.T) {
 	})
 }
 
-// TestSemanticFirst_PathOverride_BareFilenameDoesNotFire pins the
-// documented constant's reach: a bare filename without `/` does NOT
-// match isExactPath. The query "shell_completions.go" must take the
-// semantic-first path even though the user's intent is "the file at
-// path shell_completions.go". The wider rule is an acceptance
-// decision, not an implementation choice (SW-263 / 2026-09-01).
-func TestSemanticFirst_PathOverride_BareFilenameDoesNotFire(t *testing.T) {
+// TestSemanticFirst_PathOverride_BareFilenameFires pins SW-270 AC-1 on
+// the shipped dispatch: a bare filename with a known source extension
+// ("shell_completions.go", dev exact_path query cb-09) matches isExactPath
+// and therefore takes the lexical path override — L in lexical order,
+// every row stamped lexical_path_override, the semantic rank-1 candidate
+// NOT leading. Before SW-270 the documented rule required a `/`, this
+// query went semantic-first, and exact_path scored 0.6667 on dev
+// (SW-263). The override is the narrow bare-filename shape only: the
+// sibling sub-tests in TestSemanticFirst_PathOverrideRestored_IdentifierLifted
+// keep identifiers on the semantic-first path.
+func TestSemanticFirst_PathOverride_BareFilenameFires(t *testing.T) {
 	lex := &fakeLexical{hits: []lexicalHit{
 		{NodeID: "lex_target", Kind: "function", QualifiedName: "pkg.Target", Path: "shell_completions.go", Line: 1, Score: 999},
 		{NodeID: "lex_other", Kind: "function", QualifiedName: "pkg.Other", Path: "other.go", Line: 1, Score: 100},
@@ -926,8 +930,17 @@ func TestSemanticFirst_PathOverride_BareFilenameDoesNotFire(t *testing.T) {
 	e := newEngine(lex, sem, nil)
 
 	const q = "shell_completions.go"
-	if isExactPath(q) {
-		t.Fatalf("test premise broken: %q must NOT match isExactPath (the documented rule requires a `/`)", q)
+	if !isExactPath(q) {
+		t.Fatalf("test premise broken: %q must match isExactPath (SW-270: a bare filename with a known source extension is a path query)", q)
+	}
+	// A bare filename ALSO matches the identifier regex (it is a dotted
+	// name shape: "shell_completions" + "." + "go"). That overlap is
+	// documented on exactPathPattern and resolved by dispatch order:
+	// readyDispatch consults isExactPath first, and the identifier half
+	// is lifted in ModeAuto anyway (SW-263). Pin the overlap so a change
+	// to either regex that silently removes it is visible here.
+	if !isExactIdentifier(q) {
+		t.Fatalf("test premise broken: %q is expected to match isExactIdentifier as well; the path override must win by dispatch order, not by the identifier rule rejecting it", q)
 	}
 
 	res, err := e.Retrieve(context.Background(), Request{Query: q, Limit: 10})
@@ -935,12 +948,18 @@ func TestSemanticFirst_PathOverride_BareFilenameDoesNotFire(t *testing.T) {
 		t.Fatalf("Retrieve: %v", err)
 	}
 	if res.Summary.Strategy != "semantic_first" {
-		t.Errorf("Strategy = %q, want semantic_first (a bare filename does not match isExactPath; semantic-first wins)", res.Summary.Strategy)
+		t.Errorf("Strategy = %q, want semantic_first (the path override is a sub-case of the semantic-first dispatch)", res.Summary.Strategy)
 	}
-	// sem_only_top leads; the lexical rank-1 row (lex_target) is admitted
-	// as lexical_backfill, NOT as the path override's rank-1.
-	if len(res.Rows) == 0 || res.Rows[0].NodeID != "sem_only_top" {
-		t.Errorf("rank-1 row = %q, want sem_only_top (bare filename takes the semantic-first path)", rowOrder(res.Rows))
+	if got, want := rowOrder(res.Rows), []string{"lex_target", "lex_other"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("rows = %v, want %v (bare filename: L in lexical order, the semantic rank-1 row does not lead)", got, want)
+	}
+	for _, r := range res.Rows {
+		if r.Region != "lexical_path_override" {
+			t.Errorf("row %s: Region = %q, want lexical_path_override", r.NodeID, r.Region)
+		}
+		if r.Explain.SemanticRank != 0 {
+			t.Errorf("row %s: SemanticRank = %d, want 0 (path override: no semantic provenance)", r.NodeID, r.Explain.SemanticRank)
+		}
 	}
 }
 

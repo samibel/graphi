@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/samibel/graphi/engine/classify"
 )
 
 // ---------------------------------------------------------------------------
@@ -775,20 +777,75 @@ func TestRules_ExactIdentifierWideningTieBreakBoundHolds(t *testing.T) {
 	}
 }
 
+// TestRules_ExactPathIsDocumentedRegex pins the two shapes the exact-path
+// rule recognises and the shapes it must keep rejecting (SW-270 AC-1 /
+// AC-6). The table is the contract; the dev-set queries named here are the
+// SW-258 development split only — no holdout query appears (AC-5).
 func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 	cases := []struct {
 		in   string
 		want bool
+		why  string
 	}{
-		{"flag_groups.go", false}, // no slash
-		{"path/to/x.go", true},
-		{"a/b", true},
-		{"", false},
-		{"path with space/x.go", false},
+		// Shape 1 — a slash path (the original rule).
+		{"path/to/x.go", true, "slash path"},
+		{"a/b", true, "slash path needs no extension"},
+		{"doc/man_docs.go", true, "dev exact_path query cb-08"},
+		// Shape 2 — a bare filename with a known source extension (SW-270 AC-1).
+		{"shell_completions.go", true, "dev exact_path query cb-09: the gap SW-263 left open"},
+		{"flag_groups.go", true, "dev exact_path query cb-07: bare filename, no slash needed"},
+		{"README.md", true, "catalog extension .md"},
+		{"config.yaml", true, "catalog extension .yaml"},
+		{"a.b.go", true, "dots inside the base are fine; the LAST segment is the extension"},
+		// A dotted identifier is NOT a filename (AC-1): its last segment is
+		// not a known extension.
+		{"cmd.Execute", false, "dotted identifier (AC-1)"},
+		{"cobra.Command.AddCommand", false, "multi-segment dotted identifier"},
+		// Bare identifiers must stay rejected. SW-263 lifted the identifier
+		// half of AC-6 (owner decision 2026-09-01) and the revert that
+		// restored the PATH override deliberately kept that lift: an
+		// identifier that matched the path rule would be forced back onto
+		// the lexical override and silently undo the settled decision.
+		{"ExecuteC", false, "dev exact_identifier query cb-01 — identifier lift stands (SW-263)"},
+		{"MarkFlagsMutuallyExclusive", false, "dev exact_identifier query cb-02 — identifier lift stands (SW-263)"},
+		{"Execute", false, "dev ambiguous query cb-32 — no extension"},
+		{"completion", false, "dev ambiguous query cb-35 — no extension"},
+		// Narrowness: unknown or malformed extensions stay out.
+		{"notes.txt", false, "extension not in the parser catalog"},
+		{"main.GO", false, "extensions are matched lowercase only"},
+		{".go", false, "an extension with no base name"},
+		{"foo.", false, "trailing dot, no extension"},
+		{"", false, "empty"},
+		{"path with space/x.go", false, "whitespace is never POSIX-safe"},
+		{"hello world.go", false, "whitespace in a bare filename"},
+		{"how does cobra validate required flags", false, "free text"},
 	}
 	for _, c := range cases {
 		if got := isExactPath(c.in); got != c.want {
-			t.Errorf("isExactPath(%q) = %v, want %v", c.in, got, c.want)
+			t.Errorf("isExactPath(%q) = %v, want %v (%s)", c.in, got, c.want, c.why)
+		}
+	}
+}
+
+// TestRules_ExactPathExtensionsTrackParserCatalog pins that the documented
+// extension list the bare-filename shape recognises stays inside the
+// parser catalog's vocabulary (engine/classify): a bare filename is only a
+// path query when graphi could have indexed a file of that kind.
+func TestRules_ExactPathExtensionsTrackParserCatalog(t *testing.T) {
+	if len(exactPathExtensions) == 0 {
+		t.Fatal("exactPathExtensions is empty; the bare-filename shape would never fire")
+	}
+	seen := map[string]bool{}
+	for _, ext := range exactPathExtensions {
+		if ext == "" || ext != strings.ToLower(ext) || strings.ContainsAny(ext, "./ ") {
+			t.Errorf("extension %q must be a lowercase bare suffix without dot, slash or space", ext)
+		}
+		if seen[ext] {
+			t.Errorf("extension %q listed twice", ext)
+		}
+		seen[ext] = true
+		if classify.Language("x."+ext) == "" {
+			t.Errorf("extension %q is not in the parser catalog (engine/classify.Language)", ext)
 		}
 	}
 }
