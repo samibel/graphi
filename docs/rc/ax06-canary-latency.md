@@ -987,12 +987,20 @@ unaccounted = shadow − accounted             the residue: comparison + recorde
 ```
 
 `unaccounted` is judged by **`canaryLatencyBudget`** — literally the function §2's rule
-calls, extracted by SW-244 so there is exactly one copy. Same 10 %/250 µs fixed term, same
-3× same-run noise term, same 4× ceiling, same three-valued verdict, same evaluation order.
-`TestSW244_ShadowAccountingSharesTheGateBudget` asserts the two agree across a sweep of
-baselines and controls, so softening the accounting would require softening the AX-06 gate
-itself. That is deliberate: SW-244 introduces the cost being judged, and a story does not get
-to pick the budget that judges its own cost.
+calls, extracted by SW-244 so there is exactly one copy of the *budget arithmetic*. Same
+10 %/250 µs fixed term, same 3× same-run noise term, same 4× ceiling, same three-valued
+verdict. `TestSW244_ShadowAccountingSharesTheGateBudget` asserts the two budgets agree across a
+sweep of baselines and controls, so widening the bar the accounting is held to would require
+widening the AX-06 gate's bar itself. That is deliberate: SW-244 introduces the cost being
+judged, and a story does not get to pick the budget that judges its own cost.
+
+What is **not** shared is the verdict switch that applies that budget. `evaluateCanaryAccounting`
+has its own, and since SW-275 (§5.10) the two differ in the degraded regime: the AX-06 statistic
+FAILs there only on a *decisive* overhead and is otherwise UNKNOWN, while the accounting still
+FAILs on `unaccounted > budget AND unaccounted > noiseTerm` — the pre-SW-275 ordering. So the
+accounting carries the same exposure the AX-06 tail had — a marginal FAIL on a measurement the
+run has already called not judgeable — for the unaccounted residue, which has not been observed
+to flake. That is tracked as a separate follow-up in SW-275, not changed there.
 
 **Where this is lenient, stated rather than hidden.** At the median the arithmetic is sound —
 the median of a sum of two costs is close to the sum of their medians. At the tail it is

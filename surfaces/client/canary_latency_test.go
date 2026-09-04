@@ -3432,7 +3432,15 @@ func BenchmarkCanaryDispatch(b *testing.B) {
 //
 // and unaccounted is then held to canaryLatencyBudget(baseline, |a-b|) — the
 // same fixed bar, the same 3x same-run noise term, the same 4x ceiling and the
-// same three-valued verdict as the gate.
+// same three-valued verdict as the gate. Only that BUDGET ARITHMETIC is shared;
+// the verdict switch below is this accounting's own, and since SW-275 it is
+// NOT the gate's: in the degraded regime the gate (evaluateCanaryStat) FAILs
+// only on a decisive overhead and is otherwise UNKNOWN, while this switch keeps
+// the pre-SW-275 "past the budget AND past 3x the control" FAIL test. The
+// accounting therefore carries the same exposure the AX-06 tail had — a
+// marginal FAIL on a run that has already called itself not judgeable — for
+// the unaccounted residue. Tracked as a separate follow-up in SW-275; not
+// changed there, because it is a rule of its own and not the gate's.
 //
 // # What this measures well, and where it is lenient
 //
@@ -3505,10 +3513,14 @@ func evaluateCanaryAccounting(name string, pct float64, base, ref, exec, shadow 
 		a.Verdict = canaryLatencyUnknown
 		a.Reason = fmt.Sprintf("%s: zero legacy baseline", name)
 	case a.Unaccounted > a.Budget && a.Unaccounted > a.NoiseTerm:
-		// Same ordering as the gate, for the same reason: an excess past both
-		// the clamped budget AND three times this run's own demonstrated
-		// resolution is signal at whatever resolution the run achieved, and a
-		// degraded runner is not a licence to launder it into a pass.
+		// The pre-SW-275 ordering, kept: an excess past both the clamped
+		// budget AND three times this run's own demonstrated resolution is
+		// read as signal at whatever resolution the run achieved, and a
+		// degraded runner is not a licence to launder it into a pass. The gate
+		// itself no longer orders it this way (evaluateCanaryStat, SW-275:
+		// decisive-or-UNKNOWN in the degraded regime); this accounting's rule is
+		// its own and is left as it was — see the type comment for the exposure
+		// that leaves, tracked separately.
 		a.Verdict = canaryLatencyFail
 		a.Reason = fmt.Sprintf(
 			"%s: shadow %v - (legacy %v + executor %v) = %v is cost the dual run does NOT "+
