@@ -35,6 +35,17 @@ jobs:
         # on every PR. Capture BOTH streams and the exit status, and fail on
         # either — a file gofmt cannot parse is a lint failure, not a pass.
         # internal/gofmtclean asserts the same three facts from inside `go test`.
+        #
+        # Three outcomes, one of them green:
+        #   1. gofmt exits non-zero            -> FAIL, printing what gofmt said.
+        #   2. grep (the node_modules filter)  -> FAIL, printing gofmt's list. A
+        #      exits >= 2 (its own failure, or   filter that did not run has not
+        #      127 when it is absent)            produced an empty drift list.
+        #   3. grep exits 1 (nothing left after -> the drift list is $drift, and
+        #      the filter) or 0 (something is)   an empty one is the pass case.
+        # Round-1 review: the first fix had `|| true` on the grep, which folded
+        # outcome 2 into outcome 3 — gofmt listing an unformatted file and grep
+        # dying with nothing on stdout read as "no drift".
         run: |
           # `|| rc=$?`, not `; rc=$?`: this shell is `bash -e`, and a failing
           # assignment aborts the step BEFORE the captured text is printed —
@@ -46,9 +57,17 @@ jobs:
             printf '%s\n' "$out"
             exit 1
           fi
-          # rc is 0 here, so $out is the drift list alone. The `|| true` is on
-          # grep filtering already-captured text, not on the tool under test.
-          drift=$(printf '%s\n' "$out" | grep -v node_modules || true)
+          # rc is 0 here, so $out is the drift list alone. grep's status is read
+          # the same way; only 0 (lines left after the filter) and 1 (none left,
+          # the pass case) are trusted. Anything else is grep failing, and a
+          # failed filter must not turn a non-empty gofmt list into an empty one.
+          grc=0
+          drift=$(printf '%s\n' "$out" | grep -v node_modules) || grc=$?
+          if [ "$grc" -gt 1 ]; then
+            echo "::error::grep -v node_modules exited $grc while filtering gofmt's list; refusing to read that as no drift. gofmt -l . printed:"
+            printf '%s\n' "$out"
+            exit 1
+          fi
           if [ -n "$drift" ]; then
             echo "::error::unformatted files (run gofmt -w):"
             printf '%s\n' "$drift"
