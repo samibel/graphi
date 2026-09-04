@@ -24,12 +24,34 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: gofmt -l is empty
+      - name: gofmt -l exits 0 and lists nothing
+        # SW-273. `gofmt -l` prints the drift list on STDOUT, prints parse errors
+        # on STDERR, and exits 2 on a parse error. The previous form,
+        #     drift=$(gofmt -l . | grep -v node_modules || true)
+        # could not see a parse error at all: $(...) captures stdout only, the
+        # pipe replaced gofmt's status with grep's, `|| true` discarded what was
+        # left, and `-n "$drift"` then tested an empty string. Two .go files with
+        # no package clause sat under engine/embed/testdata with this step green
+        # on every PR. Capture BOTH streams and the exit status, and fail on
+        # either — a file gofmt cannot parse is a lint failure, not a pass.
+        # internal/gofmtclean asserts the same three facts from inside `go test`.
         run: |
-          drift=$(gofmt -l . | grep -v node_modules || true)
+          # `|| rc=$?`, not `; rc=$?`: this shell is `bash -e`, and a failing
+          # assignment aborts the step BEFORE the captured text is printed —
+          # the status would be right and the parse error would be invisible.
+          rc=0
+          out=$(gofmt -l . 2>&1) || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::gofmt -l . exited $rc — a .go file gofmt cannot parse, or an I/O failure:"
+            printf '%s\n' "$out"
+            exit 1
+          fi
+          # rc is 0 here, so $out is the drift list alone. The `|| true` is on
+          # grep filtering already-captured text, not on the tool under test.
+          drift=$(printf '%s\n' "$out" | grep -v node_modules || true)
           if [ -n "$drift" ]; then
             echo "::error::unformatted files (run gofmt -w):"
-            echo "$drift"
+            printf '%s\n' "$drift"
             exit 1
           fi
 
