@@ -15,7 +15,7 @@
 // next unparseable .go file fails on the developer's machine, not only in a
 // workflow nobody reads the transcript of.
 //
-// The shape is engine/exthost/isolation_test.go's: a fact about the whole
+// The shape is cmd/graphi/binary_weight_test.go's: a fact about the whole
 // module, asserted mechanically from inside the suite, with no product import.
 // It lives in its own package so that it has no other reason to change.
 package gofmtclean_test
