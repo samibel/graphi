@@ -863,6 +863,57 @@ available from the log.
 
 ---
 
+### 5.10 The gate under the load of its own suite (SW-275, 2026-09-04)
+
+**The finding.** Nothing in §1–§3 moves. What SW-275 found is one layer out from the bar:
+the *full parallel `go test ./...`* is itself the contention §5.6 modelled, and under it two
+things happened on the trunk that the gate's honesty did not deserve to be punished for.
+
+1. `test-gate` on `main`, last ten runs before this amendment: **3 failures, all**
+   `ax06_executor_seam_latency` / `test gate: UNVERIFIED` — the gate correctly said it could
+   not judge the tail (`tail_control_above_ceiling`), the CI job reported a non-zero exit as
+   red, and each was cleared by a manual re-run of the identical commit.
+2. `TestAX06_LatencyGateFailsOnMinorityIncidenceRegression` **hard-failed** on a run in which
+   round 1 caught the injection through the tail — a *marginal* FAIL, `p95 overhead 9.558 ms`
+   against a `3.991 ms` budget with a `2.882 ms` control — and rounds 2–3 lost the tail's A/A
+   control and passed on the median alone. The shipped arbitration reports that run as UNKNOWN
+   *by design* (§2: a marginal FAIL does not outrank the absence of a re-measurement) and says
+   the FAIL is not withdrawn. The demonstration's own guard then failed the test, because it
+   only excused a run in which a whole statistic had been unjudgeable in *every* round.
+
+**What changed — the harness, not the bar.**
+
+- The demonstration guard (`canaryLatencyDemonstrationInconclusive`) now asks the question the
+  demonstration actually has: *did any judged round miss the injection?* A run whose judged
+  tails all read FAIL, with the rest unjudgeable, is inconclusive and is skipped with the
+  round counts; a run in which a judged tail read PASS against the injection, or which passed
+  outright, still fails loudly. `TestAX06_DemonstrationGuardIsNeverStricterThanBefore` walks
+  every sequence of one to three reachable round shapes and proves the amended guard excuses a
+  superset of what the old one did (172 of 2 954 sequences move from hard failure to
+  inconclusive under the tail predicate, 48 under the either-statistic predicate the systemic
+  demonstration uses; none move the other way). `TestAX06_DemonstrationGuardOnTheRecordedRun`
+  rebuilds the recorded run above through the shipped evaluation, to the microsecond, and pins
+  old-guard-fails / new-guard-inconclusive.
+- `cmd/testgate -remeasure-unverified` (passed by the `test-gate` workflow): when the full run
+  is UNVERIFIED — complete, no failure, a gate could not measure — the reporting gates'
+  packages are re-run *alone* (`-count=1 -p 1`) on the now-idle runner and that isolated
+  run's own verdict is reported, the first report carried as `remeasured`. This is §1's
+  best-of-three provision applied one layer up, with the load removed. Only UNVERIFIED is
+  re-measured; a failure is never re-run; an isolated run that is itself UNVERIFIED or NOT
+  GREEN stands as such.
+
+**Measured** (12-core M2 Max, load = a parallel `go test ./...` plus one busy loop per core;
+logs in the SW-275 evidence directory):
+
+| | original | amended |
+|---|---|---|
+| `…FailsOnMinorityIncidenceRegression`, 5 runs | **1 FAIL** (`got UNKNOWN after 3 round(s)`, the shape above) | 5 PASS |
+| `TestAX06_ExecutorSeamLatencyWithinThreshold`, 5 runs | 2 PASS, **3 UNVERIFIED** | 4 PASS, 1 UNVERIFIED |
+
+Under a lighter load (the parallel suite alone, no spinners) neither reproduced in 3 runs —
+the tail is lost exactly when the machine is saturated, which on a 2-vCPU CI runner the
+parallel suite achieves on its own.
+
 ## 6. The dual-run cost of the shipped default (SW-244, 2026-08-28)
 
 SW-244 moves the compiled-in kill-switch default from `legacy` to `shadow`, which makes the
