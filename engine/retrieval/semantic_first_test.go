@@ -963,6 +963,65 @@ func TestSemanticFirst_PathOverride_BareFilenameFires(t *testing.T) {
 	}
 }
 
+// TestSemanticFirst_PathOverride_RejectedSuffixesDoNotFire is the
+// negative twin of TestSemanticFirst_PathOverride_BareFilenameFires on
+// the shipped dispatch (SW-270 round 1). The bare-filename shape is
+// ".go" only: a bare filename with any other suffix, and a dotted
+// identifier, must NOT take the lexical path override. Each query is
+// identifier-shaped (it also matches exactIdentifierPattern), and the
+// identifier half is lifted in ModeAuto, so the semantic rank-1 row must
+// lead and no row may carry the lexical_path_override region — exactly
+// what an exact-identifier query gets. The lexical fixture's rank-1 row
+// is a file with the queried name, so if the override fired the lexical
+// row would lead and the assertion would catch it.
+func TestSemanticFirst_PathOverride_RejectedSuffixesDoNotFire(t *testing.T) {
+	queries := []string{
+		"theme.css",
+		"config.json",
+		"README.md",
+		"config.yaml",
+		"index.html",
+		"module.jsx",
+		"script.kts",
+		"cmd.Execute",
+	}
+	for _, q := range queries {
+		t.Run(q, func(t *testing.T) {
+			if isExactPath(q) {
+				t.Fatalf("test premise broken: %q must NOT match isExactPath (SW-270: the bare-filename shape is .go only)", q)
+			}
+			if !isExactIdentifier(q) {
+				t.Fatalf("test premise broken: %q is expected to match isExactIdentifier (identifier-shaped); the point of the test is that the lifted identifier rule, not the path rule, governs it", q)
+			}
+			lex := &fakeLexical{hits: []lexicalHit{
+				{NodeID: "lex_target", Kind: "function", QualifiedName: "pkg.Target", Path: q, Line: 1, Score: 999},
+				{NodeID: "lex_other", Kind: "function", QualifiedName: "pkg.Other", Path: "other.go", Line: 1, Score: 100},
+			}}
+			sem := &fakeSemantic{available: true, state: StateReady, hits: []semanticHit{
+				{NodeID: "sem_only_top", DocumentID: "doc-s", Kind: "function", QualifiedName: "pkg.S", Path: "sem.go", Line: 1, CosineScore: 0.99},
+				{NodeID: "lex_other", DocumentID: "doc-lo", Kind: "function", QualifiedName: "pkg.Other", Path: "other.go", Line: 1, CosineScore: 0.5},
+			}}
+			e := newEngine(lex, sem, nil)
+
+			res, err := e.Retrieve(context.Background(), Request{Query: q, Limit: 10})
+			if err != nil {
+				t.Fatalf("Retrieve: %v", err)
+			}
+			if res.Summary.Strategy != "semantic_first" {
+				t.Errorf("Strategy = %q, want semantic_first", res.Summary.Strategy)
+			}
+			if len(res.Rows) == 0 || res.Rows[0].NodeID != "sem_only_top" {
+				t.Errorf("rows = %v, want sem_only_top leading (a %q query is identifier-shaped and takes the semantic-first path; the lexical path override must NOT fire)", rowOrder(res.Rows), q)
+			}
+			for _, r := range res.Rows {
+				if r.Region == "lexical_path_override" {
+					t.Errorf("row %s: Region = lexical_path_override on %q (the path rule must NOT fire on a non-.go bare filename or a dotted identifier)", r.NodeID, q)
+				}
+			}
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // AC-11 (strategy and provenance truthfulness).
 // ---------------------------------------------------------------------------

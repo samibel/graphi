@@ -17,8 +17,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/samibel/graphi/engine/classify"
 )
 
 // ---------------------------------------------------------------------------
@@ -780,25 +778,30 @@ func TestRules_ExactIdentifierWideningTieBreakBoundHolds(t *testing.T) {
 // TestRules_ExactPathIsDocumentedRegex pins the two shapes the exact-path
 // rule recognises and the shapes it must keep rejecting (SW-270 AC-1 /
 // AC-6). The table is the contract; the dev-set queries named here are the
-// SW-258 development split only — no holdout query appears (AC-5).
+// SW-258 development split only — no holdout query appears (AC-5). The
+// bare-filename shape is ".go" only: review of the first SW-270 build found
+// that a catalog-wide extension list gave path precedence to unmeasured,
+// identifier-shaped queries ("theme.css", "config.json"), so every other
+// suffix is pinned as rejected here.
 func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 	cases := []struct {
 		in   string
 		want bool
 		why  string
 	}{
-		// Shape 1 — a slash path (the original rule).
+		// Shape 1 — a slash path (the original rule, unchanged).
 		{"path/to/x.go", true, "slash path"},
 		{"a/b", true, "slash path needs no extension"},
 		{"doc/man_docs.go", true, "dev exact_path query cb-08"},
-		// Shape 2 — a bare filename with a known source extension (SW-270 AC-1).
+		{"site/content/user_guide.md", true, "slash path: the extension is irrelevant in shape 1"},
+		{"cmd/theme.css", true, "slash path: the extension is irrelevant in shape 1"},
+		// Shape 2 — a bare Go filename (SW-270 AC-1).
 		{"shell_completions.go", true, "dev exact_path query cb-09: the gap SW-263 left open"},
 		{"flag_groups.go", true, "dev exact_path query cb-07: bare filename, no slash needed"},
-		{"README.md", true, "catalog extension .md"},
-		{"config.yaml", true, "catalog extension .yaml"},
-		{"a.b.go", true, "dots inside the base are fine; the LAST segment is the extension"},
+		{"a.b.go", true, "dots inside the base are fine; only the final .go is the extension"},
+		{"command_test.go", true, "a test file is still a Go filename"},
 		// A dotted identifier is NOT a filename (AC-1): its last segment is
-		// not a known extension.
+		// not ".go".
 		{"cmd.Execute", false, "dotted identifier (AC-1)"},
 		{"cobra.Command.AddCommand", false, "multi-segment dotted identifier"},
 		// Bare identifiers must stay rejected. SW-263 lifted the identifier
@@ -810,9 +813,22 @@ func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 		{"MarkFlagsMutuallyExclusive", false, "dev exact_identifier query cb-02 — identifier lift stands (SW-263)"},
 		{"Execute", false, "dev ambiguous query cb-32 — no extension"},
 		{"completion", false, "dev ambiguous query cb-35 — no extension"},
-		// Narrowness: unknown or malformed extensions stay out.
-		{"notes.txt", false, "extension not in the parser catalog"},
-		{"main.GO", false, "extensions are matched lowercase only"},
+		// Narrowness: every non-".go" suffix stays out of shape 2. These are
+		// identifier-shaped (they also match exactIdentifierPattern) and
+		// unmeasured; giving them path precedence was the review finding
+		// against the first build.
+		{"theme.css", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"config.json", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"README.md", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"config.yaml", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"index.html", false, "non-Go suffix: identifier-shaped, unmeasured (parser disabled)"},
+		{"module.jsx", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"script.kts", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"notes.txt", false, "non-Go suffix"},
+		{"main.py", false, "non-Go suffix: a source language, but not the measured one"},
+		{"main.gonna", false, "the suffix must be exactly .go, not a prefix of a longer one"},
+		{"main.go.txt", false, ".go must be the FINAL segment"},
+		{"main.GO", false, "the suffix is matched lowercase only"},
 		{".go", false, "an extension with no base name"},
 		{"foo.", false, "trailing dot, no extension"},
 		{"", false, "empty"},
@@ -823,29 +839,6 @@ func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 	for _, c := range cases {
 		if got := isExactPath(c.in); got != c.want {
 			t.Errorf("isExactPath(%q) = %v, want %v (%s)", c.in, got, c.want, c.why)
-		}
-	}
-}
-
-// TestRules_ExactPathExtensionsTrackParserCatalog pins that the documented
-// extension list the bare-filename shape recognises stays inside the
-// parser catalog's vocabulary (engine/classify): a bare filename is only a
-// path query when graphi could have indexed a file of that kind.
-func TestRules_ExactPathExtensionsTrackParserCatalog(t *testing.T) {
-	if len(exactPathExtensions) == 0 {
-		t.Fatal("exactPathExtensions is empty; the bare-filename shape would never fire")
-	}
-	seen := map[string]bool{}
-	for _, ext := range exactPathExtensions {
-		if ext == "" || ext != strings.ToLower(ext) || strings.ContainsAny(ext, "./ ") {
-			t.Errorf("extension %q must be a lowercase bare suffix without dot, slash or space", ext)
-		}
-		if seen[ext] {
-			t.Errorf("extension %q listed twice", ext)
-		}
-		seen[ext] = true
-		if classify.Language("x."+ext) == "" {
-			t.Errorf("extension %q is not in the parser catalog (engine/classify.Language)", ext)
 		}
 	}
 }
