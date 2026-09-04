@@ -517,26 +517,41 @@ func evaluateCanaryStat(name string, pct float64, base, ref, exec []time.Duratio
 		s.Verdict = canaryLatencyUnknown
 		s.Reason = fmt.Sprintf(
 			"%s: no usable measurement: an arm produced no samples or a zero baseline", s.Name)
-	case s.Overhead > s.Budget && s.Overhead > s.NoiseTerm:
-		// A degraded run is not a licence to pass an arbitrarily large
-		// regression. This case is checked BEFORE the degraded branch on
-		// purpose: an overhead that exceeds both the clamped budget AND three
-		// times the run's own demonstrated resolution is signal by the gate's
-		// own signal-to-noise rule, however poor that resolution is. Without
-		// this ordering, a runner degraded enough to widen the control past the
-		// ceiling would launder any regression into a PASS via the UNKNOWN
-		// branch — precisely what AC-2 forbids in the opposite direction.
+	case s.NoiseTerm > s.Ceiling && canaryLatencyOverheadDecisive(s, s.RefDelta):
+		// The DEGRADED regime: the same-run A/A control is wider than the
+		// ceiling, so two byte-identical paths could not be told apart at this
+		// percentile. A degraded run is still not a licence to pass an
+		// arbitrarily large regression, so this case is checked BEFORE the
+		// UNKNOWN branch on purpose — but the bar it is checked against is the
+		// DECISIVE one (§2, "marginal or decisive"): the overhead has to be past
+		// 3x every scale this measurement demonstrated, the ceiling clamp AND
+		// the A/A control, not merely past the clamp and 3x the control.
 		//
-		// In the NON-degraded regime this is exactly the old FAIL condition:
-		// Budget is then max(FixedBar, NoiseTerm) >= NoiseTerm, so
-		// "Overhead > Budget" already implies "Overhead > NoiseTerm". The
-		// clause only changes behaviour where the control is wider than the
-		// ceiling, and only ever in the direction of failing.
+		// # What changed in SW-275, and why
+		//
+		// The FAIL bar in this regime used to be "past the clamped budget AND
+		// past 3x the control". Under a full parallel `go test ./...` that
+		// failed the tail on a measurement the gate itself called not
+		// judgeable: p95 overhead 9.56 ms against a 3.99 ms ceiling, with the
+		// two legacy arms 2.88 ms apart (3x = 8.65 ms, past the ceiling). A
+		// control that wide is a single folded-normal draw from a runner whose
+		// tail is dominated by preemption; 3x it is not a bar the run can stand
+		// on (§5.9 measured exactly that at the arbitration level and moved to
+		// the widest scale in evidence). So the stat-level rule now uses the
+		// same decisive threshold the arbitration already uses, and everything
+		// below it in this regime is UNKNOWN — reported with the overhead that
+		// WAS seen, never as PASS. A genuine regression past that threshold
+		// still FAILs here, at whatever resolution the run achieved, which is
+		// what keeps AC-2's laundering prohibition intact in both directions.
+		//
+		// The NON-degraded regime is untouched: the branches below read exactly
+		// as they did.
 		s.Verdict = canaryLatencyFail
 		s.Reason = fmt.Sprintf(
-			"%s: executor %s - legacy %s = %v exceeds the %v budget AND exceeds 3x the "+
-				"same-run A/A control (%v), so it is signal even at this run's resolution",
-			s.Name, s.Name, s.Name, s.Overhead, s.Budget, s.RefDelta)
+			"%s: executor %s - legacy %s = %v exceeds the %v budget AND exceeds 3x every scale "+
+				"this run demonstrated (the %v ceiling and the %v same-run A/A control), so it is "+
+				"signal even at this run's resolution",
+			s.Name, s.Name, s.Name, s.Overhead, s.Budget, s.Ceiling, s.RefDelta)
 	case s.NoiseTerm > s.Ceiling:
 		s.Verdict = canaryLatencyUnknown
 		s.Reason = fmt.Sprintf(
@@ -545,6 +560,15 @@ func evaluateCanaryStat(name string, pct float64, base, ref, exec []time.Duratio
 				"legacy paths could not be told apart at this resolution, so nothing can be "+
 				"concluded about the executor seam from this run at this percentile",
 			s.Name, s.RefDelta, s.NoiseTerm, s.Ceiling, canaryLatencyDegradedMultiple, s.FixedBar)
+		if s.Overhead > s.Budget {
+			// Candour about what WAS seen: an overhead past the budget is
+			// recorded, not discarded — it is simply not judgeable here.
+			s.Reason += fmt.Sprintf(
+				". An overhead of %v past the %v budget WAS observed and is NOT withdrawn; it is "+
+					"inside 3x the widest scale this run demonstrated (%v), so at this resolution it "+
+					"cannot be told from the runner's own noise. Re-run on a quieter machine",
+				s.Overhead, s.Budget, canaryLatencyDecisiveScale(s, s.RefDelta))
+		}
 	case s.Overhead <= s.Budget:
 		s.Verdict = canaryLatencyPass
 	default:
@@ -622,15 +646,18 @@ func (r canaryLatencyResult) String() string {
 //
 // # This is not a new idea — it is round 2's idea, applied consistently
 //
-// evaluateCanaryStat already tests FAIL BEFORE the degraded branch, on the
-// reasoning that an overhead past both the clamp and the run's own
-// signal-to-noise requirement is signal at any resolution. That reasoning was
-// accepted and verified. It was simply not applied in the two places where one
-// statistic's answer meets another's: the composition of a round, and the
-// arbitration of a run. SW-242's PR #169 failed in exactly that gap — a tail
-// FAIL at 42x its budget was discarded because the median of the same round was
-// unjudgeable, and two earlier rounds that had caught the same regression at 79
-// and 92 ms over budget were then erased by that one UNKNOWN round.
+// evaluateCanaryStat tests a decisive FAIL BEFORE the degraded branch, on the
+// reasoning that an overhead past every scale the run demonstrated is signal at
+// any resolution. That reasoning was accepted and verified. It was at first not
+// applied in the two places where one statistic's answer meets another's: the
+// composition of a round, and the arbitration of a run. SW-242's PR #169 failed
+// in exactly that gap — a tail FAIL at 42x its budget was discarded because the
+// median of the same round was unjudgeable, and two earlier rounds that had
+// caught the same regression at 79 and 92 ms over budget were then erased by
+// that one UNKNOWN round. SW-275 closed the gap from the other side: the
+// stat-level rule in the degraded regime now uses this same threshold
+// (canaryLatencyOverheadDecisive) rather than the looser "past 3x the round's
+// own control", so there is ONE notion of decisive, held in one function.
 //
 // # Why the threshold is 3x the widest scale, not 1x
 //
@@ -660,11 +687,28 @@ func canaryLatencyStatDecisive(s canaryLatencyStat, resolution time.Duration) bo
 	if s.Verdict != canaryLatencyFail {
 		return false
 	}
+	return canaryLatencyOverheadDecisive(s, resolution)
+}
+
+// canaryLatencyDecisiveScale is the widest scale in evidence for one statistic:
+// its ceiling clamp or the given A/A resolution, whichever is larger.
+func canaryLatencyDecisiveScale(s canaryLatencyStat, resolution time.Duration) time.Duration {
 	scale := s.Ceiling
 	if resolution > scale {
 		scale = resolution
 	}
-	return float64(s.Overhead) > canaryLatencyNoiseFactor*float64(scale)
+	return scale
+}
+
+// canaryLatencyOverheadDecisive is the arithmetic half of
+// canaryLatencyStatDecisive, without the verdict precondition: is this overhead
+// past 3x the widest scale in evidence? evaluateCanaryStat uses it to decide
+// whether a degraded-regime overhead is a FAIL at all (SW-275), and the
+// arbitration uses it, through canaryLatencyStatDecisive, to decide whether a
+// recorded FAIL outranks the absence of a measurement. One threshold, one
+// function.
+func canaryLatencyOverheadDecisive(s canaryLatencyStat, resolution time.Duration) bool {
+	return float64(s.Overhead) > canaryLatencyNoiseFactor*float64(canaryLatencyDecisiveScale(s, resolution))
 }
 
 // canaryLatencyTailFailNote explains a tail FAIL in the terms of whatever the
@@ -1315,18 +1359,24 @@ func canaryLatencyAnyRound(results []canaryLatencyResult, pred func(canaryLatenc
 //
 // The guard used to require, in addition, that a whole gated statistic had
 // been unjudgeable in EVERY round (canaryLatencyRunUnresolved). That excused a
-// run that measured nothing, but not the run a loaded machine actually
-// produces. Recorded on 2026-09-03 under a full parallel `go test ./...`:
-// round 1 caught the injection through the tail (a MARGINAL tail FAIL:
-// p95 overhead 9.56 ms against a 3.99 ms budget, control 2.88 ms), then rounds
-// 2 and 3 lost the tail's A/A control and passed on the median alone. The
-// SHIPPED arbitration reports that run as UNKNOWN by design — a marginal FAIL
-// does not outrank the absence of a re-measurement (§2, "marginal or
-// decisive") — and says so: "tail not judgeable ... round 1 recorded a FAIL,
-// which is NOT withdrawn". The old guard then hard-FAILED the demonstration on
-// exactly that report, because round 1's tail HAD been judged. So the test
-// failed a measurement the gate itself had just called not judgeable, on a
-// run in which the gate had in fact caught the injection.
+// run that measured nothing, but not a MIXED run: one round's tail judged and
+// FAILing on the injection, the others unjudgeable. The SHIPPED arbitration
+// reports such a run as UNKNOWN by design — a marginal FAIL does not outrank
+// the absence of a re-measurement (§2, "marginal or decisive") — and says so:
+// "tail not judgeable ... round N recorded a FAIL, which is NOT withdrawn". The
+// old guard then hard-FAILED the demonstration on exactly that report, because
+// one round's tail HAD been judged. So the test failed a run in which the gate
+// had in fact caught the injection and honestly said it could not confirm it.
+//
+// The run recorded on 2026-09-03 under a full parallel `go test ./...` had that
+// shape under the per-statistic rule of the day (round 1: p95 overhead 9.56 ms
+// against a 3.99 ms budget with the control at 2.88 ms — a FAIL in the
+// degraded regime; rounds 2 and 3 median-only). SW-275's per-statistic change
+// (evaluateCanaryStat) now reports that round 1 tail as UNKNOWN, so the
+// recorded run is excused by the whole-run clause alone. The mixed shape is
+// still reachable the other way round — a quiet round that catches the
+// injection marginally, then load arrives — and that is what the second clause
+// is for.
 //
 // The amended guard asks the question the demonstration actually has: did any
 // judged round miss the injection? A run whose judged statistics all read FAIL
@@ -1335,7 +1385,7 @@ func canaryLatencyAnyRound(results []canaryLatencyResult, pred func(canaryLatenc
 // as a disjunct so nothing that was inconclusive before becomes a failure now:
 // TestAX06_DemonstrationGuardIsNeverStricterThanBefore proves that over every
 // reachable round sequence, and TestAX06_DemonstrationGuardOnTheRecordedRun pins
-// the recorded shape on both.
+// both shapes.
 func canaryLatencyDemonstrationInconclusive(overall canaryLatencyResult, results []canaryLatencyResult,
 	missed func(canaryLatencyResult) bool) bool {
 	if overall.Verdict != canaryLatencyUnknown {
@@ -1427,22 +1477,43 @@ func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 }
 
 // canaryLatencyGuardBeforeSW275 is the demonstration guard as it stood before
-// SW-275, kept verbatim so the two tests below compare the amended guard against
+// SW-275, kept verbatim so the tests below compare the amended guard against
 // the real predecessor rather than against a paraphrase of it.
 func canaryLatencyGuardBeforeSW275(overall canaryLatencyResult, results []canaryLatencyResult) bool {
 	return overall.Verdict == canaryLatencyUnknown && canaryLatencyRunUnresolved(results)
 }
 
+// canaryLatencyStatVerdictBeforeSW275 is the per-statistic verdict rule as it
+// stood before SW-275 — the FAIL test "past the clamped budget AND past 3x the
+// round's own A/A control" applied BEFORE the degraded test — re-applied to an
+// already-evaluated statistic. Kept verbatim so the property test below
+// compares the amended rule against the real predecessor.
+func canaryLatencyStatVerdictBeforeSW275(s canaryLatencyStat) canaryLatencyVerdict {
+	switch {
+	case s.Baseline <= 0:
+		return canaryLatencyUnknown
+	case s.Overhead > s.Budget && s.Overhead > s.NoiseTerm:
+		return canaryLatencyFail
+	case s.NoiseTerm > s.Ceiling:
+		return canaryLatencyUnknown
+	case s.Overhead <= s.Budget:
+		return canaryLatencyPass
+	default:
+		return canaryLatencyFail
+	}
+}
+
 // canaryLatencyRecordedRun20260903 rebuilds, through the SHIPPED evaluation, the
 // minority-incidence run recorded on 2026-09-03 under a full parallel
-// `go test ./...` (SW-275): round 1's tail read the injection —
+// `go test ./...` (SW-275): round 1's tail, under the rule of the day, read —
 //
 //	p95 FAIL overhead=9.558396ms budget=3.991488ms
 //	  (fixed=997.872us noise=3x2.882375ms=8.647125ms ceiling=3.991488ms)
 //	  legacy-a=11.419917ms legacy-b=8.537542ms executor=19.537125ms
 //
-// — a MARGINAL FAIL (9.56 ms is under 3x the 3.99 ms ceiling), and rounds 2 and
-// 3 lost the tail's A/A control and passed on the median alone. The medians are
+// — a FAIL in the DEGRADED regime (3x the control is past the ceiling) that was
+// not decisive (9.56 ms is under 3x the 3.99 ms ceiling), and rounds 2 and 3
+// lost the tail's A/A control and passed on the median alone. The medians are
 // not in the record and are set to a clean ~3.3 ms; the tail numbers are the
 // recorded ones to the microsecond.
 func canaryLatencyRecordedRun20260903() []canaryLatencyResult {
@@ -1460,56 +1531,103 @@ func canaryLatencyRecordedRun20260903() []canaryLatencyResult {
 	return []canaryLatencyResult{round1, medianOnly(), medianOnly()}
 }
 
-// TestAX06_DemonstrationGuardOnTheRecordedRun pins the SW-275 shape: the
-// shipped arbitration calls the recorded run UNKNOWN and says the FAIL is not
-// withdrawn; the pre-SW-275 guard nevertheless turned that into a hard failure
-// of the demonstration; the amended guard reports it inconclusive, names the
-// rounds, and still fails loudly on a genuine miss.
+// TestAX06_DemonstrationGuardOnTheRecordedRun pins the SW-275 shape end to end,
+// through the shipped evaluation:
+//
+//   - under the amended per-statistic rule, round 1's tail is UNKNOWN, not FAIL:
+//     the degraded regime with an overhead inside 3x the widest scale in
+//     evidence. The overhead is carried in the reason, not discarded. The
+//     pre-SW-275 rule, re-applied to the same numbers, FAILs it.
+//   - the run is therefore three median-only rounds, which the shipped
+//     arbitration reports as UNKNOWN, and which the demonstration guard reports
+//     as inconclusive — under the pre-SW-275 guard as well, since the tail was
+//     now unjudgeable in every round.
+//   - the shape that still needs the amended GUARD is the other order: a quiet
+//     round that catches the injection marginally, then load. The shipped
+//     arbitration calls that UNKNOWN with the FAIL not withdrawn; the old guard
+//     hard-failed it, the amended guard reports it inconclusive.
+//   - the guard has not gone hollow: a judged tail PASS is a miss and a PASS is
+//     never inconclusive.
 func TestAX06_DemonstrationGuardOnTheRecordedRun(t *testing.T) {
 	rounds := canaryLatencyRecordedRun20260903()
 	r1 := rounds[0]
-	if r1.Median.Verdict != canaryLatencyPass || r1.Tail.Verdict != canaryLatencyFail || r1.Verdict != canaryLatencyFail {
-		t.Fatalf("round 1 must be a tail-caught FAIL on a clean median, got %s", r1)
-	}
 	if r1.Tail.Overhead != 9558396*time.Nanosecond || r1.Tail.RefDelta != 2882375*time.Nanosecond {
 		t.Fatalf("round 1's tail is not the recorded measurement: %s", r1.Tail)
 	}
-	if canaryLatencyStatDecisive(r1.Tail, r1.Tail.RefDelta) {
-		t.Fatalf("the recorded FAIL was marginal, not decisive: %s", r1.Tail)
+	if r1.Tail.NoiseTerm <= r1.Tail.Ceiling {
+		t.Fatalf("the recorded tail must be in the DEGRADED regime: %s", r1.Tail)
 	}
-	for i, r := range rounds[1:] {
+	if got := canaryLatencyStatVerdictBeforeSW275(r1.Tail); got != canaryLatencyFail {
+		t.Fatalf("the pre-SW-275 rule is expected to have FAILed the recorded tail, got %s — "+
+			"the recorded failure would not have happened", got)
+	}
+	if canaryLatencyOverheadDecisive(r1.Tail, r1.Tail.RefDelta) {
+		t.Fatalf("the recorded overhead was not decisive: %s", r1.Tail)
+	}
+	if r1.Tail.Verdict != canaryLatencyUnknown {
+		t.Fatalf("SW-275: the recorded tail must be UNKNOWN under the amended rule, got %s: %s",
+			r1.Tail.Verdict, r1.Tail)
+	}
+	if !strings.Contains(r1.Tail.Reason, "WAS observed and is NOT withdrawn") {
+		t.Fatalf("the UNKNOWN must report the overhead it saw: %q", r1.Tail.Reason)
+	}
+	for i, r := range rounds {
 		if !canaryLatencyMedianOnlyPass(r) {
-			t.Fatalf("round %d must be a median-only pass, got %s", i+2, r)
+			t.Fatalf("round %d must be a median-only pass under the amended rule, got %s", i+1, r)
 		}
 	}
 
 	overall := canaryLatencyOverall(rounds)
-	if overall.Verdict != canaryLatencyUnknown {
-		t.Fatalf("the shipped arbitration reports this run as UNKNOWN by design (§2), got %s: %s",
-			overall.Verdict, overall)
+	if overall.Verdict != canaryLatencyUnknown || !canaryLatencyMedianOnly(overall) {
+		t.Fatalf("three median-only rounds are UNKNOWN by design (§2), got %s: %s", overall.Verdict, overall)
 	}
-	if !strings.Contains(overall.Reason, "round 1 of this same run recorded a FAIL, which is NOT withdrawn") {
-		t.Fatalf("the arbitration's own report must carry the un-withdrawn FAIL: %s", overall.Reason)
+	if !canaryLatencyGuardBeforeSW275(overall, rounds) {
+		t.Fatalf("with the tail unjudgeable in every round, even the old guard reports inconclusive")
 	}
-
-	// Before: the run was neither tail-unjudgeable in EVERY round (round 1 was
-	// judged) nor median-unjudgeable, so the guard said "conclusive" and the
-	// demonstration hard-failed on a verdict the gate itself calls not judgeable.
-	if canaryLatencyGuardBeforeSW275(overall, rounds) {
-		t.Fatalf("the pre-SW-275 guard is expected to have failed this run; the recorded failure would not have happened")
-	}
-	// After: no judged tail read PASS, so there is no evidence of a miss.
 	if !canaryLatencyDemonstrationInconclusive(overall, rounds, canaryLatencyMissedByTail) {
 		t.Fatalf("SW-275: the recorded run must be reported inconclusive, not failed")
 	}
-	report := canaryLatencyInconclusiveReport(rounds)
-	if !strings.Contains(report, "FAILed on the injection in 1") || !strings.Contains(report, "unjudgeable in 2") {
+	if report := canaryLatencyInconclusiveReport(rounds); !strings.Contains(report, "tail was unjudgeable in all 3 round(s)") {
+		t.Fatalf("the inconclusive report must say the tail was never judged: %q", report)
+	}
+
+	// The other order — the shape the amended GUARD exists for. Round 1 quiet
+	// and marginal: a narrow control, the tail 600 µs over on one call in
+	// three (inside 3x the 1 ms clamp). Rounds 2 and 3 as recorded: loaded,
+	// median-only. The arbitration holds the FAIL as UNKNOWN and says so.
+	us := time.Microsecond
+	mixed := []canaryLatencyResult{
+		evaluateCanaryLatency(
+			canaryLatencySamplesAt(400*us, 100*us), canaryLatencySamplesAt(400*us, 100*us),
+			canaryLatencySamplesIncident(400*us, 600*us, 3)),
+		rounds[1], rounds[2],
+	}
+	if m := mixed[0]; m.Verdict != canaryLatencyFail || m.Tail.Verdict != canaryLatencyFail ||
+		m.Tail.NoiseTerm > m.Tail.Ceiling || canaryLatencyStatDecisive(m.Tail, m.Tail.RefDelta) {
+		t.Fatalf("premise: round 1 must be a marginal tail FAIL outside the degraded regime, got %s", m)
+	}
+	mixedOverall := canaryLatencyOverall(mixed)
+	if mixedOverall.Verdict != canaryLatencyUnknown {
+		t.Fatalf("the shipped arbitration reports a marginal FAIL beside unjudgeable rounds as UNKNOWN (§2), got %s: %s",
+			mixedOverall.Verdict, mixedOverall)
+	}
+	if !strings.Contains(mixedOverall.Reason, "round 1 of this same run recorded a FAIL, which is NOT withdrawn") {
+		t.Fatalf("the arbitration's own report must carry the un-withdrawn FAIL: %s", mixedOverall.Reason)
+	}
+	if canaryLatencyGuardBeforeSW275(mixedOverall, mixed) {
+		t.Fatalf("the pre-SW-275 guard is expected to have hard-failed this shape (round 1's tail was judged)")
+	}
+	if !canaryLatencyDemonstrationInconclusive(mixedOverall, mixed, canaryLatencyMissedByTail) {
+		t.Fatalf("SW-275: a run whose only judged tail FAILed on the injection is inconclusive, not a miss")
+	}
+	if report := canaryLatencyInconclusiveReport(mixed); !strings.Contains(report, "FAILed on the injection in 1") ||
+		!strings.Contains(report, "unjudgeable in 2") {
 		t.Fatalf("the inconclusive report must name the round counts: %q", report)
 	}
 
 	// The guard has not gone hollow. A judged tail PASS anywhere in an
 	// otherwise identical UNKNOWN run is a miss and stays a failure...
-	missed := append([]canaryLatencyResult{}, rounds...)
+	missed := append([]canaryLatencyResult{}, mixed...)
 	missed[1] = canaryLatencyCompose(
 		canaryLatencyShapeStat("p50", canaryLatencyUnknown, false),
 		canaryLatencyShapeStat("p95", canaryLatencyPass, false))
@@ -1519,7 +1637,7 @@ func TestAX06_DemonstrationGuardOnTheRecordedRun(t *testing.T) {
 		t.Fatalf("a round whose judged tail read PASS against the injection is a miss, not inconclusive")
 	}
 	// ...and a run that passes outright is never inconclusive.
-	passed := append([]canaryLatencyResult{}, rounds...)
+	passed := append([]canaryLatencyResult{}, mixed...)
 	passed[2] = canaryLatencyCompose(
 		canaryLatencyShapeStat("p50", canaryLatencyPass, false),
 		canaryLatencyShapeStat("p95", canaryLatencyPass, false))
@@ -1528,6 +1646,91 @@ func TestAX06_DemonstrationGuardOnTheRecordedRun(t *testing.T) {
 	} else if canaryLatencyDemonstrationInconclusive(o, passed, canaryLatencyMissedByTail) {
 		t.Fatalf("a PASS is never inconclusive")
 	}
+}
+
+// TestAX06_DegradedVerdictIsNeverStricterThanBefore is the safety half of the
+// SW-275 per-statistic change, on the calibrated noise model rather than on a
+// hand-picked case. For every statistic evaluated — clean arms and arms with a
+// 2 ms or 20 ms cost injected on one call in eight, on every calibrated runner
+// condition — it checks against the verbatim pre-SW-275 rule that:
+//
+//   - the amended rule FAILs only what the old rule FAILed (never stricter);
+//   - the two rules differ ONLY in the degraded regime, and only by turning a
+//     FAIL into an UNKNOWN — a PASS is never produced where there was none;
+//   - the difference is real (some statistic differs), so the change is wired
+//     in;
+//   - in the degraded regime the answer is never PASS (AC-2, unchanged), and a
+//     decisive overhead still FAILs there (the laundering prohibition holds).
+func TestAX06_DegradedVerdictIsNeverStricterThanBefore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("the Monte Carlo is not a -short gate")
+	}
+	const trials = 400
+	var differ, degraded, degradedFail, seen int
+	for _, lvl := range canaryLatencyNoiseLevels() {
+		for _, inject := range []time.Duration{0, 2 * time.Millisecond, 20 * time.Millisecond} {
+			rng := rand.New(rand.NewSource(20260904))
+			for i := 0; i < trials; i++ {
+				exec := canaryLatencyNoisyArm(rng, lvl.mean, lvl.sdFrac, lvl.spikeRate, lvl.spikeMul)
+				if inject > 0 {
+					for k := range exec {
+						if k%8 == 0 {
+							exec[k] += inject
+						}
+					}
+					sort.Slice(exec, func(a, b int) bool { return exec[a] < exec[b] })
+				}
+				r := evaluateCanaryLatency(
+					canaryLatencyNoisyArm(rng, lvl.mean, lvl.sdFrac, lvl.spikeRate, lvl.spikeMul),
+					canaryLatencyNoisyArm(rng, lvl.mean, lvl.sdFrac, lvl.spikeRate, lvl.spikeMul),
+					exec)
+				for _, s := range []canaryLatencyStat{r.Median, r.Tail} {
+					seen++
+					before := canaryLatencyStatVerdictBeforeSW275(s)
+					now := s.Verdict
+					if now == canaryLatencyFail && before != canaryLatencyFail {
+						t.Fatalf("%s/%v: the amended rule is stricter than the old one: before=%s now=%s: %s",
+							lvl.name, inject, before, now, s)
+					}
+					if now != before {
+						differ++
+						if s.NoiseTerm <= s.Ceiling {
+							t.Fatalf("%s/%v: the rules differ outside the degraded regime: before=%s now=%s: %s",
+								lvl.name, inject, before, now, s)
+						}
+						if before != canaryLatencyFail || now != canaryLatencyUnknown {
+							t.Fatalf("%s/%v: the only permitted difference is FAIL -> UNKNOWN, got %s -> %s: %s",
+								lvl.name, inject, before, now, s)
+						}
+						if !strings.Contains(s.Reason, "WAS observed and is NOT withdrawn") {
+							t.Fatalf("%s/%v: a withdrawn FAIL must still report the overhead: %q", lvl.name, inject, s.Reason)
+						}
+					}
+					if s.NoiseTerm > s.Ceiling {
+						degraded++
+						if now == canaryLatencyPass {
+							t.Fatalf("%s/%v: PASS in the degraded regime: %s", lvl.name, inject, s)
+						}
+						if canaryLatencyOverheadDecisive(s, s.RefDelta) != (now == canaryLatencyFail) {
+							t.Fatalf("%s/%v: in the degraded regime FAIL must be exactly \"decisive\": decisive=%v verdict=%s: %s",
+								lvl.name, inject, canaryLatencyOverheadDecisive(s, s.RefDelta), now, s)
+						}
+						if now == canaryLatencyFail {
+							degradedFail++
+						}
+					}
+				}
+			}
+		}
+	}
+	if differ == 0 {
+		t.Fatalf("the amended rule never differs from the old one over %d statistics — the change is not wired in", seen)
+	}
+	if degradedFail == 0 {
+		t.Fatalf("no decisive FAIL was seen in the degraded regime over %d degraded statistics — the laundering guard is untested", degraded)
+	}
+	t.Logf("%d statistics evaluated, %d in the degraded regime, %d of those still FAIL (decisive), %d moved FAIL -> UNKNOWN",
+		seen, degraded, degradedFail, differ)
 }
 
 // TestAX06_DemonstrationGuardIsNeverStricterThanBefore walks every sequence of
@@ -1728,8 +1931,9 @@ func TestAX06_LatencyDecisionRule(t *testing.T) {
 		},
 		{
 			// A degraded control is not a licence to pass an arbitrary
-			// regression: an overhead past both the clamp and 3x the run's own
-			// demonstrated resolution is signal at any resolution.
+			// regression: an overhead past 3x every scale the run demonstrated
+			// (the clamp and its own A/A control) is signal at any resolution.
+			// 18 ms against 3x max(1 ms ceiling, 2 ms control) = 6 ms.
 			name: "gross_regression_fails_even_through_a_degraded_control",
 			base: at(1*ms, 1*ms), ref: at(3*ms, 1*ms), exec: at(20*ms, 1*ms),
 			want: canaryLatencyFail,
@@ -1740,6 +1944,50 @@ func TestAX06_LatencyDecisionRule(t *testing.T) {
 				}
 				if r.Median.Verdict != canaryLatencyFail {
 					t.Fatalf("a degraded control must not launder a gross regression, got %s", r.Median.Verdict)
+				}
+				if !canaryLatencyOverheadDecisive(r.Median, r.Median.RefDelta) {
+					t.Fatalf("this case must be DECISIVE to fail in the degraded regime: %s", r.Median)
+				}
+			},
+		},
+		{
+			// SW-275: the degraded regime with an overhead past the budget and
+			// past 3x the control but NOT past 3x the widest scale in evidence.
+			// These are the tail numbers recorded on 2026-09-03 under a full
+			// parallel `go test ./...`, to the microsecond: two byte-identical
+			// legacy paths 2.88 ms apart at p95 (3x = 8.65 ms, past the 3.99 ms
+			// ceiling), executor 9.56 ms over their mean. The old rule FAILed
+			// this — on a measurement it had itself just called not judgeable.
+			// It is UNKNOWN: the overhead is reported, not withdrawn, and not
+			// turned into a verdict the resolution cannot support.
+			name: "degraded_control_with_a_marginal_overhead_is_unknown_not_fail",
+			base: at(3300*us, 11419917*time.Nanosecond-3300*us),
+			ref:  at(3300*us, 8537542*time.Nanosecond-3300*us),
+			exec: at(3350*us, 19537125*time.Nanosecond-3350*us),
+			want: canaryLatencyPass, // on the MEDIAN alone: the round says so
+			checkFn: func(t *testing.T, r canaryLatencyResult) {
+				tail := r.Tail
+				if tail.Overhead != 9558396*time.Nanosecond || tail.RefDelta != 2882375*time.Nanosecond {
+					t.Fatalf("not the recorded measurement: %s", tail)
+				}
+				if tail.NoiseTerm <= tail.Ceiling {
+					t.Fatalf("this case must exercise the DEGRADED regime: noise=%v ceiling=%v", tail.NoiseTerm, tail.Ceiling)
+				}
+				if tail.Overhead <= tail.Budget || tail.Overhead <= tail.NoiseTerm {
+					t.Fatalf("premise: the old rule must have FAILed this (overhead %v vs budget %v, noise %v)",
+						tail.Overhead, tail.Budget, tail.NoiseTerm)
+				}
+				if canaryLatencyOverheadDecisive(tail, tail.RefDelta) {
+					t.Fatalf("premise: the recorded overhead is NOT decisive (%v vs 3x%v)", tail.Overhead, canaryLatencyDecisiveScale(tail, tail.RefDelta))
+				}
+				if tail.Verdict != canaryLatencyUnknown {
+					t.Fatalf("SW-275: a marginal overhead in the degraded regime is UNKNOWN, got %s: %s", tail.Verdict, tail)
+				}
+				if !strings.Contains(tail.Reason, "An overhead of 9.558396ms past the 3.991488ms budget WAS observed and is NOT withdrawn") {
+					t.Fatalf("the UNKNOWN must carry the overhead it saw: %q", tail.Reason)
+				}
+				if !canaryLatencyMedianOnlyPass(r) {
+					t.Fatalf("the round must be a median-only pass, got %s", r)
 				}
 			},
 		},
