@@ -42,7 +42,7 @@ import _access_ledger  # noqa: E402
 
 
 HARVESTS = Path("docs/eval/retrieval/harvests")
-REVIEW = HARVESTS / "sw-279-phase-2b-family-review"
+DEFAULT_REVIEW = "sw-279-phase-2b2-family-review"
 DATASET_V1 = Path("internal/eval/retrieval/testdata/datasets/cobra-v1.json")
 ACTOR = "Claude Opus 5 (SW-279 Phase 2 orchestrator)"
 
@@ -104,7 +104,10 @@ def parse_reviewer(path: Path, idset: set[str]) -> tuple[set[frozenset[str]], se
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--harvest", required=True, help="harvest directory name under docs/eval/retrieval/harvests/")
+    ap.add_argument("--review", default=DEFAULT_REVIEW,
+                    help=f"family-review directory under docs/eval/retrieval/harvests/ (default: {DEFAULT_REVIEW})")
     args = ap.parse_args()
+    review = HARVESTS / args.review
 
     root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], check=True,
                                stdout=subprocess.PIPE, text=True).stdout.strip())
@@ -114,8 +117,8 @@ def main() -> int:
 
     harvest = HARVESTS / args.harvest
     candidate_ledger = harvest / "candidate-ledger.jsonl"
-    blind_path = REVIEW / "blind-queries.txt"
-    out_path = REVIEW / "family-ledger.jsonl"
+    blind_path = review / "blind-queries.txt"
+    out_path = review / "family-ledger.jsonl"
     if out_path.exists():
         print(f"refusing to overwrite {out_path}", file=sys.stderr)
         return 2
@@ -149,8 +152,8 @@ def main() -> int:
         )
         return 3
 
-    reviewer_a = REVIEW / "family-reviewer-A-pi-minimax-m3.txt"
-    reviewer_b = REVIEW / "family-reviewer-B-codex.txt"
+    reviewer_a = review / "family-reviewer-A-pi-minimax-m3.txt"
+    reviewer_b = review / "family-reviewer-B-codex.txt"
     pairs_a, answered_a = parse_reviewer(reviewer_a, idset)
     pairs_b, answered_b = parse_reviewer(reviewer_b, idset)
     union = pairs_a | pairs_b
@@ -280,7 +283,7 @@ def main() -> int:
         HARVESTS / args.harvest / "access-ledger.jsonl",
         actor=ACTOR,
         command_tool_class="local Section 7 union, transitive closure, family id and 1:7 positional split",
-        input_artifact=(REVIEW / "family-reviewer-A-pi-minimax-m3.txt").as_posix(),
+        input_artifact=(review / "family-reviewer-A-pi-minimax-m3.txt").as_posix(),
         input_sha256=_access_ledger.sha256_file(reviewer_a),
         output_artifact=out_path.as_posix(),
         output_sha256=hashlib.sha256(payload).hexdigest(),

@@ -1,0 +1,40 @@
+{
+  "schema": "sw-279-family-reviewer-attestation-of-record/v1",
+  "not_a_first_person_attestation": true,
+  "what_this_is": "A statement by the SW-279 orchestrator of what the repository can and cannot evidence about this reviewer's conduct. Section 8 asks for 'attestations from each actor'. This is not that; it is what is available once the process has exited.",
+  "reviewer_slot": "B",
+  "reviewer_actor": "Codex CLI v0.148.0 (SW-279 Phase 2b2 family reviewer B)",
+  "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+  "recorded_at_utc": "2026-09-04T22:25:42.102947Z",
+  "invocation": {
+    "slot": "B",
+    "actor": "Codex CLI v0.148.0 (SW-279 Phase 2b2 family reviewer B)",
+    "model": "codex exec default",
+    "command": "codex exec --dangerously-bypass-approvals-and-sandbox \"$(cat <prompt>)\"",
+    "invoked_at_utc": "2026-09-04T22:15:42Z",
+    "finished_at_utc": "2026-09-04T22:23:42Z",
+    "cli_session_ids": [
+      "01a06e7e-191b-7370-a44c-ff9ae403ed44"
+    ],
+    "session_note": "The CLI emitted its own session id, recorded above; a transcript exists outside this repository.",
+    "prompt_sha256_as_delivered": "49c25ba8f8aa043328f16ccfe0e836a8a79a87b441d06b9e20d2074a6161bfe6",
+    "prompt_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-B-invocation-prompt.txt",
+    "prompt_sha256_as_published": "e968507f2b00572febcddefbc87f8265eb92843cccec1e28b7c15b14241d4653",
+    "console_log_sha256_as_produced": "d8fa8f92f96c7493f5d6aed891bfafce740010e89fa8beb5d13d6676489e4271",
+    "console_log_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-B-console-log.txt",
+    "console_log_sha256_as_published": "827f531acdb99d0e1c212ed2f1332f56ce879369528eee061c15d78290d13573",
+    "output_file": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-B-codex.txt",
+    "output_sha256": "1b7fc2b02de4e6451c2ab4b48d86b47ec16c26a7417c100359e5e204cc6720b6"
+  },
+  "evidenced_from_repository_bytes_and_the_invocation_record": [
+    "The reviewer's input was blind-queries.txt: 134 lines of `<opaque-id><TAB><query text>` and nothing else. Every id recomputes as sha256('sw279-blind-v1\\n' + text)[:10], so it encodes the text and nothing else - no issue number, no dataset id, no stratum, no split, no provenance, no answer span. This is checkable from repository bytes.",
+    "The exact command line, the model identifier, and the wall-clock window of the invocation are recorded in invocation-record.json, together with the digest of the prompt as delivered.",
+    "The reviewer's output references only opaque ids. It cites no file path, no line range, no symbol, no rank, no score and no split.",
+    "The prompt forbade opening any file other than the brief and the query list, and forbade source, dataset, retrieval, ranking and previous-review access."
+  ],
+  "not_evidenced": [
+    "This is not a first-person attestation. The process has exited; it cannot attest, and a fresh session cannot attest to what an earlier session did.",
+    "The console log records what the CLI printed, not every file it opened. A prohibited read that the CLI did not print would not appear in it.",
+    "Blindness to provenance leaks by inference for one class of row: the list contains bare symbols and an off-topic noise band that cannot be issue-title-derived under Section 2's first-token rule, so a reviewer can infer that some rows are pre-existing. A reviewer still cannot infer any row's split, which is the only leak that would poison a merge."
+  ]
+}

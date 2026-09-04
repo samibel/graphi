@@ -1,0 +1,134 @@
+q-0174ba5994	how does the documentation generator walk the command tree
+q-0407adcd3c	doc/man_docs.go
+q-06184d1b24	how to call the help command on demand?
+q-083c29231e	Does cobra support "@file.txt" flag syntax?
+q-083fcd7cd1	Are commands with un-runnable parents deliberately undiscoverable?
+q-084833bd7c	How do we provide conditional default values
+q-084ccea27b	database connection pool
+q-0bfad1869a	How would I create a custom Zsh Completion, but for another shell?
+q-0dcef62dc1	How to test a cobra CLI application?
+q-0fd8128ab6	How to set flags in test?
+q-112402db02	How to have app name be different from the root command?
+q-1802eca229	kubernetes pod scheduler
+q-1a2875cc02	How to access Persistent Flags values in init function?
+q-1b8799bd73	Is there a way to mark --version as deprecated?
+q-1b9fee4dbb	How to make rootCmd behave as one of its children
+q-1d2b7737c3	Can Cobra create watch-like CLIs?
+q-1e11bcebbd	How to make arguments show up in usage text?
+q-201e16a374	How to retrieve parent command flag value?
+q-20294d3168	GenZshCompletionNoDesc
+q-2349b16ea3	Execute
+q-23ba216024	How to check if flag was set or not?
+q-25814ff3cd	how to enable prefix matching for commands
+q-25e1497473	How do you place help at the top?
+q-29e1ae6a39	how does the completion command get registered on the root command
+q-2ad59bff46	How to disable message "Run 'xxxxx --help' for usage." ?
+q-2adeac36d6	Can you use Cobra to manage custom licence software keys
+q-2b745b14f5	How can I pass context.Context between pre/post-run hooks?
+q-2d501b4223	how is the version flag handled
+q-2f015d8adf	How can I call other subcommands?
+q-2f5a1b2245	how are commands added to a parent and their parent pointer set
+q-305238368a	Usage
+q-3090f56852	Is it possible to handle -h and --help differently?
+q-3419d4374a	how do persistent flags propagate from parent to child commands
+q-3433ff1f53	Can I disable sorting of flags for given command?
+q-34a7e61450	How to check if any flag was set ?
+q-37353d6cd1	How to write shell completion function in Go
+q-39d9cf240f	how do flag groups get enforced during completion
+q-3a28eeff56	How can I use config file to pass in an array of string arguments to a sub command?
+q-3a80e018bc	How to distinguish default value and manually set value of a flag?
+q-3b6ef8bba5	Why does `--version` not work?
+q-3b7c601bf8	ValidateRequiredFlags
+q-47c3433380	How to have sub commands "share" a sub command?
+q-4a68915ebb	How to get order of different flags?
+q-4c8a6cac39	How can I set a version dynamically?
+q-5c41c22e37	How does record executed commands and parameters
+q-5ee70e90d7	MarkFlagsMutuallyExclusive
+q-60df13c261	how do I disable the default completion command
+q-60e8116b57	active_help.go
+q-62e7375037	what is the lifecycle of running a root command from Execute to the Run hooks
+q-647fb81ddf	is there a way to add flags dynamically?
+q-65f607f300	how does cobra find the subcommand for the given arguments
+q-6c24291167	Can I have args/flags between rootcmd and subcommand
+q-6c5239de6b	Is it possible to create a cobra CLI with autocompletion for windows cmd?
+q-7594f7bd54	where are required flags validated before a command runs
+q-75cc0928e0	How to check what command was chosen
+q-776097bcaa	where is the levenshtein distance computed
+q-776fafd6f2	how can i use cobra deal with -delete like git ?
+q-779325e1ab	how does the shell completion request get dispatched to the completion logic
+q-77e06c690b	flag_groups.go
+q-7b480d3c5c	Is it possible to easily hide default flag values from help?
+q-7d448e4e40	How to auto complete hidden flags?
+q-8006d799b9	How to transfer parameters between PersistentPreRun func and Run func
+q-83cc122da7	How do I use multiple characters in a short parameter?
+q-841447007f	How to write custom help command?
+q-85b7ed0a40	Are flags with file globs supported?
+q-890dac8d56	How to change the unknown command error code
+q-8cce053ca6	Is there a way to not show `Global Flags` on --help.
+q-90d4d6a552	How to call a command from another command with flags
+q-916188d869	Is it possible to have a cmd.Flags().Uint64P accept decimal OR hex values as valid?
+q-9c960dfd6f	How to get a list of flags associated with a particular command ?
+q-9e10262086	how to hide the description in the completion
+q-9e11a10cf6	Is it possible to disable copyright generation altogether?
+q-9e44856846	How do you use one - instead of two -- ?
+q-a0bc05d547	RegisterFlagCompletionFunc
+q-a120ffaab0	Where to place sanity checks for command line args.
+q-a2d170fda1	How do I make --help exit?
+q-a3d1ab7d2c	how do I pass a command status to Postrun in cobra cli
+q-a8d75131ac	json web token signature verification
+q-a97249b25f	How to do auto-completions for Cobra CLIs that are `os.Exec`ed
+q-ad81c1ac0b	How to test inherited flags?
+q-b128a49041	Gen
+q-b4888d1e90	How to implement cmd about executing a script file with uncertain flags
+q-b75d7ecc5a	How to add a required argument?
+q-b8dddc5443	ExecuteC
+q-b94c5b04cf	How to handle wrong subcommand?
+q-b9695ad969	Is there a way to escape flag input?
+q-ba201251d1	Is there a way to share variables inside cobra instance?
+q-bac1c3f708	How do you add a shorthand to an option?
+q-bc7728267b	how are unknown command suggestions computed
+q-bc83ab3f22	How to exit after a help command
+q-bcafafc3f1	How to use times command from example
+q-bd862b17f0	How to make 'version' subcommand call 'root --version'
+q-be4e0e594e	How can I create commands preceded by variable arguments
+q-bf8e2f6af6	How to tell if NoArgs has been set.
+q-c02cb3285e	How can I remove the default help command from the root command?
+q-c137ef94d7	how to find what flags is been called in the command
+q-c3d7ec5f61	how to add entry to `Available Commands` help section.
+q-c54c2b15aa	how to enforce the number of arguments required?
+q-c6422d2d31	How to get sub command result back to parent?
+q-c70f4a276b	Why is validateRequiredFlags() executed after PreRun/PreRunE?
+q-c86ddba63e	How does one mark a flag a dependency of another flag
+q-c8cf312c0d	Can I make it ignore flags including hyphen(-)?
+q-c9dedfdf83	Is there a good way to reconstruct the original command-line invocation?
+q-ca6f4cef57	which environment variable controls active help
+q-cca34d895d	how to generate man pages for a command tree
+q-cdf52860c4	How do I get the flag of the currently executing command?
+q-ce98704167	how does cobra report a flag parsing error to the user
+q-cf047ff0b9	GenMarkdownTree
+q-d142abde77	shell_completions.go
+q-d20b45f953	How to invoke a subcommand by default
+q-d585456681	sqlite write ahead log checkpoint
+q-da0b542f13	Is there a way to customise entire deprecate message for a command
+q-dafb3af970	http router middleware chain
+q-db72578c10	How to document or define a required argument?
+q-db9a7897b6	How to "wrap" command line arguments so they won't be interpreted as commands?
+q-de7b35e8fe	what does the group id on commands do
+q-e0d118d906	completion
+q-e324a389d9	How should you return errors from commands?
+q-e5002cbb36	How to create root level method calling for each submodule after flags parsing
+q-e9cab7c46c	Is it possible to remove error log output
+q-ea2e631e3c	how are hidden and deprecated commands excluded from the help output
+q-ea451429c7	How to set argument before subcommand
+q-ecea678c01	How to pass parameters from one command to another?
+q-ee79389202	how to access Global Flag in subCommand?
+q-f03e2ccf3f	How to remove the default use: XXX [command]
+q-f0b72e6b0b	How to validate flags when they get set?
+q-f2acc7429f	How to pass two values for an option?
+q-f44a345203	Is it possible to use internal cobra functionality to parse a string as if it was a command line argument?
+q-f648447788	How to define mutually exlusive flags
+q-f6717f3451	how to make command names case insensitive
+q-fb30cf7aee	Flags
+q-fb737c3714	How to define behavior for unknown commands, or to add commands at runtime?
+q-fdfc969cc0	how to set `nil` as default value in `BoolVar`?
+q-fe951b6183	How to dynamically discover sub-commands and execute ?

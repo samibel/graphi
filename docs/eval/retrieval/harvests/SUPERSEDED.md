@@ -50,3 +50,55 @@ it.
 
 The replacement harvest lives in `sw-279-phase-2a2/` and is produced by committed, field-selective
 scripts whose GraphQL selection sets are auditable in source rather than asserted in a sentence.
+
+---
+
+## The outcome, recorded after the re-harvest ran
+
+Added 2026-09-04, after `sw-279-phase-2a2/` was produced. The table above was written before the
+re-harvest and stated what *would* survive; this section states what actually did.
+
+| prediction | outcome |
+|---|---|
+| the frozen rule is untouched | **held.** Still `d9aea986…5a2c`, byte-identical to the blob at `a0a13a7`. |
+| the Phase-1 boundary proof holds | **held.** A property of git, unaffected by a second fetch. |
+| the mechanical pass reproduces (1,116 / 139) | **reproduced, on a population one row larger.** 1,117 mechanical rejects and **139** syntactically eligible over 1,256 issues, and the 139 issue numbers are *identical* to the superseded run's. All 1,255 shared title and body digests match byte for byte. |
+| the 66 candidates reproduce "only if reproduced" | **they did not.** The re-run yields **94 candidates**, not 66. |
+| `sw-279-phase-2b-family-review/` survives if the candidate set is unchanged | **it is not unchanged, so the review was redone.** See `sw-279-phase-2b-family-review/SUPERSEDED.md` and `sw-279-phase-2b2-family-review/`. |
+
+Two things the prediction did not anticipate:
+
+- **The population is 1,256, not 1,255.** The count check fired and the fetch script refused to
+  continue. The extra row is issue #1036, created six years before the cutoff, and the new manifest
+  is a strict superset of the old. The cause is named in
+  `sw-279-phase-2a2/population-discrepancy-decision.md`: the superseded run used the GitHub Search
+  API, the re-harvest uses the GraphQL `issues` connection, and the two agree exactly in all
+  fourteen creation years except 2020 — where the connection sees 180 and Search sees 179. #1036 is
+  absent from GitHub's Search index. It lands in the *mechanical* reject bucket, so the larger
+  population cannot have moved the candidate set.
+- **`created_at` is now non-null in all 1,256 rows.** It was null in 1,255 of 1,255 here.
+
+### The measured cost of the violation
+
+The two semantic classifications agree on 107 of 139 rows and differ on 32, and the difference is
+almost entirely one-directional: **30 rows this harvest rejected are candidates under the re-run,
+and 2 it accepted are now rejects.** The clause signature is what makes it worth publishing rather
+than filing:
+
+| clause | superseded (primary / mentions) | re-run (primary / mentions) |
+|---|---|---|
+| **E1** bug report | **29 / 30** | **8 / 12** |
+| **E4** program-specific support | 12 / **42** | 9 / **13** |
+| E2 feature or change request | 11 / 13 | 11 / 14 |
+| C2 Cobra is the subject | 12 / 12 | 10 / 14 |
+
+E1 is the clause a maintainer's `bug` label encodes; E4 is what a maintainer's "please share your
+code" reply encodes. Both collapsed. E2 — `enhancement`, an equally common label — did not move at
+all, which is a real counter-signal and is stated rather than left out.
+
+**This is consistent with the harm the ruling described; it is not proof of it.** The two runs used
+different models, and two honest classifiers reading the same clean text would also disagree — the
+re-run's own classifier marked 52 of 139 rows as genuine semantic boundaries. What can be said is
+narrower and still worth saying: the run that held maintainer labels, comments and state in context
+rejected issues as bug reports and as program-specific support at three times the rate of the run
+that never saw them.

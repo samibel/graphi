@@ -180,6 +180,10 @@ def main() -> None:
             primary_counts[str(row["primary_deciding_clause"])] += 1
             clause_counts.update(str(clause) for clause in row["deciding_clauses"])
 
+    # The selector attestation is written by the isolated classifier itself, in its own
+    # words. This script does not compose one on its behalf; it only records its digest.
+    attestation_sha = sha256(attestation_path.read_bytes())
+
     sealed_at = now()
     seal = {
         "schema": "sw-279-candidate-question-seal/v1",
@@ -221,10 +225,6 @@ def main() -> None:
         "semantic_classifier_attestation_sha256": attestation_sha,
     }
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    # The selector attestation is written by the isolated classifier itself, in its own
-    # words. This script does not compose one on its behalf; it only records its digest.
-    attestation_sha = sha256(attestation_path.read_bytes())
 
     _access_ledger.append(
         access_path,

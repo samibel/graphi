@@ -1,0 +1,26 @@
+{
+  "schema": "sw-279-phase-2-seal/v1",
+  "sealed_at_utc": "2026-09-04T22:25:53.866103Z",
+  "sealed_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+  "repository_commit_at_seal": "004b806ae513067d6a28ae55f6e86164ae26a430",
+  "phase_1_rule_commit": "a0a13a757c66e8d4f0747d4a68955fe95d072573",
+  "phase_1_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "harvest": "sw-279-phase-2a2",
+  "candidate_questions_sha256": "35f2daf71dbef5b186383c49c58f1b85065874d2e9c5ca0a546146014aa3ba84",
+  "stratum_assignments_sha256": "9780cf5195297d8ff6d89b136c920b7278ee47dd16fecaf7934b1eadd700e4c1",
+  "family_ledger_sha256": "20561477d9104ad79ee329061f89f0f10a7baa853b6b265ac195b55683039655",
+  "sealed_questions_file": "sealed-questions.jsonl",
+  "sealed_questions_sha256": "cd2c774c67b43d795cdc603ec40ed541b2246b60e6bd28d53af569a4df8de8b6",
+  "sealed_count": 94,
+  "sealed_by_stratum": {
+    "architecture_flow": 1,
+    "config_docs": 90,
+    "nl_behaviour": 3
+  },
+  "sealed_by_provisional_split": {
+    "dev": 20,
+    "holdout": 74
+  },
+  "scope": "question text, stratum, rubric, family and provisional split for every candidate. Answerability, grade-3 spans and dataset membership are NOT sealed here: Section 8 step 4 comes after this seal.",
+  "source_access_before_this_seal": "none for any provisional query"
+}

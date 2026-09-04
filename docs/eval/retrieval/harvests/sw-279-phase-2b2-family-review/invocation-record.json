@@ -1,0 +1,50 @@
+{
+  "schema": "sw-279-phase-2b2-invocation-record/v1",
+  "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+  "recorded_at_utc": "2026-09-04T22:25:42.100891Z",
+  "blind_queries_file": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/blind-queries.txt",
+  "blind_queries_sha256": "4b7d95a1ed48a78a2417e3ea6aba33a31eaba822edbcb58b786c15a14b3ea87b",
+  "blind_queries_count": 134,
+  "brief_file": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-brief.txt",
+  "brief_sha256": "0083232af663667cdf8465b754863ed851466740bebca398fb0032d46f6395d5",
+  "reviewers": [
+    {
+      "slot": "A",
+      "actor": "pi CLI, minimax/MiniMax-M3 (SW-279 Phase 2b2 family reviewer A)",
+      "model": "minimax/MiniMax-M3",
+      "command": "pi -p --model \"minimax/MiniMax-M3\" --no-session \"$(cat <prompt>)\"",
+      "invoked_at_utc": "2026-09-04T22:15:42Z",
+      "finished_at_utc": "2026-09-04T22:19:42Z",
+      "cli_session_ids": [],
+      "session_note": "pi was invoked with --no-session, so no transcript was retained.",
+      "prompt_sha256_as_delivered": "24c27253f6ee5e4983c39e2637916351856c6b6e57445b6f0cdb607232244e38",
+      "prompt_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-A-invocation-prompt.txt",
+      "prompt_sha256_as_published": "830ff36a9497a2771a51178b2ebc3c3d5624eb9571d88db103109bcbe083df4e",
+      "console_log_sha256_as_produced": "80a4d9ce1436ddeb673dd50c9c793da4f20aaa841bf1323322b08e637c726f51",
+      "console_log_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-A-console-log.txt",
+      "console_log_sha256_as_published": "80eba22e3d0ef57395363d82db9717725306ed32a0da5b6ec2c7854883f51128",
+      "output_file": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-A-pi-minimax-m3.txt",
+      "output_sha256": "52cec680720c2114ac771950c6da3dae352d24b5a7929ed2103ee28565dcb4f9"
+    },
+    {
+      "slot": "B",
+      "actor": "Codex CLI v0.148.0 (SW-279 Phase 2b2 family reviewer B)",
+      "model": "codex exec default",
+      "command": "codex exec --dangerously-bypass-approvals-and-sandbox \"$(cat <prompt>)\"",
+      "invoked_at_utc": "2026-09-04T22:15:42Z",
+      "finished_at_utc": "2026-09-04T22:23:42Z",
+      "cli_session_ids": [
+        "01a06e7e-191b-7370-a44c-ff9ae403ed44"
+      ],
+      "session_note": "The CLI emitted its own session id, recorded above; a transcript exists outside this repository.",
+      "prompt_sha256_as_delivered": "49c25ba8f8aa043328f16ccfe0e836a8a79a87b441d06b9e20d2074a6161bfe6",
+      "prompt_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-B-invocation-prompt.txt",
+      "prompt_sha256_as_published": "e968507f2b00572febcddefbc87f8265eb92843cccec1e28b7c15b14241d4653",
+      "console_log_sha256_as_produced": "d8fa8f92f96c7493f5d6aed891bfafce740010e89fa8beb5d13d6676489e4271",
+      "console_log_file_as_published": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/reviewer-B-console-log.txt",
+      "console_log_sha256_as_published": "827f531acdb99d0e1c212ed2f1332f56ce879369528eee061c15d78290d13573",
+      "output_file": "docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-B-codex.txt",
+      "output_sha256": "1b7fc2b02de4e6451c2ab4b48d86b47ec16c26a7417c100359e5e204cc6720b6"
+    }
+  ]
+}

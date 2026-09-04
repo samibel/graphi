@@ -36,7 +36,7 @@ import _access_ledger  # noqa: E402
 
 
 HARVESTS = Path("docs/eval/retrieval/harvests")
-REVIEW = HARVESTS / "sw-279-phase-2b-family-review"
+DEFAULT_REVIEW = "sw-279-phase-2b2-family-review"
 RULE_PATH = Path("docs/eval/retrieval/dataset-v2-inclusion-rule.md")
 RULE_SHA256 = "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c"
 RULE_COMMIT = "a0a13a757c66e8d4f0747d4a68955fe95d072573"
@@ -91,7 +91,10 @@ def rubric_record(query: str, modes: dict[str, str], passfail: str) -> dict[str,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--harvest", required=True)
+    ap.add_argument("--review", default=DEFAULT_REVIEW,
+                    help=f"family-review directory under docs/eval/retrieval/harvests/ (default: {DEFAULT_REVIEW})")
     args = ap.parse_args()
+    review = HARVESTS / args.review
 
     root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], check=True,
                                stdout=subprocess.PIPE, text=True).stdout.strip())
@@ -108,7 +111,7 @@ def main() -> int:
     harvest = HARVESTS / args.harvest
     questions_path = harvest / "candidate-questions.jsonl"
     strata_path = harvest / "stratum-assignments.jsonl"
-    family_path = REVIEW / "family-ledger.jsonl"
+    family_path = review / "family-ledger.jsonl"
     sealed_path = harvest / "sealed-questions.jsonl"
     seal_path = harvest / "phase-2-seal.json"
     for path in (sealed_path, seal_path):

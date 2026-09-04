@@ -1,0 +1,19 @@
+{
+  "schema": "sw-279-stratum-assigner-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 Phase 2 stratum assigner)",
+  "attested_at_utc": "2026-09-04T22:21:00Z",
+  "input_sha256": "d2e8c3f1ac9b9336eae71cae4d09513edd334f52a320a4179aa41605f8505028",
+  "input_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "output_sha256": "9780cf5195297d8ff6d89b136c920b7278ee47dd16fecaf7934b1eadd700e4c1",
+  "statements": [
+    "Every stratum was decided from the Q field and the issue author's opening body in stratum-input.jsonl and from nothing else.",
+    "I opened exactly three files: the assignment brief, docs/eval/retrieval/dataset-v2-inclusion-rule.md, and docs/eval/retrieval/harvests/sw-279-phase-2a2/stratum-input.jsonl. I read Section 5 of the frozen rule verbatim rather than a paraphrase.",
+    "I opened no Cobra source, no graphi source, no test, and no dataset or judgement file, and I navigated no checkout.",
+    "I ran no search of any kind - no graphi CLI, no mcp__graphi__* tool, no semantic or lexical search, no grep or glob over the repository - and I saw no ranked result, score, bundle, or other retrieval output for any of these questions.",
+    "I made no GitHub, web, or connector request; no issue was looked up, and external links appearing as literal text in the bodies were not opened.",
+    "I used the shell only to write my two output files, to validate the output against the input row set, and to compute the three sha256 digests recorded above.",
+    "I applied rules 1, 2 and 3 in the frozen precedence order, taking the first applicable rule for each row, and I recorded that rule number alongside the stratum.",
+    "I did not balance the strata toward any count: no per-stratum target was used, and no assignment was influenced by where an answer might be found, how many answer spans might exist, or how a retriever might perform. The resulting distribution (90 config_docs, 3 nl_behaviour, 1 architecture_flow) is the unadjusted output of the precedence order applied row by row.",
+    "No question was assigned exact_identifier, exact_path, ambiguous, or no_hit."
+  ]
+}
