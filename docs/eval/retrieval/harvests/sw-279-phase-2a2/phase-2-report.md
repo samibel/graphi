@@ -410,3 +410,20 @@ now enforced at load time too.
    itself. What this harvest adds over the last one is that the transport is now a committed
    selection set rather than an assertion, and that the actor who fetched is not the actor who
    selected.
+
+## Two ledger irregularities, disclosed
+
+An append-only ledger cannot be edited, so both of these are corrected by later rows rather than
+tidied away.
+
+1. **Sequences 3 and 4 carry timestamps earlier than sequence 2.** The discrepancy probe and the
+   instrument probe ran before `scripts/eval/_access_ledger.py` existed and so did not emit their
+   own rows at the time; they were back-filled by
+   `scripts/eval/backfill_sw279_diagnostic_ledger_rows.py`, which takes each timestamp from the
+   record the access itself produced. **Ledger sequence is append order, not access order**, and
+   each back-filled row says so in its own `detail`.
+2. **Sequence 14's output digest no longer resolves.** The answerability finalizer ran twice: the
+   first run appended its row and then exited 3 on the unresolved row, as §4 requires. The
+   reviewer's resolution was applied and the finalizer re-run — sequence 15, whose output is
+   authoritative. Sequence 17 is a correction row naming both digests. Sequence 14 stays, because
+   removing it would be the precise defect this harvest exists to avoid.
