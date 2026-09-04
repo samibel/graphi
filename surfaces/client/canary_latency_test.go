@@ -1159,16 +1159,15 @@ func TestAX06_LatencyGateFailsOnInjectedSeamRegression(t *testing.T) {
 				// PR #172 is why it exists: three rounds, every median
 				// unjudgeable, the run correctly UNKNOWN, and the test reported
 				// it as AC-3 having been violated.
-				if canaryLatencyDemonstrationInconclusive(overall, results) {
-					which := canaryLatencyUnresolvedStatistic(results)
-					t.Skipf("AC-3 systemic demonstration inconclusive: the "+which+
-						" (this runner could not tell two byte-identical legacy paths apart "+
-						"there), so the %d extra executor-seam pass(es) per call could not be "+
-						"measured. NOT evidence that the gate missed the regression: %s",
-						len(results), tc.extra, overall)
+				if canaryLatencyDemonstrationInconclusive(overall, results, canaryLatencyMissedByEither) {
+					t.Skipf("AC-3 systemic demonstration inconclusive: %s, so the %d extra "+
+						"executor-seam pass(es) per call could not be measured. NOT evidence that "+
+						"the gate missed the regression: %s",
+						canaryLatencyInconclusiveReport(results), tc.extra, overall)
 				}
 				t.Fatalf("AC-3: %d extra executor-seam pass(es) per call must turn the gate red, "+
-					"got %s after %d round(s): %s",
+					"got %s after %d round(s) — a judged statistic read PASS against the "+
+					"injection, or the run passed outright: %s",
 					tc.extra, overall.Verdict, len(results), overall)
 			}
 			t.Logf("AC-3 demonstration: %d extra seam pass(es) per call -> %s after %d round(s)\n  %s\n  %s",
@@ -1268,27 +1267,110 @@ func canaryLatencyUnresolvedStatistic(results []canaryLatencyResult) string {
 	return "tail was unjudgeable in all %d round(s) at p95"
 }
 
+// canaryLatencyMissedByTail reports whether a round positively judged the TAIL
+// as PASS. In a minority-incidence demonstration that is the one round shape
+// that is evidence the gate MISSED the injection: the tail's own A/A control
+// was narrow enough to judge, and the judgement was "no regression". The median
+// is EXPECTED to pass on that shape, so it is not consulted.
+func canaryLatencyMissedByTail(r canaryLatencyResult) bool {
+	return r.Tail.Verdict == canaryLatencyPass
+}
+
+// canaryLatencyMissedByEither reports whether a round positively judged EITHER
+// statistic as PASS. In a systemic demonstration both statistics should see the
+// injection, so a judged PASS from either one is a miss.
+func canaryLatencyMissedByEither(r canaryLatencyResult) bool {
+	return r.Median.Verdict == canaryLatencyPass || r.Tail.Verdict == canaryLatencyPass
+}
+
+// canaryLatencyAnyRound reports whether any round satisfies pred.
+func canaryLatencyAnyRound(results []canaryLatencyResult, pred func(canaryLatencyResult) bool) bool {
+	for _, r := range results {
+		if pred(r) {
+			return true
+		}
+	}
+	return false
+}
+
 // canaryLatencyDemonstrationInconclusive reports whether a demonstration that
 // did NOT turn the gate red failed because the run could not measure, rather
 // than because the gate missed the injection. It is the one guard shared by
 // every injected-regression demonstration below; there is deliberately not a
 // second idiom for the same question.
 //
-// Both halves are load-bearing:
+// Two halves are load-bearing:
 //
-//   - canaryLatencyRunUnresolved: a whole gated statistic has to have been
-//     unavailable for the WHOLE run. A single noisy round is not an excuse.
 //   - the verdict has to be UNKNOWN. A PASS is never inconclusive. A gate that
 //     answers "no regression" to an injected one is the exact defect these
 //     demonstrations exist to catch, and a guard that skipped on it would make
 //     them hollow, so a PASS must still fail the test loudly.
+//   - no round may have been a MISS: a statistic that WAS judgeable and read
+//     "no regression" against the injection, whatever the other rounds did.
+//     Which statistic counts is the demonstration's to say (missed): the tail
+//     alone for the minority-incidence shape the median cannot see, either
+//     statistic for a systemic one.
 //
-// The PASS case is also unreachable by construction — canaryLatencyCompose takes
-// a round with an unjudgeable median to UNKNOWN, and canaryLatencyMedianOnlyOverall
-// takes a run with an unjudgeable tail there — but this says so out loud instead
-// of resting on that argument surviving a future edit to either function.
-func canaryLatencyDemonstrationInconclusive(overall canaryLatencyResult, results []canaryLatencyResult) bool {
-	return overall.Verdict == canaryLatencyUnknown && canaryLatencyRunUnresolved(results)
+// # What changed in SW-275, and why
+//
+// The guard used to require, in addition, that a whole gated statistic had
+// been unjudgeable in EVERY round (canaryLatencyRunUnresolved). That excused a
+// run that measured nothing, but not the run a loaded machine actually
+// produces. Recorded on 2026-09-03 under a full parallel `go test ./...`:
+// round 1 caught the injection through the tail (a MARGINAL tail FAIL:
+// p95 overhead 9.56 ms against a 3.99 ms budget, control 2.88 ms), then rounds
+// 2 and 3 lost the tail's A/A control and passed on the median alone. The
+// SHIPPED arbitration reports that run as UNKNOWN by design — a marginal FAIL
+// does not outrank the absence of a re-measurement (§2, "marginal or
+// decisive") — and says so: "tail not judgeable ... round 1 recorded a FAIL,
+// which is NOT withdrawn". The old guard then hard-FAILED the demonstration on
+// exactly that report, because round 1's tail HAD been judged. So the test
+// failed a measurement the gate itself had just called not judgeable, on a
+// run in which the gate had in fact caught the injection.
+//
+// The amended guard asks the question the demonstration actually has: did any
+// judged round miss the injection? A run whose judged statistics all read FAIL
+// carries no such evidence, and is reported as inconclusive with the round
+// counts, the same way the gate reports it. The old whole-run condition is kept
+// as a disjunct so nothing that was inconclusive before becomes a failure now:
+// TestAX06_DemonstrationGuardIsNeverStricterThanBefore proves that over every
+// reachable round sequence, and TestAX06_DemonstrationGuardOnTheRecordedRun pins
+// the recorded shape on both.
+func canaryLatencyDemonstrationInconclusive(overall canaryLatencyResult, results []canaryLatencyResult,
+	missed func(canaryLatencyResult) bool) bool {
+	if overall.Verdict != canaryLatencyUnknown {
+		return false
+	}
+	return canaryLatencyRunUnresolved(results) || !canaryLatencyAnyRound(results, missed)
+}
+
+// canaryLatencyInconclusiveReport says WHICH rounds could not judge, and which
+// did and what they found, for the skip message: a reader is told whether the
+// run measured nothing (the old shape) or caught the injection and then could
+// not re-measure it (the SW-275 shape).
+func canaryLatencyInconclusiveReport(results []canaryLatencyResult) string {
+	if canaryLatencyRunUnresolved(results) {
+		which := canaryLatencyUnresolvedStatistic(results)
+		return fmt.Sprintf("the "+which+" (this runner could not tell two byte-identical legacy "+
+			"paths apart there), so the injection could not be measured", len(results))
+	}
+	var tailFail, tailUnknown, medianUnknown int
+	for _, r := range results {
+		switch r.Tail.Verdict {
+		case canaryLatencyFail:
+			tailFail++
+		case canaryLatencyUnknown:
+			tailUnknown++
+		}
+		if r.Median.Verdict == canaryLatencyUnknown {
+			medianUnknown++
+		}
+	}
+	return fmt.Sprintf("of %d round(s) the tail FAILed on the injection in %d and was unjudgeable "+
+		"in %d (median unjudgeable in %d), and no judged tail read PASS; the shipped arbitration "+
+		"reports such a run as UNKNOWN because the FAIL could not be re-measured on a round that "+
+		"resolved the tail (§2: a marginal FAIL does not outrank the absence of a measurement)",
+		len(results), tailFail, tailUnknown, medianUnknown)
 }
 
 func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
@@ -1319,15 +1401,13 @@ func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 				// same way, and it is the limit recorded in doc §3: sustained
 				// contention costs the tail statistic, and with it the
 				// minority-incidence coverage, for that run.
-				if canaryLatencyDemonstrationInconclusive(overall, results) {
-					which := canaryLatencyUnresolvedStatistic(results)
-					t.Skipf("minority-incidence demonstration inconclusive: the "+which+
-						" (this runner could not tell two byte-identical legacy paths apart "+
-						"there), so the injection could not be measured. Not evidence that the "+
-						"gate missed it: %s", len(results), overall)
+				if canaryLatencyDemonstrationInconclusive(overall, results, canaryLatencyMissedByTail) {
+					t.Skipf("minority-incidence demonstration inconclusive: %s. Not evidence "+
+						"that the gate missed it: %s", canaryLatencyInconclusiveReport(results), overall)
 				}
 				t.Fatalf("SW-242 AC-3 (minority incidence): %d extra executor-seam pass(es) on "+
-					"1 call in %d must turn the gate red, got %s after %d round(s): %s",
+					"1 call in %d must turn the gate red, got %s after %d round(s) — a judged "+
+					"tail read PASS against the injection, or the run passed outright: %s",
 					tc.extra, tc.every, overall.Verdict, len(results), overall)
 			}
 			// The point of the test is that the TAIL caught it. If the median
@@ -1343,6 +1423,159 @@ func TestAX06_LatencyGateFailsOnMinorityIncidenceRegression(t *testing.T) {
 				"after %d round(s)\n  %s\n  %s",
 				tc.extra, tc.every, overall.Verdict, len(results), overall, overall.Reason)
 		})
+	}
+}
+
+// canaryLatencyGuardBeforeSW275 is the demonstration guard as it stood before
+// SW-275, kept verbatim so the two tests below compare the amended guard against
+// the real predecessor rather than against a paraphrase of it.
+func canaryLatencyGuardBeforeSW275(overall canaryLatencyResult, results []canaryLatencyResult) bool {
+	return overall.Verdict == canaryLatencyUnknown && canaryLatencyRunUnresolved(results)
+}
+
+// canaryLatencyRecordedRun20260903 rebuilds, through the SHIPPED evaluation, the
+// minority-incidence run recorded on 2026-09-03 under a full parallel
+// `go test ./...` (SW-275): round 1's tail read the injection —
+//
+//	p95 FAIL overhead=9.558396ms budget=3.991488ms
+//	  (fixed=997.872us noise=3x2.882375ms=8.647125ms ceiling=3.991488ms)
+//	  legacy-a=11.419917ms legacy-b=8.537542ms executor=19.537125ms
+//
+// — a MARGINAL FAIL (9.56 ms is under 3x the 3.99 ms ceiling), and rounds 2 and
+// 3 lost the tail's A/A control and passed on the median alone. The medians are
+// not in the record and are set to a clean ~3.3 ms; the tail numbers are the
+// recorded ones to the microsecond.
+func canaryLatencyRecordedRun20260903() []canaryLatencyResult {
+	ms, us := time.Millisecond, time.Microsecond
+	at := canaryLatencySamplesAt
+	round1 := evaluateCanaryLatency(
+		at(3300*us, 11419917*time.Nanosecond-3300*us),
+		at(3300*us, 8537542*time.Nanosecond-3300*us),
+		at(3350*us, 19537125*time.Nanosecond-3350*us))
+	// Rounds 2 and 3: two byte-identical legacy paths 4 ms apart at p95 (3x4 ms
+	// is past the ~3.3 ms ceiling), executor within noise of their mean.
+	medianOnly := func() canaryLatencyResult {
+		return evaluateCanaryLatency(at(3300*us, 2*ms), at(3300*us, 6*ms), at(3350*us, 4*ms))
+	}
+	return []canaryLatencyResult{round1, medianOnly(), medianOnly()}
+}
+
+// TestAX06_DemonstrationGuardOnTheRecordedRun pins the SW-275 shape: the
+// shipped arbitration calls the recorded run UNKNOWN and says the FAIL is not
+// withdrawn; the pre-SW-275 guard nevertheless turned that into a hard failure
+// of the demonstration; the amended guard reports it inconclusive, names the
+// rounds, and still fails loudly on a genuine miss.
+func TestAX06_DemonstrationGuardOnTheRecordedRun(t *testing.T) {
+	rounds := canaryLatencyRecordedRun20260903()
+	r1 := rounds[0]
+	if r1.Median.Verdict != canaryLatencyPass || r1.Tail.Verdict != canaryLatencyFail || r1.Verdict != canaryLatencyFail {
+		t.Fatalf("round 1 must be a tail-caught FAIL on a clean median, got %s", r1)
+	}
+	if r1.Tail.Overhead != 9558396*time.Nanosecond || r1.Tail.RefDelta != 2882375*time.Nanosecond {
+		t.Fatalf("round 1's tail is not the recorded measurement: %s", r1.Tail)
+	}
+	if canaryLatencyStatDecisive(r1.Tail, r1.Tail.RefDelta) {
+		t.Fatalf("the recorded FAIL was marginal, not decisive: %s", r1.Tail)
+	}
+	for i, r := range rounds[1:] {
+		if !canaryLatencyMedianOnlyPass(r) {
+			t.Fatalf("round %d must be a median-only pass, got %s", i+2, r)
+		}
+	}
+
+	overall := canaryLatencyOverall(rounds)
+	if overall.Verdict != canaryLatencyUnknown {
+		t.Fatalf("the shipped arbitration reports this run as UNKNOWN by design (§2), got %s: %s",
+			overall.Verdict, overall)
+	}
+	if !strings.Contains(overall.Reason, "round 1 of this same run recorded a FAIL, which is NOT withdrawn") {
+		t.Fatalf("the arbitration's own report must carry the un-withdrawn FAIL: %s", overall.Reason)
+	}
+
+	// Before: the run was neither tail-unjudgeable in EVERY round (round 1 was
+	// judged) nor median-unjudgeable, so the guard said "conclusive" and the
+	// demonstration hard-failed on a verdict the gate itself calls not judgeable.
+	if canaryLatencyGuardBeforeSW275(overall, rounds) {
+		t.Fatalf("the pre-SW-275 guard is expected to have failed this run; the recorded failure would not have happened")
+	}
+	// After: no judged tail read PASS, so there is no evidence of a miss.
+	if !canaryLatencyDemonstrationInconclusive(overall, rounds, canaryLatencyMissedByTail) {
+		t.Fatalf("SW-275: the recorded run must be reported inconclusive, not failed")
+	}
+	report := canaryLatencyInconclusiveReport(rounds)
+	if !strings.Contains(report, "FAILed on the injection in 1") || !strings.Contains(report, "unjudgeable in 2") {
+		t.Fatalf("the inconclusive report must name the round counts: %q", report)
+	}
+
+	// The guard has not gone hollow. A judged tail PASS anywhere in an
+	// otherwise identical UNKNOWN run is a miss and stays a failure...
+	missed := append([]canaryLatencyResult{}, rounds...)
+	missed[1] = canaryLatencyCompose(
+		canaryLatencyShapeStat("p50", canaryLatencyUnknown, false),
+		canaryLatencyShapeStat("p95", canaryLatencyPass, false))
+	if o := canaryLatencyOverall(missed); o.Verdict != canaryLatencyUnknown {
+		t.Fatalf("fixture: expected UNKNOWN, got %s", o)
+	} else if canaryLatencyDemonstrationInconclusive(o, missed, canaryLatencyMissedByTail) {
+		t.Fatalf("a round whose judged tail read PASS against the injection is a miss, not inconclusive")
+	}
+	// ...and a run that passes outright is never inconclusive.
+	passed := append([]canaryLatencyResult{}, rounds...)
+	passed[2] = canaryLatencyCompose(
+		canaryLatencyShapeStat("p50", canaryLatencyPass, false),
+		canaryLatencyShapeStat("p95", canaryLatencyPass, false))
+	if o := canaryLatencyOverall(passed); o.Verdict != canaryLatencyPass {
+		t.Fatalf("fixture: expected PASS, got %s", o)
+	} else if canaryLatencyDemonstrationInconclusive(o, passed, canaryLatencyMissedByTail) {
+		t.Fatalf("a PASS is never inconclusive")
+	}
+}
+
+// TestAX06_DemonstrationGuardIsNeverStricterThanBefore walks every sequence of
+// one, two and three rounds over every reachable round shape and checks that
+// whatever the pre-SW-275 guard called inconclusive, the amended guard still
+// does — for both miss predicates — so SW-275 can only turn hard failures into
+// skips, never the reverse. It also checks the change is real (some sequence
+// differs), that a PASS is never inconclusive, and that a judged miss is never
+// excused unless the old whole-run condition already excused it.
+func TestAX06_DemonstrationGuardIsNeverStricterThanBefore(t *testing.T) {
+	shapes := canaryLatencyRoundShapes()
+	preds := map[string]func(canaryLatencyResult) bool{
+		"tail":   canaryLatencyMissedByTail,
+		"either": canaryLatencyMissedByEither,
+	}
+	var seqs [][]canaryLatencyResult
+	for _, a := range shapes {
+		seqs = append(seqs, []canaryLatencyResult{a})
+		for _, b := range shapes {
+			seqs = append(seqs, []canaryLatencyResult{a, b})
+			for _, c := range shapes {
+				seqs = append(seqs, []canaryLatencyResult{a, b, c})
+			}
+		}
+	}
+	for name, missed := range preds {
+		var relaxed int
+		for _, seq := range seqs {
+			overall := canaryLatencyOverall(seq)
+			before := canaryLatencyGuardBeforeSW275(overall, seq)
+			after := canaryLatencyDemonstrationInconclusive(overall, seq, missed)
+			if before && !after {
+				t.Fatalf("%s: the amended guard is stricter than the old one on %v", name, canaryLatencyShapeNames(seq))
+			}
+			if after && overall.Verdict == canaryLatencyPass {
+				t.Fatalf("%s: a PASS was called inconclusive on %v", name, canaryLatencyShapeNames(seq))
+			}
+			if after && !before && canaryLatencyAnyRound(seq, missed) {
+				t.Fatalf("%s: a judged miss was newly excused on %v", name, canaryLatencyShapeNames(seq))
+			}
+			if after && !before {
+				relaxed++
+			}
+		}
+		if relaxed == 0 {
+			t.Fatalf("%s: the amended guard never differs from the old one — the change is not wired in", name)
+		}
+		t.Logf("%s: %d of %d sequences move from hard failure to inconclusive", name, relaxed, len(seqs))
 	}
 }
 
