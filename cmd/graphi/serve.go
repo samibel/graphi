@@ -274,6 +274,15 @@ func runDaemon(args []string) int {
 		asvc := analysis.NewDefaultServiceWithWatch(store, watchStatusProvider{mgr: watchMgr}).Freeze()
 		handler := client.NewDirect(query.New(store), search.New(store)).WithAnalysis(asvc)
 		srv := daemon.NewServerWithWatch(handler, watchMgr)
+		// SW-275: install the signal handler BEFORE the listener exists. The
+		// socket is the daemon's readiness signal — the moment `net.Listen`
+		// returns it is dial-able and `daemon listening` is printed — and until
+		// signal.NotifyContext has run, a SIGTERM is delivered with Go's default
+		// disposition: the process dies with `signal: terminated`, the socket
+		// file is left behind, and none of the deferred cleanups above run.
+		// Arming first makes "observably ready" imply "handles SIGTERM".
+		sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancel()
 		if err := srv.Start(*socket); err != nil {
 			fmt.Fprintf(os.Stderr, "graphi: daemon start: %v\n", err)
 			return 1
@@ -284,8 +293,6 @@ func runDaemon(args []string) int {
 		// signal — then RETURN, so the deferred cleanups (watcher StopAll, store
 		// Close) actually run and the process exits. This replaces the former
 		// `select {}` that parked the process forever after `stop`.
-		sigCtx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		defer cancel()
 		select {
 		case <-srv.Done():
 		case <-sigCtx.Done():

@@ -190,20 +190,33 @@ ceiling   = 4 × fixedBar                            the hard clamp
 budget    = min( max( fixedBar , noiseTerm ) , ceiling )
 ```
 
-> A statistic is **UNKNOWN** when an arm produced no samples, or when `noiseTerm > ceiling`
-> *and* the overhead is not itself past both. It **fails** when
-> `overhead > budget` **and** `overhead > noiseTerm`. Otherwise it **passes**
-> (`overhead ≤ budget`).
+> A statistic is **UNKNOWN** when an arm produced no samples. In the **ordinary regime**
+> (`noiseTerm ≤ ceiling`) it **fails** when `overhead > budget` and otherwise **passes**. In
+> the **degraded regime** (`noiseTerm > ceiling` — two byte-identical legacy paths could not
+> be told apart at this percentile) it **fails** only when the overhead is *decisive*
+> (`overhead > 3 × max(ceiling, refDelta)`, defined below) and is otherwise **UNKNOWN** — with
+> the overhead that was seen carried in the report, never as a pass.
 
-The evaluation order matters and is checked in that order in the code: the FAIL test is
-applied **before** the degraded test. In the ordinary regime this changes nothing —
-`budget ≥ noiseTerm` there, so `overhead > budget` already implies `overhead > noiseTerm`,
-and the rule reads exactly as it did. It only bites when the control is wider than the
-ceiling, and only ever in the direction of failing: an overhead past both the clamp *and*
-three times the run's own demonstrated resolution is signal at whatever resolution that run
-achieved, and a degraded runner is not a licence to launder it into a pass. Without this
-ordering, enough contention would make any regression invisible, which is AC-2's prohibition
-read in the opposite direction.
+The evaluation order matters and is checked in that order in the code: the decisive-FAIL test
+is applied **before** the degraded test. A degraded runner is not a licence to launder a
+regression into a pass — an overhead past three times every scale the run demonstrated is
+signal at whatever resolution that run achieved, and it FAILs here. Without this ordering,
+enough contention would make any regression invisible, which is AC-2's prohibition read in the
+opposite direction.
+
+**Amended by SW-275 (2026-09-04).** The FAIL bar in the degraded regime used to be
+`overhead > budget` **and** `overhead > noiseTerm` — past the clamp and past 3× the round's
+*own* A/A control. Under a full parallel `go test ./...` that failed the tail on a measurement
+the gate had itself just called not judgeable: p95 overhead 9.558 ms against a 3.991 ms
+ceiling, with the two legacy arms 2.882 ms apart (3× = 8.647 ms, past the ceiling). 3× a single
+folded-normal draw from a preemption-dominated tail is not a bar the run can stand on — §5.9
+measured exactly that at the arbitration level and moved to the widest scale in evidence. The
+per-statistic rule now uses the same *decisive* threshold, so there is one notion of decisive,
+held in one function (`canaryLatencyOverheadDecisive`). Everything below it in the degraded
+regime is UNKNOWN. The ordinary regime is byte-for-byte unchanged, and the change can only turn
+a FAIL into an UNKNOWN, never anything into a PASS —
+`TestAX06_DegradedVerdictIsNeverStricterThanBefore` proves both against the verbatim previous
+rule on the calibrated noise model; §5.10 records what it did under real load.
 
 ### A FAIL is *marginal* or *decisive*
 
@@ -861,6 +874,92 @@ Every p95 overhead in that job — 79.556457 ms, 92.47372 ms, 74.651076 ms — c
 ceiling by 8×, 11× and 11× even under the most conservative reconstruction of the ceiling
 available from the log.
 
+### 5.10 The degraded-regime verdict, amended and measured (SW-275, 2026-09-04)
+
+**The finding.** On 2026-09-03, under a full parallel `go test ./...`,
+`TestAX06_LatencyGateFailsOnMinorityIncidenceRegression` printed
+
+```
+p95 FAIL overhead=9.558396ms budget=3.991488ms
+  (fixed=997.872us noise=3x2.882375ms=8.647125ms ceiling=3.991488ms)
+  legacy-a=11.419917ms legacy-b=8.537542ms executor=19.537125ms
+```
+
+— a tail FAIL in the **degraded** regime (3× the control is past the ceiling, so the run had
+already established that it could not tell two byte-identical paths apart at p95), reached
+because the §2 rule of the day tested `overhead > budget AND overhead > noiseTerm` before the
+degraded test. 9.558 ms is past 3× a 2.882 ms control, but under 3× the widest scale in
+evidence (3 × 3.991 ms = 11.974 ms): a *marginal* FAIL by §2's own definition, produced by
+exactly the "3× a single folded-normal draw" bar that §5.9 measured at 24× the false-FAIL rate
+and rejected at the arbitration level. The story's binding acceptance paragraph (SW-275) asked
+for one of two remedies; this is remedy (b) — UNKNOWN rather than FAIL when the noise estimate
+exceeds the budget — with the decisive exception that keeps AC-2 intact in both directions.
+
+**The amended rule** is the one §2 now states: in the degraded regime a statistic FAILs only
+when its overhead is decisive (`> 3 × max(ceiling, refDelta)`), and is otherwise UNKNOWN, with
+the observed overhead carried in the reason ("WAS observed and is NOT withdrawn"). The ordinary
+regime is untouched. There is one notion of decisive, in `canaryLatencyOverheadDecisive`, used
+by the per-statistic rule and by the arbitration alike.
+
+**Proved, not sampled.** `TestAX06_LatencyDecisionRule` replays the recorded numbers to the
+microsecond: the previous rule (kept verbatim as `canaryLatencyStatVerdictBeforeSW275`) FAILs
+the tail; the amended rule reports UNKNOWN and names the 9.558396 ms it saw.
+`TestAX06_DegradedVerdictIsNeverStricterThanBefore` evaluates 12 000 statistics on the §5.8
+noise model (every runner condition; clean arms and 2 ms / 20 ms injected on one call in eight)
+against the verbatim previous rule: the amended rule never FAILs what the old one did not, the
+two differ only in the degraded regime and only FAIL → UNKNOWN, never PASS there, and every
+degraded-regime FAIL is exactly a decisive one. 2 340 statistics fell in the degraded regime;
+529 of them still FAIL (decisive), 159 moved FAIL → UNKNOWN.
+
+**Measured under real load** (12-core arm64 laptop; load = one busy loop per core plus a
+looping `CGO_ENABLED=0 go test ./... -count=1`; 10 consecutive runs per condition of
+`go test ./surfaces/client -run 'TestAX06_ExecutorSeamLatencyWithinThreshold$|TestAX06_LatencyGateFailsOnMinorityIncidenceRegression$' -count=1 -v`;
+`main` @ `cd01c16` is the previous rule, the amended tree @ `cdd6fbd`). Test outcomes — for
+the gate, PASS / UNKNOWN (a skip carrying the UNVERIFIED marker) / FAIL; for the
+minority-incidence demonstration, "red" means the gate FAILed on the injection as required,
+"inconclusive" is the demonstration's skip, "miss" is the demonstration failing:
+
+| condition | gate PASS | gate UNKNOWN | gate FAIL | demonstration red | inconclusive | miss |
+|---|---|---|---|---|---|---|
+| previous rule, under load | 7 | 3 | 0 | 20 / 20 | 0 | 0 |
+| **amended rule, under load** | 4 | 6 | 0 | **20 / 20** | 0 | 0 |
+| amended rule, no induced load (control) | 10 | 0 | 0 | 20 / 20 | 0 | 0 |
+| previous rule, no induced load (control) | 10 | 0 | 0 | 20 / 20 | 0 | 0 |
+
+The gate's UNKNOWN counts differ between the first two rows because the induced load is not
+stationary (the looping suite has build and test phases), not because of the rule: every one
+of the 9 + 20 degraded-regime tail rounds the clean-tree gate produced under load was UNKNOWN
+under **both** rules, so the amended rule changed no gate verdict in these runs — as it
+cannot, having only FAIL → UNKNOWN to give. A separate replay of every p95 round line in the
+four logs through both rules confirms it. The recorded 2026-09-03 shape — a marginal overhead
+in the degraded regime on the *clean* tree — did not recur in 40 gate rounds under this load;
+it is pinned deterministically instead (above).
+
+**A genuine regression still FAILs when it is measurable.** Under the same load the injected
+strong regressions stayed red under the amended rule in every run: the minority-incidence
+shape (20 extra real seam passes on one call in 8 / in 16) 20 / 20, and the systemic shape
+(`TestAX06_LatencyGateFailsOnInjectedSeamRegression`, seam cost ×2 / ×4) 20 / 20. In the
+minority-incidence runs 35 of 60 tail rounds were in the degraded regime and **all 35 were
+decisive** (overheads of 13.8–41.5 ms against 3× scales of 3.5–19.7 ms), so the amended rule
+kept every one of them as a FAIL. The systemic run is where the amended rule visibly bit: 5 of
+its 33 degraded tail rounds were marginal under the old rule's FAIL test (overheads of
+4.2–11.6 ms against 3× scales of 7.0–15.2 ms) and moved FAIL → UNKNOWN — and the round FAILed
+anyway, on the median, which is the statistic a systemic regression lives in. Nothing that was
+caught stopped being caught.
+
+**What this does and does not do to the trunk.** The trunk's red (`test gate: UNVERIFIED`,
+`ax06_executor_seam_latency`) comes from the gate honestly reporting UNKNOWN when a loaded
+runner cannot resolve the tail in any of three rounds; `cmd/testgate` maps that to exit 3 and
+the `test-gate` workflow treats every non-zero exit as red. This amendment does not change
+that: the gate is neither more nor less likely to reach a verdict on a loaded runner, it is only
+no longer able to FAIL on a measurement it has called not judgeable. Remedy (a) — a
+load-robust tail — would need the p95 A/A control to fall inside the ceiling on the loaded
+runner, and with N = 200 samples per arm the control under this load is 1.2–3.9 ms against
+ceilings of 1–4 ms. Bounding it means an order of magnitude more tail samples (the quantile's
+sampling error falls as √N), which is a §1 constant no story gets to move quietly and a run-time
+cost paid exactly on the runner that is already contended. Whether to pay it, or to change what
+`test-gate` does with an honest UNVERIFIED, is recorded as an open owner question in SW-275.
+
 ---
 
 ## 6. The dual-run cost of the shipped default (SW-244, 2026-08-28)
@@ -888,12 +987,20 @@ unaccounted = shadow − accounted             the residue: comparison + recorde
 ```
 
 `unaccounted` is judged by **`canaryLatencyBudget`** — literally the function §2's rule
-calls, extracted by SW-244 so there is exactly one copy. Same 10 %/250 µs fixed term, same
-3× same-run noise term, same 4× ceiling, same three-valued verdict, same evaluation order.
-`TestSW244_ShadowAccountingSharesTheGateBudget` asserts the two agree across a sweep of
-baselines and controls, so softening the accounting would require softening the AX-06 gate
-itself. That is deliberate: SW-244 introduces the cost being judged, and a story does not get
-to pick the budget that judges its own cost.
+calls, extracted by SW-244 so there is exactly one copy of the *budget arithmetic*. Same
+10 %/250 µs fixed term, same 3× same-run noise term, same 4× ceiling, same three-valued
+verdict. `TestSW244_ShadowAccountingSharesTheGateBudget` asserts the two budgets agree across a
+sweep of baselines and controls, so widening the bar the accounting is held to would require
+widening the AX-06 gate's bar itself. That is deliberate: SW-244 introduces the cost being
+judged, and a story does not get to pick the budget that judges its own cost.
+
+What is **not** shared is the verdict switch that applies that budget. `evaluateCanaryAccounting`
+has its own, and since SW-275 (§5.10) the two differ in the degraded regime: the AX-06 statistic
+FAILs there only on a *decisive* overhead and is otherwise UNKNOWN, while the accounting still
+FAILs on `unaccounted > budget AND unaccounted > noiseTerm` — the pre-SW-275 ordering. So the
+accounting carries the same exposure the AX-06 tail had — a marginal FAIL on a measurement the
+run has already called not judgeable — for the unaccounted residue, which has not been observed
+to flake. That is tracked as a separate follow-up in SW-275, not changed there.
 
 **Where this is lenient, stated rather than hidden.** At the median the arithmetic is sound —
 the median of a sum of two costs is close to the sum of their medians. At the tail it is
