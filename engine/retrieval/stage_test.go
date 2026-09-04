@@ -775,20 +775,70 @@ func TestRules_ExactIdentifierWideningTieBreakBoundHolds(t *testing.T) {
 	}
 }
 
+// TestRules_ExactPathIsDocumentedRegex pins the two shapes the exact-path
+// rule recognises and the shapes it must keep rejecting (SW-270 AC-1 /
+// AC-6). The table is the contract; the dev-set queries named here are the
+// SW-258 development split only — no holdout query appears (AC-5). The
+// bare-filename shape is ".go" only: review of the first SW-270 build found
+// that a catalog-wide extension list gave path precedence to unmeasured,
+// identifier-shaped queries ("theme.css", "config.json"), so every other
+// suffix is pinned as rejected here.
 func TestRules_ExactPathIsDocumentedRegex(t *testing.T) {
 	cases := []struct {
 		in   string
 		want bool
+		why  string
 	}{
-		{"flag_groups.go", false}, // no slash
-		{"path/to/x.go", true},
-		{"a/b", true},
-		{"", false},
-		{"path with space/x.go", false},
+		// Shape 1 — a slash path (the original rule, unchanged).
+		{"path/to/x.go", true, "slash path"},
+		{"a/b", true, "slash path needs no extension"},
+		{"doc/man_docs.go", true, "dev exact_path query cb-08"},
+		{"site/content/user_guide.md", true, "slash path: the extension is irrelevant in shape 1"},
+		{"cmd/theme.css", true, "slash path: the extension is irrelevant in shape 1"},
+		// Shape 2 — a bare Go filename (SW-270 AC-1).
+		{"shell_completions.go", true, "dev exact_path query cb-09: the gap SW-263 left open"},
+		{"flag_groups.go", true, "dev exact_path query cb-07: bare filename, no slash needed"},
+		{"a.b.go", true, "dots inside the base are fine; only the final .go is the extension"},
+		{"command_test.go", true, "a test file is still a Go filename"},
+		// A dotted identifier is NOT a filename (AC-1): its last segment is
+		// not ".go".
+		{"cmd.Execute", false, "dotted identifier (AC-1)"},
+		{"cobra.Command.AddCommand", false, "multi-segment dotted identifier"},
+		// Bare identifiers must stay rejected. SW-263 lifted the identifier
+		// half of AC-6 (owner decision 2026-09-01) and the revert that
+		// restored the PATH override deliberately kept that lift: an
+		// identifier that matched the path rule would be forced back onto
+		// the lexical override and silently undo the settled decision.
+		{"ExecuteC", false, "dev exact_identifier query cb-01 — identifier lift stands (SW-263)"},
+		{"MarkFlagsMutuallyExclusive", false, "dev exact_identifier query cb-02 — identifier lift stands (SW-263)"},
+		{"Execute", false, "dev ambiguous query cb-32 — no extension"},
+		{"completion", false, "dev ambiguous query cb-35 — no extension"},
+		// Narrowness: every non-".go" suffix stays out of shape 2. These are
+		// identifier-shaped (they also match exactIdentifierPattern) and
+		// unmeasured; giving them path precedence was the review finding
+		// against the first build.
+		{"theme.css", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"config.json", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"README.md", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"config.yaml", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"index.html", false, "non-Go suffix: identifier-shaped, unmeasured (parser disabled)"},
+		{"module.jsx", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"script.kts", false, "non-Go suffix: identifier-shaped, unmeasured"},
+		{"notes.txt", false, "non-Go suffix"},
+		{"main.py", false, "non-Go suffix: a source language, but not the measured one"},
+		{"main.gonna", false, "the suffix must be exactly .go, not a prefix of a longer one"},
+		{"main.go.txt", false, ".go must be the FINAL segment"},
+		{"main.GO", false, "the suffix is matched lowercase only"},
+		{".go", false, "an extension with no base name"},
+		{"foo.", false, "trailing dot, no extension"},
+		{"", false, "empty"},
+		{"path with space/x.go", false, "whitespace is never POSIX-safe"},
+		{"hello world.go", false, "whitespace in a bare filename"},
+		{"how does cobra validate required flags", false, "free text"},
 	}
 	for _, c := range cases {
 		if got := isExactPath(c.in); got != c.want {
-			t.Errorf("isExactPath(%q) = %v, want %v", c.in, got, c.want)
+			t.Errorf("isExactPath(%q) = %v, want %v (%s)", c.in, got, c.want, c.why)
 		}
 	}
 }
