@@ -1,0 +1,1291 @@
+{
+  "schema_version": 1,
+  "id": "cobra-v1-dev",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "go",
+  "evidence_class": "agent-annotated, human-reviewed",
+  "notes": "SW-270 dev-only measurement population: every and only split=dev query from source dataset cobra-v1 at sha256 be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82; the holdout split is excluded so it is never read (AC-5). Judgements, grades and relevant_min_grade are inherited unchanged from the source.",
+  "queries": [
+    {
+      "id": "cb-01",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "ExecuteC",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1051,
+          "end_line": 1137,
+          "anchor": "func (c *Command) ExecuteC(",
+          "grade": 3,
+          "reason": "The declaration of ExecuteC itself.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1035,
+          "end_line": 1041,
+          "anchor": "func (c *Command) Execute(",
+          "grade": 2,
+          "reason": "Execute is the one-line wrapper that calls ExecuteC.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1043,
+          "end_line": 1049,
+          "anchor": "func (c *Command) ExecuteContextC(",
+          "grade": 2,
+          "reason": "ExecuteContextC sets the context and delegates to ExecuteC.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-02",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MarkFlagsMutuallyExclusive",
+      "judgements": [
+        {
+          "path": "flag_groups.go",
+          "start_line": 63,
+          "end_line": 77,
+          "anchor": "func (c *Command) MarkFlagsMutuallyExclusive(",
+          "grade": 3,
+          "reason": "The declaration of MarkFlagsMutuallyExclusive.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 188,
+          "end_line": 207,
+          "anchor": "func validateExclusiveFlagGroups(",
+          "grade": 2,
+          "reason": "The validator that enforces the annotation the marker sets.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "flag_groups_test.go",
+          "start_line": 22,
+          "end_line": 195,
+          "anchor": "func TestValidateFlagGroups(",
+          "grade": 1,
+          "reason": "The flag-group test exercises the marker among others.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-03",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenMarkdownTree",
+      "judgements": [
+        {
+          "path": "doc/md_docs.go",
+          "start_line": 119,
+          "end_line": 129,
+          "anchor": "func GenMarkdownTree(",
+          "grade": 3,
+          "reason": "The declaration of GenMarkdownTree.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/md_docs.go",
+          "start_line": 131,
+          "end_line": 158,
+          "anchor": "func GenMarkdownTreeCustom(",
+          "grade": 2,
+          "reason": "GenMarkdownTree delegates to GenMarkdownTreeCustom with identity handlers.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/md_docs_test.go",
+          "start_line": 95,
+          "end_line": 110,
+          "anchor": "func TestGenMdTree(",
+          "grade": 1,
+          "reason": "The test for the tree generator.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-04",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "RegisterFlagCompletionFunc",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 132,
+          "end_line": 146,
+          "anchor": "func (c *Command) RegisterFlagCompletionFunc(",
+          "grade": 3,
+          "reason": "The declaration of RegisterFlagCompletionFunc.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 148,
+          "end_line": 160,
+          "anchor": "func (c *Command) GetFlagCompletionFunc(",
+          "grade": 2,
+          "reason": "The accessor for the function the registration stores.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 35,
+          "end_line": 36,
+          "anchor": "var flagCompletionFunctions",
+          "grade": 1,
+          "reason": "The package-level map the registration writes into.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-07",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "flag_groups.go",
+      "judgements": [
+        {
+          "path": "flag_groups.go",
+          "start_line": 1,
+          "end_line": 290,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query; any symbol in it answers a path query.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-08",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "doc/man_docs.go",
+      "judgements": [
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 1,
+          "end_line": 246,
+          "anchor": "package doc",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-09",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "shell_completions.go",
+      "judgements": [
+        {
+          "path": "shell_completions.go",
+          "start_line": 1,
+          "end_line": 98,
+          "anchor": "package cobra",
+          "grade": 3,
+          "reason": "The file named by the query.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-11",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where are required flags validated before a command runs",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1146,
+          "end_line": 1168,
+          "anchor": "func (c *Command) ValidateRequiredFlags(",
+          "grade": 3,
+          "reason": "ValidateRequiredFlags walks the flag set and reports the missing required ones.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 1013,
+          "anchor": "func (c *Command) execute(",
+          "grade": 2,
+          "reason": "execute calls ValidateRequiredFlags right before the Run hooks.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "shell_completions.go",
+          "start_line": 21,
+          "end_line": 26,
+          "anchor": "func (c *Command) MarkFlagRequired(",
+          "grade": 2,
+          "reason": "MarkFlagRequired sets the annotation the validation reads.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 319,
+          "end_line": 333,
+          "anchor": "### Required flags",
+          "grade": 1,
+          "reason": "User-guide prose on required flags; explains the feature, not where it runs.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 818,
+          "end_line": 834,
+          "anchor": "func TestRequiredFlags(",
+          "grade": 1,
+          "reason": "The test pins the behaviour but is not the implementation.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-12",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does cobra find the subcommand for the given arguments",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 724,
+          "end_line": 748,
+          "anchor": "func (c *Command) Find(",
+          "grade": 3,
+          "reason": "Find walks the arguments down the command tree and returns the matched command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 767,
+          "end_line": 786,
+          "anchor": "func (c *Command) findNext(",
+          "grade": 2,
+          "reason": "findNext matches one argument against names, aliases and prefixes.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 788,
+          "end_line": 829,
+          "anchor": "func (c *Command) Traverse(",
+          "grade": 2,
+          "reason": "Traverse is the flag-parsing variant of the same lookup.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 643,
+          "end_line": 679,
+          "anchor": "func stripFlags(",
+          "grade": 1,
+          "reason": "stripFlags removes flags before the lookup; supporting, not the lookup itself.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-13",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how are unknown command suggestions computed",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 831,
+          "end_line": 850,
+          "anchor": "func (c *Command) SuggestionsFor(",
+          "grade": 3,
+          "reason": "SuggestionsFor ranks sibling commands by Levenshtein distance and explicit SuggestFor entries.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "cobra.go",
+          "start_line": 187,
+          "end_line": 221,
+          "anchor": "func ld(",
+          "grade": 2,
+          "reason": "ld is the Levenshtein distance the suggestion threshold is computed from.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 750,
+          "end_line": 765,
+          "anchor": "func (c *Command) findSuggestions(",
+          "grade": 2,
+          "reason": "findSuggestions renders the suggestions into the unknown-command error text.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 694,
+          "end_line": 734,
+          "anchor": "## Suggestions when",
+          "grade": 1,
+          "reason": "User-guide prose describing the feature from the outside.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1296,
+          "end_line": 1341,
+          "anchor": "func TestSuggestions(",
+          "grade": 1,
+          "reason": "The test for suggestions.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-14",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does the shell completion request get dispatched to the completion logic",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 193,
+          "end_line": 264,
+          "anchor": "func (c *Command) initCompleteCmd(",
+          "grade": 3,
+          "reason": "initCompleteCmd adds the hidden __complete command that receives the shell's request.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 266,
+          "end_line": 520,
+          "anchor": "func (c *Command) getCompletions(",
+          "grade": 3,
+          "reason": "getCompletions is the dispatcher that computes the completions for the request.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 26,
+          "end_line": 33,
+          "anchor": "ShellCompRequestCmd",
+          "grade": 2,
+          "reason": "The constants naming the hidden request commands.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-15",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how is the version flag handled",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1200,
+          "end_line": 1224,
+          "anchor": "func (c *Command) InitDefaultVersionFlag(",
+          "grade": 3,
+          "reason": "InitDefaultVersionFlag adds the --version flag when Command.Version is set.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 1013,
+          "anchor": "func (c *Command) execute(",
+          "grade": 2,
+          "reason": "execute checks the version flag and renders the version template before running.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 598,
+          "end_line": 609,
+          "anchor": "func (c *Command) VersionTemplate(",
+          "grade": 2,
+          "reason": "VersionTemplate is what gets printed for the flag.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 592,
+          "end_line": 598,
+          "anchor": "## Version Flag",
+          "grade": 2,
+          "reason": "The user-guide section on the version flag.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 1051,
+          "end_line": 1060,
+          "anchor": "func TestVersionFlagExecuted(",
+          "grade": 1,
+          "reason": "A test of the flag.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-16",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "where is the levenshtein distance computed",
+      "judgements": [
+        {
+          "path": "cobra.go",
+          "start_line": 187,
+          "end_line": 221,
+          "anchor": "func ld(",
+          "grade": 3,
+          "reason": "ld is the Levenshtein implementation.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 831,
+          "end_line": 850,
+          "anchor": "func (c *Command) SuggestionsFor(",
+          "grade": 2,
+          "reason": "The only caller of ld.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-19",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "what is the lifecycle of running a root command from Execute to the Run hooks",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1051,
+          "end_line": 1137,
+          "anchor": "func (c *Command) ExecuteC(",
+          "grade": 3,
+          "reason": "ExecuteC finds the target command, initialises help and completion commands and calls execute.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 1013,
+          "anchor": "func (c *Command) execute(",
+          "grade": 3,
+          "reason": "execute parses flags, validates, and runs the PersistentPreRun/PreRun/Run/PostRun chain.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1035,
+          "end_line": 1041,
+          "anchor": "func (c *Command) Execute(",
+          "grade": 2,
+          "reason": "Execute is the public entry point.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 605,
+          "end_line": 693,
+          "anchor": "## PreRun and PostRun Hooks",
+          "grade": 1,
+          "reason": "User-guide prose on the hook order.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1015,
+          "end_line": 1025,
+          "anchor": "func (c *Command) preRun(",
+          "grade": 1,
+          "reason": "preRun/postRun run the package initializers and finalizers around the command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-20",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how do persistent flags propagate from parent to child commands",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1847,
+          "end_line": 1853,
+          "anchor": "func (c *Command) mergePersistentFlags(",
+          "grade": 3,
+          "reason": "mergePersistentFlags merges the parents' persistent flags into the command's flag set.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1855,
+          "end_line": 1874,
+          "anchor": "func (c *Command) updateParentsPflags(",
+          "grade": 3,
+          "reason": "updateParentsPflags walks the parents and collects their persistent flags.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1725,
+          "end_line": 1735,
+          "anchor": "func (c *Command) PersistentFlags(",
+          "grade": 2,
+          "reason": "PersistentFlags is the set that propagates.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1695,
+          "end_line": 1718,
+          "anchor": "func (c *Command) InheritedFlags(",
+          "grade": 2,
+          "reason": "InheritedFlags is the child's view of what it received.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 270,
+          "end_line": 279,
+          "anchor": "### Persistent Flags",
+          "grade": 1,
+          "reason": "User-guide prose on persistent flags.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-21",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how are commands added to a parent and their parent pointer set",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1302,
+          "end_line": 1329,
+          "anchor": "func (c *Command) AddCommand(",
+          "grade": 3,
+          "reason": "AddCommand sets each child's parent and appends it, updating paddings.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1361,
+          "end_line": 1393,
+          "anchor": "func (c *Command) RemoveCommand(",
+          "grade": 2,
+          "reason": "RemoveCommand is the inverse and shows the same bookkeeping.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1842,
+          "end_line": 1845,
+          "anchor": "func (c *Command) Parent(",
+          "grade": 1,
+          "reason": "The accessor for the pointer AddCommand sets.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-22",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does the documentation generator walk the command tree",
+      "judgements": [
+        {
+          "path": "doc/md_docs.go",
+          "start_line": 131,
+          "end_line": 158,
+          "anchor": "func GenMarkdownTreeCustom(",
+          "grade": 3,
+          "reason": "GenMarkdownTreeCustom recurses over the available subcommands and writes one file each.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 46,
+          "end_line": 80,
+          "anchor": "func GenManTreeFromOpts(",
+          "grade": 2,
+          "reason": "The man-page variant of the same walk.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 59,
+          "end_line": 85,
+          "anchor": "func GenYamlTreeCustom(",
+          "grade": 2,
+          "reason": "The YAML variant of the same walk.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/rest_docs.go",
+          "start_line": 143,
+          "end_line": 170,
+          "anchor": "func GenReSTTreeCustom(",
+          "grade": 2,
+          "reason": "The ReST variant of the same walk.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-24",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how do flag groups get enforced during completion",
+      "judgements": [
+        {
+          "path": "flag_groups.go",
+          "start_line": 220,
+          "end_line": 290,
+          "anchor": "func (c *Command) enforceFlagGroupsForCompletion(",
+          "grade": 3,
+          "reason": "enforceFlagGroupsForCompletion marks group members required or hidden for the completion pass.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "completions.go",
+          "start_line": 266,
+          "end_line": 520,
+          "anchor": "func (c *Command) getCompletions(",
+          "grade": 2,
+          "reason": "getCompletions is the caller that applies the enforcement before completing flags.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "flag_groups.go",
+          "start_line": 79,
+          "end_line": 109,
+          "anchor": "func (c *Command) ValidateFlagGroups(",
+          "grade": 1,
+          "reason": "The run-time validation counterpart, not the completion path.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-25",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how do I disable the default completion command",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 104,
+          "end_line": 116,
+          "anchor": "type CompletionOptions struct",
+          "grade": 3,
+          "reason": "CompletionOptions.DisableDefaultCmd is the switch.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 92,
+          "end_line": 116,
+          "anchor": "## Adapting the default completion command",
+          "grade": 3,
+          "reason": "The docs section that shows setting DisableDefaultCmd.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/docgen/_index.md",
+          "start_line": 15,
+          "end_line": 17,
+          "anchor": "InitDefaultCompletionCmd",
+          "grade": 1,
+          "reason": "A docgen note that mentions the completion command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-26",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "which environment variable controls active help",
+      "judgements": [
+        {
+          "path": "active_help.go",
+          "start_line": 59,
+          "end_line": 67,
+          "anchor": "func activeHelpEnvVar(",
+          "grade": 3,
+          "reason": "activeHelpEnvVar derives the <PROGRAM>_ACTIVE_HELP variable name.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/active_help.md",
+          "start_line": 88,
+          "end_line": 131,
+          "anchor": "## User control of Active Help",
+          "grade": 3,
+          "reason": "The docs section that names the environment variable and its values.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 46,
+          "end_line": 57,
+          "anchor": "func GetActiveHelpConfig(",
+          "grade": 2,
+          "reason": "GetActiveHelpConfig reads the variable.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "active_help.go",
+          "start_line": 24,
+          "end_line": 31,
+          "anchor": "activeHelpEnvVarSuffix",
+          "grade": 2,
+          "reason": "The constants that spell the variable suffix.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-27",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how to enable prefix matching for commands",
+      "judgements": [
+        {
+          "path": "cobra.go",
+          "start_line": 52,
+          "end_line": 55,
+          "anchor": "var EnablePrefixMatching",
+          "grade": 3,
+          "reason": "EnablePrefixMatching is the package-level switch.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 767,
+          "end_line": 786,
+          "anchor": "func (c *Command) findNext(",
+          "grade": 2,
+          "reason": "findNext is where the switch changes the lookup.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1524,
+          "end_line": 1538,
+          "anchor": "func (c *Command) hasNameOrAliasPrefix(",
+          "grade": 2,
+          "reason": "The prefix predicate the lookup uses.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command_test.go",
+          "start_line": 305,
+          "end_line": 332,
+          "anchor": "func TestEnablePrefixMatching(",
+          "grade": 1,
+          "reason": "The test of the switch.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-28",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "what does the group id on commands do",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 41,
+          "end_line": 45,
+          "anchor": "type Group struct",
+          "grade": 3,
+          "reason": "Group is the id + title pair commands are grouped under in help.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 533,
+          "end_line": 540,
+          "anchor": "### Grouping commands in help",
+          "grade": 3,
+          "reason": "The docs section explaining GroupID and AddGroup.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1356,
+          "end_line": 1359,
+          "anchor": "func (c *Command) AddGroup(",
+          "grade": 2,
+          "reason": "AddGroup registers the groups a GroupID may reference.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1170,
+          "end_line": 1181,
+          "anchor": "func (c *Command) checkCommandGroups(",
+          "grade": 2,
+          "reason": "checkCommandGroups panics on a GroupID with no registered group.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-30",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how to generate man pages for a command tree",
+      "judgements": [
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 33,
+          "end_line": 44,
+          "anchor": "func GenManTree(",
+          "grade": 3,
+          "reason": "GenManTree is the entry point.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "site/content/docgen/man.md",
+          "start_line": 1,
+          "end_line": 31,
+          "anchor": "# Generating Man Pages",
+          "grade": 3,
+          "reason": "The docs page with the GenManTree example.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 82,
+          "end_line": 88,
+          "anchor": "type GenManTreeOptions struct",
+          "grade": 2,
+          "reason": "The options the tree generator takes.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 46,
+          "end_line": 80,
+          "anchor": "func GenManTreeFromOpts(",
+          "grade": 2,
+          "reason": "The implementation GenManTree delegates to.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-31",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Gen",
+      "judgements": [
+        {
+          "path": "doc/md_docs.go",
+          "start_line": 51,
+          "end_line": 54,
+          "anchor": "func GenMarkdown(",
+          "grade": 2,
+          "reason": "One of several equally plausible Gen* generators.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/man_docs.go",
+          "start_line": 103,
+          "end_line": 116,
+          "anchor": "func GenMan(",
+          "grade": 2,
+          "reason": "One of several equally plausible Gen* generators.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/yaml_docs.go",
+          "start_line": 87,
+          "end_line": 90,
+          "anchor": "func GenYaml(",
+          "grade": 2,
+          "reason": "One of several equally plausible Gen* generators.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "doc/rest_docs.go",
+          "start_line": 56,
+          "end_line": 59,
+          "anchor": "func GenReST(",
+          "grade": 2,
+          "reason": "One of several equally plausible Gen* generators.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "bash_completions.go",
+          "start_line": 685,
+          "end_line": 697,
+          "anchor": "func (c *Command) GenBashCompletion(",
+          "grade": 2,
+          "reason": "The completion generators are Gen* too.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-32",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Execute",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1035,
+          "end_line": 1041,
+          "anchor": "func (c *Command) Execute(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1051,
+          "end_line": 1137,
+          "anchor": "func (c *Command) ExecuteC(",
+          "grade": 2,
+          "reason": "The variant that does the work.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1027,
+          "end_line": 1033,
+          "anchor": "func (c *Command) ExecuteContext(",
+          "grade": 2,
+          "reason": "The context-taking variant.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1043,
+          "end_line": 1049,
+          "anchor": "func (c *Command) ExecuteContextC(",
+          "grade": 2,
+          "reason": "The context-taking variant that returns the command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 1013,
+          "anchor": "func (c *Command) execute(",
+          "grade": 2,
+          "reason": "The private execute that runs one command.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-33",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Flags",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1641,
+          "end_line": 1653,
+          "anchor": "func (c *Command) Flags(",
+          "grade": 3,
+          "reason": "The exact name.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1668,
+          "end_line": 1693,
+          "anchor": "func (c *Command) LocalFlags(",
+          "grade": 2,
+          "reason": "A flag-set accessor a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1725,
+          "end_line": 1735,
+          "anchor": "func (c *Command) PersistentFlags(",
+          "grade": 2,
+          "reason": "A flag-set accessor a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1695,
+          "end_line": 1718,
+          "anchor": "func (c *Command) InheritedFlags(",
+          "grade": 2,
+          "reason": "A flag-set accessor a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "command.go",
+          "start_line": 1751,
+          "end_line": 1754,
+          "anchor": "func (c *Command) HasFlags(",
+          "grade": 1,
+          "reason": "A predicate, not the flag set.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-35",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "completion",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 678,
+          "end_line": 839,
+          "anchor": "func (c *Command) InitDefaultCompletionCmd(",
+          "grade": 3,
+          "reason": "The completion command itself.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "bash_completions.go",
+          "start_line": 685,
+          "end_line": 697,
+          "anchor": "func (c *Command) GenBashCompletion(",
+          "grade": 2,
+          "reason": "A per-shell generator a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "zsh_completions.go",
+          "start_line": 29,
+          "end_line": 33,
+          "anchor": "func (c *Command) GenZshCompletion(",
+          "grade": 2,
+          "reason": "A per-shell generator a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "fish_completions.go",
+          "start_line": 275,
+          "end_line": 281,
+          "anchor": "func (c *Command) GenFishCompletion(",
+          "grade": 2,
+          "reason": "A per-shell generator a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        },
+        {
+          "path": "powershell_completions.go",
+          "start_line": 310,
+          "end_line": 314,
+          "anchor": "func (c *Command) GenPowerShellCompletion(",
+          "grade": 2,
+          "reason": "A per-shell generator a user may mean.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-36",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "dev",
+      "query": "kubernetes pod scheduler",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 47,
+          "end_line": 255,
+          "anchor": "type Command struct",
+          "grade": 0,
+          "reason": "Negative example: the central Command type has nothing to do with kubernetes; surfacing it is a false positive.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-37",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "dev",
+      "query": "http router middleware chain",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 1013,
+          "anchor": "func (c *Command) execute(",
+          "grade": 0,
+          "reason": "Negative example: the command executor is not an HTTP middleware chain.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    },
+    {
+      "id": "cb-38",
+      "stratum": "no_hit",
+      "language": "en",
+      "split": "dev",
+      "query": "database connection pool",
+      "judgements": [
+        {
+          "path": "cobra.go",
+          "start_line": 187,
+          "end_line": 221,
+          "anchor": "func ld(",
+          "grade": 0,
+          "reason": "Negative example: the Levenshtein helper is unrelated to databases.",
+          "annotator": "claude-delegate (SW-258 build)",
+          "reviewer": "orchestrator"
+        }
+      ]
+    }
+  ]
+}

@@ -38,8 +38,8 @@ var (
 // admit, and the test asserts the admitted output (the bounded body
 // + the preserved signature) is what the model will consume.
 const (
-	cobraWritePreambleFixture = "testdata/cobra/writePreamble.go"
-	cobraGenBashCompFixture   = "testdata/cobra/genBashComp.go"
+	cobraWritePreambleFixture = "testdata/cobra/writePreamble.txt"
+	cobraGenBashCompFixture   = "testdata/cobra/genBashComp.txt"
 )
 
 // cobraFunctionBounds are the byte offsets of the two oversized

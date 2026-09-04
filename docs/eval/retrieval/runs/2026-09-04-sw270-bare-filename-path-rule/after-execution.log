@@ -1,0 +1,30 @@
+retrieval-eval: indexing $HOME/.cache/graphi/corpus/cobra
+retrieval-eval: embedder "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b" active; generating vectors
+retrieval-eval: generation pass embedded=768 reused=0 excluded=170 failed=0 purged=0 (id=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b)
+retrieval-eval: semantic ready (model=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b, dim=256, rows=768)
+retrieval-eval: name-only semantic control ready (model=static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b, rows=768, universe=v3-eligible)
+retrieval-eval: indexed 938 nodes, 4036 edges, 58 files in 224ms
+retrieval-eval: baseline lexical over 30 queries
+retrieval-eval: baseline hybrid_v1 over 30 queries
+retrieval-eval: baseline semantic_name_only over 30 queries
+retrieval-eval: baseline oracle_upper_bound over 30 queries
+retrieval-eval: baseline chunk_only over 30 queries
+retrieval-eval: baseline fusion over 30 queries
+retrieval-eval: baseline semantic_first over 30 queries
+retrieval-eval: wrote $SW270_TMP/after-report.json
+retrieval-eval: wrote the raw-sample run directory to $SW270_TMP/after
+retrieval-eval: cobra @ a0a6ae020bb3899ff0276067863e50523f897370, dataset cobra-v1-dev (30 queries), candidate 8ef56351a845bab8a938062822a25984ada3081d, runner static-local
+retrieval-eval:   lexical              top1 0.222  recall@5 0.214  recall@10 0.264  mrr@10 0.252  ndcg@10 0.247  (27/30 scored)
+retrieval-eval:   hybrid_v1            top1 0.481  recall@5 0.395  recall@10 0.473  mrr@10 0.605  ndcg@10 0.468  (27/30 scored)
+retrieval-eval:   semantic_name_only   top1 0.556  recall@5 0.412  recall@10 0.569  mrr@10 0.627  ndcg@10 0.527  (27/30 scored)
+retrieval-eval:   oracle_upper_bound   top1 1.000  recall@5 1.000  recall@10 1.000  mrr@10 1.000  ndcg@10 1.000  (27/30 scored)
+retrieval-eval:   chunk_only           top1 0.481  recall@5 0.395  recall@10 0.473  mrr@10 0.605  ndcg@10 0.468  (27/30 scored)
+retrieval-eval:   fusion               top1 0.667  recall@5 0.494  recall@10 0.570  mrr@10 0.765  ndcg@10 0.581  (27/30 scored)
+retrieval-eval:   semantic_first       top1 0.667  recall@5 0.578  recall@10 0.693  mrr@10 0.750  ndcg@10 0.643  (27/30 scored)
+retrieval-eval:   lexical              index 224ms  p50 208us  p95 350us  rss 446.84375MB
+retrieval-eval:   hybrid_v1            index 224ms  p50 2208us  p95 4561us  rss 446.875MB
+retrieval-eval:   semantic_name_only   index 224ms  p50 638us  p95 703us  rss 446.875MB
+retrieval-eval:   oracle_upper_bound   index not_applicable  p50 0us  p95 1us  rss 446.875MB
+retrieval-eval:   chunk_only           index 224ms  p50 2269us  p95 4643us  rss 446.90625MB
+retrieval-eval:   fusion               index 224ms  p50 3055us  p95 5290us  rss 446.90625MB
+retrieval-eval:   semantic_first       index 224ms  p50 2922us  p95 5268us  rss 447.375MB

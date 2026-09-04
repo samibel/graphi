@@ -1,0 +1,3 @@
+retrieval-eval: wrote the aggregate reproduction to $SW270_TMP/after/aggregate.json
+retrieval-eval: aggregate PASS (harness retrieval-eval/3, scorer retrieval-aggregate/1): 565 metric(s) checked, 565 reproduced, 0 discrepant, 0 unknown
+retrieval-eval: PASS - all 565 published metric(s) reproduced from the raw data
