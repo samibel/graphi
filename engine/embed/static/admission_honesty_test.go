@@ -45,7 +45,7 @@ func TestStatic_AdmitReportsOverflowOnWritePreamble(t *testing.T) {
 	emb := &Embedder{loaded: true, loadedM: staticModel}
 
 	// Load the writePreamble fixture.
-	src, err := os.ReadFile("../testdata/cobra/writePreamble.go")
+	src, err := os.ReadFile("../testdata/cobra/writePreamble.txt")
 	if err != nil {
 		t.Fatalf("read writePreamble fixture: %v", err)
 	}
