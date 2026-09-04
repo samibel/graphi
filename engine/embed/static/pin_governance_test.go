@@ -120,6 +120,9 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-01-static-local",
 		"docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local",
 		"docs/eval/retrieval/runs/2026-09-03-sw272-field-parity",
+		// SW-270: before/after of the bare-filename exact-path rule on the
+		// dev split; both sides carry the pinned static selector stamp.
+		"docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)
