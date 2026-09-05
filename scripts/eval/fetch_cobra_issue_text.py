@@ -40,9 +40,21 @@ ACTOR = "Claude Opus 5 (SW-279 Phase 2 re-harvest fetcher)"
 
 # The literal selection set, quoted into the access ledger so the ledger's claim and the
 # program's behaviour are the same string.
+#
+# It used to be *only* quoted into the ledger: the executed query carried its own copy of
+# the same field list, so adding `labels` to the query without touching this constant would
+# have recreated the exact overfetch this story exists to prevent while the ledger went on
+# certifying "and nothing else". The two are bound now in both directions - the query is
+# built from this constant, and `assert_query_is_the_selection_set` re-derives the executed
+# query's issue-connection body and refuses if it is anything but this constant plus paging.
 SELECTION_SET = "nodes { number createdAt title body author { login } }"
 
-QUERY = """
+# Paging is not issue content: `pageInfo` selects cursor metadata about the connection, not
+# fields of any issue. It is named separately so the assertion below can allow it explicitly
+# rather than tolerating whatever else happens to be there.
+PAGE_INFO = "pageInfo { hasNextPage endCursor }"
+
+QUERY_TEMPLATE = """
 query($owner: String!, $name: String!, $cursor: String) {
   repository(owner: $owner, name: $name) {
     issues(
@@ -51,12 +63,69 @@ query($owner: String!, $name: String!, $cursor: String) {
       states: [OPEN, CLOSED]
       orderBy: {field: CREATED_AT, direction: ASC}
     ) {
-      nodes { number createdAt title body author { login } }
-      pageInfo { hasNextPage endCursor }
+      %(selection_set)s
+      %(page_info)s
     }
   }
 }
 """
+
+
+def normalise(fragment: str) -> str:
+    """Collapse GraphQL whitespace so two spellings of one selection compare equal."""
+    return " ".join(fragment.replace("{", " { ").replace("}", " } ").split())
+
+
+def issues_connection_body(query: str) -> str:
+    """Return the body of the `issues(...)` connection in `query`, brace-matched.
+
+    Parsing rather than trusting: the point is to read what will actually be sent to
+    GitHub, so that a hand-edit of the template cannot pass an assertion made against the
+    constant it was supposed to be built from.
+    """
+    marker = query.index("issues(")
+    depth = 0
+    for i in range(marker, len(query)):
+        if query[i] == "(":
+            depth += 1
+        elif query[i] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+    else:
+        raise ValueError("unterminated issues(...) argument list")
+    open_brace = query.index("{", i)
+    depth = 0
+    for j in range(open_brace, len(query)):
+        if query[j] == "{":
+            depth += 1
+        elif query[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return query[open_brace + 1:j]
+    raise ValueError("unterminated issues(...) selection")
+
+
+def assert_query_is_the_selection_set(query: str = None) -> str:
+    """Refuse unless the executed query asks for SELECTION_SET plus paging, and nothing else.
+
+    Returns the normalised body it verified, so a caller can record what it checked.
+    """
+    if query is None:
+        query = QUERY
+    body = normalise(issues_connection_body(query))
+    expected = normalise(SELECTION_SET + " " + PAGE_INFO)
+    if body != expected:
+        raise SystemExit(
+            "the executed GraphQL query does not match the declared selection set; §1 permits "
+            "the issue number, creation time, title, body and author login and nothing else.\n"
+            f"  declared: {expected}\n"
+            f"  executed: {body}"
+        )
+    return body
+
+
+QUERY = QUERY_TEMPLATE % {"selection_set": SELECTION_SET, "page_info": PAGE_INFO}
 
 
 def run(*args: str) -> str:
@@ -76,6 +145,12 @@ def main() -> int:
     if Path.cwd().resolve() != root.resolve():
         print("run from the repository root", file=sys.stderr)
         return 2
+
+    # Before anything reaches the network: the query that will actually be sent asks for
+    # SELECTION_SET and paging, and nothing else. This raises SystemExit rather than
+    # returning, because a divergence here means the ledger is about to certify a
+    # transport that is not the one being used.
+    verified_selection = assert_query_is_the_selection_set()
 
     # The Phase 1 boundary is re-verified here too: this fetch must postdate the frozen
     # rule commit and the working rule bytes must still be the committed bytes.
@@ -188,6 +263,7 @@ def main() -> int:
         "row_count": len(rows),
         "row_order": "ascending issue_number, exactly matching issue-numbers.txt",
         "graphql_selection_set": SELECTION_SET,
+        "graphql_issues_connection_body_as_executed": verified_selection,
         "requested_fields": ["number", "createdAt", "title", "body", "author.login"],
         "explicitly_not_requested": [
             "labels", "reactions", "comments", "timelineItems", "closedAt", "stateReason",
@@ -219,7 +295,10 @@ def main() -> int:
         output_artifact=raw_path.as_posix(),
         output_sha256=raw_digest,
         detail=(
-            "GraphQL selection set was exactly `" + SELECTION_SET + "` and nothing else. "
+            "GraphQL selection set was exactly `" + SELECTION_SET + "` and nothing else — "
+            "not asserted, but re-derived from the query that was sent and compared to that "
+            "constant before the first request (`assert_query_is_the_selection_set`), which "
+            "read back `" + verified_selection + "`. "
             "No label, reaction, comment, maintainer reply, timeline item, closing event, "
             "state, assignee, milestone, or linked pull request was requested, so none was "
             "transported. No external link target was opened. The response was written to "

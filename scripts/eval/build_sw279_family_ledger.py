@@ -156,6 +156,34 @@ def main() -> int:
     reviewer_b = review / "family-reviewer-B-codex.txt"
     pairs_a, answered_a = parse_reviewer(reviewer_a, idset)
     pairs_b, answered_b = parse_reviewer(reviewer_b, idset)
+
+    # Fail closed on incomplete coverage. Until SW-279 review round 1 these two counts were
+    # computed, written into the summary row, and never compared against anything: deleting
+    # a reviewer's line silently produced a ledger built from 133 of 134 answers, and the
+    # missing query simply became a singleton family. That is the shape Section 7 cannot
+    # tolerate, because a query no reviewer ruled on is indistinguishable in the output from
+    # a query both reviewers ruled unrelated to everything - and one of those is evidence
+    # while the other is absence of it.
+    missing = {
+        reviewer_a.name: sorted(idset - answered_a),
+        reviewer_b.name: sorted(idset - answered_b),
+    }
+    if any(missing.values()):
+        for name, ids in missing.items():
+            if ids:
+                print(
+                    f"{name} answered {len(idset) - len(ids)} of {len(idset)} blind ids; "
+                    f"{len(ids)} unanswered: {', '.join(ids[:10])}"
+                    + (", ..." if len(ids) > 10 else ""),
+                    file=sys.stderr,
+                )
+        print(
+            "every blind id needs a ruling from BOTH reviewers before a family ledger can be "
+            "built (frozen rule Section 7); refusing to write a ledger from partial coverage",
+            file=sys.stderr,
+        )
+        return 3
+
     union = pairs_a | pairs_b
 
     parent = {i: i for i in ids}
