@@ -1,0 +1,36 @@
+{
+  "primary_raters": [
+    {
+      "id": "primary-rater-1",
+      "role": "primary",
+      "provider": "anthropic (Claude Code subagent, fresh context)",
+      "model": "claude-haiku-4-5",
+      "independence_basis": "Spawned as a fresh general-purpose subagent with no conversation history from this track. It did not write any SW-266 slice, did not harvest, annotate or review the cobra-v2 dataset, and receives only the question text, the preserved bundle bytes and the frozen answer instructions. Its model differs from the model that implemented this slice and from the model that annotated the dataset in SW-279 (Claude Opus 5).",
+      "participated_in_track": false
+    },
+    {
+      "id": "primary-rater-2",
+      "role": "primary",
+      "provider": "anthropic (Claude Code subagent, fresh context)",
+      "model": "claude-sonnet-4-5",
+      "independence_basis": "Spawned as a fresh general-purpose subagent with no conversation history from this track. It did not write any SW-266 slice and did not harvest, annotate or review the cobra-v2 dataset. Its model differs from primary-rater-1, from the implementer and from the SW-279 annotators. It shares a PROVIDER with both, which is a real and stated limit of this panel's independence.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "grader-1",
+    "role": "grader",
+    "provider": "anthropic (Claude Code subagent, fresh context)",
+    "model": "claude-opus-5",
+    "independence_basis": "Spawned as a fresh general-purpose subagent with no conversation history from this track. It rated nothing: it receives the question, the bundle, one already content-addressed response and the reviewed grade-3 answer spans, and applies the frozen rubric.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "adjudicator-1",
+    "role": "adjudicator",
+    "provider": "anthropic (Claude Code subagent, fresh context)",
+    "model": "claude-fable",
+    "independence_basis": "Spawned as a fresh general-purpose subagent with no conversation history from this track and no primary rating role. It answers from the same question text and the same bundle bytes as the primaries, and its response is frozen and content-addressed before any primary response or grade is disclosed to it.",
+    "participated_in_track": false
+  }
+}

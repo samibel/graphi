@@ -40,6 +40,12 @@ replace the current pin, append a dated entry containing all of the following:
 
 No token-savings run directories exist at adoption time (SW-277).
 
+SW-280 commits the first tokenizer-dependent run directory:
+
+- `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/` — the qrel-blind smoke evaluation.
+  Its preserved `task_context/2` bundles carry real-tokenizer counts under the current pin, so a
+  rotation must list this directory as stale and regenerate those counts before it can pass.
+
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains
 real-token counts, its exact directory must be added here in backticks before

@@ -130,6 +130,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
 	embedder := fs.String("embedder", "", "embedder selector — one of: empty (lexical-only by intent; fusion/semantic baselines report unavailable with the typed reason), `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` (under //go:build embed_onnx). A non-empty selector that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
 
+	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
+	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
+
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")
 	budgetReports := map[string]*string{
@@ -174,6 +177,32 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case *aggregate != "":
 		return runAggregate(*aggregate, *out, stderr)
+	case *blindEval != "":
+		root, err := repositoryRoot()
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		dir := *blindEvalDir
+		if dir != "" && !filepath.IsAbs(dir) {
+			dir = filepath.Join(root, dir)
+		}
+		checkoutDir := *checkout
+		if checkoutDir == "" && *repo != "" && *repo != FixtureRepoName {
+			home, herr := os.UserHomeDir()
+			if herr == nil {
+				checkoutDir = filepath.Join(home, ".cache", "graphi", "corpus", *repo)
+			}
+		}
+		return runBlindEval(blindEvalOptions{
+			phase:    *blindEval,
+			dir:      dir,
+			root:     root,
+			dataset:  *dataset,
+			repoName: *repo,
+			checkout: checkoutDir,
+			embedder: *embedder,
+		}, stdout, stderr)
 	case *derive:
 		var budgets []budgetReport
 		for _, class := range retrieval.FixtureClasses {
