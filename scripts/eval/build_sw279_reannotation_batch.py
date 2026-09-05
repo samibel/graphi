@@ -75,18 +75,64 @@ RUNS = Path("docs/eval/retrieval/runs")
 DATASET_ID = "cobra-v2"
 
 
+def _json_values(node) -> "list[str]":
+    """Every string anywhere in a decoded JSON structure."""
+    if isinstance(node, str):
+        return [node]
+    if isinstance(node, dict):
+        return [s for k, v in node.items() for s in _json_values(k) + _json_values(v)]
+    if isinstance(node, list):
+        return [s for item in node for s in _json_values(item)]
+    return []
+
+
+def _decoded_strings(raw: bytes) -> "list[str]":
+    """The decoded strings of `raw` read as JSON, then as JSONL. Empty if it is neither."""
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return []
+    try:
+        return _json_values(json.loads(text))
+    except ValueError:
+        pass
+    found: list[str] = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            found.extend(_json_values(json.loads(line)))
+        except ValueError:
+            return []
+    return found
+
+
 def runs_that_consumed_the_dataset() -> list[str]:
     """Every file under `runs/` that names the dataset this harvest builds.
 
-    Read as bytes and searched literally: the point is to find the id wherever a run records
-    it - `dataset.json`'s `id`, a `run.json` reference, a README - without depending on any
-    one run format staying the shape it is today.
+    Two passes, because either alone has a hole.
+
+    The literal byte search finds the id wherever a run records it - `dataset.json`'s `id`, a
+    `run.json` reference, a README - without depending on any one run format staying the shape
+    it is today. But a JSON file may spell the id with escapes: `"cobra\\u002dv2"` decodes to
+    exactly `cobra-v2` and contains none of its bytes. Round 3 of review found precisely that,
+    and a run record does not stop being a run record for being escaped.
+
+    So the second pass decodes JSON and JSONL and searches the decoded strings. A file that is
+    neither parses to nothing and is covered by the literal pass alone.
     """
     if not RUNS.is_dir():
         return []
     needle = DATASET_ID.encode("utf-8")
+
+    def names_the_dataset(path: Path) -> bool:
+        raw = path.read_bytes()
+        if needle in raw:
+            return True
+        return any(DATASET_ID in value for value in _decoded_strings(raw))
+
     return sorted(path.as_posix() for path in RUNS.rglob("*")
-                  if path.is_file() and needle in path.read_bytes())
+                  if path.is_file() and names_the_dataset(path))
 
 
 def main() -> int:

@@ -15,7 +15,7 @@ import (
 // scripts, so the checks that keep the dataset honest are on the same gate as the
 // dataset itself rather than in a command someone has to remember to run.
 //
-// The suite lives at scripts/eval/tests/test_sw279_gates.py: 51 cases, of which 43 break
+// The suite lives at scripts/eval/tests/test_sw279_gates.py: 52 cases, of which 44 break
 // exactly one thing and assert the script refuses, and 8 are positive controls that
 // reproduce a committed artefact byte for byte or accept a legitimate variation — a gate
 // that always fails would otherwise look identical to one that works.
@@ -37,7 +37,7 @@ import (
 //     clone is genuinely absent from this machine. Any other skip is a failure;
 //   - a sanctioned skip does not pass. The test SKIPS, naming what did not run, because a
 //     partial gate run is a non-result and must not be reported as a green gate.
-const wantCases = 51
+const wantCases = 52
 
 // The exact cases that read the pinned spf13/cobra checkout. They may skip, and only they,
 // and only when that checkout is missing. Written out rather than pattern-matched, so a new

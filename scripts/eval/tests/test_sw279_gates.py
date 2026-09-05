@@ -10,12 +10,12 @@ break exactly one thing, and assert the script refuses with a message naming wha
 **The suite is NOT all refusals, and saying so was itself a defect.** It has two kinds of
 case, and the round-1 commit message described all of them as refusals:
 
-  * REFUSAL cases break one thing and assert the script stops. There are 43.
+  * REFUSAL cases break one thing and assert the script stops. There are 44.
   * POSITIVE CONTROL cases change nothing and assert the script still produces the committed
     artefact byte for byte, or accept a legitimate variation, because a gate that always fails
     looks identical to one that works. There are 8, named in `POSITIVE_CONTROLS` below.
 
-51 cases in total. `declared()` re-derives both counts from the module at run time, and the
+52 cases in total. `declared()` re-derives both counts from the module at run time, and the
 last line of a run states them, so the Go wrapper asserts against a contract rather than
 against the shape of unittest's console output.
 
@@ -591,6 +591,28 @@ class TheReannotationBuilderBoundsTheReRollChannel(SandboxTest):
         run = self.box.path("docs/eval/retrieval/runs/2026-09-05-gate-local")
         run.mkdir(parents=True)
         self.box.write_json(run / "dataset.json", {"schema_version": 1, "id": "cobra-v2"})
+
+        result = self.build(str(CONTESTED))
+
+        self.assertEqual(result.returncode, 2, msg=result.stdout)
+        self.assertIn("dataset.json references cobra-v2", result.stderr)
+        self.assertIn("Section 8 step 6 has run for this dataset", result.stderr)
+        self.assertFalse(self.box.answerability("reannotation-plan.json").exists())
+        self.assertFalse(self.box.answerability("batch-6-input.jsonl").exists())
+
+    def test_a_run_that_escapes_the_dataset_id_is_still_refused(self) -> None:
+        """The refusal above searched raw bytes, so a run could spell the id with a JSON
+        escape and slip past it: `"cobra\\u002dv2"` decodes to exactly `cobra-v2` and shares
+        none of its bytes. Round 3 of review found that on the commit that added the check.
+        A run record does not stop being a run record for being escaped, so the search now
+        decodes JSON and JSONL as well as reading them literally."""
+        self.box.restore_pre_reannotation_state()
+        run = self.box.path("docs/eval/retrieval/runs/2026-09-05-gate-escaped")
+        run.mkdir(parents=True)
+        # Written as raw text, not via write_json, so the escape survives to disk.
+        (run / "dataset.json").write_text(
+            '{"schema_version": 1, "id": "cobra\\u002dv2"}\n', encoding="utf-8")
+        self.assertNotIn(b"cobra-v2", (run / "dataset.json").read_bytes())
 
         result = self.build(str(CONTESTED))
 

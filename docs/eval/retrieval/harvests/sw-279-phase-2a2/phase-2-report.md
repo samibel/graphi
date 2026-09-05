@@ -311,7 +311,7 @@ no transcript was retained for reviewer A; that is recorded rather than glossed.
 
 ### The gate suite, counted correctly
 
-`scripts/eval/tests/test_sw279_gates.py` has **51 cases: 43 refusals and 8 positive controls.** The
+`scripts/eval/tests/test_sw279_gates.py` has **52 cases: 44 refusals and 8 positive controls.** The
 round-1 commit message (`56307de`) said "Seventeen cases" and then listed all of them under "The
 refusals", which was wrong in both directions — the suite then had 17 cases, of which **13 were
 refusals and 4 were positive controls**, and describing a positive control as a refusal overstates
@@ -320,7 +320,7 @@ kinds are now named apart in the suite's own `POSITIVE_CONTROLS` inventory, the 
 from the module rather than written down twice, and a run's last line states them:
 
 ```
-SW279-GATES declared=51 refusals=43 positive_controls=8 ran=51 ok=51 skipped=0 failed=0
+SW279-GATES declared=52 refusals=44 positive_controls=8 ran=52 ok=52 skipped=0 failed=0
 ```
 
 A refusal case breaks exactly one thing and asserts the script stops with a message naming what is
@@ -591,6 +591,17 @@ Four refusals close it, and none of them leaves the operator any discretion:
    then run and re-labelling a row is choosing the label that moves a number which already exists.
    No per-row bound reaches that, so the channel closes rather than narrows. On this record the scan
    finds nothing, which is why the builder still reproduces `batch-6-input.jsonl` byte for byte.
+
+   The scan reads each file twice, and the second pass exists because the first was not enough.
+   A literal byte search finds the id in whatever shape a run records it — `dataset.json`'s `id`,
+   a `run.json` reference, a README — without assuming any run format stays as it is today. But a
+   JSON file may spell the id with escapes: `"cobra\u002dv2"` decodes to exactly
+   `cobra-v2` and contains none of its bytes. **The review round that followed the commit adding this refusal
+   found precisely that, and it is recorded here rather than quietly repaired**, because it is the
+   second time in this story that a check was asserted to cover more than it did. A run record does
+   not stop being a run record for being escaped, so the scan now also decodes JSON and JSONL and
+   searches the decoded strings; a file that is neither parses to nothing and is covered by the
+   literal pass alone.
 
 Each refusal has a gate case in `scripts/eval/tests/test_sw279_gates.py` proven to bite by breaking
 it. **The refusals change nothing on this record, and that is the point**: with them in place the
