@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-10",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "502559784be28f4f1ac3ff6b6567bbc145c1f2bced2c841fb2c6639db3124ae4",
+  "bundle_sha256": "3499de7f16945a6da0e13df164580e400f212f6e515a8a7ed583ce02d8ef05ea",
+  "prompt_sha256": "f74b38a5c285c8b8c54992696d17b5bf45c35cf61fd842aca98cf477b66ccd5d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The search found the file **active_help.go** (evidence e1: path \"active_help.go\", line 1) as the primary match with a seed score of 300.\n\nThe file is part of the Cobra command-line framework (evidence e39 shows copyright 2013-2023 The Cobra Authors, licensed under Apache License 2.0).\n\nThe file contains the following related symbols (evidence e2-e9):\n- Function **cobra.AppendActiveHelp** at line 42 — adds specified strings to arrays for ActiveHelp, with documentation indicating these are processed by completion scripts (evidence e40)\n- Constants for environment variables and markers (lines 25-30): **activeHelpMarker** (\"_activeHelp_\"), **activeHelpEnvVarSuffix** (\"_ACTIVE_HELP\"), **activeHelpGlobalEnvVar** (\"COBRA_ACTIVE_HELP\"), and **activeHelpGlobalDisable** (\"0\") (evidence e41)\n- Variable **activeHelpEnvVarPrefixSubstRegexp** at line 33 for substituting non-ASCII-alphanumeric characters (evidence e41-e42)\n- Functions **GetActiveHelpConfig** (line 51) and **activeHelpEnvVar** (line 62)\n\nThe file has high risk with 11 dependent files, and is referenced by tests in doc/ (doc/cmd_test.go, doc/man_docs_test.go, doc/yaml_docs_test.go, doc/man_examples_test.go, doc/md_docs_test.go, doc/rest_docs_test.go per evidence e11-e20).",
+  "responded_at": "2026-09-05T13:43:13Z",
+  "sha256": "e2346fbdb1d98b636ee07bbf651d6d110bd5176d1b6ef38ceb472696ca9df876"
+}

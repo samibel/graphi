@@ -1,0 +1,1 @@
+INSUFFICIENT The response does not contain evidence of any cobra internal function or method designed to parse a string as command-line arguments; it shows usage/help/completion functionality instead.

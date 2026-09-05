@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1086",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "b9bf826129abec1dbbcd727823aa454876356e57146504ee6ad47f7a8a972eef",
+  "bundle_sha256": "38a2c853f6aa7ae3844c6a9c17045a5df3ecf1baf7aef5da97335faa4de46ae0",
+  "prompt_sha256": "bb178fffce41f0321fd3951d3429717e495cbac6cbccefd6d03dc9fe851e55b0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To check if a flag was set or not, use cmd.Flags().Lookup(name) or the cmd.Flag(name) method (command.go:1795, evidence e52) which retrieves the flag from the command tree. Once you have the *flag.Flag object returned, check its Changed property to determine if the flag was explicitly set by the user. The evidence demonstrates that flag properties are directly accessible, as shown by checking flag.Hidden and flag.Deprecated properties (bash_completions.go:699, evidence e51), making flag.Changed similarly accessible to determine if a flag was set.",
+  "responded_at": "2026-09-05T13:50:16Z",
+  "sha256": "fe11a50fd83d351a6bfd965d81f6fe2f8ce00b34d214ccd325e8671030dbb693"
+}

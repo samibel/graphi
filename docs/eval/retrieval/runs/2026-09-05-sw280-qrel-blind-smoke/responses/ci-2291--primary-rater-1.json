@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2291",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "83dba85b9dbd18ceef1a527cbea30056677cfde67e28a48babaa9ee8c735b290",
+  "bundle_sha256": "3ec733a682befb9cf728a09920341f6c64e4a77e45e1378713edc3dde0750756",
+  "prompt_sha256": "f9ef442e7c1d57bcd627ee209b9978d2f0333410902c9953042543bb8a809eb7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To implement a command for executing a script file with uncertain flags, use Cobra's command and flags handling:\n\n1. Define a Command using cobra.Command.Use (command.go:51 shows the Command type). The command's Use field specifies the command name.\n\n2. Access and define flags via Command.Flags() method (command.go:1643). The response snippet shows: \"Flags returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents).\" It returns a *flag.FlagSet that you can use to register flags with methods like String(), Bool(), etc.\n\n3. Parse incoming flag arguments using Command.ParseFlags(args []string) (command.go:1819). The response shows this is called during command execution to parse both persistent and local flags.\n\n4. In your command's Run function, access parsed flag values via the parsed FlagSet and pass them as arguments to your script execution.\n\n5. Handle the execution flow via Command.execute(a []string) (command.go:874). The response shows this handles the core execution logic including flag parsing, deprecated command handling, and running the associated function.\n\n6. For handling uncertain/dynamic flags at runtime, use the parsed FlagSet's Visit() method or Args() to inspect which flags were actually provided, then pass only those to your script execution.\n\nThe key is that cobra.Command.Flags() returns a *flag.FlagSet, which provides methods to both register flags upfront and query which flags were parsed at runtime - allowing you to execute a script with only the flags that were actually specified.",
+  "responded_at": "2026-09-05T13:53:56Z",
+  "sha256": "a9027079217270b21196b4de2c7557a060005d1a74066a3bf7b67ae99d16d720"
+}

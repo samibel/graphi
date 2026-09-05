@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-17",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "3342c4e5cd007dc83c626ef428803bea347914743644161b4ed8657948c52407",
+  "bundle_sha256": "4a6ec724144565e924264ee6ccf73c5c938df471b46b8323ea5c0d09c8d7dec0",
+  "prompt_sha256": "fc233faf08e7bba88d1713b3ee92980d4260d3d632a73917475872446225d288",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the provided response, cobra reports flag parsing errors through error interfaces and usage messages:\n\n**Through error types:** Cobra defines a `flagCompError` type (completions.go:45) with an `Error()` method (completions.go:50) that returns a formatted error message. The error message structure is:\n```\n\"Subcommand '\" + subCommand + \"' does not support flag '\" + flagName + \"'\"\n```\nas shown in the snippet at completions.go lines 44-56.\n\n**Through usage messages:** The site/content/user_guide.md documentation (lines 548-560) explicitly states: \"When the user provides an invalid flag or invalid command, Cobra responds by showing the user the 'usage'.\"\n\nThe evidence also references multiple test cases related to flag parsing errors (`TestFParseErrWhitelistSameCommand` in command_test.go:2374, `TestFParseErrWhitelistChildCommand` in command_test.go:2414, etc.) and mentions the `Command.ExecuteC` method (command.go:1052) which appears to be involved in error handling during command execution.",
+  "responded_at": "2026-09-05T13:49:24Z",
+  "sha256": "e5c00644d379b9d69ea7676a22cf917726db0fa5a8c9c4970708135481153fa3"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2250",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "30e8f362babf4df70103551190959327a631eddcc1e1d775ba7a793a7a3e37e3",
+  "bundle_sha256": "cbf62c620204313354c1d77dd31c871e7c0bb00157a8ca31e1ce6c2db384f3dc",
+  "prompt_sha256": "3c1b2117d8b4e29e636381036a3f8ef3d8e973c609078b7254805ba22d9e3fde",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "You use a single dash (-) for shorthand flags (single-letter flags), while you use double dashes (--) for long flags (multi-letter flags). The documentation in site/content/user_guide.md (lines 577-589) shows examples: -h is the short form of --help, and -l is the short form of --license. The test in command_test.go:1256 also references shorthand flag handling with the pattern \"unknown shorthand flag: 'v' in -v\".",
+  "responded_at": "2026-09-05T13:53:43Z",
+  "sha256": "964a3c0dcf9c042cda1abfff1fbc565bd82802ba4862f1e38290d09250bb6323"
+}

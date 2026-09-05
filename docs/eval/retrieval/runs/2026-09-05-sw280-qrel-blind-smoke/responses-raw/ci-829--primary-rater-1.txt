@@ -1,0 +1,10 @@
+Based on the command.go:473 snippet (e60), the Help() method exits after a help command by returning nil:
+
+```go
+func (c *Command) Help() error {
+	c.HelpFunc()(c, []string{})
+	return nil
+}
+```
+
+The function calls HelpFunc() to display the help output, then returns nil to signal successful completion and exit. In Go, returning nil from an error-returning function indicates normal completion without error.

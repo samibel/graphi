@@ -1,0 +1,23 @@
+Use the Command's single stored context.Context field, mutating it with SetContext (or a value-carrying wrapper) in an earlier hook and reading it back with Context() in a later hook — cobra does not pass separate contexts per hook, all hooks share the one *Command.
+
+Mechanism shown in the response:
+- `func (c *Command) Context() context.Context { return c.ctx }` (command.go:264, evidence e2/e49/e52) — reads the command's stored context.
+- `func (c *Command) SetContext(ctx context.Context) { c.ctx = ctx }` (command.go:270, evidence e5/e52) — overwrites the stored context.
+- `func (c *Command) ExecuteContext(ctx context.Context) error { c.ctx = ctx; return c.Execute() }` (command.go:1030, evidence e4/e51), with the doc comment: "ExecuteContext is the same as Execute(), but sets the ctx on the command. Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs functions." (e51, command.go:1024-1036).
+
+Because PersistentPreRun, PreRun, Run, PostRun, and PersistentPostRun all execute against the same `cmd *Command` (per the hook ordering documented at site/content/user_guide.md:605, evidence e3/e25/e50: "PersistentPreRun, PreRun, Run, ..."), a value stashed via `cmd.SetContext(context.WithValue(cmd.Context(), key, val))` inside PreRun is visible in later hooks by calling `cmd.Context().Value(key)`.
+
+This exact pattern is exercised by the test `TestSetContextPreRunOverwrite` (command_test.go:2519, evidence e10/e11/e12, snippet e55 at command_test.go:2513-2525):
+```
+func TestSetContextPreRunOverwrite(t *testing.T) {
+    type key struct{}
+    val := "blah"
+    root := &Command{
+        Use: "root",
+        Run: func(cmd *Command, args []string) {
+            key := cmd.Context().Value(key{})
+            ...
+```
+Related tests confirming the same context-threading mechanism: TestSetContextPreRun (command_test.go:2493), TestSetContext (command_test.go:2468), TestSetContextPersistentPreRun (command_test.go:2540), and TestExecuteContext / TestExecuteContextC (command_test.go:177, 206).
+
+So concretely: call `cmd.SetContext(context.WithValue(cmd.Context(), yourKeyType{}, yourValue))` in the pre-run hook (PersistentPreRun or PreRun), then in the post-run hook (or Run) call `cmd.Context().Value(yourKeyType{})` to retrieve it — both hooks operate on the same *Command whose `ctx` field is the shared carrier. If you're driving execution yourself, seed the initial context via `cmd.ExecuteContext(ctx)` (or `ExecuteContextC`, referenced in the ExecuteContext doc comment) rather than plain `Execute()`.

@@ -1,0 +1,19 @@
+Based on the JSON-RPC response provided, the evidence shows that Cobra's PreRun and PostRun Hooks (documented in site/content/user_guide.md:605) are executed in a specific order:
+
+- PersistentPreRun
+- PreRun
+- Run
+
+The response demonstrates parameter transfer through closure variables. The testPersistentHooks function (command_test.go:1578-1590, snippet e107) shows this pattern: a `hookRunOrder` slice is declared in the outer scope and then captured and modified by the `validateHook` function called within the hooks. The snippet shows:
+
+```
+func testPersistentHooks(t *testing.T, expectedHookRunOrder []string) {
+	var hookRunOrder []string
+
+	validateHook := func(args []string, hookName string) {
+		hookRunOrder = append(hookRunOrder, hookName)
+```
+
+This demonstrates that variables can be shared between PersistentPreRun and Run functions through closures over variables in the command setup scope. This allows parameter/data transfer between the hook functions.
+
+The response references command.go (line 1015) for the preRun method implementation and the Command type definition (command.go line 45), which would contain the hook field definitions, though the actual hook function signatures are not shown in the provided snippets.

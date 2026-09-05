@@ -1,0 +1,7 @@
+To set a version dynamically, set the `Version` field on the root command. According to site/content/user_guide.md:592, "Cobra adds a top-level '--version' flag if the Version field is set on the root command."
+
+You can customize how the version is displayed by calling the `SetVersionTemplate()` method. The documentation at site/content/user_guide.md:592 (evidence e41) states: "The template can be customized using the `cmd.SetVersionTemplate(s string)` function."
+
+The method `SetVersionTemplate` is defined in command.go:353 (evidence e44) and allows you to provide a custom template string for version output. The version flag is initialized in the `InitDefaultVersionFlag()` method in command.go:1204 (evidence e43), which checks whether the `Version` field is set and returns early if it is empty.
+
+In summary: assign a version string to the `Version` field on your root command, and optionally call `SetVersionTemplate()` to customize the output template.

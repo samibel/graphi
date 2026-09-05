@@ -1,0 +1,15 @@
+In this Cobra framework repository, "Usage" refers to the command usage display mechanism. The primary entry points are five methods on the Command type (command.go):
+
+1. **cobra.Command.Usage** (command.go:446) — The main method that "puts out the usage for the command. Used when a user provides invalid input. Can be defined by user by overriding UsageFunc" (snippet e37).
+
+2. **cobra.Command.UsageFunc** (command.go:426) — Returns either the function set by SetUsageFunc for this command or a parent, or a default usage function (snippet e36).
+
+3. **cobra.Command.SetUsageFunc** (command.go:307) — Allows developers to set a custom usage function. The documentation notes "Usage can be defined by application" (snippet e33).
+
+4. **cobra.Command.UsagePadding** (command.go:516) — Returns padding for the usage display, with a minimum of 25 characters or the parent's command max use length (snippet e35).
+
+5. **cobra.Command.UsageTemplate** (command.go:544) — Returns the usage template, inheriting from parent if not defined (snippet e40).
+
+The framework also documents this capability in site/content/user_guide.md:583, which explains "Defining your own usage" through public methods SetUsageFunc and SetUsageTemplate (snippet e34).
+
+The Command type itself is defined at command.go:51 with the note that "Cobra requires you to define the usage and description as part of your command definition to ensure usability" (snippet e38).

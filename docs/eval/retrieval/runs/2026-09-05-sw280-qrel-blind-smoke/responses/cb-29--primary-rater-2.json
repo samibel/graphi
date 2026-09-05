@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-29",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e01254597f989d7d7013d79a12557aeae1bff4a6d3b1a0403b1b815955a98c91",
+  "bundle_sha256": "81ef4d0c110f46b50b634922a466655cae454fc42f7885381796215d9ab8b83e",
+  "prompt_sha256": "b4e5aa1e5df09894f30fc781e05b615764f8440df29af085b5f7e3576c4eefc4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the package-level variable `cobra.EnableCaseInsensitive = true`. It is declared in cobra.go:62 with the comment \"EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\" (evidence e115, cobra.go span 56-68).\n\nThis flag is consumed by `commandNameMatches` in command.go:1879 (evidence e117, span 1873-1885):\n\n\tfunc commandNameMatches(s string, t string) bool {\n\t\tif EnableCaseInsensitive {\n\t\t\treturn strings.EqualFold(s, t)\n\t\t}\n\t\treturn s == t\n\t}\n\nSo once `EnableCaseInsensitive` is set to true before command execution, comparisons of command names fall back to `strings.EqualFold` instead of exact `==` string comparison, making command name matching case-insensitive. This function is used by `Command.findNext` (command.go:767, evidence e6/e120) when resolving a subcommand name during execution, so enabling the flag affects how subcommands are looked up by name at runtime.\n\nNo separate per-command setting is shown in this response — the mechanism is the single global variable `EnableCaseInsensitive`.",
+  "responded_at": "2026-09-05T13:43:36Z",
+  "sha256": "8870db0494423980a6782ab1678ecd5e87bc2be0f223ff9588383a267b95c0fa"
+}

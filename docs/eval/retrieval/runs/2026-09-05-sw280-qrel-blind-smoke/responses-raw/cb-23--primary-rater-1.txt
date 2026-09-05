@@ -1,0 +1,7 @@
+The completion command is registered on the root command through the method cobra.Command.InitDefaultCompletionCmd (completions.go:683). According to the evidence, this function "adds a default 'completion' command to c" and is called automatically when executing the root command. The method checks three conditions before proceeding:
+
+1. The feature has not been explicitly disabled by the program
+2. The root command has subcommands (to avoid creating one on a command with no subcommands)
+3. The root command does not already have a 'completion' command provided by the program
+
+Once these conditions are met, InitDefaultCompletionCmd creates and registers the completion command as a subcommand on the root. This is supported by evidence showing InitDefaultCompletionCmd being called from cobra.Command.ExecuteC (command.go:1052), which is called when executing the root command, ensuring that the completion command is registered early in the command execution flow.

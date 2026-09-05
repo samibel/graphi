@@ -1,0 +1,11 @@
+Based on the provided response, cobra reports flag parsing errors through error interfaces and usage messages:
+
+**Through error types:** Cobra defines a `flagCompError` type (completions.go:45) with an `Error()` method (completions.go:50) that returns a formatted error message. The error message structure is:
+```
+"Subcommand '" + subCommand + "' does not support flag '" + flagName + "'"
+```
+as shown in the snippet at completions.go lines 44-56.
+
+**Through usage messages:** The site/content/user_guide.md documentation (lines 548-560) explicitly states: "When the user provides an invalid flag or invalid command, Cobra responds by showing the user the 'usage'."
+
+The evidence also references multiple test cases related to flag parsing errors (`TestFParseErrWhitelistSameCommand` in command_test.go:2374, `TestFParseErrWhitelistChildCommand` in command_test.go:2414, etc.) and mentions the `Command.ExecuteC` method (command.go:1052) which appears to be involved in error handling during command execution.

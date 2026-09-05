@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-434",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "f206e96cdd00ef8c958118747ab58588f9081e97624a8cfb757bbcbcdf8b2ab5",
+  "bundle_sha256": "8afcbb51c1b0ec5ff91fcfc41ed583ec8b22083ce6cefbef9d812dc8b4948ac5",
+  "prompt_sha256": "3b9b72076fe52b7ff973778be8bd6b9e735dcbf02a78d7d110768e183420e162",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To find what flags are being called in a command in this Cobra CLI codebase, use these methods on the `cobra.Command` type:\n\n1. **Command.Flags()** (command.go:1643) - Returns the complete FlagSet that applies to the command, including both local and persistent flags declared in the current command and all parent commands. This is the primary method to inspect all flags in effect for a command.\n\n2. **Command.LocalFlags()** (command.go:1669) - Returns only the local FlagSet specifically set in the current command, excluding inherited flags from parent commands.\n\n3. **Command.NonInheritedFlags()** (command.go:1721) - Returns all flags that were not inherited from parent commands (equivalent to LocalFlags).\n\n4. **Command.Flag(name string)** (command.go:1795) - Climbs up the command tree to lookup a specific flag by name. Searches both the command's flags and persistent flags from parent commands.\n\n5. **findFlag(cmd *Command, name string)** (completions.go:841) - Helper function that finds a flag by name in the command's FlagSet, handling both long flag names and short flag lookups.\n\nTo inspect all flags called during command execution, call `cmd.Flags()` to get the complete FlagSet, which provides access to all flags that have been registered and are available for that command.",
+  "responded_at": "2026-09-05T13:54:31Z",
+  "sha256": "f54bdbccdd80f4c63525e2a8bf7866fe10d616bdc902e6ba6748f17d09707cb9"
+}

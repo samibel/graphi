@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-725",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a1a6bc05f2a5060552a84cc9767127dbba6d901b98e75775ccaa940b1b81d61e",
+  "bundle_sha256": "b93ed4d4d632762742b3a162f5c10c102ff379e60b543d3b9f8a4e54bba7755f",
+  "prompt_sha256": "e0a853e3c9cee84e1ed37204965a0795f7883330bcf1d31c3eea56d73d62c7d2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT the response only shows evidence about parent/child command wiring (AddCommand at command.go:1303, which panics via `panic(\"Command can't be a child of itself\")` if a command is added as its own child; Traverse at command.go:790; and tests like TestTraverseWithBadChildFlag, TestHelpFlagExecutedOnChild, TestChildTakesArgs that construct a separate rootCmd and childCmd), but contains no snippet, symbol, or test describing a technique for making rootCmd itself execute with a child's behavior (e.g. aliasing its Run/Args to a child's, or any documented pattern for that).",
+  "responded_at": "2026-09-05T13:55:37Z",
+  "sha256": "4e674c4bcd56d392e5f66f00ccacfae30c349f7702db4ecce58c7486258aa2a0"
+}

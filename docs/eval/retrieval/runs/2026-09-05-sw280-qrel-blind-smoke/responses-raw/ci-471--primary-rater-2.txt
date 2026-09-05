@@ -1,0 +1,21 @@
+Set the `Args` field on your `cobra.Command` to one of the built-in `PositionalArgs` validator functions defined in args.go; the framework invokes it for you (via `c.Args(c, args)`, called from command.go around line 1141-1143) before running the command.
+
+The response's snippets show the concrete options:
+
+- `cobra.ExactArgs(n int)` (args.go:94, snippet e54): returns a `PositionalArgs` closure that errors unless `len(args) != n` is false — i.e. requires exactly n args: `fmt.Errorf("accepts %d arg(s), received %d", n, len(args))`.
+- `cobra.MinimumNArgs(n int)` (args.go:74, snippet e57): errors if `len(args) < n` — "requires at least %d arg(s), only received %d".
+- `cobra.RangeArgs(min, max int)` (args.go:104, snippet e53): errors if `len(args) < min || len(args) > max` — "accepts between %d and %d arg(s), received %d".
+- `cobra.ArbitraryArgs` (args.go:68/74 area, snippet e57): never errors, i.e. no enforcement.
+
+All of these have signature `func(cmd *Command, args []string) error` matching the `PositionalArgs` type declared at args.go:22 (`type PositionalArgs func(cmd *Command, args []string) error`, snippet e59).
+
+Usage, per site/content/user_guide.md:367 (snippet e56): "Validation of positional arguments can be specified using the `Args` field of `Command`." That section is titled "Positional and Custom Arguments" and lists the built-in validators under "Number of arguments", starting with `NoArgs` - report an error if there are any positional args (the doc snippet is truncated after that first bullet, so the remaining bullet list for ExactArgs/MinimumNArgs/MaximumNArgs/RangeArgs isn't shown verbatim in this response, but their implementations above confirm the mechanism).
+
+So concretely, to enforce the number of required arguments you write:
+
+    cmd := &cobra.Command{
+        Args: cobra.ExactArgs(2), // or MinimumNArgs(n), RangeArgs(min, max), etc.
+        ...
+    }
+
+and Cobra calls that function with the parsed positional args, returning an error (which aborts execution) if the count doesn't match.

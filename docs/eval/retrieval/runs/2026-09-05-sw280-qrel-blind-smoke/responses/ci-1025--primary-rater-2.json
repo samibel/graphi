@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1025",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "d30f9274f45e9b39d7aa183b9eedf0d44a88356b65121b5c546faa1e15d29467",
+  "bundle_sha256": "f26f71a76b2b4050c5e196d1f739be62f2ddb5c8b9e9de148ce28513c67dd9f6",
+  "prompt_sha256": "7daff5c2eb888fcbc9b7ac25121de5e793b499ce7b2ba839bded19e25d20e282",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response's evidence covers flag lookup/parsing plumbing (Command.Traverse at command.go:790, Command.Flag at command.go:1795, Command.Flags at command.go:1643, Command.ParseFlags at command.go:1819) and doc/completion generation (doc.genFlagResult, doc.manPrintFlags, cobra.writeRequiredFlag), but none of the returned snippets, symbol names, or evidence entries mention any escaping, quoting, or sanitization mechanism for flag input (e.g. a \"--\" terminator or shell/string escaping). The word \"escape\" does not appear anywhere in the response, so there is no basis here to say whether or how flag input can be escaped.",
+  "responded_at": "2026-09-05T13:43:56Z",
+  "sha256": "23d996e1a54247ee352cb3c51690330d15430d5df116c27557f6fee1b9d297a6"
+}

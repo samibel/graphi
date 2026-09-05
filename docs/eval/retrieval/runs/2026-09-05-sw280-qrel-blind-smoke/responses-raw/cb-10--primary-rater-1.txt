@@ -1,0 +1,11 @@
+The search found the file **active_help.go** (evidence e1: path "active_help.go", line 1) as the primary match with a seed score of 300.
+
+The file is part of the Cobra command-line framework (evidence e39 shows copyright 2013-2023 The Cobra Authors, licensed under Apache License 2.0).
+
+The file contains the following related symbols (evidence e2-e9):
+- Function **cobra.AppendActiveHelp** at line 42 — adds specified strings to arrays for ActiveHelp, with documentation indicating these are processed by completion scripts (evidence e40)
+- Constants for environment variables and markers (lines 25-30): **activeHelpMarker** ("_activeHelp_"), **activeHelpEnvVarSuffix** ("_ACTIVE_HELP"), **activeHelpGlobalEnvVar** ("COBRA_ACTIVE_HELP"), and **activeHelpGlobalDisable** ("0") (evidence e41)
+- Variable **activeHelpEnvVarPrefixSubstRegexp** at line 33 for substituting non-ASCII-alphanumeric characters (evidence e41-e42)
+- Functions **GetActiveHelpConfig** (line 51) and **activeHelpEnvVar** (line 62)
+
+The file has high risk with 11 dependent files, and is referenced by tests in doc/ (doc/cmd_test.go, doc/man_docs_test.go, doc/yaml_docs_test.go, doc/man_examples_test.go, doc/md_docs_test.go, doc/rest_docs_test.go per evidence e11-e20).

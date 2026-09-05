@@ -1,0 +1,32 @@
+Use `SetHelpCommand` to install a replacement (or a no-op/hidden) help command on the root command, which prevents Cobra's automatic default from ever being installed; if the default has already been installed, remove it explicitly with `RemoveCommand`.
+
+Evidence for this:
+
+1. site/content/user_guide.md:492 ("Help Command" section) states: "Cobra automatically adds a help command to your application when you have subcommands. This will be called when a user runs 'app help'." (e65, lines 486-498) — confirming the default help command is auto-added rather than something you must opt into.
+
+2. site/content/user_guide.md:541 ("Defining your own help") states: "You can provide your own Help command or your own template for the default command to use with the following functions:" followed by `cmd.SetHelpCommand(cmd *Command)` (e64, lines 535-547). This is the documented API for overriding/replacing the default help command on a command (e.g. your root command).
+
+3. command.go:1229, `func (c *Command) InitDefaultHelpCmd()` — the method Cobra calls internally to install the default help command — contains the guard: "If c already has help command or c has no subcommands, it will do nothing." The snippet (e63, lines 1223-1235) shows the actual check:
+   ```go
+   func (c *Command) InitDefaultHelpCmd() {
+       if !c.HasSubCommands() {
+           return
+       }
+       if c.helpCommand == nil {
+           c.helpCommand = &Command{
+   ```
+   Because this only assigns `c.helpCommand` when it is `nil`, calling `rootCmd.SetHelpCommand(...)` before execution (which sets `c.helpCommand` to your own command) makes this guard skip installing Cobra's default help command entirely — effectively "removing" it by preemption.
+
+4. If the default help command has already been added (e.g. after `Execute()` has run once), it can be removed generically via command.go:1362, `func (c *Command) RemoveCommand(cmds ...*Command)`: "RemoveCommand removes one or more commands from a parent command." (e67, lines 1356-1368):
+   ```go
+   func (c *Command) RemoveCommand(cmds ...*Command) {
+       commands := []*Command{}
+   main:
+       for _, command := range c.commands {
+           for _, cmd := range cmds {
+               if command == cmd {
+                   command.parent = nil
+   ```
+   You would locate the help command among `rootCmd.Commands()` (command.go:1293, listed as a related method) and pass it to `RemoveCommand`.
+
+In short: prevent it up front with `rootCmd.SetHelpCommand(...)` (documented in site/content/user_guide.md:541, and effective because of the nil-check in `InitDefaultHelpCmd` at command.go:1229-1235), or strip it after the fact with `rootCmd.RemoveCommand(...)` (command.go:1362).

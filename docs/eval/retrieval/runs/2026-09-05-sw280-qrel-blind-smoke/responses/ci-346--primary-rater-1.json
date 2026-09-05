@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-346",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "2893e84e8f7095d0af86f5fcda07860debf395229ce69d73087f1b695801a4b1",
+  "bundle_sha256": "d894fbb948929ab7cf81135d53ceb1ebcfc875607aa29d962a84978ba8400505",
+  "prompt_sha256": "1124969c3f7af87ee85f9bfe69069e507dafbf2fa85ec0c00611c3204a2f3f1b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To add a required argument in Cobra, set the `Args` field of the `Command` struct to use a built-in validator. Specifically, use `cobra.MinimumNArgs(n)` to require at least n arguments. The `Args` field is a `PositionalArgs` function that validates positional arguments (site/content/user_guide.md:367), and the `ValidateArgs` method (command.go:1139) executes this validator when the command runs. For example, `MinimumNArgs(1)` (args.go:74) returns an error if fewer than 1 argument is provided, enforcing the requirement.",
+  "responded_at": "2026-09-05T13:54:16Z",
+  "sha256": "b73a2364f6eb341e15b2e326700831d7ca87006f1d197ccd5238ea7eb0a30dd1"
+}

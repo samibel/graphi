@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains code showing that Help() returns nil (command.go:473-479) and documents that HelpFunc() can be overridden (command.go:452), but does not provide example code demonstrating how to implement exit behavior in a custom help function.

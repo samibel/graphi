@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-674",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a99ae0596e3c3fb12a0c211a4fc8f2cb9255fa7f1a7eb8441fdba5c495634b73",
+  "bundle_sha256": "713e7dbbed04a5e1c232394e9d5e4277bbfdbbc18a203f1cbe8a9c770cf6f85a",
+  "prompt_sha256": "bf6fefa854ea47409b1b3f668242cdc3f0de131afc749d192afdf0ddd638be52",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To create root level method calling for each submodule after flags parsing, use `AddCommand` to organize subcommands and enable `Command.TraverseChildren` for proper flag parsing hierarchy.\n\nFrom the evidence:\n\n1. **Organizing subcommands** (site/content/user_guide.md:191-197): \"A command may have subcommands which in turn may have other subcommands. This is achieved by using `AddCommand`. In some cases, especially in larger applications, each subcommand may be defined in its own go package. The suggested approach is for the parent command to use `AddCommand` to add its most immediate\" subcommands.\n\n2. **Flag parsing order** (site/content/user_guide.md:288): \"By default, Cobra only parses local flags on the target command, and any local flags on parent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will parse local flags on each command before executing the target command.\"\n\n3. **Implementation details** (command_test.go:931-937): The pattern shows creating a parent command, child command, using `AddCommand()` to attach the child, then calling `PersistentFlags()` and `Flags()` methods to define flags at each level.\n\n4. **Flag introspection methods** (doc/rest_docs.go:30-33 and doc/md_docs.go:32-35): Use `NonInheritedFlags()` and `HasAvailableFlags()` to inspect and process flags at each command level after parsing.\n\nThe key is structuring each submodule as its own Command, adding them via AddCommand, and leveraging PersistentFlags and local Flags at appropriate hierarchy levels to control when methods execute relative to flag parsing.",
+  "responded_at": "2026-09-05T13:55:09Z",
+  "sha256": "c987650b19f2a9f0234768f71629f9ff1e39693c0db1ebeec9aff6df77defbf9"
+}

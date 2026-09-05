@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-06",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "ec7908152ae3725b160dc4a6176375d30bc0fa9f191fc9480efa26f617755999",
+  "bundle_sha256": "8656800793c3cf3ae91424a2722c5ffa6c34d57b4b2d9cd05915018ee40eee28",
+  "prompt_sha256": "157c3230dabe0d228fbbd5d5cbc9edd74126ff60f1c67aea8dec96d89bee760c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "GenZshCompletionNoDesc is a method on cobra.Command, defined in zsh_completions.go:42 (evidence e5/e33):\n\n\t// GenZshCompletionNoDesc generates zsh completion file without descriptions\n\t// and writes it to the passed writer.\n\tfunc (c *Command) GenZshCompletionNoDesc(w io.Writer) error {\n\t\treturn c.genZshCompletion(w, false)\n\t}\n\nIt generates zsh completion output without descriptions and writes it to the io.Writer passed in, by delegating to the unexported helper genZshCompletion(w, includeDesc bool), passing includeDesc=false. That helper is defined at zsh_completions.go:80 (evidence e4/e32):\n\n\tfunc (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {\n\t\tbuf := new(bytes.Buffer)\n\t\tgenZshComp(buf, c.Name(), includeDesc)\n\t\t_, err := buf.WriteTo(w)\n\t\treturn err\n\t}\n\ngenZshCompletion in turn calls the package-level function genZshComp(buf, c.Name(), includeDesc) (zsh_completions.go:87, evidence e16/e7c0b8d04ca258149) to build the completion script into a buffer, then writes that buffer to w.\n\nGenZshCompletionNoDesc is the no-description writer counterpart to GenZshCompletionFileNoDesc (zsh_completions.go:36, evidence e1/e29), which instead writes to a file:\n\n\tfunc (c *Command) GenZshCompletionFileNoDesc(filename string) error {\n\t\treturn c.genZshCompletionFile(filename, false)\n\t}\n\nand it mirrors GenZshCompletion (zsh_completions.go:31, evidence e2/e30), which is the same writer-based method but with includeDesc=true (descriptions included):\n\n\tfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\t\treturn c.genZshCompletion(w, true)\n\t}\n\nSo, in short: GenZshCompletionNoDesc(w io.Writer) error writes zsh shell-completion code for the command (and its subcommands, via genZshComp) to w, omitting the completion descriptions that GenZshCompletion would otherwise include.",
+  "responded_at": "2026-09-05T13:42:19Z",
+  "sha256": "b94b5459819a9e8cd32a491a461d80c6770cfd9f8530248ea1f5c0db31c4b4c1"
+}

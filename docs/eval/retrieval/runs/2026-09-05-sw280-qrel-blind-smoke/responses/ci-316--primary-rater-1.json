@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-316",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "725d47e1ea7ed6708bce905a3fd7cb6d1b41ee1dea163c386b5f5ff77e7552dd",
+  "bundle_sha256": "4ed6ec147843a94305cff8f7857885a89f5e2863e24fb511e9d58dda7acc53d4",
+  "prompt_sha256": "2e98b36128093ebd5133c5e50f2e895da5ef0ce0919bd641d90e411ef6c9f214",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, you can disable sorting of flags for a given command by setting the `SortFlags` field on the command's FlagSet to `false`. The test function `TestSortedFlags` (command_test.go:2135-2141) demonstrates this capability. The test comment states: \"TestSortedFlags checks, if cmd.LocalFlags() is unsorted when cmd.Flags().SortFlags set to false.\" The code shows this pattern:\n\n```\nc := \u0026Command{}\nc.Flags().SortFlags = false\n```\n\nThis allows you to control flag sorting on a per-command basis by accessing the FlagSet through `cmd.Flags().SortFlags` and setting it to `false`.",
+  "responded_at": "2026-09-05T13:54:10Z",
+  "sha256": "ad7723f93a88bef593b3eb4faa4f1aad6940be2741eea24ea8538d57c59f8ac1"
+}

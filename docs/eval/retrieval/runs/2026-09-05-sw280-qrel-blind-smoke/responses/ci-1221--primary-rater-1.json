@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1221",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "93de10aecfc68920b1a0652dac9e6b3b0b02954675c77203a00356e62f5919f9",
+  "bundle_sha256": "e14e7438c11489be162bd4d9dac0f081f8ed904ddc0e1e2fa8b24130199c00ed",
+  "prompt_sha256": "99fdc64706a76ff397346ac297a263fcb45d5f679bcefce490c4c678f88a0c1a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To set a version dynamically, set the `Version` field on the root command. According to site/content/user_guide.md:592, \"Cobra adds a top-level '--version' flag if the Version field is set on the root command.\"\n\nYou can customize how the version is displayed by calling the `SetVersionTemplate()` method. The documentation at site/content/user_guide.md:592 (evidence e41) states: \"The template can be customized using the `cmd.SetVersionTemplate(s string)` function.\"\n\nThe method `SetVersionTemplate` is defined in command.go:353 (evidence e44) and allows you to provide a custom template string for version output. The version flag is initialized in the `InitDefaultVersionFlag()` method in command.go:1204 (evidence e43), which checks whether the `Version` field is set and returns early if it is empty.\n\nIn summary: assign a version string to the `Version` field on your root command, and optionally call `SetVersionTemplate()` to customize the output template.",
+  "responded_at": "2026-09-05T13:50:31Z",
+  "sha256": "7f167f8940fd5b8f71b8e5eac2bb1e8fbfe3c4bbbe0962cbb0af7ada2c24617d"
+}

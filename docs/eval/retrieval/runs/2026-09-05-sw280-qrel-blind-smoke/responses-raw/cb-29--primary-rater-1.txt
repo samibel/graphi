@@ -1,0 +1,3 @@
+Set the global variable cobra.EnableCaseInsensitive to true.
+
+The evidence shows this is a global flag in cobra.go (line 62) with the documentation comment "allows case-insensitive commands names. (case sensitive by default)" (e115). The commandNameMatches function in command.go (lines 1873-1885, e117) implements case-insensitive matching by checking this flag: when EnableCaseInsensitive is true, it uses strings.EqualFold() for case-insensitive string comparison; otherwise it performs exact string equality checks.

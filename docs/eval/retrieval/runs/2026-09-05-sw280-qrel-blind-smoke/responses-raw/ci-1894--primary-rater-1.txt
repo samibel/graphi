@@ -1,0 +1,7 @@
+To hide the description in the completion, use one of these two approaches:
+
+1. **Programmatically disable descriptions**: Set `rootCmd.CompletionOptions.DisableDescriptions = true` (evidence: site/content/completions/_index.md:117, snippet e31).
+
+2. **Use the command-line flag**: Pass the `--no-descriptions` flag (evidence: completions.go:100, where `compCmdNoDescFlagName = "no-descriptions"` with description "disable completion descriptions", snippet e30).
+
+The `CompletionOptions` type (completions.go:105, snippet e32) provides these control mechanisms: `DisableDescriptions` to turn off all completion descriptions for shells that support them, and `DisableNoDescFlag` to prevent creating the '--no-descriptions' flag itself if desired.

@@ -1,0 +1,13 @@
+To create root level method calling for each submodule after flags parsing, use `AddCommand` to organize subcommands and enable `Command.TraverseChildren` for proper flag parsing hierarchy.
+
+From the evidence:
+
+1. **Organizing subcommands** (site/content/user_guide.md:191-197): "A command may have subcommands which in turn may have other subcommands. This is achieved by using `AddCommand`. In some cases, especially in larger applications, each subcommand may be defined in its own go package. The suggested approach is for the parent command to use `AddCommand` to add its most immediate" subcommands.
+
+2. **Flag parsing order** (site/content/user_guide.md:288): "By default, Cobra only parses local flags on the target command, and any local flags on parent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will parse local flags on each command before executing the target command."
+
+3. **Implementation details** (command_test.go:931-937): The pattern shows creating a parent command, child command, using `AddCommand()` to attach the child, then calling `PersistentFlags()` and `Flags()` methods to define flags at each level.
+
+4. **Flag introspection methods** (doc/rest_docs.go:30-33 and doc/md_docs.go:32-35): Use `NonInheritedFlags()` and `HasAvailableFlags()` to inspect and process flags at each command level after parsing.
+
+The key is structuring each submodule as its own Command, adding them via AddCommand, and leveraging PersistentFlags and local Flags at appropriate hierarchy levels to control when methods execute relative to flag parsing.

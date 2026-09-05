@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1758",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "6c99a923e785c7abb5a1178fa7ee9fb3b236202fbdc4fcfae82e5460bd5f33e4",
+  "bundle_sha256": "ce2026adc7aec41b685e07af9c9a0068543ab9d8a1b10b643b661892ee0d8f11",
+  "prompt_sha256": "d68b70a046460e90416ec8eb7cd39c60a6cc5116110ee4e487b11a445d32eb47",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Looking at the JSON-RPC response, I can see methods for accessing and working with flag sets in Cobra, but the response does not explicitly show the API for dynamically adding individual flags at runtime.\n\nThe response indicates that `Flags()` (command.go:1643), `PersistentFlags()` (command.go:1726), and `LocalFlags()` (command.go:1669) return FlagSet objects, and that `AddFlagSet()` can merge FlagSets (command.go:1851). However, the specific methods for dynamically adding individual flags to a FlagSet are not demonstrated in the provided evidence snippets or documentation excerpts from site/content/user_guide.md (lines 257-270) or README.md (line 68).\n\nINSUFFICIENT - the response shows flag retrieval and merging methods but does not demonstrate the API for adding individual flags dynamically at runtime.",
+  "responded_at": "2026-09-05T13:52:16Z",
+  "sha256": "aeb7c2ca6b154b6f1f2b05e96318f9ebad44dc1158de186ed386d4598f1ccb87"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1060",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "4ea276c2c7e0e683f1bc824ff8028517289d8d714f75a34f70e75d48a1ef0cff",
+  "bundle_sha256": "592bc94ac250bc8009122cb15d7aeaf50e32327d0ab920693c15cc002aa9b231",
+  "prompt_sha256": "9ca371ad84abd685d4641e28ac1fa93cbcb89abb0b40dbbb9670dded3d9c5ba9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The response does not show an API for designating a specific subcommand to run \"by default\" (no field or function like a \"default command\" setting appears anywhere in the items or snippets). What it does show is the mechanism that decides which command actually runs when Execute is called, and that mechanism's fallback is to run the command itself (not a subcommand) when no subcommand name is given on the args.\n\nThe flow, per the evidence:\n\n1. `Command.Execute()` (command.go:1038, snippet e94, lines 1032-1041) — \"Execute uses the args (os.Args[1:] by default) and run through the command tree finding appropriate matches for commands and then corresponding flags.\" It just calls `c.ExecuteC()`.\n2. `Command.ExecuteC()` (command.go:1052, snippet e91, lines 1046-1058) — sets up context, then \"Regardless of what command execute is called on, run on Root only\" and checks `c.HasParent()` — i.e. execution always starts from the root of the command tree, not from whatever command Execute() was called on.\n3. `Command.Find(args)` (command.go:726, snippet e96, lines 720-732) — \"Find the target command given the args and command tree. Meant to be run on the highest node. Only searches down.\" Its inner `innerfind` closure strips flags from the incoming args (`stripFlags(innerArgs, c)`), and critically: \"if len(argsWOflags) == 0 { return c, innerArgs }\" — when there are no non-flag arguments left to match against a child's name, it returns the current command `c` itself rather than descending into a subcommand.\n4. `legacyArgs` (args.go:28, snippet e95, lines 22-34) documents the resulting policy explicitly: \"root commands with no subcommands can take arbitrary arguments; root commands with subcommands will do subcommand validity checking; subcommands will always accept arbitrary arguments\" — and its code path is `if !cmd.HasSubCommands() { return nil }` (\"no subcommand, always take args\").\n\nSo, based on this response: a command is invoked \"by default\" (as opposed to one of its subcommands) simply by running `Execute()`/`ExecuteC()` with no subcommand name present in the arguments — `Find` falls through to returning the command itself, and that command's own `Run`/`RunE` executes. There is nothing in this response indicating a way to pre-select which child subcommand should be treated as the default when the parent has subcommands; `HasSubCommands()` (command.go:1556, snippet e98) and `Runnable()` (command.go:1550-1553, same snippet) are the only related helpers shown, and neither implements default-subcommand selection.",
+  "responded_at": "2026-09-05T13:44:20Z",
+  "sha256": "eb5bb8790c727b16b73615fb0d2c5d486268d7a8958bc13166309a2f02b9b57f"
+}

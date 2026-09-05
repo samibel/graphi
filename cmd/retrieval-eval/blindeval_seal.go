@@ -46,6 +46,11 @@ func rawResponseFileName(queryID, raterID string) string {
 	return strings.TrimSuffix(retrieval.ResponseFileName(queryID, raterID), ".json") + ".txt"
 }
 
+// rawGradeFileName is where a grader reads its packet and writes its verdict.
+func rawGradeFileName(queryID, raterID string) string {
+	return strings.TrimSuffix(retrieval.ResponseFileName(queryID, raterID), ".json") + ".txt"
+}
+
 // blindEvalRefusalMarker is the one spelling a rater uses to decline. It is
 // distinct from INSUFFICIENT, which is a substantive answer and is graded.
 const blindEvalRefusalMarker = "REFUSED"
@@ -128,11 +133,18 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 
 	// Grader packets for every answered response, and grades for every raw
 	// grade file that names a sealed response.
+	//
+	// Packets and raw grades are named by the rater SLOT (query--rater), not by
+	// the response digest, so a human dispatching the grading cannot transcribe
+	// a 64-character hex name wrongly. The binding to the response's content
+	// address is not weakened by that: the packet states the address, and the
+	// sealed grade below is built from the response object itself.
 	packets, grades := 0, 0
-	for sha, response := range sealedResponses {
+	for _, response := range sealedResponses {
 		if response.Status != retrieval.ResponseStatusAnswered {
 			continue
 		}
+		slot := rawGradeFileName(response.QueryID, response.RaterID)
 		q := queries[response.QueryID]
 		bundle, err := loadCapturedBundle(o.dir, response.QueryID)
 		if err != nil {
@@ -144,13 +156,13 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		if err := os.WriteFile(filepath.Join(o.dir, blindEvalGraderPacketsDir, sha+".txt"), []byte(packet), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(o.dir, blindEvalGraderPacketsDir, slot), []byte(packet), 0o644); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
 		packets++
 
-		rawGrade := filepath.Join(o.dir, blindEvalRawGradesDir, sha+".txt")
+		rawGrade := filepath.Join(o.dir, blindEvalRawGradesDir, slot)
 		info, statErr := os.Stat(rawGrade)
 		if statErr != nil {
 			continue
@@ -161,7 +173,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 			return exitError
 		}
 		if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalGradesDir,
-			retrieval.GradeFileName(sha)), grade); err != nil {
+			retrieval.GradeFileName(response.SHA256)), grade); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}

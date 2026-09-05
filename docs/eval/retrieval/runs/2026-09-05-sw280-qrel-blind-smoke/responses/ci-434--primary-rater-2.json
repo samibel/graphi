@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-434",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "f206e96cdd00ef8c958118747ab58588f9081e97624a8cfb757bbcbcdf8b2ab5",
+  "bundle_sha256": "8afcbb51c1b0ec5ff91fcfc41ed583ec8b22083ce6cefbef9d812dc8b4948ac5",
+  "prompt_sha256": "3b9b72076fe52b7ff973778be8bd6b9e735dcbf02a78d7d110768e183420e162",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To find out what flags are being invoked/looked up for a cobra Command, the response points to a small cluster of functions/methods in command.go and completions.go:\n\n1. cmd.Flags() — command.go:1643 (snippet e157, lines 1637-1649). This is the entry point: \"Flags returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents).\" It lazily builds c.flags via flag.NewFlagSet(c.Name(), flag.ContinueOnError) if not already set. This is the FlagSet you query to see what flags exist/are registered for the command.\n\n2. cmd.Flag(name) — command.go:1795 (snippet e159, lines 1789-1801), doc comment \"Flag climbs up the command tree looking for matching flag.\" Implementation: `flag = c.Flags().Lookup(name)`, and if that's nil it falls back to `c.persistentFlag(name)` (command.go:1806, ref 6291636 cb0d0080b34b32c7). So to check whether a specific flag was declared/called on a command (including inherited from parents), you call cmd.Flag(\"name\") rather than walking FlagSets yourself.\n\n3. findFlag(cmd, name) — completions.go:841 (snippet e158, lines 835-847), a package-level helper used by completion code: `flagSet := cmd.Flags(); if len(name) == 1 { if short := flagSet.ShorthandLookup(name); short != nil { name = short.Name ... } }`. This shows how a short flag (\"-f\") is resolved to its long name before lookup, again by first calling cmd.Flags().\n\n4. Related FlagSet accessors, all built on top of Flags()/LocalFlags(): LocalFlags() (command.go:1669), NonInheritedFlags() (command.go:1721, snippet e156 — literally `return c.LocalFlags()`), InheritedFlags() (command.go:1696), PersistentFlags() (command.go following NonInheritedFlags in the same snippet), and HasAvailableFlags()/HasAvailableInheritedFlags() (command.go:1773/1789) to check if any flags are present before iterating.\n\n5. If instead you mean \"which flags were passed as CLI args to invoke the command\" (i.e., parsing os.Args rather than declared FlagSets), the relevant piece is stripFlags(args, c) (command.go:643, related item c3e28273a96f88e5) and its caller cmd.Find(args) (command.go:726, snippet e160, lines 720-732): `argsWOflags := stripFlags(innerArgs, c)`. Command.Find walks the command tree using stripFlags to separate flag tokens from positional args so it can locate the target subcommand; stripFlags is what recognizes an arg as a flag (looking at the \"--\" / \"-\" prefix logic shown just above it in command.go around line 719-722 in the same snippet region).\n\nIn short: call cmd.Flags() to get the FlagSet of a command, then either iterate it or use cmd.Flag(name)/findFlag(cmd, name) to look up a specific flag by name (long or short); use stripFlags/cmd.Find to see how cobra itself distinguishes flag tokens from command/arg tokens when parsing the invocation.",
+  "responded_at": "2026-09-05T13:54:46Z",
+  "sha256": "c79ead9bc7096c1c27ba4a72513d1b0ba49ee6bbf92412a5baecf501daeeae88"
+}

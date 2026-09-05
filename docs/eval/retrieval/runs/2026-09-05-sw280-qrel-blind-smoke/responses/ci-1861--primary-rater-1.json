@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1861",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e0030e004db845a74dfa173469990e16fdf8ea23e84f3efdb3a27e49c57922ac",
+  "bundle_sha256": "5be78440ef030b1f5c6b26f468dbab19aa14b29ce148b0b5eb9ae5b70ae2c41a",
+  "prompt_sha256": "891af2e3d6b82234ddd40edd4a0c20ebe3b3be3ec766c5eefeb616eed1fafc0f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In the Cobra CLI framework, sub-commands are discovered and executed through the Command type and its methods in command.go.\n\nTo discover sub-commands dynamically:\n1. Check if commands exist using `HasSubCommands()` (command.go:1556), which returns `len(c.commands) \u003e 0`\n2. Iterate through available sub-commands using `HasAvailableSubCommands()` (command.go:1617), which loops through `c.commands` and checks each sub-command's availability status via `IsAvailableCommand()`\n\nTo execute:\n1. Call `Execute()` (command.go:1038), which invokes `ExecuteC()` and returns an error\n2. Or call `ExecuteC()` directly (command.go:1052), which executes the command and returns both the Command and error\n\nThe Command struct maintains sub-commands internally in the `c.commands` slice. Discovery iterates through this slice to identify available sub-commands (excluding deprecated/hidden ones), and execution flows through the Execute methods which traverse the command tree to find matches and execute appropriate handlers.",
+  "responded_at": "2026-09-05T13:52:07Z",
+  "sha256": "86663c1aa7cd86084979c5d78ec18f01284c153b7fa95d9e73adbd93a0d49481"
+}

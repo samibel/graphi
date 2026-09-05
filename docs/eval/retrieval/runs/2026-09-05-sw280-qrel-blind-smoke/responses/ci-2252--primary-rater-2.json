@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2252",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "107b99acf4ccab2840ee697d53f0f9108e79d3f8d9eae02466e5650a188f8fb4",
+  "bundle_sha256": "da859ff7fa299399cc75e29d7698f3af074eea44c4ca217333b05b341a662cee",
+  "prompt_sha256": "bc7f932fceeb304110c404224be9b5520ec77ca2aab827a5ae59466b1402dd98",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra doesn't have a distinct \"help at the top\" setting — help propagates upward through the command tree's parent chain, so \"placing\" it at the top means defining it on the root command.\n\nTo output help you call `Help()` (command.go:473, snippet e37):\n```\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}\n```\n\n`Help()` delegates to `HelpFunc()` (command.go:452-458, snippet e38):\n```\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n```\nIf the current command has no `helpFunc` of its own, it walks up via `HasParent()`/`Parent()` (command.go:1632, snippet e42; command.go:1843) to its parent's `HelpFunc()`, and so on until it reaches the top-level (root) command — or the built-in default if nothing was ever set.\n\nThe help text template works the same way — `HelpTemplate()` (command.go:585-591, snippet e40):\n```\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n```\nAgain: if the command doesn't define its own `helpTemplate`, it inherits from its parent, recursing to the top.\n\nSo concretely, to \"place help at the top,\" you call `SetHelpFunc`/set the help template on the root command (the top of the command tree) rather than on each subcommand. Every subcommand that hasn't overridden its own help function/template will inherit that top-level definition, because `HelpFunc()` and `HelpTemplate()` both bubble up the parent chain until they hit the command at the top that has one defined.\n\n(For reference, the `--help` flag itself is defined as `const HelpFlag = \"--help\"` in command_test.go:2572, and Cobra's separate \"Active Help\" feature — shell-completion hints, not command help — is documented starting at site/content/active_help.md:1.)",
+  "responded_at": "2026-09-05T13:54:04Z",
+  "sha256": "8169809869f6a94774a78eac9a803dbe4f60a5704ae263f51bfee07ac579f2c8"
+}

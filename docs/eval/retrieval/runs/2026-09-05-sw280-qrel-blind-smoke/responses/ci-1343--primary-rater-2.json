@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1343",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c3d7dfb312e73f3e3022a1ab5f787cca3da6893674ffe8ed0035a214620e7b56",
+  "bundle_sha256": "75debb24b17be49b3f237569e3bb1241c8c1d4f4a7e111ca84e583c30ff74d22",
+  "prompt_sha256": "a29afa39f7daf93684dd9191ad2d8735692cd6b9711473ef78814d41f5bfc75e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response shows that a command can be marked deprecated via a `Deprecated` string field (e.g. doc/cmd_test.go:77 sets `Deprecated: \"Please use echo instead\"` on `deprecatedCmd`, and command_test.go:1493-1499's `TestDeprecatedCommand` sets `Deprecated: \"This command is deprecated\"`), but it contains no snippet of the code path that actually renders/prints that deprecation notice at runtime (e.g. in command.go), so there is no way to tell from this evidence whether the full/entire printed message is customizable via that field or whether cobra wraps it with additional fixed text you cannot change.",
+  "responded_at": "2026-09-05T13:51:04Z",
+  "sha256": "15e3e8f6449e79c95e42660b831f96d78c249450cb87e8c14e2e5e049ff9b187"
+}

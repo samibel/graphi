@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies methods for help flag initialization (InitDefaultHelpFlag in command.go:1186) and persistent flags documentation (site/content/user_guide.md:270), but does not provide evidence of a specific mechanism or configuration option to hide Global Flags from the help output.

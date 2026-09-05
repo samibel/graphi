@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1289",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "5175869aec07cd3a31cf5cfe4a905227ef2c44193509d643c1d44b266634abe4",
+  "bundle_sha256": "b980b607ca44e81f94d6fe1348b447426f57d8d22fc7cddfae161b5359a90829",
+  "prompt_sha256": "17c14b1c6f87fbefcad042e026755a97c26df03597b003ebb6a76236b5a2f2f1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, but only via package-level state, not a per-Command-instance mechanism. The response's evidence shows cobra.go declares two package-level variable slices:\n\n    var initializers []func()   (cobra.go:42, e3/e33)\n    var finalizers []func()     (cobra.go:43, e1/e31)\n\nand two package functions that append to them:\n\n    func OnInitialize(y ...func()) {\n        initializers = append(initializers, y...)\n    }   (cobra.go:99-101, e36)\n\n    func OnFinalize(y ...func()) {\n        finalizers = append(finalizers, y...)\n    }   (cobra.go:105-107, e37)\n\nSo the way to \"share\" something across cobra usage is to register closures via OnInitialize/OnFinalize, which get stored in these shared package-level slices and are presumably run around each command's Execute (per the doc comments \"run when each command's Execute method is called\" / \"terminated\"). Because initializers/finalizers are package-level vars (not fields on the Command struct), anything captured in the closures you pass to OnInitialize/OnFinalize is effectively shared globally across all commands built with this package, not scoped to one particular *cobra.Command instance.\n\nThe response does not contain any evidence of a Command-instance-scoped field (e.g., an Annotations map, Context, or similar) used for sharing variables between a single command and its subcommands/hooks — only the package-level initializers/finalizers slices and the OnInitialize/OnFinalize functions are shown (cobra.go:42-43, 99-107). The related preRun/postRun methods (command.go:1015-1022, e10/e11) appear in the \"related\" list but no snippet/body for them is included in the response, so I cannot say whether they read shared instance state.",
+  "responded_at": "2026-09-05T13:50:53Z",
+  "sha256": "bad14c2b8db6a9f05a26dd7d9ab1e0f22e23e5ae81b0cd8bb0cbe6e3906a8097"
+}

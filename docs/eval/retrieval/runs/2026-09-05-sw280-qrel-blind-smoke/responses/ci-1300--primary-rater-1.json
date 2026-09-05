@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1300",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "107b8e26f5790a9e06f4ef4a9f0ce1fe6fc2e1a51b02396f59752d530fa489b3",
+  "bundle_sha256": "969930e6137f098e8bbc0cc6e62958e85bc79172e8bc90d768a7c617efabf6e8",
+  "prompt_sha256": "9432bae745bcad36ee15df65c495d53efd138a0ac9f012d2330e84e366bb2ecf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To validate flags when they get set, Cobra provides several validation methods:\n\n1. **ValidateRequiredFlags()** (command.go:1147): Validates that all required flags are present. This method checks if any flags marked as required have been set, and returns an error if they're missing.\n\n2. **ValidateFlagGroups()** (flag_groups.go:81): Validates the mutuallyExclusive/oneRequired/requiredAsGroup logic. This is called to check flag group constraints after parsing. It handles three types of flag group validations:\n   - validateOneRequiredFlagGroups (flag_groups.go:167): Ensures at least one flag in a group is set\n   - validateExclusiveFlagGroups (flag_groups.go:188): Ensures only one flag in a group is set\n   - Required-together validation: Ensures if any flags in a group are set, all must be set\n\n3. **MarkFlagsRequiredTogether()** (flag_groups.go:33): Marks given flags with annotations so that Cobra errors if the command is invoked with a subset (but not all) of the given flags.\n\nThe validation happens through flag group annotations that Cobra checks during command execution. The Flags() method (command.go:1643) returns the complete FlagSet that applies to the command, which contains all the flag definitions needed for validation.\n\nThese validation methods should be called during command execution to ensure flag constraints are met before processing command logic.",
+  "responded_at": "2026-09-05T13:50:49Z",
+  "sha256": "867199dd68582b8bf2a20469de1fe7ac43ca67ef7a3c4d2f8916e85576ef60e7"
+}

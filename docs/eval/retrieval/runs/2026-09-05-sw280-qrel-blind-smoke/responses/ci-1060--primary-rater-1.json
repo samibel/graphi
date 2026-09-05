@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1060",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "4ea276c2c7e0e683f1bc824ff8028517289d8d714f75a34f70e75d48a1ef0cff",
+  "bundle_sha256": "592bc94ac250bc8009122cb15d7aeaf50e32327d0ab920693c15cc002aa9b231",
+  "prompt_sha256": "9ca371ad84abd685d4641e28ac1fa93cbcb89abb0b40dbbb9670dded3d9c5ba9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To invoke a subcommand by default in Cobra, use the Execute() or ExecuteC() methods. The Execute() method (command.go:1038) uses os.Args[1:] by default and runs through the command tree to find the matching subcommand. ExecuteC() (command.go:1052) is the context-aware variant that performs the actual execution. For a default help subcommand specifically, call InitDefaultHelpCmd() (command.go:1229), which automatically adds a help command and is invoked when executing the command or calling help and usage. The Find() method (command.go:726) locates the target command in the hierarchy based on the provided arguments.",
+  "responded_at": "2026-09-05T13:43:56Z",
+  "sha256": "185a5157e3b92fa19a144bd321c1df72c14bcb4265b3ae4886b48534d707010e"
+}

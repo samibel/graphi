@@ -1,0 +1,13 @@
+To change the unknown command error code, use the `Command.SetFlagErrorFunc()` method at command.go:318 to provide a custom error handler function. The method signature is:
+
+func (c *Command) SetFlagErrorFunc(f func(*Command, error) error)
+
+This allows you to set a custom function that generates an error when flag parsing fails. The function will be called instead of returning the default error. You can also use the `Command.FlagErrorFunc()` method at command.go:500 to retrieve either the function set by SetFlagErrorFunc for this command or a parent's function.
+
+The error messages for unknown commands are generated using the format "unknown command %q for %q" (as seen in the NoArgs validator at args.go:42), which can be customized by implementing your own error function through SetFlagErrorFunc.
+
+Evidence:
+- command.go:318 - SetFlagErrorFunc method definition
+- command.go:500 - FlagErrorFunc method that retrieves or returns the error handler
+- args.go:42 - NoArgs function showing the default error message format
+- command_test.go:2747 - TestUnknownFlagShouldReturnSameErrorRegardlessOfArgPosition test case validating error behavior

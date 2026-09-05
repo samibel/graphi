@@ -1,0 +1,10 @@
+Sanity checks for positional command-line args belong in args.go, written as a `PositionalArgs` function and assigned to a `Command`'s `Args` field.
+
+Evidence:
+- args.go:22 (snippet e137, span 22-34) defines the type: `type PositionalArgs func(cmd *Command, args []string) error`, and the surrounding comment describes validators like `legacyArgs` (args.go:28) that check subcommand/argument validity.
+- args.go:36-48 (snippet e134) shows `NoArgs` (args.go:42), a concrete example: `func NoArgs(cmd *Command, args []string) error { if len(args) > 0 { return fmt.Errorf(...) } return nil }`.
+- The check is invoked centrally from command.go:1139 via `(c *Command) ValidateArgs(args []string) error` (snippet e135, span 1133-1145): `if c.Args == nil { return ArbitraryArgs(c, args) }; return c.Args(c, args)`. So `Command.Args` (a `PositionalArgs` value set in args.go) is what actually runs the sanity check, dispatched through `ValidateArgs`.
+- Other related validators are also in args.go: `ArbitraryArgs` (args.go:69) and `MinimumNArgs` (args.go:74), confirming args.go is the file where these argument-count/content checks are collected.
+- args_test.go (e.g. args_test.go:23 `getCommand`, and the many `TestExactArgs...`, `TestRangeArgs...`, `TestMinimumNArgs...` functions at args_test.go:214-509) is the corresponding test file that exercises these checks, showing the pattern for testing a new sanity check.
+
+So: write the new check as a function matching `func(cmd *Command, args []string) error` in args.go, then set it as a `Command`'s `Args` field (or add it to `legacyArgs`-style default handling) — it will be invoked automatically through `Command.ValidateArgs` in command.go, and tested in args_test.go.

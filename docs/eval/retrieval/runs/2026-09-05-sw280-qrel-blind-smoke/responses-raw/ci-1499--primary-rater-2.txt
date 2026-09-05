@@ -1,0 +1,29 @@
+Call Command.RemoveCommand(cmds ...*Command) on the parent command, passing the child command(s) to remove.
+
+Evidence: command.go:1362-1368 (ref_id e1/085c68594070e1f5) defines:
+
+    // RemoveCommand removes one or more commands from a parent command.
+    func (c *Command) RemoveCommand(cmds ...*Command) {
+        commands := []*Command{}
+    main:
+        for _, command := range c.commands {
+            for _, cmd := range cmds {
+                if command == cmd {
+                    command.parent = nil
+
+It iterates the parent's c.commands, and for any command matching one of the ones passed in, drops it from the retained list (and clears its parent pointer), leaving the rest in place — so it removes only the specified command(s), not all of them.
+
+A concrete usage example is in completions_test.go:2417-2423 (ref_id e2/2079415768bacab3, snippet e72), the removeCompCmd helper:
+
+    func removeCompCmd(rootCmd *Command) {
+        // Remove completion command for the next test
+        for _, cmd := range rootCmd.commands {
+            if cmd.Name() == compCmdName {
+                rootCmd.RemoveCommand(cmd)
+                return
+            }
+        }
+
+This finds the specific default/auto-added subcommand by name (here the default "completion" command, compCmdName) among rootCmd's children and calls rootCmd.RemoveCommand(cmd) on it — i.e., to remove a default "use: XXX [command]" that was auto-registered on a parent, locate it via its Name() (which derives from the Use string, per Command.Name() at command.go:1496: it takes c.Use and truncates at the first space) among the parent's commands and call parentCmd.RemoveCommand(thatCmd).
+
+The response also lists two directly relevant tests — TestRemoveCommand (command_test.go:1450) and TestReplaceCommandWithRemove (command_test.go:1462) — which exercise this same RemoveCommand behavior, though their bodies are not included in the response bytes.

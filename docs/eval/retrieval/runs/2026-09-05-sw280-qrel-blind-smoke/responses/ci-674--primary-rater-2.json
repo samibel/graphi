@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-674",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a99ae0596e3c3fb12a0c211a4fc8f2cb9255fa7f1a7eb8441fdba5c495634b73",
+  "bundle_sha256": "713e7dbbed04a5e1c232394e9d5e4277bbfdbbc18a203f1cbe8a9c770cf6f85a",
+  "prompt_sha256": "bf6fefa854ea47409b1b3f668242cdc3f0de131afc749d192afdf0ddd638be52",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response only surfaces subcommand registration and flag-introspection material (site/content/user_guide.md:191 \"Organizing subcommands\" via `AddCommand`; site/content/user_guide.md:288 \"Local Flag on Parent Commands\" via `Command.TraverseChildren`; command.go's `NonInheritedFlags`/`InheritedFlags`/`HasAvailableFlags`; doc/md_docs.go and doc/rest_docs.go's `printOptions`/`printOptionsReST` doc generators; command_test.go's `TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag`), none of which describes a mechanism for a root command to invoke a shared method for every submodule/subcommand after flag parsing completes (e.g. no `PersistentPreRun`, `cobra.OnInitialize`, or `Execute()` call-chain evidence is present).",
+  "responded_at": "2026-09-05T13:55:23Z",
+  "sha256": "41ffc64563e06ecae1aec35117c3c10c00938a47c0bd6632027b2ad5d01bd879"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-852",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "3ad7f4beccc891643f191938faf997e9c71425fe39f63f527940c3415bb7b98c",
+  "bundle_sha256": "38e792c6da68d211f04455afa21a029b44c8798c05890db4449ee6f214bfdefb",
+  "prompt_sha256": "2c4843c33fc4efc1ead63f9bb19ca7f30515c45869f66c087e0eabe4f70ad844",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response only documents the order in which PersistentPreRun, PreRun, and Run execute (site/content/user_guide.md:599-611, e1/e104: \"PersistentPreRun\" then \"PreRun\" then \"Run\") and shows tests verifying that ordering via a shared string slice `hookRunOrder` (command_test.go:1562-1590, e105/e107), plus the unrelated `preRun()`/`postRun()` methods that just call `initializers` (command.go:1009-1021, e106); none of the evidence describes or demonstrates a mechanism (e.g. command struct fields, closures, flags, or cmd.Context()) for passing parameters from PersistentPreRun into Run.",
+  "responded_at": "2026-09-05T13:55:58Z",
+  "sha256": "1236daa0604c7e675fdf41aa5dd255dfdbcf399d0369aca776b2135e4b930eca"
+}

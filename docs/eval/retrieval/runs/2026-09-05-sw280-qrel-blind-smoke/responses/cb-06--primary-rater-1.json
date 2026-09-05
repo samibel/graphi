@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-06",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "ec7908152ae3725b160dc4a6176375d30bc0fa9f191fc9480efa26f617755999",
+  "bundle_sha256": "8656800793c3cf3ae91424a2722c5ffa6c34d57b4b2d9cd05915018ee40eee28",
+  "prompt_sha256": "157c3230dabe0d228fbbd5d5cbc9edd74126ff60f1c67aea8dec96d89bee760c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "GenZshCompletionNoDesc is a method on the cobra.Command type, located at zsh_completions.go:42. According to the evidence (e33, spanning lines 36-48), it takes an io.Writer parameter and returns an error. The implementation calls c.genZshCompletion(w, false). The method generates zsh completion output without descriptions and writes it to the passed writer. It is related to GenZshCompletionFileNoDesc (zsh_completions.go:36) and genZshCompletion (zsh_completions.go:80), which are called by or related through the internal genZshCompletion helper function.",
+  "responded_at": "2026-09-05T13:42:15Z",
+  "sha256": "8d80c50958ed9046252f5cf91eada83129c86822912ed787ca0aaf21503a74f7"
+}

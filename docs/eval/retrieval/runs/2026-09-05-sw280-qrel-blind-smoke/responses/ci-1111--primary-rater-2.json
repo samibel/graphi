@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1111",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "675b6a84029da3aab14f51cd58cae327396fd667be07fa37d0cfb7f5f4c612c0",
+  "bundle_sha256": "1961644f2d27aa36b1be15016098b9255b90083e86a6cc5091fadec03a7694c4",
+  "prompt_sha256": "2d71d9632369198358adb143c059606111eccb9b4a6a9d6801871978393ecb7e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response contains no evidence for the specific message \"Run '%s --help' for usage.\" or the code path that emits it; the snippets only cover Command.Help() (command.go:473-479), Command.HelpFunc()/Usage() (command.go:446-458), Command.InitDefaultHelpCmd() (command.go:1223-1235), and the docs on Active Help, the Usage Message, and the Help Command (site/content/user_guide.md:486-498, 548-560; site/content/active_help.md:1-7), none of which reference that literal string, a flag to suppress it, or fields such as SilenceUsage/SilenceErrors that would control it.",
+  "responded_at": "2026-09-05T13:49:55Z",
+  "sha256": "3a3f30b0a3a674492525e311bd49c2c449a4101353645984b5f68b10f06e893d"
+}

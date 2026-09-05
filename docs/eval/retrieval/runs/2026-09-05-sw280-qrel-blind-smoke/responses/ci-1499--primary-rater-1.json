@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1499",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "7af27b154b8a077f896333b21fc0bde760288c78c867e43ab929f2bd95f2ab4a",
+  "bundle_sha256": "c1828fe28853af88d49990b5558af69599b478cc6b709c6de27eacb29f40941b",
+  "prompt_sha256": "e80352c895a0993a1ba75b7deca00fad9c71ba736c1be0be7953b729cf0ffb4f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To remove the default \"use: XXX [command]\" command, use the **RemoveCommand()** method.\n\nThe primary evidence is from **command.go:1362** (evidence_ref e1), which defines the method:\n\n```go\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n```\n\nThis is the top-ranked result (score 300) and is demonstrated in a test helper function at **completions_test.go:2417** (evidence_ref e2), which shows practical usage:\n\n```go\nfunc removeCompCmd(rootCmd *Command) {\n\t// Remove completion command for the next test\n\tfor _, cmd := range rootCmd.commands {\n\t\tif cmd.Name() == compCmdName {\n\t\t\trootCmd.RemoveCommand(cmd)\n\t\t\treturn\n\t\t}\n\t}\n}\n```\n\nAdditionally, you can prevent the default help command from being initialized in the first place by leveraging **InitDefaultHelpCmd()** at **command.go:1229** (evidence_ref e3), which only adds the default help command if the command has subcommands. The documentation in **site/content/user_guide.md:541** (evidence_ref e4) also mentions you can provide your own help command using `SetHelpCommand(cmd *Command)` to customize or replace the default help behavior entirely.",
+  "responded_at": "2026-09-05T13:51:26Z",
+  "sha256": "8dbbd76dbc99c51014010bab1fea69d77e68601f1da69bdec30bb2373f04393d"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-470",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "5338d7484494d64ae31ba559d0827d5ee620499598e4d600dd2c0c9b0182e596",
+  "bundle_sha256": "6576e59e7f28ba55303b6948b844fc7dc54fc66cce5f17decfa915f632da2c78",
+  "prompt_sha256": "275b06944f502682cfb29558cc11199f78d57c5a6f8e2c741f33a4bb0ab55e4c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To call the help command on demand, use the Help() method on a Command object (command.go:473), which \"puts out the help for the command\" by calling c.HelpFunc()(c, []string{}) per the snippet (e62). Alternatively, invoke the help command through the CLI: Cobra automatically adds a help command when you have subcommands, called via 'app help' or 'app help \u003ccommand\u003e' (site/content/user_guide.md:492, e65). For custom implementations, define your own help command using SetHelpCommand(cmd *Command) as documented in site/content/user_guide.md:541-547 (e64). The default help command is initialized automatically via InitDefaultHelpCmd() (command.go:1229, e63), which \"is called automatically by executing the c or by calling help and usage.\"",
+  "responded_at": "2026-09-05T13:54:36Z",
+  "sha256": "bc55c5d71774138922b4d0862ecb41de986e5dd7330b4b48501a14277b5c9c91"
+}

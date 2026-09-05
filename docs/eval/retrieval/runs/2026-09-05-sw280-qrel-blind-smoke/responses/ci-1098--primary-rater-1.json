@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1098",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a98ff40516eac33308f8bf1ee1248da09835c666c1eded124ed3856f40827c67",
+  "bundle_sha256": "facb06a81d237ae9b2ae46ccbd84b4764f1f631ec391b89d8848af84af3b0317",
+  "prompt_sha256": "73e4b8e491cb85ff5fbf19210019cd04890ead9280632fd7827406fe66a1fa10",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To change the unknown command error code, use the `Command.SetFlagErrorFunc()` method at command.go:318 to provide a custom error handler function. The method signature is:\n\nfunc (c *Command) SetFlagErrorFunc(f func(*Command, error) error)\n\nThis allows you to set a custom function that generates an error when flag parsing fails. The function will be called instead of returning the default error. You can also use the `Command.FlagErrorFunc()` method at command.go:500 to retrieve either the function set by SetFlagErrorFunc for this command or a parent's function.\n\nThe error messages for unknown commands are generated using the format \"unknown command %q for %q\" (as seen in the NoArgs validator at args.go:42), which can be customized by implementing your own error function through SetFlagErrorFunc.\n\nEvidence:\n- command.go:318 - SetFlagErrorFunc method definition\n- command.go:500 - FlagErrorFunc method that retrieves or returns the error handler\n- args.go:42 - NoArgs function showing the default error message format\n- command_test.go:2747 - TestUnknownFlagShouldReturnSameErrorRegardlessOfArgPosition test case validating error behavior",
+  "responded_at": "2026-09-05T13:49:51Z",
+  "sha256": "7d40f6e2f1b527b404e58dbec58f4a42dfd8efd0738032222f47f710734698f9"
+}

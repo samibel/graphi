@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-346",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "2893e84e8f7095d0af86f5fcda07860debf395229ce69d73087f1b695801a4b1",
+  "bundle_sha256": "d894fbb948929ab7cf81135d53ceb1ebcfc875607aa29d962a84978ba8400505",
+  "prompt_sha256": "1124969c3f7af87ee85f9bfe69069e507dafbf2fa85ec0c00611c3204a2f3f1b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the command's `Args` field to a `PositionalArgs` validator that requires at least one (or N) positional arguments — the built-in `cobra.MinimumNArgs` — rather than adding a \"required argument\" some other way.\n\nEvidence:\n- `args.go:74` (snippet spans 68-80) defines `MinimumNArgs`: `func MinimumNArgs(n int) PositionalArgs { return func(cmd *Command, args []string) error { if len(args) \u003c n { return fmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args)) } return nil } }`. Assigning this to a command's `Args` field (e.g. `Args: cobra.MinimumNArgs(1)`) makes that many positional arguments required.\n- `args.go:16-28` shows the type this fits: `type PositionalArgs func(cmd *Command, args []string) error`, the signature any custom/built-in validator (including `MinimumNArgs`) must satisfy.\n- `command.go:1139` (`ValidateArgs`, snippet 1133-1145) shows how the field is consumed: `if c.Args == nil { return ArbitraryArgs(c, args) }; return c.Args(c, args)`. So if you don't set `Args`, `ArbitraryArgs` (`args.go:69`, \"ArbitraryArgs never returns an error\") is used instead and no argument is required — you must explicitly set `Args` to enforce a required argument.\n- `site/content/user_guide.md:367` (snippet 361-373), section \"Positional and Custom Arguments\": \"Validation of positional arguments can be specified using the `Args` field of `Command`. The following validators are built in: - Number of arguments: - `NoArgs` - report an error if there are any positional args.\" (the built-in list continues past the truncated snippet, which is where `MinimumNArgs`/`ExactArgs`-style validators are documented).\n\nSo concretely: on your `*cobra.Command`, set `Args: cobra.MinimumNArgs(1)` (or a custom `func(cmd *cobra.Command, args []string) error` matching `PositionalArgs`) to require at least one argument; leaving `Args` nil falls back to `ArbitraryArgs`, which accepts any number of arguments including zero.",
+  "responded_at": "2026-09-05T13:54:24Z",
+  "sha256": "51560620183fe7760c76847f7adf649fb4c21c6f3cba62985c0066d7a347fa60"
+}

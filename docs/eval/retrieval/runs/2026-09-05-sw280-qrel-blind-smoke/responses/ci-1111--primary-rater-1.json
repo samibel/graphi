@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1111",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "675b6a84029da3aab14f51cd58cae327396fd667be07fa37d0cfb7f5f4c612c0",
+  "bundle_sha256": "1961644f2d27aa36b1be15016098b9255b90083e86a6cc5091fadec03a7694c4",
+  "prompt_sha256": "2d71d9632369198358adb143c059606111eccb9b4a6a9d6801871978393ecb7e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To disable the message \"Run 'xxxxx --help' for usage.\", you can use one of these approaches:\n\n1. Set a custom help function using `SetHelpFunc()`:\n   cmd.SetHelpFunc(f func(*Command, []string))\n\n2. Set a custom help template using `SetHelpTemplate()`:\n   cmd.SetHelpTemplate(s string)\n\nAccording to the evidence from site/content/user_guide.md (lines 548-560), both methods allow you to customize the help behavior and will apply to any children commands. By implementing your own help function or template, you can omit or customize the \"Run '--help' for usage\" message entirely.\n\nThe default behavior is implemented in command.go's Help() method (line 473) and HelpFunc() method (line 452), which use the default help function. By overriding these with SetHelpFunc() or SetHelpTemplate(), you gain complete control over what message is displayed.",
+  "responded_at": "2026-09-05T13:49:53Z",
+  "sha256": "cedd32c43058d6611b77b39f6c267a024bbd7b1943ee5291dc15a6ccd30bcdb4"
+}

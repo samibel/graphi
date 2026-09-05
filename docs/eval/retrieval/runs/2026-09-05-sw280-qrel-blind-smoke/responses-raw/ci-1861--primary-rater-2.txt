@@ -1,0 +1,14 @@
+Sub-commands are discovered by walking the unexported `commands []*Command` slice stored on each `cobra.Command` (type defined at command.go:51), and execution is kicked off through `Execute`/`ExecuteC`.
+
+Discovery:
+- `HasSubCommands` (command.go:1556-1558): `func (c *Command) HasSubCommands() bool { return len(c.commands) > 0 }` — cheapest existence check.
+- `HasAvailableSubCommands` (command.go:1617 area, snippet at 1611-1623): iterates `for _, sub := range c.commands { if sub.IsAvailableCommand() { return true } }`, i.e. it dynamically walks the child list and filters out deprecated/hidden/help commands via `IsAvailableCommand` (command.go:1562, snippet 1556-1568): a command is unavailable if `len(c.Deprecated) != 0 || c.Hidden`, or if it is the parent's auto-generated help command (`c.HasParent() && c.Parent().helpCommand == c`).
+- `HasHelpSubCommands` (command.go:1603, snippet 1597-1609) does the analogous walk but tests `sub.IsAdditionalHelpTopicCommand()` to find help topics.
+- `InitDefaultHelpCmd` (command.go:1229, snippet 1223-1235) also checks `HasSubCommands()` before lazily attaching a default `help` command as one of `c.commands`.
+
+Execution:
+- `Execute()` (command.go:1038, snippet 1032-1044): `func (c *Command) Execute() error { _, err := c.ExecuteC(); return err }`.
+- `ExecuteContext`/`ExecuteContextC` (command.go:1030 and 1046, snippet 1046-1058) are thin wrappers that set `c.ctx` and then also call into `ExecuteC()`.
+- `ExecuteC()` (command.go:1052) is the real entry point: it defaults `c.ctx` to `context.Background()` if unset, then — per the comment in the snippet — "Regardless of what command execute is called on, run on Root only" when `c.HasParent()` is true, i.e. it walks up to the root command before doing the actual dispatch. The evidence graph shows `ExecuteC` calling out to `Traverse` (command.go:790, referenced at command.go:1088) for parsing/traversing the command tree, plus `checkCommandGroups`, `InitDefaultHelpCmd`, `InitDefaultCompletionCmd` (completions.go:683), and various `Print*`/`DebugFlags` helpers, but the response's snippet for `ExecuteC` is truncated at line 1058 (right after the `HasParent()` check begins), so the exact subcommand-matching/argument-splitting logic inside `ExecuteC` (beyond calling `Traverse`) is not included in this response.
+
+In short: check/enumerate via `c.commands` + `HasSubCommands`/`HasAvailableSubCommands`/`IsAvailableCommand`, then execute via `Command.Execute()` -> `Command.ExecuteC()`, which normalizes to the root command and uses `Traverse` (command.go:790) to walk the discovered sub-command tree before running the matched command.

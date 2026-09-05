@@ -1,0 +1,9 @@
+To enforce the number of arguments required in Cobra, use one of these built-in validators on the Command.Args field:
+
+1. **ExactArgs(n)** (args.go:94) - Enforces exactly n arguments. Returns error if len(args) != n, with message "accepts %d arg(s), received %d" (e54).
+
+2. **MinimumNArgs(n)** (args.go:74) - Enforces at least N arguments. Returns error if len(args) < n, with message "requires at least %d arg(s), only received %d" (e57).
+
+3. **RangeArgs(min, max)** (args.go:104) - Enforces arguments are within a range. Returns error if len(args) < min OR len(args) > max, with message "accepts between %d and %d arg(s), received %d" (e53).
+
+All validators implement the PositionalArgs function type (args.go:22, e59) with signature `func(cmd *Command, args []string) error`. Documentation at site/content/user_guide.md:367 (e56) confirms these are built-in argument validators under "Positional and Custom Arguments."

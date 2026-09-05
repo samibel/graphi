@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1505",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "96ab4f93ae7fef5c2718a8016cc91052051032472841cf62090392c1df46369c",
+  "bundle_sha256": "3733be512a3536c36bd23dda0c1a86f1c67121fc6aaf8a208899389e6dca2bb5",
+  "prompt_sha256": "3c0a87a335d2fb877c4f538ec0489af5c20d399da95a10dd7bf157769eda1c50",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `SetHelpCommand` to install a replacement (or a no-op/hidden) help command on the root command, which prevents Cobra's automatic default from ever being installed; if the default has already been installed, remove it explicitly with `RemoveCommand`.\n\nEvidence for this:\n\n1. site/content/user_guide.md:492 (\"Help Command\" section) states: \"Cobra automatically adds a help command to your application when you have subcommands. This will be called when a user runs 'app help'.\" (e65, lines 486-498) — confirming the default help command is auto-added rather than something you must opt into.\n\n2. site/content/user_guide.md:541 (\"Defining your own help\") states: \"You can provide your own Help command or your own template for the default command to use with the following functions:\" followed by `cmd.SetHelpCommand(cmd *Command)` (e64, lines 535-547). This is the documented API for overriding/replacing the default help command on a command (e.g. your root command).\n\n3. command.go:1229, `func (c *Command) InitDefaultHelpCmd()` — the method Cobra calls internally to install the default help command — contains the guard: \"If c already has help command or c has no subcommands, it will do nothing.\" The snippet (e63, lines 1223-1235) shows the actual check:\n   ```go\n   func (c *Command) InitDefaultHelpCmd() {\n       if !c.HasSubCommands() {\n           return\n       }\n       if c.helpCommand == nil {\n           c.helpCommand = \u0026Command{\n   ```\n   Because this only assigns `c.helpCommand` when it is `nil`, calling `rootCmd.SetHelpCommand(...)` before execution (which sets `c.helpCommand` to your own command) makes this guard skip installing Cobra's default help command entirely — effectively \"removing\" it by preemption.\n\n4. If the default help command has already been added (e.g. after `Execute()` has run once), it can be removed generically via command.go:1362, `func (c *Command) RemoveCommand(cmds ...*Command)`: \"RemoveCommand removes one or more commands from a parent command.\" (e67, lines 1356-1368):\n   ```go\n   func (c *Command) RemoveCommand(cmds ...*Command) {\n       commands := []*Command{}\n   main:\n       for _, command := range c.commands {\n           for _, cmd := range cmds {\n               if command == cmd {\n                   command.parent = nil\n   ```\n   You would locate the help command among `rootCmd.Commands()` (command.go:1293, listed as a related method) and pass it to `RemoveCommand`.\n\nIn short: prevent it up front with `rootCmd.SetHelpCommand(...)` (documented in site/content/user_guide.md:541, and effective because of the nil-check in `InitDefaultHelpCmd` at command.go:1229-1235), or strip it after the fact with `rootCmd.RemoveCommand(...)` (command.go:1362).",
+  "responded_at": "2026-09-05T13:51:50Z",
+  "sha256": "b99f43f52d4d64999fa0a2d6442490568d597a67c7d6a2de72039229ee8834f6"
+}

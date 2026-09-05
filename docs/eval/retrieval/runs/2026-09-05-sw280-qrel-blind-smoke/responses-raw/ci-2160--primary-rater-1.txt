@@ -1,0 +1,16 @@
+To add an entry to the `Available Commands` help section, you need to create a subcommand that passes the IsAvailableCommand() check.
+
+Based on evidence from command.go (lines 1556-1568), a command is available for display in "Available Commands" when it:
+1. Is not deprecated (Deprecated field is empty)
+2. Is not hidden (Hidden is false)
+3. Is not the parent command's help command itself
+
+The key method HasAvailableSubCommands() (command.go, lines 1611-1623) iterates through all subcommands and checks if any pass IsAvailableCommand(), determining whether the "Available Commands" section is displayed.
+
+To add an entry:
+1. Create a new Command instance
+2. Add it as a subcommand to the parent command
+3. Keep the Deprecated field empty and Hidden set to false
+4. The command will automatically appear in the "Available Commands" section of the help output
+
+The InitDefaultHelpCmd() method (command.go, lines 1223-1235) shows that the help system is automatically initialized when subcommands are present, and it manages how available commands are displayed in the help template.

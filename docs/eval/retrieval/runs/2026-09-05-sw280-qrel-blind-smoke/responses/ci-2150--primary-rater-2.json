@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2150",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "d3824c250ee8631cd47a119b9567ad61dbb8a472469ecb13b9f0dfeed7050664",
+  "bundle_sha256": "051a47861b52b3b44ca55d6f0b3b5775bc68f097d8c95d287bd61e45617ee917",
+  "prompt_sha256": "b6078c4cdddc4a8648aa730e9bc30ebc84f5a194e0113a083ff3d40909e645ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response only shows mechanisms for hiding whole flags (flag.Hidden and flag.Deprecated, checked by nonCompletableFlag in bash_completions.go:699) and for suppressing a flag's own default value via NoOptDefVal (shortHasNoOptDefVal, command.go:631), plus doc/yaml_docs.go:149's genFlagResult which walks flags for doc generation; none of these snippets show a setting or code path that hides the \"default: X\" text specifically from rendered help/usage output.",
+  "responded_at": "2026-09-05T13:53:02Z",
+  "sha256": "c8851ee711e8cf0cf7eaa0a8a28cc17cacb76c1b8a5083cd0f55ee339a6f0299"
+}

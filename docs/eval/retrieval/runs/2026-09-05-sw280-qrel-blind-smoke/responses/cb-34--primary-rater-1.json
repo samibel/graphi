@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-34",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66",
+  "bundle_sha256": "36fdfc2287d0ec947dd76fd1deb928a92e99cc54ee9644d94bc3192b3e10046f",
+  "prompt_sha256": "cb2f94cf64b2935178cd19ace5715e052e816c2a3b1ccc607c29318a79c7414c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In this Cobra framework repository, \"Usage\" refers to the command usage display mechanism. The primary entry points are five methods on the Command type (command.go):\n\n1. **cobra.Command.Usage** (command.go:446) — The main method that \"puts out the usage for the command. Used when a user provides invalid input. Can be defined by user by overriding UsageFunc\" (snippet e37).\n\n2. **cobra.Command.UsageFunc** (command.go:426) — Returns either the function set by SetUsageFunc for this command or a parent, or a default usage function (snippet e36).\n\n3. **cobra.Command.SetUsageFunc** (command.go:307) — Allows developers to set a custom usage function. The documentation notes \"Usage can be defined by application\" (snippet e33).\n\n4. **cobra.Command.UsagePadding** (command.go:516) — Returns padding for the usage display, with a minimum of 25 characters or the parent's command max use length (snippet e35).\n\n5. **cobra.Command.UsageTemplate** (command.go:544) — Returns the usage template, inheriting from parent if not defined (snippet e40).\n\nThe framework also documents this capability in site/content/user_guide.md:583, which explains \"Defining your own usage\" through public methods SetUsageFunc and SetUsageTemplate (snippet e34).\n\nThe Command type itself is defined at command.go:51 with the note that \"Cobra requires you to define the usage and description as part of your command definition to ensure usability\" (snippet e38).",
+  "responded_at": "2026-09-05T13:43:44Z",
+  "sha256": "7758b3c482775387c2c77fe06246c522b061e0f278ec47a69db8a79e6f2f6c2e"
+}

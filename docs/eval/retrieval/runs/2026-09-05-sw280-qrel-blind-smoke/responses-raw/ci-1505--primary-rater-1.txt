@@ -1,0 +1,9 @@
+Based on the response evidence, there are two main approaches to remove the default help command from the root command:
+
+1. Using RemoveCommand: The RemoveCommand method (command.go:1362) can remove one or more commands from a parent command. This method can be used to remove the default help subcommand that Cobra automatically adds.
+
+2. Using SetHelpCommand: The documentation at site/content/user_guide.md:541 ("Defining your own help") references SetHelpCommand as a function that allows you to provide your own help command or customize the default one. This same approach could be used to remove or disable the help command by setting it appropriately.
+
+The default help command is automatically added by Cobra when you have subcommands (site/content/user_guide.md:492: "Cobra automatically adds a help command to your application when you have subcommands"). It is added by the InitDefaultHelpCmd method (command.go:1229), which adds a default help command to a Command if it doesn't already have one and if the command has subcommands.
+
+To remove it, you would use either RemoveCommand to remove the help subcommand from your root command's command list, or SetHelpCommand to replace or disable the default implementation.

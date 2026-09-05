@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-43",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "cda3f0a7b94dc4e6c878ad20bbceac74035f6e45faa7f4a103d513b52a8cd182",
+  "bundle_sha256": "86ede99dc49c3ccae932eb8a8fbef1fca0b06824a4994996159c144300216d6b",
+  "prompt_sha256": "df647c45a9141a284613e9b0101ec52620efdcb2fbacd33f4b7e4280fc75a7ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No — the response gives no evidence that a command's own discoverability depends on whether its parent is runnable; the availability check only looks at the command's own flags.\n\ncommand.go:1562-1568 (e60), `IsAvailableCommand`:\n    func (c *Command) IsAvailableCommand() bool {\n        if len(c.Deprecated) != 0 || c.Hidden {\n            return false\n        }\n        if c.HasParent() \u0026\u0026 c.Parent().helpCommand == c {\n            return false\n        ...\n\nThis is the only \"availability\"/discoverability gate in the snippets, and it checks exactly two things: (1) the command's own `Deprecated`/`Hidden` fields, and (2) whether the command itself is literally its parent's auto-generated `helpCommand`. Neither condition inspects `Parent().Runnable()` — a command is not excluded merely because its parent lacks a `Run`/`RunE`.\n\n`Runnable()` itself (command.go:1551, e61) is defined purely locally: `return c.Run != nil || c.RunE != nil` — it says nothing about parents or children.\n\n`HasAvailableSubCommands` (command.go:1617, e62) walks `c.commands` and includes a sub-command if `sub.IsAvailableCommand()` returns true — again gated only by that sub-command's own Hidden/Deprecated/help-command status, not by whether `c` (the parent) is itself runnable.\n\nThe closest concept to \"un-runnable parent\" in the evidence is `IsAdditionalHelpTopicCommand` (command.go:1583, e64): a command that is itself not runnable, not deprecated, not hidden, and has no runnable sub-commands is classified as a \"help topic\" command — but that logic is about the command's own runnability plus its children's, not about its parent's runnability, and being a help-topic command is a documentation classification, not a suppression of discoverability (it is explicitly excluded from the \"not available\" check in `IsAvailableCommand`, which never even references `IsAdditionalHelpTopicCommand`).\n\n`hasSeeAlso` (doc/util.go:26, e63) filters a parent's children for the \"See Also\" doc section using `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()` — again per-child, keyed off each child's own state, not the parent's runnability.\n\nSo based strictly on this response: commands are not deliberately hidden/undiscoverable because their parent is un-runnable. Discoverability (`IsAvailableCommand`, `HasAvailableSubCommands`, the `hasSeeAlso` doc filter) is driven entirely by each command's own `Hidden`/`Deprecated` flags and whether it is its parent's synthesized help command — parent runnability plays no role in any of the cited functions.",
+  "responded_at": "2026-09-05T13:54:39Z",
+  "sha256": "7c83fe06f5974a638b18420c16d46fcb9e50e69deada044131b2a9a33dbbe4ec"
+}

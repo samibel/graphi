@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1564",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "80a1164c08e42d80f288e48632a886299aec0b0591c56e1472486a3b45426632",
+  "bundle_sha256": "fa6824af19f16887110f75530575e533b4d96464c5e824d915fbb5e499ecb405",
+  "prompt_sha256": "c7b901d5f85dddfd29de67226a23e9a1f023bebf1c28b054a42f335d43a54d6f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Write the arguments directly into the command's `Use` field, following Cobra's documented syntax convention for that one-line usage message.\n\nEvidence: in command.go (ref e56, lines 45-57), the `Command` struct's `Use` field is commented as \"the one-line usage message\" with the \"Recommended syntax\": \"[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\", \"... indicates that you can specify multiple values for the previous argument.\", and \"| indicates mutually exclusive information. You can use the argument to the left of the separator or the argument to the right of the separator.\" So to make an argument appear in the usage text, you type it into `Use` (e.g. `Use: \"mycmd [arg1] arg2...\"`), bracketing optional args, leaving required ones bare, and using `...` / `|` for repeated or mutually-exclusive args respectively.\n\nThat `Use` string is what gets shown as usage: `Command.Usage()` (command.go:446, ref e5/e54) calls `c.UsageFunc()(c)` to print it, and `UsageFunc` (command.go:426, ref dfb49659eaf139d8/e18) supplies the default usage-rendering function.\n\nIf instead you want to change how/what is displayed beyond editing `Use` (e.g. a fully custom usage layout), site/content/user_guide.md's \"Defining your own usage\" section (ref e51, lines 577-589) says you can override the default with:\ncmd.SetUsageFunc(f func(*Command) error)\ncmd.SetUsageTemplate(s string)",
+  "responded_at": "2026-09-05T13:51:49Z",
+  "sha256": "158661b393b52a5e13dbd154191fc325f8c40fe432d44b7385582be8854a23f5"
+}

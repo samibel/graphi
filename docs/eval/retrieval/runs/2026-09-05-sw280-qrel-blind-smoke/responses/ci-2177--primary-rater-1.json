@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2177",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "8daee77d7a6a1ccf1ee5f8f8c98aafe562d9a1bd8262bd8e55caf92c67fea998",
+  "bundle_sha256": "33fa1d97f04f64f10d7fa54a78c771c5a85568a7df4a94546be2cb3b5dd1b585",
+  "prompt_sha256": "cf2b436230cc950261b8064cb9ce88837a2bbd3f0c712934aede0364a91c103f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains information about marking flags as required (MarkFlagRequired, MarkFlagsOneRequired, MarkPersistentFlagRequired) and flag groups, but does not show a specific API method for marking one flag as a dependency of another flag (e.g., making flag B conditionally required when flag A is used).",
+  "responded_at": "2026-09-05T13:53:26Z",
+  "sha256": "0f518dc2be0628a45a2521d72f8fefbd543ccbccc37ab73af407d07346783e35"
+}

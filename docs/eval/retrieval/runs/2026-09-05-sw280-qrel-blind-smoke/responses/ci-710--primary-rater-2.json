@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-710",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "ba44ea13b5f29a121bbb86df0ba84da1ba3dd4cee84ead355c26aac53fa7a8bd",
+  "bundle_sha256": "c900a88414c16a786c15507669ae7b8d2e0088aebd8f2bc47625bbea0a9b630a",
+  "prompt_sha256": "343b95e4c5875478fd02f6ce52497221522b02b800342442ceb3b5fa97a19b75",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response surfaces cobra.Command internals for argument validation and tree traversal (e.g. Command.Find at command.go:726, legacyArgs and NoArgs in args.go:22-48, Command.CommandPath at command.go:1426, Command.argsMinusFirstX at command.go:684, Command.getCompletions at completions.go:266) but contains no evidence of any mechanism for passing parameters or data from one command to another (no snippet or reference touches Context/SetContext/ExecuteContext, Annotations, PersistentFlags inheritance, or shared state between parent and child commands), so the question cannot be answered from it.",
+  "responded_at": "2026-09-05T13:55:21Z",
+  "sha256": "2058559fefc60c681d15882f7ea0da13230e814c707f48a18bf482712278d5fc"
+}

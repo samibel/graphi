@@ -1,0 +1,13 @@
+Hidden and deprecated commands are excluded from help output through the `IsAvailableCommand()` method in command.go (lines 1562-1568). This method checks two conditions:
+1. Whether the command's `Deprecated` field is non-zero: `len(c.Deprecated) != 0`
+2. Whether the command's `Hidden` flag is set: `c.Hidden`
+
+If either condition is true, the method returns false, marking the command as unavailable for display.
+
+This exclusion mechanism is used in two key places:
+
+1. **HasAvailableSubCommands()** (command.go:1617-1623) - iterates through subcommands and only returns true if it finds one where `sub.IsAvailableCommand()` is true, ensuring only available (non-hidden, non-deprecated) subcommands are shown in the usage/help output.
+
+2. **IsAdditionalHelpTopicCommand()** (command.go:1583-1589) - explicitly checks `if c.Runnable() || len(c.Deprecated) != 0 || c.Hidden` to determine if a command should appear as an additional help topic, filtering out deprecated and hidden commands.
+
+The test `TestHiddenCommandIsHidden` (command_test.go:1771-1777) confirms this behavior by verifying that commands with `Hidden: true` are reported as unavailable by `IsAvailableCommand()`.

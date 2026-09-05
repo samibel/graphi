@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1416",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "12bcba6132ed36666a58b1a54309120bb2e1dde97c68ca221f006500dded932d",
+  "bundle_sha256": "7dda67e6c5861722478f7f8a4fe77dd217b21a56dfa71978f140e79891c63003",
+  "prompt_sha256": "3fe29cf042011c47c4acb83f08de1c27ec47149f272f9b977b362bdf2929be2c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT the response only shows the unexported, no-argument helper `func (c *Command) postRun()` (command.go:1021, snippet at e101/e103), which just loops over a package-level `finalizers` slice and calls each `x()` with no parameters or return value, and its sibling `preRun()`/`initializers` (cobra.go:42-43) — it contains no evidence of the public `PostRun`/`PostRunE` (or `PersistentPostRun(E)`) command hook signature, which is the mechanism that would actually let you pass a command's status (e.g. an error or exit result) into a post-run hook, so the response gives no basis for answering how to do that.",
+  "responded_at": "2026-09-05T13:51:15Z",
+  "sha256": "082dea5b717749cc9032b3e0b30b23bcb60d05d034975c5f7249af2efa6d5d42"
+}

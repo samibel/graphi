@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-470",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "5338d7484494d64ae31ba559d0827d5ee620499598e4d600dd2c0c9b0182e596",
+  "bundle_sha256": "6576e59e7f28ba55303b6948b844fc7dc54fc66cce5f17decfa915f632da2c78",
+  "prompt_sha256": "275b06944f502682cfb29558cc11199f78d57c5a6f8e2c741f33a4bb0ab55e4c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "There are two ways to invoke help \"on demand\" shown in the response, one from the CLI and one from Go code.\n\n1. From the command line: run the app with the auto-added `help` command, or the `--help` flag on any command. This is documented in site/content/user_guide.md:486-498 (evidence e65): \"Cobra automatically adds a help command to your application when you have subcommands. This will be called when a user runs 'app help'. Additionally, help will also support all other commands as input. Say, for instance, you have a command called 'create' without any additional configuration; Cobra will work when 'app help create' is called. Every command will automatically have the '--help' flag added.\" So `app help`, `app help \u003ccommand\u003e`, or `\u003ccommand\u003e --help` all trigger it on demand.\n\n2. From Go code, on a *Command value, call its Help() method directly. command.go:467-479 (evidence e62) gives the source:\n   // Help puts out the help for the command.\n   // Used when a user calls help [command].\n   // Can be defined by user by overriding HelpFunc.\n   func (c *Command) Help() error {\n       c.HelpFunc()(c, []string{})\n       return nil\n   }\n   So `cmd.Help()` runs whatever HelpFunc is currently set for that command.\n\nSupporting context: the default `help` subcommand itself is wired up automatically by InitDefaultHelpCmd (command.go:1229, evidence e63), which the doc comment says \"is called automatically by executing the c or by calling help and usage\" — i.e. it registers the help command the first time the root command executes, or when help/usage is invoked, so you don't normally need to call it yourself. If you want a custom help command or template instead of the default, user_guide.md:535-547 (evidence e64) shows overriding it via `cmd.SetHelpCommand(cmd *Command)`.",
+  "responded_at": "2026-09-05T13:54:44Z",
+  "sha256": "66d30ca246740dfa8f564cce074d100d948721dc7bb1e34b5e5200d23d08a803"
+}

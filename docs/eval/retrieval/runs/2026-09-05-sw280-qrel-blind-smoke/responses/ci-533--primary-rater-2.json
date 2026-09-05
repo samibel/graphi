@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-533",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "95bdc88c437e2a3c9ee0e18c58999265b4c11b894414ddaa0d824d987ae2be4a",
+  "bundle_sha256": "9971019330b44233c263fd523a81dbad73ddc4a9e2403d0a743de20e48d4a0a4",
+  "prompt_sha256": "c81c39ba6476fe1cdf7a7b0ae06dd2a9c7bcfd5b4451b60d0cd2566d3d2a3980",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response contains no evidence about any cobra functionality for parsing a string into command-line arguments (e.g., an args-splitting/shell-lexing helper or something like SetArgs). Its items and snippets only cover README.md:95 (install usage), command.go's UseLine/CommandPath/HasParent/HasAvailableFlags methods, powershell_completions.go's genPowerShellComp/genPowerShellCompletion, doc/*.go generators (GenMarkdownCustom, GenYamlCustom, GenReSTCustom, manPreamble), cobra.go's WriteStringAndCheck, active_help.go's activeHelpEnvVar, and site/content/user_guide.md's Usage Message/Help Command sections — none of which describe parsing an arbitrary string as if it were CLI input.",
+  "responded_at": "2026-09-05T13:54:52Z",
+  "sha256": "a7dbab1c8266096266fc0100aae020c83226f102f66e4821aae5a31c9a619a71"
+}

@@ -1,0 +1,20 @@
+Hidden and deprecated commands are excluded from help output by being filtered out of the "available" command set that the help/usage templates iterate over, rather than by any special-casing inside the help renderer itself.
+
+The core check is `cobra.Command.IsAvailableCommand` (command.go:1562, snippet spans 1556-1568):
+    func (c *Command) IsAvailableCommand() bool {
+        if len(c.Deprecated) != 0 || c.Hidden {
+            return false
+        }
+        if c.HasParent() && c.Parent().helpCommand == c {
+            return false
+        ...
+
+Any command whose `Deprecated` string is non-empty or whose `Hidden` flag is true immediately returns `false` here.
+
+This predicate is what gates inclusion in the "Available Commands" section: `cobra.Command.HasAvailableSubCommands` (command.go:1617, snippet 1611-1623) loops over `c.commands` and returns true as soon as it finds a sub-command for which `sub.IsAvailableCommand()` is true — its own comment says it returns "true on the first found available (non deprecated/help/hidden) sub command." The usage/help templates use this (and the underlying per-command `IsAvailableCommand` checks when listing) to decide which sub-commands actually get printed, so hidden/deprecated ones are simply skipped.
+
+A related predicate, `cobra.Command.IsAdditionalHelpTopicCommand` (command.go:1583, snippet 1577-1589), applies the same exclusion for the "Additional help topics" section: "if a command is runnable, deprecated, or hidden it is not a 'help' command" — `if c.Runnable() || len(c.Deprecated) != 0 || c.Hidden { return false }`. This feeds `HasHelpSubCommands` (command.go:1603).
+
+`Command.Help()` itself (command.go:473) just invokes `c.HelpFunc()(c, []string{})` — the exclusion logic lives in the availability predicates the help function's template consults, not in `Help()` directly.
+
+Test evidence confirms the hidden-exclusion behavior: `TestHiddenCommandIsHidden` (command_test.go:1771, snippet 1765-1777) creates a command with `Hidden: true` and asserts `c.IsAvailableCommand()` is false, with the comment "test to ensure hidden commands do not show up in usage/help text." Similarly, doc/cmd_test.go:77 defines a `deprecatedCmd` with `Deprecated: "Please use echo instead"` (snippet 71-83) used to exercise deprecated-command handling in the generated docs.

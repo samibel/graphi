@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2254",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "21809cbe703aa87c520469be8814b5819bcfcdb3ab6937d2678a448053fd5671",
+  "bundle_sha256": "517944768067e72bb339da74d3f2aef965f8ba1886eececf76d8aa96bdedc8ce",
+  "prompt_sha256": "a2314f9f31165abe0977e95759ae15f3c048b458188da78de629e5aafa6c378f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT the response only shows internal doc-generation machinery for an option's shorthand (the cmdOption struct with a Shorthand field in doc/yaml_docs.go:30, and doc.genFlagResult in doc/yaml_docs.go:149 which reads flag.Shorthand off an already-defined *pflag.Flag via flags.VisitAll) plus unrelated user-guide sections (help customization, \"unknown command\" suggestions, active help), but none of the evidence shows the actual API call or syntax a user writes to attach a shorthand when defining a flag/option (e.g. a *VarP-style function with a shorthand argument), so there isn't enough here to answer how you add one.",
+  "responded_at": "2026-09-05T13:53:50Z",
+  "sha256": "2f2b4003bf8c5c6917cf820af3a8f79ac05d3f731b6674e69dd2cf4678dc80d3"
+}

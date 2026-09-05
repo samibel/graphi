@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-724",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "1b0415777e1187d7d8c969cca0c53bdd1b205093c21d71b4e5d7a6dde71b38cc",
+  "bundle_sha256": "3eaead757842dc0a0ac6a5a6bbd882bd6e76ad76eebe0a83a5290ec79573351e",
+  "prompt_sha256": "8a8169b22c0f3b08341baa082b4e138c4b37ea89937191461f39c2be8f9f1ed6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response points to the relevant location but does not include the actual instructions/code. The only lead is evidence e36 (site/content/user_guide.md:154-166, under the \"Create additional commands\" heading at user_guide.md:160), which says verbatim: \"If you wanted to create a version command you would create cmd/version.go and populate it with the following:\" — but the snippet is truncated exactly there, before the code that would show how the version subcommand invokes root's --version behavior. The other version-related evidence (e35, user_guide.md:592, \"Version Flag\" section) only explains that Cobra adds a top-level --version flag when Version is set on the root command and that its output template can be customized via cmd.SetVersionTemplate(s string); it says nothing about a separate 'version' subcommand calling 'root --version'. The test evidence (e38, command_test.go:1165, TestVersionFlagExecutedOnSubcommand) only shows executeCommand(rootCmd, \"--version\", \"sub\") confirming the root --version flag still fires when a subcommand name is also passed as an arg — it does not define or exercise a 'version' subcommand that programmatically invokes root's --version. No file in the response contains code that reruns root with a \"--version\" argument from within a subcommand (e.g. no snippet shows something like rootCmd.SetArgs([]string{\"--version\"}) or cmd.Root().Execute() being called from a version subcommand's Run function).",
+  "responded_at": "2026-09-05T13:55:26Z",
+  "sha256": "6a4e7c35f19991e2570e8b9c14ca94b9e355c3e26105ebeb013bd125424abdd0"
+}

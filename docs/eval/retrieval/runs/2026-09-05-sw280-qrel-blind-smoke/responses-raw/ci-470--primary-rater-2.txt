@@ -1,0 +1,15 @@
+There are two ways to invoke help "on demand" shown in the response, one from the CLI and one from Go code.
+
+1. From the command line: run the app with the auto-added `help` command, or the `--help` flag on any command. This is documented in site/content/user_guide.md:486-498 (evidence e65): "Cobra automatically adds a help command to your application when you have subcommands. This will be called when a user runs 'app help'. Additionally, help will also support all other commands as input. Say, for instance, you have a command called 'create' without any additional configuration; Cobra will work when 'app help create' is called. Every command will automatically have the '--help' flag added." So `app help`, `app help <command>`, or `<command> --help` all trigger it on demand.
+
+2. From Go code, on a *Command value, call its Help() method directly. command.go:467-479 (evidence e62) gives the source:
+   // Help puts out the help for the command.
+   // Used when a user calls help [command].
+   // Can be defined by user by overriding HelpFunc.
+   func (c *Command) Help() error {
+       c.HelpFunc()(c, []string{})
+       return nil
+   }
+   So `cmd.Help()` runs whatever HelpFunc is currently set for that command.
+
+Supporting context: the default `help` subcommand itself is wired up automatically by InitDefaultHelpCmd (command.go:1229, evidence e63), which the doc comment says "is called automatically by executing the c or by calling help and usage" — i.e. it registers the help command the first time the root command executes, or when help/usage is invoked, so you don't normally need to call it yourself. If you want a custom help command or template instead of the default, user_guide.md:535-547 (evidence e64) shows overriding it via `cmd.SetHelpCommand(cmd *Command)`.

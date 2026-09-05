@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-29",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e01254597f989d7d7013d79a12557aeae1bff4a6d3b1a0403b1b815955a98c91",
+  "bundle_sha256": "81ef4d0c110f46b50b634922a466655cae454fc42f7885381796215d9ab8b83e",
+  "prompt_sha256": "b4e5aa1e5df09894f30fc781e05b615764f8440df29af085b5f7e3576c4eefc4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the global variable cobra.EnableCaseInsensitive to true.\n\nThe evidence shows this is a global flag in cobra.go (line 62) with the documentation comment \"allows case-insensitive commands names. (case sensitive by default)\" (e115). The commandNameMatches function in command.go (lines 1873-1885, e117) implements case-insensitive matching by checking this flag: when EnableCaseInsensitive is true, it uses strings.EqualFold() for case-insensitive string comparison; otherwise it performs exact string equality checks.",
+  "responded_at": "2026-09-05T13:43:38Z",
+  "sha256": "e71241ed21ac36235e9f8a33d221849b11f2856cbbf5740b49278d0ace5e2c95"
+}

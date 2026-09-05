@@ -1,0 +1,31 @@
+To add commands at runtime, use the `Command.AddCommand()` method in command.go:1303. As shown in the snippet, this method accepts one or more commands to add to a parent command:
+
+```go
+// AddCommand adds one or more commands to this parent command.
+func (c *Command) AddCommand(cmds ...*Command) {
+    for i, x := range cmds {
+        if cmds[i] == c {
+            panic("Command can't be a child of itself")
+        }
+        cmds[i].parent = c
+        // update max lengths
+```
+
+To remove commands at runtime, use `Command.RemoveCommand()` at command.go:1362:
+
+```go
+// RemoveCommand removes one or more commands from a parent command.
+func (c *Command) RemoveCommand(cmds ...*Command) {
+    commands := []*Command{}
+main:
+    for _, command := range c.commands {
+        for _, cmd := range cmds {
+            if command == cmd {
+                command.parent = nil
+```
+
+Commands can be organized using `Command.AddGroup()` at command.go:1356 to group them logically.
+
+For handling unknown commands, the validation logic is shown in `legacyArgs()` at args.go:28, which checks subcommand validity and determines whether to accept or validate arguments based on whether the command has subcommands.
+
+The `Command.Commands()` method at command.go:1293 retrieves the sorted slice of child commands, and `Command.IsAdditionalHelpTopicCommand()` at command.go:1583 can help distinguish between regular and help-related commands.

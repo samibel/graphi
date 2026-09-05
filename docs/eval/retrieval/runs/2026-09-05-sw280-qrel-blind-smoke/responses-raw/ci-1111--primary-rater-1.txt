@@ -1,0 +1,11 @@
+To disable the message "Run 'xxxxx --help' for usage.", you can use one of these approaches:
+
+1. Set a custom help function using `SetHelpFunc()`:
+   cmd.SetHelpFunc(f func(*Command, []string))
+
+2. Set a custom help template using `SetHelpTemplate()`:
+   cmd.SetHelpTemplate(s string)
+
+According to the evidence from site/content/user_guide.md (lines 548-560), both methods allow you to customize the help behavior and will apply to any children commands. By implementing your own help function or template, you can omit or customize the "Run '--help' for usage" message entirely.
+
+The default behavior is implemented in command.go's Help() method (line 473) and HelpFunc() method (line 452), which use the default help function. By overriding these with SetHelpFunc() or SetHelpTemplate(), you gain complete control over what message is displayed.

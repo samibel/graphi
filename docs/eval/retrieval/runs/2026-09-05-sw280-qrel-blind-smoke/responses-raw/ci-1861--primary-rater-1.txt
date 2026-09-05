@@ -1,0 +1,11 @@
+In the Cobra CLI framework, sub-commands are discovered and executed through the Command type and its methods in command.go.
+
+To discover sub-commands dynamically:
+1. Check if commands exist using `HasSubCommands()` (command.go:1556), which returns `len(c.commands) > 0`
+2. Iterate through available sub-commands using `HasAvailableSubCommands()` (command.go:1617), which loops through `c.commands` and checks each sub-command's availability status via `IsAvailableCommand()`
+
+To execute:
+1. Call `Execute()` (command.go:1038), which invokes `ExecuteC()` and returns an error
+2. Or call `ExecuteC()` directly (command.go:1052), which executes the command and returns both the Command and error
+
+The Command struct maintains sub-commands internally in the `c.commands` slice. Discovery iterates through this slice to identify available sub-commands (excluding deprecated/hidden ones), and execution flows through the Execute methods which traverse the command tree to find matches and execute appropriate handlers.

@@ -1,0 +1,9 @@
+To check if any flag was set, use the `cobra.Command.HasFlags()` method (command.go:1752), which returns a boolean indicating whether the command contains any flags (local plus persistent from the entire structure). The snippet shows:
+
+```
+func (c *Command) HasFlags() bool {
+	return c.Flags().HasFlags()
+}
+```
+
+Additionally, to check for a specific flag, use the `cobra.Command.Flag(name string)` method (command.go:1795), which climbs up the command tree looking for a matching flag and returns the flag or nil if not found.

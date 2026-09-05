@@ -1,0 +1,13 @@
+In the Cobra framework shown in this response, parameters are passed from one command to another through the command tree structure and argument chains. The key mechanism is the Command type (command.go:51, e158) which defines parent-child command relationships.
+
+Parameters flow through several mechanisms:
+
+1. **Command Tree Navigation**: The Find method (command.go:726, e160) processes arguments as it traverses the command tree: "Find the target command given the args and command tree" with the signature showing it receives args []string and returns the target command and remaining args.
+
+2. **Argument Chain Processing**: The legacyArgs function (args.go:28, e161) validates arguments as they propagate through the command hierarchy. For subcommands, it "always accept arbitrary arguments" (args.go:22-34, e161), allowing parameters to be passed down to child commands.
+
+3. **Command Hierarchy**: The CommandPath method (command.go:1426, e162) demonstrates the parent-child relationship: "CommandPath() string" builds the full path by recursively calling c.Parent().CommandPath(), showing how commands relate to pass context.
+
+4. **Argument Stripping**: The Find method implementation uses stripFlags (command.go:643) to separate arguments from flags, preserving parameters that should flow to subcommands.
+
+Essentially, parameters are passed by maintaining them in the args []string array that gets processed as the command tree is traversed from parent to child commands.

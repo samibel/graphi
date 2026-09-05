@@ -1,0 +1,9 @@
+To document or define a required argument in Cobra:
+
+DOCUMENTATION (in the Use field):
+According to command.go (line 45-57, evidence e106), the Command struct's Use field defines syntax conventions where "[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required." This is the documentation convention for marking arguments as required in the usage string.
+
+DEFINITION/VALIDATION (programmatically):
+According to site/content/user_guide.md (line 361-373, evidence e108), "Validation of positional arguments can be specified using the `Args` field of `Command`." The ValidateArgs method (command.go line 1139, evidence e107) enforces these argument rules at runtime.
+
+In summary: document required arguments in the Use field without brackets, and define validation rules using the Args field of the Command struct.

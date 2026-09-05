@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2252",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "107b99acf4ccab2840ee697d53f0f9108e79d3f8d9eae02466e5650a188f8fb4",
+  "bundle_sha256": "da859ff7fa299399cc75e29d7698f3af074eea44c4ca217333b05b341a662cee",
+  "prompt_sha256": "bc7f932fceeb304110c404224be9b5520ec77ca2aab827a5ae59466b1402dd98",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains information about cobra's Help() method (command.go:473), HelpFunc() method (command.go:452), and HelpTemplate() method (command.go:585), but does not provide specific instructions on how to place help at the top of output or command structure.",
+  "responded_at": "2026-09-05T13:53:45Z",
+  "sha256": "0eb2a4ceb08e1b8741c268f87da9096d2cc1e106387473a2302932ff09812a8a"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1894",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "0a4fe5a95fa1bff830073ba1f2c9173a26ab343d6a156e3404299ac94613b120",
+  "bundle_sha256": "0e12675809014d3921513b62598d0a53e59ad460f8ef11f3cd55185814036600",
+  "prompt_sha256": "3f6bcb9a5fb089085f5009e56fe7b55b0744f3eb9f858696b4cda9dd717d0358",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set `CompletionOptions.DisableDescriptions = true` on the root command to hide (completely disable) descriptions in shell completions.\n\nEvidence: site/content/completions/_index.md:111-123 (ref_id e31) states: \"To tell Cobra to completely disable descriptions for completions:\\n```\\nrootCmd.CompletionOptions.DisableDescriptions = true\\n```\". This is backed by the `CompletionOptions` struct in completions.go:105-111 (ref_id e32), which documents the field: \"DisableDescriptions turns off all completion descriptions for shells\".\n\nRelated: completions.go:94-106 (ref_id e30) also defines a `--no-descriptions` flag (`compCmdNoDescFlagName = \"no-descriptions\"`, `compCmdNoDescFlagDesc = \"disable completion descriptions\"`) that lets an end user pass `--no-descriptions` at completion-generation time to suppress descriptions per-invocation, and `DisableNoDescFlag` on `CompletionOptions` controls whether that flag is even offered. So there are two related mechanisms: `CompletionOptions.DisableDescriptions = true` (hard-disables descriptions everywhere, set by the program) versus the `--no-descriptions` flag (a per-invocation opt-out for shells that support descriptions, e.g. site/content/completions/_index.md:446-458, ref_id e29, shows `$ helm s[tab][tab]` \"Without descriptions\").",
+  "responded_at": "2026-09-05T13:52:18Z",
+  "sha256": "ef924f68b1349bc74e614a490c97eba8e5e7c973266d3c3da2e531a833b8a3ec"
+}

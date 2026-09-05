@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2138",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "cd50880edf52091bab02583410346988e102c272a1c8dd33b8ac4e9ca411a58a",
+  "bundle_sha256": "990808473de839c9d1661f5c1d0cf4cba0cdb94e246655b11d29c5a1a9ba4b18",
+  "prompt_sha256": "5afe5fc7497dfa56f5176bc9ffdfa324f0660744a8e65875bed7ad64f84629aa",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the response, an unrecognized/wrong subcommand is handled through the default positional-args validator, `legacyArgs` (args.go:28, snippet span 22-34), which cobra runs during execution. Its doc comment states the governing behaviour: \"root commands with no subcommands can take arbitrary arguments; root commands with subcommands will do subcommand validity checking; subcommands will always accept arbitrary arguments.\" The function body shown begins:\n\n  func legacyArgs(cmd *Command, args []string) error {\n      // no subcommand, always take args\n      if !cmd.HasSubCommands() {\n          return nil\n      }\n      // root command with subcommands, do subcommand checking.\n\nSo the handling path is: `Command.ExecuteC` (command.go:1052, snippet e130) resolves the intended target via `Command.Find` (command.go:726, snippet e135), which walks the command tree stripping flags and matching each argument to a child command name. When the root command has subcommands (`HasSubCommands`, command.go:1556) but the given argument does not match any child, `legacyArgs` is the point where \"subcommand validity checking\" is applied to reject it — that is the \"wrong subcommand\" case referenced in the question.\n\nThe response's snippet for `legacyArgs` is truncated immediately after the comment \"root command with subcommands, do subcommand checking.\" (args.go span stops at line 34), so the actual conditional/error-construction statement that rejects an unmatched subcommand (e.g., the specific error message and any suggestion logic) is not included in the evidence bytes and cannot be quoted.\n\nSeparately, the response also shows a related but distinct error type, `flagCompError` (completions.go:44-56, snippet e132), whose `Error()` method returns `\"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"` — this covers a subcommand rejecting an unsupported flag during completion, not an unrecognized subcommand name, so it is not the mechanism the question is asking about.\n\nINSUFFICIENT (partial) — the response identifies legacyArgs (args.go:28) as the function responsible for rejecting an invalid/unknown subcommand, but the provided snippet is cut off right before the actual check/error statement, so the exact error text and logic used to \"handle\" a wrong subcommand are not present in the given bytes.",
+  "responded_at": "2026-09-05T13:53:07Z",
+  "sha256": "46f841f795bc3a042d14385603f651652d3c4c2d2c9c5066090bfce1079dfe03"
+}

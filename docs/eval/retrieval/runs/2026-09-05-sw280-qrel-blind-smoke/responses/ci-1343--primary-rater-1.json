@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1343",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c3d7dfb312e73f3e3022a1ab5f787cca3da6893674ffe8ed0035a214620e7b56",
+  "bundle_sha256": "75debb24b17be49b3f237569e3bb1241c8c1d4f4a7e111ca84e583c30ff74d22",
+  "prompt_sha256": "a29afa39f7daf93684dd9191ad2d8735692cd6b9711473ef78814d41f5bfc75e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, there is a way to customize the entire deprecation message for a command.\n\nThe deprecation message is customized by setting the `Deprecated` field on the `cobra.Command` struct to your custom message string. Evidence from the response shows:\n\n1. In doc/cmd_test.go:77 (snippet e34), a `deprecatedCmd` is defined with:\n   `Deprecated: \"Please use echo instead\",`\n\n2. In command_test.go:1493 (snippet e37), a test demonstrates:\n   `Deprecated: \"This command is deprecated\",`\n\nBoth examples show that the entire deprecation message can be fully customized through the `Deprecated` field when defining a Command. The user guide (site/content/user_guide.md:599, snippet e35) references similar customization patterns using setter functions for other message types, indicating this is the standard mechanism for customizing deprecation messages in Cobra.",
+  "responded_at": "2026-09-05T13:51:03Z",
+  "sha256": "baab29ddace85cac3d8ff25f9d145e72afd897aa8f76ded609b6c172f389acdf"
+}

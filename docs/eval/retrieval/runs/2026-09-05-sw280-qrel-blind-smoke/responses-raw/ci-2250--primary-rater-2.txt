@@ -1,0 +1,13 @@
+A single "-" is the prefix for a flag's one-letter shorthand form, while "--" prefixes the flag's full (long) name — both forms refer to the same flag and are interchangeable.
+
+This is shown directly in the user_guide.md snippet (site/content/user_guide.md, lines 577-580, ref e46):
+
+      -h, --help             help for cobra-cli
+      -l, --license string   name of license for the project
+          --viper            use Viper for configuration
+
+Here `-h` is the one-dash shorthand for `--help`, and `-l` is the one-dash shorthand for `--license`. Note that `--viper` has no shorthand listed, so for flags that only define a long name, only the "--" form works — a flag only gets a "-x" single-dash form if it was explicitly given a one-letter shorthand.
+
+Corroborating evidence from command_test.go (ref e45, lines 1250-1252) shows the shorthand form actually being used and validated at the command line: the test checks an error message "unknown shorthand flag: 'v' in -v", confirming `-v` is the single-dash shorthand invocation syntax that Cobra/pflag parses, as opposed to a corresponding `--verbose`-style two-dash long flag.
+
+So in practice: pass `-h` (or `-l value`) for the shorthand, or `--help` (or `--license value`) for the full name — pick whichever alias the flag defines; you don't need both dashes unless you're using the long name.

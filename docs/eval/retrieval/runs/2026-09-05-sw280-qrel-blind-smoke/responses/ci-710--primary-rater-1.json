@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-710",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "ba44ea13b5f29a121bbb86df0ba84da1ba3dd4cee84ead355c26aac53fa7a8bd",
+  "bundle_sha256": "c900a88414c16a786c15507669ae7b8d2e0088aebd8f2bc47625bbea0a9b630a",
+  "prompt_sha256": "343b95e4c5875478fd02f6ce52497221522b02b800342442ceb3b5fa97a19b75",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In the Cobra framework shown in this response, parameters are passed from one command to another through the command tree structure and argument chains. The key mechanism is the Command type (command.go:51, e158) which defines parent-child command relationships.\n\nParameters flow through several mechanisms:\n\n1. **Command Tree Navigation**: The Find method (command.go:726, e160) processes arguments as it traverses the command tree: \"Find the target command given the args and command tree\" with the signature showing it receives args []string and returns the target command and remaining args.\n\n2. **Argument Chain Processing**: The legacyArgs function (args.go:28, e161) validates arguments as they propagate through the command hierarchy. For subcommands, it \"always accept arbitrary arguments\" (args.go:22-34, e161), allowing parameters to be passed down to child commands.\n\n3. **Command Hierarchy**: The CommandPath method (command.go:1426, e162) demonstrates the parent-child relationship: \"CommandPath() string\" builds the full path by recursively calling c.Parent().CommandPath(), showing how commands relate to pass context.\n\n4. **Argument Stripping**: The Find method implementation uses stripFlags (command.go:643) to separate arguments from flags, preserving parameters that should flow to subcommands.\n\nEssentially, parameters are passed by maintaining them in the args []string array that gets processed as the command tree is traversed from parent to child commands.",
+  "responded_at": "2026-09-05T13:55:14Z",
+  "sha256": "f722eabe134083649982c060e3f7a4edf84d5b25539cb02f52b290b945fb5a60"
+}

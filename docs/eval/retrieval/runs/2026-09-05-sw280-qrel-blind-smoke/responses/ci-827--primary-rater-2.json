@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-827",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "4be1cc40191d4a5ef2196afe07f4d82958c1ba0b816d29b771600983c9c6452d",
+  "bundle_sha256": "8a9ac2761800808e164753644e33627e8af0becca2b3f34546f05a9b9e592a0f",
+  "prompt_sha256": "027d4430cf7775d952de45ad3de58efa54560a3348360c69414d55949fd363e3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Sanity checks for positional command-line args belong in args.go, written as a `PositionalArgs` function and assigned to a `Command`'s `Args` field.\n\nEvidence:\n- args.go:22 (snippet e137, span 22-34) defines the type: `type PositionalArgs func(cmd *Command, args []string) error`, and the surrounding comment describes validators like `legacyArgs` (args.go:28) that check subcommand/argument validity.\n- args.go:36-48 (snippet e134) shows `NoArgs` (args.go:42), a concrete example: `func NoArgs(cmd *Command, args []string) error { if len(args) \u003e 0 { return fmt.Errorf(...) } return nil }`.\n- The check is invoked centrally from command.go:1139 via `(c *Command) ValidateArgs(args []string) error` (snippet e135, span 1133-1145): `if c.Args == nil { return ArbitraryArgs(c, args) }; return c.Args(c, args)`. So `Command.Args` (a `PositionalArgs` value set in args.go) is what actually runs the sanity check, dispatched through `ValidateArgs`.\n- Other related validators are also in args.go: `ArbitraryArgs` (args.go:69) and `MinimumNArgs` (args.go:74), confirming args.go is the file where these argument-count/content checks are collected.\n- args_test.go (e.g. args_test.go:23 `getCommand`, and the many `TestExactArgs...`, `TestRangeArgs...`, `TestMinimumNArgs...` functions at args_test.go:214-509) is the corresponding test file that exercises these checks, showing the pattern for testing a new sanity check.\n\nSo: write the new check as a function matching `func(cmd *Command, args []string) error` in args.go, then set it as a `Command`'s `Args` field (or add it to `legacyArgs`-style default handling) — it will be invoked automatically through `Command.ValidateArgs` in command.go, and tested in args_test.go.",
+  "responded_at": "2026-09-05T13:55:49Z",
+  "sha256": "d930cf32b7df6aa0dd70f8e8eba7a71cb38a7cd7259fd7ebe733c4a51660f867"
+}

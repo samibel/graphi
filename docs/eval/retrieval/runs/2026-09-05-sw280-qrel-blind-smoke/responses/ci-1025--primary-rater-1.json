@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1025",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "d30f9274f45e9b39d7aa183b9eedf0d44a88356b65121b5c546faa1e15d29467",
+  "bundle_sha256": "f26f71a76b2b4050c5e196d1f739be62f2ddb5c8b9e9de148ce28513c67dd9f6",
+  "prompt_sha256": "7daff5c2eb888fcbc9b7ac25121de5e793b499ce7b2ba839bded19e25d20e282",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The provided snippets show flag parsing logic in the Traverse function (command.go:784-796) with an inFlag state variable and switch cases for different flag formats, but do not explicitly detail a specific escape mechanism for flag input.",
+  "responded_at": "2026-09-05T13:43:59Z",
+  "sha256": "c6206bc44f6cd2f0e6eda96c8f71721bcefb5678b5e4e454c2bc7aafedcc4ae2"
+}

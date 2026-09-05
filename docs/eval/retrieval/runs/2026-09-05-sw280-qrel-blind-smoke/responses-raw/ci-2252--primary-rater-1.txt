@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains information about cobra's Help() method (command.go:473), HelpFunc() method (command.go:452), and HelpTemplate() method (command.go:585), but does not provide specific instructions on how to place help at the top of output or command structure.

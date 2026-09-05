@@ -1,0 +1,61 @@
+"Usage" in this codebase is the cobra.Command.Usage method, defined at command.go:446 (top-ranked seed, score 140). Its snippet (evidence e37, command.go:440-452) is:
+
+// Usage puts out the usage for the command.
+// Used when a user provides invalid input.
+// Can be defined by user by overriding UsageFunc.
+func (c *Command) Usage() error {
+	return c.UsageFunc()(c)
+}
+
+So Usage() prints the usage message for a command, and is triggered when a user supplies invalid input. It delegates to c.UsageFunc()(c) rather than doing formatting itself.
+
+UsageFunc (command.go:426, evidence e36, snippet lines 420-432) supplies that function:
+// UsageFunc returns either the function set by SetUsageFunc for this command
+// or a parent, or it returns a default usage function.
+func (c *Command) UsageFunc() (f func(*Command) error) {
+	if c.usageFunc != nil {
+		return c.usageFunc
+	}
+	if c.HasParent() {
+		return c.Parent().UsageFunc()
+	}
+	...
+
+This shows usage behavior is overridable per-command (via c.usageFunc) and falls back through the parent command chain (c.HasParent() / c.Parent().UsageFunc()), otherwise using a built-in default.
+
+The function can be set explicitly via SetUsageFunc (command.go:307, evidence e33, snippet 301-313):
+// SetUsageFunc sets usage function. Usage can be defined by application.
+func (c *Command) SetUsageFunc(f func(*Command) error) {
+	c.usageFunc = f
+}
+
+There is also SetUsageTemplate (command.go, same snippet block) for setting a template string, and a corresponding UsageTemplate() getter (command.go:544, evidence e40, snippet 538-550):
+// UsageTemplate returns usage template for the command.
+func (c *Command) UsageTemplate() string {
+	if c.usageTemplate != "" {
+		return c.usageTemplate
+	}
+	if c.HasParent() {
+		return c.parent.UsageTemplate()
+	}
+	...
+
+Related supporting pieces surfaced by the graph:
+- UsageString (command.go:479) — related/caller of Usage, presumably renders the usage text as a string.
+- UsagePadding (command.go:516, evidence e35, snippet 510-522) — computes left-padding for usage listings, using a package-level minUsagePadding = 25, falling back to c.parent.commandsMaxUseLen if larger.
+- PrintErrln (command.go:1416, callee) and OutOrStderr (command.go:380, callee) — used in the usage-printing/error-output path.
+- HasParent (command.go:1632) and mergePersistentFlags (command.go:1849) — additional callees tied into command-tree traversal used by the usage machinery.
+- The Command struct itself (command.go:51) is the receiver type for all of the above.
+
+Documentation: site/content/user_guide.md:583 has a "Defining your own usage" section (evidence e34, snippet lines 577-589):
+### Defining your own usage
+You can provide your own usage function or template for Cobra to use.
+Like help, the function and template are overridable through public methods:
+
+```go
+cmd.SetUsageFunc(f func(*Command) error)
+cmd.SetUsageTemplate(s string)
+
+This confirms the public customization API is exactly SetUsageFunc and SetUsageTemplate, matching the two setter methods found in command.go.
+
+In short: "Usage" is the mechanism (Command.Usage/UsageFunc/UsageTemplate/UsageString/UsagePadding, all in command.go) that cobra uses to print/format a command's usage message on invalid input, customizable per-command via SetUsageFunc/SetUsageTemplate, inheriting from parent commands when not explicitly set, and documented in site/content/user_guide.md under "Defining your own usage."

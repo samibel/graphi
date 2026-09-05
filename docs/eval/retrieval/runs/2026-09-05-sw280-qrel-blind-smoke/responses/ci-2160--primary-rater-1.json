@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2160",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "21dc654ef074a8582e90dd1f9dd16fc2236b34bbfd409b1fb48ce156dfefe309",
+  "bundle_sha256": "87807d194240248e124f6d8a61209743abe40e0897f76ce4149c8b9b3aee13b5",
+  "prompt_sha256": "bbf9dcd865d4516980629b34a11334fbdecb98005b549a7329a22ec72470bc34",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To add an entry to the `Available Commands` help section, you need to create a subcommand that passes the IsAvailableCommand() check.\n\nBased on evidence from command.go (lines 1556-1568), a command is available for display in \"Available Commands\" when it:\n1. Is not deprecated (Deprecated field is empty)\n2. Is not hidden (Hidden is false)\n3. Is not the parent command's help command itself\n\nThe key method HasAvailableSubCommands() (command.go, lines 1611-1623) iterates through all subcommands and checks if any pass IsAvailableCommand(), determining whether the \"Available Commands\" section is displayed.\n\nTo add an entry:\n1. Create a new Command instance\n2. Add it as a subcommand to the parent command\n3. Keep the Deprecated field empty and Hidden set to false\n4. The command will automatically appear in the \"Available Commands\" section of the help output\n\nThe InitDefaultHelpCmd() method (command.go, lines 1223-1235) shows that the help system is automatically initialized when subcommands are present, and it manages how available commands are displayed in the help template.",
+  "responded_at": "2026-09-05T13:53:07Z",
+  "sha256": "a497dd95b5e7655cbc08b6db9d1e638d0431927ca686f3274b4751230d21c23d"
+}

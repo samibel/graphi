@@ -1,0 +1,17 @@
+Sanity checks for command line args should be placed in the ValidateArgs method (command.go:1139) and through PositionalArgs validation functions defined in args.go.
+
+The primary validation point is the ValidateArgs method in command.go (lines 1133-1145):
+```
+func (c *Command) ValidateArgs(args []string) error {
+	if c.Args == nil {
+		return ArbitraryArgs(c, args)
+	}
+	return c.Args(c, args)
+}
+```
+
+Arg validation functions are implemented in args.go, including:
+- NoArgs (args.go:42) - validates that no arguments are included
+- legacyArgs (args.go:28) - provides legacy validation behavior
+
+These validation functions implement the PositionalArgs type (args.go:22), which is a function signature: `type PositionalArgs func(cmd *Command, args []string) error`. The validation function is assigned to the Command.Args field, and ValidateArgs calls it during command execution to check argument validity.

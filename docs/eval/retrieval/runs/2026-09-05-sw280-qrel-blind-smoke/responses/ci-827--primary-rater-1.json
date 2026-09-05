@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-827",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "4be1cc40191d4a5ef2196afe07f4d82958c1ba0b816d29b771600983c9c6452d",
+  "bundle_sha256": "8a9ac2761800808e164753644e33627e8af0becca2b3f34546f05a9b9e592a0f",
+  "prompt_sha256": "027d4430cf7775d952de45ad3de58efa54560a3348360c69414d55949fd363e3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Sanity checks for command line args should be placed in the ValidateArgs method (command.go:1139) and through PositionalArgs validation functions defined in args.go.\n\nThe primary validation point is the ValidateArgs method in command.go (lines 1133-1145):\n```\nfunc (c *Command) ValidateArgs(args []string) error {\n\tif c.Args == nil {\n\t\treturn ArbitraryArgs(c, args)\n\t}\n\treturn c.Args(c, args)\n}\n```\n\nArg validation functions are implemented in args.go, including:\n- NoArgs (args.go:42) - validates that no arguments are included\n- legacyArgs (args.go:28) - provides legacy validation behavior\n\nThese validation functions implement the PositionalArgs type (args.go:22), which is a function signature: `type PositionalArgs func(cmd *Command, args []string) error`. The validation function is assigned to the Command.Args field, and ValidateArgs calls it during command execution to check argument validity.",
+  "responded_at": "2026-09-05T13:55:40Z",
+  "sha256": "55c951868eabd6e619f6d352fbbedf284f2a060de0ce6a1054c317dbcebdecc2"
+}
