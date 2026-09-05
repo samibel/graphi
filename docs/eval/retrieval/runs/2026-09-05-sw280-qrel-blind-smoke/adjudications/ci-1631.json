@@ -1,0 +1,34 @@
+{
+  "query_id": "ci-1631",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-1631",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "4f29f07a352c3b1191fc637556bdbf8be72048cc71bd2a8e205b5ab4d31f7e55",
+    "bundle_sha256": "96ffff8fd4e7175e4d2cd7ab17cf461d21b1e2278a52e2ceca76debdd578d1f4",
+    "prompt_sha256": "2e16a5b37a33d4627519fc14b89962888b0f211b8f4f7df36e4d2cb3f8e8fa29",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Yes, for the error output that a Command emits — it is redirectable, so you can silence it by pointing the command's error writer at a writer that discards what it receives. Not for the package-level helpers, which write to os.Stderr directly.\n\nEvidence in the response:\n\n1. command.go:283 (snippet e71, span 277-289): `SetOutput(output io.Writer)` — comment: \"SetOutput sets the destination for usage and error messages. If output is nil, os.Stderr is used. Deprecated: Use SetOut and/or SetErr instead\". Body sets both `c.outWriter = output` and `c.errWriter = output`. So the error destination is a configurable field (`errWriter`), and the deprecation note names `SetErr` as the current way to set it (the body of SetErr itself is not in the response; only this comment references it).\n\n2. command.go:385 (snippet e72, span 379-391): `ErrOrStderr()` returns `c.getErr(os.Stderr)` — i.e. the configured err writer, falling back to os.Stderr only when none is set (getErr is listed as a callee at command.go:404, e14).\n\n3. command.go:1411 (snippet e74, span 1405-1417): `PrintErr` does `fmt.Fprint(c.ErrOrStderr(), i...)`, and `PrintErrln` calls `PrintErr`. Comment: \"Print to the defined Err output, fallback to Stderr if not set.\" So the Command's error printing goes through the configurable writer; supplying a discarding writer via SetErr (or the deprecated SetOutput) removes it. Other callers of ErrOrStderr listed in the response (InitDefaultHelpCmd at command.go:1263/1267, UsageString at command.go:488, initCompleteCmd at completions.go:251) route through the same writer.\n\nLimits — output you cannot remove this way:\n\n- cobra.go:233 (snippet e73, span 227-239): `CheckErr(msg interface{})` does `fmt.Fprintln(os.Stderr, \"Error:\", msg)` then `os.Exit(1)` — hard-coded to os.Stderr, not the Command's writer. `WriteStringAndCheck` (cobra.go:241, e75) calls CheckErr.\n\n- completions.go:893 (snippet e69, span 887-899): `CompError(msg)` prefixes \"[Error] \" and calls `CompDebug(msg, true)` (\"prints the specified completion message to stderr\"); `CompErrorln` (completions.go:899) is the newline variant. The `true` argument is `printToStdErr`, and nothing in the response shows a way to turn it off from the caller (the body of CompDebug at completions.go:864 is not included).\n\nNote: the snippet for `ErrOrStderr` and `SetOutput` show the mechanism, but the response does not show the `SetErr` implementation or any explicit \"discard\" writer in the repository; the discarding writer would have to be supplied by the caller.",
+    "responded_at": "2026-09-05T14:08:35Z",
+    "sha256": "54a544e17b7a6f1e03984c3c6a3ace0dbcc2fba7c330fb352d458874df9e303d"
+  },
+  "disclosure": {
+    "query_id": "ci-1631",
+    "adjudicator_response_sha256": "54a544e17b7a6f1e03984c3c6a3ace0dbcc2fba7c330fb352d458874df9e303d",
+    "disclosed_artifact_sha256": [
+      "ee0035a4f8ac00f36f9bf28bc55a91b3d0986a4fa5ada757ae8d52594e43af29",
+      "6f1cffff65e6a2ab16bb0f5013646f7e8a07bf776c87e1d2be0f3e509a190d4c"
+    ],
+    "disclosed_at": "2026-09-05T14:08:36Z"
+  }
+}

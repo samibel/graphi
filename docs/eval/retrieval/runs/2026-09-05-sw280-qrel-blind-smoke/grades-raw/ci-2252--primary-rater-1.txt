@@ -1,0 +1,9 @@
+FAIL
+
+Query ci-2252 ("How do you place help at the top?"), response 0eb2a4ceb08e1b8741c268f87da9096d2cc1e106387473a2302932ff09812a8a.
+
+Checked against the single reviewed grade-3 span: command.go:584-596, anchor "func (c *Command) HelpTemplate() string {" — the default help layout and the resolution rule (a template set on the command wins, otherwise the parent's is inherited; the default puts Long/Short first, then the usage string).
+
+The response is a graded failure, not an ungraded one: it is present and non-empty, but it opens with INSUFFICIENT and states it "does not provide specific instructions on how to place help at the top". Under the rubric's fail criteria, a response that says it cannot answer is an honest answer and a failed one. It therefore also fails pass criterion 2: it makes no checkable claim about the help template or its resolution rule, so nothing in it is consistent with the HelpTemplate grade-3 span — it declines to assert the mechanism the span records.
+
+Bundle grounding is not the deciding factor here, and is noted only for completeness: the response does cite material actually present in the bundle bytes — command.go:473 (evidence e1, snippet e37, "func (c *Command) Help() error {"), command.go:452 (evidence e2, snippet e38, "func (c *Command) HelpFunc() func(*Command, []string) {"), and command.go:585 (evidence e4, seed 4 "method cobra.Command.HelpTemplate (command.go:585)", snippet e40 containing "func (c *Command) HelpTemplate() string {" and the helpTemplate/HasParent resolution lines). Criterion 3 is thus satisfied, and the bundle demonstrably contained the grade-3 answer span; the rater surfaced it by name and then declined to answer from it. The failure is the rater's abstention, not a missing bundle.

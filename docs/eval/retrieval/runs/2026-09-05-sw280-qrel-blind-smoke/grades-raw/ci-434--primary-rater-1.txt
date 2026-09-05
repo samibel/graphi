@@ -1,0 +1,26 @@
+FAIL
+
+Checked against the single reviewed grade-3 span for ci-434: command.go:1146-1168,
+anchor "flags.VisitAll(func(pflag *flag.Flag) {", whose load-bearing content is the
+Changed bit test at line 1159 — i.e. the procedure for determining which flags were
+actually supplied on the invocation.
+
+Grounding (criterion 3) holds: the response cites command.go:1643 (Flags), 1669
+(LocalFlags), 1721 (NonInheritedFlags), 1795 (Flag) and completions.go:841 (findFlag),
+all of which are present in the bundle bytes — as seed items and as snippet evidence
+e157 ("// Flags returns the complete FlagSet that applies"), e163 ("// LocalFlags returns
+the local FlagSet specifically set in the current command"), e156 ("func (c *Command)
+NonInheritedFlags()"), e159 ("// Flag climbs up the command tree looking for matching
+flag") and e158 ("func findFlag(cmd *Command, name string) *pflag.Flag"). Nothing is
+supplied from outside the bundle, and the response is not INSUFFICIENT, empty or refused.
+
+Criteria 1 and 2 do not hold. The question asks how to find which flags were called on
+the command; the response answers the adjacent question of how to reach a command's flag
+sets. It enumerates flag accessors and closes with the explicit claim that calling
+cmd.Flags() yields "all flags that have been registered and are available for that
+command" — the declared flag set, not the supplied one. It never reaches VisitAll, never
+names the Changed bit, and offers no equivalent mechanism for distinguishing a flag the
+user passed from one merely declared. The reviewed span's own reasoning treats c.Flags()
+as only the starting point of the operation; stopping there and presenting the registered
+set as the answer contradicts the span rather than restating it in equivalent terms. The
+response is checkable and unhedged, so it fails on substance, not on vagueness.

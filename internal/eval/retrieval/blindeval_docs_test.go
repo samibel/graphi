@@ -2,6 +2,7 @@ package retrieval
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -144,5 +145,69 @@ func TestQrelBlindSmoke_MethodNotesStateTheOrderOfOperations(t *testing.T) {
 		if !strings.Contains(text, required) {
 			t.Errorf("METHOD.md no longer states %q", required)
 		}
+	}
+}
+
+// The committed run is only evidence if it still recomputes. This reloads the
+// whole run directory and re-derives k, the pass count, every query outcome and
+// the release result from the artifacts themselves — so a later edit to any
+// response, grade or number fails here rather than being discovered by a reader.
+func TestQrelBlindSmoke_CommittedRunRevalidatesFromItsOwnArtifacts(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	dir := filepath.Join(root, filepath.FromSlash(blindEvalRunDir))
+	if _, err := os.Stat(filepath.Join(dir, BlindEvalOutcomeFile)); err != nil {
+		t.Fatalf("the committed run has no %s: %v", BlindEvalOutcomeFile, err)
+	}
+	artifacts, err := LoadEvaluationArtifacts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var recorded EvaluationOutcome
+	raw, err := os.ReadFile(filepath.Join(dir, BlindEvalOutcomeFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &recorded); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateEvaluationOutcome(recorded, artifacts); err != nil {
+		t.Fatalf("the committed outcome does not recompute from its own artifacts: %v", err)
+	}
+
+	// The specific facts this run is cited for, pinned so a silent edit shows up.
+	if recorded.N != 64 || recorded.K != 56 {
+		t.Errorf("N=%d k=%d, want 64 and 56", recorded.N, recorded.K)
+	}
+	if recorded.Release != ReleaseNo {
+		t.Errorf("release = %s, want NO", recorded.Release)
+	}
+	if recorded.PassCount >= recorded.K {
+		t.Errorf("pass count %d is not below k=%d, so RELEASE: NO would be wrong", recorded.PassCount, recorded.K)
+	}
+	if recorded.NonAnsweredCount != 0 {
+		t.Errorf("non-answered responses = %d; this run recorded none", recorded.NonAnsweredCount)
+	}
+	if recorded.AdjudicationCount != recorded.DisagreementCount {
+		t.Errorf("adjudications=%d disagreements=%d; every disagreement must be adjudicated",
+			recorded.AdjudicationCount, recorded.DisagreementCount)
+	}
+	if !recorded.EndOfRunComparison.AllMatch {
+		t.Error("the recorded end-of-run hash comparison did not match; the run is invalid")
+	}
+	if recorded.Interval.MeetsFloor {
+		t.Errorf("the observed interval claims to clear the floor at %d/%d", recorded.PassCount, recorded.N)
+	}
+}
+
+// The committed report must satisfy the stronger report contract, not only the
+// naming rule every markdown file in the directory is held to.
+func TestQrelBlindSmoke_CommittedReportStatesItsOwnLimitations(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(blindEvalRunDir), BlindEvalReadmeFile))
+	if err != nil {
+		t.Fatalf("the committed run has no %s: %v", BlindEvalReadmeFile, err)
+	}
+	if err := CheckQrelBlindSmokeReport(string(body)); err != nil {
+		t.Fatal(err)
 	}
 }

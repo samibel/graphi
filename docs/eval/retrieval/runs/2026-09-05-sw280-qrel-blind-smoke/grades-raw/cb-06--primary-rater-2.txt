@@ -1,0 +1,35 @@
+PASS
+
+Checked against the single reviewed grade-3 span for cb-06: zsh_completions.go:40-44,
+anchor "func (c *Command) GenZshCompletionNoDesc(" (the declaration of GenZshCompletionNoDesc).
+
+1. Answers the question asked. The query is the bare symbol name GenZshCompletionNoDesc; the
+   response identifies that exact symbol — a method on cobra.Command — states where it is declared
+   and what it does. It does not drift to the neighbouring GenZshCompletionFileNoDesc or
+   GenZshCompletion, which it correctly treats as siblings rather than as the answer.
+
+2. Substantively correct. The response places the declaration at zsh_completions.go:42 and
+   reproduces the declaration line "func (c *Command) GenZshCompletionNoDesc(w io.Writer) error"
+   together with its doc comment and body. That is inside the reviewed grade-3 span 40-44 and
+   matches its anchor text exactly; nothing in the response contradicts the key. The behavioural
+   claim (writes zsh completion without descriptions to the passed writer by delegating to
+   genZshCompletion(w, false)) is consistent with the body shown in the span.
+
+3. Grounded in the bundle. Every load-bearing citation is present in the given bytes:
+   - evidence e5 — {"ref_id":"e5","path":"zsh_completions.go","line":42,"span":"42-42",
+     "role":"primary"} — and item f99e84f7559cfc4e, "primary: method
+     cobra.Command.GenZshCompletionNoDesc (zsh_completions.go:42)";
+   - evidence e33 — snippet zsh_completions.go:36-48, which literally contains the doc comment,
+     "func (c *Command) GenZshCompletionNoDesc(w io.Writer) error {" and
+     "return c.genZshCompletion(w, false)" that the response quotes;
+   - evidence e4/e32 — snippet zsh_completions.go:74-86, the source of the quoted
+     genZshCompletion(w io.Writer, includeDesc bool) body including genZshComp(buf, c.Name(),
+     includeDesc);
+   - evidence e16 and item 7c0b8d04ca258149 — "callee: function cobra.genZshComp
+     (zsh_completions.go:87)", supporting the genZshComp claim;
+   - evidence e1/e29 and e2/e30 — the GenZshCompletionFileNoDesc (line 36) and GenZshCompletion
+     (line 31) snippets the response quotes for contrast.
+   No claim in the response requires knowledge of Cobra beyond these bytes.
+
+None of the fail criteria apply: it is on-question, contradicts no grade-3 span, cites only bundle
+content, does not return INSUFFICIENT, and makes a definite checkable claim.

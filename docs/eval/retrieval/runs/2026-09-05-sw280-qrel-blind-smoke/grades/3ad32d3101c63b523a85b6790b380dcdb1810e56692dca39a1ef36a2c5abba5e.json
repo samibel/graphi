@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1098",
+  "response_sha256": "3ad32d3101c63b523a85b6790b380dcdb1810e56692dca39a1ef36a2c5abba5e",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the single reviewed grade-3 span for ci-1098: cobra.go:232-238, anchor \"exits with error code 1\" — the exit status is hard-coded at 1 inside CheckErr, and a caller changes it by no longer routing through that helper.\n\nThe response is grounded (criterion 3 holds): it quotes ref e87, args.go:36-48, including the `fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())` body of NoArgs, and cites item ref_id 69888a9d4b149ed3 (\"function cobra.NoArgs (args.go:42)\") plus e2/e86 (command.go:500 FlagErrorFunc) and e5/e89 (command.go:318 SetFlagErrorFunc). All of those bytes are present in the bundle it was given.\n\nIt fails criteria 1 and 2. The question asks how to change the error *code*; the response answers how to change the error *message text*, stating \"There is no numeric 'error code' for the unknown-command error\" and concluding the only remedy is editing the fmt.Errorf format strings in args.go. That is a nearby question, not the one asked, and it directly contradicts the grade-3 span: Cobra does produce a numeric exit status, hard-coded to 1 in CheckErr at cobra.go:232-238. Nothing in the response names CheckErr, cobra.go, os.Exit, or any exit-status mechanism, and its closing claim that \"the only mechanism shown is direct edits to the fmt.Errorf strings in args.go\" is inconsistent with the answer key rather than an equivalent formulation of it. The bundle contained no cobra.go span, but the rubric grades the response as given: it made a confident, checkable claim that the key contradicts, so it fails rather than being scored as INSUFFICIENT.",
+  "graded_at": "2026-09-05T13:59:37Z",
+  "sha256": "df62fc279a3f82425f445491abe17074c49b0421ac8d0a390118b82988ed2131"
+}

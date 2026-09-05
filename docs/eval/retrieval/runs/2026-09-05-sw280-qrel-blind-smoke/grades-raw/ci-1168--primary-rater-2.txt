@@ -1,0 +1,11 @@
+FAIL
+
+Checked against all three reviewed grade-3 spans, principally command.go:274-278 (anchor "SetArgs sets arguments for the command.") and secondarily command.go:1076-1091 (anchor "cmd, flags, err = c.Find(args)") and command.go:1051-1060 (anchor "Regardless of what command execute is called on, run on Root only").
+
+Bundle evidence the response cited: e33 / site/content/user_guide.md:185-197 ("Organizing subcommands" ... "This is achieved by using `AddCommand`"), quoted verbatim; plus e36/e38 command.go:1556 HasSubCommands, e31 command.go:1337 AllChildCommandsHaveGroup, e34 command.go:1617 HasAvailableSubCommands, e32 command.go:1603 HasHelpSubCommands, and e35 args.go:28 legacyArgs. All of these do appear in the bundle bytes, so criterion 3 (grounded in the bundle) is satisfied.
+
+Criterion 1 (answers the question asked) and criterion 2 (substantively correct) both fail. The question asks how a caller can invoke another subcommand; the answer key's procedure is to replace the argument vector via SetArgs (command.go:274-278) and then Execute, with resolution performed by Find on the root command (command.go:1076-1091, command.go:1051-1060). The response's load-bearing claim is instead that subcommands are "called" by attaching them to a parent with AddCommand — that is command-tree registration, i.e. how a subcommand comes to exist, not how one is chosen and invoked. AddCommand is not a "different but genuinely equivalent mechanism" for SetArgs/Execute; it is an answer to a nearby question ("how do I organize subcommands?", the very heading it quotes).
+
+The response never names SetArgs, Execute or ExecuteC, never mentions that dispatch re-runs from the root, and never states the arguments-drive-selection mechanism. Its one gesture toward dispatch — "cobra resolving `args[0]` against the `c.commands` tree" via legacyArgs (args.go:28) — is offered as support for the AddCommand claim rather than as the answer, does not identify Find (present in the bundle at command.go:726 as ref e6d3046bf2018131/e17) as the resolver, and gives the reader no procedure they could execute. Its closing caveat concedes it found no call-site for the operation it names, which underlines that the checkable claim it does make is the AddCommand one.
+
+Consistent with no grade-3 span; graded FAIL.

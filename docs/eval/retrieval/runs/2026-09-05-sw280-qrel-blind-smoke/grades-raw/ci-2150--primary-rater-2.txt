@@ -1,0 +1,31 @@
+FAIL
+
+Query ci-2150, response c8851ee711e8cf0cf7eaa0a8a28cc17cacb76c1b8a5083cd0f55ee339a6f0299.
+
+Checked against the single reviewed grade-3 span for this question:
+command.go:569-575, anchor "{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}" — the point in
+the default usage template that delegates the whole Flags / Global Flags block, and therefore the
+thing that must be replaced (e.g. via SetUsageTemplate) to suppress printed defaults.
+
+Rubric criterion 1 (answers the question asked): the response is about the right question — it is
+scoped to hiding default flag values from help output.
+
+Rubric criterion 3 (grounded in the bundle): satisfied. Everything the response cites is genuinely
+present in the bundle bytes — nonCompletableFlag at bash_completions.go:699 with the
+`flag.Hidden || len(flag.Deprecated) > 0` body (ref e2/e89), shortHasNoOptDefVal at command.go:631
+and its NoOptDefVal body (ref e5/e92), and genFlagResult at doc/yaml_docs.go:149 (ref e3/e90). No
+outside-the-bundle sourcing.
+
+Rubric criterion 2 (substantively correct): not met. The response makes no affirmative claim that is
+consistent with the grade-3 span. The usage-template line command.go:569-575 and the
+FlagUsages/UsageTemplate mechanism appear nowhere in what the response identified; the response's
+own survey (Hidden/Deprecated, NoOptDefVal, yaml doc generation) is all off the answer key, and it
+concludes that no such mechanism is shown.
+
+Decisive fail criterion: the response is an explicit INSUFFICIENT. Under the rubric's fail criteria,
+"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one."
+This is a graded declination, not a missing/empty/refused response, so it is graded rather than
+treated as a failure-by-rule non-grade. The bundle it was given surfaced InitDefaultHelpFlag,
+completion helpers and doc generators but never the usage-template block at command.go:569-575, so
+the honest declination is recorded as a failure of the bundle's sufficiency, which is what this
+evaluation measures.

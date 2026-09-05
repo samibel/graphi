@@ -1,0 +1,17 @@
+PASS
+
+Checked against both reviewed grade-3 spans for ci-1202.
+
+1. Answers the question asked. The question has two halves — how unknown-command behaviour is defined, and how commands are added at runtime — and the response addresses both explicitly ("To add commands at runtime, use ... AddCommand()" and "For handling unknown commands, the validation logic is shown in legacyArgs()"). It is not answering a nearby question.
+
+2. Substantively correct against the key.
+   - Runtime-addition half, checked against grade-3 span command.go:1302-1329, anchor "func (c *Command) AddCommand(cmds ...*Command) {": the response names exactly that method at command.go:1303 as the operation for adding commands to a parent at run time, and quotes the reparenting line `cmds[i].parent = c`. Consistent with the span; nothing contradicted.
+   - Unknown-command half, checked against grade-3 span args.go:24-39, anchor "unknown command %q for %q%s": the response names legacyArgs() at args.go:28 as the logic that "checks subcommand validity and determines whether to accept or validate arguments based on whether the command has subcommands." That restates the span's stated rule (no subcommands -> arbitrary args accepted; root with subcommands -> subcommand validity checking) and contradicts none of it. It does not reproduce the unknown-command error string itself, but the rubric requires consistency with a grade-3 span, not exhaustiveness, and the claim made is checkable rather than hedged.
+
+3. Grounded in the bundle. Every citation appears in the bytes the rater was given:
+   - command.go:1303 AddCommand — item ref_id ec40e8ae10c56a4b ("primary: method cobra.Command.AddCommand (command.go:1303)"), evidence e4 and snippet e154 (span 1297-1309), whose text the response quotes verbatim including the `panic("Command can't be a child of itself")` line.
+   - args.go:28 legacyArgs — item ref_id f21a64459558a11d ("primary: function cobra.legacyArgs (args.go:28)"), evidence e5 and snippet e155 (span 22-34), which carries the doc comment the response paraphrases.
+   - Supporting mentions are also in-bundle: RemoveCommand at command.go:1362 (ref_id 085c68594070e1f5, evidence e1, snippet e151, quoted verbatim), AddGroup at command.go:1356 (inside snippet e151), Commands() at command.go:1293 (ref_id 2356443441d4d409, snippet e152), IsAdditionalHelpTopicCommand at command.go:1583 (ref_id dc2976def459ba3f, snippet e153).
+   Nothing cited is absent from the bundle, and no part of the answer is supplied from outside it.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites only in-bundle evidence, does not return INSUFFICIENT, and makes checkable claims.

@@ -1,0 +1,38 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-1505: command.go:1226-1234,
+anchor "if c.helpCommand == nil {" — the default help command is constructed only when
+c.helpCommand is nil and the command has subcommands, so supplying one's own command via
+SetHelpCommand suppresses the default.
+
+1. Answers the question asked. The response is about removing/suppressing the default help
+   command on the root command, not a nearby question (not --help flag, not help templates).
+
+2. Substantively correct. The response's second approach — "Using SetHelpCommand: ... provide
+   your own help command ... to remove or disable the help command" — is the mechanism the
+   grade-3 span names. It also states the controlling condition correctly: InitDefaultHelpCmd
+   "adds a default help command to a Command if it doesn't already have one and if the command
+   has subcommands", which is exactly the c.helpCommand == nil / HasSubCommands gate at
+   command.go:1226-1234. The additional RemoveCommand suggestion is a second route that the
+   answer key does not contradict; the rubric requires consistency with at least one reviewed
+   span, and the SetHelpCommand claim is consistent with it, so the extra option does not fail
+   the response.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes:
+   - command.go:1229 InitDefaultHelpCmd — item ref_id 8821bed31f420e96 ("primary: method
+     cobra.Command.InitDefaultHelpCmd (command.go:1229)") and evidence e3; snippet e63
+     (command.go:1223-1235) contains the doc comment "If c already has help command or c has no
+     subcommands, it will do nothing", "if !c.HasSubCommands()" and the anchor line
+     "if c.helpCommand == nil {" itself.
+   - site/content/user_guide.md:541 "Defining your own help" — item ref_id 9369af9206932b1d and
+     evidence e4/e35; snippet e64 contains the heading "### Defining your own help" and the line
+     "cmd.SetHelpCommand(cmd *Command)", which is where the rater got SetHelpCommand.
+   - site/content/user_guide.md:492 — item ref_id e909af5513ea2ba6 and evidence e5/e36; the
+     quoted sentence "Cobra automatically adds a help command to your application when you have
+     subcommands." appears verbatim in snippet e65.
+   - command.go:1362 RemoveCommand — item ref_id 085c68594070e1f5 and evidence e12; snippet e67
+     (command.go:1356-1368) contains "func (c *Command) RemoveCommand(cmds ...*Command)".
+
+No fail criterion applies: the response is not about a different question, does not contradict
+the grade-3 span, cites only material present in the bytes, does not answer INSUFFICIENT, and
+makes a definite checkable claim rather than hedging.

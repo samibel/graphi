@@ -1,0 +1,15 @@
+PASS
+
+Checked against grade-3 span args.go:73-81 anchor "func MinimumNArgs(n int) PositionalArgs {" (the built-in validator making N positional arguments mandatory, n=1).
+
+1. Answers the question asked. The question is "How to add a required argument?" and the response answers exactly that: set the command's `Args` field to a `PositionalArgs` validator, concretely `Args: cobra.MinimumNArgs(1)`. It is not answering a nearby question (e.g. required flags).
+
+2. Substantively correct. The response's central claim names `cobra.MinimumNArgs` and its use as `Args: cobra.MinimumNArgs(1)`, which is the mechanism in the first reviewed grade-3 span (args.go:73-81). It also points at the `PositionalArgs` type and the `Args` field as the general route, which is consistent with, and a superset of, the second span (ExactArgs) rather than contradicting it. Nothing in the response contradicts either span; the note that a nil `Args` falls back to `ArbitraryArgs` (so `Args` must be set explicitly) is a correct supporting statement, not a competing answer.
+
+3. Grounded in the bundle. Every citation is present in the exact bundle bytes:
+   - `args.go:74` with snippet span 68-80 — evidence ref e114 in the bundle, whose snippet text contains verbatim "// MinimumNArgs returns an error if there is not at least N args.", "func MinimumNArgs(n int) PositionalArgs {" and the `fmt.Errorf("requires at least %d arg(s), only received %d", n, len(args))` line the response quotes.
+   - `args.go:16-28` — evidence ref e118, whose snippet contains verbatim "type PositionalArgs func(cmd *Command, args []string) error".
+   - `command.go:1139` `ValidateArgs` with snippet span 1133-1145 — evidence ref e112, whose snippet contains "func (c *Command) ValidateArgs(args []string) error {", "if c.Args == nil {", "return ArbitraryArgs(c, args)" and "return c.Args(c, args)".
+   - `args.go:69` `ArbitraryArgs` and the "ArbitraryArgs never returns an error" comment — present both as the ranked item "callee: function cobra.ArbitraryArgs (args.go:69)" and inside the e114 snippet text.
+   - `site/content/user_guide.md:367` with snippet span 361-373 — evidence ref e113, whose snippet contains "## Positional and Custom Arguments", "Validation of positional arguments can be specified using the `Args` field of `Command`." and the "`NoArgs` - report an error if there are any positional args." bullet, exactly as quoted.
+   The response also correctly flags that the user_guide snippet is truncated before the MinimumNArgs/ExactArgs bullets, so it does not attribute to the bundle anything the bundle does not contain. No claim is supplied from outside the bundle, it is not INSUFFICIENT, and it is not hedged — it makes the checkable claim `Args: cobra.MinimumNArgs(1)`.

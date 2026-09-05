@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1592",
+  "response_sha256": "2504e62f7edc7bd3d6392742d3f32cd1bb6dfbf8ff1db5068567e4702ab5ee79",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the grade-3 span command.go:52-61, anchor \"Arguments that are not enclosed in brackets are required.\"\n\n1. Answers the question asked. The response addresses both halves of \"How to document or define a required argument?\" — it separates documenting (the Use string convention) from defining/enforcing (the Args validator field) and gives a concrete instruction for each.\n\n2. Substantively correct. The documenting claim reproduces the command.go:52-61 span almost verbatim: it quotes the Use field's recommended syntax, including \"[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\", and concludes correctly that an argument is documented as required by writing it unbracketed in Command.Use. That is consistent with the reviewed span, and nothing in the response contradicts it. The second half — set Command.Args to a validator, which ValidateArgs invokes — is the mechanism that args.go:73-81 (MinimumNArgs) and args.go:93-101 (ExactArgs) instantiate; the response does not name those two functions but describes the same enforcement path and does not assert anything the key contradicts. The closing caveat is scoped to the specific validator name only, not to the answer as a whole, so a checkable claim remains on the table and rubric fail-criterion \"hedged to the point of making no checkable claim\" does not apply. Nor is this an INSUFFICIENT response: it answers.\n\n3. Grounded in the bundle. Every citation is present in the bytes the rater was given: evidence e106 (command.go, span 45-57, role snippet) carries the exact \"Arguments that are not enclosed in brackets are required.\" text the response quotes; e107 (command.go, span 1133-1145) carries the ValidateArgs body the response reproduces, matching item a63fab69c86b602b at command.go:1139; e108 (site/content/user_guide.md, span 361-373) carries the \"Positional and Custom Arguments\" text and the `NoArgs` truncation the response accurately notes; and item ca0ac9e7f5b714ac / evidence e9 covers ArbitraryArgs at args.go:69. No cited path, symbol or line is absent from the bundle, and no part of the answer is supplied from outside it.",
+  "graded_at": "2026-09-05T14:02:03Z",
+  "sha256": "14053d7cf741efb9ec2a8827d55df0ba3e6898c88bcf91d57fa1912521f26658"
+}

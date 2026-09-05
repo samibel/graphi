@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1592",
+  "response_sha256": "24834e9ed8d107bc98faa8811b9a633b7c1f2289fcb5ac5519aa6e854e587bae",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against grade-3 span command.go:52-61, anchor \"Arguments that are not enclosed in brackets are required.\" The response's documentation half quotes that convention verbatim and states the correct rule: an argument in the Use field is required when it is not enclosed in brackets. This is consistent with the answer key rather than contradicting it.\n\nGrounded in the bundle: the response cites evidence e106 (command.go, span 45-57), whose snippet bytes in the bundle contain the Command struct's Use field comment including the exact sentence \"[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\" It also cites e108 (site/content/user_guide.md, span 361-373), whose snippet in the bundle contains \"Validation of positional arguments can be specified using the `Args` field of `Command`.\" and the built-in validator list, and e107 (command.go:1139, span 1133-1145), whose snippet contains func (c *Command) ValidateArgs. All three ref ids, paths, line spans and quoted strings appear in the exact bundle bytes.\n\nAnswers the question asked: it treats both halves of \"document or define\", giving the Use-field convention for documenting and the Args-field / ValidateArgs mechanism for defining and enforcing. The defining half does not name MinimumNArgs (args.go:73-81) or ExactArgs (args.go:93-101) specifically, but pass criterion 2 requires consistency with at least one reviewed grade-3 span, and the Args-field/ValidateArgs answer is the same mechanism those validators plug into, not a contradiction of it. No hedging, no INSUFFICIENT, a checkable claim is made.",
+  "graded_at": "2026-09-05T14:01:54Z",
+  "sha256": "8c2ffd7cb9abe9371a27b4150667d18f92647a4d664dd5913af349b424d2c28b"
+}

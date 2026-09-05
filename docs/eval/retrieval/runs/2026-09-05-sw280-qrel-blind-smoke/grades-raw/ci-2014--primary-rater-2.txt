@@ -1,0 +1,48 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-2014: command.go:1034-1040,
+anchor "// Execute uses the args (os.Args[1:] by default)", whose reason states the dispatch
+mechanism — Execute runs the supplied args through the command tree, matching the command and
+then its corresponding flags.
+
+1. Answers the question asked. The question is "How to call a command from another command with
+   flags". The response answers exactly that: it states there is no dedicated "call command X from
+   command Y with flags" helper, and that the mechanism is to build one args slice containing both
+   the subcommand path tokens and the flag tokens and let the command tree resolve it
+   (ExecuteC -> Find/Traverse -> Flags/ParseFlags). It does not drift to a nearby question.
+
+2. Substantively correct. The response's claim is the same mechanism the grade-3 span describes,
+   reached through an equivalent location. The span anchors on Execute (command.go:1034-1040); the
+   response anchors on ExecuteC (command.go:1052), which is the function Execute delegates to, and
+   correctly reports that dispatch is re-rooted ("Regardless of what command execute is called on,
+   run on Root only ... if c.HasParent()") and that the root then matches the command from the args
+   and afterwards applies the corresponding flags. That is "args through the command tree, matching
+   the command and then its corresponding flags" — genuinely equivalent, and nothing in the answer
+   key is contradicted. Naming Find/Traverse and Flags/ParseFlags refines the same path rather than
+   proposing a competing one.
+
+3. Grounded in the bundle. Every load-bearing citation appears verbatim in the bundle bytes the
+   rater was given:
+   - e129, command.go span 1046-1058 — the ExecuteC snippet, including the quoted
+     "Regardless of what command execute is called on, run on Root only" and "if c.HasParent()".
+   - e130, command.go span 720-732 — the Find snippet, including "Find the target command given the
+     args and command tree / Meant to be run on the highest node. Only searches down." and the
+     inner `stripFlags(innerArgs, c)` call the response relies on for the flags-do-not-block-matching
+     claim.
+   - e128, command.go span 784-796 — the Traverse snippet, including "Traverse the command tree to
+     find the command, and parse args for each parent.", `flags := []string{}`, `inFlag := false`
+     and "A long flag with a space separated value".
+   - e134, command.go span 1637-1649 — the Flags snippet, including "returns the complete FlagSet
+     that applies to this command (local and persistent declared here and by all parents)" and
+     `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`.
+   - e127, completions.go span 260-272 — the getCompletions snippet, including `toComplete :=
+     args[len(args)-1]`, `trimmedArgs := args[:len(args)-1]` and `var finalCmd *Command`.
+   - Command.ParseFlags (command.go:1819) is present as a bundle item, and its cited edges e28
+     (completions.go:319), e29 (completions.go:323) and e30 (command.go:823) are present with those
+     exact paths and lines.
+   No cited path, symbol or line is absent from the bundle, and nothing in the answer is supplied
+   from outside it.
+
+No fail criterion applies: the response is not about a different question, does not contradict the
+grade-3 span, does not say INSUFFICIENT, and is not hedged — it commits to a concrete, checkable
+claim about how the flags-bearing args slice is resolved and parsed.

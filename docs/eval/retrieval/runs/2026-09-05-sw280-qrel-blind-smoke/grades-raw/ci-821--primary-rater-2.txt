@@ -1,0 +1,30 @@
+FAIL
+Query ci-821, response a49d197706ddf44f39201403bcede7b4e1b945534ddd55f09458f9216c1a9780.
+
+The response opens with INSUFFICIENT and makes no checkable claim about how to suppress the
+`Global Flags` section. Under the frozen rubric's fail criteria, "the response says it cannot
+answer (INSUFFICIENT), which is an honest answer and a failed one" — that alone is sufficient,
+and it also fails pass criterion 2 (no substantive claim to check) and criterion 5's hedging bar.
+This is not a missing, empty or refused response: the rater returned substantive prose explaining
+what it looked for and why it stopped, so it is gradable rather than a failure-by-rule.
+
+Grade-3 spans checked against:
+- command.go:572-575 anchor="Global Flags:" — the template block and its
+  {{if .HasAvailableInheritedFlags}} condition. The response explicitly states it found no
+  usage/help template and no InheritedFlags/NonInheritedFlags check, so it neither matches nor
+  contradicts this span; it declines to name it.
+- command.go:311-314 anchor="func (c *Command) SetUsageTemplate(s string) {" — the response names
+  `UsageTemplate`/`SetUsageTemplate` only as the kind of thing it would have needed and reports it
+  as absent from the bundle, rather than asserting it as the answer. No equivalent alternative
+  mechanism is offered.
+
+Bundle evidence the response did cite (criterion 3 is the one criterion it satisfies): it cites
+`cobra.Command.InitDefaultHelpFlag` at command.go:1186, present as ref_id 1b7d7b255aa691cb with
+evidence e1/e78 and the snippet spanning command.go:1180-1192; and the "Persistent Flags"
+documentation at site/content/user_guide.md:270, present as ref_id 2ebf8a24970ff50b with evidence
+e2/e79 spanning lines 264-276. Both citations are genuinely in the bytes, and its characterisation
+of them is accurate — InitDefaultHelpFlag adds the -h/--help flag and the guide section describes
+declaring persistent flags, neither of which controls the heading. The bundle indeed contains no
+snippet covering command.go:572-575 or command.go:311-314; command.go appears only as a file
+roll-up (e62) and via unrelated snippets. So the failure records the bundle being insufficient for
+this question, not the rater misreading it.

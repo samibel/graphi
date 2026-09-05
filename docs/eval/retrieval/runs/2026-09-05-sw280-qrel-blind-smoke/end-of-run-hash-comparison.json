@@ -1,0 +1,41 @@
+{
+  "compared_at": "2026-09-05T14:10:13Z",
+  "comparisons": [
+    {
+      "role": "dataset",
+      "path": "internal/eval/retrieval/testdata/datasets/cobra-v2.json",
+      "frozen_sha256": "7de5ce6eef0e58d952b64ea7beaa0b09d158724b1eaa52bbd064ceebf53f35fc",
+      "observed_sha256": "7de5ce6eef0e58d952b64ea7beaa0b09d158724b1eaa52bbd064ceebf53f35fc",
+      "matches": true
+    },
+    {
+      "role": "budgets",
+      "path": "docs/eval/retrieval-budgets.json",
+      "frozen_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+      "observed_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+      "matches": true
+    },
+    {
+      "role": "targets",
+      "path": "docs/eval/retrieval-targets.json",
+      "frozen_sha256": "26a5ea05657d18b687f42f53fbebde2876e016de90b0d22b21f0441f236a0592",
+      "observed_sha256": "26a5ea05657d18b687f42f53fbebde2876e016de90b0d22b21f0441f236a0592",
+      "matches": true
+    },
+    {
+      "role": "grading_rubric",
+      "path": "docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md",
+      "frozen_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+      "observed_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+      "matches": true
+    },
+    {
+      "role": "methodology",
+      "path": "docs/eval/retrieval/methodology.md",
+      "frozen_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+      "observed_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+      "matches": true
+    }
+  ],
+  "all_match": true
+}

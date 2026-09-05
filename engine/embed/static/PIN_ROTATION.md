@@ -75,6 +75,15 @@ and become stale when `PinnedRevision` changes:
   series on both sides are produced by this pinned embedder; the `exact_path`
   0.6667 → 1.0000 result and the "every other stratum identical" finding are
   only valid for this revision.
+- `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/` — SW-280's
+  qrel-blind smoke evaluation. Its 64 preserved `task_context/2` bundles were
+  produced by this pinned embedder over the sealed cobra-v2 holdout, and the
+  31/64 pass count against `k=56` is a statement about those bundles. A rotation
+  changes the bundles and therefore invalidates the pass count, the responses
+  graded from it and the interval; it also invalidates the run's preserved
+  real-tokenizer counts, which `internal/eval/tokenizer/PIN_ROTATION.md` governs
+  separately. Added when this governance gate caught the run's absence — the
+  second time the gate has bitten on a genuinely new production-static run.
 - `docs/eval/static-embedder-cross-arch/2026-09-03-sw271/` — the byte-exact
   `darwin/arm64` versus `darwin/amd64` vector record for this revision.
 

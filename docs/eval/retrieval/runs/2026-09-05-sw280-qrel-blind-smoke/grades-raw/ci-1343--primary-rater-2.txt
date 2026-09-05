@@ -1,0 +1,9 @@
+FAIL
+
+Query ci-1343 ("Is there a way to customise entire deprecate message for a command"). Checked against the single reviewed grade-3 answer span: command.go:879-881, anchor "Command %q is deprecated, %s" — the hard-coded format string in execute() that substitutes only the command name and the Deprecated field, establishing that only the trailing text is customisable.
+
+The rater's response opens with "INSUFFICIENT" and explicitly declines to state whether the full printed message is customisable, saying "there is no way to tell from this evidence". Rubric fail criterion: "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one." It also fails the "hedged to the point of making no checkable claim" criterion — it offers two alternatives (field controls the whole message vs. cobra wraps it with fixed text) without committing to either, so nothing can be checked against the command.go:879-881 span.
+
+Bundle evidence the response did cite (correctly present in the bytes it was given): doc/cmd_test.go:77 with the e34 snippet showing `Deprecated: "Please use echo instead"` on `deprecatedCmd`, and command_test.go:1493-1499 with the e37 snippet showing `TestDeprecatedCommand` setting `Deprecated: "This command is deprecated"`. So the grounding criterion (pass criterion 3) is satisfied and the citations are genuine — the response is not fabricating from outside the bundle. Its observation that the bundle contains no snippet of command.go's rendering path is accurate: command.go appears only as read-6/e24/e33 file-level references with line 0 and no snippet, so the grade-3 span at command.go:879-881 was never surfaced in the bundle bytes.
+
+But pass criteria 1 and 2 both require an actual claim, and the response makes none. Not a missing, empty or refused response — it is a substantive INSUFFICIENT judgement and therefore graded, not a failure by rule.

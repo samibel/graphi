@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1416",
+  "response_sha256": "1e5866e02e260b4ff1e8c8e0ce39cfc985860e7898c444d183c8d26944d38638",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Response 1e5866e02e260b4ff1e8c8e0ce39cfc985860e7898c444d183c8d26944d38638 for query ci-1416 declares INSUFFICIENT, which the frozen rubric (sw280-grading-rubric/1) lists explicitly as a fail criterion: \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one\". It is a present, non-empty, non-refused response, so it is graded rather than falling under the not-graded rule for missing/empty/refused responses.\n\nChecked against the reviewed grade-3 spans: command.go:982-995 (anchor \"} else if c.PostRun != nil {\") — PostRun/PostRunE run only after RunE returned nil and receive the same *Command and args with no status parameter; command.go:136-139 (anchor \"PostRun func(cmd *Command, args []string)\") — the hook signature; and the SetContext/Context pair at command.go:268-272 and command.go:257-266, which is the mechanism for carrying a caller-defined status between Run and PostRun. The response makes no claim consistent with any of these spans: it neither states the no-status-parameter signature fact nor names the shared *Command/context carry-over, so criterion 2 (substantively correct) is not met and it makes no checkable claim about how to pass a status.\n\nBundle evidence the response did cite: command.go:1021, the exported-vs-internal `postRun` method, present in the bundle as ref_id 0a48e1b8489576b5 / evidence e1 and in the e101 snippet (\"func (c *Command) postRun() {\\n\\tfor _, x := range finalizers {\"). That citation is genuinely in the bundle bytes, so criterion 3 (grounded) is satisfied, but the response uses it only to say the bundle does not answer the question. Note that the cited command.go:1021 postRun is the finalizers loop, a different construct from the user-facing PostRun hook in the answer key — the response correctly does not claim otherwise, but it also never reaches the key's mechanism. Criterion 1 is arguably met (it is about the asked question) while criteria 2 and 3's substantive requirement fail, and the explicit INSUFFICIENT fail rule is dispositive.",
+  "graded_at": "2026-09-05T14:01:11Z",
+  "sha256": "1077f1ed0ef3135ddc4b135b802b9e9d42eba120c8dbc0ef0cd29c2e2e2d627c"
+}

@@ -1,0 +1,12 @@
+FAIL
+Query ci-2, response 37e03e0cb7ebab9c12ba7b199db60fd903e49b8546cc3a248ac8acc1d3c6d8b8.
+
+Checked against the single reviewed grade-3 span for this question: command.go:643-679, anchor "// \"--\" terminates the flags" — stripFlags() stops scanning at the literal `--`, so nothing after it is collected into the `commands` slice, which is the only source of subcommand candidates.
+
+The response does not make that claim, or any other checkable claim. It opens with the literal token INSUFFICIENT and then states only that the bundle covers argument validation (NoArgs, legacyArgs, ExactArgs) and lacks anything showing how to wrap arguments so they are not interpreted as commands. That is a declaration of inability to answer, which the rubric's fail criteria list explicitly ("the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one"). It is a graded response, not a missing/empty/refused one, so it is graded here rather than failed by rule.
+
+Pass criterion 2 is not met: the response asserts no mechanism, so it is consistent with no grade-3 span; it never mentions `--` or stripFlags.
+
+Pass criterion 3 is not met as a grounding for an answer: the bundle material the response does name — cobra.NoArgs (args.go:42, evidence e4/e198) and cobra.legacyArgs (args.go:28, evidence e5/e199), plus the args_test.go ExactArgs tests (e17, e22, e23) — is genuinely present in the bytes, but it is cited to justify the non-answer rather than to support a claim about wrapping arguments.
+
+Worth noting for the bundle-sufficiency reading this evaluation is measuring: the bundle did carry evidence ref e77 at command.go:643 — the exact start line of the grade-3 span — but only as a bare relation entry with no snippet text, so the `--` anchor comment itself never appeared in the bytes the rater saw. That explains the response without excusing it: the rubric grades the response, and this one declines to answer.

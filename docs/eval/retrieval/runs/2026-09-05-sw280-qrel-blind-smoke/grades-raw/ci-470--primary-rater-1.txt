@@ -1,0 +1,17 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-470: command.go:470-476, anchor "func (c *Command) Help() error {" — the exported call that emits the command's help on demand, delegating to HelpFunc.
+
+1. Answers the question asked. The question is "how to call the help command on demand?" and the response's lead claim is exactly that: call the Help() method on a Command object. It does not drift to a nearby question (e.g. how help is registered or templated); the extra material about the CLI 'app help' path and SetHelpCommand is supplementary and does not displace the direct answer.
+
+2. Substantively correct. The response names cobra.Command.Help() at command.go:473, which falls inside the reviewed grade-3 span command.go:470-476 and matches its anchor text. It also states the mechanism correctly — that Help() calls c.HelpFunc()(c, []string{}) — which is the delegation-to-HelpFunc behaviour the span's reason describes. Nothing in the response contradicts the answer key; the secondary pointers (the auto-added 'app help' command, InitDefaultHelpCmd) are consistent with the key's note that Help() is the same thing 'help [command]' does.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+   - e62 (command.go:467-479 snippet) contains verbatim "// Help puts out the help for the command.", "// Used when a user calls help [command].", "func (c *Command) Help() error {" and "c.HelpFunc()(c, []string{})" — this is the load-bearing citation and it carries the grade-3 span.
+   - command.go:473 appears in the bundle both as item ref_id 53d7a740e756cde0 ("method cobra.Command.Help (command.go:473)") and as evidence e2.
+   - e65 (site/content/user_guide.md:486-498) contains the "## Help Command" text about Cobra automatically adding a help command run as 'app help'.
+   - e64 (site/content/user_guide.md:535-547) contains "### Defining your own help" and "cmd.SetHelpCommand(cmd *Command)".
+   - e63 (command.go:1223-1235) contains "func (c *Command) InitDefaultHelpCmd()" and the quoted line "It is called automatically by executing the c or by calling help and usage."
+   No cited path, symbol, line or quoted string is absent from the bundle, and no claim is supplied from outside it.
+
+No fail criterion applies: the response is not about another question, does not contradict the key, does not answer INSUFFICIENT, and makes a specific checkable claim rather than hedging.

@@ -1,0 +1,29 @@
+FAIL
+Query ci-533, response a7dbab1c8266096266fc0100aae020c83226f102f66e4821aae5a31c9a619a71.
+The response opens with "INSUFFICIENT" and makes no checkable claim about how to parse a
+string as if it were a command line argument. The rubric's fail criteria list this
+explicitly: a response that says it cannot answer (INSUFFICIENT) is an honest answer and a
+failed one. It is a present, non-empty, non-refusing-by-omission response, so it is graded
+here rather than treated as a failure-by-rule.
+
+Checked against grade-3 span command.go:274-278, anchor "func (c *Command) SetArgs(a []string) {"
+(the exported mechanism for feeding Cobra your own argument list in place of os.Args[1:]),
+and against grade-3 span command.go:1818-1840, anchor
+"func (c *Command) ParseFlags(args []string) error {" (the exported entry point that parses a
+supplied argument slice against the command's merged flag sets). The response asserts neither
+mechanism — it names SetArgs only as an example of what it says the bundle lacks, which is a
+statement about the bundle's coverage, not a claim that SetArgs is the answer. Criterion 2
+(substantively correct claim consistent with a grade-3 span) therefore is not met.
+
+Bundle evidence the response cites: README.md:95 (e1/e47 install-and-usage snippet),
+command.go UseLine at 1437 (e2/e48), CommandPath at 1426 (e8/e54), HasParent at 1632 (e9),
+HasAvailableFlags at 1773 (e6/e52), powershell_completions.go genPowerShellComp at 28
+(e3/e49) and genPowerShellCompletion at 288 (e7/e53), doc/md_docs.go GenMarkdownCustom:57,
+doc/yaml_docs.go GenYamlCustom:93, doc/rest_docs.go GenReSTCustom:62, doc/man_docs.go
+manPreamble:143, cobra.go WriteStringAndCheck:241, active_help.go activeHelpEnvVar:62, and
+site/content/user_guide.md "Usage Message" (554) / "Help Command" (492). All of those do
+appear in the bundle bytes, so the citations are genuine and criterion 3 is satisfied; the
+enumeration is also accurate — neither answer-key span (command.go:274-278, command.go:1818-1840)
+is present anywhere in the served items, evidence entries or snippets. That accuracy does not
+rescue the grade: the rubric admits no partial credit and no third outcome, and an accurate
+INSUFFICIENT is still a fail.

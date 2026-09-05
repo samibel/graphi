@@ -1,0 +1,9 @@
+FAIL
+
+Query ci-1790 ("How to test a cobra CLI application?"), response d008ed317b0fd27511341ca94e17ed6ebdfba259e3c4dfe6af461b7005e96e4e.
+
+Grade-3 span checked against: command.go:274-278, anchor "particularly useful when testing" — the SetArgs doc comment that names testing as its purpose, i.e. a test drives the CLI by setting args on the root command and executing it.
+
+Bundle evidence the response cited: .github/labeler.yml line 5 / snippet e27 (the "area/cobra-command" pattern list containing './cobra_test.go'), plus README.md:89-101 (e23) and README.md:1-7 (e29), and site/content/user_guide.md:24-36 (e24), 486-498 (e26), 548-560 (e25), 1-7 (e28). All of these do appear in the bundle bytes, so the response is honestly grounded in what it was given, and it is addressed to the question asked rather than a nearby one.
+
+It fails on the rubric's explicit fail criterion: the response is an INSUFFICIENT declaration — "the response contains no guidance on how to test a Cobra CLI application" — which the rubric records as an honest answer and a failed one. It makes no checkable claim about the testing procedure and therefore cannot be consistent with the command.go:274-278 SetArgs span; nothing in the bundle carried command.go, and the rater correctly observed that './cobra_test.go' appears only as a labeler glob with no test API or procedure attached. The failure is a property of the bundle's sufficiency, not of the rater's honesty, but under pass criterion 2 the grade is FAIL.

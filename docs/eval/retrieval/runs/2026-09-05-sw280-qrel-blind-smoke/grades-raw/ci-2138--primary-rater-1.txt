@@ -1,0 +1,15 @@
+PASS
+
+Checked against the reviewed grade-3 span args.go:24-39, anchor "// legacyArgs validation has the following behaviour:" (the default mechanism: a root command that has subcommands does subcommand validity checking on an unrecognised first argument; subcommands accept arbitrary args unless Args is set).
+
+1. Answers the question asked. The response addresses how an unrecognised/wrong subcommand is handled, not a nearby question. Its lead claim is that wrong subcommands are handled by the legacyArgs validation function in args.go, which "implements subcommand validity checking" and runs "when a root command with subcommands is executed" — that is the mechanism the question asks about.
+
+2. Substantively correct. The lead claim is consistent with the args.go:24-39 grade-3 span: legacyArgs is the default PositionalArgs validator, and it is the root-with-subcommands case that performs subcommand checking. The response does not contradict either grade-3 span; it simply does not reach the second span's caller-facing cobra.NoArgs procedure, and the rubric requires consistency with at least one span, not both. The supporting claims are also non-contradictory: Command.Find does locate the target command in the tree, and ExecuteC is the execution path. The flagCompError mention is a tangent about shell-completion flag errors rather than wrong-subcommand handling, but it is presented as a separate, correctly-scoped statement ("flag-related subcommand errors") and does not falsify the main answer.
+
+3. Grounded in the bundle. Every cited location appears in the exact bundle bytes:
+   - args.go lines 22-34 = evidence e134, whose snippet text carries the very anchor comment "// legacyArgs validation has the following behaviour:" and the bullet "- root commands with subcommands will do subcommand validity checking"; the primary item f21a64459558a11d names "function cobra.legacyArgs (args.go:28)".
+   - command.go lines 720-732 = evidence e135, whose snippet contains "// Find the target command given the args and command tree / // Meant to be run on the highest node. Only searches down." — the response paraphrases this line for line.
+   - completions.go lines 44-56 = evidence e132, cited by ref id explicitly; the quoted string "Subcommand 'X' does not support flag 'Y'" matches the snippet's Error() body.
+   - command.go lines 1046-1058 = evidence e130, the ExecuteC snippet.
+
+No fail criterion applies: the response is not about a different question, contradicts no grade-3 span, supplies nothing from outside the bundle, does not return INSUFFICIENT, and makes a definite checkable claim rather than hedging.

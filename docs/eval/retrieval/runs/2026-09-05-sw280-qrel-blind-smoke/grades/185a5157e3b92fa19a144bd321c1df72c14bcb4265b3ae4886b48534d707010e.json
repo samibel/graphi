@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1060",
+  "response_sha256": "185a5157e3b92fa19a144bd321c1df72c14bcb4265b3ae4886b48534d707010e",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against both reviewed grade-3 spans for ci-1060: command.go:274-278 (anchor \"func (c *Command) SetArgs(a []string) {\" — the operation that substitutes the argument vector, i.e. how a default subcommand name is inserted before dispatch) and command.go:1076-1081 (anchor \"args := c.args\" — ExecuteC dispatching on c.args whenever non-nil, falling back to os.Args[1:] only otherwise).\n\nCriterion 3 (grounded in the bundle) holds: every citation the response makes is present in the given bytes — Execute at command.go:1038 (evidence e4, snippet e94), ExecuteC at command.go:1052 (e1, snippet e91), InitDefaultHelpCmd at command.go:1229 (e2, snippet e92), and Find at command.go:726 (item ref_id e6d3046bf2018131, snippet e96). So the response is not supplying its answer from outside the bundle.\n\nCriterion 2 (substantively correct) fails, and criterion 1 is at best borderline. The response's actual claim is \"to invoke a subcommand by default, use Execute()/ExecuteC()\", which describes how any Cobra command tree is dispatched, not how a particular subcommand is made the default one. It names neither SetArgs nor any equivalent mechanism for substituting the argument vector, so it is inconsistent with the first grade-3 span rather than an equivalent restatement of it. Against the second span it is worse than silent: it asserts that Execute \"uses os.Args[1:] by default\" with no mention that ExecuteC reads c.args first and only falls back to os.Args[1:] when c.args is nil — the precedence that is the whole reason the technique works. The only concretely \"default subcommand\" claim it makes, InitDefaultHelpCmd at command.go:1229 adding a default help command, is a genuinely different mechanism (auto-registering a help child), not making a chosen subcommand run when none is named, and the answer key contradicts it as the answer to this question. Find at command.go:726 is likewise the lookup step, not the substitution point.\n\nThe response therefore addresses a nearby question (how command execution and lookup work) and makes no checkable claim matching either reviewed grade-3 span, so it does not pass.",
+  "graded_at": "2026-09-05T13:59:22Z",
+  "sha256": "c4206d980cc05b1f4a35c777fa8d9bed32d946ddb8e6de36433f17d217a4e6d4"
+}

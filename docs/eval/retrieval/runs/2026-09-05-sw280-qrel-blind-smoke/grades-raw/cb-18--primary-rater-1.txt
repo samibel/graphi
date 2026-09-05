@@ -1,0 +1,14 @@
+PASS
+
+Checked against the single reviewed grade-3 span for cb-18: command.go:1560-1576, anchor "func (c *Command) IsAvailableCommand(" — IsAvailableCommand is the predicate that hides hidden and deprecated commands from help.
+
+1. Answers the question asked. The question is how hidden and deprecated commands are excluded from help output; the response names the exclusion predicate and the help-side call sites that consume it, not a nearby question.
+
+2. Substantively correct. The response's central claim — that exclusion happens in (c *Command) IsAvailableCommand in command.go, which returns false when len(c.Deprecated) != 0 or c.Hidden — is the same location and mechanism as the grade-3 span. Its cited line range (1562-1568) falls inside the key's 1560-1576 and matches the function's declaration line as reported in the bundle. Nothing in the response contradicts the key; the supporting material on HasAvailableSubCommands and IsAdditionalHelpTopicCommand is correct additional context about where the predicate is applied.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes the rater was given:
+   - IsAvailableCommand at command.go:1562 and its body `if len(c.Deprecated) != 0 || c.Hidden { return false }` — item ref_id 2320e6ccb55ff14c and evidence e56 (command.go span 1556-1568 snippet).
+   - HasAvailableSubCommands at command.go:1617 with the `sub.IsAvailableCommand()` loop — item ref_id b6177b2491c90bd2 and evidence e54 (command.go span 1611-1623 snippet).
+   - IsAdditionalHelpTopicCommand at command.go:1583 with `if c.Runnable() || len(c.Deprecated) != 0 || c.Hidden` — item ref_id dc2976def459ba3f and evidence e55 (command.go span 1577-1589 snippet).
+   - TestHiddenCommandIsHidden at command_test.go:1771 asserting a Hidden command is not IsAvailableCommand — item ref_id 7904904fe6dd4fcb and evidence e53 (command_test.go span 1765-1777 snippet).
+   No claim is supplied from outside the bundle, the response is not INSUFFICIENT, and it is not hedged: it makes a single checkable claim about the predicate.

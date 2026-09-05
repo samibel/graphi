@@ -1,0 +1,46 @@
+PASS
+
+Checked against both reviewed grade-3 spans for ci-1202.
+
+1. Answers the question asked. The response addresses both halves of the two-part
+   question explicitly: a paragraph on "Adding commands at runtime" and a paragraph on
+   "Behavior for unknown/invalid commands". It is not answering a nearby question.
+
+2. Substantively correct against the answer key.
+   - Runtime-add half, checked against the grade-3 span command.go:1302-1329
+     anchor "func (c *Command) AddCommand(cmds ...*Command) {": the response names
+     Command.AddCommand at command.go:1303 as the operation, and describes exactly the
+     mechanism the span's reason gives — it appends children to the parent's c.commands
+     slice and reparents them (cmds[i].parent = c). It also correctly notes the inverse
+     RemoveCommand and that Commands() exposes runtime-added children. Consistent with
+     the key, contradicting nothing in it.
+   - Unknown-command half, checked against the grade-3 span args.go:24-39
+     anchor "unknown command %q for %q%s": the response names legacyArgs (args.go:28) as
+     the default behaviour for unrecognised commands and reproduces the span's exact rule
+     verbatim from the doc comment — root commands with no subcommands take arbitrary
+     args, root commands with subcommands do subcommand validity checking, subcommands
+     always accept arbitrary args — and identifies `if !cmd.HasSubCommands() { return nil }`
+     as the branch that governs rejection. It further connects findSuggestions
+     (command.go:750) to args.go:36 as the suggestion path, which is the "plus suggestions"
+     half of the key's reason. Consistent with the key.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+   - e154 (command.go, span 1297-1309) carries the AddCommand snippet including
+     "AddCommand adds one or more commands to this parent command.", the
+     "Command can't be a child of itself" panic and `cmds[i].parent = c` — quoted accurately.
+   - e155 (args.go, span 22-34) carries the legacyArgs snippet whose doc comment the
+     response quotes, plus the HasSubCommands early return.
+   - e151 (command.go 1356-1368, RemoveCommand) and e152 (command.go 1287-1299,
+     Commands + EnableCommandSorting) support the runtime-mutation claims.
+   - The item entries for AddCommand (command.go:1303), legacyArgs (args.go:28),
+     HasSubCommands (command.go:1556) and findSuggestions (command.go:750, evidence e11 =
+     args.go:36) all appear in the bundle's items/evidence arrays.
+   Nothing cited is absent from the bundle; nothing load-bearing is supplied from outside it.
+
+On the trailing "INSUFFICIENT (partial)" line: this is not the INSUFFICIENT fail case.
+The rubric fails a response that says it cannot answer. This response does answer, and
+answers correctly against both grade-3 spans; the closing line only scopes what it did not
+have a snippet for (the findSuggestions body and the literal error-string/dispatch site),
+after having already made the checkable claims. It is a stated limitation on top of a
+committed answer, not a refusal, and it is not hedged to the point of making no checkable
+claim. Judged on the answer given, all three pass criteria hold.

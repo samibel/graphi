@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2177",
+  "response_sha256": "227870bb96f995759323b1ca039e042caf0251d882d69571214091cf0dfa2553",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the single reviewed grade-3 span for ci-2177: flag_groups.go:31-45, anchor \"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors\" — the key answer is that you call c.MarkFlagsRequiredTogether(names...) after declaring the flags, and Cobra errors when the command is invoked with some but not all of them, i.e. one flag requires the other.\n\nThe response declares INSUFFICIENT. Under the rubric's fail criteria, \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one\" — this alone is dispositive, and the outcome is a graded FAIL rather than a failure-by-rule, since the response is present, non-empty and not a refusal to engage.\n\nIndependently, pass criterion 2 also does not hold. The response never names MarkFlagsRequiredTogether or any equivalent mechanism; instead it affirmatively asserts that no such \"flag A requires flag B\" marker exists — \"that would need a different function (e.g. a 'required-together' or 'depends-on' marker) that is not present anywhere in this response's items or evidence list\" — which contradicts the reviewed grade-3 span rather than being consistent with it.\n\nBundle grounding (criterion 3) is the one criterion the response does satisfy: it cites material genuinely present in the bytes it was given — snippet e61 at flag_groups.go:43-55 for MarkFlagsOneRequired (item 7d36065e466013da, flag_groups.go:49), snippet e58 at shell_completions.go:32-44 for the package-level MarkFlagRequired with its flags.SetAnnotation(name, BashCompOneRequiredFlag, ...) body, the Command methods MarkFlagRequired (shell_completions.go:24, e62/e5) and MarkPersistentFlagRequired (shell_completions.go:31, e15), and enforceFlagGroupsForCompletion (flag_groups.go:225, e16/e17) which it correctly notes carries no snippet. All of these appear verbatim in the bundle. Grounding alone cannot rescue a response that fails criteria 1-2 and triggers the explicit INSUFFICIENT fail criterion.",
+  "graded_at": "2026-09-05T14:04:11Z",
+  "sha256": "f74a40191951426b3f297e619374ba7278f0d9953debc6c28863a5be6763b39f"
+}

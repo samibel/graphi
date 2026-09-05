@@ -1,0 +1,33 @@
+PASS
+
+Checked against grade-3 span command.go:1146-1168 (anchor "!pflag.Changed", the built-in per-flag
+required validation) and grade-3 span flag_groups.go:79-109 (anchor "func (c *Command)
+ValidateFlagGroups() error {", the declarative validation over set flags).
+
+1. Answers the question asked. The response is about how flag validation happens when flags are set,
+   not a nearby question: it names the validation entry points and the group rules they enforce.
+
+2. Substantively correct. It identifies ValidateRequiredFlags at command.go:1147, which falls inside
+   the reviewed grade-3 span command.go:1146-1168, and ValidateFlagGroups at flag_groups.go:81,
+   which falls inside the reviewed grade-3 span flag_groups.go:79-109; it further decomposes the
+   group rules into required-together, one-required (validateOneRequiredFlagGroups) and mutually
+   exclusive (validateExclusiveFlagGroups), matching that span's reason. Nothing it asserts is
+   contradicted by any answer span. It is weaker on the third span (command.go:967-980): it says
+   only that validation "happens ... during command execution" without giving the PreRunE →
+   ValidateRequiredFlags → ValidateFlagGroups ordering, and its closing line ("these validation
+   methods should be called during command execution") reads as if the caller invokes them rather
+   than cobra. That is imprecision, not a contradiction, and consistency with at least one grade-3
+   span is what the rubric requires — two are matched squarely.
+
+3. Grounded in the bundle. Every citation appears in the given bytes: command.go:1147 =
+   ValidateRequiredFlags (item ref 9b6bf88a941fea37, evidence e4, snippet e145 spanning
+   command.go:1141-1153 containing "func (c *Command) ValidateRequiredFlags() error {");
+   flag_groups.go:81 = ValidateFlagGroups (item fe4b0093b88ba63a, evidence e6, snippet e147 spanning
+   flag_groups.go:75-87 containing "func (c *Command) ValidateFlagGroups() error {" and its
+   mutuallyExclusive/oneRequired/requiredAsGroup doc comment, which the response quotes);
+   flag_groups.go:167 = validateOneRequiredFlagGroups (evidence e3, snippet e144);
+   flag_groups.go:188 = validateExclusiveFlagGroups (evidence e5, snippet e146);
+   flag_groups.go:33 = MarkFlagsRequiredTogether (evidence e2, snippet e143, whose comment text the
+   response reproduces); command.go:1643 = Command.Flags (evidence e1, snippet e142). No claim is
+   supplied from outside the bundle, the response is not INSUFFICIENT, and it makes checkable
+   file/line claims rather than hedging.

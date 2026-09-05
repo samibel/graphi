@@ -1,0 +1,34 @@
+{
+  "query_id": "ci-1758",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-1758",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "6c99a923e785c7abb5a1178fa7ee9fb3b236202fbdc4fcfae82e5460bd5f33e4",
+    "bundle_sha256": "ce2026adc7aec41b685e07af9c9a0068543ab9d8a1b10b643b661892ee0d8f11",
+    "prompt_sha256": "d68b70a046460e90416ec8eb7cd39c60a6cc5116110ee4e487b11a445d32eb47",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Yes, in practice: flags are not declared statically on the Command struct; they live in *flag.FlagSet objects that the command creates lazily and hands back to you, so you can add flags at any point (e.g. at runtime, from a loop, or from a hook) simply by calling the accessor and adding to the returned FlagSet. There is no dedicated \"dynamic flag\" API visible in the response; the ordinary accessors are the mechanism.\n\nEvidence in the response:\n\n- command.go:1643 `func (c *Command) Flags() *flag.FlagSet` (snippet e60, lines 1637-1649): \"Flags returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents)\". The body does `if c.flags == nil { c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError) ... }` and returns it — the set is created on first use and returned as a mutable pointer, so anything added to it later is part of the command's flags.\n- command.go:1726 `func (c *Command) PersistentFlags() *flag.FlagSet` (snippet e61, lines 1720-1732): same lazy pattern (`if c.pflags == nil { c.pflags = flag.NewFlagSet(...) }`), for flags that propagate to child commands.\n- command.go:1669 `func (c *Command) LocalFlags() *flag.FlagSet` (snippet e56, lines 1663-1675): \"returns the local FlagSet specifically set in the current command\"; it first calls `c.mergePersistentFlags()`, again building `c.lflags` lazily.\n- command.go:1849 `func (c *Command) mergePersistentFlags()` (snippet e58, lines 1843-1855): \"merges c.PersistentFlags() to c.Flags() and adds missing persistent flags of all parents\" via `c.Flags().AddFlagSet(c.PersistentFlags())` and `c.Flags().AddFlagSet(c.parentsPflags)`. This is the library itself adding flags to a command's FlagSet at runtime, and it is invoked lazily from LocalFlags/InheritedFlags (relation evidence e8/e9 at command.go:1851-1852, e12 at 1697), which shows the flag sets are meant to be extended after construction rather than fixed up front. `FlagSet.AddFlagSet` is therefore also available to you for bulk-adding a whole FlagSet built elsewhere.\n- Related callers listed (names only, no snippet): `Command.InitDefaultHelpFlag` (command.go:1186) and `Command.InitDefaultVersionFlag` (command.go:1204), which by name add the default help/version flags on demand, and `Command.ParseFlags` (command.go:1819), which is where the accumulated FlagSet is actually parsed — so additions must happen before parsing/execution.\n- Docs: site/content/user_guide.md:257 \"Assign flags to a command\" (snippet e59) and :270 \"Persistent Flags\" (snippet e55) describe the two approaches: a flag is either local to the command or \"persistent\", i.e. \"available to the command it's assigned to as well as every command under that command\"; README.md:68 \"Flags\" (snippet e57) says a command \"can define flags that persist through to children commands and flags that are only available to that command\".\n\nCaveat: the response shows the FlagSet accessor and merge machinery but not a snippet of a hook (e.g. a PreRun) adding flags, nor any explicit statement about adding flags after parsing has begun, so the exact latest safe point is not established by this evidence beyond \"before ParseFlags\".",
+    "responded_at": "2026-09-05T14:08:42Z",
+    "sha256": "a697c3aab3e2eaec8d28bf13b5e6f0aa0421fd1d56e49bf3979805c60d48b32e"
+  },
+  "disclosure": {
+    "query_id": "ci-1758",
+    "adjudicator_response_sha256": "a697c3aab3e2eaec8d28bf13b5e6f0aa0421fd1d56e49bf3979805c60d48b32e",
+    "disclosed_artifact_sha256": [
+      "aeb7c2ca6b154b6f1f2b05e96318f9ebad44dc1158de186ed386d4598f1ccb87",
+      "6e9746eeb0a755445b435850aaa270982ceab1c85cf366b0341525413bfe2228"
+    ],
+    "disclosed_at": "2026-09-05T14:08:43Z"
+  }
+}

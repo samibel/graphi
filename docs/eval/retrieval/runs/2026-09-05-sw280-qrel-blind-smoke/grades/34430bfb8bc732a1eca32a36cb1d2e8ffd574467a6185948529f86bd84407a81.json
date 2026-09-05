@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-920",
+  "response_sha256": "34430bfb8bc732a1eca32a36cb1d2e8ffd574467a6185948529f86bd84407a81",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the sole reviewed grade-3 span for ci-920: command.go:1146-1168, anchor \"\u0026\u0026 !pflag.Changed\" — the operation asked for is taking c.Flags(), walking it with VisitAll, and testing each flag's Changed field to decide whether that flag was set.\nThe response is grounded in the bundle (criterion 3 holds): it cites cobra.Command.HasFlags at command.go:1752 and quotes the body \"return c.Flags().HasFlags()\", which is present verbatim in evidence e57 (command.go:1746-1758), and it cites cobra.Command.Flag at command.go:1795, present in evidence e56 (command.go:1789-1801). Both are real bundle bytes, so the answer was not supplied from outside the bundle.\nIt fails criterion 2 (substantively correct). HasFlags reports whether the command *declares* any flags (local plus persistent), as its own doc comment in e57 states — \"checks if the command contains any flags\" — which is a property of the command definition and is true whether or not the user ever passed a flag on the command line. The grade-3 span's mechanism is pflag.Changed, the per-flag record of whether a value was actually set; the response never mentions Changed, VisitAll, or any set-versus-declared distinction. The secondary claim about Command.Flag(name) is a name lookup returning *flag.Flag, which likewise answers \"does this flag exist / where is it\" rather than \"was it set\". Neither claim is a genuinely equivalent location or mechanism for the reviewed span — they answer the nearby question \"how to check if the command has any flags\", and the answer key contradicts equating that with a flag having been set.\nNot a failure-by-rule case: the response is present, non-empty, not INSUFFICIENT, and makes a definite checkable claim; it is graded and it fails on correctness.",
+  "graded_at": "2026-09-05T14:07:21Z",
+  "sha256": "a13e0af14141e48ea0de37f0e10fb5d62ce8ea16ffba5abbe2dc1a5d493a7e56"
+}

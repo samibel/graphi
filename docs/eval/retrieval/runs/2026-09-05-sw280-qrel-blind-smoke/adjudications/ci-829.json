@@ -1,0 +1,34 @@
+{
+  "query_id": "ci-829",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-829",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "c49fe02f14b0019e07ae187a5089e45cae814f4f56633a9dac3eb7c523577796",
+    "bundle_sha256": "0f9cc3bacb03fd167088077843b2cd54e874b94794520dc87b03cfeafd2ddc20",
+    "prompt_sha256": "912eff2d780087a8ae01072cdab25e158af1d23fdb0776177f28a3d5544fc16f",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "INSUFFICIENT The response only shows that Command.Help (command.go:473-476) invokes c.HelpFunc()(c, []string{}) and returns nil, plus the InitDefaultHelpCmd header (command.go:1229-1235) and user_guide.md prose about the help command; it contains no code for how Execute/ExecuteC handles the help path afterwards, no os.Exit or exit-code handling, and no hook that lets a caller terminate once help has been printed, so the mechanism to exit after a help command cannot be established from the evidence.",
+    "responded_at": "2026-09-05T14:08:43Z",
+    "sha256": "6044c6d54d40d04d3227a35e4fe16661cd84696caf0aefb09b13c1d4c6f2892d"
+  },
+  "disclosure": {
+    "query_id": "ci-829",
+    "adjudicator_response_sha256": "6044c6d54d40d04d3227a35e4fe16661cd84696caf0aefb09b13c1d4c6f2892d",
+    "disclosed_artifact_sha256": [
+      "e2c52ccf4d204df5d0284eac75573583132919d5d3f7d7e8fb57906823e3d7ab",
+      "083a23eef9fcf343c3e23d7570fe90e0e1f1e2f515fd0d1699a523c7f07014a5"
+    ],
+    "disclosed_at": "2026-09-05T14:08:44Z"
+  }
+}

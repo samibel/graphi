@@ -1,0 +1,13 @@
+FAIL
+
+Response content address: 4329bea2601701b4ec6c86f691fdfb0b8825691ef0dc11b9c3b18adf9e51825a (query ci-298, "How do I make --help exit?").
+
+The response opens with INSUFFICIENT and explicitly concludes "there is no basis in this response for how to make --help exit." Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. That alone is dispositive.
+
+Checked against the reviewed grade-3 spans:
+- command.go:893-905, anchor `helpVal, err := c.Flags().GetBool("help")` — the mechanism by which execute() returns flag.ErrHelp right after ParseFlags, skipping the command body, ValidateArgs and all *Run hooks. The response makes no claim about this span; it never mentions ParseFlags, the help flag read, or flag.ErrHelp.
+- command.go:1116-1122, anchor `if errors.Is(err, flag.ErrHelp) {` — ExecuteC intercepting flag.ErrHelp, calling HelpFunc and returning nil, which is why --help does not itself exit the process. The response does not reach this span either; it asserts that no "early-return-from-Execute logic" is shown anywhere in what it was given, which is the negation of, not agreement with, this key span.
+
+Bundle evidence the response did cite (grounding criterion, satisfied but not sufficient): it correctly quoted e29 — command.go:473 with the snippet `func (c *Command) Help() error { c.HelpFunc()(c, []string{}); return nil }` — and correctly enumerated further bundle items: HelpFunc at command.go:452 (e35/e7), InitDefaultHelpCmd at command.go:1229 (e34/e6), the Command struct at command.go:51 (e36/e8), the `--help` constant at command_test.go:2572 (e32/e4), and the site/content/user_guide.md and site/content/active_help.md excerpts (e33, e30, e31). Those citations are genuinely present in the bundle bytes, and its observation that Help() returns nil without exiting is factually accurate. But pass criterion 2 is not met: the response asserts an absence rather than making a claim consistent with either grade-3 span, and the bundle it was given surfaced neither command.go:893-905 nor command.go:1116-1122 — only command.go:473/452/1229/51 spans plus doc and config material.
+
+Verdict: FAIL — INSUFFICIENT by rule, and no checkable claim matching either reviewed grade-3 span. This is a graded failure of the response, and the record shows the bundle omitted both answer-key spans; it is not a missing, empty or refused response, so it is graded rather than being a failure by rule under the "not graded at all" section.

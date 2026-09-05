@@ -1,0 +1,13 @@
+FAIL
+
+Checked against both reviewed grade-3 spans for ci-710:
+- command.go:1109-1113, anchor "We have to pass global context to children command" (ExecuteC copying the root's context onto the resolved command when that command has none);
+- command.go:268-272, anchor "func (c *Command) SetContext(ctx context.Context) {" (the caller-facing operation for placing a value on a command so another command can read it).
+
+Criterion 1 (answers the question asked): borderline pass. The response is nominally about the question — how something gets from one command to another — so it is not a response to a different question.
+
+Criterion 3 (grounded in the bundle): pass. Everything it cites is present in the given bytes: the Command type at command.go:51 (evidence e2/e158 snippet), Find at command.go:726 (e4/e160, including the quoted comment "Find the target command given the args and command tree"), legacyArgs at args.go:28 (e5/e161, including "subcommands will always accept arbitrary arguments"), CommandPath at command.go:1426 (e6/e162, including the recursive c.Parent().CommandPath()), and stripFlags at command.go:643 (ref_id c3e28273a96f88e5, evidence e18). No cited item is absent from the bundle and nothing is supplied from outside it.
+
+Criterion 2 (substantively correct): fail, and this decides the grade. The response's claim is that parameters pass between commands via the args []string slice as the command tree is traversed — i.e. command-line argument routing and validation (Find, stripFlags, legacyArgs) plus the parent/child naming relation (CommandPath). Neither reviewed grade-3 span describes that mechanism. The key locates the answer in context propagation: SetContext places state on a command, and ExecuteC copies the root's context onto the command that actually runs. The response never mentions Context, SetContext, ExecuteC's context copy, or any equivalent state-carrying mechanism, and it is not a "different but genuinely equivalent location or mechanism" — args traversal is command-line parsing and dispatch, which is what happens before a command runs, not the channel by which one command hands state to another. The bundle did contain the pointers (e42 at command.go:270, inside the SetContext span; e21 at command.go:1090 and the ExecuteC item at command.go:1052), but the response built its answer on the argument-parsing cluster instead.
+
+Not an INSUFFICIENT response and not empty, so this is a graded failure on criterion 2, not a failure by rule.

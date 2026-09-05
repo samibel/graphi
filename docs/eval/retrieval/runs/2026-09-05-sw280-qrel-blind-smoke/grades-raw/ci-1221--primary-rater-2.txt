@@ -1,0 +1,16 @@
+PASS
+
+Query ci-1221 ("How can I set a version dynamically?"), response d7dbbc498d7444dda80f99b6aad7dbd32b521281157fa2b85f962a652d8b31d4.
+
+1. Answers the question asked. The response gives a procedure for setting the version dynamically: assign the `Version` field on the command (`rootCmd.Version = myDynamicVersionString`) at any point before `Execute()`, e.g. from a package-level var populated by `-ldflags "-X ..."`. That is the question, not a nearby one.
+
+2. Substantively correct against the reviewed grade-3 spans. Checked primarily against command.go:108-112 (anchor "Version defines the version for this command.") — the settable field that carries the version, whose non-empty value causes the version flag to be added and printed. The response names exactly that field as the mechanism and states the same non-empty condition. It is also consistent with command.go:1200-1224 (anchor "func (c *Command) InitDefaultVersionFlag() {"): the response explicitly states that Cobra checks `c.Version` at execute time rather than at construction, so whatever value has been assigned by the time the command runs is the one used, and that no separate registration step is needed. It does not reach the third span (command.go:883-886, late initialisation "to allow for user" override) by citation, but it states the ordering consequence that span fixes ("set it any time before Execute() runs"), and consistency with at least one grade-3 span is what criterion 2 requires. Nothing in the response contradicts any span; the SetVersionTemplate addendum is offered as optional display control, not as the setting mechanism, so it does not displace the correct answer.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes:
+   - site/content/user_guide.md:592, evidence e41 snippet span 586-598, quoted verbatim: "Cobra adds a top-level '--version' flag if the Version field is set on the root command. Running an application with the '--version' flag will print the version to stdout using the version template." (including the SetVersionTemplate sentence it re-quotes).
+   - command_test.go:2565-2577, evidence e42, quoted verbatim: `rootCmd := &Command{Use: "root", Version: "1.0.0", Long: "Long description"}` — the field assignment the response generalises from literal to variable.
+   - command.go:1204 / snippet 1198-1210, evidence e43 (item ref 5860ac9531308bf9, "method cobra.Command.InitDefaultVersionFlag"), quoted verbatim: "If c.Version is empty, it will do nothing."
+   - command.go:353 / snippet 347-359, evidence e44, quoted verbatim: "SetVersionTemplate sets version template to be used. Application can use it to set custom template."
+   No claim is supplied from outside the bundle; the ldflags remark is a generic illustration of where a runtime string may come from, not a load-bearing unsourced claim.
+
+No fail criterion applies: the response is not INSUFFICIENT, is not hedged, makes a checkable claim, and contradicts no span.

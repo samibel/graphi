@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-434",
+  "response_sha256": "f54bdbccdd80f4c63525e2a8bf7866fe10d616bdc902e6ba6748f17d09707cb9",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the single reviewed grade-3 span for ci-434: command.go:1146-1168,\nanchor \"flags.VisitAll(func(pflag *flag.Flag) {\", whose load-bearing content is the\nChanged bit test at line 1159 — i.e. the procedure for determining which flags were\nactually supplied on the invocation.\n\nGrounding (criterion 3) holds: the response cites command.go:1643 (Flags), 1669\n(LocalFlags), 1721 (NonInheritedFlags), 1795 (Flag) and completions.go:841 (findFlag),\nall of which are present in the bundle bytes — as seed items and as snippet evidence\ne157 (\"// Flags returns the complete FlagSet that applies\"), e163 (\"// LocalFlags returns\nthe local FlagSet specifically set in the current command\"), e156 (\"func (c *Command)\nNonInheritedFlags()\"), e159 (\"// Flag climbs up the command tree looking for matching\nflag\") and e158 (\"func findFlag(cmd *Command, name string) *pflag.Flag\"). Nothing is\nsupplied from outside the bundle, and the response is not INSUFFICIENT, empty or refused.\n\nCriteria 1 and 2 do not hold. The question asks how to find which flags were called on\nthe command; the response answers the adjacent question of how to reach a command's flag\nsets. It enumerates flag accessors and closes with the explicit claim that calling\ncmd.Flags() yields \"all flags that have been registered and are available for that\ncommand\" — the declared flag set, not the supplied one. It never reaches VisitAll, never\nnames the Changed bit, and offers no equivalent mechanism for distinguishing a flag the\nuser passed from one merely declared. The reviewed span's own reasoning treats c.Flags()\nas only the starting point of the operation; stopping there and presenting the registered\nset as the answer contradicts the span rather than restating it in equivalent terms. The\nresponse is checkable and unhedged, so it fails on substance, not on vagueness.",
+  "graded_at": "2026-09-05T14:05:35Z",
+  "sha256": "ebd298f9ecf16d93cdb331fda45cd89e60c9fc28ac21e43b9334e227f929050c"
+}

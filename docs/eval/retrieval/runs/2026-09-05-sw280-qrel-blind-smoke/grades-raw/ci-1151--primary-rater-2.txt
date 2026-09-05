@@ -1,0 +1,11 @@
+FAIL
+
+Checked against the single reviewed grade-3 span for ci-1151: command.go:1425-1434, anchor "c.Annotations[CommandDisplayNameAnnotation]" — CommandPath returning the CommandDisplayNameAnnotation value on a parentless command in place of Name(), which is the mechanism for making the displayed application name differ from the root command's name.
+
+Two independent fail criteria hold.
+
+1. Refusal by rubric fail criterion 4. The response opens with "INSUFFICIENT" and concludes "There is nothing in the evidence ... that answers how to decouple the app name from the root command." Under the rubric an INSUFFICIENT verdict is an honest answer and a failed one. (It is a substantive, reasoned response rather than a missing/empty/refused one, so it is graded rather than mechanically excluded.)
+
+2. Contradicts the grade-3 span (fail criterion 2). The response makes the affirmative negative claim that the bundle contains "no field, option, or documented mechanism for setting an application name that is distinct from the root command's Use/Name" and specifically "no Annotations field". That directly contradicts the answer key's CommandDisplayNameAnnotation mechanism, so it is inconsistent with the only reviewed grade-3 span rather than being an equivalent alternative location.
+
+Bundle evidence the response cited (all genuinely present in the given bytes, so criterion 3 — grounding — is the one criterion it satisfies): cobra.Command.Name at command.go:1496 with snippet e134 ("Name returns the command's name: the first word in the use line"); cobra.Command.Root at command.go:861 with snippet e135; and site/content/user_guide.md:492 via snippet e137 ("This will be called when a user runs 'app help'"). It did not cite the evidence entries nearest the key span — e59 (command.go:1428) and e60 (command.go:1433), which are present as relation refs in the bundle but carry no snippet text.

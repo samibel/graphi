@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1564",
+  "response_sha256": "29fc7c4e4929478144d55f031737f904994b0f619e8ead43854018fb79f110d7",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against grade-3 span command.go:52-61, anchor \"// Use is the one-line usage message.\" — the span whose reason states that the Use field's doc comment gives the notation for writing arguments into the usage line ([ ] optional, ... repeatable, | exclusive).\n\n1. Answers the question asked. The question is how to make arguments show up in usage text; the response says to define the `Use` field on the Command struct using the documented argument syntax. That is the mechanism asked about, not a nearby one.\n\n2. Substantively correct. The claim is consistent with the first reviewed grade-3 span: Use is the one-line usage message and the bracket/ellipsis/pipe notation is how arguments are written into it. Nothing in either grade-3 span (command.go:52-61 or UseLine at command.go:1436-1451) contradicts the response; UseLine renders c.Use verbatim, which reinforces it. The second paragraph about SetUsageFunc/SetUsageTemplate is an additional, non-contradicting note about overriding the usage rendering, not a substitute claim.\n\n3. Grounded in the bundle. The response cites command.go:45-57 and quotes the Use field doc comment verbatim — that is evidence ref e56 in the bundle (path command.go, span 45-57, role snippet, text_hash 5a579e11e79bcd78), whose snippet text contains exactly the quoted lines. It also cites site/content/user_guide.md:583 for \"Defining your own usage\", which is present as item ref_id 3949517e09ca9593 / evidence e2 and e51 (snippet span 577-589 containing the \"### Defining your own usage\" heading and the SetUsageFunc/SetUsageTemplate lines). Both citations appear in the given bytes; nothing is supplied from outside the bundle.\n\nNo fail criterion applies: the response is not INSUFFICIENT, not hedged past a checkable claim, not about a different question, and does not contradict the answer key.",
+  "graded_at": "2026-09-05T14:01:48Z",
+  "sha256": "cac837165dd5825a7f4b4e581007a6a113e71371f637487cf7d486dbc87fe536"
+}

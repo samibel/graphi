@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-821",
+  "response_sha256": "8432b89cb2456bdc1632f0b3f8cf4bb88205942b43d8a7f312b2adb30aa66fdb",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query: ci-821 — \"Is there a way to not show `Global Flags` on --help.\"\nResponse content address: 8432b89cb2456bdc1632f0b3f8cf4bb88205942b43d8a7f312b2adb30aa66fdb\n\nChecked against grade-3 span command.go:311-314 anchor \"func (c *Command) SetUsageTemplate(s string) {\" — the caller-facing operation that installs a replacement usage template without the Global Flags section — and against command.go:572-575 anchor \"Global Flags:\", the only site that emits the heading under {{if .HasAvailableInheritedFlags}}. The response names neither the heading site nor SetUsageTemplate, nor any equivalent mechanism.\n\nBundle evidence the response did cite: cobra.Command.InitDefaultHelpFlag at command.go:1186 (item ref_id 1b7d7b255aa691cb, evidence e1/e78 snippet span 1180-1192) and site/content/user_guide.md:270 \"Persistent Flags\" (item ref_id 2ebf8a24970ff50b, evidence e2/e79 snippet span 264-276). Both citations are genuinely present in the bundle bytes, so grounding is satisfied — but grounding alone does not carry a pass.\n\nRubric pass criterion 2 is not met: the response makes no claim consistent with either reviewed grade-3 span. It instead declares that the bundle shows no mechanism for suppressing the Global Flags section, which is the explicit INSUFFICIENT outcome. Per the fail criteria, \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one.\" The response is present and non-empty, so it is graded rather than treated as a failure-by-rule non-graded case.",
+  "graded_at": "2026-09-05T14:06:46Z",
+  "sha256": "7924d4645edca21df63e7861054c311c044a449a3b0c67c63ad21af4a9a419c7"
+}

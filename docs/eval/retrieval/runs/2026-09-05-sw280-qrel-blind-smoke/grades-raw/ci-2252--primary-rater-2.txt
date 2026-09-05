@@ -1,0 +1,31 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-2252: command.go:584-596,
+anchor "func (c *Command) HelpTemplate() string {" — the help template as the thing
+changed, plus the resolution rule (a template set on the command wins, otherwise the
+parent's is inherited).
+
+1. Answers the question asked. The question ("How do you place help at the top?") is
+   terse and the response names the ambiguity rather than dodging it, then commits to a
+   single checkable claim: set the help function/template on the root command, and every
+   subcommand that has not overridden its own inherits it. It is an answer to this
+   question, not a nearby one, and it is not hedged — it ends in a concrete instruction
+   (SetHelpFunc / set the help template on the root command).
+
+2. Substantively correct against the key. The response reaches the span's own function,
+   HelpTemplate, and states the span's resolution rule in the same terms the key does:
+   if c.helpTemplate is non-empty it wins, otherwise HasParent()/c.parent.HelpTemplate()
+   inherits upward. Nothing it claims is contradicted by the key; the mechanism it names
+   for changing what help prints is the help template, which is the key's mechanism. It
+   does not spell out the default layout (Long/Short first, then the usage string), but
+   the rubric requires consistency with a grade-3 span, not coverage of every clause of
+   its reason.
+
+3. Grounded in the bundle. Every citation is present in the given bytes and quoted
+   accurately: snippet e40 at command.go:579-591 (the HelpTemplate anchor and the
+   helpTemplate/HasParent branch), snippet e37 at command.go:467-479 (Help() delegating
+   to HelpFunc()), snippet e38 at command.go:446-458 (HelpFunc's helpFunc /
+   HasParent()/Parent() chain), and snippet e42 at command.go:1626-1638 (HasParent).
+   The secondary references — HelpFlag at command_test.go:2572 (e41) and
+   site/content/active_help.md:1 (e39, correctly set aside as a different feature) —
+   are also in the bundle. No claim is supplied from outside the bytes.

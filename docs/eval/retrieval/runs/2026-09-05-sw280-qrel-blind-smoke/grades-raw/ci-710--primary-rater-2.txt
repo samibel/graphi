@@ -1,0 +1,11 @@
+FAIL
+
+Query ci-710, response 2058559fefc60c681d15882f7ea0da13230e814c707f48a18bf482712278d5fc.
+
+The response opens with "INSUFFICIENT" and concludes "the question cannot be answered from it". Rubric fail criterion 4 is explicit: a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. This is not a not-graded case — the response is present and non-empty, so it is graded, and it fails by that criterion.
+
+Checked against grade-3 span command.go:1109-1113, anchor "We have to pass global context to children command" (ExecuteC copying the root's context onto the resolved command), and the second span command.go:268-272, anchor "func (c *Command) SetContext(ctx context.Context) {". The response makes no claim consistent with either; it makes no substantive claim about the mechanism at all, and instead asserts the negative — that no evidence touching Context/SetContext/ExecuteContext, Annotations or PersistentFlags inheritance is present. So pass criterion 2 (substantively correct, consistent with at least one grade-3 span) is not met, and pass criterion 1 (answers the question asked) is not met either, since the response answers "can this be answered?" rather than "how are parameters passed?".
+
+Bundle evidence cited: the response does cite material genuinely present in the bundle bytes — Command.Find at command.go:726 (item ref e6d3046bf2018131 / evidence e4, snippet e160), legacyArgs at args.go:28 and NoArgs at args.go:42 (evidence e5/e161 and e3/e159), Command.CommandPath at command.go:1426 (evidence e6/e162), Command.argsMinusFirstX at command.go:684 (evidence e25), and Command.getCompletions at completions.go:266 (evidence e12/e164). So pass criterion 3 (grounded in the bundle) is satisfied for the citations it does make; the failure is on criteria 1 and 2 plus the explicit INSUFFICIENT rule.
+
+Note for the run, not part of the grade: the bundle does contain Command.ExecuteC at command.go:1052 with relation evidence e21 at command.go:1090, and relation evidence e42 at command.go:270 — both adjacent to the two grade-3 spans — but neither is expanded as a snippet, so the anchor text the key names was never visible to the rater. The rater's negative claim about the visible bytes is therefore defensible; it is still a failed response under the frozen rubric.

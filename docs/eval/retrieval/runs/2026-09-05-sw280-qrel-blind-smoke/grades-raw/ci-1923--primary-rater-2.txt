@@ -1,0 +1,11 @@
+FAIL
+
+Response content address: f63ba75ad3a59fb60ed51cfe281e1884dafe4393bfb42179f2598f3d1ba339c5 (query ci-1923).
+
+Checked against the reviewed grade-3 span completions.go:193-207, anchor "initCompleteCmd adds a special hidden command" — the mechanism an os/exec'ing wrapper drives (the hidden `__complete [command-line]` command), and secondarily against completions.go:243-247, anchor "The completion script expects :<directive>" — the stdout output contract. The response makes no claim about either: it never names `__complete`, `initCompleteCmd`, `ShellCompDirective`, or the one-completion-per-line plus trailing `:<directive>` protocol.
+
+The response is an explicit INSUFFICIENT declaration. Rubric fail criterion four applies directly: "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one." It is not a missing, empty or refused response, so it is graded rather than being a failure by rule — the rater engaged with the material and delivered a reasoned negative finding.
+
+Grounding is not the deciding factor here but is noted: the response does cite evidence genuinely present in the bundle bytes — site/content/completions/_index.md:1 ("Generating shell completions", evidence e23), :7-19 ("Creating your own completion command", e26), :167 ("Dynamic completion of nouns" / ValidArgsFunction, e24), README.md:95 (cobra-cli usage, e3/e25) and site/content/user_guide.md:492 (Help Command, e5/e27). Every one of those paths, line numbers and anchor phrases appears in the bundle it was given, so pass criterion three would have been satisfied. It fails on criteria one and two: the bundle's snippets are general shell-completion documentation and the rater correctly observed they do not reach the os/exec case, but the rubric grades the answer, not the bundle, and no checkable claim consistent with either grade-3 span was made.
+
+Note for the run (not part of this grade): the bundle surfaced only site/content/completions/_index.md, README.md and site/content/user_guide.md — completions.go, which holds both grade-3 spans, is absent from the retrieved evidence entirely.

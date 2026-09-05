@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1111",
+  "response_sha256": "3a3f30b0a3a674492525e311bd49c2c449a4101353645984b5f68b10f06e893d",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Response content address: 3a3f30b0a3a674492525e311bd49c2c449a4101353645984b5f68b10f06e893d (query ci-1111).\n\nChecked against the reviewed grade-3 spans command.go:1097-1100 (anchor \"Run '%v --help' for usage.\" — ExecuteC prints the message, and only when SilenceErrors is false) and command.go:230-231 (anchor \"SilenceErrors is an option to quiet errors down stream.\" — the field the caller sets). The response makes no claim consistent with either span: it never names ExecuteC, the emitting call site, or SilenceErrors as the switch. It explicitly says the bundle lacks any reference to SilenceUsage/SilenceErrors, so it neither matches nor offers an equivalent mechanism.\n\nThe response opens with INSUFFICIENT, i.e. it states it cannot answer. Under the rubric's fail criteria that is an honest answer and a failed one, and it is graded (not one of the ungraded cases, which cover only a missing, empty or refused response — a substantive INSUFFICIENT judgement was returned here).\n\nBundle grounding is not the deciding factor but is sound: everything the response cites is present in the given bytes — the Command.Help snippet at command.go:467-479 (e27), Command.Usage/HelpFunc at command.go:446-458 (e33), InitDefaultHelpCmd at command.go:1223-1235 (e32), and the docs snippets site/content/user_guide.md:486-498 (e31), 548-560 (e30) and site/content/active_help.md:1-7 (e29). Its characterisation of those snippets is accurate; none carries the literal \"Run '%v --help' for usage.\" string or the SilenceErrors field. The failure is criterion 2 (no substantively correct claim consistent with a grade-3 span) plus the explicit INSUFFICIENT fail rule, not fabricated or off-bundle citation.",
+  "graded_at": "2026-09-05T13:59:45Z",
+  "sha256": "0ab1653d20f85d0a5c858e7e4e549861f90028e24a32f7ac7e6fdc520d3453b5"
+}

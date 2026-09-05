@@ -1,0 +1,11 @@
+FAIL
+
+Checked against the single reviewed grade-3 span for ci-1343: command.go:879-881, anchor "Command %q is deprecated, %s". That span is the source-defined condition: the deprecation notice is built from a hard-coded format string emitted unconditionally at the top of execute(), with only the command name and the Deprecated field substituted in, and no template, hook or override. The customisable part is therefore the trailing text only, not the entire message.
+
+Criterion 1 (answers the question asked) holds: the response is about customising a command's deprecation message and nothing else.
+
+Criterion 3 (grounded in the bundle) holds: the response cites doc/cmd_test.go:77 with `Deprecated: "Please use echo instead"` (snippet e34), command_test.go:1493 with `Deprecated: "This command is deprecated"` (snippet e37), and site/content/user_guide.md:599 "Error Message Prefix" (snippet e35). All three appear verbatim in the bundle bytes the rater was given.
+
+Criterion 2 (substantively correct) fails, and that is decisive. The response answers "Yes" and states that "the entire deprecation message can be fully customized through the `Deprecated` field". The reviewed grade-3 span contradicts exactly that claim: the `Command %q is deprecated, %s` wrapper is fixed, so setting `Deprecated` customises the trailing reason only and leaves the "Command \"x\" is deprecated, " prefix untouched. The response does not name a different-but-equivalent mechanism; it asserts the opposite of what the answer key establishes, on the very word ("entire") the question turns on. Its supporting inference from user_guide.md — that setter functions such as SetVersionTemplate / SetErrPrefix indicate a comparable override exists for deprecation — is precisely the extrapolation the key rules out, since no such setter or template exists for the deprecation path.
+
+Note for the run, not part of the verdict: the bundle surfaced command.go only as a file-level roll-up and read ref (e24, e33) with no snippet covering lines 879-881, so the deciding line was never in the bytes. Per the rubric this is a rater failure to grade, and it also reads as evidence about bundle sufficiency for this query.

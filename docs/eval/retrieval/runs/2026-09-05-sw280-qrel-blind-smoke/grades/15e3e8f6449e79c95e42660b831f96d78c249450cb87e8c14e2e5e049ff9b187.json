@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1343",
+  "response_sha256": "15e3e8f6449e79c95e42660b831f96d78c249450cb87e8c14e2e5e049ff9b187",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-1343 (\"Is there a way to customise entire deprecate message for a command\"). Checked against the single reviewed grade-3 answer span: command.go:879-881, anchor \"Command %q is deprecated, %s\" — the hard-coded format string in execute() that substitutes only the command name and the Deprecated field, establishing that only the trailing text is customisable.\n\nThe rater's response opens with \"INSUFFICIENT\" and explicitly declines to state whether the full printed message is customisable, saying \"there is no way to tell from this evidence\". Rubric fail criterion: \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one.\" It also fails the \"hedged to the point of making no checkable claim\" criterion — it offers two alternatives (field controls the whole message vs. cobra wraps it with fixed text) without committing to either, so nothing can be checked against the command.go:879-881 span.\n\nBundle evidence the response did cite (correctly present in the bytes it was given): doc/cmd_test.go:77 with the e34 snippet showing `Deprecated: \"Please use echo instead\"` on `deprecatedCmd`, and command_test.go:1493-1499 with the e37 snippet showing `TestDeprecatedCommand` setting `Deprecated: \"This command is deprecated\"`. So the grounding criterion (pass criterion 3) is satisfied and the citations are genuine — the response is not fabricating from outside the bundle. Its observation that the bundle contains no snippet of command.go's rendering path is accurate: command.go appears only as read-6/e24/e33 file-level references with line 0 and no snippet, so the grade-3 span at command.go:879-881 was never surfaced in the bundle bytes.\n\nBut pass criteria 1 and 2 both require an actual claim, and the response makes none. Not a missing, empty or refused response — it is a substantive INSUFFICIENT judgement and therefore graded, not a failure by rule.",
+  "graded_at": "2026-09-05T14:00:55Z",
+  "sha256": "2d94312f6079e86eb5c819cdc5200c31f0d296df40c48316772716501214c927"
+}

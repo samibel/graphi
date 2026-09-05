@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-725",
+  "response_sha256": "99fc1ae30ef501ac992fdf1ffc40f3e4fb653e7e57f8bb488519f0809a5c592f",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against both reviewed grade-3 spans for ci-725: args.go:68-71 anchor=\"func ArbitraryArgs(cmd *Command, args []string) error {\" and command.go:743-747 anchor=\"if commandFound.Args == nil {\". The key's mechanism is the Args validator: a root with subcommands rejects positional arguments because legacyArgs is applied only while the found command's Args field is nil, so making rootCmd behave like a leaf child means assigning rootCmd.Args (e.g. ArbitraryArgs).\n\nThe response instead claims the mechanism is setting TraverseChildren: true on the root Command, and closes with \"it enables the root to traverse into and delegate behavior to its child commands.\" TraverseChildren governs how flags are parsed on the path to a subcommand; it does not make the root accept a child's positional arguments. That claim is consistent with neither grade-3 span and is not a genuinely equivalent location or mechanism, so rubric criterion 2 (substantively correct) is not met. Its secondary point — that children are attached via rootCmd.AddCommand(childCmd) — is true but answers a different question than the one asked.\n\nGrounding (criterion 3) is satisfied: the cited evidence is really in the bundle — e52 (command_test.go:2241-2253, TestTraverseWithBadChildFlag, rootCmd := \u0026Command{Use: \"root\", TraverseChildren: true}), e53 (command_test.go:2203-2215, TestTraverseNoParentFlags), e56 (command_test.go:2181-2193, TestTraverseWithParentFlags), plus e54/e55 for rootCmd.AddCommand(childCmd). Notably the bundle did carry the key material the response passed over: item ca0ac9e7f5b714ac \"related: function cobra.ArbitraryArgs (args.go:69)\" and snippet e55 (args_test.go:423-435, TestChildTakesArgs) showing childCmd := \u0026Command{Use: \"child\", Args: ArbitraryArgs, Run: emptyRun} — the response cited e55 only for AddCommand and ignored the Args: ArbitraryArgs line in the same snippet.\n\nSince all three pass criteria must hold and criterion 2 fails, the verdict is FAIL.",
+  "graded_at": "2026-09-05T14:06:40Z",
+  "sha256": "3ea2c78b2d8fc3fb66a50b1f21b7313d4f9075c1aff906c4fecf4a0a6c6d7c2d"
+}

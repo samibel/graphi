@@ -1,0 +1,15 @@
+PASS
+
+Checked against the single reviewed grade-3 answer span for ci-1894: completions.go:104-116, anchor "DisableDescriptions bool" — the caller-facing switch CompletionOptions.DisableDescriptions, which "turns off all completion descriptions for shells that support them", set on the root command's CompletionOptions field (command.go:201-203).
+
+1. Answers the question asked. The question is "how to hide the description in the completion"; the response answers exactly that, giving the way to suppress completion descriptions rather than a nearby question about generating or customizing completions.
+
+2. Substantively correct. The response's primary claim — set `rootCmd.CompletionOptions.DisableDescriptions = true` — is the same mechanism as the grade-3 span's anchor `DisableDescriptions bool` on `CompletionOptions`, and its gloss ("turn off all completion descriptions for shells that support them") matches the span's reason text. Its secondary claim, the `--no-descriptions` flag, is an additional per-invocation route and does not contradict the key; the mention of `DisableNoDescFlag` is correctly described as suppressing creation of that flag, not as hiding descriptions. Nothing in the response is contradicted by the answer key.
+
+3. Grounded in the bundle. Every citation is present in the bundle bytes:
+   - site/content/completions/_index.md:117 / snippet e31, which literally contains "To tell Cobra to completely disable descriptions for completions:" and "rootCmd.CompletionOptions.DisableDescriptions = true";
+   - completions.go:100 / snippet e30, which contains `compCmdNoDescFlagName = "no-descriptions"` and `compCmdNoDescFlagDesc = "disable completion descriptions"`;
+   - completions.go:105 / snippet e32, which contains the `CompletionOptions` struct with `DisableNoDescFlag bool` and the line `// DisableDescriptions turns off all completion descriptions for shells`.
+   No claim is supplied from outside the bundle.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites bundle-present evidence, does not answer INSUFFICIENT, and makes a definite checkable claim rather than hedging.

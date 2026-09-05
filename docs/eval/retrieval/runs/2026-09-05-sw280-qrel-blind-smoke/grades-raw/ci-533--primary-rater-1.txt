@@ -1,0 +1,14 @@
+FAIL
+Response content address 8e60276ae45788e54cd34bf6e390c00aa57c9dce1bed79e693617ff178f86ea4, query ci-533.
+
+The response is an explicit INSUFFICIENT declaration: it states that the bundle contains no cobra internal function or method designed to parse a string as command-line arguments, and that the bundle only shows usage/help/completion functionality. Under the frozen rubric's fail criteria, "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one" — this is a graded fail, not an ungraded failure by rule, because the response is present and non-empty and is not a refusal.
+
+Checked against the reviewed grade-3 spans:
+- command.go:274-278, anchor "func (c *Command) SetArgs(a []string) {" — the exported way to feed Cobra your own argument list in place of os.Args[1:].
+- command.go:1818-1840, anchor "func (c *Command) ParseFlags(args []string) error {" — the exported entry point that parses a supplied argument slice against the command's merged flag sets.
+
+The response names neither SetArgs nor ParseFlags, nor any equivalent mechanism, so pass criterion 2 (substantively correct, consistent with at least one grade-3 span) is not met. It makes the opposite claim — that no such mechanism is evidenced — which the answer key's existence of these exported entry points does not support as an answer to the question asked.
+
+Bundle evidence the response cited: only in the negative and only by category. It characterizes the bundle's contents as usage/help/completion material, which does correspond to what is actually in the bytes — the primary hits cobra.Command.UseLine (command.go:1437, evidence e2/e48), cobra.genPowerShellComp (powershell_completions.go:28, e3/e49), the "Usage Message" and "Help Command" sections of site/content/user_guide.md (lines 554 and 492, e4/e50 and e5/e51), plus related methods HasAvailableFlags (command.go:1773, e6/e52), CommandPath (command.go:1426, e8/e54) and HasParent (command.go:1632, e9). So the response is grounded in the bundle in the sense of criterion 3 — it does not import outside knowledge — but grounding alone cannot rescue it, since criteria 1-3 must all hold and criterion 2 fails.
+
+Note for the run record, not part of the verdict: neither grade-3 span's line range (command.go:274-278, command.go:1818-1840) appears anywhere in the bundle's evidence list or snippets; command.go appears only as a whole-file roll-up (e31), a read target (e40) and via spans at lines 1420-1443 and 1767-1779. The rater's honest INSUFFICIENT therefore appears to reflect a genuine retrieval miss rather than rater error. The rubric grades the response, not the bundle, so the outcome is FAIL.

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2252",
+  "response_sha256": "8169809869f6a94774a78eac9a803dbe4f60a5704ae263f51bfee07ac579f2c8",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the single reviewed grade-3 span for ci-2252: command.go:584-596,\nanchor \"func (c *Command) HelpTemplate() string {\" — the help template as the thing\nchanged, plus the resolution rule (a template set on the command wins, otherwise the\nparent's is inherited).\n\n1. Answers the question asked. The question (\"How do you place help at the top?\") is\n   terse and the response names the ambiguity rather than dodging it, then commits to a\n   single checkable claim: set the help function/template on the root command, and every\n   subcommand that has not overridden its own inherits it. It is an answer to this\n   question, not a nearby one, and it is not hedged — it ends in a concrete instruction\n   (SetHelpFunc / set the help template on the root command).\n\n2. Substantively correct against the key. The response reaches the span's own function,\n   HelpTemplate, and states the span's resolution rule in the same terms the key does:\n   if c.helpTemplate is non-empty it wins, otherwise HasParent()/c.parent.HelpTemplate()\n   inherits upward. Nothing it claims is contradicted by the key; the mechanism it names\n   for changing what help prints is the help template, which is the key's mechanism. It\n   does not spell out the default layout (Long/Short first, then the usage string), but\n   the rubric requires consistency with a grade-3 span, not coverage of every clause of\n   its reason.\n\n3. Grounded in the bundle. Every citation is present in the given bytes and quoted\n   accurately: snippet e40 at command.go:579-591 (the HelpTemplate anchor and the\n   helpTemplate/HasParent branch), snippet e37 at command.go:467-479 (Help() delegating\n   to HelpFunc()), snippet e38 at command.go:446-458 (HelpFunc's helpFunc /\n   HasParent()/Parent() chain), and snippet e42 at command.go:1626-1638 (HasParent).\n   The secondary references — HelpFlag at command_test.go:2572 (e41) and\n   site/content/active_help.md:1 (e39, correctly set aside as a different feature) —\n   are also in the bundle. No claim is supplied from outside the bytes.",
+  "graded_at": "2026-09-05T14:04:41Z",
+  "sha256": "b1e67005d91470e3083f4fcb170965f67e8430c6dfee7996a13a1f0981fa1fff"
+}

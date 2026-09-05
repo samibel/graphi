@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2007",
+  "response_sha256": "48acd1b112f5bed0386b83f9aa4f3c6a5de672d51cc568bf0a88fe5f8b1104e3",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the reviewed grade-3 span command.go:236-238 anchor=\"DisableFlagParsing disables the flag parsing.\" (and its implementing span command.go:1818-1822 anchor=\"func (c *Command) ParseFlags(args []string) error {\"). The response makes no claim consistent with either span: it explicitly declares INSUFFICIENT and states that the bundle contains no snippet showing the mechanism for treating hyphen-prefixed tokens as non-flags. Under the frozen rubric, an INSUFFICIENT response is an honest answer and a failed one, and it also fails pass criterion 2 (no checkable claim consistent with a grade-3 span).\n\nBundle evidence the response did cite: flag_groups.go hasAllFlags (line 111) and MarkFlagsMutuallyExclusive (line 65), bash_completions.go nonCompletableFlag (line 699), command.go Flags() (1643), HasAvailableFlags (1773) and Traverse (790), the TestStripFlags item at command_test.go:608, and the truncated Traverse snippet e144 at command.go:784-796 ending at \"// A long flag with a space separated value\". All of those do appear in the bundle bytes, so the response is grounded (criterion 3 satisfied) and on-topic (criterion 1 satisfied) — it fails solely on criterion 2 / the INSUFFICIENT fail rule. Notably the bundle did carry the related/caller item \"method cobra.Command.ParseFlags (command.go:1819)\" with evidence e15/e16, which the response listed no claim about.\n\nThe response is present and non-empty, so this is a graded FAIL, not a failure by rule.",
+  "graded_at": "2026-09-05T14:03:07Z",
+  "sha256": "70e474a9530132b2a5a4442d17d2a250a6960a564f0d4e76c973227aace31570"
+}

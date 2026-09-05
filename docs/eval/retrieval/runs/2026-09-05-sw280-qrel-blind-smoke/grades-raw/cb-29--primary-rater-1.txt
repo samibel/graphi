@@ -1,0 +1,10 @@
+PASS
+Checked against the single reviewed grade-3 span for cb-29: cobra.go:61-62, anchor "var EnableCaseInsensitive" (the package-level switch).
+
+1. Answers the question asked: the question is how to make command names case insensitive; the response answers directly with the action to take — set the global variable cobra.EnableCaseInsensitive to true.
+
+2. Substantively correct: the response names exactly the location and mechanism in the answer key — EnableCaseInsensitive in cobra.go at line 62 — and correctly describes it as the package-level switch that turns case-insensitive command name matching on. It contradicts nothing in the key.
+
+3. Grounded in the bundle: the response cites evidence present in the given bytes. It cites e115 (snippet, cobra.go span 56-68), which contains "// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)" and "var EnableCaseInsensitive = defaultCaseInsensitive" — the doc comment it quotes appears verbatim there. It also cites e117 (snippet, command.go span 1873-1885), which contains commandNameMatches with "if EnableCaseInsensitive { return strings.EqualFold(s, t) }" and the fallback "return s == t" — matching the response's description of the flag's effect. The item list in the same bundle also carries "primary: variable cobra.EnableCaseInsensitive (cobra.go:62)". No cited path, symbol, line or snippet is absent from the bundle, and nothing in the response requires prior Cobra knowledge.
+
+No fail criterion applies: it is not about a different question, it does not contradict the key, it is not INSUFFICIENT, and it makes a concrete checkable claim rather than hedging.

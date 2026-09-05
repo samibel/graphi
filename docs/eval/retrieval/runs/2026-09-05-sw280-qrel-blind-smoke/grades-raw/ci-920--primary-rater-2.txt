@@ -1,0 +1,8 @@
+FAIL
+Checked against the single reviewed grade-3 span for ci-920: command.go:1146-1168, anchor "&& !pflag.Changed" — the operation asked for is taking c.Flags(), walking it with VisitAll, and testing each flag's Changed to decide whether it was set.
+
+Bundle evidence the response cited: cobra.Command.HasFlags at command.go:1752 with snippet e57 (command.go:1746-1758, "HasFlags checks if the command contains any flags ... return c.Flags().HasFlags()"), HasPersistentFlags at command.go:1757, cobra.Command.Flag at command.go:1795 with snippet e56, and cobra.validateExclusiveFlagGroups at flag_groups.go:188 with snippet e58 (the isSet map). All of these do appear in the bundle bytes, so criterion 3 (grounded) is satisfied.
+
+Criterion 1 and 2 are not. The response's headline claim — call cmd.HasFlags() — answers a different question than the one asked: HasFlags reports whether the command *declares* any flags (local plus persistent), not whether any flag *was set* by the caller. The grade-3 span locates the answer in the VisitAll + Changed test, which the response does not name; it explicitly states that "no Flag.Changed field appears anywhere in the payload" and that it cannot show the is-set determination. Its treatment of validateExclusiveFlagGroups reaches only the pre-built isSet map and disclaims the code that populates it, so it never makes a checkable claim consistent with the grade-3 span.
+
+The response therefore lands in two fail criteria at once: it answers a nearby question (has-flags rather than was-set), and for the question actually asked it is a hedged, self-declared insufficiency ("that half of the question is not fully answered by this evidence") — honest, and by rule a failure.
