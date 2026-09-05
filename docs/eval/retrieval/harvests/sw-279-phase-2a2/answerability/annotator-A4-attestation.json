@@ -38,5 +38,11 @@
     "Two rows carry a recorded ambiguity in their note rather than a silent choice: issue 1881 (whether 'argument' means a positional or a flag) and issue 1861 (in-process subcommand discovery versus external plugin binaries). I state the reading I judged on in both cases.",
     "I know of no prohibition in the brief that I failed to honour."
   ],
-  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: fc4255485dbba6edcc1c62399c523e7ab51222c8a74e719719d6080b8ba49257."
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: fc4255485dbba6edcc1c62399c523e7ab51222c8a74e719719d6080b8ba49257.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-4-input.jsonl",
+    "sha256": "6efb0090797ebfab274ada41fd34ca54ba67fc7997090a6e9c72c4933c82c002",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
 }

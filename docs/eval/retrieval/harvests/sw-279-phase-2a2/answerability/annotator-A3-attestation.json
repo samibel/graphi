@@ -40,5 +40,11 @@
     "Two of my decisions are judgement calls at the A1/D4 boundary and I am naming them rather than burying them. Issue 1343 I judged answerable because the pinned bytes affirmatively define the deprecation message's fixed format and the exact portion a caller controls, which is more than a bare statement that the capability is missing; a reviewer who reads D4 more strictly could reach not_answerable there. Issue 1466 I judged not_answerable under D4 after checking both plausible readings of the question (glob-valued flags, and glob-filtered flag completion) and finding neither implemented at the pin.",
     "I deviated from none of the prohibitions in my task or in the brief."
   ],
-  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: c27b933aee60559dbf3363bf033e3966109a9588f90fece4481868f01445f5e9."
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: c27b933aee60559dbf3363bf033e3966109a9588f90fece4481868f01445f5e9.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-3-input.jsonl",
+    "sha256": "41d0659d421e8dfd120478536329054fc190a4083aaf8236eee09f99cd3f7b10",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
 }

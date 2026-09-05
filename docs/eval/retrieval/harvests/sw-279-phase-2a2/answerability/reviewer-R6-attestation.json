@@ -1,0 +1,23 @@
+{
+  "schema": "sw-279-answerability-reviewer-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability reviewer R6, re-annotation pass)",
+  "role": "independent reviewer",
+  "attested_at_utc": "2026-09-04T23:49:08Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "reviewed_issue_numbers": [1780],
+  "input_artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-6-input.jsonl",
+  "input_sha256": "16ac661d80ffc7863d043e5ae8624233d9ff92ffce5eadbf1cafa7bc1e84d39e",
+  "annotator_file_sha256": "7e0d1eb235ba97853ec05c34afe7ebc9cd0abade5242b8e2bfdfc7b7be5e9b52",
+  "output_sha256": "ac2fc1cd25888397c9c6a5be7e2fa3b51e5a7737953506dabf5bb2125a19114f",
+  "statements": [
+    "My first command in the pinned checkout was `git rev-parse HEAD`, and it printed a0a6ae020bb3899ff0276067863e50523f897370 before I opened any file in that checkout.",
+    "I re-read the cited bytes myself with sed, cat, grep and git ls-files inside the pinned checkout rather than trusting the annotator's description; I confirmed the tracked-file count of 66, the file modes of command.go, completions.go, README.md and go.mod, and each line range the annotation names, and I searched independently for a grade-3 span before agreeing that none exists.",
+    "The annotation carries no judgement spans, so there was no span or anchor for me to resolve; my span_checks array is empty for that reason and not because I skipped the check.",
+    "I ran no retrieval tool of any kind - no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search service - and I saw no ranked list, score, bundle, saved hit list, metric or trace for this or any query.",
+    "I made no GitHub request and no web request. I did not read issue 1780's body, comments, labels or linked pull requests; the only question text I saw was the sealed Q in the batch input file.",
+    "I read no repository other than the pinned Cobra checkout, and no file in the graphi repository other than the four named in my task: the review brief, the frozen inclusion rule, batch-6-input.jsonl and annotations-6.jsonl. I opened no other harvest file, annotation, review, ledger, report or decision record, and nothing under the graphi source tree or projects directory.",
+    "I did not edit the annotator's file. Its SHA-256 is 7e0d1eb235ba97853ec05c34afe7ebc9cd0abade5242b8e2bfdfc7b7be5e9b52, identical when I read it and after I finished writing my review.",
+    "I did not modify the frozen inclusion rule.",
+    "No verdict or grade of mine turned on how hard anything was to find, on search effort, elapsed time, identifier overlap, or any expectation about retrieval behaviour. My agreement with D5 rests on the absence of answer-bearing bytes in the tracked .go files at the pin, which I verified positively."
+  ]
+}

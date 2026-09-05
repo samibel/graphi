@@ -1,6 +1,6 @@
 {
   "schema": "sw-279-phase-2-outcome/v1",
-  "computed_at_utc": "2026-09-04T22:54:07.508851Z",
+  "computed_at_utc": "2026-09-04T23:51:29.532704Z",
   "harvest": "sw-279-phase-2a2",
   "cobra_pin_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
   "sealed_candidates": 94,
@@ -9,20 +9,21 @@
     "reject:not_answerable": 23
   },
   "not_answerable_by_disqualifier": {
-    "D3": 5,
+    "D3": 4,
     "D4": 14,
-    "D5": 4
+    "D5": 5
   },
+  "rejection_evidence_citations_resolved": 181,
+  "rejection_evidence_check_limit": "every file:line reference in every rejection note resolves to a tracked file at the pin containing the cited lines, and a reject with no such citation is refused. Whether the cited bytes support the claim made about them is a human judgement and is NOT machine-checked, unlike the graded spans.",
   "unresolved_issue_numbers": [],
   "unresolved_blocks_completion": false,
-  "annotator_unresolved_resolved_by_reviewer": [
+  "unresolved_conversions_performed": "none, in either direction: Section 4 forbids treating an unresolved row as a reject and Section 8 lists reinterpreting one among the forbidden acts, so this script converts nothing. An unresolved row blocks and is reported.",
+  "reannotated_issue_numbers": [
     1780
   ],
-  "reviewer_resolution_direction": "exclusionary only: unresolved -> not_answerable; never unresolved -> answerable",
   "reviewer_disagreement_issue_numbers": [
     1025,
-    1098,
-    1780
+    1098
   ],
   "reviewer_regraded_issue_numbers": [
     43,
@@ -62,5 +63,5 @@
   "ac2_holdout_met": true,
   "ac2_dev_shortfall": 0,
   "ac2_holdout_shortfall": 0,
-  "answerability_ledger_sha256": "5ac94b3fc4961cd90dacfea05973f266a190ce267d46f617f6ad1e51e60b8418"
+  "answerability_ledger_sha256": "7b91b1391b5317fd02b3871baa6ba5dda1ba2173b0f29f490711ddab68e973ef"
 }

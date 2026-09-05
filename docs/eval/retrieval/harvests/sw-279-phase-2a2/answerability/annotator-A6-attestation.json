@@ -1,0 +1,25 @@
+{
+  "schema": "sw-279-answerability-annotator-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability annotator A6, re-annotation pass)",
+  "role": "source annotator",
+  "attested_at_utc": "2026-09-04T23:46:10Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "assigned_issue_numbers": [
+    1780
+  ],
+  "input_artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-6-input.jsonl",
+  "input_sha256": "16ac661d80ffc7863d043e5ae8624233d9ff92ffce5eadbf1cafa7bc1e84d39e",
+  "output_sha256": "7e0d1eb235ba97853ec05c34afe7ebc9cd0abade5242b8e2bfdfc7b7be5e9b52",
+  "statements": [
+    "My first action against the pinned checkout was `git rev-parse HEAD`, and it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly; I opened no file in that checkout before seeing that output.",
+    "I ran no retrieval tool of any kind: no graphi CLI invocation, no mcp__graphi__* tool, no task_context, no semantic or lexical search service. I saw no ranked list, no score, no bundle, no saved hit list, no retrieval metric and no trace, for this question or any other.",
+    "Everything I did inside the checkout was plain reading and plain text search: git rev-parse, git ls-files, git grep, grep, sed, awk and cat on tracked files at the pin.",
+    "I made no GitHub request and no web request. I did not run gh, curl, WebFetch or a browser. I never saw issue 1780's body, comments, labels, linked pull requests or any maintainer reply; the sealed Q in the batch input is the entirety of what I knew about the report.",
+    "I read no repository other than the pinned Cobra checkout, and inside the graphi repository I opened only the three files named in my task: the annotation brief, the frozen inclusion rule, and batch-6-input.jsonl. I opened no other file under the sw-279-phase-2a2 harvest directory, no other annotation, review, ledger, report or decision record, nothing under projects/, and no graphi source, dataset or test. I do not know what any other annotator or any earlier pass decided about this issue.",
+    "I did not modify docs/eval/retrieval/dataset-v2-inclusion-rule.md or any other input file; the only files I wrote are annotations-6.jsonl and this attestation.",
+    "My verdict is not_answerable with disqualifier D5, and my judgements array is empty, so I cite no spans. Every line number and quoted fragment that appears in my note was re-read at the pin after I drafted the note, and each one occurs at the line or within the range I give it: command.go lines 30, 199-200, 236-238, 362-372, 643, 664, 684, 932-934, 1818-1840 and 1833; README.md lines 77-79; go.mod line 8.",
+    "My verdict was not decided by how long the search took, by how large the search area was, or by any expectation about retrieval difficulty. There was no time or file-count budget and I applied none. The pinned tree is 66 tracked files; I read the flag-parsing paths in command.go in full and grepped the entire tree for single-dash, POSIX, Go-flag-package, normalization and flag-parse-error handling before concluding.",
+    "Disclosure a sceptical reader is owed: the sealed Q is grammatically incomplete and I had to interpret it. I considered several readings (a single-dash long option token like -delete; receiving such a token verbatim and handling it in the command; and git-style suggestion behaviour) and found no A2-satisfying .go span under any of them, which is why I recorded D5 rather than unresolved. Under the reading where the caller only wants the raw token, Command.DisableFlagParsing is the nearest candidate mechanism, and I explain in the note why I judged it insufficient rather than grade-3; another annotator could reasonably weigh that differently.",
+    "Further disclosure: I hold prior general familiarity with Cobra, pflag and git from training. I did not use it as a verdict reason, and I treated pflag's and git's behaviour as external material that the pinned bytes do not supply - that unavailability is part of why the question fails A2/A3 here rather than being quietly filled in from memory."
+  ]
+}

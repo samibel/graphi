@@ -37,5 +37,11 @@
     "Disclosure, offered because it is a true fact about my run rather than because it was asked: the session scratchpad directory is shared with at least one other process running concurrently, and a temporary verification script I had written there was overwritten by another process's script while I was working. I noticed that replacement because its first lines named a different output file (annotations-3.jsonl). I did not open, read, or use that file or any other annotator's annotations; I rewrote my verification script under a unique name and re-ran it against my own output only.",
     "Where a sealed Q admitted more than one plausible reading (notably issues 1025 and 1098), I chose one reading, stated it explicitly in that row's note, and cited only bytes that support it, rather than silently broadening or narrowing the query."
   ],
-  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: 9a9324f54bf6f0cb0e875069ac3ba6d0bd6047c18d7735138fe7c63740fadbdd."
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: 9a9324f54bf6f0cb0e875069ac3ba6d0bd6047c18d7735138fe7c63740fadbdd.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-2-input.jsonl",
+    "sha256": "2498245f07e03dc4c5ba3bc890444ce31968a7bb7bbbb9e0b75fc433a96942f2",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
 }

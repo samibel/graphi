@@ -39,5 +39,11 @@
     "I returned no unresolved rows. Each of the 18 candidates finished with either reviewed grade-3 evidence satisfying A1-A4 or a positive D-clause finding, and I did not use unresolved as a substitute for either.",
     "I ran two short Python verification scripts from a scratchpad directory. They executed only git rev-parse, git ls-files, sed and local file reads against the pinned checkout and my own output file; they performed no search, ranking, scoring or network access."
   ],
-  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: dcfa31e162372f95d9114e8eb66bd8730766faaf383a5d8c3eb87b71bd84e71e."
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: dcfa31e162372f95d9114e8eb66bd8730766faaf383a5d8c3eb87b71bd84e71e.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-5-input.jsonl",
+    "sha256": "9594f28d333bc8923b6498eb05859906898ea2f714381e4cac83c7b93efef257",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
 }
