@@ -1,0 +1,41 @@
+{
+  "schema": "sw-279-answerability-reviewer-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability reviewer R5)",
+  "role": "independent reviewer",
+  "attested_at_utc": "2026-09-04T22:51:24Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "reviewed_issue_numbers": [
+    1970,
+    1991,
+    2007,
+    2014,
+    2111,
+    2138,
+    2142,
+    2150,
+    2160,
+    2161,
+    2176,
+    2177,
+    2249,
+    2250,
+    2252,
+    2254,
+    2291,
+    2314
+  ],
+  "annotator_file_sha256": "17a1fede210d45b0d6b1bdd32f457bc050250ee2a6e44ff601d30b1e9369acd1",
+  "output_sha256": "d5bef62ed801eddd6101c415001e79edfc3da703c0606ff265f1f6b8b8ed6f9a",
+  "statements": [
+    "I ran git -C $COBRA_ROOT rev-parse HEAD before opening any file and it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly; every span below was read at that commit.",
+    "I opened and read all 58 cited spans myself with sed over the pinned files rather than trusting the annotator's descriptions, and I checked programmatically that each path is git-tracked, that each inclusive range lies inside the file, and that each anchor string occurs verbatim inside its own range. All 58 resolved on all three tests.",
+    "Where a span's meaning depended on its surroundings I read the enclosing declaration too - stripFlags, execute, UsageTemplate and the args.go validators - and one of my grade corrections (command.go:657-659 in issue 2007) rests on what that enclosing function actually returns.",
+    "I ran no retrieval of any kind: no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search service, and I saw no rank, score, bundle, hit list, metric or trace. My only search was plain git grep and grep inside the verified checkout.",
+    "I made no GitHub request and no web request, and I read no issue comment, label or linked pull request. Outside the checkout I opened only the four files named in my task: the review brief, the frozen inclusion rule, batch-5-input.jsonl and annotations-5.jsonl.",
+    "No verdict or grade of mine turned on how hard anything was to find, on the size of the search area, or on any expectation about how retrieval would perform. Where I lowered a grade it was because the span's bytes do not contain the operation or condition the sealed answer mode requires; where I raised one it was because they do.",
+    "I did not edit the annotator's file; I verified its sha256 matches the value given in my task before and after reviewing it.",
+    "I examined both not_answerable rows for positive D-clause evidence and re-derived that evidence independently at the pin rather than accepting the annotator's citations; neither rejection rests on a not-found, too-hard or time-limit rationale.",
+    "I agree with all 18 verdicts and disagree with 7 grades across 5 rows (three grades corrected in issue 2150 alone); my span notes state the deciding bytes for each disagreement.",
+    "I did not deviate from any prohibition in my task."
+  ]
+}

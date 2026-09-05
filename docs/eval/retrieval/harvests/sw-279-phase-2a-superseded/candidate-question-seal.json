@@ -1,0 +1,14 @@
+{
+  "schema": "sw-279-candidate-question-seal/v1",
+  "sealed_at_utc": "2026-09-03T23:29:26.492455Z",
+  "sealed_by": "Codex /root (SW-279 Phase 2a selector)",
+  "phase_1_rule_commit": "a0a13a757c66e8d4f0747d4a68955fe95d072573",
+  "phase_1_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "population_manifest_sha256": "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17",
+  "candidate_ledger_file": "candidate-ledger.jsonl",
+  "candidate_ledger_sha256": "c6efef91544a3cdaad6ae38533733ba05d19d433c56ab76125819959da4c059e",
+  "candidate_questions_file": "candidate-questions.jsonl",
+  "candidate_questions_sha256": "e90220d3b8c2787008327d6eda2a6fbdd01311c44fd779436fd701bf138b89d0",
+  "candidate_count": 66,
+  "scope": "T and mechanically derived Q only; no stratum, rubric, family, split, answerability, judgement, or dataset assignment"
+}

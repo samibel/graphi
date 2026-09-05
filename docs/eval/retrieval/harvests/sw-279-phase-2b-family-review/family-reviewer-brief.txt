@@ -1,0 +1,82 @@
+[PUBLICATION NOTE — not part of the brief as delivered]
+This is the brief the two family reviewers were given, with one edit: the path to the
+blinded query list was a session-local scratchpad path and is rewritten here to the
+repository path of the same bytes. Nothing else is changed.
+  sha256 as delivered to the reviewers : f3abb01582e933a0762b084d95d4f80a90e381cc24dc9998950af5805dd187c2
+  the file they read, unchanged        : blind-queries.txt, sha256 93f9f792945f8ec8...5c17dc81
+[END PUBLICATION NOTE]
+
+<task>
+You are ONE OF TWO INDEPENDENT FAMILY REVIEWERS for the graphi dataset-v2 build (story SW-279).
+Another reviewer is doing this same task separately and will never see your answer, nor you theirs.
+A pair is joined if EITHER of you marks it same-task, so you do not need to be conservative to
+protect the result — you need to be honest.
+
+You have NO repository access for this task and need none. Do not open any repository, do not run
+any search, do not look anything up. Everything you need is in this brief.
+</task>
+
+<what_you_are_given>
+A list of 106 questions, one per line, as `<opaque-id><TAB><question text>`, at:
+
+    docs/eval/retrieval/harvests/sw-279-phase-2b-family-review/blind-queries.txt
+    (sha256 93f9f792945f8ec851b54f4e71bf482ba3cc5eb1cde144494c51d6375c17dc81)
+
+The IDs are hashes of the text. They encode nothing: not the source, not the order they were
+collected in, not which split they belong to, not whether they are new or pre-existing. That is
+deliberate — your judgement must come from the question text alone.
+</what_you_are_given>
+
+<the_test_you_apply_verbatim>
+This is lifted unchanged from the frozen inclusion rule that governs this dataset:
+
+queries, before answerability annotation and before a split is assigned. Two questions are in the
+same family when they are exact duplicates, duplicates after Unicode NFC/case-folding/whitespace
+collapse/terminal-punctuation removal, paraphrases, or same-task variants. The operational
+same-task test is conservative: they must express the same user intent and require the same answer
+mode, and one correct answer at the pin could satisfy both without adding a distinct mechanism,
+action, or code-defined fact. Merely sharing a topic, identifier, file, or answer span does not make
+two different information needs the same task.
+
+Read the last sentence twice. **Sharing a topic, an identifier, a file, or even the same answer
+location does NOT make two different information needs the same task.** Two questions about flag
+parsing are not one family merely because both concern flags.
+</the_test_you_apply_verbatim>
+
+<why_this_matters_and_what_it_is_protecting>
+These questions will be split into a development set and a sealed holdout set. If two questions
+that are really the same underlying task land on opposite sides of that split, the holdout is
+contaminated: the system will have been tuned on a question it is then "blindly" evaluated on.
+Grouping them into one family prevents that, because a family never crosses the split.
+
+So the cost of the two errors is asymmetric. **Merging two questions that are not really the same
+task** loses a little statistical independence. **Failing to merge two that are** silently breaks
+the holdout, and nothing downstream would detect it. When genuinely torn, merge.
+</why_this_matters_and_what_it_is_protecting>
+
+<output_format>
+Produce one line per question, for all 106, in the input's order:
+
+    <id>  ->  <space-separated ids it is same-task with, or the word NONE>
+
+Symmetry is not required of you — if you list B under A but forget A under B, the orchestrator's
+union step handles it. Do not compute transitive closure yourself; list only direct judgements.
+
+Then, separately, list every pair you found genuinely difficult, with one sentence each on what
+made it hard. That list is evidence, not an admission — the frozen rule requires disagreements and
+hard cases to be retained and audited.
+</output_format>
+
+<forbidden>
+- Do NOT look at any source code, any repository, any retrieval output, any ranking, or any
+  previous dataset. You have not been given them and must not seek them.
+- Do NOT try to infer which questions are new versus pre-existing, or which split anything is in.
+- Do NOT optimise for a target number of families. There is no target.
+</forbidden>
+
+<report>
+1. The 106 lines.
+2. The difficult pairs, with one sentence each.
+3. How many families your judgements imply, if you take the transitive closure — as a sanity number
+   only; the orchestrator computes the authoritative closure over both reviewers.
+</report>

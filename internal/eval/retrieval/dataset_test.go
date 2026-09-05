@@ -101,6 +101,90 @@ func TestDataset_ValidateRejectsEachBrokenRule(t *testing.T) {
 	}
 }
 
+// family_id and provenance are optional at the schema level because cobra-v1
+// predates them and is frozen. What is not optional is consistency: a dataset
+// carries them for every query or for none, and no family may straddle the
+// dev/holdout line. Both rules exist because the failure they prevent is
+// silent - an unlabelled paraphrase, or a holdout answer already visible in
+// dev - and neither would show up as a broken run.
+func TestDataset_ValidateFamilyAndProvenance(t *testing.T) {
+	label := func(d *Dataset, i int, family, provenance string) {
+		d.Queries[i].FamilyID = family
+		d.Queries[i].Provenance = provenance
+	}
+
+	t.Run("a dataset with no family_id at all is still valid", func(t *testing.T) {
+		ds := validDataset()
+		if err := ds.Validate(); err != nil {
+			t.Fatalf("Validate() = %v, want nil", err)
+		}
+	})
+
+	t.Run("every query labelled, families within one split", func(t *testing.T) {
+		ds := validDataset()
+		label(&ds, 0, "cobra-family-aaaaaaaaaaaaaaaa", "github:spf13/cobra#1")
+		label(&ds, 1, "cobra-family-bbbbbbbbbbbbbbbb", "dataset:cobra-v1:cb-01")
+		if err := ds.Validate(); err != nil {
+			t.Fatalf("Validate() = %v, want nil", err)
+		}
+	})
+
+	t.Run("provenance everywhere and family_id nowhere is refused", func(t *testing.T) {
+		// The mirror image of the case below, and the direction validateFamilies
+		// used to wave through: every row carries a provenance, none carries a
+		// family, so nothing stops a paraphrase of a holdout question sitting in
+		// dev unlabelled.
+		ds := validDataset()
+		for i := range ds.Queries {
+			ds.Queries[i].Provenance = "github:spf13/cobra#1"
+		}
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "for every query or for none") {
+			t.Fatalf("Validate() = %v, want an all-or-nothing family error", err)
+		}
+	})
+
+	t.Run("provenance on one query and family_id nowhere is refused", func(t *testing.T) {
+		ds := validDataset()
+		ds.Queries[0].Provenance = "github:spf13/cobra#1"
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "for every query or for none") {
+			t.Fatalf("Validate() = %v, want an all-or-nothing family error", err)
+		}
+	})
+
+	t.Run("some labelled and some not is refused", func(t *testing.T) {
+		ds := validDataset()
+		label(&ds, 0, "cobra-family-aaaaaaaaaaaaaaaa", "github:spf13/cobra#1")
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "for every query or for none") {
+			t.Fatalf("Validate() = %v, want an all-or-nothing family error", err)
+		}
+	})
+
+	t.Run("family_id without provenance is refused", func(t *testing.T) {
+		ds := validDataset()
+		label(&ds, 0, "cobra-family-aaaaaaaaaaaaaaaa", "")
+		label(&ds, 1, "cobra-family-bbbbbbbbbbbbbbbb", "dataset:cobra-v1:cb-01")
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "provenance is empty") {
+			t.Fatalf("Validate() = %v, want a missing-provenance error", err)
+		}
+	})
+
+	t.Run("a family crossing dev and holdout is refused", func(t *testing.T) {
+		ds := validDataset()
+		// q1 is dev and q2 is holdout in the minimal dataset; putting them in
+		// one family is exactly the leak family_id exists to stop.
+		label(&ds, 0, "cobra-family-aaaaaaaaaaaaaaaa", "github:spf13/cobra#1")
+		label(&ds, 1, "cobra-family-aaaaaaaaaaaaaaaa", "dataset:cobra-v1:cb-01")
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "crosses splits") {
+			t.Fatalf("Validate() = %v, want a cross-split family error", err)
+		}
+	})
+}
+
 func TestDataset_RelevantSpansHonourTheMinimumGrade(t *testing.T) {
 	ds := validDataset()
 	if got := ds.Queries[0].RelevantSpans(ds.MinGrade()); len(got) != 1 || got[0].Grade != 3 {

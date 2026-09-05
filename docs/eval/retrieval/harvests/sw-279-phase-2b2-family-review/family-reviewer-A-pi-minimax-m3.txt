@@ -1,0 +1,187 @@
+FAMILY REVIEWER A — SW-279 phase 2b2 family review
+Input: blind-queries.txt (134 questions), judged from question text alone.
+Judgements below are DIRECT only; no transitive closure applied in part (1).
+
+=== (1) PER-QUERY DIRECT SAME-TASK JUDGEMENTS (134 lines, input order) ===
+
+q-0174ba5994  ->  NONE
+q-0407adcd3c  ->  NONE
+q-06184d1b24  ->  NONE
+q-083c29231e  ->  NONE
+q-083fcd7cd1  ->  NONE
+q-084833bd7c  ->  NONE
+q-084ccea27b  ->  NONE
+q-0bfad1869a  ->  q-6c5239de6b
+q-0dcef62dc1  ->  NONE
+q-0fd8128ab6  ->  q-ad81c1ac0b
+q-112402db02  ->  NONE
+q-1802eca229  ->  NONE
+q-1a2875cc02  ->  NONE
+q-1b8799bd73  ->  NONE
+q-1b9fee4dbb  ->  q-d20b45f953
+q-1d2b7737c3  ->  NONE
+q-1e11bcebbd  ->  NONE
+q-201e16a374  ->  q-ee79389202
+q-20294d3168  ->  NONE
+q-2349b16ea3  ->  NONE
+q-23ba216024  ->  q-3a80e018bc
+q-25814ff3cd  ->  NONE
+q-25e1497473  ->  NONE
+q-29e1ae6a39  ->  NONE
+q-2ad59bff46  ->  NONE
+q-2adeac36d6  ->  NONE
+q-2b745b14f5  ->  q-8006d799b9 q-a3d1ab7d2c
+q-2d501b4223  ->  NONE
+q-2f015d8adf  ->  q-90d4d6a552
+q-2f5a1b2245  ->  NONE
+q-305238368a  ->  NONE
+q-3090f56852  ->  NONE
+q-3419d4374a  ->  NONE
+q-3433ff1f53  ->  NONE
+q-34a7e61450  ->  q-c137ef94d7
+q-37353d6cd1  ->  NONE
+q-39d9cf240f  ->  NONE
+q-3a28eeff56  ->  NONE
+q-3a80e018bc  ->  q-23ba216024
+q-3b6ef8bba5  ->  NONE
+q-3b7c601bf8  ->  q-7594f7bd54
+q-47c3433380  ->  NONE
+q-4a68915ebb  ->  NONE
+q-4c8a6cac39  ->  NONE
+q-5c41c22e37  ->  q-c9dedfdf83
+q-5ee70e90d7  ->  q-f648447788
+q-60df13c261  ->  NONE
+q-60e8116b57  ->  NONE
+q-62e7375037  ->  NONE
+q-647fb81ddf  ->  NONE
+q-65f607f300  ->  NONE
+q-6c24291167  ->  q-ea451429c7 q-be4e0e594e
+q-6c5239de6b  ->  q-0bfad1869a
+q-7594f7bd54  ->  q-3b7c601bf8
+q-75cc0928e0  ->  NONE
+q-776097bcaa  ->  q-bc7728267b
+q-776fafd6f2  ->  q-9e44856846 q-83cc122da7
+q-779325e1ab  ->  NONE
+q-77e06c690b  ->  NONE
+q-7b480d3c5c  ->  NONE
+q-7d448e4e40  ->  NONE
+q-8006d799b9  ->  q-2b745b14f5 q-a3d1ab7d2c
+q-83cc122da7  ->  q-9e44856846 q-776fafd6f2
+q-841447007f  ->  NONE
+q-85b7ed0a40  ->  NONE
+q-890dac8d56  ->  NONE
+q-8cce053ca6  ->  NONE
+q-90d4d6a552  ->  q-2f015d8adf
+q-916188d869  ->  NONE
+q-9c960dfd6f  ->  q-cdf52860c4
+q-9e10262086  ->  NONE
+q-9e11a10cf6  ->  NONE
+q-9e44856846  ->  q-776fafd6f2 q-83cc122da7
+q-a0bc05d547  ->  NONE
+q-a120ffaab0  ->  NONE
+q-a2d170fda1  ->  q-bc83ab3f22
+q-a3d1ab7d2c  ->  q-2b745b14f5 q-8006d799b9
+q-a8d75131ac  ->  NONE
+q-a97249b25f  ->  NONE
+q-ad81c1ac0b  ->  q-0fd8128ab6
+q-b128a49041  ->  NONE
+q-b4888d1e90  ->  q-c8cf312c0d
+q-b75d7ecc5a  ->  q-db72578c10 q-c54c2b15aa
+q-b8dddc5443  ->  NONE
+q-b94c5b04cf  ->  q-fb737c3714
+q-b9695ad969  ->  q-db9a7897b6
+q-ba201251d1  ->  q-ecea678c01 q-c6422d2d31
+q-bac1c3f708  ->  NONE
+q-bc7728267b  ->  q-776097bcaa
+q-bc83ab3f22  ->  q-a2d170fda1
+q-bcafafc3f1  ->  NONE
+q-bd862b17f0  ->  NONE
+q-be4e0e594e  ->  q-6c24291167 q-ea451429c7
+q-bf8e2f6af6  ->  NONE
+q-c02cb3285e  ->  NONE
+q-c137ef94d7  ->  q-34a7e61450
+q-c3d7ec5f61  ->  NONE
+q-c54c2b15aa  ->  q-b75d7ecc5a q-db72578c10
+q-c6422d2d31  ->  q-ba201251d1 q-ecea678c01
+q-c70f4a276b  ->  NONE
+q-c86ddba63e  ->  NONE
+q-c8cf312c0d  ->  q-b4888d1e90
+q-c9dedfdf83  ->  q-5c41c22e37
+q-ca6f4cef57  ->  NONE
+q-cca34d895d  ->  NONE
+q-cdf52860c4  ->  q-9c960dfd6f
+q-ce98704167  ->  NONE
+q-cf047ff0b9  ->  NONE
+q-d142abde77  ->  NONE
+q-d20b45f953  ->  q-1b9fee4dbb
+q-d585456681  ->  NONE
+q-da0b542f13  ->  NONE
+q-dafb3af970  ->  NONE
+q-db72578c10  ->  q-b75d7ecc5a q-c54c2b15aa
+q-db9a7897b6  ->  q-b9695ad969
+q-de7b35e8fe  ->  NONE
+q-e0d118d906  ->  NONE
+q-e324a389d9  ->  NONE
+q-e5002cbb36  ->  NONE
+q-e9cab7c46c  ->  NONE
+q-ea2e631e3c  ->  NONE
+q-ea451429c7  ->  q-6c24291167 q-be4e0e594e
+q-ecea678c01  ->  q-ba201251d1 q-c6422d2d31
+q-ee79389202  ->  q-201e16a374
+q-f03e2ccf3f  ->  NONE
+q-f0b72e6b0b  ->  NONE
+q-f2acc7429f  ->  NONE
+q-f44a345203  ->  NONE
+q-f648447788  ->  q-5ee70e90d7
+q-f6717f3451  ->  NONE
+q-fb30cf7aee  ->  NONE
+q-fb737c3714  ->  q-b94c5b04cf
+q-fdfc969cc0  ->  NONE
+q-fe951b6183  ->  NONE
+
+=== (2) PAIRS I FOUND GENUINELY DIFFICULT ===
+
+MERGED, but close calls:
+q-a2d170fda1 / q-bc83ab3f22 — "How do I make --help exit?" vs "How to exit after a help command": one names the flag and one names the command, and it is unclear whether the asker distinguishes them at all; I merged because the underlying want (terminate the process once help is printed) and the answer mode are identical.
+q-23ba216024 / q-3a80e018bc — "was the flag set" vs "distinguish default from manually set value" are worded as different needs but resolve to the same single fact (Changed), so one answer satisfies both.
+q-34a7e61450 / q-c137ef94d7 — "check if any flag was set" vs "find what flags is been called": the second is grammatically ambiguous and could equally mean "list the command's flags"; I merged with the "which flags did the user actually set" reading.
+q-9c960dfd6f / q-cdf52860c4 — "list of flags associated with a particular command" vs "flag of the currently executing command": singular/plural and "particular" vs "current" differ, but both reduce to reaching the command's flag set from inside a run.
+q-2b745b14f5 / q-8006d799b9 / q-a3d1ab7d2c — three different phrasings (context between pre/post hooks, params between PersistentPreRun and Run, status into PostRun) of carrying state across the hook chain; the third mentions "status", which nearly makes it a distinct need about error propagation.
+q-ba201251d1 / q-ecea678c01 / q-c6422d2d31 — sharing variables in an instance, passing parameters command-to-command, and getting a subcommand result back to the parent; each could be read as a distinct direction of data flow, but all three want one shared-state mechanism.
+q-3b7c601bf8 / q-7594f7bd54 — a bare symbol name vs a "where is this validated" locate question; symbol lookup and locate questions normally differ in answer mode, but here both terminate at exactly the same function with nothing extra to say.
+q-5ee70e90d7 / q-f648447788 — bare symbol MarkFlagsMutuallyExclusive vs "how to define mutually exclusive flags"; merging a symbol query with a how-to is the merge I am least comfortable with, but the how-to has no answer beyond that symbol.
+q-bc7728267b / q-776097bcaa — "how are unknown command suggestions computed" vs "where is the levenshtein distance computed"; the second is narrower (one helper) and the first spans the suggestion path, so this is a genuine scope mismatch that I resolved toward merging.
+q-b94c5b04cf / q-fb737c3714 — "handle wrong subcommand" vs a compound question whose second half ("add commands at runtime") is a clearly different task; I merged on the first half only.
+q-b75d7ecc5a / q-db72578c10 / q-c54c2b15aa — "required argument", "document or define a required argument", and "enforce the number of arguments" all land on the Args validators, but "document" hints at usage text and "number of" hints at arity, either of which could be split out.
+q-c8cf312c0d / q-b4888d1e90 — "ignore flags including hyphen" vs "execute a script file with uncertain flags"; the second is a use case rather than a question, and I merged only because both need flag parsing turned off.
+q-b9695ad969 / q-db9a7897b6 — "escape flag input" vs "wrap arguments so they won't be interpreted as commands": one says flags, the other says commands, but the terminator answer is the same.
+q-0fd8128ab6 / q-ad81c1ac0b — "set flags in test" vs "test inherited flags": inheritance could require a distinct fact about where the flag lives, which nearly kept them apart.
+q-0bfad1869a / q-6c5239de6b — custom completion for an unsupported shell vs autocompletion for Windows cmd; different shells named, same underlying "cobra doesn't generate for my shell, what do I do" task.
+q-5c41c22e37 / q-c9dedfdf83 — "record executed commands and parameters" vs "reconstruct the original command-line invocation"; the first sounds like logging as a feature, the second like a one-off reconstruction, but both need the same recovered invocation.
+q-6c24291167 / q-ea451429c7 / q-be4e0e594e — three phrasings of allowing arguments to precede the subcommand; "commands preceded by variable arguments" could also be read as a design question about command shape.
+
+NOT MERGED, but hard:
+q-2d501b4223 / q-3b6ef8bba5 — "how is the version flag handled" is a mechanism question while "why does --version not work" wants a fix; same code region, different answer mode.
+q-20294d3168 / q-9e10262086 — GenZshCompletionNoDesc is exactly the no-description generator, but a bare symbol lookup and "how do I hide descriptions" (which also involves the --no-descriptions flag) are different needs.
+q-0407adcd3c / q-cca34d895d — man_docs.go is where man generation lives, but "show me this file" and "how do I generate man pages for a tree" are a locate and a usage task respectively.
+q-60e8116b57 / q-ca6f4cef57 — active_help.go vs "which environment variable controls active help": the file contains the answer, but the second wants one specific code-defined constant.
+q-7594f7bd54 / q-c70f4a276b — "where are required flags validated" vs "why is it executed after PreRun": the second asks for ordering rationale, a distinct fact beyond the location.
+q-34a7e61450 / q-23ba216024 — checking one specific flag uses Changed while checking whether any flag was set needs an iteration mechanism, which I judged distinct.
+q-2ad59bff46 / q-e9cab7c46c — suppressing the usage hint and suppressing error output are adjacent but are two different settings, so answering one does not answer the other.
+q-1a2875cc02 / q-ee79389202 — accessing persistent flags in init() is really about parse timing, whereas accessing a global flag in a subcommand is about lookup; near-identical wording, different underlying problem.
+q-3419d4374a / q-201e16a374 — mechanism of persistent-flag propagation vs how to read a parent's flag value; overlapping answer span, different intent.
+q-62e7375037 / q-2349b16ea3 — the lifecycle question spans the whole Execute-to-hooks path while the bare symbol wants one function.
+q-1e11bcebbd / q-db72578c10 — "make arguments show up in usage text" overlaps the "document a required argument" reading, but arity enforcement and usage rendering are separate mechanisms.
+q-75cc0928e0 / q-5c41c22e37 — "what command was chosen" is a subset of "record commands and parameters", but the latter needs the arguments too.
+q-c02cb3285e / q-60df13c261 — removing the default help command and disabling the default completion command are structurally identical questions about two different defaults, hence two different code-defined facts.
+q-f6717f3451 / q-25814ff3cd — case-insensitive names and prefix matching are the same shape of question about two distinct settings.
+q-fdfc969cc0 / q-3a80e018bc — a nil/tri-state bool default and distinguishing default from set both address "did the user say anything", but via different mechanisms.
+q-83cc122da7 / q-bac1c3f708 — multi-character short flags vs simply adding a shorthand; adjacent wording, but one is a limitation question and the other a basic how-to.
+
+=== (3) SANITY NUMBER ===
+
+Under transitive closure of my direct judgements alone: 108 families
+(21 multi-member families covering 47 questions, plus 87 singletons).
+The five off-topic distractor questions (database connection pool, kubernetes pod
+scheduler, json web token signature verification, sqlite write ahead log checkpoint,
+http router middleware chain) are singletons; they share no task with each other.

@@ -1,0 +1,15 @@
+{
+  "schema": "sw-279-phase-2a-selector-attestation/v1",
+  "actor": "Codex /root (SW-279 Phase 2a selector)",
+  "attested_at_utc": "2026-09-03T23:29:26.492757Z",
+  "input_population_manifest_sha256": "b9f712af1bea40bbde437dee649a35346de023891839e8ae148138a94a8c4a17",
+  "output_candidate_ledger_sha256": "c6efef91544a3cdaad6ae38533733ba05d19d433c56ab76125819959da4c059e",
+  "statements": [
+    "I used only issue number, author, creation time, title, and opening body for candidate classification.",
+    "I did not inspect any GitHub comment, maintainer reply, reaction, label, closing event, attachment target, linked pull request, or external-link target for selection.",
+    "I did not inspect the pinned Cobra source or perform candidate-directed source search.",
+    "I did not run or inspect candidate or baseline retrieval output, ranks, scores, bundles, metrics, traces, or saved hit lists.",
+    "I assigned no family, stratum, rubric, split, answerability verdict, judgement, or dataset row.",
+    "I did not edit docs/eval/retrieval-targets.json or any dataset file."
+  ]
+}

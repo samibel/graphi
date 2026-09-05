@@ -55,3 +55,7 @@ Thumbs.db
 # excluded during the SW-192..197 integration; nothing stopped them the first
 # time, so ignore the shape rather than the two paths.
 ingest-meta.db
+
+# Python bytecode caches from the eval harvest tooling
+__pycache__/
+*.pyc

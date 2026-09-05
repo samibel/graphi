@@ -1,0 +1,13 @@
+[PUBLICATION NOTE - not part of the file as produced]
+Absolute paths have been rewritten to repository-relative paths. This is a public
+repository and the absolute paths carry a local username. Nothing else is changed;
+both digests are recorded in invocation-record.json.
+[END PUBLICATION NOTE]
+
+Written: `docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-A-pi-minimax-m3.txt`
+
+- Part 1: all 134 ids, input order, exactly one line each, direct judgements only (verified: 134 `->` lines, all ids present, symmetric).
+- Part 2: 17 merged-but-close pairs and 16 not-merged-but-hard pairs, one sentence each.
+- Part 3: 108 families under transitive closure (21 multi-member families covering 47 questions + 87 singletons).
+
+Only the brief and the query list were read.

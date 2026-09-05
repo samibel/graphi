@@ -1,0 +1,109 @@
+{
+  "schema": "sw-279-population-instrument-probe/v1",
+  "probed_at_utc": "2026-09-04T21:56:36.013459Z",
+  "probed_by": "Claude Opus 5 (SW-279 Phase 2 re-harvest fetcher)",
+  "cutoff_utc": "2026-09-03T22:57:37.000000Z",
+  "graphql_issues_connection_total": 1256,
+  "github_search_total": 1255,
+  "per_year": [
+    {
+      "creation_year": "2013",
+      "search_window": "2013-01-01..2013-12-31",
+      "graphql_issues_connection_count": 4,
+      "github_search_issue_count": 4,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2014",
+      "search_window": "2014-01-01..2014-12-31",
+      "graphql_issues_connection_count": 20,
+      "github_search_issue_count": 20,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2015",
+      "search_window": "2015-01-01..2015-12-31",
+      "graphql_issues_connection_count": 49,
+      "github_search_issue_count": 49,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2016",
+      "search_window": "2016-01-01..2016-12-31",
+      "graphql_issues_connection_count": 80,
+      "github_search_issue_count": 80,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2017",
+      "search_window": "2017-01-01..2017-12-31",
+      "graphql_issues_connection_count": 123,
+      "github_search_issue_count": 123,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2018",
+      "search_window": "2018-01-01..2018-12-31",
+      "graphql_issues_connection_count": 119,
+      "github_search_issue_count": 119,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2019",
+      "search_window": "2019-01-01..2019-12-31",
+      "graphql_issues_connection_count": 108,
+      "github_search_issue_count": 108,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2020",
+      "search_window": "2020-01-01..2020-12-31",
+      "graphql_issues_connection_count": 180,
+      "github_search_issue_count": 179,
+      "delta_graphql_minus_search": 1
+    },
+    {
+      "creation_year": "2021",
+      "search_window": "2021-01-01..2021-12-31",
+      "graphql_issues_connection_count": 142,
+      "github_search_issue_count": 142,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2022",
+      "search_window": "2022-01-01..2022-12-31",
+      "graphql_issues_connection_count": 154,
+      "github_search_issue_count": 154,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2023",
+      "search_window": "2023-01-01..2023-12-31",
+      "graphql_issues_connection_count": 122,
+      "github_search_issue_count": 122,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2024",
+      "search_window": "2024-01-01..2024-12-31",
+      "graphql_issues_connection_count": 66,
+      "github_search_issue_count": 66,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2025",
+      "search_window": "2025-01-01..2025-12-31",
+      "graphql_issues_connection_count": 64,
+      "github_search_issue_count": 64,
+      "delta_graphql_minus_search": 0
+    },
+    {
+      "creation_year": "2026",
+      "search_window": "2026-01-01..2026-09-03",
+      "graphql_issues_connection_count": 25,
+      "github_search_issue_count": 25,
+      "delta_graphql_minus_search": 0
+    }
+  ],
+  "issue_text_read": false
+}

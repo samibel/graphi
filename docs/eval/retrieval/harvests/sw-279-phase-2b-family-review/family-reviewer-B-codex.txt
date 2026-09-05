@@ -1,0 +1,126 @@
+### Judgements
+
+```text
+q-0174ba5994  ->  NONE
+q-0407adcd3c  ->  NONE
+q-06184d1b24  ->  NONE
+q-083c29231e  ->  NONE
+q-083fcd7cd1  ->  NONE
+q-084833bd7c  ->  NONE
+q-084ccea27b  ->  NONE
+q-0bfad1869a  ->  q-37353d6cd1
+q-0dcef62dc1  ->  NONE
+q-1802eca229  ->  NONE
+q-1a2875cc02  ->  NONE
+q-1d2b7737c3  ->  NONE
+q-1e11bcebbd  ->  q-db72578c10
+q-201e16a374  ->  q-ee79389202
+q-20294d3168  ->  NONE
+q-2349b16ea3  ->  NONE
+q-23ba216024  ->  q-3a80e018bc
+q-25814ff3cd  ->  NONE
+q-25e1497473  ->  NONE
+q-29e1ae6a39  ->  NONE
+q-2ad59bff46  ->  NONE
+q-2adeac36d6  ->  NONE
+q-2b745b14f5  ->  NONE
+q-2d501b4223  ->  NONE
+q-2f5a1b2245  ->  NONE
+q-305238368a  ->  NONE
+q-3090f56852  ->  NONE
+q-3419d4374a  ->  NONE
+q-3433ff1f53  ->  NONE
+q-34a7e61450  ->  q-c137ef94d7
+q-37353d6cd1  ->  q-0bfad1869a
+q-39d9cf240f  ->  NONE
+q-3a80e018bc  ->  q-23ba216024
+q-3b7c601bf8  ->  q-7594f7bd54
+q-45a5423b0f  ->  NONE
+q-47c3433380  ->  NONE
+q-4a68915ebb  ->  NONE
+q-5c41c22e37  ->  q-c9dedfdf83
+q-5ee70e90d7  ->  q-f648447788
+q-60df13c261  ->  NONE
+q-60e8116b57  ->  NONE
+q-62e7375037  ->  NONE
+q-647fb81ddf  ->  NONE
+q-65f607f300  ->  NONE
+q-6c24291167  ->  NONE
+q-6c5239de6b  ->  NONE
+q-7594f7bd54  ->  q-3b7c601bf8
+q-776097bcaa  ->  NONE
+q-776fafd6f2  ->  q-83cc122da7 q-9e44856846
+q-779325e1ab  ->  NONE
+q-77e06c690b  ->  NONE
+q-7b480d3c5c  ->  NONE
+q-7d448e4e40  ->  NONE
+q-83cc122da7  ->  q-776fafd6f2 q-9e44856846
+q-841447007f  ->  NONE
+q-8cce053ca6  ->  NONE
+q-916188d869  ->  NONE
+q-9c960dfd6f  ->  NONE
+q-9e11a10cf6  ->  NONE
+q-9e44856846  ->  q-776fafd6f2 q-83cc122da7
+q-a0bc05d547  ->  NONE
+q-a120ffaab0  ->  NONE
+q-a8d75131ac  ->  NONE
+q-b128a49041  ->  NONE
+q-b4888d1e90  ->  NONE
+q-b75d7ecc5a  ->  q-c54c2b15aa
+q-b8dddc5443  ->  NONE
+q-bac1c3f708  ->  NONE
+q-bc7728267b  ->  NONE
+q-be4e0e594e  ->  q-ea451429c7
+q-bf8e2f6af6  ->  NONE
+q-c02cb3285e  ->  NONE
+q-c137ef94d7  ->  q-34a7e61450
+q-c54c2b15aa  ->  q-b75d7ecc5a
+q-c6422d2d31  ->  NONE
+q-c86ddba63e  ->  NONE
+q-c9dedfdf83  ->  q-5c41c22e37
+q-ca6f4cef57  ->  NONE
+q-cca34d895d  ->  NONE
+q-cdf52860c4  ->  NONE
+q-ce98704167  ->  NONE
+q-cf047ff0b9  ->  NONE
+q-d142abde77  ->  NONE
+q-d20b45f953  ->  NONE
+q-d585456681  ->  NONE
+q-da0b542f13  ->  NONE
+q-dafb3af970  ->  NONE
+q-db72578c10  ->  q-1e11bcebbd
+q-db9a7897b6  ->  NONE
+q-de7b35e8fe  ->  NONE
+q-e0d118d906  ->  NONE
+q-e324a389d9  ->  NONE
+q-e5002cbb36  ->  NONE
+q-ea2e631e3c  ->  NONE
+q-ea451429c7  ->  q-be4e0e594e
+q-ee79389202  ->  q-201e16a374
+q-f03e2ccf3f  ->  NONE
+q-f0b72e6b0b  ->  NONE
+q-f2acc7429f  ->  NONE
+q-f44a345203  ->  NONE
+q-f648447788  ->  q-5ee70e90d7
+q-f6717f3451  ->  NONE
+q-f777bc71fe  ->  NONE
+q-fb30cf7aee  ->  NONE
+q-fb737c3714  ->  NONE
+q-fdfc969cc0  ->  NONE
+```
+
+### Difficult pairs
+
+- `q-0bfad1869a` ↔ `q-37353d6cd1` — Merged because both seek a portable custom shell-completion function written in Go, although the first is phrased through a Zsh comparison.
+- `q-34a7e61450` ↔ `q-c137ef94d7` — Merged because enumerating changed flags answers both, despite one requesting a Boolean-style “any” check and the other asking which flags were supplied.
+- `q-1e11bcebbd` ↔ `q-db72578c10` — Merged on the interpretation that “document or define” concerns representing a positional argument in usage text rather than enforcing it.
+- `q-b75d7ecc5a` ↔ `q-db72578c10` — Not merged because the former requires argument validation, while the latter was interpreted as usage documentation.
+- `q-23ba216024` ↔ `q-34a7e61450` — Not merged because testing one named flag and discovering whether any flag was set require different operations.
+- `q-6c24291167` ↔ `q-ea451429c7` — Not merged because the former also asks about flags and mixed flag placement, adding a parsing distinction absent from the positional-argument question.
+- `q-db9a7897b6` ↔ `q-ea451429c7` — Not merged because escaping or passing through arguments is a different action from defining an argument before a subcommand.
+- `q-0174ba5994` ↔ `q-cca34d895d` — Not merged because internal tree traversal and invoking man-page generation require different answer modes.
+- `q-5c41c22e37` ↔ `q-c9dedfdf83` — Merged because recording an executed command with its parameters and reconstructing the invocation share the same underlying capture task.
+- `q-776fafd6f2` ↔ `q-83cc122da7` — Merged because a single-dash multi-character option and a multi-character shorthand present the same flag-syntax constraint.
+- `q-a120ffaab0` ↔ `q-c54c2b15aa` — Not merged because arbitrary argument sanity checks and enforcing an exact argument count require distinct validation facts.
+
+Transitive closure implies **94 families**.

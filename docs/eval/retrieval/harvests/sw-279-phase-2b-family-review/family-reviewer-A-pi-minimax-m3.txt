@@ -1,0 +1,132 @@
+I'll work through the 106 questions carefully, applying the conservative same-task test. Let me first read the full input file.
+
+Below are my independent same-task judgements for all 106 questions.
+
+# 1. The 106 lines
+
+```
+q-0174ba5994 -> NONE
+q-0407adcd3c -> NONE
+q-06184d1b24 -> NONE
+q-083c29231e -> NONE
+q-083fcd7cd1 -> q-ea2e631e3c
+q-084833bd7c -> NONE
+q-084ccea27b -> NONE
+q-0bfad1869a -> NONE
+q-0dcef62dc1 -> NONE
+q-1802eca229 -> NONE
+q-1a2875cc02 -> NONE
+q-1d2b7737c3 -> NONE
+q-1e11bcebbd -> NONE
+q-201e16a374 -> q-ee79389202
+q-20294d3168 -> NONE
+q-2349b16ea3 -> NONE
+q-23ba216024 -> q-34a7e61450 q-c137ef94d7 q-3a80e018bc
+q-25814ff3cd -> NONE
+q-25e1497473 -> NONE
+q-29e1ae6a39 -> NONE
+q-2ad59bff46 -> NONE
+q-2adeac36d6 -> NONE
+q-2b745b14f5 -> NONE
+q-2d501b4223 -> NONE
+q-2f5a1b2245 -> NONE
+q-305238368a -> NONE
+q-3090f56852 -> NONE
+q-3419d4374a -> NONE
+q-3433ff1f53 -> NONE
+q-34a7e61450 -> q-23ba216024 q-c137ef94d7 q-3a80e018bc
+q-37353d6cd1 -> NONE
+q-39d9cf240f -> NONE
+q-3a80e018bc -> q-23ba216024 q-34a7e61450 q-c137ef94d7
+q-3b7c601bf8 -> q-7594f7bd54
+q-45a5423b0f -> NONE
+q-47c3433380 -> NONE
+q-4a68915ebb -> NONE
+q-5c41c22e37 -> NONE
+q-5ee70e90d7 -> q-f648447788
+q-60df13c261 -> NONE
+q-60e8116b57 -> NONE
+q-62e7375037 -> NONE
+q-647fb81ddf -> NONE
+q-65f607f300 -> NONE
+q-6c24291167 -> q-ea451429c7
+q-6c5239de6b -> NONE
+q-7594f7bd54 -> q-3b7c601bf8
+q-776097bcaa -> q-bc7728267b
+q-776fafd6f2 -> q-83cc122da7 q-9e44856846
+q-779325e1ab -> NONE
+q-77e06c690b -> NONE
+q-7b480d3c5c -> NONE
+q-7d448e4e40 -> NONE
+q-83cc122da7 -> q-9e44856846 q-776fafd6f2
+q-841447007f -> NONE
+q-8cce053ca6 -> NONE
+q-916188d869 -> NONE
+q-9c960dfd6f -> NONE
+q-9e11a10cf6 -> NONE
+q-9e44856846 -> q-83cc122da7 q-776fafd6f2
+q-a0bc05d547 -> NONE
+q-a120ffaab0 -> NONE
+q-a8d75131ac -> NONE
+q-b128a49041 -> NONE
+q-b4888d1e90 -> NONE
+q-b75d7ecc5a -> q-db72578c10
+q-b8dddc5443 -> NONE
+q-bac1c3f708 -> NONE
+q-bc7728267b -> q-776097bcaa
+q-be4e0e594e -> NONE
+q-bf8e2f6af6 -> NONE
+q-c02cb3285e -> NONE
+q-c137ef94d7 -> q-23ba216024 q-34a7e61450 q-3a80e018bc
+q-c54c2b15aa -> NONE
+q-c6422d2d31 -> NONE
+q-c86ddba63e -> NONE
+q-c9dedfdf83 -> NONE
+q-ca6f4cef57 -> NONE
+q-cca34d895d -> NONE
+q-cdf52860c4 -> NONE
+q-ce98704167 -> NONE
+q-cf047ff0b9 -> NONE
+q-d142abde77 -> NONE
+q-d20b45f953 -> NONE
+q-d585456681 -> NONE
+q-da0b542f13 -> NONE
+q-dafb3af970 -> NONE
+q-db72578c10 -> q-b75d7ecc5a
+q-db9a7897b6 -> NONE
+q-de7b35e8fe -> NONE
+q-e0d118d906 -> NONE
+q-e324a389d9 -> NONE
+q-e5002cbb36 -> NONE
+q-ea2e631e3c -> q-083fcd7cd1
+q-ea451429c7 -> q-6c24291167
+q-ee79389202 -> q-201e16a374
+q-f03e2ccf3f -> NONE
+q-f0b72e6b0b -> NONE
+q-f2acc7429f -> NONE
+q-f44a345203 -> NONE
+q-f648447788 -> q-5ee70e90d7
+q-f6717f3451 -> NONE
+q-f777bc71fe -> NONE
+q-fb30cf7aee -> NONE
+q-fb737c3714 -> NONE
+q-fdfc969cc0 -> NONE
+```
+
+# 2. Difficult cases (genuinely torn — retained for audit)
+
+- **F2 quartet (q-23ba216024, q-34a7e61450, q-c137ef94d7, q-3a80e018bc):** "How to check if a single flag was set," "how to check if *any* flag was set," "how to find which flags were called," and "how to distinguish default from manually-set" all map to the same `cmd.Flag().Changed` / `cmd.Flags().Visit` answer area, but "any flag at all" is a broader/yes-no question while the others ask about which specific flag(s). The conservative rule pulls me to merge; the strict reading could keep q-34a7e61450 separate.
+- **F6 pair (q-ea2e631e3c, q-083fcd7cd1):** "How are hidden/deprecated commands excluded from help output" and "are commands with un-runnable parents deliberately undiscoverable" both ask about cobra's discovery-filtering, but the first names two filters (`Hidden`, `Deprecated`) while the second names a different one (parent runs `SilenceErrors`/no-op). Filtered-out-from-help is a single shared intent; the specific filters are different code-defined facts.
+- **F9 trio (q-83cc122da7, q-9e44856846, q-776fafd6f2):** All three ask about "non-standard cobra/pflag shorthand." They may each target a *different* mechanism — multi-character short param like `-verbose`, single-dash cluster shorthand like `-abc`, and an ambiguous "git-style `-delete`" whose meaning is unclear. The conservative rule pushes me to merge because a single pflag-shorthand explanation could cover all three; the strict reading would split them.
+- **Help-output cluster (q-06184d1b24, q-841447007f, q-c02cb3285e, q-f03e2ccf3f, q-2ad59bff46, q-8cce053ca6, q-7b480d3c5c, q-25e1497473):** Eight questions all targeting the help command or help template, but each names a *distinct* customization slot (programmatic invocation, custom command body, removal, use line, trailing hint, global-flags section, flag defaults, ordering). The shared topic is "the help template" and they share `cobra.Command.SetUsageTemplate` / `HelpFunc()` as answer locations, but each requires a distinct mechanism.
+- **Flag-access contexts (q-1a2875cc02, q-cdf52860c4, F1's q-201e16a374 / q-ee79389202):** Four questions all hitting the "get a flag value" API surface but in distinct contexts — inside the `Init` callback, on the currently-executing command, and on a subcommand reading a parent's/global flag. The mechanism answers differ in timing and scope (`Init` runs before flag parsing settles, persistent-flag inheritance vs local flag lookup), so these are plausibly three separate families even though they share the same Go method names.
+- **Argument-validation edges (q-c54c2b15aa vs F5's q-b75d7ecc5a / q-db72578c10):** "How to enforce the *number* of arguments required" (count constraint) versus "how to add a required argument / how to define a required argument" (presence constraint). Both touch arg validation, but `MinimumNArgs`/`MaximumNArgs`/`ExactArgs` is a different code-defined fact from `Args: cobra.ExactArgs(N)`-style declaration.
+- **Cmdline-parse inverse pair (q-c9dedfdf83 vs q-f44a345203):** "Reconstruct the original command line" vs "parse a string as if it were a command-line argument" — inverse operations that may live near the same code (the parser/flag-replay area) but answer opposite user intents. A single coherent answer satisfies neither without adding a separate conversion step.
+- **Bare-symbol queries (e.g., q-0407adcd3c, q-20294d3168, q-2349b16ea3, q-305238368a, q-3b7c601bf8, q-5ee70e90d7, q-60e8116b57, q-77e06c690b, q-a0bc05d547, q-b128a49041, q-b8dddc5443, q-cf047ff0b9, q-d142abde77, q-e0d118d906, q-fb30cf7aee):** Each is a bare identifier (filename, function name, type name, or concept name) with no question phrasing — likely "locate / show me X." I judged each as a separate task because the rule explicitly says sharing an identifier or file does *not* merge distinct information needs; but a strict counter-reading could collapse them into one "find a cobra symbol" family since the answer mode is uniformly "return the source location."
+- **Off-topic singletons (q-084ccea27b, q-1802eca229, q-a8d75131ac, q-d585456681, q-dafb3af970, q-f777bc71fe, q-2adeac36d6):** These are unambiguously off-cobra topics (DB connection pool, k8s scheduling, JWT verification, SQLite WAL, HTTP middleware, etcd role, license-key management). Each stands alone; I noted them here only to flag that they form a deliberate noise band unrelated to the cobra questions.
+
+# 3. Family count (transitive closure)
+
+- 9 multi-member families (F1–F9, sizes 2, 4, 2, 2, 2, 2, 2, 2, 3 respectively — 21 questions total).
+- 85 singletons.
+- **My direct-judgement closure implies 9 + 85 = 94 distinct groups.**

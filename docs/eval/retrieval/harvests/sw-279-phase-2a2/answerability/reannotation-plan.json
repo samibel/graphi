@@ -1,0 +1,24 @@
+{
+  "schema": "sw-279-answerability-reannotation-plan/v1",
+  "harvest": "sw-279-phase-2a2",
+  "reason": "SW-279 review round 1, finding B1: the finalizer's unresolved->not_answerable conversion is removed because Section 4 and Section 8 forbid it, so this candidate needs a genuine terminal state from an actor that has not touched the row.",
+  "rule_basis": "Section 4: every candidate must finish with (a) reviewed grade-3 evidence satisfying A1-A4, (b) a positive D1-D5 finding, or (c) unresolved, and an unresolved row blocks completion of Phase 2 rather than being reinterpreted as a reject (Section 8).",
+  "batches": [
+    {
+      "batch": 6,
+      "input": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-6-input.jsonl",
+      "issue_numbers": [
+        1780
+      ],
+      "supersedes_annotation_for": [
+        1780
+      ],
+      "annotator_slot": "A6",
+      "reviewer_slot": "R6",
+      "annotations_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/annotations-6.jsonl",
+      "reviews_output": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/reviews-6.jsonl",
+      "input_sha256": "16ac661d80ffc7863d043e5ae8624233d9ff92ffce5eadbf1cafa7bc1e84d39e",
+      "retention": "The original annotation and the original review are retained unedited in their own files and are carried onto the ledger row alongside the fresh pass."
+    }
+  ]
+}

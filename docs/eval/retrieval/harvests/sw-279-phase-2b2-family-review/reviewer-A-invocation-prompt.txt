@@ -1,0 +1,27 @@
+[PUBLICATION NOTE - not part of the file as produced]
+Absolute paths have been rewritten to repository-relative paths. This is a public
+repository and the absolute paths carry a local username. Nothing else is changed;
+both digests are recorded in invocation-record.json.
+[END PUBLICATION NOTE]
+
+You are ONE OF TWO INDEPENDENT FAMILY REVIEWERS for a dataset build. Your whole task is defined by a written brief.
+
+1. Read the brief in full: docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-brief.txt
+2. Read the query list it names: docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/blind-queries.txt
+3. Follow the brief exactly and write your COMPLETE answer to: docs/eval/retrieval/harvests/sw-279-phase-2b2-family-review/family-reviewer-A-pi-minimax-m3.txt
+
+Your answer file must contain, in this order:
+  (1) one line per query, for all 134, in the input's order, formatted exactly as
+      <id>  ->  <space-separated ids it is same-task with, or the word NONE>
+  (2) the pairs you found genuinely difficult, one sentence each on what made it hard
+  (3) how many families your judgements imply under transitive closure, as a sanity number
+
+HARD CONSTRAINTS:
+- Read ONLY those two files. Do not open, list or grep any other file in this repository or outside it.
+- Do NOT look at any source code, any repository, any retrieval output, any ranking, any dataset, or any previous family review. You have not been given them and must not seek them.
+- Do NOT try to infer which questions are new versus pre-existing, or which split anything is in.
+- Do NOT optimise for a target number of families. There is no target.
+- Another reviewer is doing this same task separately. You will never see their answer and they will never see yours. A pair is joined if EITHER of you marks it same-task, so you do not need to be conservative to protect the result - you need to be honest.
+- Every one of the 134 ids must appear on the left of exactly one line. Do not skip any. Do not compute transitive closure yourself in part (1); list only direct judgements.
+
+Write the file and then stop.

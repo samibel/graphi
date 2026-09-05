@@ -1,0 +1,47 @@
+{
+  "schema": "sw-279-answerability-annotator-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability annotator A2)",
+  "role": "source annotator",
+  "attested_at_utc": "2026-09-04T22:41:08Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "assigned_issue_numbers": [
+    678,
+    689,
+    710,
+    724,
+    725,
+    771,
+    821,
+    827,
+    829,
+    835,
+    852,
+    920,
+    943,
+    1025,
+    1027,
+    1060,
+    1086,
+    1098,
+    1111
+  ],
+  "output_sha256": "54a47d1b421ce535a50d64a554f0240aa094c5aa003d8292a9af9aee938a897c",
+  "statements": [
+    "My first action was `git -C <cobra-checkout> rev-parse HEAD`; it printed a0a6ae020bb3899ff0276067863e50523f897370, and I opened no file in that checkout before that check returned.",
+    "I ran no retrieval of any kind for this annotation: no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search engine. I saw no ranked list, no score, no bundle, no saved hit list, no metric and no trace. Navigation was limited to cat/sed/awk, plain grep, git grep and git ls-files inside the verified checkout.",
+    "I made no GitHub or web request. I did not run gh, fetch a URL, or open a browser, and I read no issue body beyond the sealed Q, no issue comment, no label and no linked pull request.",
+    "The only repository I read is the pinned Cobra checkout. The only files I read outside it are the three named in my task: the annotation brief, docs/eval/retrieval/dataset-v2-inclusion-rule.md, and my own batch-2-input.jsonl. I opened no graphi source, dataset, test, or other harvest file, and no other annotator's output.",
+    "Every anchor in annotations-2.jsonl was checked programmatically against the pinned bytes: all 56 spans resolve, each anchor occurring inside its own cited inclusive line range in the tracked file named, at the pin.",
+    "No verdict of mine was decided by how long a search took, by how large the search area was, or by any expectation about whether retrieval would find the span. Where a question was hard I kept reading; the three not_answerable rows each rest on a positive D-clause finding about what the pinned bytes do and do not contain, cited in the row's note.",
+    "I did not rewrite any sealed rubric, did not add bespoke expected-answer wording to a rubric, and did not change any answer mode. The rubric objects in my input were read and left untouched.",
+    "Disclosure, offered because it is a true fact about my run rather than because it was asked: the session scratchpad directory is shared with at least one other process running concurrently, and a temporary verification script I had written there was overwritten by another process's script while I was working. I noticed that replacement because its first lines named a different output file (annotations-3.jsonl). I did not open, read, or use that file or any other annotator's annotations; I rewrote my verification script under a unique name and re-ran it against my own output only.",
+    "Where a sealed Q admitted more than one plausible reading (notably issues 1025 and 1098), I chose one reading, stated it explicitly in that row's note, and cited only bytes that support it, rather than silently broadening or narrowing the query."
+  ],
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: 9a9324f54bf6f0cb0e875069ac3ba6d0bd6047c18d7735138fe7c63740fadbdd.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-2-input.jsonl",
+    "sha256": "2498245f07e03dc4c5ba3bc890444ce31968a7bb7bbbb9e0b75fc433a96942f2",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
+}

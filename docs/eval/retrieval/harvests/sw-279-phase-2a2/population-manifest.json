@@ -1,0 +1,19 @@
+{
+  "schema": "sw-279-population-manifest/v1",
+  "repository": "spf13/cobra",
+  "population_definition": "GitHub objects classified as issues, created at or before cutoff",
+  "cutoff_utc": "2026-09-03T22:57:37.000000Z",
+  "cutoff_source": "committer timestamp of the frozen Phase 1 rule commit",
+  "serialization": "ascending decimal issue number followed by LF, including final LF",
+  "population_size": 1256,
+  "expected_population_size": 1255,
+  "count_matches_phase_1_expectation": false,
+  "issue_numbers_file": "issue-numbers.txt",
+  "issue_numbers_sha256": "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4",
+  "first_issue_number": 1,
+  "last_issue_number": 2491,
+  "github_pages_fetched": 13,
+  "github_issue_nodes_seen_including_post_cutoff": 1256,
+  "fetch_started_at_utc": "2026-09-04T21:53:49.192033Z",
+  "fetch_completed_at_utc": "2026-09-04T21:53:57.940149Z"
+}

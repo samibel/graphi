@@ -1,0 +1,50 @@
+{
+  "schema": "sw-279-answerability-annotator-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability annotator A3)",
+  "role": "source annotator",
+  "attested_at_utc": "2026-09-04T22:40:19Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "assigned_issue_numbers": [
+    1120,
+    1133,
+    1148,
+    1151,
+    1168,
+    1202,
+    1221,
+    1222,
+    1236,
+    1289,
+    1300,
+    1343,
+    1358,
+    1368,
+    1408,
+    1416,
+    1457,
+    1461,
+    1466
+  ],
+  "output_sha256": "54a4745fe3c43e9726ec02c3f08e1abb38365ec0d3630c750e77ff63eaccb608",
+  "statements": [
+    "My first action in this task was to run git rev-parse HEAD against the Cobra checkout and confirm it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly. I opened no file in that checkout before that confirmation returned.",
+    "I ran no retrieval tool of any kind. I did not invoke the graphi CLI, any mcp__graphi__* tool, task_context, or any semantic or lexical search engine, and I never saw a ranked list, a relevance score, a bundle, a saved hit list, a retrieval metric, or a trace. Everything I looked at came from reading files and from plain grep, git grep and git ls-tree run inside the pinned checkout.",
+    "I made no network request. No gh, no WebFetch, no WebSearch, no browser. I read no issue body beyond the sealed Q given to me, and no issue comment, label, linked pull request, or maintainer statement.",
+    "The only repository I read was the pinned Cobra checkout at <cobra-checkout>. Outside it I read exactly the three files named in my task: the annotation brief, the dataset-v2 inclusion rule (Sections 4 and 6 verbatim, plus its section headings), and batch-3-input.jsonl. I read no graphi source, no graphi dataset, no graphi test, and no other harvest directory. I read no dependency source, including pflag.",
+    "Every anchor I cite occurs literally inside its cited inclusive line range in the named file at the pin. I checked all 75 spans programmatically by re-reading the pinned bytes for each range and asserting the anchor substring is present, and all 75 resolved. Every cited path is a tracked regular file (mode 100644) in the pin's tree.",
+    "No verdict of mine was decided by how long a search took, by how many files I had to open, by how deep an answer sat in a call chain, by identifier overlap, or by any expectation about how a retrieval system would perform on the question. I used no time budget and no file-count budget.",
+    "I recorded three not_answerable verdicts and each rests on a positive finding about the pinned bytes, stated in its note: 1120 (D5), 1457 (D4), 1466 (D4). None of them is a 'could not find it' rejection; in each case I state what the pinned tree does contain and why those bytes fail the clause.",
+    "I returned no unresolved rows. In each of the nineteen cases I was able to settle the question against the pinned source, so unresolved would have been inaccurate rather than cautious.",
+    "I did not rewrite any sealed rubric, did not add bespoke expected-answer wording to any rubric, and did not change any answer mode. I graded the pinned source against the rubrics as they were handed to me.",
+    "Where I judged a range, I used the smallest contiguous range that preserves the declaration or documentation unit carrying the answer. I noticed one span I had first drawn wider than its declaration unit (a grade-1 contrast span on issue 1343) and narrowed it before finalising, so that no cited range extends past the unit its reason relies on.",
+    "Two of my decisions are judgement calls at the A1/D4 boundary and I am naming them rather than burying them. Issue 1343 I judged answerable because the pinned bytes affirmatively define the deprecation message's fixed format and the exact portion a caller controls, which is more than a bare statement that the capability is missing; a reviewer who reads D4 more strictly could reach not_answerable there. Issue 1466 I judged not_answerable under D4 after checking both plausible readings of the question (glob-valued flags, and glob-filtered flag completion) and finding neither implemented at the pin.",
+    "I deviated from none of the prohibitions in my task or in the brief."
+  ],
+  "publication_note": "Absolute paths were rewritten to repository-relative paths before this file was committed; this repository is public and a pre-commit guard refuses a staged file containing the local username. Nothing else was changed. sha256 of the bytes as the actor produced them: c27b933aee60559dbf3363bf033e3966109a9588f90fece4481868f01445f5e9.",
+  "input_artifact_orchestrator_recorded": {
+    "artifact": "docs/eval/retrieval/harvests/sw-279-phase-2a2/answerability/batch-3-input.jsonl",
+    "sha256": "41d0659d421e8dfd120478536329054fc190a4083aaf8236eee09f99cd3f7b10",
+    "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+    "note": "Back-filled during SW-279 review round 1. This attestation's schema carried no input digest, so the bytes this annotator read were recorded nowhere. This is the digest of the committed batch input the batch plan assigned to this annotator; it is NOT a first-person statement by the annotator, which has exited and cannot make one. The annotator's own output_sha256 is unchanged and still resolves."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "sw-279-candidate-question-seal/v1",
+  "sealed_at_utc": "2026-09-04T22:14:25.789264Z",
+  "sealed_by": "Claude Opus 5 (SW-279 Phase 2a isolated semantic classifier)",
+  "phase_1_rule_commit": "a0a13a757c66e8d4f0747d4a68955fe95d072573",
+  "phase_1_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "population_manifest_sha256": "2c35bf714abc32bc9074dfe75df7f5f36ba4d19958de9ca2eea596b353c74de4",
+  "candidate_ledger_file": "candidate-ledger.jsonl",
+  "candidate_ledger_sha256": "cdb65a0ce0ae8b8e76fe7e17bf7a1531484d8f69b97f897763bda8cf7ce1de61",
+  "candidate_questions_file": "candidate-questions.jsonl",
+  "candidate_questions_sha256": "35f2daf71dbef5b186383c49c58f1b85065874d2e9c5ca0a546146014aa3ba84",
+  "candidate_count": 94,
+  "scope": "T and mechanically derived Q only; no stratum, rubric, family, split, answerability, judgement, or dataset assignment"
+}

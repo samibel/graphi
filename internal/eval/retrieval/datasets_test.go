@@ -16,9 +16,22 @@ const (
 	// checks they agree.
 	cobraPinnedSHA = "a0a6ae020bb3899ff0276067863e50523f897370"
 
+	// One env var, one upstream string, one sentinel for the cobra clone, used
+	// by every cobra span test. SW-279 briefly gave the v2 test its own
+	// GRAPHI_COBRA_ROOT and its own upstream spelling, which meant pointing one
+	// variable at a clone left the other test silently skipping.
+	cobraEnvVar   = "GRAPHI_CORPUS_COBRA"
+	cobraUpstream = "spf13/cobra"
+	cobraSentinel = "command.go"
+
 	// grpcGoDataset is the PERFORMANCE-ONLY dataset over the large size
 	// class (AC-8); grpcGoPinnedSHA is corpus/manifest.json's pin for grpc-go
 	// v1.60.1.
+	// cobraV2Dataset is the SW-279 release dataset: cobra-v1's 40 queries minus
+	// the withdrawn cb-05, plus questions harvested from real spf13/cobra issues
+	// under a rule frozen before any issue was fetched.
+	cobraV2Dataset = "testdata/datasets/cobra-v2.json"
+
 	grpcGoDataset   = "testdata/datasets/grpc-go-perf-v1.json"
 	grpcGoPinnedSHA = "dbbcf59957fec0bd58063224cbf105b3b3698d4e"
 )
@@ -103,10 +116,102 @@ func TestDatasets_CobraDatasetShape(t *testing.T) {
 	}
 }
 
+// The v2 dataset's shape, checkable without the clone. The properties asserted
+// here are the ones SW-279 exists to guarantee, so a future edit that quietly
+// breaks one fails here rather than in a release claim: every query carries a
+// family and a provenance, no family straddles the split, cb-05 is absent while
+// cb-11 keeps the dev split it has had since SW-258, and the answerable counts
+// clear 30 on both sides.
+func TestDatasets_CobraV2Shape(t *testing.T) {
+	ds, err := LoadDataset(cobraV2Dataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ds.Dataset.RepoSHA != cobraPinnedSHA {
+		t.Errorf("repo_sha = %q, want the pin %q", ds.Dataset.RepoSHA, cobraPinnedSHA)
+	}
+
+	// v2's issue-derived rows were reviewed by an independent agent, not by a
+	// human. Filing the set under the human-reviewed label would overstate the
+	// evidence, so the label must not be that constant and must say what the
+	// review actually was.
+	if ds.Dataset.EvidenceClass == EvidenceClassAgentHumanReviewed {
+		t.Errorf("evidence_class = %q; v2's issue-derived rows were agent-reviewed and must not be filed under the human-reviewed label", ds.Dataset.EvidenceClass)
+	}
+	if !strings.Contains(ds.Dataset.EvidenceClass, "agent-reviewed") {
+		t.Errorf("evidence_class = %q, want it to state that the issue-derived rows were agent-reviewed", ds.Dataset.EvidenceClass)
+	}
+
+	answerable := map[string]int{}
+	byID := map[string]Query{}
+	for _, q := range ds.Dataset.Queries {
+		byID[q.ID] = q
+		if q.FamilyID == "" || q.Provenance == "" {
+			t.Errorf("query %q: family_id=%q provenance=%q, both are required in v2", q.ID, q.FamilyID, q.Provenance)
+		}
+		if q.Stratum != StratumNoHit {
+			answerable[q.Split]++
+		}
+	}
+
+	// Validate already refuses a family that crosses splits; assert it here too,
+	// because this is the property the whole holdout claim rests on and it should
+	// fail loudly in the dataset test, not only inside a validator.
+	splitOf := map[string]string{}
+	for _, q := range ds.Dataset.Queries {
+		if prior, seen := splitOf[q.FamilyID]; seen && prior != q.Split {
+			t.Errorf("family %q crosses splits %s and %s at query %q", q.FamilyID, prior, q.Split, q.ID)
+		}
+		splitOf[q.FamilyID] = q.Split
+	}
+
+	if _, present := byID["cb-05"]; present {
+		t.Error("cb-05 is withdrawn from v2; see projects/graphi/stories/SW-279/decision-holdout-dev-overlap.md")
+	}
+	cb11, present := byID["cb-11"]
+	if !present {
+		t.Fatal("cb-11 must be carried into v2")
+	}
+	if cb11.Split != SplitDev {
+		t.Errorf("cb-11 split = %q, want %q; no SW-258 assignment may move", cb11.Split, SplitDev)
+	}
+
+	const want = 30
+	if answerable[SplitDev] < want || answerable[SplitHoldout] < want {
+		t.Errorf("answerable dev=%d holdout=%d, want >= %d on both (SW-266 AC-2)", answerable[SplitDev], answerable[SplitHoldout], want)
+	}
+
+	// Every issue-derived query is a natural-language question in one of the three
+	// strata Section 5 allows it to enter, and carries a github provenance.
+	for _, q := range ds.Dataset.Queries {
+		if !strings.HasPrefix(q.Provenance, "github:spf13/cobra#") {
+			continue
+		}
+		switch q.Stratum {
+		case StratumConfigDocs, StratumArchitectureFlow, StratumNLBehaviour:
+		default:
+			t.Errorf("issue-derived query %q has stratum %q; Section 5 permits only config_docs, architecture_flow, nl_behaviour", q.ID, q.Stratum)
+		}
+	}
+}
+
+// AC-9 for v2: every judged span still resolves at the pin. Skips visibly when
+// the clone is absent, exactly as the v1 check does.
+func TestDatasets_CobraV2SpansResolveAtPinnedSHA(t *testing.T) {
+	root := pinnedCheckout(t, cobraEnvVar, "cobra", cobraUpstream, cobraSentinel, cobraPinnedSHA, cobraV2Dataset)
+	ds, err := LoadDataset(cobraV2Dataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckSpanCoverage(root, ds.Dataset); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // AC-9 over the pinned public repository: runs only against a local clone at
 // the pinned sha, and SKIPS — visibly — otherwise. A stale judgement fails.
 func TestDatasets_CobraSpansResolveAtPinnedSHA(t *testing.T) {
-	root := pinnedCheckout(t, "GRAPHI_CORPUS_COBRA", "cobra", "spf13/cobra", "command.go", cobraPinnedSHA, "cobra-v1.json")
+	root := pinnedCheckout(t, cobraEnvVar, "cobra", cobraUpstream, cobraSentinel, cobraPinnedSHA, "cobra-v1.json")
 	ds, err := LoadDataset(cobraDataset)
 	if err != nil {
 		t.Fatal(err)

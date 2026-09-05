@@ -1,0 +1,23 @@
+{
+  "schema": "sw-279-semantic-classifier-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 Phase 2a isolated semantic classifier)",
+  "role": "labelled solo substitute for an independent selector",
+  "attested_at_utc": "2026-09-04T22:13:00Z",
+  "input_semantic_review_sha256": "132d16762be42a9ea35eb65a336557ad4b915715be439e01fef199b19beb5269",
+  "input_rule_sha256": "d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c",
+  "output_sha256": "cfd44cdb3941b1c186f69b510bd6821c8f452507416dd731e481d8885e7feae7",
+  "statements": [
+    "I opened exactly three files: the frozen rule, the semantic-classifier brief, and semantic-review.jsonl. I read no other file in this repository or outside it.",
+    "Every verdict rests only on the issue number, author, creation time, raw title T, mechanically derived question Q, and the issue author's opening body as they appear in semantic-review.jsonl.",
+    "I made no GitHub access of any kind: no gh command, no web fetch, no web search, no browser, no GitHub connector, and no GitHub MCP tool. I looked up no issue state, label, reaction, comment, maintainer reply, timeline entry, or linked pull request.",
+    "Several bodies contain URLs, including permalinks into the Cobra source, links to other repositories, a StackOverflow link, and image links. I treated every one of them as literal text and opened none of them; where a body's meaning depended on an unopened link or an image I recorded that as a C3 failure rather than resolving it.",
+    "I read no Cobra source, no graphi source, no test, and no dataset file, and I formed no view on whether any question has an answer at the pin; answerability was left entirely to the later step.",
+    "I ran no retrieval of any kind: no semantic or lexical search, no graphi CLI or mcp__graphi__* tool, no grep or glob over the repository, and I saw no ranked result, score, bundle, hit list, or metric.",
+    "I did not open, list, grep, or otherwise inspect docs/eval/retrieval/harvests/sw-279-phase-2a-superseded/, and I have not seen any output of the discarded earlier run over these same rows.",
+    "No verdict was influenced by how easy or hard an answer would be for a retriever to locate; I had no retrieval output and did not reason as though I did.",
+    "I classified all 139 rows in ascending issue-number order, in batches, with no target count in mind and no early stop; the resulting 94 candidates and 45 rejects are simply what applying Section 3 produced.",
+    "Where I judged a row to sit on a genuine semantic boundary that a second reader could reasonably decide the other way, I set boundary_case to true and said so in the rationale rather than smoothing it over; 52 rows are so marked.",
+    "I used Bash only to compute the three SHA-256 digests recorded here, to write these two output files, and to run one local script that checked my own output for line count, ordering, JSON validity, and legal clause identifiers.",
+    "Prior familiarity with Cobra cannot be erased from a language model, but no verdict cites it and no rationale rests on it; each rationale is grounded in the issue author's own words."
+  ]
+}

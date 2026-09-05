@@ -1,0 +1,42 @@
+{
+  "schema": "sw-279-answerability-reviewer-attestation/v1",
+  "actor": "Claude Opus 5 (SW-279 answerability reviewer R1)",
+  "role": "independent reviewer",
+  "attested_at_utc": "2026-09-04T22:49:23Z",
+  "checkout_head_verified": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "reviewed_issue_numbers": [
+    2,
+    43,
+    298,
+    316,
+    346,
+    365,
+    434,
+    467,
+    470,
+    471,
+    492,
+    509,
+    511,
+    533,
+    545,
+    563,
+    605,
+    656,
+    674
+  ],
+  "annotator_file_sha256": "5ac89bca2f16493ceae64ce850f08431b6e1cec1853e05403b067bb14fbf0818",
+  "output_sha256": "886776e4c7b5d4b75d542799fa91bfcad13c4a8bf6fda4395a8811c104eb0c40",
+  "statements": [
+    "Before opening any other file I ran `git -C <cobra checkout> rev-parse HEAD` and it printed a0a6ae020bb3899ff0276067863e50523f897370 exactly; every judgement below is against that tree.",
+    "I opened and read the bytes of all 55 cited spans myself with sed/awk over the pinned files, and separately confirmed by exact substring match that each anchor occurs verbatim inside its stated inclusive range. I did not take the annotator's description of any span as evidence.",
+    "For every cited path I checked with `git ls-files -s` that it is tracked at the pin with mode 100644, a regular file, and that the stated range lies inside the file.",
+    "I ran no retrieval tool of any kind: no graphi CLI, no mcp__graphi__* tool, no task_context, no semantic or lexical search service. I saw no ranked list, score, bundle, metric or trace for any of these queries. My only searching was plain grep and git grep inside the pinned checkout, which the brief permits.",
+    "I made no GitHub request and no web request. I read no issue comment, label, linked pull request, or any Cobra source outside the pinned checkout.",
+    "I read only the four files named in my task from the graphi repository - the review brief, the frozen inclusion rule, batch-1-input.jsonl and annotations-1.jsonl - and no other harvest file, dataset, test or source file from that repository.",
+    "No verdict or grade of mine turned on how hard anything was to find, how long it took, how large the search area was, or on any expectation about retrieval behaviour. Where I upheld a not_answerable row I first reproduced the positive D-clause evidence myself from the pinned bytes rather than accepting the annotator's account of it.",
+    "I did not edit the annotator's file; annotations-1.jsonl hashes to the value recorded above, which is the value I was given in my task.",
+    "I disagreed with three grades (issues 43, 434 and 511, each a proposed grade 3 that I judge to be a grade 2). I agreed with all 19 verdicts, and I have recorded in the row notes for issues 298, 316, 492 and 656 the specific reservations that brought me closest to dissenting, so that agreement is not mistaken for absence of scrutiny.",
+    "I deviated from no prohibition in the brief."
+  ]
+}

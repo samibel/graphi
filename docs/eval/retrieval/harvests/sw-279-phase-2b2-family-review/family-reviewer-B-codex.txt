@@ -1,0 +1,154 @@
+q-0174ba5994  ->  q-cf047ff0b9
+q-0407adcd3c  ->  NONE
+q-06184d1b24  ->  NONE
+q-083c29231e  ->  NONE
+q-083fcd7cd1  ->  NONE
+q-084833bd7c  ->  NONE
+q-084ccea27b  ->  NONE
+q-0bfad1869a  ->  q-37353d6cd1 q-a0bc05d547
+q-0dcef62dc1  ->  NONE
+q-0fd8128ab6  ->  q-ad81c1ac0b
+q-112402db02  ->  NONE
+q-1802eca229  ->  NONE
+q-1a2875cc02  ->  NONE
+q-1b8799bd73  ->  NONE
+q-1b9fee4dbb  ->  q-d20b45f953
+q-1d2b7737c3  ->  NONE
+q-1e11bcebbd  ->  q-db72578c10
+q-201e16a374  ->  q-ee79389202
+q-20294d3168  ->  q-9e10262086
+q-2349b16ea3  ->  NONE
+q-23ba216024  ->  q-3a80e018bc
+q-25814ff3cd  ->  NONE
+q-25e1497473  ->  NONE
+q-29e1ae6a39  ->  NONE
+q-2ad59bff46  ->  NONE
+q-2adeac36d6  ->  NONE
+q-2b745b14f5  ->  q-8006d799b9
+q-2d501b4223  ->  q-3b6ef8bba5
+q-2f015d8adf  ->  q-90d4d6a552 q-bd862b17f0 q-ecea678c01
+q-2f5a1b2245  ->  NONE
+q-305238368a  ->  NONE
+q-3090f56852  ->  NONE
+q-3419d4374a  ->  NONE
+q-3433ff1f53  ->  NONE
+q-34a7e61450  ->  q-c137ef94d7
+q-37353d6cd1  ->  q-0bfad1869a q-a0bc05d547
+q-39d9cf240f  ->  NONE
+q-3a28eeff56  ->  NONE
+q-3a80e018bc  ->  q-23ba216024
+q-3b6ef8bba5  ->  q-2d501b4223
+q-3b7c601bf8  ->  q-7594f7bd54
+q-47c3433380  ->  NONE
+q-4a68915ebb  ->  q-c9dedfdf83
+q-4c8a6cac39  ->  NONE
+q-5c41c22e37  ->  NONE
+q-5ee70e90d7  ->  q-f648447788
+q-60df13c261  ->  NONE
+q-60e8116b57  ->  NONE
+q-62e7375037  ->  NONE
+q-647fb81ddf  ->  NONE
+q-65f607f300  ->  NONE
+q-6c24291167  ->  q-be4e0e594e q-ea451429c7
+q-6c5239de6b  ->  NONE
+q-7594f7bd54  ->  q-3b7c601bf8
+q-75cc0928e0  ->  q-b8dddc5443
+q-776097bcaa  ->  q-bc7728267b
+q-776fafd6f2  ->  q-83cc122da7 q-9e44856846
+q-779325e1ab  ->  NONE
+q-77e06c690b  ->  NONE
+q-7b480d3c5c  ->  NONE
+q-7d448e4e40  ->  NONE
+q-8006d799b9  ->  q-2b745b14f5
+q-83cc122da7  ->  q-776fafd6f2 q-9e44856846
+q-841447007f  ->  NONE
+q-85b7ed0a40  ->  NONE
+q-890dac8d56  ->  NONE
+q-8cce053ca6  ->  NONE
+q-90d4d6a552  ->  q-2f015d8adf q-bd862b17f0 q-ecea678c01
+q-916188d869  ->  NONE
+q-9c960dfd6f  ->  q-fb30cf7aee
+q-9e10262086  ->  q-20294d3168
+q-9e11a10cf6  ->  NONE
+q-9e44856846  ->  q-776fafd6f2 q-83cc122da7
+q-a0bc05d547  ->  q-0bfad1869a q-37353d6cd1
+q-a120ffaab0  ->  q-c54c2b15aa
+q-a2d170fda1  ->  q-bc83ab3f22
+q-a3d1ab7d2c  ->  NONE
+q-a8d75131ac  ->  NONE
+q-a97249b25f  ->  NONE
+q-ad81c1ac0b  ->  q-0fd8128ab6
+q-b128a49041  ->  NONE
+q-b4888d1e90  ->  q-b9695ad969 q-c8cf312c0d
+q-b75d7ecc5a  ->  q-c54c2b15aa q-db72578c10
+q-b8dddc5443  ->  q-75cc0928e0
+q-b94c5b04cf  ->  q-fb737c3714
+q-b9695ad969  ->  q-b4888d1e90 q-c8cf312c0d
+q-ba201251d1  ->  NONE
+q-bac1c3f708  ->  NONE
+q-bc7728267b  ->  q-776097bcaa
+q-bc83ab3f22  ->  q-a2d170fda1
+q-bcafafc3f1  ->  NONE
+q-bd862b17f0  ->  q-2f015d8adf q-90d4d6a552 q-ecea678c01
+q-be4e0e594e  ->  q-6c24291167 q-ea451429c7
+q-bf8e2f6af6  ->  NONE
+q-c02cb3285e  ->  NONE
+q-c137ef94d7  ->  q-34a7e61450
+q-c3d7ec5f61  ->  NONE
+q-c54c2b15aa  ->  q-a120ffaab0 q-b75d7ecc5a q-db72578c10
+q-c6422d2d31  ->  NONE
+q-c70f4a276b  ->  NONE
+q-c86ddba63e  ->  NONE
+q-c8cf312c0d  ->  q-b4888d1e90 q-b9695ad969
+q-c9dedfdf83  ->  q-4a68915ebb
+q-ca6f4cef57  ->  NONE
+q-cca34d895d  ->  NONE
+q-cdf52860c4  ->  NONE
+q-ce98704167  ->  NONE
+q-cf047ff0b9  ->  q-0174ba5994
+q-d142abde77  ->  NONE
+q-d20b45f953  ->  q-1b9fee4dbb
+q-d585456681  ->  NONE
+q-da0b542f13  ->  NONE
+q-dafb3af970  ->  NONE
+q-db72578c10  ->  q-1e11bcebbd q-b75d7ecc5a q-c54c2b15aa
+q-db9a7897b6  ->  NONE
+q-de7b35e8fe  ->  NONE
+q-e0d118d906  ->  NONE
+q-e324a389d9  ->  NONE
+q-e5002cbb36  ->  NONE
+q-e9cab7c46c  ->  NONE
+q-ea2e631e3c  ->  NONE
+q-ea451429c7  ->  q-6c24291167 q-be4e0e594e
+q-ecea678c01  ->  q-2f015d8adf q-90d4d6a552 q-bd862b17f0
+q-ee79389202  ->  q-201e16a374
+q-f03e2ccf3f  ->  NONE
+q-f0b72e6b0b  ->  NONE
+q-f2acc7429f  ->  NONE
+q-f44a345203  ->  NONE
+q-f648447788  ->  q-5ee70e90d7
+q-f6717f3451  ->  NONE
+q-fb30cf7aee  ->  q-9c960dfd6f
+q-fb737c3714  ->  q-b94c5b04cf q-fe951b6183
+q-fdfc969cc0  ->  NONE
+q-fe951b6183  ->  q-fb737c3714
+
+Difficult pairs:
+q-0174ba5994 / q-cf047ff0b9 — I joined them because the named tree-generation operation and the question about its traversal can be satisfied by one explanation, although one is only a symbol name.
+q-0174ba5994 / q-cca34d895d — I kept them separate because explaining traversal internals and asking how to generate man pages have different answer modes despite both involving documentation trees.
+q-0bfad1869a / q-a0bc05d547 — I joined them because a shell-independent Go completion callback answers the custom-completion intent, though the first query is framed through Zsh and the second names a flag-specific API.
+q-0dcef62dc1 / q-0fd8128ab6 — I kept them separate because end-to-end CLI testing needs more setup and assertions than the narrower act of supplying flag arguments in a test.
+q-0fd8128ab6 / q-ad81c1ac0b — I joined them because testing an inherited flag is a direct variant of setting flags through the tested command's argument vector, though it also exercises parent-child inheritance.
+q-1e11bcebbd / q-db72578c10 — I joined them on the documentation side of the latter query because both can be answered by describing the command's usage declaration, even though requiredness may additionally need validation.
+q-201e16a374 / q-3419d4374a — I kept them separate because retrieving a parent flag is an application task while explaining inheritance propagation is an implementation question.
+q-2b745b14f5 / q-8006d799b9 — I joined them because command context is a direct way to carry data across those hooks, although the broader parameter-transfer question could also be implemented with captured state.
+q-2d501b4223 / q-3b6ef8bba5 — I joined them because the condition under which Cobra installs and handles the version flag also explains the reported non-working flag, despite the explanatory versus troubleshooting wording.
+q-3433ff1f53 / q-4a68915ebb — I kept them separate because disabling help-display sorting and recovering the order in which flags were supplied are plausibly different tasks under the terse wording of the latter.
+q-4a68915ebb / q-c9dedfdf83 — I joined them because preserving the original argument vector answers both supplied-flag order and invocation reconstruction, although reconstruction is broader and cannot recover shell quoting exactly.
+q-6c24291167 / q-be4e0e594e — I joined them because both ask whether variable tokens can precede a selected subcommand, though the first also mentions flags and the second emphasizes positional arguments.
+q-083fcd7cd1 / q-c3d7ec5f61 — I kept them separate because a question about deliberate discoverability semantics and an action to add a help entry are different information needs even if availability rules affect both.
+q-b4888d1e90 / q-b9695ad969 — I joined them because both seek to pass flag-looking input through to another consumer, though whole-command parsing disablement and a one-off delimiter are different possible scopes.
+q-b94c5b04cf / q-fb737c3714 — I joined them because defining behavior for an unknown command directly covers handling a wrong subcommand, while treating the latter query's runtime-command alternative as a separate direct edge.
+q-fb737c3714 / q-fe951b6183 — I joined them because runtime command addition is the mechanism for dynamically discovered subcommands, although the former query also offers unknown-command handling as an alternative.
+
+Families under transitive closure: 101

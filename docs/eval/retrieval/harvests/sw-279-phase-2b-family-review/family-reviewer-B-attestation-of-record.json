@@ -1,0 +1,30 @@
+{
+  "schema": "sw-279-family-reviewer-attestation-of-record/v1",
+  "not_a_first_person_attestation": true,
+  "what_this_is": "A statement by the SW-279 orchestrator of what the repository can and cannot evidence about this reviewer's conduct. Section 8 of the frozen rule asks for 'attestations from each actor'. This is not that. The reviewer's session no longer exists and a later session cannot attest to what an earlier one did, so the gap is narrowed by evidence rather than closed by a signature.",
+  "reviewer_slot": "B",
+  "reviewer_actor": "Codex CLI (SW-279 Phase 2b family reviewer B)",
+  "recorded_by": "Claude Opus 5 (SW-279 Phase 2 orchestrator)",
+  "recorded_at_utc": "2026-09-04T22:03:49.547299Z",
+  "access_timestamp_utc": null,
+  "access_timestamp_note": "No session timestamp was retained for this reviewer.",
+  "input_blind_queries_file": "docs/eval/retrieval/harvests/sw-279-phase-2b-family-review/blind-queries.txt",
+  "input_blind_queries_sha256": "93f9f792945f8ec851b54f4e71bf482ba3cc5eb1cde144494c51d6375c17dc81",
+  "input_brief_file": "docs/eval/retrieval/harvests/sw-279-phase-2b-family-review/family-reviewer-brief.txt",
+  "input_brief_sha256_as_published": "eea10105e5c8342af16571cf9bb1bff6f1726686c266b3f5275fe52918acb426",
+  "input_brief_sha256_as_delivered": "f3abb01582e933a0762b084d95d4f80a90e381cc24dc9998950af5805dd187c2",
+  "input_brief_difference": "One edit: the blinded-query list's session-scratchpad path was rewritten to the repository path of the same bytes. A header note in the published file records it.",
+  "output_file": "docs/eval/retrieval/harvests/sw-279-phase-2b-family-review/family-reviewer-B-codex.txt",
+  "output_sha256": "2e58382a4745467d5f3700160c389a0f82733fa6dbdeff8b5e5705a20735387a",
+  "evidenced_from_repository_bytes": [
+    "The reviewer's input was blind-queries.txt, which contains only `<opaque-id><TAB><query text>`. Every one of its 106 ids recomputes as sha256('sw279-blind-v1\\n' + text)[:10], so the id encodes the text and nothing else: no issue number, no dataset id, no stratum, no split, no provenance, no answer span. This is checkable from repository bytes.",
+    "The reviewer's recorded output references only those opaque ids. It cites no file path, no line range, no symbol location, no rank, no score, and no split.",
+    "The two reviewers' pair sets differ substantially (16 pairs for A, 13 for B, 8 shared), their stated own-closures are independently correct and reached from different partitions, and their prose and difficult-pair lists are unrelated. That is circumstantial evidence of independent work.",
+    "Neither reviewer held any GitHub API response: the brief supplied the query text directly and the reviewers had no repository access for the task."
+  ],
+  "not_evidenced": [
+    "Isolation is not proven from repository bytes. There is no session id, no timestamp, and no transcript for either reviewer. The evidence is the brief's instruction plus the divergence of the two outputs.",
+    "No first-person attestation exists from either reviewer, and this record is not one. The brief did not ask for an attestation, and a later session cannot attest to what an earlier session did.",
+    "Blindness to provenance leaked by inference for one class of row. blind-queries.txt contains bare symbols and an off-topic noise band that cannot be issue-title-derived under Section 2's first-token rule, and reviewer A named the noise band explicitly. So a reviewer could infer that some rows were pre-existing. A reviewer could NOT infer any row's split, which is the only leak that would poison a merge."
+  ]
+}
