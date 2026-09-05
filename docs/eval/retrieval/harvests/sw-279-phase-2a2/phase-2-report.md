@@ -140,8 +140,10 @@ Every differing row, with the clause that decided it in the run that rejected it
 | C3 standalone meaning | 5 / 11 | 3 / 4 |
 
 E1 is the clause a maintainer's `bug` label encodes. E4 is what a maintainer's "please share your
-code" reply encodes. Both collapsed. **E2 — `enhancement`, an equally common label — did not move at
-all**, which is a real counter-signal and is stated here rather than left out.
+code" reply encodes. Both collapsed. **E2 — `enhancement`, an equally common label — barely moved:
+its primary count is flat at 11, and its mention count went 13 → 14.** That is a real counter-signal
+and is stated here rather than left out. (An earlier draft said E2 "did not move at all"; the
+primary count is what was flat, and the sentence now says which count it means.)
 
 **This is consistent with the harm the ruling described. It is not proof of it.** Two things cut
 against reading it as proof:
@@ -150,7 +152,21 @@ against reading it as proof:
    also disagree, and 32 of 139 is not an implausible amount of disagreement on a genuinely
    contested clause boundary.
 2. The re-run's own classifier marked **52 of 139 rows as genuine semantic boundaries** — rows a
-   second reader could reasonably decide the other way. 21 of the 32 differing rows are among them.
+   second reader could reasonably decide the other way. **16 of the 32 differing rows are among
+   them**: `{298, 678, 724, 829, 835, 891, 943, 957, 1221, 1466, 1521, 1631, 1861, 1923, 2007,
+   2249}`, which is the count the two per-row tables above give (14 + 2).
+
+The second point is weaker than it looks, and the honest reading has to say so. **Half the
+disagreement — 16 of 32 rows — is on rows the re-run's own classifier did not consider borderline
+at all.** Ordinary boundary noise explains the flagged half far better than the unflagged half; on
+those 16, one run rejected and the other accepted with neither reader treating the call as close.
+So the "two honest readers would differ anyway" defence covers about half of the divergence and
+leaves the rest unexplained by it.
+
+(An earlier draft of this paragraph said 21 of 32. That was wrong, and wrong in the direction that
+flattered the superseded run, inside the very sentence arguing against reading the clause collapse
+as contamination. It is corrected here rather than quietly fixed: the number is 16, and it makes
+this a weaker counter-argument than the report previously claimed.)
 
 What can be said is narrower, and still worth saying: **the run that held maintainer labels,
 comments and state in context rejected issues as bug reports and as program-specific support at
@@ -224,19 +240,68 @@ must not be written.
 
 ## The §8 access ledger
 
-One append-only ledger, `access-ledger.jsonl` in this directory. Two honest caveats are written into
-the rows themselves rather than left for a reader to discover:
+One append-only ledger, `access-ledger.jsonl` in this directory, 33 rows. Three honest caveats are
+written into the rows themselves rather than left for a reader to discover:
 
 - **Ledger sequence is append order, not access order.** Two diagnostic accesses (the discrepancy
   probe and the instrument probe) ran before the ledger helper existed and were back-filled by
   `scripts/eval/backfill_sw279_diagnostic_ledger_rows.py`, which takes each row's timestamp from the
-  record the access itself produced. Their rows therefore carry timestamps earlier than the row
-  numbered before them, and each row says so.
+  record the access itself produced. Twelve answerability rows (below) were back-filled the same
+  way. Every back-filled row carries `"backfilled": true` and says so in its `detail`.
+- **Ten answerability actors had no ledger row at all until review round 1.** This was found by the
+  round-1 review, not by us, and it is the same defect
+  `../../../../projects/graphi/stories/SW-279/decision-holdout-dev-overlap.md` §3 item 6 treated as
+  a hard stop for two family reviewers. Sequences 19–28 are the five annotators and five reviewers
+  of the first answerability pass; 29–30 are the re-annotation pass's A6 and R6. Each carries the
+  actor's own attested timestamp, the digests of the file it read and the file it wrote, and its
+  attestation's path and digest. `scripts/eval/backfill_sw279_answerability_ledger_rows.py`
+  re-verifies every attested digest against the committed bytes and refuses on a mismatch; all
+  twelve resolved.
 - **The family reviewers have no first-person attestation and one cannot be manufactured.** A
   process that has exited cannot attest, and a fresh session cannot attest to what an earlier one
   did. What is written for each is an **attestation of record**: a statement, labelled as such, of
   what the repository evidences about that reviewer's conduct and — separately and explicitly — what
-  it does not. **The §8 gap is narrowed, not closed.**
+  it does not. **The §8 gap is narrowed, not closed.** The actors still lacking a first-person
+  attestation are exactly two: **family reviewer A (pi/minimax-M3)** and **family reviewer B
+  (Codex)**, for the 2b2 review. Both processes had exited before the gap was noticed, `pi` was
+  invoked with `--no-session` so no transcript was retained for A, and nothing in a later session
+  can honestly stand in for either. All twelve answerability actors do have first-person
+  attestations.
+
+### What the annotators' attestations do and do not say about their inputs
+
+The first-pass annotator attestation schema recorded `output_sha256` and **no input digest at all**,
+so the bytes each annotator actually read were recorded nowhere. The five reviewers were better off:
+each attested the `annotator_file_sha256` it read, and every one of those resolves to the committed
+annotation file.
+
+That is now recorded, and recorded honestly rather than repaired. Each of
+`annotator-A{1..5}-attestation.json` gained one field,
+`input_artifact_orchestrator_recorded`, which names the batch input the plan assigned to that
+annotator, its digest, and — in the field's own `note` — that the orchestrator wrote it during
+review round 1 and that **it is not a first-person statement by the annotator**, which has exited
+and cannot make one. No existing field in any attestation was changed. The corresponding ledger rows
+carry `input_digest_provenance` saying the same thing, so a reader who sees only the ledger is not
+misled either.
+
+A6's attestation is different: it was asked for an input digest and attested one first-person, and
+the back-fill script checked that value against the committed bytes rather than overwriting it.
+
+### The seal now refuses out-of-order, rather than asserting it did not happen
+
+`scripts/eval/seal_sw279_phase2.py` used to check nothing about ordering and wrote
+`"source_access_before_this_seal": "none for any provisional query"` unconditionally — a sentence,
+not a check. The round-1 reviewer ran it in a clone with all five `annotations-*.jsonl` present and
+it returned 0. It now refuses if any step-4 artefact exists under the harvest, and refuses if any of
+the four attestations it consumes (the semantic classifier, the stratum assigner, and both family
+reviewers) is missing. `scripts/eval/tests/test_sw279_gates.py` proves each refusal by deleting the
+thing and asserting the exit code, and proves the gate is not simply always-refusing by re-sealing a
+correctly-ordered tree and getting `sealed-questions.jsonl` back byte for byte.
+
+**This does not retroactively prove the committed seal was taken in order.** That evidence is still
+what it always was — timestamps, commit order, and the fact that the annotator attestations
+(22:38–22:52Z) all postdate the seal (22:25:53Z at `004b806`). What changed is that the *next* seal
+cannot be taken out of order without the script saying so.
 
 The 2b2 reviewers leave materially better evidence than the first pair: the exact command line, the
 model identifier, the wall-clock window, Codex's own session id, and the digests of the prompt as
@@ -274,10 +339,20 @@ Run only after the seal. The 94 sealed candidates were split into five contiguou
 ascending issue number — a batching that is a function of the sealed order, not of any question's
 content, because a content-driven batching would be a soft form of the preference §8 forbids.
 
-Each batch had one annotator and one **separate** independent reviewer in its own session, so no
-actor reviewed its own judgements. Both verified the checkout's `HEAD` against
+Each batch had one annotator and one **separate** independent reviewer, each in its own session, so
+no actor reviewed its own judgements. Both verified the checkout's `HEAD` against
 `a0a6ae020bb3899ff0276067863e50523f897370` before opening a file. Every reviewer re-read every
-cited span itself rather than trusting the annotator's description.
+cited span itself rather than trusting the annotator's description. Separate *sessions* is not the
+same as separate *machines*: they shared a scratchpad filesystem, and one annotator disclosed a
+collision on it — see limit 7 below, which states what that could and could not have done.
+
+The annotator's identity on every row now comes from the batch plan and that actor's own
+attestation, not from the judgements. Rejections carry no judgements, so the earlier version
+recorded a *filename* as the annotator on all 23 rejected rows, and the "no actor reviewed its own
+judgements" guard was comparing a filename against an actor name and could never fire on them. That
+is fixed, the 23 rows now name their actor, and
+`scripts/eval/tests/test_sw279_gates.py` proves the guard fires on a rejection row by wiring one
+actor into both jobs and asserting the refusal.
 
 ### Outcome
 
@@ -288,10 +363,21 @@ cited span itself rather than trusting the annotator's description.
 | `unresolved` | **0** |
 | total | 94 |
 
-Rejections by disqualifier: **D4 = 14** (Cobra does not implement the capability), **D3 = 5** (the
-answer lives outside the pinned tree, almost always in `pflag`), **D5 = 4** (no span satisfying A2).
-Every rejection carries positive, cited evidence; every reviewer re-derived it independently and
-none rests on "could not find it", elapsed time, or an expectation about retrieval.
+Rejections by disqualifier: **D4 = 14** (Cobra does not implement the capability), **D5 = 5** (no
+span satisfying A2), **D3 = 4** (the answer lives outside the pinned tree, almost always in
+`pflag`). Every reviewer re-derived the evidence independently and none of it rests on "could not
+find it", elapsed time, or an expectation about retrieval.
+
+**How far "positive, cited evidence" is machine-checked, exactly.** Rejection evidence lives in
+prose, not in graded spans, and until review round 1 nothing checked it at all: a reject needed only
+to name a D-clause. Now `finalize_sw279_answerability.py` extracts every `file:line` reference from
+both the annotator's and the reviewer's note and resolves it against the pinned tree — the file must
+be tracked and the cited lines must be inside it — and refuses the whole run if any reference fails
+or if a rejection carries no source citation at all. **181 citations across the 23 rejections all
+resolve.** What this does *not* check, and no mechanical check can, is whether those bytes say what
+the note claims about them. That remains a human — here, an agent — judgement, unlike the 278 graded
+spans, which are checked three ways. The distinction is recorded in `phase-2-outcome.json` under
+`rejection_evidence_check_limit`.
 
 **All 278 cited spans resolve at the pin.** Every path is tracked and regular, every range is inside
 its file, and every anchor occurs verbatim inside its own range — checked by the annotator, again by
@@ -318,34 +404,67 @@ A review that agrees with everything did not happen. This one disagreed:
   words that this is "file extension filtering (not full glob filtering)". Right answer, wrong
   reason, corrected.
 
-### The one unresolved row, and the judgement made on it
+### The one unresolved row, the rule violation it produced, and how it was actually settled
 
-Issue **#1780** was returned `unresolved` by its annotator: it could not fix the intent of the
-question from `Q` alone, and the readings gave different disqualifiers. §4 says an unresolved
-candidate blocks completion of Phase 2, and the first finalizer run duly exited 3 and refused to
-write an outcome.
+**The first attempt at this row was a violation of the frozen rule, and it was corrected in review
+round 1 rather than defended.** The sequence is worth writing out in full, because the reasoning
+that produced it was plausible and still wrong.
 
-The independent reviewer settled it as `not_answerable` / **D3**, from the sealed `Q` and the pinned
-bytes, on the ground that §6's universal pass/fail requires preserving every explicit constraint in
-`Q` — and `Q` writes the token with a leading dash, so the reading that would have made it
-answerable is only reachable by discarding a character the question states. Every remaining reading
-converges on the same fact: Cobra declares no flag types and no flag-declaration API; `Flags()` and
-`PersistentFlags()` hand out a `*pflag.FlagSet` and parsing is delegated, and `pflag` is not in the
-pinned tree.
+Issue **#1780** was returned `unresolved` by its annotator (A4): it could not fix the intent of the
+question from `Q` alone, and the readings gave different disqualifiers. Its independent reviewer
+(R4) disagreed and produced a positive **D3** finding from the sealed `Q` and the pinned bytes.
 
-**§4 permits a candidate to finish on "a positive D1–D5 finding citing … pinned source that
-establishes the disqualifier". It does not say which of the two named actors must produce it, and
-the independent reviewer is named in the same clause.** The finalizer therefore accepts a reviewer's
-resolution of an `unresolved` row — **in one direction only**. `unresolved → not_answerable` removes
-a query and can never be a route to a target; `unresolved → answerable` would add one and is refused
-by the script even if a reviewer proposed it. Both positions stay on the row, and the disagreement
-is in `phase-2-outcome.json` under `annotator_unresolved_resolved_by_reviewer`.
+The finalizer was then written to apply that: `unresolved → not_answerable` whenever the reviewer
+supplied a D-clause. The argument was that §4 lets a candidate finish on "a positive D1–D5 finding
+citing … pinned source", does not say which named actor must produce it, and that the conversion was
+exclusionary-only and so could never be a route to a target. **That argument is wrong on the rule's
+own text.** §4: "An unresolved candidate is not silently treated as a reject: it blocks completion
+of Phase 2 and is reported." §8, among the acts the selector, family reviewers, source annotators
+and their tools are forbidden to perform: "reinterpret an unresolved row as a reject". Neither
+clause distinguishes a direction, and neither offers an exception for a well-evidenced
+reinterpretation. Being exclusionary made the conversion harmless to the counts; it did not make it
+permitted.
 
-**This is an orchestrator judgement call and a reviewer should scrutinise it.** The honest
-alternative was to leave the row unresolved and report Phase 2 as blocked on it. Two things make
-that alternative worse rather than safer: the row is excluded from the dataset either way, so
-nothing about the released set changes; and the yield clears 30/30 by a wide margin with or without
-it, so no number depends on the choice.
+**What was done instead.** The conversion is deleted from
+`scripts/eval/finalize_sw279_answerability.py`. An unresolved row now blocks: the run writes its
+ledger and outcome under `-blocked` names, prints the blocking issue numbers, and exits 3.
+`scripts/eval/tests/test_sw279_gates.py` reconstructs the exact historical situation — #1780 back to
+`unresolved`, R4's D3 review in place, no re-annotation — and asserts the run blocks with the row
+still reading `unresolved` and `disqualifier: null`. **That test fails if the conversion is ever
+reinstated.**
+
+**#1780 then needed a genuine terminal state, and got one.** §4 gives a candidate exactly three
+ways to finish: (a) reviewed grade-3 evidence satisfying A1–A4, (b) a positive D1–D5 finding, or
+(c) `unresolved`. The only legitimate route out of (c) is a fresh determination by an actor that has
+not seen the row. So the sealed question — and nothing else: no verdict, no note, no disqualifier,
+no hint that the row was contested — was reissued as `answerability/batch-6-input.jsonl` under
+`answerability/reannotation-plan.json`, and given to a **fresh annotator (A6)** and then to a
+**fresh independent reviewer (R6)**, each in its own session under the same briefs and the same
+prohibitions as A1–A5 and R1–R5.
+
+- **A6 returned `not_answerable` / D5**, first-person, citing pinned bytes: Cobra performs no
+  flag-token parsing of its own (`command.go:30` aliases `spf13/pflag`; `ParseFlags` hands the raw
+  slice to `c.Flags().Parse(args)` at `command.go:1833`; `README.md:77-79` says flag functionality
+  comes from pflag), `pflag` v1.0.5 (`go.mod:8`) is not among the 66 tracked files at the pin, and
+  the Cobra-side code that inspects single-dash tokens treats one as a flag only when `len(s) == 2`.
+  It examined `DisableFlagParsing`, `FParseErrWhitelist` and `SetGlobalNormalizationFunc` and
+  explains why none of them contains the mechanism `Q` asks for.
+- **R6 agreed**, having re-derived every cited fact itself, searched independently for a grade-3
+  span rather than accepting its absence, and added two observations that do not change the verdict
+  (a third copy of the `len(s) == 2` test at `command.go:803`, and that D3 applies independently on
+  the same bytes).
+
+**Nothing was deleted.** A4's `unresolved` verdict and note, and R4's D3 finding, are both retained
+in `annotations-4.jsonl` and `reviews-4.jsonl` and travel onto the ledger row under
+`superseded_annotation` and `superseded_review`. The row's terminal state is A6's and R6's, produced
+first-person, not a reinterpretation of A4's.
+
+**What did and did not change as a result.** The terminal-state counts are identical — 71 accept, 23
+reject, 0 unresolved — because the row is a reject either way. The disqualifier moved from D3 to D5,
+which is why the rejection mix above reads D4 = 14, D5 = 5, D3 = 4. `cobra-v2.json` rebuilds byte
+for byte. **This decision was made on the rule, not on the arithmetic**: the yield clears 30/30 by
+11 and 34, so no number depended on it, and had A6 also returned `unresolved` the honest outcome
+would have been to report Phase 2 as blocked.
 
 ## The yield, and AC-2
 
@@ -385,9 +504,10 @@ rejected. Had that run stood, the holdout side would have been decided by a 3.2-
 | `no_hit` (excluded from relevance aggregates) | 5 |
 
 Every query carries `family_id` and `provenance`. `internal/eval/retrieval/dataset.go` now refuses a
-dataset that carries them for some queries and not others, and refuses any family that crosses
-dev and holdout — the same property `measurement_contract.go` already enforced at measurement time,
-now enforced at load time too.
+dataset that carries them for some queries and not others — **in both directions**, including the
+one it used to wave through, where every row carries a provenance and none carries a `family_id` —
+and refuses any family that crosses dev and holdout, the same property `measurement_contract.go`
+already enforced at measurement time, now enforced at load time too.
 
 **`cobra-v1.json` is byte-unchanged**, re-read and compared after the v2 write by the builder itself.
 
@@ -410,20 +530,70 @@ now enforced at load time too.
    itself. What this harvest adds over the last one is that the transport is now a committed
    selection set rather than an assertion, and that the actor who fetched is not the actor who
    selected.
+7. **The annotator sessions shared a scratchpad filesystem, and one of them hit a collision on it.**
+   `answerability/annotator-A2-attestation.json` discloses, unprompted, that a temporary
+   verification script A2 had written in the shared scratchpad was overwritten by another process's
+   script while A2 was working, and that A2 noticed because the replacement's first lines named
+   `annotations-3.jsonl`. A2 states it did not open, read or use that file and rewrote its script
+   under a unique name. **That statement cannot be verified from repository bytes** — it is exactly
+   the class of claim §8 says the ledger and the attestations make falsifiable rather than
+   checkable. What *can* be said from the bytes is that the batches are disjoint: A2 held issues
+   678–1111 and A3 held 1120–1466, so nothing in A3's file corresponds to any row A2 decided, and
+   the channel could not have moved an A2 verdict even if it had been used. Separate sessions with
+   separate contexts is what "independent" means here; it does not mean separate machines, and this
+   report said "in its own session" without saying that until review round 1 pointed it out.
+8. **Six attestations were path-rewritten before they were committed.** This repository is public
+   and a pre-commit guard refuses a staged file containing the local username, so absolute paths in
+   those actors' output were replaced with repository-relative ones. The six are
+   `annotator-A{1..5}-attestation.json` and `reviewer-R4-attestation.json`; each records its
+   pre-rewrite digest in a `publication_note`, and **the pre-rewrite bytes are not retained**, so
+   those "as produced" digests cannot be independently checked by anyone. Nothing else in those
+   files was changed. The other eight answerability attestations wrote repository-relative paths in
+   the first place and are committed exactly as produced.
+9. **Rejection evidence is cited, and the citations resolve, but the claims about them are not
+   machine-checked.** See "How far 'positive, cited evidence' is machine-checked, exactly" above.
 
-## Two ledger irregularities, disclosed
+## Four ledger irregularities, disclosed
 
-An append-only ledger cannot be edited, so both of these are corrected by later rows rather than
-tidied away.
+An append-only ledger cannot be edited, so every one of these is corrected by a later row rather
+than tidied away. **Ledger sequence is append order, not access order** — that is the single fact
+behind three of the four.
 
 1. **Sequences 3 and 4 carry timestamps earlier than sequence 2.** The discrepancy probe and the
    instrument probe ran before `scripts/eval/_access_ledger.py` existed and so did not emit their
    own rows at the time; they were back-filled by
    `scripts/eval/backfill_sw279_diagnostic_ledger_rows.py`, which takes each timestamp from the
-   record the access itself produced. **Ledger sequence is append order, not access order**, and
-   each back-filled row says so in its own `detail`.
-2. **Sequence 14's output digest no longer resolves.** The answerability finalizer ran twice: the
-   first run appended its row and then exited 3 on the unresolved row, as §4 requires. The
-   reviewer's resolution was applied and the finalizer re-run — sequence 15, whose output is
-   authoritative. Sequence 17 is a correction row naming both digests. Sequence 14 stays, because
-   removing it would be the precise defect this harvest exists to avoid.
+   record the access itself produced. Each of those two rows says so in its own `detail`.
+2. **Sequence 11 also precedes sequence 10** (22:19:42Z against 22:24:07Z), and so does sequence 12
+   against 13. The 2b2 family reviewers' rows were recorded after the reviews were in, while the
+   cb-05 withdrawal row (10) was written by the ledger build that followed them. The underlying
+   order is correct — the reviews at 22:19 and 22:23 did precede the family-ledger build at 22:24
+   and the seal at 22:25 — and only the numbering is out of order. **Rows 11 and 12 do not say so in
+   their own `detail`**, unlike rows 3 and 4; an earlier version of this report said "each
+   back-filled row says so", which was true of two rows and not of these two. It is corrected here
+   rather than in the ledger, because the ledger is append-only.
+3. **Sequences 19–30 all carry timestamps earlier than the rows numbered before them.** These are
+   the twelve answerability actors, back-filled in review round 1 by
+   `scripts/eval/backfill_sw279_answerability_ledger_rows.py` with each actor's own attested
+   timestamp. Every one carries `"backfilled": true` and says in its `detail` that ledger sequence
+   here is append order, not access order. They also carry `input_digest_provenance`, which
+   distinguishes the digest an actor attested itself from one the orchestrator recorded on its
+   behalf.
+4. **Sequence 14's output digest no longer resolves, and neither do 15, 16 or 17's.** The
+   answerability finalizer has run three times. The first run appended its row and then exited 3 on
+   the unresolved row; the second (sequence 15) wrote the ledger that stood until review round 1,
+   with sequence 16 consuming it to build the dataset and sequence 17 correcting 14. Review round 1
+   changed what the finalizer writes — the conversion removed, annotator identity taken from the
+   plan, rejection citations resolved — so it was re-run a third time (sequence 31), the dataset
+   rebuilt (32, byte-identical), and **sequence 33 is the correction row naming the superseded
+   digest and the authoritative one**. Sequences 14–17 stay, because removing them would be the
+   precise defect this harvest exists to avoid. Both correction rows (17 and 33) name the access
+   ledger itself as their `input_artifact`, so their `input_sha256` is the ledger's digest *before*
+   the row was appended and cannot resolve against the file afterwards. That is arithmetic, not an
+   irregularity, but it is the kind of thing a checker flags, so it is stated here.
+
+A run blocked on an unresolved row no longer claims the authoritative artefact names at all: it
+writes `answerability-ledger-blocked.jsonl` and `phase-2-outcome-blocked.json`, which is what
+prevents irregularity 4 from recurring. An earlier version of this report said the first blocked run
+"refused to write an outcome". It did not — it wrote both the ledger and the outcome and *then*
+returned 3, which is how sequence 14 came to point at a file that was later replaced.
