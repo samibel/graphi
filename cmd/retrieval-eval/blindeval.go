@@ -11,6 +11,10 @@ package main
 //	         complete MCP task_context/2 response per answerable holdout query,
 //	         and writes the pre-registration record. Both happen BEFORE any
 //	         rater response exists.
+//	seal     turns the raters', grader's and adjudicator's raw text into
+//	         content-addressed records, deriving each response's status by rule
+//	         and each timestamp from the raw file itself. An absent raw file is
+//	         a missing response, not an omitted one.
 //	decide   reads the responses, grades and adjudications, recompares every
 //	         frozen input hash, applies the decision procedure and writes the
 //	         outcome and report. RELEASE: NO exits non-zero.
@@ -38,12 +42,13 @@ import (
 const (
 	blindEvalFreeze  = "freeze"
 	blindEvalCapture = "capture"
+	blindEvalSeal    = "seal"
 	blindEvalDecide  = "decide"
 )
 
 // BlindEvalPhases is the closed set of accepted phases, exported so the
 // no-override test can enumerate it rather than trusting a doc string.
-var BlindEvalPhases = []string{blindEvalFreeze, blindEvalCapture, blindEvalDecide}
+var BlindEvalPhases = []string{blindEvalFreeze, blindEvalCapture, blindEvalSeal, blindEvalDecide}
 
 // blindEvalOptions is everything the mode reads. Every field is a location or
 // an identity; none of them is a threshold, a waiver or a retry.
@@ -63,6 +68,8 @@ func runBlindEval(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return runBlindEvalFreeze(o, stdout, stderr)
 	case blindEvalCapture:
 		return runBlindEvalCapture(o, stdout, stderr)
+	case blindEvalSeal:
+		return runBlindEvalSeal(o, stdout, stderr)
 	case blindEvalDecide:
 		return runBlindEvalDecide(o, stdout, stderr)
 	default:

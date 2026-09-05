@@ -157,7 +157,7 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 	if code := runBlindEval(blindEvalOptions{phase: "publish"}, &stdout, &stderr); code != exitUsage {
 		t.Fatalf("an unknown phase returned %d, want %d", code, exitUsage)
 	}
-	if !strings.Contains(stderr.String(), "freeze, capture, decide") {
+	if !strings.Contains(stderr.String(), "freeze, capture, seal, decide") {
 		t.Errorf("stderr %q does not enumerate the accepted phases", stderr.String())
 	}
 }
