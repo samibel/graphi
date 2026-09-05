@@ -16,6 +16,14 @@ const (
 	// checks they agree.
 	cobraPinnedSHA = "a0a6ae020bb3899ff0276067863e50523f897370"
 
+	// One env var, one upstream string, one sentinel for the cobra clone, used
+	// by every cobra span test. SW-279 briefly gave the v2 test its own
+	// GRAPHI_COBRA_ROOT and its own upstream spelling, which meant pointing one
+	// variable at a clone left the other test silently skipping.
+	cobraEnvVar   = "GRAPHI_CORPUS_COBRA"
+	cobraUpstream = "spf13/cobra"
+	cobraSentinel = "command.go"
+
 	// grpcGoDataset is the PERFORMANCE-ONLY dataset over the large size
 	// class (AC-8); grpcGoPinnedSHA is corpus/manifest.json's pin for grpc-go
 	// v1.60.1.
@@ -108,8 +116,6 @@ func TestDatasets_CobraDatasetShape(t *testing.T) {
 	}
 }
 
-// AC-9 over the pinned public repository: runs only against a local clone at
-// the pinned sha, and SKIPS — visibly — otherwise. A stale judgement fails.
 // The v2 dataset's shape, checkable without the clone. The properties asserted
 // here are the ones SW-279 exists to guarantee, so a future edit that quietly
 // breaks one fails here rather than in a release claim: every query carries a
@@ -123,6 +129,17 @@ func TestDatasets_CobraV2Shape(t *testing.T) {
 	}
 	if ds.Dataset.RepoSHA != cobraPinnedSHA {
 		t.Errorf("repo_sha = %q, want the pin %q", ds.Dataset.RepoSHA, cobraPinnedSHA)
+	}
+
+	// v2's issue-derived rows were reviewed by an independent agent, not by a
+	// human. Filing the set under the human-reviewed label would overstate the
+	// evidence, so the label must not be that constant and must say what the
+	// review actually was.
+	if ds.Dataset.EvidenceClass == EvidenceClassAgentHumanReviewed {
+		t.Errorf("evidence_class = %q; v2's issue-derived rows were agent-reviewed and must not be filed under the human-reviewed label", ds.Dataset.EvidenceClass)
+	}
+	if !strings.Contains(ds.Dataset.EvidenceClass, "agent-reviewed") {
+		t.Errorf("evidence_class = %q, want it to state that the issue-derived rows were agent-reviewed", ds.Dataset.EvidenceClass)
 	}
 
 	answerable := map[string]int{}
@@ -181,7 +198,7 @@ func TestDatasets_CobraV2Shape(t *testing.T) {
 // AC-9 for v2: every judged span still resolves at the pin. Skips visibly when
 // the clone is absent, exactly as the v1 check does.
 func TestDatasets_CobraV2SpansResolveAtPinnedSHA(t *testing.T) {
-	root := pinnedCheckout(t, "GRAPHI_COBRA_ROOT", "cobra", "https://github.com/spf13/cobra", "command.go", cobraPinnedSHA, cobraV2Dataset)
+	root := pinnedCheckout(t, cobraEnvVar, "cobra", cobraUpstream, cobraSentinel, cobraPinnedSHA, cobraV2Dataset)
 	ds, err := LoadDataset(cobraV2Dataset)
 	if err != nil {
 		t.Fatal(err)
@@ -191,8 +208,10 @@ func TestDatasets_CobraV2SpansResolveAtPinnedSHA(t *testing.T) {
 	}
 }
 
+// AC-9 over the pinned public repository: runs only against a local clone at
+// the pinned sha, and SKIPS — visibly — otherwise. A stale judgement fails.
 func TestDatasets_CobraSpansResolveAtPinnedSHA(t *testing.T) {
-	root := pinnedCheckout(t, "GRAPHI_CORPUS_COBRA", "cobra", "spf13/cobra", "command.go", cobraPinnedSHA, "cobra-v1.json")
+	root := pinnedCheckout(t, cobraEnvVar, "cobra", cobraUpstream, cobraSentinel, cobraPinnedSHA, "cobra-v1.json")
 	ds, err := LoadDataset(cobraDataset)
 	if err != nil {
 		t.Fatal(err)

@@ -61,11 +61,14 @@ const DefaultRelevantMinGrade = 2
 // agent and reviewed by the orchestrator (AC-2).
 const EvidenceClassAgentHumanReviewed = "agent-annotated, human-reviewed"
 
-// EvidenceClassAgentAgentReviewed labels a dataset whose annotator and
-// independent reviewer were both agents. It exists so that a dataset built
-// that way cannot be filed under the human-reviewed label: the review really
-// was independent of the annotator, and really was not a human.
-const EvidenceClassAgentAgentReviewed = "agent-annotated, agent-reviewed"
+// There is deliberately no EvidenceClassAgentAgentReviewed constant. SW-279
+// added one and never used it: cobra-v2 is mixed evidence — the cobra-v1 rows
+// it carries were human-reviewed under SW-258, the issue-derived rows were
+// reviewed by an independent agent — so no single-label constant describes it,
+// and a constant nothing compares against enforces nothing. The property it was
+// meant to protect (a mixed or agent-reviewed set must not be filed under the
+// human-reviewed label) is asserted where it can actually fail, in
+// TestDatasets_CobraV2Shape.
 
 // Dataset is one versioned query set against one pinned repository.
 type Dataset struct {
@@ -249,8 +252,11 @@ func (d *Dataset) Validate() error {
 // family may span dev and holdout, because a family that does has already leaked
 // its holdout answer into the set the system is tuned on.
 func (d *Dataset) validateFamilies() error {
-	labelled, unlabelled := 0, 0
+	labelled, unlabelled, provenanced := 0, 0, 0
 	for _, q := range d.Queries {
+		if strings.TrimSpace(q.Provenance) != "" {
+			provenanced++
+		}
 		if strings.TrimSpace(q.FamilyID) == "" {
 			unlabelled++
 			continue
@@ -261,6 +267,15 @@ func (d *Dataset) validateFamilies() error {
 		}
 	}
 	if labelled == 0 {
+		// The all-or-nothing rule has to bite in both directions. A file that
+		// carries provenance on some rows and family_id on none looks annotated
+		// and is not: it can still hide an unlabelled paraphrase across the
+		// split, which is the whole failure family_id exists to stop. Returning
+		// nil here — as this function did until SW-279 review round 1 — made the
+		// rule asymmetric and the gate silent on exactly that shape.
+		if provenanced > 0 {
+			return fmt.Errorf("%d of %d queries carry provenance and none carries family_id; a dataset carries family and provenance for every query or for none", provenanced, len(d.Queries))
+		}
 		return nil
 	}
 	if unlabelled > 0 {

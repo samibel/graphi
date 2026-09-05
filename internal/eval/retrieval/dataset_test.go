@@ -129,6 +129,30 @@ func TestDataset_ValidateFamilyAndProvenance(t *testing.T) {
 		}
 	})
 
+	t.Run("provenance everywhere and family_id nowhere is refused", func(t *testing.T) {
+		// The mirror image of the case below, and the direction validateFamilies
+		// used to wave through: every row carries a provenance, none carries a
+		// family, so nothing stops a paraphrase of a holdout question sitting in
+		// dev unlabelled.
+		ds := validDataset()
+		for i := range ds.Queries {
+			ds.Queries[i].Provenance = "github:spf13/cobra#1"
+		}
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "for every query or for none") {
+			t.Fatalf("Validate() = %v, want an all-or-nothing family error", err)
+		}
+	})
+
+	t.Run("provenance on one query and family_id nowhere is refused", func(t *testing.T) {
+		ds := validDataset()
+		ds.Queries[0].Provenance = "github:spf13/cobra#1"
+		err := ds.Validate()
+		if err == nil || !strings.Contains(err.Error(), "for every query or for none") {
+			t.Fatalf("Validate() = %v, want an all-or-nothing family error", err)
+		}
+	})
+
 	t.Run("some labelled and some not is refused", func(t *testing.T) {
 		ds := validDataset()
 		label(&ds, 0, "cobra-family-aaaaaaaaaaaaaaaa", "github:spf13/cobra#1")
