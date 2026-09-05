@@ -31,6 +31,25 @@ process that has exited cannot attest.
 
 Nothing here is deleted or rewritten: the ledger is appended to, and the attestations gain a
 labelled field without any existing field changing.
+
+**The two steps are order-independent, and where they cannot be, this refuses rather than
+producing a record that lies.** Round 1 wrote them as one pass that snapshotted the
+already-recorded outputs first, then possibly rewrote an attestation, then skipped any row
+that already existed. Running it once without `--annotate-attestations` and once with returned
+0 both times and left a committed ledger row whose `attestation_sha256` was the digest of the
+attestation as it stood before the second run edited it - a pinned digest that no longer
+resolves, which is the exact defect class the ledger exists to make visible. Three changes fix
+it:
+
+  * every attestation that is going to be annotated is annotated BEFORE any ledger row is
+    written, and the set of already-recorded outputs is read after that, so within one
+    invocation the two flag settings converge on the same result;
+  * annotating an attestation that an existing ledger row already pins by digest is REFUSED,
+    because the ledger is append-only and there is no honest in-place repair - the remedy is a
+    correction row (`append_sw279_ledger_correction.py`), and the operator is told so;
+  * every run, with or without the flag, ends by re-resolving every `attestation_sha256` in
+    the ledger against the committed bytes and refusing if any of them is stale. A stale
+    digest already on disk is reported by the next run rather than waiting for a reader.
 """
 
 from __future__ import annotations
@@ -80,9 +99,98 @@ def main() -> int:
     answerability = harvest / "answerability"
     ledger_path = harvest / "access-ledger.jsonl"
 
-    existing = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()
+    def ledger_rows() -> list[dict[str, object]]:
+        return [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()
                 if line.strip()]
-    already = {str(row.get("output_artifact")) for row in existing}
+
+    def stale_attestation_digests() -> list[str]:
+        """Every `attestation_sha256` in the ledger that no longer resolves to its file."""
+        stale: list[str] = []
+        for row in ledger_rows():
+            attestation = row.get("attestation")
+            pinned = row.get("attestation_sha256")
+            if not attestation or not pinned:
+                continue
+            path = Path(str(attestation))
+            if not path.exists():
+                stale.append(f"sequence {row.get('sequence')}: {attestation} no longer exists")
+                continue
+            actual = _access_ledger.sha256_file(path)
+            if actual != str(pinned):
+                stale.append(
+                    f"sequence {row.get('sequence')}: {attestation} is pinned at {pinned} but "
+                    f"its committed bytes hash to {actual}"
+                )
+        return stale
+
+    # A stale digest already on disk is reported now, whatever this run was asked to do.
+    entry_stale = stale_attestation_digests()
+    if entry_stale:
+        for problem in entry_stale:
+            print(problem, file=sys.stderr)
+        print(
+            f"{len(entry_stale)} committed ledger row(s) pin an attestation digest that no longer "
+            "resolves. The ledger is append-only, so the remedy is a correction row "
+            "(scripts/eval/append_sw279_ledger_correction.py), not an edit.",
+            file=sys.stderr,
+        )
+        return 2
+
+    # Step one, for every batch, before any ledger row is written: annotate the attestations
+    # that need it. Doing this first is what makes the two flag settings converge on the same
+    # committed bytes regardless of the order they are invoked in.
+    if args.annotate_attestations:
+        pinned_by_row = {str(row.get("attestation")): row for row in ledger_rows()
+                         if row.get("attestation") and row.get("attestation_sha256")}
+        pending: list[tuple[Path, dict[str, object]]] = []
+        for batch in plans(harvest):
+            attestation_path = answerability / f"annotator-{batch['annotator_slot']}-attestation.json"
+            if not attestation_path.exists():
+                print(f"missing artefact: {attestation_path}", file=sys.stderr)
+                return 2
+            record = json.loads(attestation_path.read_text(encoding="utf-8"))
+            if record.get("input_sha256") is not None:
+                continue
+            if "input_artifact_orchestrator_recorded" in record:
+                continue
+            input_path = Path(str(batch["input"]))
+            if not input_path.exists():
+                print(f"missing artefact: {input_path}", file=sys.stderr)
+                return 2
+            row = pinned_by_row.get(attestation_path.as_posix())
+            if row is not None:
+                print(
+                    f"{attestation_path.as_posix()} is already pinned by ledger sequence "
+                    f"{row.get('sequence')} at {row.get('attestation_sha256')}. Annotating it now "
+                    "would leave that committed row pointing at bytes that no longer exist, which "
+                    "is the record lying about itself. Run --annotate-attestations BEFORE the "
+                    "ledger rows are written; on an existing ledger the remedy is a correction "
+                    "row (scripts/eval/append_sw279_ledger_correction.py), not an edit.",
+                    file=sys.stderr,
+                )
+                return 2
+            record["input_artifact_orchestrator_recorded"] = {
+                "artifact": input_path.as_posix(),
+                "sha256": _access_ledger.sha256_file(input_path),
+                "recorded_by": ORCHESTRATOR,
+                "note": (
+                    "Back-filled during SW-279 review round 1. This attestation's schema "
+                    "carried no input digest, so the bytes this annotator read were recorded "
+                    "nowhere. This is the digest of the committed batch input the batch plan "
+                    "assigned to this annotator; it is NOT a first-person statement by the "
+                    "annotator, which has exited and cannot make one. The annotator's own "
+                    "output_sha256 is unchanged and still resolves."
+                ),
+            }
+            pending.append((attestation_path, record))
+        for attestation_path, record in pending:
+            attestation_path.write_text(
+                json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(f"recorded input digest in {attestation_path.as_posix()}")
+
+    # Only now is it safe to read what the ledger already records and to digest the
+    # attestations: every byte they will be pinned at is on disk.
+    already = {str(row.get("output_artifact")) for row in ledger_rows()}
 
     written: list[dict[str, object]] = []
     for batch in plans(harvest):
@@ -128,29 +236,6 @@ def main() -> int:
             "process that has exited cannot attest to one. This is the digest of the committed "
             "batch input that the batch plan assigned to it, not a claim by the annotator."
         )
-
-        # Annotate the attestation BEFORE the ledger row is written, so the row's
-        # attestation_sha256 is the digest of the file as it now stands rather than a digest
-        # this same run immediately invalidates.
-        if args.annotate_attestations and annotator_attested_input is None:
-            record = dict(annotator)
-            if "input_artifact_orchestrator_recorded" not in record:
-                record["input_artifact_orchestrator_recorded"] = {
-                    "artifact": input_path.as_posix(),
-                    "sha256": input_digest,
-                    "recorded_by": ORCHESTRATOR,
-                    "note": (
-                        "Back-filled during SW-279 review round 1. This attestation's schema "
-                        "carried no input digest, so the bytes this annotator read were recorded "
-                        "nowhere. This is the digest of the committed batch input the batch plan "
-                        "assigned to this annotator; it is NOT a first-person statement by the "
-                        "annotator, which has exited and cannot make one. The annotator's own "
-                        "output_sha256 is unchanged and still resolves."
-                    ),
-                }
-                annotator_attestation.write_text(
-                    json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-                print(f"recorded input digest in {annotator_attestation.as_posix()}")
 
         if annotations_path.as_posix() not in already:
             written.append(_access_ledger.append(
@@ -204,10 +289,27 @@ def main() -> int:
                 input_digest_provenance="first-person: the reviewer attested this input digest itself",
             ))
 
+    # Exit check. Whatever this run did or skipped, no committed row may pin an attestation
+    # digest that does not resolve. This is what makes the two invocation orders equivalent in
+    # their observable result rather than only in their intent.
+    exit_stale = stale_attestation_digests()
+    if exit_stale:
+        for problem in exit_stale:
+            print(problem, file=sys.stderr)
+        print(
+            f"{len(exit_stale)} ledger row(s) now pin an attestation digest that does not "
+            "resolve; refusing to report success over a record that contradicts the files it "
+            "points at.",
+            file=sys.stderr,
+        )
+        return 2
+
     print(json.dumps(
         [{"sequence": row["sequence"], "actor": row["actor"], "output_artifact": row["output_artifact"]}
          for row in written], ensure_ascii=False, indent=2))
     print(f"{len(written)} ledger rows appended")
+    print(f"{len(ledger_rows())} ledger rows; every attestation digest re-resolved against the "
+          "committed bytes")
     return 0
 
 

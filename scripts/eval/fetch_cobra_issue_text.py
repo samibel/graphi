@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -76,52 +77,197 @@ def normalise(fragment: str) -> str:
     return " ".join(fragment.replace("{", " { ").replace("}", " } ").split())
 
 
-def issues_connection_body(query: str) -> str:
-    """Return the body of the `issues(...)` connection in `query`, brace-matched.
+# GraphQL lexical tokens. Commas, whitespace and `#` comments are insignificant and are
+# dropped by `lex`; everything else must match one of these, so a character the lexer does
+# not understand is a refusal rather than something silently skipped over.
+TOKEN = re.compile(
+    r'\.\.\.'                              # spread, for fragments
+    r'|"""(?:.|\n)*?"""'                    # block string
+    r'|"(?:[^"\\\n]|\\.)*"'                # string
+    r'|\$?[_A-Za-z][_0-9A-Za-z]*'           # name or variable
+    r'|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?'   # number
+    r'|[!$()\[\]{}:=@|&]'                   # punctuation
+)
+NAME = re.compile(r"[_A-Za-z][_0-9A-Za-z]*\Z")
 
-    Parsing rather than trusting: the point is to read what will actually be sent to
-    GitHub, so that a hand-edit of the template cannot pass an assertion made against the
-    constant it was supposed to be built from.
-    """
-    marker = query.index("issues(")
+
+class Overfetch(SystemExit):
+    """Raised when the operation about to be sent is not the one §1 permits."""
+
+
+def refuse(reason: str, query: str) -> None:
+    raise Overfetch(
+        "the executed GraphQL operation is not the declared one; §1 permits the issue "
+        "number, creation time, title, body and author login and nothing else.\n"
+        f"  problem: {reason}\n"
+        f"  operation:\n{query.strip()}"
+    )
+
+
+def lex(query: str) -> list[tuple[str, int, int]]:
+    """Return (token, start, end) triples, dropping insignificant commas and comments."""
+    tokens: list[tuple[str, int, int]] = []
+    i = 0
+    while i < len(query):
+        char = query[i]
+        if char in " \t\r\n\ufeff,":
+            i += 1
+            continue
+        if char == "#":
+            newline = query.find("\n", i)
+            i = len(query) if newline < 0 else newline + 1
+            continue
+        match = TOKEN.match(query, i)
+        if match is None:
+            refuse(f"unlexable character {char!r} at offset {i}", query)
+        tokens.append((match.group(0), match.start(), match.end()))
+        i = match.end()
+    tokens.append(("", len(query), len(query)))  # sentinel, so no walk runs off the end
+    return tokens
+
+
+class Field:
+    """One field in a selection set, with its parsed sub-selection and that sub-selection's
+    span in the original source, so the bytes that will be sent are what gets compared."""
+
+    def __init__(self, name: str, alias: str | None,
+                 fields: list["Field"] | None, span: tuple[int, int] | None) -> None:
+        self.name = name
+        self.alias = alias
+        self.fields = fields  # None when the field has no selection set
+        self.span = span      # (offset just after `{`, offset of the matching `}`)
+
+
+def skip_balanced(tokens: list[tuple[str, int, int]], i: int, opener: str, closer: str,
+                  query: str) -> int:
     depth = 0
-    for i in range(marker, len(query)):
-        if query[i] == "(":
+    while i < len(tokens):
+        value = tokens[i][0]
+        if value == opener:
             depth += 1
-        elif query[i] == ")":
+        elif value == closer:
             depth -= 1
             if depth == 0:
-                break
-    else:
-        raise ValueError("unterminated issues(...) argument list")
-    open_brace = query.index("{", i)
-    depth = 0
-    for j in range(open_brace, len(query)):
-        if query[j] == "{":
-            depth += 1
-        elif query[j] == "}":
-            depth -= 1
-            if depth == 0:
-                return query[open_brace + 1:j]
-    raise ValueError("unterminated issues(...) selection")
+                return i + 1
+        elif value == "":
+            break
+        i += 1
+    refuse(f"unterminated {opener}{closer}", query)
+    return i  # unreachable; refuse raises
+
+
+def parse_selection_set(tokens: list[tuple[str, int, int]], i: int,
+                        query: str) -> tuple[list[Field], int]:
+    """Parse `{ ... }` starting at tokens[i], returning its fields and the index after `}`."""
+    if tokens[i][0] != "{":
+        refuse("expected a selection set", query)
+    open_at = tokens[i][2]
+    i += 1
+    fields: list[Field] = []
+    while tokens[i][0] != "}":
+        value = tokens[i][0]
+        if value == "":
+            refuse("unterminated selection set", query)
+        if value == "...":
+            refuse("a fragment spread or inline fragment can smuggle any field past a "
+                   "field-name check, so neither is allowed anywhere in this operation", query)
+        if not NAME.match(value):
+            refuse(f"expected a field name, found {value!r}", query)
+        alias: str | None = None
+        name = value
+        i += 1
+        if tokens[i][0] == ":":
+            # `alias: field` - the wire name is the alias, so a check that reads only field
+            # names would not see what is actually being transported.
+            alias, name = name, tokens[i + 1][0]
+            i += 2
+        if tokens[i][0] == "(":
+            i = skip_balanced(tokens, i, "(", ")", query)
+        if tokens[i][0] == "@":
+            refuse("a directive can change what is returned, so none is allowed", query)
+        sub: list[Field] | None = None
+        span: tuple[int, int] | None = None
+        if tokens[i][0] == "{":
+            start = tokens[i][2]
+            sub, i = parse_selection_set(tokens, i, query)
+            span = (start, tokens[i - 1][1])  # tokens[i-1] is the matching `}`
+        fields.append(Field(name, alias, sub, span))
+    del open_at
+    return fields, i + 1
+
+
+def only_field(fields: list[Field], expected: str, where: str, query: str) -> Field:
+    """Refuse unless `fields` is exactly one un-aliased field named `expected`."""
+    if len(fields) != 1:
+        found = ", ".join(f"{f.alias + ': ' if f.alias else ''}{f.name}" for f in fields)
+        refuse(f"{where} selects {len(fields)} fields ({found}); §1 permits exactly one "
+               f"({expected}), because any sibling selection transports issue content the "
+               "issues-connection check never looks at", query)
+    field = fields[0]
+    if field.alias is not None:
+        refuse(f"{where} selects an aliased field {field.alias}: {field.name}; an alias hides "
+               "the field actually being requested", query)
+    if field.name != expected:
+        refuse(f"{where} selects {field.name}, not {expected}", query)
+    if field.fields is None or field.span is None:
+        refuse(f"{where}'s {expected} has no selection set", query)
+    return field
 
 
 def assert_query_is_the_selection_set(query: str = None) -> str:
-    """Refuse unless the executed query asks for SELECTION_SET plus paging, and nothing else.
+    """Refuse unless the WHOLE operation is the one §1 permits.
 
-    Returns the normalised body it verified, so a caller can record what it checked.
+    Round 1 bound the `issues(...)` body to `SELECTION_SET`, which was not enough: the check
+    read one selection body and ignored the rest of the document, so a sibling
+    `issue(number: 1) { labels { nodes { name } } }` under the same `repository` passed while
+    transporting labels. This validates the whole operation instead:
+
+      * exactly one operation definition, a `query`, with nothing after it;
+      * no fragment definition, no fragment spread, no inline fragment, no directive - each
+        of which can put a field into the response without that field's name appearing where
+        a naive check looks;
+      * no alias anywhere on the path, so the field being requested is the field being named;
+      * `repository` is the ONLY field at the root and `issues` is the ONLY field under it;
+      * the `issues` selection is exactly SELECTION_SET plus paging, by equality.
+
+    Returns the normalised issues-connection body it verified, so a caller can record what it
+    checked.
     """
     if query is None:
         query = QUERY
-    body = normalise(issues_connection_body(query))
+
+    tokens = lex(query)
+    for value, _, _ in tokens:
+        if value == "fragment":
+            refuse("a fragment definition can carry any field list; none is allowed", query)
+
+    i = 0
+    head = tokens[0][0]
+    if head in {"mutation", "subscription"}:
+        refuse(f"this is a {head}, not a query", query)
+    if head == "query":
+        i = 1
+        if tokens[i][0] == "(":
+            i = skip_balanced(tokens, i, "(", ")", query)
+    elif head != "{":
+        refuse(f"expected a query operation, found {head!r}", query)
+
+    root, i = parse_selection_set(tokens, i, query)
+    if tokens[i][0] != "":
+        refuse("there is more than one definition in this document; a second operation or a "
+               "trailing fragment is not part of the declared transport", query)
+
+    repository = only_field(root, "repository", "the operation root", query)
+    issues = only_field(repository.fields, "issues", "repository", query)
+
+    # The body is the source span the parser itself walked, not a `str.index` for `issues(`,
+    # so a sibling field whose name merely ends in `issues` cannot be read in its place.
+    body = normalise(query[issues.span[0]:issues.span[1]])
     expected = normalise(SELECTION_SET + " " + PAGE_INFO)
     if body != expected:
-        raise SystemExit(
-            "the executed GraphQL query does not match the declared selection set; §1 permits "
-            "the issue number, creation time, title, body and author login and nothing else.\n"
-            f"  declared: {expected}\n"
-            f"  executed: {body}"
-        )
+        refuse(f"the issues(...) selection does not match the declared selection set\n"
+               f"  declared: {expected}\n"
+               f"  executed: {body}", query)
     return body
 
 

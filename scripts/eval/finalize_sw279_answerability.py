@@ -13,7 +13,11 @@ It refuses rather than reports when the artefacts do not support a verdict:
   * a row with no independent reviewer, or reviewed by its own annotator;
   * a row whose reviewer is not the reviewer the batch plan paired with its annotator;
   * a judgement whose recorded annotator is not the actor the plan assigned to that file;
-  * a candidate with no verdict at all.
+  * a candidate with no verdict at all;
+  * an actor whose attestation does not describe the work the plan gave it - a different set of
+    issue numbers, or an input or output digest that is not the committed bytes;
+  * a re-annotation performed by an actor that already ruled on the row it is superseding;
+  * a supersession of a row that was not `unresolved`, or a second supersession of any row.
 
 **An `unresolved` row is never converted into anything.** Section 4: "An unresolved candidate
 is not silently treated as a reject: it blocks completion of Phase 2 and is reported."
@@ -65,11 +69,21 @@ D_CLAUSES = {"D1", "D2", "D3", "D4", "D5"}
 AC2_MINIMUM = 30
 
 
-# A `path.ext:line` or `path.ext:start-end` reference inside a prose note. Deliberately
-# conservative: it matches only file-looking tokens with an extension the pinned tree
-# actually uses, so ordinary prose and version strings are not mistaken for citations.
+# A `path.ext:line` or `path.ext:start-end` reference inside a prose note.
+#
+# Round 1 made this an extension allowlist - go, md, mod, txt, yaml, yml, sh - on the argument
+# that a narrow pattern cannot mistake a version string for a citation. The cost was silence
+# in the wrong direction: `definitely-missing.json:999` matched nothing, so it was neither
+# resolved nor reported, and a rejection note could point a reader at a location that does not
+# exist while the run returned 0. An unresolvable citation must be a refusal, and a citation
+# the parser cannot classify is exactly the case where that matters most.
+#
+# So the extension is no longer enumerated: any dotted, path-shaped token followed by `:line`
+# is treated as a citation and must resolve at the pin. The extension must still begin with a
+# letter, which is what keeps version strings (`v1.2:3`, `1.16:4`) and section references
+# (`4.1:2`) out - they are not citation-shaped, rather than being citation-shaped and ignored.
 CITATION = re.compile(
-    r"\b([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:go|md|mod|txt|yaml|yml|sh)):(\d+)(?:\s*-\s*(\d+))?"
+    r"\b([A-Za-z0-9_][A-Za-z0-9_./-]*\.[A-Za-z][A-Za-z0-9_+-]{0,9}):(\d+)(?:\s*-\s*(\d+))?"
 )
 
 
@@ -113,8 +127,34 @@ def read_jsonl(path: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+class Refuse(Exception):
+    """A structural defect in the plan/attestation wiring. The run stops; nothing is written."""
+
+
+def attested_input_digest(attestation: dict[str, object]) -> tuple[str | None, bool]:
+    """Return (digest, is_first_person) for whichever input digest an attestation carries.
+
+    The five first-pass annotator attestations predate the schema field, so their input
+    digest is the orchestrator-recorded one back-filled under a name that says who recorded
+    it. Either is a digest that must resolve; only one of them is a first-person claim, and
+    this keeps the difference visible instead of flattening it.
+    """
+    first_person = attestation.get("input_sha256")
+    if first_person is not None:
+        return str(first_person), True
+    recorded = attestation.get("input_artifact_orchestrator_recorded")
+    if isinstance(recorded, dict) and recorded.get("sha256") is not None:
+        return str(recorded["sha256"]), False
+    return None, False
+
+
 def load_passes(harvest: Path) -> tuple[dict[str, dict[str, object]], dict[int, str]]:
-    """Bind each annotation/review file to the actors the plan assigned to it.
+    """Bind each annotation/review file to the actors the plan assigned to it, and check that
+    the binding is one the artefacts actually support.
 
     Returns (passes, superseded_by):
       * `passes` is keyed by the annotations file name and carries the annotator's and
@@ -124,6 +164,25 @@ def load_passes(harvest: Path) -> tuple[dict[str, dict[str, object]], dict[int, 
 
     Identity is read from the plan and from each actor's own attestation, so a row's
     annotator is recorded whether or not that row happens to carry judgements.
+
+    Round 1 stopped there, and that was not enough. The slot name in the plan was the only
+    thing tying an attestation to a batch: nothing checked that the attesting actor had been
+    assigned those issue numbers, that the bytes it attested to are the committed bytes, or -
+    for a re-annotation - that the superseding actor had not already ruled on the very row it
+    was brought in to settle. Renaming the re-annotation plan's `annotator_slot` from A6 to A4
+    therefore returned 0 and attributed #1780 to the actor whose `unresolved` verdict the
+    fresh pass exists to replace, which is the one thing §4's "an actor that has not seen the
+    row" forbids. Four things are checked here now, before any verdict is read:
+
+      * the actor's own `assigned_issue_numbers` / `reviewed_issue_numbers` must be exactly
+        the issue numbers in the batch input the plan gave it;
+      * the input digest it attested (or, for the five first-pass annotators, the labelled
+        orchestrator-recorded one) must be the digest of that committed input file;
+      * the output digest it attested must be the digest of the committed output file, and a
+        reviewer's `annotator_file_sha256` must be the digest of the annotations it reviewed;
+      * a superseding actor must not appear as the annotator or the reviewer of any other
+        batch covering a row it is superseding, and the superseding annotator and reviewer
+        must not be the same actor.
     """
     answerability = harvest / "answerability"
     plans: list[tuple[dict[str, object], bool]] = []
@@ -136,26 +195,147 @@ def load_passes(harvest: Path) -> tuple[dict[str, dict[str, object]], dict[int, 
 
     passes: dict[str, dict[str, object]] = {}
     superseded_by: dict[int, str] = {}
+    # batch number -> (issue numbers it covers, annotator actor, reviewer actor)
+    coverage: dict[int, tuple[set[int], str, str]] = {}
+    supersessions: list[tuple[int, set[int], str, str]] = []
+
     for batch, is_reannotation in plans:
-        annotations_name = Path(str(batch["annotations_output"])).name
+        number = int(batch["batch"])
+        annotations_path = Path(str(batch["annotations_output"]))
+        reviews_path = Path(str(batch["reviews_output"]))
+        input_path = Path(str(batch["input"]))
         annotator_slot = str(batch["annotator_slot"])
         reviewer_slot = str(batch["reviewer_slot"])
         annotator_attestation = answerability / f"annotator-{annotator_slot}-attestation.json"
         reviewer_attestation = answerability / f"reviewer-{reviewer_slot}-attestation.json"
         for path in (annotator_attestation, reviewer_attestation):
             if not path.exists():
-                raise SystemExit(f"missing attestation for a planned actor: {path}")
-        passes[annotations_name] = {
-            "batch": int(batch["batch"]),
+                raise Refuse(f"missing attestation for a planned actor: {path}")
+        for path in (input_path, annotations_path, reviews_path):
+            if not path.exists():
+                raise Refuse(f"batch {number}: the plan names {path}, which does not exist")
+
+        annotator = json.loads(annotator_attestation.read_text(encoding="utf-8"))
+        reviewer = json.loads(reviewer_attestation.read_text(encoding="utf-8"))
+        annotator_actor = str(annotator["actor"])
+        reviewer_actor = str(reviewer["actor"])
+
+        assigned = {int(row["issue_number"]) for row in read_jsonl(input_path)}
+        input_digest = sha256_file(input_path)
+        annotations_digest = sha256_file(annotations_path)
+        reviews_digest = sha256_file(reviews_path)
+
+        # The plan's own declared input digest, where it carries one, is held to the same bar.
+        planned_input_digest = batch.get("input_sha256")
+        if planned_input_digest is not None and str(planned_input_digest) != input_digest:
+            raise Refuse(
+                f"batch {number}: the plan declares input_sha256 {planned_input_digest} for "
+                f"{input_path}, whose committed bytes hash to {input_digest}"
+            )
+
+        for role, slot, attestation, key, expected in (
+            ("annotator", annotator_slot, annotator, "assigned_issue_numbers", assigned),
+            ("reviewer", reviewer_slot, reviewer, "reviewed_issue_numbers", assigned),
+        ):
+            claimed = attestation.get(key)
+            if claimed is None:
+                raise Refuse(
+                    f"batch {number}: {role} {slot}'s attestation carries no {key}, so nothing "
+                    "ties this actor to the rows the plan gave it"
+                )
+            if {int(n) for n in claimed} != expected:
+                raise Refuse(
+                    f"batch {number}: {role} {slot} attests to {sorted(int(n) for n in claimed)}, "
+                    f"but the plan's input {input_path} contains {sorted(expected)}. A slot name "
+                    "is not an assignment; the actor's own statement of what it was given has to "
+                    "be the rows it was actually given."
+                )
+
+        annotator_input, first_person = attested_input_digest(annotator)
+        if annotator_input is None:
+            raise Refuse(
+                f"batch {number}: annotator {annotator_slot}'s attestation records no input "
+                "digest, first-person or orchestrator-recorded, so the bytes it read are not "
+                "evidenced anywhere"
+            )
+        checks = [
+            (f"annotator {annotator_slot} input"
+             + ("" if first_person else " (orchestrator-recorded)"), annotator_input, input_digest),
+            (f"annotator {annotator_slot} output", str(annotator["output_sha256"]), annotations_digest),
+            (f"reviewer {reviewer_slot} output", str(reviewer["output_sha256"]), reviews_digest),
+            (f"reviewer {reviewer_slot} input (the annotations it reviewed)",
+             str(reviewer["annotator_file_sha256"]), annotations_digest),
+        ]
+        reviewer_input = reviewer.get("input_sha256")
+        if reviewer_input is not None:
+            checks.append((f"reviewer {reviewer_slot} batch input", str(reviewer_input), input_digest))
+        for label, attested, actual in checks:
+            if attested != actual:
+                raise Refuse(
+                    f"batch {number}: {label} is attested as {attested}, but the committed bytes "
+                    f"hash to {actual}"
+                )
+
+        coverage[number] = (assigned, annotator_actor, reviewer_actor)
+        superseded = {int(n) for n in batch.get("supersedes_annotation_for", [])}
+        if superseded:
+            if not is_reannotation:
+                raise Refuse(
+                    f"batch {number} supersedes {sorted(superseded)} but is not a re-annotation "
+                    "batch; only the re-annotation plan may declare a supersession"
+                )
+            if not superseded <= assigned:
+                raise Refuse(
+                    f"batch {number} supersedes {sorted(superseded - assigned)}, which is not in "
+                    "its own input"
+                )
+            supersessions.append((number, superseded, annotator_actor, reviewer_actor))
+
+        passes[annotations_path.name] = {
+            "batch": number,
             "annotator_slot": annotator_slot,
             "reviewer_slot": reviewer_slot,
-            "annotator": str(json.loads(annotator_attestation.read_text(encoding="utf-8"))["actor"]),
-            "reviewer": str(json.loads(reviewer_attestation.read_text(encoding="utf-8"))["actor"]),
-            "reviews_file": Path(str(batch["reviews_output"])).name,
+            "annotator": annotator_actor,
+            "reviewer": reviewer_actor,
+            "reviews_file": reviews_path.name,
             "is_reannotation": is_reannotation,
         }
-        for number in batch.get("supersedes_annotation_for", []):
-            superseded_by[int(number)] = annotations_name
+        for issue in sorted(superseded):
+            if issue in superseded_by:
+                raise Refuse(
+                    f"issue {issue} is declared superseded by two batches ({superseded_by[issue]} "
+                    f"and {annotations_path.name}). Exactly one re-roll per row, ever: if the "
+                    "second pass also returned `unresolved`, Phase 2 is "
+                    "blocked and reported, and there is no pass three. An unbounded re-roll "
+                    "channel empties Section 4's blocking clause - see projects/graphi/stories/"
+                    "SW-279/decision-unresolved-reannotation.md."
+                )
+            superseded_by[issue] = annotations_path.name
+
+    # Freshness. §4 allows only "a fresh terminal determination by an actor that has not seen
+    # the row"; an actor that already annotated or reviewed that row has seen it, so it cannot
+    # be the actor that settles it, whatever slot name the plan gives it.
+    for number, superseded, annotator_actor, reviewer_actor in supersessions:
+        if annotator_actor == reviewer_actor:
+            raise Refuse(
+                f"batch {number}: the superseding annotator and reviewer are the same actor "
+                f"{annotator_actor!r}"
+            )
+        for issue in sorted(superseded):
+            for other, (issues, prior_annotator, prior_reviewer) in sorted(coverage.items()):
+                if other == number or issue not in issues:
+                    continue
+                for role, actor in (("annotator", annotator_actor), ("reviewer", reviewer_actor)):
+                    if actor in (prior_annotator, prior_reviewer):
+                        raise Refuse(
+                            f"batch {number} supersedes issue {issue}, but its {role} "
+                            f"{actor!r} already ruled on that row in batch {other}. Section 4 "
+                            "allows only a fresh terminal determination by an actor that has "
+                            "not seen the row: an actor cannot supersede its own judgement, "
+                            "and re-pointing a slot name at an actor that has does not make "
+                            "the pass fresh."
+                        )
+
     return passes, superseded_by
 
 
@@ -186,7 +366,11 @@ def main() -> int:
     harvest = HARVESTS / args.harvest
     sealed = {int(row["issue_number"]): row for row in read_jsonl(harvest / "sealed-questions.jsonl")}
 
-    passes, superseded_by = load_passes(harvest)
+    try:
+        passes, superseded_by = load_passes(harvest)
+    except Refuse as refusal:
+        print(str(refusal), file=sys.stderr)
+        return 2
 
     annotations: dict[int, dict[str, object]] = {}
     annotator_of: dict[int, str] = {}
@@ -206,6 +390,39 @@ def main() -> int:
                 # the earlier verdict is kept rather than dropped.
                 if superseded_by.get(number) != path.name:
                     print(f"issue {number}: annotated twice ({path.name})", file=sys.stderr)
+                    return 2
+                # Only an `unresolved` row may be re-rolled, and only once. Both bounds come
+                # from projects/graphi/stories/SW-279/decision-unresolved-reannotation.md,
+                # which permitted the fresh-pass route and then found it had no bound at all:
+                # the finalizer accepted a second annotation whatever the first-pass verdict
+                # was, so an operator could re-roll an `accept` or a `reject` whose outcome
+                # they disliked, and §4's "an unresolved row blocks completion" would never
+                # bite. An unresolved row is by construction one with no outcome to dislike;
+                # an accepted or rejected row is permanently non-re-rollable; and if a second
+                # pass also returns `unresolved`, Phase 2 blocks and reports - there is no
+                # pass three.
+                # The cap is checked before the eligibility clause, because on a third
+                # annotation the "first-pass" verdict has already been replaced by the second
+                # pass's, and reporting that as an ineligible supersession would name the
+                # wrong defect.
+                if number in superseded_annotation:
+                    print(
+                        f"issue {number}: a third annotation ({path.name}). Exactly one "
+                        "re-roll per row, ever. If the second pass also returns `unresolved`, "
+                        "Phase 2 blocks and is reported; it is not re-run until it stops.",
+                        file=sys.stderr,
+                    )
+                    return 2
+                previous = str(annotations[number]["verdict"])
+                if previous != "unresolved":
+                    print(
+                        f"issue {number}: {path.name} supersedes a first-pass verdict of "
+                        f"{previous!r}. Only an `unresolved` row may be re-annotated: allowing "
+                        "an accept or a reject to be re-rolled is 're-roll the rows whose "
+                        "answer you dislike', and it empties the blocking clause the "
+                        "re-annotation route exists to serve.",
+                        file=sys.stderr,
+                    )
                     return 2
                 superseded_annotation[number] = {
                     "annotator": annotator_of[number],

@@ -309,6 +309,42 @@ delivered and as published, all in
 `../sw-279-phase-2b2-family-review/invocation-record.json`. pi was invoked with `--no-session`, so
 no transcript was retained for reviewer A; that is recorded rather than glossed.
 
+### The gate suite, counted correctly
+
+`scripts/eval/tests/test_sw279_gates.py` has **43 cases: 36 refusals and 7 positive controls.** The
+round-1 commit message (`56307de`) said "Seventeen cases" and then listed all of them under "The
+refusals", which was wrong in both directions — the suite then had 17 cases, of which **13 were
+refusals and 4 were positive controls**, and describing a positive control as a refusal overstates
+the evidence by counting a "the script still works" assertion as a "the script stops" one. The two
+kinds are now named apart in the suite's own `POSITIVE_CONTROLS` inventory, the counts are derived
+from the module rather than written down twice, and a run's last line states them:
+
+```
+SW279-GATES declared=43 refusals=36 positive_controls=7 ran=43 ok=43 skipped=0 failed=0
+```
+
+A refusal case breaks exactly one thing and asserts the script stops with a message naming what is
+wrong. A positive control changes nothing and asserts the script still reproduces the committed
+artefact byte for byte, because a gate that always fails looks identical to one that works. Both
+kinds are necessary and neither substitutes for the other.
+
+**The Go wrapper no longer reports PASS over a population that did not run.**
+`internal/eval/retrieval/sw279_gates_test.go` asserted only that the output contained `... ok`
+somewhere. With the pinned spf13/cobra clone unavailable, the 15 cases that drive the answerability
+finalizer skipped, the other 28 printed `ok`, and `go test` returned 0 — a green gate over a skipped
+population, which is the SW-273 defect class these gates exist to prevent. The wrapper now carries
+its own declaration of the expected case count (so a deleted or renamed case fails the build rather
+than quietly shrinking the evidence), requires every declared case to have run, fails on any skip it
+does not sanction, and — where the skip *is* sanctioned, meaning one of the 15 named cobra-dependent
+cases with the pinned clone genuinely absent — reports **SKIP rather than PASS**, naming what did not
+run. A partial gate run is a non-result.
+
+**Limit worth stating.** The pinned clone lives at `$GRAPHI_CORPUS_COBRA` or
+`$HOME/.cache/graphi/corpus/cobra` and is **not provisioned in CI**, so those 15 cases skip there
+today, exactly as `internal/eval/retrieval/datasets_test.go` already does. What changed is that the
+skip is now visible as a skip instead of being absorbed into a pass; provisioning the clone in CI is
+not done here.
+
 ## Recorded rule defects — for a future rule version, NOT repaired here
 
 Amending frozen bytes after seeing the candidates is what Phase 1 exists to prevent, so none of
@@ -436,11 +472,49 @@ reinstated.**
 **#1780 then needed a genuine terminal state, and got one.** §4 gives a candidate exactly three
 ways to finish: (a) reviewed grade-3 evidence satisfying A1–A4, (b) a positive D1–D5 finding, or
 (c) `unresolved`. The only legitimate route out of (c) is a fresh determination by an actor that has
-not seen the row. So the sealed question — and nothing else: no verdict, no note, no disqualifier,
-no hint that the row was contested — was reissued as `answerability/batch-6-input.jsonl` under
+not seen the row. So the sealed question was reissued as `answerability/batch-6-input.jsonl` under
 `answerability/reannotation-plan.json`, and given to a **fresh annotator (A6)** and then to a
 **fresh independent reviewer (R6)**, each in its own session under the same briefs and the same
 prohibitions as A1–A5 and R1–R5.
+
+Whether that route is permitted at all was disputed in review round 2 and adjudicated separately:
+`projects/graphi/stories/SW-279/decision-unresolved-reannotation.md` rules it **PERMITTED**, on the
+ground that §4's list constrains what a candidate may *finish with* rather than its history, and
+that §8's ban is on *reinterpreting* a row — which A6 could not do, having never seen the earlier
+pass. The same adjudication found that the route as implemented had **no bound at all**, and made
+three machine refusals a condition of the ruling; they are described under "The re-roll channel is
+bounded" below.
+
+**What the re-annotation input withheld, stated precisely.** An earlier draft of this report said the
+reissued question carried "no hint that the row was contested". That is too strong, and the accurate
+version is worth more than the tidy one:
+
+- **What is true.** `batch-6-input.jsonl` parses to exactly four keys — `issue_number`, `Q`,
+  `stratum`, `rubric` — and is content-identical, field by field, to the `batch-4-input.jsonl`
+  record for 1780. No verdict, disqualifier, note or contest marker appears anywhere in it. A6
+  could not learn the earlier verdict, its direction, or which clause anyone had reached.
+- **What is not.** A6 knew it was performing a re-annotation pass: its own attestation self-describes
+  as "annotator A6, re-annotation pass" and states that it does not know what "any earlier pass"
+  decided. And batch 6 is a **single-row batch** in a plan whose other five batches hold 18–19 rows
+  each, which is legible on its face. Knowing that a row is being redone carries a weak prior that
+  the earlier pass ended in a blocking state, since a re-do is likelier to follow `unresolved` than
+  an accept. It carries no signal at all about which outcome anyone wanted, and the outcome A6
+  produced — a reject — shrinks the dataset rather than growing it.
+
+**What "fresh" and "independent" mean here, and what they do not.** All twelve answerability actors —
+A1–A6 and R1–R6 — are **one model, Claude Opus 5, in twelve separate sessions**. A6 and R6 are
+exactly as independent of A4/R4 as R1–R5 were of A1–A5: no more, and no less. §4 requires "an
+independent reviewer" and does not define independence as model diversity, so this meets the rule as
+written — but *fresh actor* here means **fresh session, not fresh model or fresh vendor**, and no
+claim in this report should be read as asserting otherwise.
+
+**A record gap that bounds all of the above.** The task prompts given to A1–A6 and R1–R6 were **not
+archived**. The `sw-279-phase-2b2-family-review` pass did archive its invocation prompts
+(`reviewer-A-invocation-prompt.txt`, `reviewer-B-invocation-prompt.txt`); the answerability pass
+archived none. So "the actor saw only the sealed row and the briefs" rests on each actor's
+attestation rather than on bytes anyone can re-read. This is a pre-existing gap across all twelve
+actors, not something the re-annotation introduced — but it is the reason the claims above about
+what A6 did and did not see cannot be checked against the repository.
 
 - **A6 returned `not_answerable` / D5**, first-person, citing pinned bytes: Cobra performs no
   flag-token parsing of its own (`command.go:30` aliases `spf13/pflag`; `ParseFlags` hands the raw
@@ -465,6 +539,55 @@ which is why the rejection mix above reads D4 = 14, D5 = 5, D3 = 4. `cobra-v2.js
 for byte. **This decision was made on the rule, not on the arithmetic**: the yield clears 30/30 by
 11 and 34, so no number depended on it, and had A6 also returned `unresolved` the honest outcome
 would have been to report Phase 2 as blocked.
+
+**An ordering irregularity, disclosed rather than left to be found.**
+`internal/eval/retrieval/testdata/datasets/cobra-v2.json` was written at commit `60347a8`, **before**
+the re-annotation. §8's permitted order puts the dataset freeze at step 5 and answerability at step
+4, so a step-5 artefact predates a repeat of step 4. It is inert on this record, and each part of
+that is checkable: the file was not modified by the re-annotation, it rebuilds byte for byte from the
+current ledger, and no retrieval run has ever consumed it — `docs/eval/retrieval/runs/` contains no
+run referencing `cobra-v2`, so §8 step 6 has not happened for this dataset. It should not recur, and
+the control below is written so that it cannot: no re-annotation is permitted once step 6 has run.
+
+### The re-roll channel is bounded
+
+A route out of `unresolved` that an operator may invoke at will empties §4's blocking effect, and
+the implementation had **no bound on it whatever**. `build_sw279_reannotation_batch.py` took
+`--issues` as free operator input and validated only that the numbers were in the sealed set; it
+never read the existing annotations, so a re-annotation batch could be built for an `accept` row or
+a `reject` row. `finalize_sw279_answerability.py` honoured a second annotation whatever the
+first-pass verdict was. The only obstacle to a second round was accidental — the builder refuses to
+overwrite an existing `reannotation-plan.json`, so a second round needed that file deleted, which is
+a git-visible act and not a control anyone designed. In that state an operator could re-roll exactly
+the rows whose answers they disliked.
+
+Three refusals close it, and none of them leaves the operator any discretion:
+
+1. **Only an `unresolved` row is eligible.** The builder reads the current verdict of every
+   requested issue out of the committed `annotations-*.jsonl` and refuses anything else; the
+   finalizer refuses a supersession whose superseded verdict is not `unresolved`. An accepted or
+   rejected row becomes permanently non-re-rollable, and an unresolved row is by construction one
+   with **no outcome to dislike**.
+2. **Exactly one re-roll per row, ever.** Two batches declaring a supersession for the same issue is
+   refused at the plan; a third annotation of any issue is refused in the finalizer; the builder
+   refuses when any issue already carries a second annotation. If the second pass also returns
+   `unresolved`, Phase 2 blocks and is reported — there is no pass three, and the `-blocked`
+   machinery that makes that real is unchanged.
+3. **The whole eligible set, or none.** The builder computes the unresolved set itself and refuses
+   an `--issues` list that is not exactly it. Seeing which rows are unresolved therefore confers no
+   choice: the operator's only decision is run-or-stop, and stopping is always available.
+
+Each refusal has a gate case in `scripts/eval/tests/test_sw279_gates.py` proven to bite by breaking
+it. **The refusals change nothing on this record, and that is the point**: with them in place the
+finalizer reproduces `answerability-ledger.jsonl` and `cobra-v2.json` byte for byte and the counts
+are unmoved, which is what makes them a bound rather than a rewrite. Trivially satisfied here — 1780
+was the only unresolved row, so the eligible set and the re-annotated set were the same single row.
+
+The frozen rule is **not amended**: it still hashes to
+`d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c`. The adjudication records five
+defects in the rule itself (RULEDEF-001…005, chiefly that `unresolved` has a blocking effect and no
+defined exit) against a future, separately reviewed dataset-v3 rule. None of them is acted on inside
+SW-279.
 
 ## The yield, and AC-2
 

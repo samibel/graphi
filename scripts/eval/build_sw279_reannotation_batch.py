@@ -18,7 +18,28 @@ change that; this script only prepares the input.
 The input carries exactly what a first-pass batch input carries - issue number, sealed `Q`,
 sealed stratum, sealed rubric - taken from `sealed-questions.jsonl`, so the re-annotator sees
 the sealed question and nothing the original annotator did not see. It carries no verdict, no
-note, no disqualifier and no hint that the row was ever contested.
+note and no disqualifier. It is not a claim that the re-annotator cannot tell it is
+re-annotating: the actor is told which pass it is performing, and a single-row batch in a plan
+whose other batches hold eighteen or nineteen rows is itself legible. What the input withholds
+is the earlier verdict, its direction and its clause.
+
+**The route this script opens is bounded, because an unbounded one is "re-roll the rows whose
+answer you dislike".** `projects/graphi/stories/SW-279/decision-unresolved-reannotation.md`
+permitted the fresh-pass route and then found the implementation had no bound at all: this
+script validated only that the requested numbers were in the sealed set, never reading the
+existing annotations, so a batch could be built for an `accept` or a `reject` row. Two
+refusals close that, and neither leaves the operator any discretion:
+
+  * **only `unresolved` is eligible** - the current verdict of every requested issue is read
+    out of the committed `annotations-*.jsonl`, and anything else is refused. An accepted or
+    rejected row is permanently non-re-rollable; an unresolved row is by construction one with
+    no outcome to dislike;
+  * **the whole eligible set, or none** - the unresolved set is computed here, and `--issues`
+    must be exactly it. The operator may not take a subset, so seeing which rows are
+    unresolved confers no choice.
+
+The third bound - exactly one re-roll per row, ever - lives in the finalizer, which is where a
+second supersession would have to be honoured.
 
 Outputs `<harvest>/answerability/batch-<n>-input.jsonl` and
 `<harvest>/answerability/reannotation-plan.json`. It refuses to overwrite either. The seal-era
@@ -68,6 +89,55 @@ def main() -> int:
     missing = [n for n in wanted if n not in sealed]
     if missing:
         print(f"not in the sealed set: {missing}", file=sys.stderr)
+        return 2
+
+    # Eligibility, read out of the committed annotations rather than taken from the operator.
+    # A row that already has an outcome may never be re-rolled, whatever that outcome is.
+    verdicts: dict[int, tuple[str, str]] = {}
+    duplicates: list[int] = []
+    for annotations_path in sorted(out_dir.glob("annotations-*.jsonl")):
+        for line in annotations_path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            number = int(row["issue_number"])
+            if number in verdicts:
+                duplicates.append(number)
+            verdicts[number] = (str(row["verdict"]), annotations_path.name)
+    if not verdicts:
+        print(f"no annotations under {out_dir}; there is nothing to re-annotate", file=sys.stderr)
+        return 2
+    if duplicates:
+        # Already re-annotated once. Exactly one re-roll per row, ever.
+        print(
+            f"issue(s) {sorted(set(duplicates))} already carry a second annotation; a row may be "
+            "re-annotated exactly once. If the second pass also returned `unresolved`, Phase 2 is "
+            "blocked and reported - there is no pass three.",
+            file=sys.stderr,
+        )
+        return 2
+
+    ineligible = {n: verdicts[n] for n in wanted if verdicts.get(n, ("absent", ""))[0] != "unresolved"}
+    if ineligible:
+        for number, (verdict, where) in sorted(ineligible.items()):
+            print(f"issue {number}: current verdict is {verdict!r} ({where})", file=sys.stderr)
+        print(
+            "only an `unresolved` row may be re-annotated. Re-rolling a row that already has an "
+            "outcome is 're-roll the rows whose answer you dislike', which empties Section 4's "
+            "blocking clause; see projects/graphi/stories/SW-279/"
+            "decision-unresolved-reannotation.md.",
+            file=sys.stderr,
+        )
+        return 2
+
+    eligible = sorted(n for n, (verdict, _) in verdicts.items() if verdict == "unresolved")
+    if sorted(wanted) != eligible:
+        print(
+            f"--issues is {sorted(wanted)}, but the unresolved set is {eligible}. The whole "
+            "eligible set is re-annotated, or none of it: letting the operator pick a subset "
+            "restores exactly the discretion the eligibility rule removes.",
+            file=sys.stderr,
+        )
         return 2
 
     input_path = out_dir / f"batch-{args.batch}-input.jsonl"

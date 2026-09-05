@@ -82,23 +82,64 @@ def blind_id(text: str) -> str:
     return "q-" + hashlib.sha256((BLIND_SALT + text).encode("utf-8")).hexdigest()[:10]
 
 
-def parse_reviewer(path: Path, idset: set[str]) -> tuple[set[frozenset[str]], set[str]]:
+# An answer line: a blind id, an arrow or colon, and a right-hand side. The prose sections of
+# the reviewers' files never take this shape, so a line that does is an answer, and is held to
+# the answer grammar below.
+ANSWER_LINE = re.compile(r"\s*(q-[0-9a-f]{10})\s*(?:->|→|:)\s*(.*)$")
+
+# The whole of the permitted right-hand side: the literal NONE, or one or more blind ids
+# separated by whitespace or commas. Nothing else.
+ANSWER_RHS = re.compile(r"(?:NONE|q-[0-9a-f]{10}(?:[\s,]+q-[0-9a-f]{10})*)\Z", re.I)
+
+
+def parse_reviewer(path: Path, idset: set[str]) -> tuple[set[frozenset[str]], set[str], list[str]]:
+    """Parse one reviewer's answers, validating the grammar of every right-hand side.
+
+    Returns (pairs, answered, problems).
+
+    Round 1 made incomplete coverage a refusal, but an id was marked answered before its
+    right-hand side was looked at, and the only things then done with that side were a
+    word-boundary search for NONE and a findall for ids. So a side the reviewer never wrote
+    as NONE — a typo, a truncation, a model that answered in prose, a line mangled in
+    transport — was counted as answered, matched no ids, and became indistinguishable in the
+    output from an explicit "related to nothing". That silently loses a same-task join, and a
+    lost join is precisely what can leave two questions about one task on opposite sides of
+    the dev/holdout line, which Section 7 exists to prevent. An unrecognised answer is
+    therefore a refusal, not a NONE.
+    """
     pairs: set[frozenset[str]] = set()
     answered: set[str] = set()
-    for line in path.read_text(encoding="utf-8").splitlines():
-        match = re.match(r"\s*(q-[0-9a-f]{10})\s*(?:->|→|:)\s*(.*)$", line)
+    problems: list[str] = []
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        match = ANSWER_LINE.match(line)
         if not match:
             continue
-        left, rest = match.group(1), match.group(2)
+        left, rest = match.group(1), match.group(2).strip()
+        where = f"{path.name}:{lineno}"
         if left not in idset:
+            problems.append(f"{where}: answers for {left}, which is not in blind-queries.txt")
+            continue
+        if left in answered:
+            problems.append(f"{where}: {left} is answered more than once")
             continue
         answered.add(left)
-        if re.search(r"\bNONE\b", rest, re.I):
+        if not ANSWER_RHS.match(rest):
+            problems.append(
+                f"{where}: {left} -> {rest!r} is not a recognised answer; the grammar is "
+                "NONE, or one or more q-<10 hex digits> ids separated by whitespace or commas"
+            )
+            continue
+        if rest.upper() == "NONE":
             continue
         for right in re.findall(r"q-[0-9a-f]{10}", rest):
-            if right in idset and right != left:
-                pairs.add(frozenset((left, right)))
-    return pairs, answered
+            if right not in idset:
+                problems.append(f"{where}: {left} -> {right}, which is not in blind-queries.txt")
+                continue
+            if right == left:
+                problems.append(f"{where}: {left} is answered as same-task with itself")
+                continue
+            pairs.add(frozenset((left, right)))
+    return pairs, answered, problems
 
 
 def main() -> int:
@@ -154,8 +195,24 @@ def main() -> int:
 
     reviewer_a = review / "family-reviewer-A-pi-minimax-m3.txt"
     reviewer_b = review / "family-reviewer-B-codex.txt"
-    pairs_a, answered_a = parse_reviewer(reviewer_a, idset)
-    pairs_b, answered_b = parse_reviewer(reviewer_b, idset)
+    pairs_a, answered_a, problems_a = parse_reviewer(reviewer_a, idset)
+    pairs_b, answered_b, problems_b = parse_reviewer(reviewer_b, idset)
+
+    # Grammar before coverage. An answer nobody can parse is not an answer, and reading it as
+    # one is how a same-task join disappears with nothing reporting a loss.
+    malformed = problems_a + problems_b
+    if malformed:
+        for problem in malformed:
+            print(problem, file=sys.stderr)
+        print(
+            f"{len(malformed)} unrecognised reviewer answer(s); refusing to write a family "
+            "ledger. A right-hand side this parser cannot classify is NOT an explicit NONE: "
+            "reading it as one drops a same-task join, and a dropped join is what puts two "
+            "questions about the same task on opposite sides of the dev/holdout line "
+            "(frozen rule Section 7).",
+            file=sys.stderr,
+        )
+        return 3
 
     # Fail closed on incomplete coverage. Until SW-279 review round 1 these two counts were
     # computed, written into the summary row, and never compared against anything: deleting
