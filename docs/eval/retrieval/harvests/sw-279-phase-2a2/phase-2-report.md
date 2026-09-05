@@ -311,7 +311,7 @@ no transcript was retained for reviewer A; that is recorded rather than glossed.
 
 ### The gate suite, counted correctly
 
-`scripts/eval/tests/test_sw279_gates.py` has **43 cases: 36 refusals and 7 positive controls.** The
+`scripts/eval/tests/test_sw279_gates.py` has **51 cases: 43 refusals and 8 positive controls.** The
 round-1 commit message (`56307de`) said "Seventeen cases" and then listed all of them under "The
 refusals", which was wrong in both directions — the suite then had 17 cases, of which **13 were
 refusals and 4 were positive controls**, and describing a positive control as a refusal overstates
@@ -320,18 +320,19 @@ kinds are now named apart in the suite's own `POSITIVE_CONTROLS` inventory, the 
 from the module rather than written down twice, and a run's last line states them:
 
 ```
-SW279-GATES declared=43 refusals=36 positive_controls=7 ran=43 ok=43 skipped=0 failed=0
+SW279-GATES declared=51 refusals=43 positive_controls=8 ran=51 ok=51 skipped=0 failed=0
 ```
 
 A refusal case breaks exactly one thing and asserts the script stops with a message naming what is
 wrong. A positive control changes nothing and asserts the script still reproduces the committed
-artefact byte for byte, because a gate that always fails looks identical to one that works. Both
-kinds are necessary and neither substitutes for the other.
+artefact byte for byte — or, for the GraphQL argument checks, asserts that a query reformatted
+without changing what it asks for is still accepted. A gate that always fails looks identical to one
+that works. Both kinds are necessary and neither substitutes for the other.
 
 **The Go wrapper no longer reports PASS over a population that did not run.**
 `internal/eval/retrieval/sw279_gates_test.go` asserted only that the output contained `... ok`
 somewhere. With the pinned spf13/cobra clone unavailable, the 15 cases that drive the answerability
-finalizer skipped, the other 28 printed `ok`, and `go test` returned 0 — a green gate over a skipped
+finalizer skipped, every other case printed `ok`, and `go test` returned 0 — a green gate over a skipped
 population, which is the SW-273 defect class these gates exist to prevent. The wrapper now carries
 its own declaration of the expected case count (so a deleted or renamed case fails the build rather
 than quietly shrinking the evidence), requires every declared case to have run, fails on any skip it
@@ -547,7 +548,16 @@ the re-annotation. §8's permitted order puts the dataset freeze at step 5 and a
 that is checkable: the file was not modified by the re-annotation, it rebuilds byte for byte from the
 current ledger, and no retrieval run has ever consumed it — `docs/eval/retrieval/runs/` contains no
 run referencing `cobra-v2`, so §8 step 6 has not happened for this dataset. It should not recur, and
-the control below is written so that it cannot: no re-annotation is permitted once step 6 has run.
+refusal 4 below is written so that it cannot: `build_sw279_reannotation_batch.py` refuses to build a
+re-annotation batch at all once any file under `docs/eval/retrieval/runs/` names `cobra-v2`.
+
+Round 3 of the review found this paragraph asserting that control while **no code implemented it** —
+a harvest carrying a run whose dataset id was `cobra-v2` produced a batch with rc=0. The check exists
+now, with a gate case
+(`test_re_annotating_after_a_retrieval_run_consumed_the_dataset_is_refused`). Recording it: an
+unbacked claim in a document whose purpose is to be checked by someone who wants to disbelieve it is
+worse than the gap it papers over, because it spends the credibility of every other sentence around
+it.
 
 ### The re-roll channel is bounded
 
@@ -561,7 +571,7 @@ overwrite an existing `reannotation-plan.json`, so a second round needed that fi
 a git-visible act and not a control anyone designed. In that state an operator could re-roll exactly
 the rows whose answers they disliked.
 
-Three refusals close it, and none of them leaves the operator any discretion:
+Four refusals close it, and none of them leaves the operator any discretion:
 
 1. **Only an `unresolved` row is eligible.** The builder reads the current verdict of every
    requested issue out of the committed `annotations-*.jsonl` and refuses anything else; the
@@ -576,6 +586,11 @@ Three refusals close it, and none of them leaves the operator any discretion:
 3. **The whole eligible set, or none.** The builder computes the unresolved set itself and refuses
    an `--issues` list that is not exactly it. Seeing which rows are unresolved therefore confers no
    choice: the operator's only decision is run-or-stop, and stopping is always available.
+4. **No re-annotation at all once the dataset has been used.** The builder scans
+   `docs/eval/retrieval/runs/` and refuses if any file there names `cobra-v2`, because §8 step 6 has
+   then run and re-labelling a row is choosing the label that moves a number which already exists.
+   No per-row bound reaches that, so the channel closes rather than narrows. On this record the scan
+   finds nothing, which is why the builder still reproduces `batch-6-input.jsonl` byte for byte.
 
 Each refusal has a gate case in `scripts/eval/tests/test_sw279_gates.py` proven to bite by breaking
 it. **The refusals change nothing on this record, and that is the point**: with them in place the
@@ -721,3 +736,42 @@ writes `answerability-ledger-blocked.jsonl` and `phase-2-outcome-blocked.json`, 
 prevents irregularity 4 from recurring. An earlier version of this report said the first blocked run
 "refused to write an outcome". It did not — it wrote both the ledger and the outcome and *then*
 returned 3, which is how sequence 14 came to point at a file that was later replaced.
+
+## What these scripts are not hardened against
+
+Every gate in this harvest validates its **inputs**. None of them is hardened against an **operator
+with commit rights**, and no acceptance criterion asked for that.
+
+Three review rounds each added a validator and each found the next input class the previous one did
+not cover. Four findings from the last round are recorded here as known follow-ups rather than
+fixed:
+
+1. **Freshness bypass via input-row coverage.** The re-annotation freshness check derives an actor's
+   coverage from the batch's input rows, so an actor's prior involvement is invisible where the
+   input does not carry the row.
+2. **Freshness bypass via batch-number reuse.** Batch identity is the operator-supplied number, so a
+   reused number can make a second pass look like the first.
+3. **Backfill `./`-path spelling.** `backfill_sw279_answerability_ledger_rows.py` compares paths as
+   written, so a `./`-prefixed spelling of the same file edits before the staleness check refuses.
+4. **Citation extension shapes.** Rejection-citation resolution recognises a bounded set of path
+   shapes; digit-leading and unusually long extensions are not seen as citations.
+
+A fifth, adjacent one: the Go gate wrapper transmits skipped case **ids** but not their **reasons**,
+so it sanctions a skip by name rather than by cause.
+
+The reasoning is not that these are unimportant. It is that the operator they would defend against
+owns the repository and can commit anything, including a change to the validator itself, so
+hand-rolled input validation has no reachable fixed point against that adversary — three rounds of
+evidence say each layer closed reveals the next. The controls that actually bind here are the
+**externally checkable** ones, and they do not depend on any script behaving:
+
+- the committed digests in `phase-2-seal.json`, the access ledger and the attestations;
+- git history, in which every artefact and every change to one is a visible commit;
+- the frozen rule's hash, `d9aea9863501d3d2827aa191275f689fc8afeda30ecb8dcbbb379d7339d85a2c`,
+  recorded before the first fetch;
+- byte-identical reproduction — the finalizer, the family-ledger builder and the dataset builder all
+  rebuild their committed outputs exactly, which is what makes every refusal added in review a bound
+  on the machinery rather than a rewrite of the record.
+
+Anyone auditing this dataset should check those four, not the scripts' resistance to their own
+operator.

@@ -55,15 +55,45 @@ SELECTION_SET = "nodes { number createdAt title body author { login } }"
 # rather than tolerating whatever else happens to be there.
 PAGE_INFO = "pageInfo { hasNextPage endCursor }"
 
-QUERY_TEMPLATE = """
-query($owner: String!, $name: String!, $cursor: String) {
-  repository(owner: $owner, name: $name) {
-    issues(
+# The repository this harvest is permitted to read, and the only one. The metadata records
+# `spf13/cobra`; these two constants are where that claim comes from, they are what the
+# variables are bound to at the call site, and `assert_variables_pin_the_repository` refuses
+# any other binding before the first request.
+REPO_OWNER = "spf13"
+REPO_NAME = "cobra"
+
+# The argument lists the operation is permitted to carry, declared once and interpolated into
+# the query below, so - as with SELECTION_SET - the constant the checks compare against and
+# the text that is actually sent are the same string.
+#
+# Round 3 found `parse_selection_set` skipping every balanced `( ... )` without ever looking
+# inside it, so `repository(owner: "kubernetes", name: "kubernetes")` passed the whole
+# assertion: the field names were right, the selection set was right, and the fetcher would
+# have written another repository's issue bodies into a file whose metadata says
+# `spf13/cobra`. Arguments are compared now, by token equality (whitespace and commas are
+# insignificant to GraphQL and so are insignificant here), everywhere they can appear:
+# the operation's variable definitions, `repository`, and `issues`. Nothing under `issues`
+# can carry an argument unnoticed either, because that whole selection body is compared to
+# SELECTION_SET + PAGE_INFO by equality.
+#
+# `after: $cursor` is the one argument whose *value* legitimately varies: the fetcher walks
+# the connection. It varies as a variable binding at request time, never as a change to the
+# operation - which is why the operation is pinned by equality here while
+# `assert_variables_pin_the_repository` pins `owner` and `name` to the constants above and
+# leaves `cursor` free.
+VARIABLE_DEFINITIONS = "$owner: String!, $name: String!, $cursor: String"
+REPOSITORY_ARGS = "owner: $owner, name: $name"
+ISSUES_ARGS = """
       first: 50
       after: $cursor
       states: [OPEN, CLOSED]
       orderBy: {field: CREATED_AT, direction: ASC}
-    ) {
+    """
+
+QUERY_TEMPLATE = """
+query(%(variable_definitions)s) {
+  repository(%(repository_args)s) {
+    issues(%(issues_args)s) {
       %(selection_set)s
       %(page_info)s
     }
@@ -126,14 +156,26 @@ def lex(query: str) -> list[tuple[str, int, int]]:
     return tokens
 
 
-class Field:
-    """One field in a selection set, with its parsed sub-selection and that sub-selection's
-    span in the original source, so the bytes that will be sent are what gets compared."""
+def tokens_of(fragment: str) -> str:
+    """Collapse a GraphQL fragment to its significant tokens, space-separated.
 
-    def __init__(self, name: str, alias: str | None,
+    Whitespace, commas and comments are insignificant to GraphQL, and `lex` already drops
+    them, so two spellings of one argument list compare equal here while any change to what
+    is being asked for does not. The trailing sentinel is dropped.
+    """
+    return " ".join(token for token, _, _ in lex(fragment)[:-1])
+
+
+class Field:
+    """One field in a selection set, with its arguments, its parsed sub-selection and that
+    sub-selection's span in the original source, so the bytes that will be sent are what gets
+    compared."""
+
+    def __init__(self, name: str, alias: str | None, args: str | None,
                  fields: list["Field"] | None, span: tuple[int, int] | None) -> None:
         self.name = name
         self.alias = alias
+        self.args = args      # significant tokens of `( ... )`, or None when there is no list
         self.fields = fields  # None when the field has no selection set
         self.span = span      # (offset just after `{`, offset of the matching `}`)
 
@@ -181,8 +223,11 @@ def parse_selection_set(tokens: list[tuple[str, int, int]], i: int,
             # names would not see what is actually being transported.
             alias, name = name, tokens[i + 1][0]
             i += 2
+        args: str | None = None
         if tokens[i][0] == "(":
+            args_from = tokens[i][2]
             i = skip_balanced(tokens, i, "(", ")", query)
+            args = tokens_of(query[args_from:tokens[i - 1][1]])
         if tokens[i][0] == "@":
             refuse("a directive can change what is returned, so none is allowed", query)
         sub: list[Field] | None = None
@@ -191,7 +236,7 @@ def parse_selection_set(tokens: list[tuple[str, int, int]], i: int,
             start = tokens[i][2]
             sub, i = parse_selection_set(tokens, i, query)
             span = (start, tokens[i - 1][1])  # tokens[i-1] is the matching `}`
-        fields.append(Field(name, alias, sub, span))
+        fields.append(Field(name, alias, args, sub, span))
     del open_at
     return fields, i + 1
 
@@ -214,6 +259,45 @@ def only_field(fields: list[Field], expected: str, where: str, query: str) -> Fi
     return field
 
 
+def only_args(field: Field, declared: str, where: str, query: str) -> None:
+    """Refuse unless `field` carries exactly the declared argument list.
+
+    Round 3's finding: the parser skipped every balanced `( ... )` without comparing it, so
+    `repository(owner: "kubernetes", name: "kubernetes")` passed a check that reads only field
+    names - the fetch would have written a different repository's issue bodies into a file
+    whose metadata says `spf13/cobra`. Equality, not containment: an added argument, a removed
+    one and a changed one are all changes to what is being asked for.
+    """
+    expected = tokens_of(declared)
+    if field.args is None:
+        refuse(f"{where} carries no argument list; §1's transport is `{expected}`", query)
+    if field.args != expected:
+        refuse(f"{where}'s arguments are not the declared ones\n"
+               f"  declared: {expected}\n"
+               f"  executed: {field.args}", query)
+
+
+def assert_variables_pin_the_repository(variables: dict[str, str], query: str = None) -> None:
+    """Refuse unless the variable bindings name the one repository §1 permits.
+
+    The operation asks for `repository(owner: $owner, name: $name)`, so pinning the operation
+    pins the *shape* and leaves the target to the bindings sent alongside it. This is the other
+    half: `owner` and `name` must be exactly REPO_OWNER and REPO_NAME, and no other variable
+    may be bound here. `cursor` is not passed through this dict - paging is the one thing that
+    legitimately varies, and it is added per request by the caller.
+    """
+    expected = {"owner": REPO_OWNER, "name": REPO_NAME}
+    if variables != expected:
+        refuse(
+            "the repository variables are not the declared ones; the metadata and the access "
+            f"ledger record `{REPO_OWNER}/{REPO_NAME}`, so any other binding fetches issue "
+            "bodies this harvest has no permission to read\n"
+            f"  declared: {expected}\n"
+            f"  bound:    {variables}",
+            QUERY if query is None else query,
+        )
+
+
 def assert_query_is_the_selection_set(query: str = None) -> str:
     """Refuse unless the WHOLE operation is the one §1 permits.
 
@@ -228,6 +312,10 @@ def assert_query_is_the_selection_set(query: str = None) -> str:
         a naive check looks;
       * no alias anywhere on the path, so the field being requested is the field being named;
       * `repository` is the ONLY field at the root and `issues` is the ONLY field under it;
+      * every argument list in the operation - the variable definitions, `repository`'s and
+        `issues`' - is exactly the declared one, by token equality. Round 3 found these
+        skipped without comparison, which let `repository(owner: "kubernetes", ...)` through
+        a check that had already approved every field name in the document;
       * the `issues` selection is exactly SELECTION_SET plus paging, by equality.
 
     Returns the normalised issues-connection body it verified, so a caller can record what it
@@ -245,12 +333,26 @@ def assert_query_is_the_selection_set(query: str = None) -> str:
     head = tokens[0][0]
     if head in {"mutation", "subscription"}:
         refuse(f"this is a {head}, not a query", query)
-    if head == "query":
-        i = 1
-        if tokens[i][0] == "(":
-            i = skip_balanced(tokens, i, "(", ")", query)
-    elif head != "{":
+    if head != "query":
         refuse(f"expected a query operation, found {head!r}", query)
+    i = 1
+    if NAME.match(tokens[i][0]):
+        i += 1  # an operation name is permitted; it names the operation, not a field
+    if tokens[i][0] != "(":
+        # The declared transport takes its repository from variables, so an operation that
+        # declares none is either taking it from a literal or from a default - both of which
+        # are changes to what is being asked for.
+        refuse("the operation declares no variables; §1's transport declares "
+               f"`{tokens_of(VARIABLE_DEFINITIONS)}`", query)
+    # A variable definition can carry a default value, so it is part of what the operation
+    # asks for and is pinned like any other argument list.
+    definitions_from = tokens[i][2]
+    i = skip_balanced(tokens, i, "(", ")", query)
+    definitions = tokens_of(query[definitions_from:tokens[i - 1][1]])
+    if definitions != tokens_of(VARIABLE_DEFINITIONS):
+        refuse("the operation's variable definitions are not the declared ones\n"
+               f"  declared: {tokens_of(VARIABLE_DEFINITIONS)}\n"
+               f"  executed: {definitions}", query)
 
     root, i = parse_selection_set(tokens, i, query)
     if tokens[i][0] != "":
@@ -258,7 +360,9 @@ def assert_query_is_the_selection_set(query: str = None) -> str:
                "trailing fragment is not part of the declared transport", query)
 
     repository = only_field(root, "repository", "the operation root", query)
+    only_args(repository, REPOSITORY_ARGS, "repository", query)
     issues = only_field(repository.fields, "issues", "repository", query)
+    only_args(issues, ISSUES_ARGS, "issues", query)
 
     # The body is the source span the parser itself walked, not a `str.index` for `issues(`,
     # so a sibling field whose name merely ends in `issues` cannot be read in its place.
@@ -271,7 +375,18 @@ def assert_query_is_the_selection_set(query: str = None) -> str:
     return body
 
 
-QUERY = QUERY_TEMPLATE % {"selection_set": SELECTION_SET, "page_info": PAGE_INFO}
+QUERY = QUERY_TEMPLATE % {
+    "variable_definitions": VARIABLE_DEFINITIONS,
+    "repository_args": REPOSITORY_ARGS,
+    "issues_args": ISSUES_ARGS,
+    "selection_set": SELECTION_SET,
+    "page_info": PAGE_INFO,
+}
+
+# The repository variables, bound once here and sent verbatim, so what
+# `assert_variables_pin_the_repository` checks is what the request carries. `cursor` is not
+# in this dict: paging is the one binding that varies, and it is added per request.
+VARIABLES = {"owner": REPO_OWNER, "name": REPO_NAME}
 
 
 def run(*args: str) -> str:
@@ -297,6 +412,11 @@ def main() -> int:
     # returning, because a divergence here means the ledger is about to certify a
     # transport that is not the one being used.
     verified_selection = assert_query_is_the_selection_set()
+
+    # And the operation's target: the query pins the shape `repository(owner: $owner, name:
+    # $name)`, this pins what those two variables carry. Both halves are needed - an operation
+    # whose arguments are all correct still reads whatever repository the bindings name.
+    assert_variables_pin_the_repository(VARIABLES)
 
     # The Phase 1 boundary is re-verified here too: this fetch must postdate the frozen
     # rule commit and the working rule bytes must still be the committed bytes.
@@ -335,12 +455,9 @@ def main() -> int:
     nodes_seen = 0
     by_number: dict[int, dict[str, object]] = {}
     while True:
-        command = [
-            "gh", "api", "graphql",
-            "-f", f"query={QUERY}",
-            "-F", "owner=spf13",
-            "-F", "name=cobra",
-        ]
+        command = ["gh", "api", "graphql", "-f", f"query={QUERY}"]
+        for key, value in VARIABLES.items():
+            command.extend(["-F", f"{key}={value}"])
         if cursor is not None:
             command.extend(["-F", f"cursor={cursor}"])
         payload = json.loads(run(*command))
@@ -403,7 +520,7 @@ def main() -> int:
 
     metadata = {
         "schema": "sw-279-raw-issue-text/v1",
-        "repository": "spf13/cobra",
+        "repository": f"{REPO_OWNER}/{REPO_NAME}",
         "population_manifest_file": manifest_path.name,
         "population_manifest_sha256": manifest_digest,
         "row_count": len(rows),

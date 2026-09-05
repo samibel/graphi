@@ -41,6 +41,12 @@ refusals close that, and neither leaves the operator any discretion:
 The third bound - exactly one re-roll per row, ever - lives in the finalizer, which is where a
 second supersession would have to be honoured.
 
+A fourth bound closes the channel entirely once the dataset has been used: if any file under
+`docs/eval/retrieval/runs/` names `cobra-v2`, Section 8 step 6 has happened and no
+re-annotation is built at all. Re-labelling a row after a retrieval number exists for it is
+choosing the label that moves the number, and no per-row bound reaches that. The Phase 2
+report claimed this control existed before any code implemented it; it exists now.
+
 Outputs `<harvest>/answerability/batch-<n>-input.jsonl` and
 `<harvest>/answerability/reannotation-plan.json`. It refuses to overwrite either. The seal-era
 `batch-plan.json` is not touched: it records what was planned before the seal, and this pass
@@ -62,6 +68,26 @@ import _access_ledger  # noqa: E402
 HARVESTS = Path("docs/eval/retrieval/harvests")
 ACTOR = "Claude Opus 5 (SW-279 Phase 2 orchestrator)"
 
+# Section 8's step 6 - run retrieval against the frozen dataset - and where its output lands.
+# `DATASET_ID` is the id `build_cobra_v2_dataset.py` writes into the dataset this harvest's
+# answerability ledger produces; a run that has consumed it names it in its own files.
+RUNS = Path("docs/eval/retrieval/runs")
+DATASET_ID = "cobra-v2"
+
+
+def runs_that_consumed_the_dataset() -> list[str]:
+    """Every file under `runs/` that names the dataset this harvest builds.
+
+    Read as bytes and searched literally: the point is to find the id wherever a run records
+    it - `dataset.json`'s `id`, a `run.json` reference, a README - without depending on any
+    one run format staying the shape it is today.
+    """
+    if not RUNS.is_dir():
+        return []
+    needle = DATASET_ID.encode("utf-8")
+    return sorted(path.as_posix() for path in RUNS.rglob("*")
+                  if path.is_file() and needle in path.read_bytes())
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
@@ -77,6 +103,26 @@ def main() -> int:
                                stdout=subprocess.PIPE, text=True).stdout.strip())
     if Path.cwd().resolve() != root.resolve():
         print("run from the repository root", file=sys.stderr)
+        return 2
+
+    # Once retrieval has been run against the dataset, re-annotating it is choosing the
+    # answer after seeing the score. The Phase 2 report asserted this was prevented while
+    # nothing checked it, which is a worse defect than the gap itself: an unbacked claim in a
+    # document whose whole purpose is to be checkable. It is checked here now.
+    consumed = runs_that_consumed_the_dataset()
+    if consumed:
+        for path in consumed[:10]:
+            print(f"{path} references {DATASET_ID}", file=sys.stderr)
+        if len(consumed) > 10:
+            print(f"... and {len(consumed) - 10} more", file=sys.stderr)
+        print(
+            f"{len(consumed)} file(s) under {RUNS.as_posix()} reference {DATASET_ID}, so "
+            "Section 8 step 6 has run for this dataset. Re-annotating an answerability row "
+            "after a retrieval number exists for it is choosing the label that moves the "
+            "number, which no bound on the re-roll channel can undo. Refusing to build a "
+            "re-annotation batch.",
+            file=sys.stderr,
+        )
         return 2
 
     harvest = HARVESTS / args.harvest

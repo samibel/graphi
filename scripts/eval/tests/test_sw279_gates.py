@@ -10,12 +10,12 @@ break exactly one thing, and assert the script refuses with a message naming wha
 **The suite is NOT all refusals, and saying so was itself a defect.** It has two kinds of
 case, and the round-1 commit message described all of them as refusals:
 
-  * REFUSAL cases break one thing and assert the script stops. There are 36.
+  * REFUSAL cases break one thing and assert the script stops. There are 43.
   * POSITIVE CONTROL cases change nothing and assert the script still produces the committed
-    artefact byte for byte, because a gate that always fails looks identical to one that
-    works. There are 7, named in `POSITIVE_CONTROLS` below.
+    artefact byte for byte, or accept a legitimate variation, because a gate that always fails
+    looks identical to one that works. There are 8, named in `POSITIVE_CONTROLS` below.
 
-43 cases in total. `declared()` re-derives both counts from the module at run time, and the
+51 cases in total. `declared()` re-derives both counts from the module at run time, and the
 last line of a run states them, so the Go wrapper asserts against a contract rather than
 against the shape of unittest's console output.
 
@@ -72,6 +72,7 @@ POSITIVE_CONTROLS = frozenset({
     "test_either_invocation_order_produces_the_same_attestation_digests",
     "test_no_committed_ledger_row_pins_a_stale_attestation_digest",
     "test_the_shipped_query_matches_the_declared_selection_set",
+    "test_a_whitespace_reformatted_query_is_still_accepted",
 })
 
 
@@ -581,8 +582,26 @@ class TheReannotationBuilderBoundsTheReRollChannel(SandboxTest):
         self.assertIn("already carry a second annotation", result.stderr)
         self.assertIn("there is no pass three", result.stderr)
 
+    def test_re_annotating_after_a_retrieval_run_consumed_the_dataset_is_refused(self) -> None:
+        """The Phase 2 report asserted that re-annotation after retrieval output exists is
+        prevented, and no code checked it: a harvest carrying a run whose dataset id is
+        `cobra-v2` produced a batch with rc=0. Re-labelling a row once a number depends on it
+        is choosing the label that moves the number, which no per-row bound reaches."""
+        self.box.restore_pre_reannotation_state()
+        run = self.box.path("docs/eval/retrieval/runs/2026-09-05-gate-local")
+        run.mkdir(parents=True)
+        self.box.write_json(run / "dataset.json", {"schema_version": 1, "id": "cobra-v2"})
+
+        result = self.build(str(CONTESTED))
+
+        self.assertEqual(result.returncode, 2, msg=result.stdout)
+        self.assertIn("dataset.json references cobra-v2", result.stderr)
+        self.assertIn("Section 8 step 6 has run for this dataset", result.stderr)
+        self.assertFalse(self.box.answerability("reannotation-plan.json").exists())
+        self.assertFalse(self.box.answerability("batch-6-input.jsonl").exists())
+
     def test_building_the_historical_batch_reproduces_its_input_byte_for_byte(self) -> None:
-        """Positive control: the three refusals above are not the builder refusing always."""
+        """Positive control: the four refusals above are not the builder refusing always."""
         committed = (REPO / "docs/eval/retrieval/harvests" / HARVEST
                      / "answerability" / "batch-6-input.jsonl").read_bytes()
         self.box.restore_pre_reannotation_state()
@@ -650,6 +669,29 @@ class TheFamilyLedgerRefusesPartialCoverageAndBadGrammar(SandboxTest):
 
         self.assertEqual(result.returncode, 3, msg=result.stdout)
         self.assertIn("q-0000000000, which is not in blind-queries.txt", result.stderr)
+        self.assertFalse(self.box.review("family-ledger.jsonl").exists())
+
+    def test_an_answer_spelling_an_id_in_the_wrong_case_is_refused(self) -> None:
+        """Round 3. The right-hand-side grammar was validated case-insensitively while the
+        extraction that builds the pairs matched lowercase only, so `Q-CF047FF0B9` validated,
+        produced no pair, and returned rc=0 with a ledger missing that join and nothing on
+        stderr. A dropped join is how one family ends up split across dev and holdout, which
+        is the single thing Section 7's machinery exists to prevent."""
+        self.box.review("family-ledger.jsonl").unlink()
+        path = self.box.review("family-reviewer-B-codex.txt")
+        lines, _ = self.first_answer_line(path)
+        target = next(i for i, line in enumerate(lines)
+                      if line.strip().startswith("q-") and "->" in line
+                      and not line.strip().endswith("NONE"))
+        left, arrow, right = lines[target].partition("->")
+        lines[target] = left + arrow + right.upper()
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        result = self.build()
+
+        self.assertEqual(result.returncode, 3, msg=result.stdout)
+        self.assertIn("is not written in the canonical spelling", result.stderr)
+        self.assertIn("unrecognised reviewer answer", result.stderr)
         self.assertFalse(self.box.review("family-ledger.jsonl").exists())
 
     def test_full_coverage_reproduces_the_committed_ledger_byte_for_byte(self) -> None:
@@ -813,8 +855,11 @@ class TheGraphQLOperationIsBoundToTheDeclaredSelectionSet(unittest.TestCase):
     """M-f, and N5 in round 2. `SELECTION_SET` is what the access ledger certifies. Round 1
     bound the executed `issues(...)` body to it - but read only that one selection body and
     ignored the rest of the document, so a sibling `issue(number: 1) { labels { ... } }` under
-    the same `repository` passed the check while transporting labels. The whole operation is
-    validated now."""
+    the same `repository` passed the check while transporting labels. Round 3 then found the
+    parser walking past every argument list without comparing it, so
+    `repository(owner: "kubernetes", name: "kubernetes")` passed a check that had already
+    approved every field name in the document. Arguments and variable bindings are compared
+    now, so the whole operation AND its target are validated."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -896,6 +941,51 @@ class TheGraphQLOperationIsBoundToTheDeclaredSelectionSet(unittest.TestCase):
     def test_a_mutation_is_refused(self) -> None:
         self.assertIn("this is a mutation, not a query",
                       self.refuses(self.mod.QUERY.replace("query(", "mutation(", 1)))
+
+    def test_a_changed_repository_owner_is_refused(self) -> None:
+        """Round 3, the exploit as performed. `skip_balanced` walked past every argument list
+        without comparing it, so every field name in the document was the declared one and the
+        fetch would have written kubernetes/kubernetes issue bodies into a file whose metadata
+        says spf13/cobra."""
+        elsewhere = self.mod.QUERY.replace("owner: $owner", 'owner: "kubernetes"', 1)
+        self.assertIn("repository's arguments are not the declared ones", self.refuses(elsewhere))
+
+    def test_a_changed_repository_name_is_refused(self) -> None:
+        elsewhere = self.mod.QUERY.replace("name: $name", 'name: "kubernetes"', 1)
+        self.assertIn("repository's arguments are not the declared ones", self.refuses(elsewhere))
+
+    def test_an_added_argument_is_refused(self) -> None:
+        """Equality, not containment: an argument nobody declared changes what comes back."""
+        added = self.mod.QUERY.replace("first: 50", "first: 50\n      filterBy: {}", 1)
+        self.assertIn("issues's arguments are not the declared ones", self.refuses(added))
+
+    def test_a_variable_default_naming_another_repository_is_refused(self) -> None:
+        """A default value is an argument by another route: it decides what is fetched when
+        the binding is absent, and it lives in the operation's variable definitions rather
+        than in any field's argument list."""
+        defaulted = self.mod.QUERY.replace(
+            "$owner: String!", '$owner: String = "kubernetes"', 1)
+        self.assertIn("variable definitions are not the declared ones", self.refuses(defaulted))
+
+    def test_bindings_naming_another_repository_are_refused(self) -> None:
+        """The other half of pinning the target. The operation asks for `repository(owner:
+        $owner, name: $name)`, so an operation that is exactly the declared one still reads
+        whatever repository the bindings sent alongside it name."""
+        with self.assertRaises(SystemExit) as caught:
+            self.mod.assert_variables_pin_the_repository(
+                {"owner": "kubernetes", "name": "kubernetes"})
+        self.assertIn("the repository variables are not the declared ones", str(caught.exception))
+
+    def test_a_whitespace_reformatted_query_is_still_accepted(self) -> None:
+        """Positive control for the argument checks: whitespace and commas are insignificant
+        to GraphQL and are insignificant here, so the gate refuses changes to what is asked
+        for and not changes to how it is typed. Without this, an argument check that always
+        refused would look exactly like one that works."""
+        reformatted = " ".join(self.mod.QUERY.split())
+        self.assertNotEqual(reformatted, self.mod.QUERY)
+        body = self.mod.assert_query_is_the_selection_set(reformatted)
+        self.assertEqual(body, self.mod.normalise(self.mod.SELECTION_SET + " " + self.mod.PAGE_INFO))
+        self.mod.assert_variables_pin_the_repository(self.mod.VARIABLES)
 
 
 def declared() -> tuple[list[str], list[str], list[str]]:

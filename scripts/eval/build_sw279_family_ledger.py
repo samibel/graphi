@@ -88,8 +88,25 @@ def blind_id(text: str) -> str:
 ANSWER_LINE = re.compile(r"\s*(q-[0-9a-f]{10})\s*(?:->|→|:)\s*(.*)$")
 
 # The whole of the permitted right-hand side: the literal NONE, or one or more blind ids
-# separated by whitespace or commas. Nothing else.
-ANSWER_RHS = re.compile(r"(?:NONE|q-[0-9a-f]{10}(?:[\s,]+q-[0-9a-f]{10})*)\Z", re.I)
+# separated by whitespace or commas. Nothing else, and in exactly this spelling.
+#
+# A blind id is the lowercase hex of a SHA-256 prefix (`blind_id`), and `ANSWER_LINE` above
+# reads the left-hand side as lowercase-only, so lowercase is the only spelling anything in
+# this pipeline ever produces. Round 3 found this pattern carrying `re.I` while `ID_IN_RHS`
+# below - the extraction that actually builds the pairs - matched lowercase only. The two
+# disagreed, and the disagreement was silent: `q-aaaaaaaaaa -> Q-CF047FF0B9` validated,
+# extracted no id at all, and left the same-task join in the reviewer's file with nothing on
+# the ledger and nothing on stderr. That is the exact failure mode the docstring below says
+# is intolerable, because a dropped join is how one family ends up split across dev and
+# holdout. Validation and extraction now use the same character class, so a non-canonical id
+# is a refusal with a diagnostic rather than a join that disappears.
+ID_IN_RHS = re.compile(r"q-[0-9a-f]{10}")
+ANSWER_RHS = re.compile(r"(?:NONE|q-[0-9a-f]{10}(?:[\s,]+q-[0-9a-f]{10})*)\Z")
+
+# The same shape read case-insensitively. Used ONLY to tell a case variant apart from genuine
+# garbage, so the refusal names which of the two it is.
+ANSWER_RHS_ANY_CASE = re.compile(
+    r"(?:NONE|q-[0-9a-fA-F]{10}(?:[\s,]+q-[0-9a-fA-F]{10})*)\Z", re.I)
 
 
 def parse_reviewer(path: Path, idset: set[str]) -> tuple[set[frozenset[str]], set[str], list[str]]:
@@ -124,14 +141,23 @@ def parse_reviewer(path: Path, idset: set[str]) -> tuple[set[frozenset[str]], se
             continue
         answered.add(left)
         if not ANSWER_RHS.match(rest):
-            problems.append(
-                f"{where}: {left} -> {rest!r} is not a recognised answer; the grammar is "
-                "NONE, or one or more q-<10 hex digits> ids separated by whitespace or commas"
-            )
+            if ANSWER_RHS_ANY_CASE.match(rest):
+                problems.append(
+                    f"{where}: {left} -> {rest!r} is shaped like an answer but is not written "
+                    "in the canonical spelling; a blind id is lowercase hex and the literal is "
+                    "NONE in capitals. Nothing in this pipeline emits any other spelling, so a "
+                    "case variant means the file was hand-edited or mangled in transport, and "
+                    "reading it as an answer would drop the join it names"
+                )
+            else:
+                problems.append(
+                    f"{where}: {left} -> {rest!r} is not a recognised answer; the grammar is "
+                    "NONE, or one or more q-<10 hex digits> ids separated by whitespace or commas"
+                )
             continue
-        if rest.upper() == "NONE":
+        if rest == "NONE":
             continue
-        for right in re.findall(r"q-[0-9a-f]{10}", rest):
+        for right in ID_IN_RHS.findall(rest):
             if right not in idset:
                 problems.append(f"{where}: {left} -> {right}, which is not in blind-queries.txt")
                 continue
