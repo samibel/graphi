@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -180,6 +181,14 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 	}
 	dir, relRunDir := blindEvalFixtureRunDir(t, root)
 	read := retrieval.RepoFileSHA256Reader(root)
+	// The fixture's candidate commit is this repository's REAL HEAD, because
+	// `decide` now resolves the binding's candidate-repository commit ids
+	// against git. A made-up forty-hex id would make every fixture run unbound
+	// and would only prove the resolution does not run.
+	candidateSHA, err := retrieval.CheckoutHEAD(context.Background(), root)
+	if err != nil {
+		t.Fatalf("resolve this repository's HEAD for the fixture candidate: %v", err)
+	}
 	rubricPath := relRunDir + "/grading-rubric.md"
 	if err := os.WriteFile(filepath.Join(dir, "grading-rubric.md"), []byte("# fixture grading rubric\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -196,7 +205,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		FreezeCommit:               "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
 		FreezeTimestamp:            "2026-09-05T08:00:00Z",
 		DatasetPath:                "internal/eval/retrieval/testdata/datasets/cobra-v2.json",
-		CandidateSHA:               "0123456789abcdef0123456789abcdef01234567",
+		CandidateSHA:               candidateSHA,
 		CandidateMethod:            retrieval.SavingsCandidateMethod,
 		CandidateTokenBudget:       retrieval.SavingsCandidateBudget,
 		ComparatorVersion:          retrieval.BlindEvalComparatorVersion,

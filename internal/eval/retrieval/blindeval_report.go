@@ -13,6 +13,20 @@ import (
 	"strings"
 )
 
+// ThreatModelPath is the document that bounds what this evaluation's evidence
+// is designed to establish.
+const ThreatModelPath = "docs/eval/retrieval/threat-model.md"
+
+// QrelBlindSmokeDisclosure is the sentence every claim resting on this
+// evaluation carries, verbatim from the owner decision that bounded the threat
+// model (projects/graphi/stories/SW-280/decision-threat-model.md, 2026-09-05).
+//
+// It is a constant rather than prose in a template because it is the price of
+// bounding the model: a procedure that stops defending against a class must say
+// so wherever its numbers are read, and a sentence that can be reworded per
+// document is a sentence that softens.
+const QrelBlindSmokeDisclosure = "The evidence for this number is designed to detect error, accident and drift. It is **not** designed to detect deliberate falsification by someone with write access to this repository, and it should not be read as establishing that none occurred."
+
 // RenderQrelBlindSmokeReport renders the evaluation report required by AC-11.
 //
 // Counts are authoritative and are printed as `k/n` with their `1/n`
@@ -48,6 +62,23 @@ func RenderQrelBlindSmokeReport(outcome EvaluationOutcome, pre PreRegistration, 
 	w("not as a number no rater could have inflated.\n\n")
 	w("Its pass count is a separate gate. The pass count does not enter the token estimand or its\n")
 	w("interval (`docs/eval/retrieval/methodology.md`, \"Estimand and claim boundary\").\n\n")
+
+	w("## What this evidence is designed to establish, and what it is not\n\n")
+	w("> %s\n\n", QrelBlindSmokeDisclosure)
+	w("The threat model this procedure is built to is `%s`.\n", ThreatModelPath)
+	w("It defends against **error, accident and drift** — a stale or programmatically wrong value, an\n")
+	w("artifact deleted or overwritten without intent, a frozen input changing under a run. It does\n")
+	w("**not** defend against deliberate falsification by someone with write access to this repository,\n")
+	w("and no check that lives inside the repository can: that actor owns the repository, can author any\n")
+	w("commit and can rewrite any history.\n\n")
+	w("The threat model records the controls that remain in force, and records one known open\n")
+	w("gap deferred by an explicit owner decision — the run directory's containment check is lexical and\n")
+	w("does not resolve symlinks. It is out of scope for this run, which fails by 26 passes and whose\n")
+	w("outcome no relocated artifact could reach, and it is required before any run reporting\n")
+	w("`RELEASE: YES` is published.\n\n")
+	w("What binds an author is what a reader can recompute from outside: the committed digests below,\n")
+	w("this run directory's git history, byte-identical reproduction from the committed inputs, and —\n")
+	w("above all — publication of the raw per-query data and the scoring code.\n\n")
 
 	w("## Result\n\n")
 	w("| quantity | value |\n|---|---|\n")

@@ -12,6 +12,33 @@ It is not a system-blind evaluation, not a human panel, and not an estimate of g
 answerability. Its pass count is a separate gate and does not enter the token estimand or its
 interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 
+## What this evidence is designed to establish, and what it is not
+
+> The evidence for this number is designed to detect error, accident and drift. It is **not**
+> designed to detect deliberate falsification by someone with write access to this repository, and
+> it should not be read as establishing that none occurred.
+
+The threat model this procedure is built to is `docs/eval/retrieval/threat-model.md`, and every rule
+below should be read inside its boundary. It defends against **error** (a stale, mistyped or
+programmatically wrong value; a file written to the wrong path; a digest that no longer matches the
+bytes it names), **accident** (an artifact deleted or overwritten without intent; a run re-executed
+against a changed input; two processes racing at one address) and **drift** (a frozen input changing
+under a run; a gate that stops running and is not noticed; a claim ageing out of agreement with the
+code).
+
+It does not defend against deliberate falsification by someone with write access to this repository,
+and no check that lives inside the repository can: that actor owns the repository, can author any
+commit and can rewrite any history. The threat model also records one **known open gap, deferred by
+an explicit owner decision** — physical containment of the run directory is lexical
+(`cmd/retrieval-eval/blindeval.go:485`), so a run behind an in-repository symlink pointing outside
+the repository is read from an external mutable directory. It is out of scope for **this** run
+because this run fails by 26 passes and no relocated artifact could reach its outcome, and it is
+**required before any run reporting `RELEASE: YES` is published**. `filepath.EvalSymlinks` closes it.
+
+What binds an author here is what a reader can recompute from outside: the committed digests, this
+directory's git history, byte-identical reproduction from the committed inputs, and — above all —
+publication of the raw per-query data and the scoring code.
+
 ## The order of operations, and why it is the deliverable
 
 1. **Freeze.** `precondition-record.json` names every input by content hash with its freeze commit

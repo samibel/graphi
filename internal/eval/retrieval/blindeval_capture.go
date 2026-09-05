@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -234,6 +235,34 @@ func GitRepoProbe() RepoProbe {
 			}
 			return paths, nil
 		},
+	}
+}
+
+// GitCommitResolver is the production CommitResolver: it asks git whether the
+// id names a commit object in the repository at root.
+//
+// `git cat-file -e <sha>^{commit}` exits 0 when the id resolves to a commit,
+// and non-zero when it resolves to nothing or to an object that is not a
+// commit. That distinction matters: a tree or blob id is forty hex characters
+// too, and binding a run to one would be the same error wearing a different
+// shape. A failure to run git at all is returned as an error rather than as
+// "does not exist", so a broken environment reads as unresolved rather than as
+// a forged binding.
+func GitCommitResolver(root string) CommitResolver {
+	return func(sha string) (bool, error) {
+		cmd := exec.Command("git", "-C", root, "cat-file", "-e", sha+"^{commit}")
+		cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		if err == nil {
+			return true, nil
+		}
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return false, nil
+		}
+		return false, fmt.Errorf("git cat-file -e %s^{commit} in %s: %w (%s)", sha, root, err, strings.TrimSpace(stderr.String()))
 	}
 }
 

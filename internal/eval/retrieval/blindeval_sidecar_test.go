@@ -11,6 +11,7 @@ package retrieval
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,7 +54,7 @@ func TestQrelBlindSmoke_AFabricatedCandidateBindingIsNotBound(t *testing.T) {
 	}
 	// Positive control: the sound binding really does bind, so the refusals
 	// below are refusals of the defect and not of the shape.
-	if assessment := AssessCaptureBinding(precondition, sound); !assessment.Bound {
+	if assessment := AssessCaptureBinding(precondition, sound, sidecarFixtureCommitResolver()); !assessment.Bound {
 		t.Fatalf("the sound control did not bind: %v", assessment.Reasons)
 	}
 
@@ -98,7 +99,7 @@ func TestQrelBlindSmoke_AFabricatedCandidateBindingIsNotBound(t *testing.T) {
 			tc.break_(&broken)
 			provenance := sound
 			provenance.Binding = &broken
-			assessment := AssessCaptureBinding(precondition, provenance)
+			assessment := AssessCaptureBinding(precondition, provenance, sidecarFixtureCommitResolver())
 			if assessment.Bound {
 				t.Fatal("a fabricated candidate binding was accepted as bound")
 			}
@@ -111,7 +112,7 @@ func TestQrelBlindSmoke_AFabricatedCandidateBindingIsNotBound(t *testing.T) {
 	t.Run("a provenance whose repo_sha is not a commit id", func(t *testing.T) {
 		provenance := sound
 		provenance.RepoSHA = "main"
-		if assessment := AssessCaptureBinding(precondition, provenance); assessment.Bound {
+		if assessment := AssessCaptureBinding(precondition, provenance, sidecarFixtureCommitResolver()); assessment.Bound {
 			t.Fatal("a provenance naming a branch instead of a commit was accepted as bound")
 		}
 	})
@@ -119,8 +120,134 @@ func TestQrelBlindSmoke_AFabricatedCandidateBindingIsNotBound(t *testing.T) {
 	t.Run("a precondition record that names no run directory", func(t *testing.T) {
 		unrooted := precondition
 		unrooted.Inputs = nil
-		if assessment := AssessCaptureBinding(unrooted, sound); assessment.Bound {
+		if assessment := AssessCaptureBinding(unrooted, sound, sidecarFixtureCommitResolver()); assessment.Bound {
 			t.Fatal("a binding was accepted although nothing names the directory this run lives in")
+		}
+	})
+}
+
+// sidecarFixtureCommitResolver resolves the one commit id these fixtures name.
+// A fixture id exists in no real repository, so without a seam the sound
+// control could never bind and the refusals below would prove nothing.
+func sidecarFixtureCommitResolver() CommitResolver {
+	const frozen = "0123456789abcdef0123456789abcdef01234567"
+	return func(sha string) (bool, error) { return sha == frozen, nil }
+}
+
+// A well-shaped commit id that resolves to no commit is not a binding.
+//
+// This is the ERROR class the threat model keeps in scope
+// (docs/eval/retrieval/threat-model.md): a stale id, one the repository has
+// garbage-collected, or a field a bug wrote the wrong value into is forty hex
+// characters and self-consistent, and it used to read as `bound` with no bad
+// intent anywhere. The resolver here is the REAL git one, run against this
+// repository, so the check is proven against the thing it will actually use.
+func TestQrelBlindSmoke_ACandidateBindingNamingANonexistentCommitIsNotBound(t *testing.T) {
+	root, err := repoRoot()
+	if err != nil {
+		t.Fatalf("resolve the module root: %v", err)
+	}
+	resolve := GitCommitResolver(root)
+
+	// The positive control comes first: a REAL commit id — this repository's
+	// own HEAD — must still bind, or every refusal below is a refusal of the
+	// resolver rather than of the defect.
+	head, err := CheckoutHEAD(context.Background(), root)
+	if err != nil {
+		t.Fatalf("resolve this repository's HEAD: %v", err)
+	}
+	if !isLowerHexDigest(head, 40) {
+		t.Fatalf("git rev-parse HEAD returned %q, which is not a 40-character commit id", head)
+	}
+	if exists, err := resolve(head); err != nil || !exists {
+		t.Fatalf("the real commit %s did not resolve: exists=%t err=%v", head, exists, err)
+	}
+
+	bindingFor := func(candidate string) (PreconditionRecord, CandidateCaptureProvenance) {
+		precondition := PreconditionRecord{
+			DatasetSHA256:        strings.Repeat("d", 64),
+			CandidateSHA:         candidate,
+			CandidateTokenBudget: SavingsCandidateBudget,
+			Inputs: []FrozenInput{
+				{Role: PreconditionInputGradingRubric, Path: "docs/eval/retrieval/runs/x/grading-rubric.md", SHA256: strings.Repeat("a", 64)},
+			},
+		}
+		provenance := CandidateCaptureProvenance{
+			CaptureVersion:   CandidateCaptureVersion,
+			Transport:        "t",
+			Boundary:         string(PayloadBoundaryCandidate),
+			RepoSHA:          strings.Repeat("b", 40),
+			DatasetSHA256:    precondition.DatasetSHA256,
+			EmbedderSelector: "static:x@y",
+			IndexFingerprint: "fp",
+			SemanticState:    "ready",
+			TokenBudget:      SavingsCandidateBudget,
+			Binding: &CandidateBinding{
+				CandidateSHA:           candidate,
+				FrozenCandidateSHA:     candidate,
+				CandidateWorktreeClean: true,
+				CandidateMatchesFrozen: true,
+				CandidateExcludedPath:  "docs/eval/retrieval/runs/x",
+				// The indexed corpus commit. It is deliberately NOT resolved
+				// against this repository: it names a commit in the pinned
+				// corpus clone, which is not present when the decision is
+				// taken.
+				CheckoutSHA:           strings.Repeat("b", 40),
+				CheckoutWorktreeClean: true,
+			},
+		}
+		return precondition, provenance
+	}
+
+	t.Run("a real commit id still binds", func(t *testing.T) {
+		precondition, provenance := bindingFor(head)
+		assessment := AssessCaptureBinding(precondition, provenance, resolve)
+		if !assessment.Bound {
+			t.Fatalf("a binding naming this repository's own HEAD did not bind: %v", assessment.Reasons)
+		}
+	})
+
+	t.Run("a well-shaped commit id that does not exist", func(t *testing.T) {
+		const ghost = "ffffffffffffffffffffffffffffffffffffffff"
+		precondition, provenance := bindingFor(ghost)
+		assessment := AssessCaptureBinding(precondition, provenance, resolve)
+		if assessment.Bound {
+			t.Fatal("a binding naming a commit that does not exist was accepted as bound")
+		}
+		reasons := strings.Join(assessment.Reasons, "\n")
+		if !strings.Contains(reasons, ghost) {
+			t.Errorf("the refusal does not name the id that failed to resolve: %v", assessment.Reasons)
+		}
+		if !strings.Contains(reasons, "resolves to no commit in this repository") {
+			t.Errorf("the refusal does not say the id resolves to nothing: %v", assessment.Reasons)
+		}
+		for _, field := range []string{"candidate_sha", "frozen_candidate_sha"} {
+			if !strings.Contains(reasons, field) {
+				t.Errorf("the refusal does not name %s: %v", field, assessment.Reasons)
+			}
+		}
+	})
+
+	t.Run("no resolver at all", func(t *testing.T) {
+		precondition, provenance := bindingFor(head)
+		assessment := AssessCaptureBinding(precondition, provenance, nil)
+		if assessment.Bound {
+			t.Fatal("a binding whose commit ids nothing resolved was accepted as bound")
+		}
+		if !strings.Contains(strings.Join(assessment.Reasons, "\n"), "were not resolved against any repository") {
+			t.Errorf("the refusal does not say the ids went unresolved: %v", assessment.Reasons)
+		}
+	})
+
+	t.Run("a resolver that cannot answer", func(t *testing.T) {
+		precondition, provenance := bindingFor(head)
+		broken := CommitResolver(func(string) (bool, error) { return false, errors.New("git is not available") })
+		assessment := AssessCaptureBinding(precondition, provenance, broken)
+		if assessment.Bound {
+			t.Fatal("a binding was accepted although the resolver could not answer")
+		}
+		if !strings.Contains(strings.Join(assessment.Reasons, "\n"), "could not be resolved to a commit") {
+			t.Errorf("the refusal does not report the resolver failure: %v", assessment.Reasons)
 		}
 	})
 }

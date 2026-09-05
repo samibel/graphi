@@ -794,7 +794,24 @@ type EvaluationArtifacts struct {
 	// GradingConcerns are disclosed defects in COUNTED PASSES. They subtract
 	// from the reviewed count and never add to it.
 	GradingConcerns []GradingConcern
+	// ResolveCommit resolves a candidate-repository commit id to whether it
+	// exists. It is NOT loaded from the run directory — it is the seam the
+	// decision reaches git through, and the caller supplies it.
+	//
+	// A nil resolver is a release refusal rather than a skipped check. A check
+	// that is optional on the passing path is not evidence, and this one exists
+	// precisely because a binding used to be able to name a commit that never
+	// existed and still read as bound.
+	ResolveCommit CommitResolver
 }
+
+// CommitResolver reports whether a 40-character commit id resolves to a commit
+// in the repository the decision is being taken in.
+//
+// It is a seam so the refusal can be tested without building throwaway
+// repositories, and so a unit test can bind fixture ids that no real repository
+// contains. GitCommitResolver is the production implementation.
+type CommitResolver func(sha string) (bool, error)
 
 // Concern kinds. There is exactly one, and it can only ever subtract.
 const (
@@ -1317,7 +1334,11 @@ type CaptureBindingAssessment struct {
 }
 
 // AssessCaptureBinding decides whether a capture provenance binds the run.
-func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCaptureProvenance) CaptureBindingAssessment {
+//
+// resolve is how the binding's candidate-repository commit ids are checked for
+// existing. It is required: a nil resolver leaves every id unresolved and the
+// capture unbound.
+func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCaptureProvenance, resolve CommitResolver) CaptureBindingAssessment {
 	assessment := CaptureBindingAssessment{CaptureVersion: p.CaptureVersion}
 	if strings.TrimSpace(p.CaptureVersion) == "" {
 		assessment.Reasons = append(assessment.Reasons, "no capture provenance was recorded: there is no evidence of the transport, the indexed checkout, the embedder or the candidate the rated bytes came from")
@@ -1369,6 +1390,19 @@ func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCapturePro
 			assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the candidate binding records %s %q, which is not a 40-character commit id; a binding that does not name a commit binds nothing", id.name, id.value))
 		}
 	}
+	// Well-shaped is not the same as real. A binding naming forty hex
+	// characters that resolve to no commit — a stale id, one the repository has
+	// since garbage-collected, or a field a bug wrote the wrong value into —
+	// passed every check above and read as bound. That is the ERROR class this
+	// procedure covers (docs/eval/retrieval/threat-model.md), and no bad intent
+	// is needed to produce it, so the ids are resolved rather than parsed.
+	//
+	// Only the candidate-repository ids are resolvable here. checkout_sha and
+	// the provenance's repo_sha name commits in the INDEXED CORPUS repository,
+	// which is not present when the decision is taken; they are checked for
+	// shape above and for agreeing with each other below, and the threat model
+	// records that their existence is not resolved at this step.
+	assessment.Reasons = append(assessment.Reasons, unresolvedBindingCommits(binding, resolve)...)
 	frozenRunDir, err := RunDirectoryFromPreconditionRecord(precondition)
 	switch {
 	case err != nil:
@@ -1394,6 +1428,35 @@ func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCapturePro
 	}
 	assessment.Bound = len(assessment.Reasons) == 0
 	return assessment
+}
+
+// unresolvedBindingCommits names every candidate-repository commit id in the
+// binding that does not resolve to a commit.
+//
+// A malformed id is skipped here because the shape check has already named it;
+// reporting it twice would say nothing new. A resolver that errors is treated
+// as a failure to establish existence, not as existence: when the decision
+// cannot establish something, it refuses.
+func unresolvedBindingCommits(binding *CandidateBinding, resolve CommitResolver) []string {
+	if resolve == nil {
+		return []string{"the binding's commit ids were not resolved against any repository, so nothing establishes that the commits it names exist; a decision taken without a commit resolver cannot bind a capture"}
+	}
+	var reasons []string
+	for _, id := range []struct{ name, value string }{
+		{"candidate_sha", binding.CandidateSHA},
+		{"frozen_candidate_sha", binding.FrozenCandidateSHA},
+	} {
+		if !isLowerHexDigest(id.value, 40) {
+			continue
+		}
+		switch exists, err := resolve(id.value); {
+		case err != nil:
+			reasons = append(reasons, fmt.Sprintf("the candidate binding's %s %s could not be resolved to a commit: %v", id.name, id.value, err))
+		case !exists:
+			reasons = append(reasons, fmt.Sprintf("the candidate binding records %s %s, which resolves to no commit in this repository; a well-shaped commit id that does not exist binds the capture to nothing", id.name, id.value))
+		}
+	}
+	return reasons
 }
 
 // ValidateGradingConcerns refuses a concern that names material which does not
@@ -1532,7 +1595,7 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 	}
 	out.DisclosedGradingConcerns = append(out.DisclosedGradingConcerns, a.GradingConcerns...)
 	out.CorrectedPassCount = out.PassCount - len(a.GradingConcerns)
-	out.CaptureBinding = AssessCaptureBinding(a.Precondition, a.CaptureProvenance)
+	out.CaptureBinding = AssessCaptureBinding(a.Precondition, a.CaptureProvenance, a.ResolveCommit)
 
 	// The release is taken on the SMALLER of the reviewed and corrected
 	// counts, so disclosing a concern can only ever move the decision towards

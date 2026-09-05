@@ -151,6 +151,7 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 		Precondition:      precondition,
 		PreRegistration:   pre,
 		CaptureProvenance: fixtureCaptureProvenance(precondition),
+		ResolveCommit:     fixtureCommitResolver(),
 	}
 	for i, spec := range specs {
 		prq := pre.Queries[i]
@@ -285,6 +286,14 @@ func fixtureCaptureProvenance(precondition PreconditionRecord) CandidateCaptureP
 			CheckoutWorktreeClean:  true,
 		},
 	}
+}
+
+// fixtureCommitResolver resolves exactly the commit ids the fixtures name, and
+// nothing else. It is the seam the decision reaches git through; a fixture
+// whose ids no real repository contains would otherwise be unbindable.
+func fixtureCommitResolver() CommitResolver {
+	known := map[string]bool{fixtureCandidate: true}
+	return func(sha string) (bool, error) { return known[sha], nil }
 }
 
 // matchingComparison is the end-of-run comparison for an unchanged tree.

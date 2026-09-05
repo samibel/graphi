@@ -163,6 +163,9 @@ func TestQrelBlindSmoke_CommittedRunRevalidatesFromItsOwnArtifacts(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Revalidate the way `decide` decides: with a real commit resolver, so the
+	// binding assessment recomputed here is the one the command would produce.
+	artifacts.ResolveCommit = GitCommitResolver(root)
 	var recorded EvaluationOutcome
 	raw, err := os.ReadFile(filepath.Join(dir, BlindEvalOutcomeFile))
 	if err != nil {
@@ -197,6 +200,67 @@ func TestQrelBlindSmoke_CommittedRunRevalidatesFromItsOwnArtifacts(t *testing.T)
 	}
 	if recorded.Interval.MeetsFloor {
 		t.Errorf("the observed interval claims to clear the floor at %d/%d", recorded.PassCount, recorded.N)
+	}
+}
+
+// The boundary of what this evidence establishes is stated where the numbers
+// are read, not only in a decision record nobody following a claim will open.
+//
+// The owner bounded the threat model rather than keep hardening a class three
+// review rounds failed to close, and the price of that is a disclosure sentence
+// that travels with the result. This requires the threat model to exist and
+// both of the run's own documents to point at it and carry the sentence, so a
+// later regeneration or edit that drops either fails here.
+func TestQrelBlindSmoke_CommittedDocumentsCarryTheThreatModelDisclosure(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	// A document wraps its lines and quotes the sentence in a blockquote, and a
+	// sentence split across a line break is still that sentence. Compare on the
+	// unwrapped text, the way the wording checker already does.
+	unwrapped := func(text string) string {
+		lines := strings.Split(text, "\n")
+		for i, line := range lines {
+			lines[i] = strings.TrimPrefix(strings.TrimSpace(line), "> ")
+		}
+		return collapseWhitespace(strings.Join(lines, " "))
+	}
+	disclosure := collapseWhitespace(QrelBlindSmokeDisclosure)
+
+	threatModel, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(ThreatModelPath)))
+	if err != nil {
+		t.Fatalf("the threat model the run's documents cite is missing: %v", err)
+	}
+	threatModelText := unwrapped(string(threatModel))
+	if !strings.Contains(threatModelText, disclosure) {
+		t.Errorf("%s no longer carries the disclosure sentence verbatim", ThreatModelPath)
+	}
+	for _, required := range []string{
+		"error, accident and drift",
+		"deliberate falsification by someone with write access",
+		"cmd/retrieval-eval/blindeval.go:485",
+		"filepath.EvalSymlinks",
+		"required before any run that reports `RELEASE: YES` is published",
+		"raw per-query data and the scoring code",
+	} {
+		if !strings.Contains(threatModelText, collapseWhitespace(required)) {
+			t.Errorf("%s no longer states %q", ThreatModelPath, required)
+		}
+	}
+
+	for _, name := range []string{"METHOD.md", BlindEvalReadmeFile} {
+		body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(blindEvalRunDir), name))
+		if err != nil {
+			t.Fatalf("the committed run has no %s: %v", name, err)
+		}
+		text := unwrapped(string(body))
+		if !strings.Contains(text, ThreatModelPath) {
+			t.Errorf("%s does not point at %s", name, ThreatModelPath)
+		}
+		if !strings.Contains(text, disclosure) {
+			t.Errorf("%s does not carry the disclosure sentence verbatim", name)
+		}
+		if !strings.Contains(text, "RELEASE: YES") {
+			t.Errorf("%s does not state when the deferred containment gap comes due", name)
+		}
 	}
 }
 

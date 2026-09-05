@@ -406,6 +406,11 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	// The binding's candidate-repository commit ids are resolved against this
+	// repository. Without a resolver the capture cannot bind at all, so this is
+	// supplied here rather than loaded from the run directory: the run
+	// directory is the one place the ids being checked came from.
+	artifacts.ResolveCommit = retrieval.GitCommitResolver(o.root)
 	// And it must be the directory this run was frozen into, which the
 	// precondition record names.
 	if _, err := blindEvalRunDirectory(o.root, o.dir, artifacts.Precondition); err != nil {

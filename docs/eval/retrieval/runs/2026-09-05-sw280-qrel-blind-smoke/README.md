@@ -24,6 +24,27 @@ not as a number no rater could have inflated.
 Its pass count is a separate gate. The pass count does not enter the token estimand or its
 interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 
+## What this evidence is designed to establish, and what it is not
+
+> The evidence for this number is designed to detect error, accident and drift. It is **not** designed to detect deliberate falsification by someone with write access to this repository, and it should not be read as establishing that none occurred.
+
+The threat model this procedure is built to is `docs/eval/retrieval/threat-model.md`.
+It defends against **error, accident and drift** — a stale or programmatically wrong value, an
+artifact deleted or overwritten without intent, a frozen input changing under a run. It does
+**not** defend against deliberate falsification by someone with write access to this repository,
+and no check that lives inside the repository can: that actor owns the repository, can author any
+commit and can rewrite any history.
+
+The threat model records the controls that remain in force, and records one known open
+gap deferred by an explicit owner decision — the run directory's containment check is lexical and
+does not resolve symlinks. It is out of scope for this run, which fails by 26 passes and whose
+outcome no relocated artifact could reach, and it is required before any run reporting
+`RELEASE: YES` is published.
+
+What binds an author is what a reader can recompute from outside: the committed digests below,
+this run directory's git history, byte-identical reproduction from the committed inputs, and —
+above all — publication of the raw per-query data and the scoring code.
+
 ## Result
 
 | quantity | value |
@@ -134,7 +155,7 @@ Counts are authoritative; each stratum states its own `1/n` resolution.
 | grading_rubric | `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | true |
 | methodology | `docs/eval/retrieval/methodology.md` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | true |
 
-Compared at 2026-09-05T19:01:45Z. All match: true.
+Compared at 2026-09-05T20:32:21Z. All match: true.
 
 ## Capture provenance
 
