@@ -4,9 +4,22 @@ Contract: `sw280-qrel-blind-smoke-evaluation/1`. Measurement contract: `sw266-me
 
 ## What this is, and what it is not
 
-This is a **qrel-blind smoke evaluation**. The raters saw our bundle format and our question set, and answered from
-the query text and the exact serialized `task_context/2` bundle alone. It is not a system-blind
+This is a **qrel-blind smoke evaluation**. The raters saw our bundle format and our question set, and were given
+the query text and the exact serialized `task_context/2` bundle. It is not a system-blind
 evaluation, not a human panel, and not an estimate of general answerability.
+
+**Blindness here is instruction-enforced, not sandbox-enforced.** Each rater was a subagent with
+file tools, running in a checkout that contains the answer key for all of these questions
+(`internal/eval/retrieval/testdata/datasets/cobra-v2.json` carries every grade-3 span), and it was
+instructed to read exactly one file. Nothing prevented a rater from reading more; an instruction
+discouraged it. No tool-call transcript was preserved, so this cannot be checked after the fact.
+What can be checked, and was: every committed prompt rebuilds byte-for-byte from the
+pre-registered bundle and question and carries no judgement, qrel, expected answer or rubric.
+What the behaviour shows, and it points away from peeking: 38 of the 128 primary responses
+declined with `INSUFFICIENT`, and the graded outcomes agree with a naive "was a grade-3 span
+inside a retrieved snippet?" predictor on 54 of the 64 queries. A panel holding the key would
+not produce that shape. Treat the count as a smoke reading taken under instructed blindness,
+not as a number no rater could have inflated.
 
 Its pass count is a separate gate. The pass count does not enter the token estimand or its
 interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
@@ -17,7 +30,8 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 |---|---|
 | answerable holdout population `N` | 64 |
 | pre-registered minimum passing count `k` | 56 |
-| observed pass count | 31 |
+| observed pass count (as reviewed) | 31 |
+| **corrected pass count** (disclosed concerns subtracted) | **30** |
 | observed incidence | 31/64 (resolution 1/64) |
 | observed pass rate | 48.4% |
 | exact Clopper-Pearson 95% interval | [0.357501996719, 0.612741191779] |
@@ -28,6 +42,33 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 | **RELEASE** | **NO** |
 
 - 31 of 64 queries passed, below the pre-registered k=56; there is no override, exception or waiver
+- 1 counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is 31 of 64 and the corrected count is 30 of 64, and the release is decided on the smaller of the two
+- the capture is not bound: the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes
+
+## Disclosed grading concerns — counted passes that the bundle-only rule does not support
+
+These are **not** re-grades. A silent re-grade is the retry loop this evaluation exists to
+exclude, so nothing below changes a grade, a response or a query outcome. Each entry subtracts
+one from the corrected count, and the release is decided on whichever count is smaller.
+
+### ci-1086 — counted_pass_not_supported
+
+ci-1086 is counted as a pass, and the bundle-only rule does not support it. The reviewed grade-3 operation is pflag's Changed (internal/eval/retrieval/testdata/datasets/cobra-v2.json), and the captured task_context/2 bundle for ci-1086 does not contain it. Both primaries were nevertheless graded pass. The query is NOT re-graded here: a grade that is already sealed is never re-sealed, and quietly correcting one is exactly the retry loop the append-only seal exists to exclude. It is disclosed instead, and it subtracts one from the corrected count.
+
+- primary rater 2 states in its own response that the bundle does not show `.Changed` or `Flags().Changed`, and answers around the absence
+- primary rater 1 supplies `Changed` by analogy rather than from the bundle, and grade 5b1bb46b's own rationale acknowledges that the operation was reached by inference
+- the grade-3 answer span for ci-1086 names pflag.Changed, which does not appear anywhere in the preserved bundle bytes
+- raised by the SW-280 round-1 review (Codex, blocking finding 5); independently reproduced against the committed response, grade and bundle artifacts
+
+- grades concerned: `5b1bb46b4589a195403c17e5176074a28d151b8090efd05d9fd33bf62056108a`, `345e75760fc58917f5ebef1034779a0dd04d5ddfe486608282857822b3f3b0df`
+- raised by SW-280 round-1 independent review (Codex), reproduced by the round-1 fix pass at 2026-09-05T00:00:00Z
+
+## Capture binding
+
+**The rated bytes are NOT bound to the commits this run names, and that alone forces
+`RELEASE: NO`.** Recording a commit is not binding to it:
+
+- the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes
 
 ## How `k` was derived, before any response was opened
 
@@ -39,6 +80,14 @@ at least `3/4`. It was derived by code from `N`, not written into this document.
 - `k-1` = 55, whose lower bound is 0.749763164375 — below the floor, which is what fixes `k`
 - method: two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64
 - pre-registered at 2026-09-05T13:39:51Z, naming precondition record `c175fbf70391bee6c9bc2ef5fdec18814b3f1ef7730af94fb8c83bf3a08c4012` at commit `e48a1ba397392b30a1cecbbdfb4076a9bab61eff`
+- **`precondition_record_commit` above is not the commit that contains the precondition record.**
+  This run was captured by `sw280-candidate-mcp-capture/1`, which copied the record's own `freeze_commit` — the candidate
+  commit at freeze time — into a field whose name promises the containing commit. An auditor
+  following it will not find the record there. Recover the true commit with
+  `git log --diff-filter=A --format=%H -- <run dir>/precondition-record.json`. The field cannot be
+  corrected in place: the pre-registration is content-addressed and all 128 responses name that
+  address, so rewriting it would destroy the ordering evidence it exists to provide. `sw280-candidate-mcp-capture/2`
+  resolves the containing commit from git and refuses to pre-register an uncommitted record.
 
 ## Per-stratum counts
 
@@ -85,7 +134,7 @@ Counts are authoritative; each stratum states its own `1/n` resolution.
 | grading_rubric | `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | true |
 | methodology | `docs/eval/retrieval/methodology.md` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | true |
 
-Compared at 2026-09-05T14:10:13Z. All match: true.
+Compared at 2026-09-05T16:24:18Z. All match: true.
 
 ## Capture provenance
 

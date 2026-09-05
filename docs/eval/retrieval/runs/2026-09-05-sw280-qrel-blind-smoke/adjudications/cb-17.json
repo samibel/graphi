@@ -26,9 +26,12 @@
     "query_id": "cb-17",
     "adjudicator_response_sha256": "7eb96ae673ff1d0b75063951a60adda57fe9d339fd8b239857ff39c4e938e990",
     "disclosed_artifact_sha256": [
-      "e5c00644d379b9d69ea7676a22cf917726db0fa5a8c9c4970708135481153fa3",
-      "815a2550c3af632eeb34a0994b2d1975d9e1b42b8d9c6a4b4452913bc81904e1"
+      "3f97a2ded23b428572a331494f83de4ae89b36782aa84a41fe0caef83e7964d0",
+      "815a2550c3af632eeb34a0994b2d1975d9e1b42b8d9c6a4b4452913bc81904e1",
+      "c9cea7fda89ec5fa9aab0b76bf00c7c080b478003ab99b341bdfccdcb9720c63",
+      "e5c00644d379b9d69ea7676a22cf917726db0fa5a8c9c4970708135481153fa3"
     ],
-    "disclosed_at": "2026-09-05T14:08:25Z"
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
   }
 }

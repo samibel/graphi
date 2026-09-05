@@ -1,7 +1,10 @@
 package retrieval
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -144,7 +147,11 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 		t.Fatal(err)
 	}
 
-	artifacts := EvaluationArtifacts{Precondition: precondition, PreRegistration: pre}
+	artifacts := EvaluationArtifacts{
+		Precondition:      precondition,
+		PreRegistration:   pre,
+		CaptureProvenance: fixtureCaptureProvenance(precondition),
+	}
 	for i, spec := range specs {
 		prq := pre.Queries[i]
 		for slot, participant := range primaries {
@@ -160,8 +167,13 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 		adjResponse := newFixtureResponse(t, pre, prq, adjudicator, RaterRoleAdjudicator, spec.adjStatus, fixtureAdjudicate)
 		disclosed := []string{}
 		for _, r := range artifacts.Responses {
-			if r.QueryID == spec.queryID {
+			if r.QueryID == spec.queryID && r.Role == RaterRolePrimary {
 				disclosed = append(disclosed, r.SHA256)
+				for _, g := range artifacts.Grades {
+					if g.ResponseSHA256 == r.SHA256 {
+						disclosed = append(disclosed, g.SHA256)
+					}
+				}
 			}
 		}
 		artifacts.Adjudications = append(artifacts.Adjudications, Adjudication{
@@ -171,7 +183,8 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 				QueryID:                   spec.queryID,
 				AdjudicatorResponseSHA256: adjResponse.SHA256,
 				DisclosedArtifactSHA256:   disclosed,
-				DisclosedAt:               fixtureDiscloseAt.Format(time.RFC3339),
+				OrderingEvidence:          DisclosureOrderingEvidence,
+				Limitation:                DisclosureLimitation,
 			},
 		})
 		if spec.adjStatus == ResponseStatusAnswered {
@@ -236,6 +249,42 @@ func newFixtureGrade(t *testing.T, grader Participant, response RaterResponse, o
 		t.Fatal(err)
 	}
 	return sealed
+}
+
+// fixtureCaptureProvenance is a COMPLETE provenance, including the candidate
+// binding. Every fixture carries one, because an incomplete provenance is a
+// release refusal: the at-threshold RELEASE: YES case used to construct none at
+// all, which meant the passing path was never exercised with the evidence a
+// release actually requires.
+func fixtureCaptureProvenance(precondition PreconditionRecord) CandidateCaptureProvenance {
+	return CandidateCaptureProvenance{
+		CaptureVersion:    CandidateCaptureVersion,
+		Transport:         "fixture transport",
+		Surface:           "fixture surface",
+		Boundary:          string(PayloadBoundaryCandidate),
+		RepoName:          "cobra",
+		RepoSHA:           "a0a6ae020bb3899ff0276067863e50523f897370",
+		DatasetSHA256:     precondition.DatasetSHA256,
+		EmbedderSelector:  "static:fixture@0",
+		ModelFingerprint:  "static:fixture@0:fixture",
+		IndexFingerprint:  "fixture-index",
+		GenerationID:      "g-fixture",
+		PersistedVectors:  1,
+		SemanticState:     "ready",
+		TokenBudget:       SavingsCandidateBudget,
+		MethodVersion:     "task_context/2",
+		TokenizerID:       "tiktoken:cl100k_base:ordinary",
+		TokenizerVocabSHA: fixtureVocabSHA,
+		Binding: &CandidateBinding{
+			CandidateSHA:           precondition.CandidateSHA,
+			FrozenCandidateSHA:     precondition.CandidateSHA,
+			CandidateWorktreeClean: true,
+			CandidateMatchesFrozen: true,
+			CandidateExcludedPath:  "docs/eval/retrieval/runs/fixture",
+			CheckoutSHA:            "a0a6ae020bb3899ff0276067863e50523f897370",
+			CheckoutWorktreeClean:  true,
+		},
+	}
 }
 
 // matchingComparison is the end-of-run comparison for an unchanged tree.
@@ -784,11 +833,45 @@ func TestQrelBlindSmoke_AdjudicationOrderRefusals(t *testing.T) {
 			wantSub: "does not prove it followed the response",
 		},
 		{
-			name: "a disclosure stamped before the adjudicator answered",
+			// The removed disclosed_at check is replaced by one that cannot be
+			// satisfied by construction: the disclosure must name the GRADES
+			// that produced the disagreement, not only the two responses.
+			name: "a disclosure that names the primary responses but not their grades",
 			mutate: func(a *EvaluationArtifacts) {
-				a.Adjudications[0].Disclosure.DisclosedAt = fixtureAdjudicate.Add(-time.Hour).Format(time.RFC3339)
+				gradeSHAs := map[string]bool{}
+				for _, g := range a.Grades {
+					gradeSHAs[g.SHA256] = true
+				}
+				var kept []string
+				for _, sha := range a.Adjudications[0].Disclosure.DisclosedArtifactSHA256 {
+					if !gradeSHAs[sha] {
+						kept = append(kept, sha)
+					}
+				}
+				a.Adjudications[0].Disclosure.DisclosedArtifactSHA256 = kept
 			},
-			wantSub: "predates the adjudicator response",
+			wantSub: "without naming grade",
+		},
+		{
+			name: "a disclosure that omits one of the primary responses it resolved",
+			mutate: func(a *EvaluationArtifacts) {
+				a.Adjudications[0].Disclosure.DisclosedArtifactSHA256 = a.Adjudications[0].Disclosure.DisclosedArtifactSHA256[1:]
+			},
+			wantSub: "the disclosure must name",
+		},
+		{
+			name: "a disclosure that paraphrases the fixed limitation instead of carrying it",
+			mutate: func(a *EvaluationArtifacts) {
+				a.Adjudications[0].Disclosure.Limitation = "the adjudicator was blind"
+			},
+			wantSub: "fixed limitation statement",
+		},
+		{
+			name: "a disclosure that drops the ordering-evidence statement",
+			mutate: func(a *EvaluationArtifacts) {
+				a.Adjudications[0].Disclosure.OrderingEvidence = ""
+			},
+			wantSub: "fixed ordering-evidence statement",
 		},
 		{
 			name: "a disclosure that records nothing",
@@ -1085,5 +1168,425 @@ func TestQrelBlindSmoke_PreRegisteredPopulationMustEqualN(t *testing.T) {
 	}
 	if err := ValidatePreRegistration(sealed); err == nil {
 		t.Fatal("a pre-registration holding fewer queries than N was accepted")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Round-1 review fixes: the refusals that close the retry loop, the unbound
+// capture, the unresolved prompt and the disclosed-concern arithmetic.
+// ---------------------------------------------------------------------------
+
+// B1: sealing is append-only. This is the exact loop the review reproduced —
+// change a raw FAIL to PASS, re-seal, and watch the sealed grade be replaced in
+// place — expressed at the writer, which is where it was possible.
+func TestQrelBlindSmoke_SealingIsAppendOnly(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "grade.json")
+	grade := newFixtureGrade(t, Participant{ID: "g", Role: "grader", Provider: "p", Model: "m"},
+		newFixtureResponse(t, PreRegistration{SHA256: fixtureRubricSHA}, PreRegisteredQuery{QueryID: "q-1"},
+			Participant{ID: "r", Role: RaterRolePrimary, Provider: "p", Model: "m"}, RaterRolePrimary, ResponseStatusAnswered, fixtureRespondAt),
+		GradeOutcomeFail, fixtureGradeAt)
+	if err := WriteBlindEvalJSONWriteOnce("grade", path, grade); err != nil {
+		t.Fatal(err)
+	}
+	// Re-sealing the SAME material is idempotent, because every field the seal
+	// derives comes from the raw file rather than from the clock.
+	if err := WriteBlindEvalJSONWriteOnce("grade", path, grade); err != nil {
+		t.Fatalf("re-sealing identical material must be idempotent: %v", err)
+	}
+	flipped := grade
+	flipped.Outcome = GradeOutcomePass
+	flipped, err := SealGrade(flipped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = WriteBlindEvalJSONWriteOnce("grade", path, flipped)
+	if err == nil {
+		t.Fatal("re-sealing a DIFFERENT grade over an existing one was accepted; that is the retry loop that turns RELEASE: NO into RELEASE: YES one edit at a time")
+	}
+	if !strings.Contains(err.Error(), "append-only") {
+		t.Errorf("refusal %q does not say the seal is append-only", err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"outcome": "fail"`) {
+		t.Error("the sealed grade on disk was changed by a refused write")
+	}
+}
+
+// B1: an adjudicator's ANSWER is written once. Its disclosure half is derived
+// from append-only artifacts and may be recomputed, so the check is on the
+// response digest rather than on the file's bytes.
+func TestQrelBlindSmoke_AnAdjudicatorAnswerIsWrittenOnce(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "adj.json")
+	pre := PreRegistration{SHA256: fixtureRubricSHA}
+	prq := PreRegisteredQuery{QueryID: "q-1"}
+	who := Participant{ID: "adj", Role: RaterRoleAdjudicator, Provider: "p", Model: "m"}
+	first := Adjudication{QueryID: "q-1", Response: newFixtureResponse(t, pre, prq, who, RaterRoleAdjudicator, ResponseStatusAnswered, fixtureAdjudicate)}
+	if err := WriteSealedAdjudication(path, first); err != nil {
+		t.Fatal(err)
+	}
+	// The disclosure may be recomputed over the same answer.
+	recomputed := first
+	recomputed.Disclosure = DisclosureRecord{QueryID: "q-1", AdjudicatorResponseSHA256: first.Response.SHA256,
+		DisclosedArtifactSHA256: []string{fixtureRubricSHA}, OrderingEvidence: DisclosureOrderingEvidence, Limitation: DisclosureLimitation}
+	if err := WriteSealedAdjudication(path, recomputed); err != nil {
+		t.Fatalf("recomputing a derived disclosure over the same answer must be allowed: %v", err)
+	}
+	second := first
+	second.Response.Text = "on reflection, the bundle did answer it"
+	sealed, err := SealRaterResponse(second.Response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second.Response = sealed
+	if err := WriteSealedAdjudication(path, second); err == nil {
+		t.Fatal("a second adjudicator answer replaced the first")
+	} else if !strings.Contains(err.Error(), "written once") {
+		t.Errorf("refusal %q does not say an adjudicator answer is written once", err)
+	}
+}
+
+// B2: recording a commit is not binding to it. Each subtest breaks exactly one
+// of the observations and asserts the capture refuses.
+func TestQrelBlindSmoke_CandidateBindingRefusals(t *testing.T) {
+	const frozen = "0123456789abcdef0123456789abcdef01234567"
+	const head = "89abcdef0123456789abcdef0123456789abcdef"
+	options := CandidateBindingOptions{
+		CandidateRoot: "/candidate", FrozenCandidateSHA: frozen,
+		ExcludePath: "docs/eval/retrieval/runs/x", CheckoutRoot: "/cobra", CheckoutSHA: "aaaa",
+	}
+	cleanProbe := func(dirty map[string]bool, differing []string) RepoProbe {
+		return RepoProbe{
+			HeadSHA: func(_ context.Context, root string) (string, error) { return head, nil },
+			WorktreeClean: func(_ context.Context, root string) (bool, error) {
+				return !dirty[root], nil
+			},
+			PathsDifferingOutside: func(_ context.Context, root, from, to, exclude string) ([]string, error) {
+				return differing, nil
+			},
+		}
+	}
+	t.Run("a clean, matching pair binds", func(t *testing.T) {
+		binding, err := ObserveCandidateBinding(context.Background(), cleanProbe(nil, nil), options)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !binding.CandidateMatchesFrozen || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean {
+			t.Fatalf("binding = %+v", binding)
+		}
+	})
+	for _, tc := range []struct {
+		name      string
+		dirty     map[string]bool
+		differing []string
+		wantSub   string
+	}{
+		{
+			// The review's scenario: edit graphi without committing until
+			// retrieval returns the expected answers, capture, then restore.
+			name:    "the candidate worktree has uncommitted changes",
+			dirty:   map[string]bool{"/candidate": true},
+			wantSub: "candidate worktree at /candidate has uncommitted changes",
+		},
+		{
+			name:    "the indexed checkout has uncommitted changes",
+			dirty:   map[string]bool{"/cobra": true},
+			wantSub: "indexed checkout at /cobra has uncommitted changes",
+		},
+		{
+			name:      "the candidate tree differs from the frozen candidate",
+			differing: []string{"engine/retrieval/rank.go"},
+			wantSub:   "differs from the frozen candidate",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ObserveCandidateBinding(context.Background(), cleanProbe(tc.dirty, tc.differing), options)
+			if err == nil {
+				t.Fatal("the capture bound itself to a commit it had not checked")
+			}
+			if !strings.Contains(err.Error(), tc.wantSub) {
+				t.Errorf("refusal %q does not mention %q", err, tc.wantSub)
+			}
+		})
+	}
+	t.Run("an incomplete probe is refused rather than assumed clean", func(t *testing.T) {
+		if _, err := ObserveCandidateBinding(context.Background(), RepoProbe{}, options); err == nil {
+			t.Fatal("a capture with no way to observe the worktrees reported a binding")
+		}
+	})
+}
+
+// M3 and B2 at the decision: a run whose capture provenance is absent, or whose
+// provenance carries no candidate binding, cannot release — including on the
+// path that would otherwise be RELEASE: YES.
+func TestQrelBlindSmoke_AnUnboundCaptureCannotRelease(t *testing.T) {
+	specs := make([]blindEvalSpec, 0, 13)
+	for i := 0; i < 13; i++ {
+		specs = append(specs, passPass(fmt.Sprintf("hq-%02d", i+1)))
+	}
+	base := buildBlindEvalArtifacts(t, specs)
+	if outcome, err := EvaluateQrelBlindSmoke(base, matchingComparison(t, base.Precondition)); err != nil {
+		t.Fatal(err)
+	} else if outcome.Release != ReleaseYes {
+		t.Fatalf("the bound control did not release: %v", outcome.Reasons)
+	}
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*EvaluationArtifacts)
+		wantSub string
+	}{
+		{
+			name:    "no capture provenance at all",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance = CandidateCaptureProvenance{} },
+			wantSub: "no capture provenance was recorded",
+		},
+		{
+			name:    "provenance with no candidate binding",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance.Binding = nil },
+			wantSub: "recorded no candidate binding",
+		},
+		{
+			name:    "a binding taken over a dirty candidate worktree",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance.Binding.CandidateWorktreeClean = false },
+			wantSub: "candidate worktree was not clean at capture",
+		},
+		{
+			name:    "a binding taken over a dirty indexed checkout",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance.Binding.CheckoutWorktreeClean = false },
+			wantSub: "indexed checkout's worktree was not clean at capture",
+		},
+		{
+			name: "a binding against a candidate other than the frozen one",
+			mutate: func(a *EvaluationArtifacts) {
+				a.CaptureProvenance.Binding.FrozenCandidateSHA = "ffffffffffffffffffffffffffffffffffffffff"
+			},
+			wantSub: "but the precondition record froze",
+		},
+		{
+			name:    "a capture over a dataset other than the frozen one",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance.DatasetSHA256 = fixtureRubricSHA },
+			wantSub: "but " + fixtureDatasetSHA + " was frozen",
+		},
+		{
+			name:    "a capture at a budget other than the frozen one",
+			mutate:  func(a *EvaluationArtifacts) { a.CaptureProvenance.TokenBudget = 4000 },
+			wantSub: "but 1200 was frozen",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			artifacts := buildBlindEvalArtifacts(t, specs)
+			tc.mutate(&artifacts)
+			outcome, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if outcome.Release != ReleaseNo {
+				t.Fatalf("release = %s over an unbound capture", outcome.Release)
+			}
+			if outcome.CaptureBinding.Bound {
+				t.Error("the outcome reports the capture as bound")
+			}
+			joined := strings.Join(outcome.Reasons, " | ")
+			if !strings.Contains(joined, tc.wantSub) {
+				t.Errorf("reasons %q do not mention %q", joined, tc.wantSub)
+			}
+		})
+	}
+}
+
+// B5: a disclosed concern subtracts and can never add. There is no shape of
+// concern that raises a count, and one raised against anything but a counted
+// pass is refused.
+func TestQrelBlindSmoke_ADisclosedConcernOnlyEverSubtracts(t *testing.T) {
+	specs := make([]blindEvalSpec, 0, 13)
+	for i := 0; i < 12; i++ {
+		specs = append(specs, passPass(fmt.Sprintf("hq-%02d", i+1)))
+	}
+	specs = append(specs, failFail("hq-13"))
+	concern := func(queryID string, artifacts EvaluationArtifacts) GradingConcern {
+		var grades []string
+		for _, g := range artifacts.Grades {
+			if g.QueryID == queryID {
+				grades = append(grades, g.SHA256)
+			}
+		}
+		return GradingConcern{
+			QueryID: queryID, Kind: ConcernCountedPassNotSupported, GradeSHA256: grades,
+			Summary: "the bundle does not carry the reviewed operation", Evidence: []string{"fixture evidence"},
+			RaisedBy: "fixture review", RaisedAt: fixtureDiscloseAt.Format(time.RFC3339),
+		}
+	}
+	t.Run("a concern against a counted pass lowers the corrected count and the release", func(t *testing.T) {
+		artifacts := buildBlindEvalArtifacts(t, specs)
+		before, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if before.PassCount != 12 || before.Release != ReleaseNo {
+			t.Fatalf("control: pass=%d release=%s", before.PassCount, before.Release)
+		}
+		artifacts.GradingConcerns = []GradingConcern{concern("hq-01", artifacts)}
+		after, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if after.PassCount != 12 {
+			t.Errorf("the reviewed count moved to %d; a concern re-grades nothing", after.PassCount)
+		}
+		if after.CorrectedPassCount != 11 {
+			t.Errorf("corrected count = %d, want 11", after.CorrectedPassCount)
+		}
+		if after.Release != ReleaseNo {
+			t.Errorf("release = %s", after.Release)
+		}
+	})
+	t.Run("a concern cannot be raised against a counted failure", func(t *testing.T) {
+		artifacts := buildBlindEvalArtifacts(t, specs)
+		artifacts.GradingConcerns = []GradingConcern{concern("hq-13", artifacts)}
+		_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+		if err == nil {
+			t.Fatal("a concern was accepted against a query that failed; that is a re-grade in the other direction")
+		}
+		if !strings.Contains(err.Error(), "never converts a failure") {
+			t.Errorf("refusal %q", err)
+		}
+	})
+	t.Run("no concern kind can raise a count", func(t *testing.T) {
+		artifacts := buildBlindEvalArtifacts(t, specs)
+		c := concern("hq-13", artifacts)
+		c.Kind = "counted_failure_should_have_passed"
+		artifacts.GradingConcerns = []GradingConcern{c}
+		_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+		if err == nil || !strings.Contains(err.Error(), "only permitted kind") {
+			t.Fatalf("a concern kind other than the one that subtracts was accepted: %v", err)
+		}
+	})
+	t.Run("a concern naming a grade that does not exist is refused", func(t *testing.T) {
+		artifacts := buildBlindEvalArtifacts(t, specs)
+		c := concern("hq-01", artifacts)
+		c.GradeSHA256 = []string{fixtureRubricSHA}
+		artifacts.GradingConcerns = []GradingConcern{c}
+		_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+		if err == nil || !strings.Contains(err.Error(), "resolves to no grade") {
+			t.Fatalf("a concern over material that does not exist was accepted: %v", err)
+		}
+	})
+}
+
+// M2: the slot name is not the identity. A different provider or model under a
+// pre-registered slot is refused, for raters, graders and the adjudicator.
+func TestQrelBlindSmoke_ParticipantIdentitiesAreBoundToTheirArtifacts(t *testing.T) {
+	specs := make([]blindEvalSpec, 0, 13)
+	for i := 0; i < 12; i++ {
+		specs = append(specs, passPass(fmt.Sprintf("hq-%02d", i+1)))
+	}
+	specs = append(specs, blindEvalSpec{queryID: "hq-13", stratum: StratumNLBehaviour,
+		status:    [2]string{ResponseStatusAnswered, ResponseStatusAnswered},
+		grades:    [2]string{GradeOutcomePass, GradeOutcomeFail},
+		adjStatus: ResponseStatusAnswered, adjGrade: GradeOutcomePass})
+	for _, tc := range []struct {
+		name    string
+		mutate  func(*EvaluationArtifacts)
+		wantSub string
+	}{
+		{
+			name: "a response re-sealed under a different model",
+			mutate: func(a *EvaluationArtifacts) {
+				a.Responses[0].Model = "some-other-model"
+				sealed, err := SealRaterResponse(a.Responses[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+				a.Responses[0] = sealed
+			},
+			wantSub: "the slot name is not the identity",
+		},
+		{
+			name: "grades supplied under the declared grader slot by a different provider",
+			mutate: func(a *EvaluationArtifacts) {
+				a.Grades[0].Provider = "somebody else"
+				sealed, err := SealGrade(a.Grades[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+				a.Grades[0] = sealed
+			},
+			wantSub: "the slot name is not the identity",
+		},
+		{
+			name: "an adjudicator answer under the declared slot by a different model",
+			mutate: func(a *EvaluationArtifacts) {
+				was := a.Adjudications[0].Response.SHA256
+				a.Adjudications[0].Response.Model = "some-other-model"
+				sealed, err := SealRaterResponse(a.Adjudications[0].Response)
+				if err != nil {
+					t.Fatal(err)
+				}
+				a.Adjudications[0].Response = sealed
+				a.Adjudications[0].Disclosure.AdjudicatorResponseSHA256 = sealed.SHA256
+				// Re-point its grade too, so the ONLY thing left wrong is the
+				// identity: an attack that re-seals cleanly is the one worth
+				// refusing.
+				for i, g := range a.Grades {
+					if g.ResponseSHA256 != was {
+						continue
+					}
+					g.ResponseSHA256 = sealed.SHA256
+					regraded, err := SealGrade(g)
+					if err != nil {
+						t.Fatal(err)
+					}
+					a.Grades[i] = regraded
+				}
+			},
+			wantSub: "the slot name is not the identity",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			artifacts := buildBlindEvalArtifacts(t, specs)
+			tc.mutate(&artifacts)
+			_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+			if err == nil {
+				t.Fatal("an artifact recorded under a pre-registered slot by a different participant was accepted")
+			}
+			if !strings.Contains(err.Error(), tc.wantSub) {
+				t.Errorf("refusal %q does not mention %q", err, tc.wantSub)
+			}
+		})
+	}
+}
+
+// M6: an unsatisfiable population records the refusal as an artifact, not as a
+// line on stderr, so automation can tell it apart from a run that never happened.
+func TestQrelBlindSmoke_AnUnsatisfiablePopulationRecordsItsRefusal(t *testing.T) {
+	precondition := fixturePrecondition(t)
+	_, err := DerivePassCount(12, precondition.DatasetSHA256, "fixture")
+	if err == nil {
+		t.Fatal("N=12 was satisfiable")
+	}
+	outcome := UnsatisfiableOutcome(precondition, 12, err)
+	if outcome.Release != ReleaseNo {
+		t.Errorf("release = %q", outcome.Release)
+	}
+	if outcome.N != 12 || outcome.K != 0 {
+		t.Errorf("N=%d k=%d", outcome.N, outcome.K)
+	}
+	if len(outcome.Reasons) == 0 || !strings.Contains(strings.Join(outcome.Reasons, " "), "never clamped to N") {
+		t.Errorf("reasons %q do not say k is never clamped", outcome.Reasons)
+	}
+	dir := t.TempDir()
+	if err := WriteBlindEvalJSON(filepath.Join(dir, BlindEvalOutcomeFile), outcome); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, BlindEvalOutcomeFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"release": "NO"`) {
+		t.Error("the written refusal does not record RELEASE: NO")
 	}
 }

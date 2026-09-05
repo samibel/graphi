@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
@@ -38,7 +39,7 @@ import (
 // CandidateCaptureVersion identifies the capture instrument. It travels into
 // the run directory so a later change to how bytes are captured cannot be
 // mistaken for the same measurement.
-const CandidateCaptureVersion = "sw280-candidate-mcp-capture/1"
+const CandidateCaptureVersion = "sw280-candidate-mcp-capture/2"
 
 // candidateJSONRPCPrefix is the exact opening the stdio encoder produces for a
 // response: encoding/json writes struct fields in declaration order, and
@@ -48,6 +49,10 @@ const CandidateCaptureVersion = "sw280-candidate-mcp-capture/1"
 // bundle round-tripped through map[string]any comes back with alphabetically
 // ordered keys and cannot start this way.
 const candidateJSONRPCPrefix = `{"jsonrpc":"2.0","id":`
+
+// candidateRequestID is the id of the one request the capture sends, as it
+// appears in the encoded JSON of both the request and the response.
+const candidateRequestID = "1"
 
 // CapturedCandidateBundle is one query's preserved task_context/2 response,
 // together with the request that produced it. The request is recorded for
@@ -61,6 +66,110 @@ type CapturedCandidateBundle struct {
 	RetrievalStrategy string `json:"retrieval_strategy"`
 	RetrievalState    string `json:"retrieval_state"`
 	BundleSummary     string `json:"bundle_summary"`
+}
+
+// CandidateBinding binds a capture to the exact candidate implementation and
+// the exact indexed checkout it ran over.
+//
+// Recording a commit is not binding to it. The capture used to record the
+// frozen candidate sha and the pinned checkout sha and check neither against
+// the working tree, so an operator could edit graphi or the indexed repository
+// WITHOUT committing — until retrieval happened to return the expected answers
+// — capture and rate those bytes, then restore both trees, and the report would
+// still name the frozen candidate and the pinned checkout and say every hash
+// matched. These four observations are what close that: the capture refuses on
+// a dirty tree on either side, and refuses when the candidate tree differs from
+// the frozen candidate anywhere outside the run directory the run itself writes
+// into.
+type CandidateBinding struct {
+	// CandidateSHA is the candidate worktree's HEAD at capture, and
+	// FrozenCandidateSHA is what the precondition record froze. They may
+	// differ only by commits that touch nothing outside the run directory,
+	// which CandidateMatchesFrozen records.
+	CandidateSHA           string `json:"candidate_sha"`
+	FrozenCandidateSHA     string `json:"frozen_candidate_sha"`
+	CandidateWorktreeClean bool   `json:"candidate_worktree_clean"`
+	CandidateMatchesFrozen bool   `json:"candidate_matches_frozen_candidate_sha"`
+	CandidateExcludedPath  string `json:"candidate_excluded_path"`
+	CheckoutSHA            string `json:"checkout_sha"`
+	CheckoutWorktreeClean  bool   `json:"checkout_worktree_clean"`
+	// DifferingPaths is empty when the candidate matches. It is recorded
+	// rather than summarised so a refusal names what actually moved.
+	DifferingPaths []string `json:"differing_paths,omitempty"`
+}
+
+// RepoProbe is the seam the binding observes a git worktree through, so the
+// refusals can be tested without building throwaway repositories.
+type RepoProbe struct {
+	// HeadSHA returns the worktree's HEAD commit.
+	HeadSHA func(ctx context.Context, root string) (string, error)
+	// WorktreeClean reports whether the worktree has no uncommitted change,
+	// tracked or untracked.
+	WorktreeClean func(ctx context.Context, root string) (bool, error)
+	// PathsDifferingOutside lists the paths that differ between two commits,
+	// excluding everything under exclude.
+	PathsDifferingOutside func(ctx context.Context, root, from, to, exclude string) ([]string, error)
+}
+
+// CandidateBindingOptions is one binding observation.
+type CandidateBindingOptions struct {
+	CandidateRoot      string
+	FrozenCandidateSHA string
+	// ExcludePath is the run directory, repository-relative. The run
+	// necessarily writes into it between the freeze and the capture, so it is
+	// the one path a difference is expected in.
+	ExcludePath  string
+	CheckoutRoot string
+	CheckoutSHA  string
+}
+
+// ObserveCandidateBinding records the binding and refuses the states that make
+// the recorded commits meaningless.
+func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBindingOptions) (CandidateBinding, error) {
+	var binding CandidateBinding
+	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.PathsDifferingOutside == nil {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs a complete repository probe", QrelBlindSmokeEvaluationName)
+	}
+	if strings.TrimSpace(o.FrozenCandidateSHA) == "" {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs the frozen candidate sha", QrelBlindSmokeEvaluationName)
+	}
+	head, err := probe.HeadSHA(ctx, o.CandidateRoot)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: candidate HEAD: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	candidateClean, err := probe.WorktreeClean(ctx, o.CandidateRoot)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: candidate worktree state: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	if !candidateClean {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate worktree at %s has uncommitted changes; the bytes a rater sees must come from the committed candidate this run froze, not from a tree that can be restored afterwards", QrelBlindSmokeEvaluationName, o.CandidateRoot)
+	}
+	checkoutClean, err := probe.WorktreeClean(ctx, o.CheckoutRoot)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: indexed checkout worktree state: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	if !checkoutClean {
+		return binding, fmt.Errorf("retrieval %s capture: the indexed checkout at %s has uncommitted changes; an edited corpus is not the pinned corpus", QrelBlindSmokeEvaluationName, o.CheckoutRoot)
+	}
+	differing, err := probe.PathsDifferingOutside(ctx, o.CandidateRoot, o.FrozenCandidateSHA, head, o.ExcludePath)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: candidate tree comparison: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	binding = CandidateBinding{
+		CandidateSHA:           head,
+		FrozenCandidateSHA:     o.FrozenCandidateSHA,
+		CandidateWorktreeClean: candidateClean,
+		CandidateMatchesFrozen: len(differing) == 0,
+		CandidateExcludedPath:  o.ExcludePath,
+		CheckoutSHA:            o.CheckoutSHA,
+		CheckoutWorktreeClean:  checkoutClean,
+		DifferingPaths:         differing,
+	}
+	if !binding.CandidateMatchesFrozen {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate tree at %s differs from the frozen candidate %s outside %s (%s); the evaluation would be run against a candidate other than the one it froze",
+			QrelBlindSmokeEvaluationName, head, o.FrozenCandidateSHA, o.ExcludePath, strings.Join(differing, ", "))
+	}
+	return binding, nil
 }
 
 // CandidateCaptureProvenance records the composition the bytes came out of.
@@ -83,6 +192,42 @@ type CandidateCaptureProvenance struct {
 	TokenizerID       string `json:"tokenizer_id"`
 	TokenizerVocabSHA string `json:"tokenizer_vocabulary_sha256"`
 	QueryCount        int    `json:"query_count"`
+	// Binding is nil only for a capture taken before the binding existed. A
+	// nil binding is a release refusal, not a missing report row.
+	Binding *CandidateBinding `json:"candidate_binding,omitempty"`
+}
+
+// GitRepoProbe is the production RepoProbe. Each observation is one git
+// command whose output is read directly rather than interpreted: a probe that
+// guessed would defeat the point of observing.
+func GitRepoProbe() RepoProbe {
+	return RepoProbe{
+		HeadSHA: CheckoutHEAD,
+		WorktreeClean: func(ctx context.Context, root string) (bool, error) {
+			out, err := exec.CommandContext(ctx, "git", "-C", root, "status", "--porcelain", "--untracked-files=normal").Output()
+			if err != nil {
+				return false, fmt.Errorf("git status --porcelain in %s: %w", root, err)
+			}
+			return strings.TrimSpace(string(out)) == "", nil
+		},
+		PathsDifferingOutside: func(ctx context.Context, root, from, to, exclude string) ([]string, error) {
+			args := []string{"-C", root, "diff", "--name-only", from, to, "--", "."}
+			if strings.TrimSpace(exclude) != "" {
+				args = append(args, ":(exclude)"+exclude)
+			}
+			out, err := exec.CommandContext(ctx, "git", args...).Output()
+			if err != nil {
+				return nil, fmt.Errorf("git diff --name-only %s %s in %s: %w", from, to, root, err)
+			}
+			var paths []string
+			for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+				if strings.TrimSpace(line) != "" {
+					paths = append(paths, line)
+				}
+			}
+			return paths, nil
+		},
+	}
 }
 
 // CandidateCaptureOptions is one fail-closed capture run.
@@ -96,6 +241,11 @@ type CandidateCaptureOptions struct {
 	WorkDir          string
 	RealCounter      PayloadCounter
 	Log              io.Writer
+	// Binding is the candidate/checkout binding this capture must observe
+	// before it runs, and Probe is how it observes them. Both are required:
+	// an unbound capture produces bytes nobody can attribute to a commit.
+	Binding CandidateBindingOptions
+	Probe   RepoProbe
 }
 
 // CaptureCandidateBundles builds the production index over the pinned checkout
@@ -133,6 +283,13 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	}
 	if !strings.EqualFold(head, o.RepoSHA) || !strings.EqualFold(head, o.Dataset.Dataset.RepoSHA) {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: checkout is at %s, option pins %s and dataset pins %s", QrelBlindSmokeEvaluationName, head, o.RepoSHA, o.Dataset.Dataset.RepoSHA)
+	}
+	bindingOptions := o.Binding
+	bindingOptions.CheckoutRoot = o.RepoRoot
+	bindingOptions.CheckoutSHA = head
+	binding, err := ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+	if err != nil {
+		return nil, provenance, err
 	}
 
 	workDir := o.WorkDir
@@ -182,6 +339,7 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		TokenizerID:       o.RealCounter.TokenizerID,
 		TokenizerVocabSHA: o.RealCounter.VocabularySHA256,
 		QueryCount:        len(o.Queries),
+		Binding:           &binding,
 	}
 
 	captured := make([]CapturedCandidateBundle, 0, len(o.Queries))
@@ -259,7 +417,7 @@ func candidateToolCallRequest(task string) ([]byte, error) {
 	version := 2
 	request := map[string]any{
 		"jsonrpc": "2.0",
-		"id":      1,
+		"id":      json.RawMessage(candidateRequestID),
 		"method":  "tools/call",
 		"params": map[string]any{
 			"name": mcp.ToolTaskContext,
@@ -327,6 +485,14 @@ func ValidateCandidateBundleBytes(queryID string, raw []byte) (string, error) {
 	}
 	if envelope.JSONRPC != "2.0" {
 		return "", fmt.Errorf("retrieval %s capture: query %s response jsonrpc=%q", QrelBlindSmokeEvaluationName, queryID, envelope.JSONRPC)
+	}
+	// The capture sends exactly one request, with id 1. A response carrying
+	// any other id is a reply to a different call, and pairing a bundle with
+	// the wrong question is the one substitution the byte checks above cannot
+	// see. One server instance per request means this cannot bite today; it is
+	// one line, and the day it can bite it will be silent otherwise.
+	if string(envelope.ID) != candidateRequestID {
+		return "", fmt.Errorf("retrieval %s capture: query %s response answers request id %s, want %s; a response to a different request is not this query's bundle", QrelBlindSmokeEvaluationName, queryID, string(envelope.ID), candidateRequestID)
 	}
 	if len(envelope.Error) > 0 && string(envelope.Error) != "null" {
 		return "", fmt.Errorf("retrieval %s capture: query %s response carries a JSON-RPC error: %s", QrelBlindSmokeEvaluationName, queryID, string(envelope.Error))

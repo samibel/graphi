@@ -31,9 +31,21 @@ func RenderQrelBlindSmokeReport(outcome EvaluationOutcome, pre PreRegistration, 
 	w("Contract: `%s`. Measurement contract: `%s`.\n\n", outcome.ContractVersion, precondition.MeasurementContractVersion)
 
 	w("## What this is, and what it is not\n\n")
-	w("This is a **%s**. The raters saw our bundle format and our question set, and answered from\n", QrelBlindSmokeEvaluationName)
-	w("the query text and the exact serialized `task_context/2` bundle alone. It is not a system-blind\n")
+	w("This is a **%s**. The raters saw our bundle format and our question set, and were given\n", QrelBlindSmokeEvaluationName)
+	w("the query text and the exact serialized `task_context/2` bundle. It is not a system-blind\n")
 	w("evaluation, not a human panel, and not an estimate of general answerability.\n\n")
+	w("**Blindness here is instruction-enforced, not sandbox-enforced.** Each rater was a subagent with\n")
+	w("file tools, running in a checkout that contains the answer key for all of these questions\n")
+	w("(`internal/eval/retrieval/testdata/datasets/cobra-v2.json` carries every grade-3 span), and it was\n")
+	w("instructed to read exactly one file. Nothing prevented a rater from reading more; an instruction\n")
+	w("discouraged it. No tool-call transcript was preserved, so this cannot be checked after the fact.\n")
+	w("What can be checked, and was: every committed prompt rebuilds byte-for-byte from the\n")
+	w("pre-registered bundle and question and carries no judgement, qrel, expected answer or rubric.\n")
+	w("What the behaviour shows, and it points away from peeking: 38 of the 128 primary responses\n")
+	w("declined with `INSUFFICIENT`, and the graded outcomes agree with a naive \"was a grade-3 span\n")
+	w("inside a retrieved snippet?\" predictor on 54 of the 64 queries. A panel holding the key would\n")
+	w("not produce that shape. Treat the count as a smoke reading taken under instructed blindness,\n")
+	w("not as a number no rater could have inflated.\n\n")
 	w("Its pass count is a separate gate. The pass count does not enter the token estimand or its\n")
 	w("interval (`docs/eval/retrieval/methodology.md`, \"Estimand and claim boundary\").\n\n")
 
@@ -41,7 +53,10 @@ func RenderQrelBlindSmokeReport(outcome EvaluationOutcome, pre PreRegistration, 
 	w("| quantity | value |\n|---|---|\n")
 	w("| answerable holdout population `N` | %d |\n", outcome.N)
 	w("| pre-registered minimum passing count `k` | %d |\n", outcome.K)
-	w("| observed pass count | %d |\n", outcome.PassCount)
+	w("| observed pass count (as reviewed) | %d |\n", outcome.PassCount)
+	if len(outcome.DisclosedGradingConcerns) > 0 {
+		w("| **corrected pass count** (disclosed concerns subtracted) | **%d** |\n", outcome.CorrectedPassCount)
+	}
 	w("| observed incidence | %d/%d (resolution 1/%d) |\n", outcome.PassCount, outcome.N, outcome.N)
 	w("| observed pass rate | %s |\n", renderOneDecimalPercent(outcome.PassCount, outcome.N))
 	w("| exact Clopper-Pearson 95%% interval | [%s, %s] |\n", outcome.Interval.LowerBound, outcome.Interval.UpperBound)
@@ -55,6 +70,42 @@ func RenderQrelBlindSmokeReport(outcome EvaluationOutcome, pre PreRegistration, 
 	}
 	w("\n")
 
+	if len(outcome.DisclosedGradingConcerns) > 0 {
+		w("## Disclosed grading concerns — counted passes that the bundle-only rule does not support\n\n")
+		w("These are **not** re-grades. A silent re-grade is the retry loop this evaluation exists to\n")
+		w("exclude, so nothing below changes a grade, a response or a query outcome. Each entry subtracts\n")
+		w("one from the corrected count, and the release is decided on whichever count is smaller.\n\n")
+		for _, c := range outcome.DisclosedGradingConcerns {
+			w("### %s — %s\n\n", c.QueryID, c.Kind)
+			w("%s\n\n", c.Summary)
+			for _, evidence := range c.Evidence {
+				w("- %s\n", evidence)
+			}
+			w("\n- grades concerned: ")
+			for i, sha := range c.GradeSHA256 {
+				if i > 0 {
+					w(", ")
+				}
+				w("`%s`", sha)
+			}
+			w("\n- raised by %s at %s\n\n", c.RaisedBy, c.RaisedAt)
+		}
+	}
+
+	w("## Capture binding\n\n")
+	if outcome.CaptureBinding.Bound {
+		w("The rated bytes are bound to the candidate implementation and the indexed checkout this run\n")
+		w("names: candidate `%s`, checkout `%s`, both worktrees clean at capture.\n\n",
+			outcome.CaptureBinding.CandidateSHA, outcome.CaptureBinding.CheckoutSHA)
+	} else {
+		w("**The rated bytes are NOT bound to the commits this run names, and that alone forces\n")
+		w("`RELEASE: NO`.** Recording a commit is not binding to it:\n\n")
+		for _, reason := range outcome.CaptureBinding.Reasons {
+			w("- %s\n", reason)
+		}
+		w("\n")
+	}
+
 	w("## How `k` was derived, before any response was opened\n\n")
 	d := pre.Derivation
 	w("`k` is the smallest integer in `[0, N]` whose two-sided exact Clopper-Pearson 95%% lower bound is\n")
@@ -65,7 +116,18 @@ func RenderQrelBlindSmokeReport(outcome EvaluationOutcome, pre PreRegistration, 
 		w("- `k-1` = %d, whose lower bound is %s — below the floor, which is what fixes `k`\n", d.K-1, d.KMinusOneInterval.LowerBound)
 	}
 	w("- method: %s\n", d.Method)
-	w("- pre-registered at %s, naming precondition record `%s` at commit `%s`\n\n", pre.RecordedAt, pre.PreconditionSHA256, pre.PreconditionCommit)
+	w("- pre-registered at %s, naming precondition record `%s` at commit `%s`\n", pre.RecordedAt, pre.PreconditionSHA256, pre.PreconditionCommit)
+	if provenance.CaptureVersion != CandidateCaptureVersion {
+		w("- **`precondition_record_commit` above is not the commit that contains the precondition record.**\n")
+		w("  This run was captured by `%s`, which copied the record's own `freeze_commit` — the candidate\n", provenance.CaptureVersion)
+		w("  commit at freeze time — into a field whose name promises the containing commit. An auditor\n")
+		w("  following it will not find the record there. Recover the true commit with\n")
+		w("  `git log --diff-filter=A --format=%%H -- <run dir>/precondition-record.json`. The field cannot be\n")
+		w("  corrected in place: the pre-registration is content-addressed and all %d responses name that\n", len(outcome.Queries)*2)
+		w("  address, so rewriting it would destroy the ordering evidence it exists to provide. `%s`\n", CandidateCaptureVersion)
+		w("  resolves the containing commit from git and refuses to pre-register an uncommitted record.\n")
+	}
+	w("\n")
 
 	w("## Per-stratum counts\n\n")
 	w("Counts are authoritative; each stratum states its own `1/n` resolution.\n\n")

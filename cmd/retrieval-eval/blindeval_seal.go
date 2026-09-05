@@ -18,14 +18,19 @@ package main
 //   - a raw grade file becomes a Grade bound to that response's content
 //     address.
 //
-// Sealing is idempotent: the same raw material seals to the same bytes, because
-// every field it derives comes from the raw file rather than from the clock.
+// Sealing is idempotent AND append-only: the same raw material seals to the
+// same bytes, because every field it derives comes from the raw file rather
+// than from the clock — and DIFFERENT material for an address that is already
+// sealed is refused. Overwriting was the one supported retry loop this
+// evaluation had: change a raw FAIL to PASS, re-run seal, re-run decide, and
+// the old grade was gone with the replacement validly sealed.
 
 import (
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -91,6 +96,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 
 	sealedResponses := map[string]retrieval.RaterResponse{}
+	adjudicatorResponses := map[string]retrieval.RaterResponse{}
 	counts := map[string]int{}
 	for _, prq := range pre.Queries {
 		for _, rater := range pre.PrimaryRaters {
@@ -100,7 +106,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 				return exitError
 			}
-			if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalResponsesDir,
+			if err := retrieval.WriteBlindEvalJSONWriteOnce("response", filepath.Join(o.dir, retrieval.BlindEvalResponsesDir,
 				retrieval.ResponseFileName(prq.QueryID, rater.ID)), response); err != nil {
 				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 				return exitError
@@ -110,24 +116,20 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		}
 		// An adjudicator answer, when one was produced for this query.
 		adjRaw := filepath.Join(o.dir, blindEvalRawAdjudicationsDir, prq.QueryID+".txt")
-		if _, statErr := os.Stat(adjRaw); statErr == nil {
+		present, err := rawFilePresent(adjRaw)
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		if present {
 			response, err := sealOneResponse(o.dir, pre, prq, pre.Adjudicator, retrieval.RaterRoleAdjudicator, adjRaw)
 			if err != nil {
 				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 				return exitError
 			}
 			sealedResponses[response.SHA256] = response
+			adjudicatorResponses[prq.QueryID] = response
 			counts["adjudicator_"+response.Status]++
-			adjudication, err := buildAdjudication(o.dir, prq.QueryID, response)
-			if err != nil {
-				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-				return exitError
-			}
-			if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalAdjudicationsDir,
-				retrieval.BundleFileName(prq.QueryID)), adjudication); err != nil {
-				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-				return exitError
-			}
 		}
 	}
 
@@ -140,6 +142,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// address is not weakened by that: the packet states the address, and the
 	// sealed grade below is built from the response object itself.
 	packets, grades := 0, 0
+	var sealedGrades []retrieval.Grade
 	for _, response := range sealedResponses {
 		if response.Status != retrieval.ResponseStatusAnswered {
 			continue
@@ -163,25 +166,71 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		packets++
 
 		rawGrade := filepath.Join(o.dir, blindEvalRawGradesDir, slot)
-		info, statErr := os.Stat(rawGrade)
-		if statErr != nil {
-			continue
+		info, err := os.Stat(rawGrade)
+		if err != nil {
+			// Only "the grader has not written this yet" is an absence. A
+			// permission or I/O failure used to read as a skipped grade, which
+			// turns an unreadable run directory into a plausible-looking
+			// RELEASE: NO — a wrong answer that looks like the conservative one.
+			if os.IsNotExist(err) {
+				continue
+			}
+			fmt.Fprintf(stderr, "retrieval-eval: raw grade %s could not be read: %v\n", rawGrade, err)
+			return exitError
 		}
 		grade, err := sealOneGrade(rawGrade, info, pre.Grader, response, rubricSHA)
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalGradesDir,
+		if err := retrieval.WriteBlindEvalJSONWriteOnce("grade", filepath.Join(o.dir, retrieval.BlindEvalGradesDir,
 			retrieval.GradeFileName(response.SHA256)), grade); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
+		sealedGrades = append(sealedGrades, grade)
 		grades++
 	}
-	fmt.Fprintf(stdout, "retrieval-eval: sealed %d responses (%v), wrote %d grader packets and sealed %d grades\n",
-		len(sealedResponses), counts, packets, grades)
+
+	// Adjudications are built LAST, because a disclosure must name the grades
+	// it discloses and the grades do not exist until the loop above has run.
+	adjudications := 0
+	for _, prq := range pre.Queries {
+		response, adjudicated := adjudicatorResponses[prq.QueryID]
+		if !adjudicated {
+			continue
+		}
+		adjudication, err := buildAdjudication(o.dir, prq.QueryID, response, sealedGrades)
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		if err := retrieval.WriteSealedAdjudication(filepath.Join(o.dir, retrieval.BlindEvalAdjudicationsDir,
+			retrieval.BundleFileName(prq.QueryID)), adjudication); err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		adjudications++
+	}
+	fmt.Fprintf(stdout, "retrieval-eval: sealed %d responses (%v), wrote %d grader packets, sealed %d grades and %d adjudications\n",
+		len(sealedResponses), counts, packets, grades, adjudications)
 	return exitOK
+}
+
+// rawFilePresent distinguishes "the rater wrote nothing here" from "this file
+// could not be examined". Only os.IsNotExist is an absence; anything else is
+// an error, because a permission failure that reads as an absent adjudication
+// silently removes a query's third opinion.
+func rawFilePresent(path string) (bool, error) {
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
+		return true, nil
+	case os.IsNotExist(err):
+		return false, nil
+	default:
+		return false, fmt.Errorf("raw file %s could not be examined: %w", path, err)
+	}
 }
 
 // sealOneResponse derives one response record from its raw file. Status is
@@ -209,6 +258,9 @@ func sealOneResponse(dir string, pre retrieval.PreRegistration, prq retrieval.Pr
 	}
 	info, statErr := os.Stat(rawPath)
 	if statErr != nil {
+		if !os.IsNotExist(statErr) {
+			return retrieval.RaterResponse{}, fmt.Errorf("raw response %s could not be examined: %w", rawPath, statErr)
+		}
 		response.Status = retrieval.ResponseStatusMissing
 		response.RespondedAt = pre.RecordedAt
 		return retrieval.SealRaterResponse(response)
@@ -274,12 +326,13 @@ func sealOneGrade(rawPath string, info os.FileInfo, grader retrieval.Participant
 // disclosure record marks the point at which the primaries entered the same
 // decision, and it names the already-frozen adjudicator response, which is the
 // evidence that the response existed first.
-func buildAdjudication(dir, queryID string, response retrieval.RaterResponse) (retrieval.Adjudication, error) {
+func buildAdjudication(dir, queryID string, response retrieval.RaterResponse, sealedGrades []retrieval.Grade) (retrieval.Adjudication, error) {
 	var disclosed []string
 	entries, err := os.ReadDir(filepath.Join(dir, retrieval.BlindEvalResponsesDir))
 	if err != nil {
 		return retrieval.Adjudication{}, err
 	}
+	primaries := map[string]bool{}
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasPrefix(entry.Name(), queryID+"--") {
 			continue
@@ -294,12 +347,17 @@ func buildAdjudication(dir, queryID string, response retrieval.RaterResponse) (r
 		}
 		if primary.Role == retrieval.RaterRolePrimary {
 			disclosed = append(disclosed, primary.SHA256)
+			primaries[primary.SHA256] = true
 		}
 	}
-	respondedAt, err := time.Parse(time.RFC3339, response.RespondedAt)
-	if err != nil {
-		return retrieval.Adjudication{}, err
+	// A disagreement is a disagreement between GRADES, so the grades are what
+	// entered the adjudicated decision and the disclosure names them too.
+	for _, g := range sealedGrades {
+		if primaries[g.ResponseSHA256] {
+			disclosed = append(disclosed, g.SHA256)
+		}
 	}
+	sort.Strings(disclosed)
 	return retrieval.Adjudication{
 		QueryID:  queryID,
 		Response: response,
@@ -307,7 +365,8 @@ func buildAdjudication(dir, queryID string, response retrieval.RaterResponse) (r
 			QueryID:                   queryID,
 			AdjudicatorResponseSHA256: response.SHA256,
 			DisclosedArtifactSHA256:   disclosed,
-			DisclosedAt:               respondedAt.Add(time.Second).Format(time.RFC3339),
+			OrderingEvidence:          retrieval.DisclosureOrderingEvidence,
+			Limitation:                retrieval.DisclosureLimitation,
 		},
 	}, nil
 }

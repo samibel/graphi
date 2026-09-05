@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
@@ -209,5 +210,130 @@ func TestQrelBlindSmoke_CommittedReportStatesItsOwnLimitations(t *testing.T) {
 	}
 	if err := CheckQrelBlindSmokeReport(string(body)); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// m-2: nothing re-checked the frozen inputs AT REST. The end-of-run comparison
+// is a recorded artifact, and no test recomputed it, so a newline appended to
+// docs/eval/retrieval-targets.json left the whole suite green while the
+// committed run's own precondition record said that file hashed differently.
+// SW-281 is expected to touch the budgets and targets files, so the drift this
+// catches is a drift somebody is about to cause.
+func TestQrelBlindSmoke_CommittedRunFrozenInputsStillHashTheSameAtRest(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	dir := filepath.Join(root, filepath.FromSlash(blindEvalRunDir))
+	precondition, err := LoadPreconditionRecord(filepath.Join(dir, BlindEvalPreconditionFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	comparison, err := CompareFrozenInputs(precondition, RepoFileSHA256Reader(root), time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comparison.Comparisons) < len(preconditionInputRoles)+1 {
+		t.Fatalf("only %d frozen inputs were re-hashed", len(comparison.Comparisons))
+	}
+	for _, c := range comparison.Comparisons {
+		if c.Matches {
+			continue
+		}
+		observed := c.Observed
+		if c.Error != "" {
+			observed = "UNREADABLE: " + c.Error
+		}
+		t.Errorf("frozen input %s (%s) now hashes to %s, but the committed run froze %s; either restore the file or the run's result no longer stands on the inputs it names",
+			c.Role, c.Path, observed, c.Frozen)
+	}
+}
+
+// The committed run must disclose, in its own outcome artifact, that one of the
+// counted passes is not supported by the bundle-only rule — and the corrected
+// count must be the reviewed count minus that disclosure.
+func TestQrelBlindSmoke_CommittedRunDisclosesTheUnsupportedCountedPass(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	dir := filepath.Join(root, filepath.FromSlash(blindEvalRunDir))
+	var recorded EvaluationOutcome
+	raw, err := os.ReadFile(filepath.Join(dir, BlindEvalOutcomeFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &recorded); err != nil {
+		t.Fatal(err)
+	}
+	if len(recorded.DisclosedGradingConcerns) == 0 {
+		t.Fatal("the committed outcome discloses no grading concern; ci-1086's counted pass is not supported by the bundle-only rule and must be disclosed rather than silently re-graded or silently kept")
+	}
+	if recorded.CorrectedPassCount != recorded.PassCount-len(recorded.DisclosedGradingConcerns) {
+		t.Errorf("corrected=%d reviewed=%d concerns=%d", recorded.CorrectedPassCount, recorded.PassCount, len(recorded.DisclosedGradingConcerns))
+	}
+	// The disclosure must not have moved the release, in either direction.
+	if recorded.Release != ReleaseNo {
+		t.Errorf("release=%s; disclosing a concern may never change the release away from NO", recorded.Release)
+	}
+	if recorded.CorrectedPassCount >= recorded.K {
+		t.Errorf("corrected pass count %d is not below k=%d", recorded.CorrectedPassCount, recorded.K)
+	}
+	body, err := os.ReadFile(filepath.Join(dir, BlindEvalReadmeFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{
+		"Disclosed grading concerns",
+		"corrected pass count",
+		"ci-1086",
+	} {
+		if !strings.Contains(string(body), required) {
+			t.Errorf("the published report does not state %q where a reader will see it", required)
+		}
+	}
+}
+
+// M1: the published report must not claim an enforced blindness the run did not
+// have. It said the raters answered from the query and the bundle "alone", and
+// the qualification lived only inside a JSONL detail string.
+func TestQrelBlindSmoke_CommittedDocumentsStateThatBlindnessWasInstructionEnforced(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	dir := filepath.Join(root, filepath.FromSlash(blindEvalRunDir))
+	for _, tc := range []struct{ file, required string }{
+		{BlindEvalReadmeFile, "instruction-enforced, not sandbox-enforced"},
+		{"METHOD.md", "instruction-enforced, not sandbox-enforced"},
+	} {
+		body, err := os.ReadFile(filepath.Join(dir, tc.file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(body), tc.required) {
+			t.Errorf("%s does not state %q; a story whose standard is \"prose asserting the order is not evidence\" must not assert an enforcement it did not have", tc.file, tc.required)
+		}
+	}
+}
+
+// B4: every committed adjudication must carry the fixed ordering-evidence and
+// limitation statements, must name both primary responses AND their grades, and
+// must carry no manufactured timestamp.
+func TestQrelBlindSmoke_CommittedAdjudicationsCarryEvidenceRatherThanAGeneratedTimestamp(t *testing.T) {
+	root := repoRootForBlindEvalDocs(t)
+	dir := filepath.Join(root, filepath.FromSlash(blindEvalRunDir))
+	artifacts, err := LoadEvaluationArtifacts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(artifacts.Adjudications) == 0 {
+		t.Fatal("the committed run holds no adjudication")
+	}
+	if err := CheckAdjudicationOrder(artifacts); err != nil {
+		t.Fatal(err)
+	}
+	for _, adj := range artifacts.Adjudications {
+		if adj.Disclosure.OrderingEvidence != DisclosureOrderingEvidence || adj.Disclosure.Limitation != DisclosureLimitation {
+			t.Errorf("query %s does not carry the fixed disclosure statements", adj.QueryID)
+		}
+		raw, err := os.ReadFile(filepath.Join(dir, BlindEvalAdjudicationsDir, BundleFileName(adj.QueryID)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(raw, []byte("disclosed_at")) {
+			t.Errorf("query %s still records a disclosed_at; it was the response's mtime plus exactly one second, which is a generated number rather than an observation", adj.QueryID)
+		}
 	}
 }

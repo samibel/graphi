@@ -407,10 +407,22 @@ func CompareFrozenInputs(rec PreconditionRecord, read ReadFileSHA256, at time.Ti
 // bundle. Recording the bundle hash here — before a response exists — is what
 // binds every later response to the exact bytes a rater could have seen.
 type PreRegisteredQuery struct {
-	QueryID           string              `json:"query_id"`
-	FamilyID          string              `json:"family_id"`
-	Stratum           string              `json:"stratum"`
-	QueryTextSHA256   string              `json:"query_text_sha256"`
+	QueryID         string `json:"query_id"`
+	FamilyID        string `json:"family_id"`
+	Stratum         string `json:"stratum"`
+	QueryTextSHA256 string `json:"query_text_sha256"`
+	// PromptSHA256 is the digest of the EXACT prompt bytes the rater was
+	// given. Pre-registering it is what makes a prompt swap detectable: a
+	// prompt with an expected answer appended after pre-registration hashes
+	// differently, and CheckPromptBinding refuses it.
+	//
+	// It is omitempty because this contract version's first run pre-dated the
+	// field. A run whose pre-registration omits it is still bound, and more
+	// tightly: CheckPromptBinding RECONSTRUCTS the prompt from the
+	// pre-registered bundle bytes and query text and requires the committed
+	// prompt file to be byte-identical, so the digest is a pure function of
+	// pre-registered content either way.
+	PromptSHA256      string              `json:"prompt_sha256,omitempty"`
 	BundleSHA256      string              `json:"bundle_sha256"`
 	BundleByteCount   int                 `json:"bundle_byte_count"`
 	BundleBoundary    PayloadBoundary     `json:"bundle_boundary"`
@@ -535,6 +547,9 @@ func ValidatePreRegistration(pre PreRegistration) error {
 		seen[q.QueryID] = true
 		if !isLowerHexDigest(q.QueryTextSHA256, 64) || !isLowerHexDigest(q.BundleSHA256, 64) {
 			return fmt.Errorf("retrieval %s: query %q lacks a content address for its text or its bundle", QrelBlindSmokeEvaluationName, q.QueryID)
+		}
+		if q.PromptSHA256 != "" && !isLowerHexDigest(q.PromptSHA256, 64) {
+			return fmt.Errorf("retrieval %s: query %q pre-registers a malformed prompt_sha256", QrelBlindSmokeEvaluationName, q.QueryID)
 		}
 		if q.BundleBoundary != PayloadBoundaryCandidate {
 			return fmt.Errorf("retrieval %s: query %q bundle boundary=%q, want %q", QrelBlindSmokeEvaluationName, q.QueryID, q.BundleBoundary, PayloadBoundaryCandidate)
@@ -721,12 +736,35 @@ func ValidateGrade(g Grade) error {
 // answered before either primary response or primary grade was disclosed: a
 // disclosure that happened first could not have named a hash that did not yet
 // exist.
+//
+// It carries NO timestamp. The earlier shape recorded a `disclosed_at` derived
+// as the adjudicator response's file mtime plus exactly one second, which is a
+// generated number wearing the costume of an observation: every disclosure was
+// +1s because the code wrote +1s, and a mutable mtime can be set to anything.
+// A field that cannot be wrong is not evidence, so it is gone. What remains is
+// the digest chain, which a later record genuinely cannot forge backwards, plus
+// an explicit statement of what the chain does NOT establish.
 type DisclosureRecord struct {
 	QueryID                   string   `json:"query_id"`
 	AdjudicatorResponseSHA256 string   `json:"adjudicator_response_sha256"`
 	DisclosedArtifactSHA256   []string `json:"disclosed_artifact_sha256"`
-	DisclosedAt               string   `json:"disclosed_at"`
+	// OrderingEvidence and Limitation are fixed strings, compared against the
+	// constants below rather than read as prose, so the limitation travels
+	// inside every adjudication artifact and cannot be softened by an edit.
+	OrderingEvidence string `json:"ordering_evidence"`
+	Limitation       string `json:"limitation"`
 }
+
+// The two fixed strings a DisclosureRecord must carry.
+const (
+	// DisclosureOrderingEvidence names what the artifacts actually establish.
+	DisclosureOrderingEvidence = "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests"
+
+	// DisclosureLimitation names what they do NOT establish. It is the honest
+	// counterpart of the removed timestamp: no artifact this slice produces
+	// can show that no primary material reached the adjudicator out of band.
+	DisclosureLimitation = "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+)
 
 // Adjudication is one adjudicated query.
 type Adjudication struct {
@@ -748,6 +786,84 @@ type EvaluationArtifacts struct {
 	Responses       []RaterResponse
 	Grades          []Grade
 	Adjudications   []Adjudication
+	// CaptureProvenance is the record the capture instrument wrote. It is NOT
+	// optional: a run with no evidence of transport, checkout, embedder and
+	// candidate binding cannot release, so its absence is a release refusal
+	// rather than a missing row in a report.
+	CaptureProvenance CandidateCaptureProvenance
+	// GradingConcerns are disclosed defects in COUNTED PASSES. They subtract
+	// from the reviewed count and never add to it.
+	GradingConcerns []GradingConcern
+}
+
+// Concern kinds. There is exactly one, and it can only ever subtract.
+const (
+	// ConcernCountedPassNotSupported discloses that a query counted as a pass
+	// is not supported by the bundle-only rule. Disclosing it lowers the
+	// corrected count; there is deliberately no concern kind that raises one,
+	// because turning a counted failure into a pass is the re-grade loop the
+	// append-only seal exists to prevent.
+	ConcernCountedPassNotSupported = "counted_pass_not_supported"
+)
+
+// GradingConcern is a disclosed defect in a counted pass, recorded beside the
+// result instead of being quietly re-graded away.
+//
+// Silently re-grading is exactly the hole the append-only seal closes, so a
+// concern is not a grade: it changes no grade, no response and no query
+// outcome. It changes the CORRECTED count, which is published beside the
+// reviewed count, and the release decision is taken on whichever is smaller.
+type GradingConcern struct {
+	QueryID string `json:"query_id"`
+	Kind    string `json:"kind"`
+	// GradeSHA256 are the grades the concern is raised against. They must
+	// resolve to recorded grades for this query, so a concern cannot be raised
+	// against material that does not exist.
+	GradeSHA256 []string `json:"grade_sha256"`
+	Summary     string   `json:"summary"`
+	Evidence    []string `json:"evidence"`
+	RaisedBy    string   `json:"raised_by"`
+	RaisedAt    string   `json:"raised_at"`
+}
+
+// checkDeclaredIdentity refuses a response or grade whose recorded identity is
+// not the identity that was pre-registered for that slot.
+//
+// The slot name alone is not an identity: "grader-1" is a label anyone can put
+// on a record. Comparing provider and model as well is what makes "a different
+// model or actor supplied and re-sealed favourable grades under the declared
+// slot" a refusal rather than an accepted record. It cannot prove which model
+// actually ran — the participant records say so themselves — but it does pin
+// every artifact to one declared, unchanging claim about who ran it.
+func checkDeclaredIdentity(what, queryID string, declared Participant, gotID, gotProvider, gotModel string) error {
+	if gotID != declared.ID {
+		return fmt.Errorf("retrieval %s: %s for query %s names %q, but the pre-registered identity for that slot is %q", QrelBlindSmokeEvaluationName, what, queryID, gotID, declared.ID)
+	}
+	if gotProvider != declared.Provider {
+		return fmt.Errorf("retrieval %s: %s for query %s by %s records provider %q, but %q was pre-registered; the slot name is not the identity", QrelBlindSmokeEvaluationName, what, queryID, declared.ID, gotProvider, declared.Provider)
+	}
+	if gotModel != declared.Model {
+		return fmt.Errorf("retrieval %s: %s for query %s by %s records model %q, but %q was pre-registered; the slot name is not the identity", QrelBlindSmokeEvaluationName, what, queryID, declared.ID, gotModel, declared.Model)
+	}
+	return nil
+}
+
+// checkResponseIdentity resolves a response's declared slot in the
+// pre-registration and binds its recorded identity to it.
+func checkResponseIdentity(pre PreRegistration, r RaterResponse) error {
+	switch r.Role {
+	case RaterRolePrimary:
+		for _, rater := range pre.PrimaryRaters {
+			if rater.ID == r.RaterID {
+				return checkDeclaredIdentity("response", r.QueryID, rater, r.RaterID, r.Provider, r.Model)
+			}
+		}
+		return fmt.Errorf("retrieval %s: response for query %s is by %q, who is not a pre-registered primary rater", QrelBlindSmokeEvaluationName, r.QueryID, r.RaterID)
+	case RaterRoleAdjudicator:
+		return checkDeclaredIdentity("adjudicator response", r.QueryID, pre.Adjudicator, r.RaterID, r.Provider, r.Model)
+	default:
+		return fmt.Errorf("retrieval %s: response for query %s has role %q", QrelBlindSmokeEvaluationName, r.QueryID, r.Role)
+	}
 }
 
 // CheckPrecedence proves, from the artifacts alone, that the pre-registration
@@ -783,6 +899,12 @@ func CheckPrecedence(a EvaluationArtifacts) error {
 		}
 		if r.BundleSHA256 != q.BundleSHA256 {
 			return fmt.Errorf("retrieval %s: response for query %s was answered from bundle %q, not the pre-registered %q", QrelBlindSmokeEvaluationName, r.QueryID, r.BundleSHA256, q.BundleSHA256)
+		}
+		if q.PromptSHA256 != "" && r.PromptSHA256 != q.PromptSHA256 {
+			return fmt.Errorf("retrieval %s: response for query %s was answered from prompt %q, not the pre-registered %q", QrelBlindSmokeEvaluationName, r.QueryID, r.PromptSHA256, q.PromptSHA256)
+		}
+		if err := checkResponseIdentity(pre, r); err != nil {
+			return err
 		}
 		respondedAt, err := time.Parse(timeLayout, r.RespondedAt)
 		if err != nil {
@@ -845,6 +967,9 @@ func CheckGradeBinding(a EvaluationArtifacts) error {
 		if g.RubricSHA256 != rubric {
 			return fmt.Errorf("retrieval %s: grade for query %s used rubric %q, not the frozen %q", QrelBlindSmokeEvaluationName, g.QueryID, g.RubricSHA256, rubric)
 		}
+		if err := checkDeclaredIdentity("grade", g.QueryID, a.PreRegistration.Grader, g.GraderID, g.Provider, g.Model); err != nil {
+			return err
+		}
 		if r.Status != ResponseStatusAnswered {
 			return fmt.Errorf("retrieval %s: query %s has a grade for a %s response; a missing, empty or refused response is a failure by rule and is not graded away", QrelBlindSmokeEvaluationName, g.QueryID, r.Status)
 		}
@@ -873,13 +998,21 @@ func CheckGradeBinding(a EvaluationArtifacts) error {
 func CheckAdjudicationOrder(a EvaluationArtifacts) error {
 	primaryBySHA := map[string]RaterResponse{}
 	gradeBySHA := map[string]Grade{}
+	primaryByQuery := map[string][]RaterResponse{}
+	gradeByResponse := map[string]Grade{}
+	preByQuery := map[string]PreRegisteredQuery{}
+	for _, q := range a.PreRegistration.Queries {
+		preByQuery[q.QueryID] = q
+	}
 	for _, r := range a.Responses {
 		if r.Role == RaterRolePrimary {
 			primaryBySHA[r.SHA256] = r
+			primaryByQuery[r.QueryID] = append(primaryByQuery[r.QueryID], r)
 		}
 	}
 	for _, g := range a.Grades {
 		gradeBySHA[g.SHA256] = g
+		gradeByResponse[g.ResponseSHA256] = g
 	}
 	seen := map[string]bool{}
 	for _, adj := range a.Adjudications {
@@ -899,29 +1032,70 @@ func CheckAdjudicationOrder(a EvaluationArtifacts) error {
 		if adj.Response.RaterID != a.PreRegistration.Adjudicator.ID {
 			return fmt.Errorf("retrieval %s: query %s was adjudicated by %s, not the pre-registered adjudicator %s", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Response.RaterID, a.PreRegistration.Adjudicator.ID)
 		}
+		if err := checkDeclaredIdentity("adjudicator response", adj.QueryID, a.PreRegistration.Adjudicator, adj.Response.RaterID, adj.Response.Provider, adj.Response.Model); err != nil {
+			return err
+		}
+		// The adjudicator answers from the SAME pre-registered inputs as the
+		// primaries. Without this the adjudicator response bypassed every
+		// input comparison CheckPrecedence applies, so a third opinion could
+		// have been taken over a different bundle, a different question or a
+		// different prompt from the one the panel disagreed about.
+		prq, known := preByQuery[adj.QueryID]
+		if !known {
+			return fmt.Errorf("retrieval %s: query %s is adjudicated but absent from the pre-registered population", QrelBlindSmokeEvaluationName, adj.QueryID)
+		}
+		if adj.Response.PreRegistrationSHA256 != a.PreRegistration.SHA256 {
+			return fmt.Errorf("retrieval %s: query %s adjudicator response names pre-registration %q, but the pre-registration's content address is %q", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Response.PreRegistrationSHA256, a.PreRegistration.SHA256)
+		}
+		if adj.Response.QueryTextSHA256 != prq.QueryTextSHA256 {
+			return fmt.Errorf("retrieval %s: query %s was adjudicated from query text %q, not the pre-registered %q", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Response.QueryTextSHA256, prq.QueryTextSHA256)
+		}
+		if adj.Response.BundleSHA256 != prq.BundleSHA256 {
+			return fmt.Errorf("retrieval %s: query %s was adjudicated from bundle %q, not the pre-registered %q", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Response.BundleSHA256, prq.BundleSHA256)
+		}
+		if prq.PromptSHA256 != "" && adj.Response.PromptSHA256 != prq.PromptSHA256 {
+			return fmt.Errorf("retrieval %s: query %s was adjudicated from prompt %q, not the pre-registered %q", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Response.PromptSHA256, prq.PromptSHA256)
+		}
 		if adj.Disclosure.AdjudicatorResponseSHA256 != adj.Response.SHA256 {
 			return fmt.Errorf("retrieval %s: query %s disclosure names response %q but the frozen adjudicator response is %q; the disclosure does not prove it followed the response",
 				QrelBlindSmokeEvaluationName, adj.QueryID, adj.Disclosure.AdjudicatorResponseSHA256, adj.Response.SHA256)
 		}
-		respondedAt, err := time.Parse(timeLayout, adj.Response.RespondedAt)
-		if err != nil {
-			return err
+		if adj.Disclosure.OrderingEvidence != DisclosureOrderingEvidence {
+			return fmt.Errorf("retrieval %s: query %s disclosure does not carry the fixed ordering-evidence statement; the disclosure record states what the digest chain establishes and must not paraphrase it", QrelBlindSmokeEvaluationName, adj.QueryID)
 		}
-		disclosedAt, err := time.Parse(timeLayout, adj.Disclosure.DisclosedAt)
-		if err != nil {
-			return fmt.Errorf("retrieval %s: query %s disclosed_at %q is not %s", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Disclosure.DisclosedAt, timeLayout)
-		}
-		if disclosedAt.Before(respondedAt) {
-			return fmt.Errorf("retrieval %s: query %s disclosure is stamped %s, which predates the adjudicator response at %s", QrelBlindSmokeEvaluationName, adj.QueryID, adj.Disclosure.DisclosedAt, adj.Response.RespondedAt)
+		if adj.Disclosure.Limitation != DisclosureLimitation {
+			return fmt.Errorf("retrieval %s: query %s disclosure does not carry the fixed limitation statement; what these artifacts do not establish travels with them", QrelBlindSmokeEvaluationName, adj.QueryID)
 		}
 		if len(adj.Disclosure.DisclosedArtifactSHA256) == 0 {
-			return fmt.Errorf("retrieval %s: query %s discloses nothing; the disclosure record exists to prove what was shown after the adjudicator answered", QrelBlindSmokeEvaluationName, adj.QueryID)
+			return fmt.Errorf("retrieval %s: query %s discloses nothing; the disclosure record exists to name what was shown after the adjudicator answered", QrelBlindSmokeEvaluationName, adj.QueryID)
 		}
+		disclosed := map[string]bool{}
 		for _, sha := range adj.Disclosure.DisclosedArtifactSHA256 {
 			_, isResponse := primaryBySHA[sha]
 			_, isGrade := gradeBySHA[sha]
 			if !isResponse && !isGrade {
 				return fmt.Errorf("retrieval %s: query %s discloses artifact %q, which resolves to no primary response or grade", QrelBlindSmokeEvaluationName, adj.QueryID, sha)
+			}
+			if disclosed[sha] {
+				return fmt.Errorf("retrieval %s: query %s discloses artifact %q twice", QrelBlindSmokeEvaluationName, adj.QueryID, sha)
+			}
+			disclosed[sha] = true
+		}
+		// The disclosure must name the GRADES, not only the responses. An
+		// adjudication happens on a graded disagreement, so the grades are
+		// what actually entered the decision; a disclosure that lists only the
+		// two responses leaves the material that produced the disagreement
+		// unaccounted for.
+		for _, primary := range primaryByQuery[adj.QueryID] {
+			if !disclosed[primary.SHA256] {
+				return fmt.Errorf("retrieval %s: query %s discloses the adjudication without naming primary response %q; the disclosure must name every primary response for the query it resolves", QrelBlindSmokeEvaluationName, adj.QueryID, primary.SHA256)
+			}
+			g, graded := gradeByResponse[primary.SHA256]
+			if !graded {
+				continue
+			}
+			if !disclosed[g.SHA256] {
+				return fmt.Errorf("retrieval %s: query %s discloses the adjudication without naming grade %q of primary response %q; a disagreement is a disagreement between GRADES, and the disclosure must name them", QrelBlindSmokeEvaluationName, adj.QueryID, g.SHA256, primary.SHA256)
 			}
 		}
 	}
@@ -1113,8 +1287,134 @@ type EvaluationOutcome struct {
 	Queries               []QueryOutcome        `json:"queries"`
 	Participants          []Participant         `json:"participants"`
 	EndOfRunComparison    HashComparisonResult  `json:"end_of_run_hash_comparison"`
-	Release               string                `json:"release"`
-	Reasons               []string              `json:"reasons"`
+	// CaptureBinding says whether the bytes the raters saw are bound to the
+	// candidate implementation and the indexed checkout they were recorded
+	// against. An unbound capture cannot release.
+	CaptureBinding CaptureBindingAssessment `json:"capture_binding"`
+	// DisclosedGradingConcerns are counted passes disclosed as unsupported,
+	// and CorrectedPassCount is the reviewed count minus those queries. The
+	// release is taken on the SMALLER of the two counts.
+	DisclosedGradingConcerns []GradingConcern `json:"disclosed_grading_concerns"`
+	CorrectedPassCount       int              `json:"corrected_pass_count"`
+	Release                  string           `json:"release"`
+	Reasons                  []string         `json:"reasons"`
+}
+
+// CaptureBindingAssessment records whether the capture provenance binds this
+// run's bytes to the candidate and checkout it names.
+//
+// It exists because provenance used to be optional: a run that read no
+// provenance at all, or whose provenance failed to parse, could still publish
+// RELEASE: YES. Evidence that is optional on the passing path is not evidence,
+// so an unbound or unprovenanced capture is now a release refusal, recorded
+// with its reasons rather than left as an empty section of a report.
+type CaptureBindingAssessment struct {
+	Bound          bool     `json:"bound"`
+	CaptureVersion string   `json:"capture_version"`
+	CandidateSHA   string   `json:"candidate_sha,omitempty"`
+	CheckoutSHA    string   `json:"checkout_sha,omitempty"`
+	Reasons        []string `json:"reasons,omitempty"`
+}
+
+// AssessCaptureBinding decides whether a capture provenance binds the run.
+func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCaptureProvenance) CaptureBindingAssessment {
+	assessment := CaptureBindingAssessment{CaptureVersion: p.CaptureVersion}
+	if strings.TrimSpace(p.CaptureVersion) == "" {
+		assessment.Reasons = append(assessment.Reasons, "no capture provenance was recorded: there is no evidence of the transport, the indexed checkout, the embedder or the candidate the rated bytes came from")
+		return assessment
+	}
+	for _, field := range []struct{ name, value string }{
+		{"transport", p.Transport},
+		{"boundary", p.Boundary},
+		{"repo_sha", p.RepoSHA},
+		{"embedder_selector", p.EmbedderSelector},
+		{"index_fingerprint", p.IndexFingerprint},
+		{"semantic_state", p.SemanticState},
+	} {
+		if strings.TrimSpace(field.value) == "" {
+			assessment.Reasons = append(assessment.Reasons, "the capture provenance records no "+field.name)
+		}
+	}
+	if p.DatasetSHA256 != precondition.DatasetSHA256 {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the capture ran over dataset %s, but %s was frozen", p.DatasetSHA256, precondition.DatasetSHA256))
+	}
+	if p.TokenBudget != precondition.CandidateTokenBudget {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the capture ran at a %d-token budget, but %d was frozen", p.TokenBudget, precondition.CandidateTokenBudget))
+	}
+	binding := p.Binding
+	if binding == nil {
+		assessment.Reasons = append(assessment.Reasons,
+			"the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes")
+		return assessment
+	}
+	assessment.CandidateSHA = binding.CandidateSHA
+	assessment.CheckoutSHA = binding.CheckoutSHA
+	if !binding.CandidateWorktreeClean {
+		assessment.Reasons = append(assessment.Reasons, "the candidate worktree was not clean at capture; uncommitted candidate code is not the candidate this run froze")
+	}
+	if !binding.CheckoutWorktreeClean {
+		assessment.Reasons = append(assessment.Reasons, "the indexed checkout's worktree was not clean at capture; an uncommitted edit to the indexed repository is not the pinned corpus")
+	}
+	if !binding.CandidateMatchesFrozen {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the candidate tree at capture (%s) differs outside the run directory from the frozen candidate %s", binding.CandidateSHA, precondition.CandidateSHA))
+	}
+	if binding.FrozenCandidateSHA != precondition.CandidateSHA {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the capture compared against candidate %s, but the precondition record froze %s", binding.FrozenCandidateSHA, precondition.CandidateSHA))
+	}
+	if binding.CheckoutSHA != p.RepoSHA {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the binding names checkout %s but the provenance names %s", binding.CheckoutSHA, p.RepoSHA))
+	}
+	assessment.Bound = len(assessment.Reasons) == 0
+	return assessment
+}
+
+// ValidateGradingConcerns refuses a concern that names material which does not
+// exist, or that is raised against anything but a counted pass.
+func ValidateGradingConcerns(concerns []GradingConcern, a EvaluationArtifacts, decided map[string]string) error {
+	gradeByQuery := map[string]map[string]bool{}
+	for _, g := range a.Grades {
+		if gradeByQuery[g.QueryID] == nil {
+			gradeByQuery[g.QueryID] = map[string]bool{}
+		}
+		gradeByQuery[g.QueryID][g.SHA256] = true
+	}
+	seen := map[string]bool{}
+	for _, c := range concerns {
+		if c.Kind != ConcernCountedPassNotSupported {
+			return fmt.Errorf("retrieval %s: disclosed concern for query %s has kind %q; the only permitted kind is %q, because a concern may only ever subtract from the count", QrelBlindSmokeEvaluationName, c.QueryID, c.Kind, ConcernCountedPassNotSupported)
+		}
+		if seen[c.QueryID] {
+			return fmt.Errorf("retrieval %s: query %s is disclosed twice; one query subtracts at most one pass", QrelBlindSmokeEvaluationName, c.QueryID)
+		}
+		seen[c.QueryID] = true
+		if decided[c.QueryID] != GradeOutcomePass {
+			return fmt.Errorf("retrieval %s: a concern is disclosed against query %s, which was not counted as a pass; a concern discloses an unsupported PASS and never converts a failure", QrelBlindSmokeEvaluationName, c.QueryID)
+		}
+		for _, field := range []struct{ name, value string }{
+			{"summary", c.Summary},
+			{"raised_by", c.RaisedBy},
+			{"raised_at", c.RaisedAt},
+		} {
+			if strings.TrimSpace(field.value) == "" {
+				return fmt.Errorf("retrieval %s: disclosed concern for query %s has no %s", QrelBlindSmokeEvaluationName, c.QueryID, field.name)
+			}
+		}
+		if _, err := time.Parse(timeLayout, c.RaisedAt); err != nil {
+			return fmt.Errorf("retrieval %s: disclosed concern for query %s has raised_at %q, not %s", QrelBlindSmokeEvaluationName, c.QueryID, c.RaisedAt, timeLayout)
+		}
+		if len(c.Evidence) == 0 {
+			return fmt.Errorf("retrieval %s: disclosed concern for query %s cites no evidence", QrelBlindSmokeEvaluationName, c.QueryID)
+		}
+		if len(c.GradeSHA256) == 0 {
+			return fmt.Errorf("retrieval %s: disclosed concern for query %s names no grade", QrelBlindSmokeEvaluationName, c.QueryID)
+		}
+		for _, sha := range c.GradeSHA256 {
+			if !gradeByQuery[c.QueryID][sha] {
+				return fmt.Errorf("retrieval %s: disclosed concern for query %s names grade %q, which resolves to no grade of that query", QrelBlindSmokeEvaluationName, c.QueryID, sha)
+			}
+		}
+	}
+	return nil
 }
 
 // EvaluateQrelBlindSmoke applies the decision procedure to every pre-registered query and
@@ -1195,19 +1495,67 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 	out.Participants = append(out.Participants, a.PreRegistration.PrimaryRaters...)
 	out.Participants = append(out.Participants, a.PreRegistration.Grader, a.PreRegistration.Adjudicator)
 
-	if out.PassCount < out.K {
+	decided := make(map[string]string, len(out.Queries))
+	for _, q := range out.Queries {
+		decided[q.QueryID] = q.Outcome
+	}
+	if err := ValidateGradingConcerns(a.GradingConcerns, a, decided); err != nil {
+		return EvaluationOutcome{}, err
+	}
+	out.DisclosedGradingConcerns = append(out.DisclosedGradingConcerns, a.GradingConcerns...)
+	out.CorrectedPassCount = out.PassCount - len(a.GradingConcerns)
+	out.CaptureBinding = AssessCaptureBinding(a.Precondition, a.CaptureProvenance)
+
+	// The release is taken on the SMALLER of the reviewed and corrected
+	// counts, so disclosing a concern can only ever move the decision towards
+	// NO. There is no arithmetic here that can move it the other way.
+	effective := out.PassCount
+	if out.CorrectedPassCount < effective {
+		effective = out.CorrectedPassCount
+	}
+	if effective < out.K {
 		out.Release = ReleaseNo
 		out.Reasons = append(out.Reasons, fmt.Sprintf("%d of %d queries passed, below the pre-registered k=%d; there is no override, exception or waiver", out.PassCount, out.N, out.K))
+	}
+	if len(out.DisclosedGradingConcerns) > 0 {
+		out.Reasons = append(out.Reasons, fmt.Sprintf("%d counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is %d of %d and the corrected count is %d of %d, and the release is decided on the smaller of the two", len(out.DisclosedGradingConcerns), out.PassCount, out.N, out.CorrectedPassCount, out.N))
 	}
 	if !comparison.AllMatch {
 		out.Release = ReleaseNo
 		out.Reasons = append(out.Reasons, "at least one frozen input's hash differs at the end of the run from its value in the precondition record")
 	}
+	if !out.CaptureBinding.Bound {
+		out.Release = ReleaseNo
+		for _, reason := range out.CaptureBinding.Reasons {
+			out.Reasons = append(out.Reasons, "the capture is not bound: "+reason)
+		}
+	}
 	if out.Release == "" {
 		out.Release = ReleaseYes
-		out.Reasons = append(out.Reasons, fmt.Sprintf("%d of %d queries passed, at or above the pre-registered k=%d, and every frozen input hash was unchanged at the end of the run", out.PassCount, out.N, out.K))
+		out.Reasons = append(out.Reasons, fmt.Sprintf("%d of %d queries passed, at or above the pre-registered k=%d, every frozen input hash was unchanged at the end of the run, and the capture is bound to the frozen candidate and the pinned checkout", out.PassCount, out.N, out.K))
 	}
 	return out, nil
+}
+
+// UnsatisfiableOutcome is the outcome record for a population no k can serve.
+//
+// AC-4 says the evaluation "shall record RELEASE: NO with that reason", and a
+// line on stderr is not a record: a caller that finds no outcome.json cannot
+// tell the mandatory refusal from a run that crashed, was interrupted, or was
+// never started. This writes the refusal down. It carries no queries, no
+// participants and no pass count, because none of those exist yet.
+func UnsatisfiableOutcome(precondition PreconditionRecord, n int, reason error) EvaluationOutcome {
+	return EvaluationOutcome{
+		ContractVersion:    QrelBlindSmokeContractVersion,
+		Evaluation:         QrelBlindSmokeEvaluationName,
+		PreconditionSHA256: precondition.SHA256,
+		N:                  n,
+		Release:            ReleaseNo,
+		Reasons: []string{
+			reason.Error(),
+			"no minimum passing count exists for this population, so the evaluation did not run; k is never clamped to N and there is no best-available mode",
+		},
+	}
 }
 
 // ValidateEvaluationOutcome recomputes every published number from the

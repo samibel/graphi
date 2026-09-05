@@ -1968,7 +1968,7 @@
     }
   ],
   "end_of_run_hash_comparison": {
-    "compared_at": "2026-09-05T14:10:13Z",
+    "compared_at": "2026-09-05T16:24:18Z",
     "comparisons": [
       {
         "role": "dataset",
@@ -2008,8 +2008,37 @@
     ],
     "all_match": true
   },
+  "capture_binding": {
+    "bound": false,
+    "capture_version": "sw280-candidate-mcp-capture/1",
+    "reasons": [
+      "the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes"
+    ]
+  },
+  "disclosed_grading_concerns": [
+    {
+      "query_id": "ci-1086",
+      "kind": "counted_pass_not_supported",
+      "grade_sha256": [
+        "5b1bb46b4589a195403c17e5176074a28d151b8090efd05d9fd33bf62056108a",
+        "345e75760fc58917f5ebef1034779a0dd04d5ddfe486608282857822b3f3b0df"
+      ],
+      "summary": "ci-1086 is counted as a pass, and the bundle-only rule does not support it. The reviewed grade-3 operation is pflag's Changed (internal/eval/retrieval/testdata/datasets/cobra-v2.json), and the captured task_context/2 bundle for ci-1086 does not contain it. Both primaries were nevertheless graded pass. The query is NOT re-graded here: a grade that is already sealed is never re-sealed, and quietly correcting one is exactly the retry loop the append-only seal exists to exclude. It is disclosed instead, and it subtracts one from the corrected count.",
+      "evidence": [
+        "primary rater 2 states in its own response that the bundle does not show `.Changed` or `Flags().Changed`, and answers around the absence",
+        "primary rater 1 supplies `Changed` by analogy rather than from the bundle, and grade 5b1bb46b's own rationale acknowledges that the operation was reached by inference",
+        "the grade-3 answer span for ci-1086 names pflag.Changed, which does not appear anywhere in the preserved bundle bytes",
+        "raised by the SW-280 round-1 review (Codex, blocking finding 5); independently reproduced against the committed response, grade and bundle artifacts"
+      ],
+      "raised_by": "SW-280 round-1 independent review (Codex), reproduced by the round-1 fix pass",
+      "raised_at": "2026-09-05T00:00:00Z"
+    }
+  ],
+  "corrected_pass_count": 30,
   "release": "NO",
   "reasons": [
-    "31 of 64 queries passed, below the pre-registered k=56; there is no override, exception or waiver"
+    "31 of 64 queries passed, below the pre-registered k=56; there is no override, exception or waiver",
+    "1 counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is 31 of 64 and the corrected count is 30 of 64, and the release is decided on the smaller of the two",
+    "the capture is not bound: the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes"
   ]
 }

@@ -124,7 +124,7 @@ func TestRetrievalEval_BlindEvalDecideBelowKIsReleaseNoAndNonZero(t *testing.T) 
 			if err := retrieval.CheckQrelBlindSmokeReport(string(report)); err != nil {
 				t.Errorf("the written report fails the naming discipline: %v", err)
 			}
-			if !strings.Contains(string(report), fmt.Sprintf("| observed pass count | %d |", tc.passes)) {
+			if !strings.Contains(string(report), fmt.Sprintf("| observed pass count (as reviewed) | %d |", tc.passes)) {
 				t.Errorf("the report does not publish the integer pass count %d", tc.passes)
 			}
 		})
@@ -240,27 +240,95 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		Grader:             grader,
 		Adjudicator:        adjudicator,
 	}
-	type queryFixture struct {
-		id     string
-		text   string
-		bundle []byte
+	// The fixture uses REAL queries from the frozen dataset and REAL prompts
+	// rebuilt from the bundle bytes, because `decide` now resolves both. A
+	// fixture whose prompts nobody could rebuild would only prove the check
+	// does not run.
+	dataset, err := retrieval.LoadDataset(filepath.Join(root, filepath.FromSlash(precondition.DatasetPath)))
+	if err != nil {
+		t.Fatal(err)
 	}
-	fixtures := make([]queryFixture, 0, n)
+	population, err := retrieval.AnswerableHoldout(dataset.Dataset)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(population) < n {
+		t.Fatalf("the frozen dataset holds %d answerable holdout queries, fixture needs %d", len(population), n)
+	}
+	prompts := map[string]retrieval.RaterPrompt{}
 	for i := 0; i < n; i++ {
-		id := fmt.Sprintf("hq-%02d", i+1)
-		bundle := []byte(`{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"` + id + `"}],"isError":false}}` + "\n")
-		fixtures = append(fixtures, queryFixture{id: id, text: "question " + id, bundle: bundle})
-		pre.Queries = append(pre.Queries, retrieval.PreRegisteredQuery{
-			QueryID: id, FamilyID: "f-" + id, Stratum: "nl_behaviour",
-			QueryTextSHA256: retrieval.SHA256Hex([]byte("question " + id)),
-			BundleSHA256:    retrieval.SHA256Hex(bundle),
-			BundleByteCount: len(bundle),
-			BundleBoundary:  retrieval.PayloadBoundaryCandidate,
-			BundleTokenCounts: []retrieval.PayloadTokenCount{
+		q := population[i]
+		body := []byte(`{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"` + q.ID + `"}],"isError":false}}` + "\n")
+		payload := retrieval.PreservedPayload{
+			Sequence:  1,
+			Boundary:  retrieval.PayloadBoundaryCandidate,
+			Operation: retrieval.PayloadOperationTaskContext,
+			Bytes:     body,
+			SHA256:    retrieval.SHA256Hex(body),
+			ByteCount: len(body),
+			TokenCounts: []retrieval.PayloadTokenCount{
 				{TokenizerID: retrieval.TokenizerID, Tokens: 3},
 				{TokenizerID: evaltokenizer.TokenizerID, VocabularySHA256: evaltokenizer.PinnedVocabularySHA256, Tokens: 20},
 			},
+		}
+		if err := retrieval.WriteBlindEvalJSON(filepath.Join(dir, retrieval.BlindEvalBundlesDir, retrieval.BundleFileName(q.ID)),
+			retrieval.CapturedCandidateBundle{QueryID: q.ID, Payload: payload, RetrievalStrategy: "semantic_first", RetrievalState: "ready", BundleSummary: "cmd fixture"}); err != nil {
+			t.Fatal(err)
+		}
+		prompt, err := retrieval.BuildRaterPrompt(q.ID, q.Text, payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(dir, retrieval.BlindEvalPromptsDir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, retrieval.BlindEvalPromptsDir, retrieval.PromptFileName(q.ID)), prompt.Bytes, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		prompts[q.ID] = prompt
+		pre.Queries = append(pre.Queries, retrieval.PreRegisteredQuery{
+			QueryID: q.ID, FamilyID: q.FamilyID, Stratum: q.Stratum,
+			QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
+			PromptSHA256:      prompt.SHA256,
+			BundleSHA256:      payload.SHA256,
+			BundleByteCount:   payload.ByteCount,
+			BundleBoundary:    retrieval.PayloadBoundaryCandidate,
+			BundleTokenCounts: payload.TokenCounts,
 		})
+	}
+	// A complete capture provenance, including the candidate binding. Without
+	// it the run cannot release at all, which is the point: a run with no
+	// evidence of where its bytes came from is not a passing run.
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(dir, retrieval.BlindEvalProvenanceFile), retrieval.CandidateCaptureProvenance{
+		CaptureVersion:    retrieval.CandidateCaptureVersion,
+		Transport:         "cmd fixture transport",
+		Surface:           "cmd fixture surface",
+		Boundary:          string(retrieval.PayloadBoundaryCandidate),
+		RepoName:          "cobra",
+		RepoSHA:           dataset.Dataset.RepoSHA,
+		DatasetSHA256:     precondition.DatasetSHA256,
+		EmbedderSelector:  "static:fixture@0",
+		ModelFingerprint:  "static:fixture@0:fixture",
+		IndexFingerprint:  "fixture-index",
+		GenerationID:      "g-fixture",
+		PersistedVectors:  1,
+		SemanticState:     "ready",
+		TokenBudget:       retrieval.SavingsCandidateBudget,
+		MethodVersion:     "task_context/2",
+		TokenizerID:       evaltokenizer.TokenizerID,
+		TokenizerVocabSHA: evaltokenizer.PinnedVocabularySHA256,
+		QueryCount:        n,
+		Binding: &retrieval.CandidateBinding{
+			CandidateSHA:           precondition.CandidateSHA,
+			FrozenCandidateSHA:     precondition.CandidateSHA,
+			CandidateWorktreeClean: true,
+			CandidateMatchesFrozen: true,
+			CandidateExcludedPath:  "docs/eval/retrieval/runs/fixture",
+			CheckoutSHA:            dataset.Dataset.RepoSHA,
+			CheckoutWorktreeClean:  true,
+		},
+	}); err != nil {
+		t.Fatal(err)
 	}
 	pre, err = retrieval.SealPreRegistration(pre)
 	if err != nil {
@@ -289,7 +357,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 				PreRegistrationSHA256: pre.SHA256,
 				QueryTextSHA256:       q.QueryTextSHA256,
 				BundleSHA256:          q.BundleSHA256,
-				PromptSHA256:          retrieval.SHA256Hex([]byte("prompt:" + q.QueryID + ":" + rater.ID)),
+				PromptSHA256:          prompts[q.QueryID].SHA256,
 				Inputs:                []string{"answer_instructions", "query_text", "preserved_bundle"},
 				Status:                retrieval.ResponseStatusAnswered,
 				Text:                  "answer for " + q.QueryID,
@@ -326,6 +394,119 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 			}
 		}
 	}
-	_ = fixtures
 	return dir
+}
+
+// M5: "the run directory must be inside the repository" was computed and never
+// checked — filepath.Rel returns "../../elsewhere" without an error, so a run
+// could freeze a mutable rubric and content-address artifacts git never saw.
+func TestRetrievalEval_BlindEvalRefusesARunDirectoryOutsideTheRepository(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("a directory inside the repository resolves", func(t *testing.T) {
+		rel, err := runDirectoryInsideRepository(root, filepath.Join(root, "docs", "eval"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rel != "docs/eval" {
+			t.Errorf("rel = %q", rel)
+		}
+	})
+	for _, outside := range []string{
+		filepath.Join(root, "..", "elsewhere"),
+		filepath.Join(root, "docs", "..", "..", "elsewhere"),
+		t.TempDir(),
+	} {
+		t.Run("refuses "+outside, func(t *testing.T) {
+			if rel, err := runDirectoryInsideRepository(root, outside); err == nil {
+				t.Fatalf("a run directory outside the repository resolved to %q instead of being refused", rel)
+			} else if !strings.Contains(err.Error(), "outside the repository") {
+				t.Errorf("refusal %q does not say the directory is outside the repository", err)
+			}
+		})
+	}
+	// And the freeze phase actually applies it.
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{
+		phase: blindEvalFreeze, dir: filepath.Join(root, "..", "elsewhere"), root: root,
+		dataset: "internal/eval/retrieval/testdata/datasets/cobra-v2.json",
+	}, &stdout, &stderr)
+	if code == exitOK {
+		t.Fatal("freeze accepted a run directory outside the repository")
+	}
+	if !strings.Contains(stderr.String(), "outside the repository") {
+		t.Errorf("stderr %q", stderr.String())
+	}
+}
+
+// B3: the rater prompt was never resolved against anything. decide now rebuilds
+// each prompt from the pre-registered bundle bytes and question, so a prompt
+// carrying an expected answer — appended after pre-registration and removed
+// afterwards — is refused rather than accepted on a digest nobody checks.
+func TestRetrievalEval_BlindEvalRefusesAPromptThatIsNotTheOneItPreRegistered(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := buildBlindEvalRunDir(t, 13, 13)
+	entries, err := os.ReadDir(filepath.Join(dir, retrieval.BlindEvalPromptsDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("the fixture wrote no prompts")
+	}
+	victim := filepath.Join(dir, retrieval.BlindEvalPromptsDir, entries[0].Name())
+	original, err := os.ReadFile(victim)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(victim, append(append([]byte(nil), original...),
+		[]byte("\n\nHINT: the answer is Command.ExecuteC in command.go.\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code == exitOK {
+		t.Fatal("decide accepted a prompt that is not the one the pre-registered inputs rebuild to")
+	}
+	if !strings.Contains(stderr.String(), "is not the prompt its pre-registered query text and bundle bytes rebuild to") {
+		t.Errorf("stderr %q does not name the prompt substitution", stderr.String())
+	}
+
+	// Restoring the prompt but leaving a response naming the substituted digest
+	// must also be refused: the response is what records what was answered from.
+	if err := os.WriteFile(victim, original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	responses, err := os.ReadDir(filepath.Join(dir, retrieval.BlindEvalResponsesDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	responsePath := filepath.Join(dir, retrieval.BlindEvalResponsesDir, responses[0].Name())
+	raw, err := os.ReadFile(responsePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var response retrieval.RaterResponse
+	if err := jsonUnmarshalStrict(raw, &response); err != nil {
+		t.Fatal(err)
+	}
+	response.PromptSHA256 = retrieval.SHA256Hex([]byte("a prompt nobody committed"))
+	sealed, err := retrieval.SealRaterResponse(response)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := retrieval.WriteBlindEvalJSON(responsePath, sealed); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code == exitOK {
+		t.Fatal("decide accepted a response answered from a prompt nobody committed")
+	}
+	if !strings.Contains(stderr.String(), "the pre-registered inputs rebuild to prompt") {
+		t.Errorf("stderr %q", stderr.String())
+	}
 }

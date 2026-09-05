@@ -105,9 +105,19 @@ func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
-	runDirRelative, err := filepath.Rel(o.root, o.dir)
+	runDirRelative, err := runDirectoryInsideRepository(o.root, o.dir)
 	if err != nil {
-		fmt.Fprintf(stderr, "retrieval-eval: run directory %s is not under %s\n", o.dir, o.root)
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	// A candidate sha read off a dirty worktree names a commit whose code is
+	// not the code that will run. Freezing it there would make every later
+	// binding check compare against a fiction.
+	if clean, err := candidateWorktreeClean(o.root); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	} else if !clean {
+		fmt.Fprintf(stderr, "retrieval-eval: the %s refuses to freeze: the candidate worktree at %s has uncommitted changes, so candidate_sha %s would not name the code this evaluation runs\n", retrieval.QrelBlindSmokeEvaluationName, o.root, head)
 		return exitError
 	}
 	record := retrieval.PreconditionRecord{
@@ -197,10 +207,19 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	// AC-4: an unsatisfiable N records RELEASE: NO with the reason, and stops.
+	// "Records" means an artifact on disk, not a line on stderr: printing the
+	// typed error and exiting left automation unable to tell the mandatory
+	// refusal apart from a run that was interrupted or never started.
 	derivation, err := retrieval.DerivePassCount(len(population), dataset.SHA256,
 		"count of answerable holdout queries in the sealed dataset: split=holdout, stratum!=no_hit, at least one grade-3 span")
 	if err != nil {
+		outcome := retrieval.UnsatisfiableOutcome(precondition, len(population), err)
+		if writeErr := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalOutcomeFile), outcome); writeErr != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", writeErr)
+			return exitError
+		}
 		fmt.Fprintf(stderr, "retrieval-eval: RELEASE: NO — %v\n", err)
+		fmt.Fprintf(stdout, "retrieval-eval: recorded RELEASE: NO in %s\n", filepath.Join(o.dir, retrieval.BlindEvalOutcomeFile))
 		return exitError
 	}
 	fmt.Fprintf(stdout, "retrieval-eval: N=%d, k=%d (lower bound %s) derived before any response is opened\n",
@@ -225,6 +244,11 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	runDirRelative, err := runDirectoryInsideRepository(o.root, o.dir)
+	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	captured, provenance, err := retrieval.CaptureCandidateBundles(context.Background(), retrieval.CandidateCaptureOptions{
 		RepoRoot:         o.checkout,
 		RepoName:         o.repoName,
@@ -234,17 +258,35 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		EmbedderSelector: o.embedder,
 		RealCounter:      counter,
 		Log:              stderr,
+		Probe:            retrieval.GitRepoProbe(),
+		Binding: retrieval.CandidateBindingOptions{
+			CandidateRoot:      o.root,
+			FrozenCandidateSHA: precondition.CandidateSHA,
+			ExcludePath:        runDirRelative,
+		},
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
 
+	// The field is named precondition_record_commit, so it must name the
+	// commit that CONTAINS the precondition record. It used to be copied from
+	// the record's own freeze_commit — the candidate commit at freeze time —
+	// which is a different commit and, for the first run of this evaluation,
+	// a commit in which the record does not exist at all. An auditor following
+	// it found nothing, and a record created later could name any earlier
+	// commit as its own precedence evidence.
+	preconditionCommit, err := gitCommitContaining(o.root, filepath.ToSlash(filepath.Join(runDirRelativeForPrecondition(o.root, o.dir), retrieval.BlindEvalPreconditionFile)))
+	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	pre := retrieval.PreRegistration{
 		ContractVersion:    retrieval.QrelBlindSmokeContractVersion,
 		Evaluation:         retrieval.QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
-		PreconditionCommit: precondition.FreezeCommit,
+		PreconditionCommit: preconditionCommit,
 		RecordedAt:         time.Now().UTC().Format(time.RFC3339),
 		Derivation:         derivation,
 	}
@@ -281,6 +323,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 			FamilyID:          q.FamilyID,
 			Stratum:           q.Stratum,
 			QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
+			PromptSHA256:      retrieval.SHA256Hex(prompt.Bytes),
 			BundleSHA256:      bundle.Payload.SHA256,
 			BundleByteCount:   bundle.Payload.ByteCount,
 			BundleBoundary:    bundle.Payload.Boundary,
@@ -351,6 +394,26 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	// Resolve the prompts the raters were actually given against the
+	// pre-registered inputs, by rebuilding each one from the pre-registered
+	// bundle bytes and question. Nothing else opens a prompt file.
+	dataset, err := retrieval.LoadDataset(filepath.Join(o.root, filepath.FromSlash(artifacts.Precondition.DatasetPath)))
+	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	if dataset.SHA256 != artifacts.Precondition.DatasetSHA256 {
+		fmt.Fprintf(stderr, "retrieval-eval: dataset sha256 %s, precondition froze %s\n", dataset.SHA256, artifacts.Precondition.DatasetSHA256)
+		return exitError
+	}
+	queryText := map[string]string{}
+	for _, q := range dataset.Dataset.Queries {
+		queryText[q.ID] = q.Text
+	}
+	if err := retrieval.CheckPromptBinding(o.dir, artifacts, queryText); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	comparison, err := retrieval.CompareFrozenInputs(artifacts.Precondition, retrieval.RepoFileSHA256Reader(o.root), time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
@@ -365,14 +428,7 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
-	var provenance retrieval.CandidateCaptureProvenance
-	if raw, err := os.ReadFile(filepath.Join(o.dir, retrieval.BlindEvalProvenanceFile)); err == nil {
-		if err := jsonUnmarshalStrict(raw, &provenance); err != nil {
-			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
-			return exitError
-		}
-	}
-	report, err := retrieval.RenderQrelBlindSmokeReport(outcome, artifacts.PreRegistration, artifacts.Precondition, provenance)
+	report, err := retrieval.RenderQrelBlindSmokeReport(outcome, artifacts.PreRegistration, artifacts.Precondition, artifacts.CaptureProvenance)
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
@@ -398,6 +454,66 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	return exitOK
+}
+
+// runDirectoryInsideRepository resolves the run directory relative to the
+// repository root and REFUSES a path that escapes it.
+//
+// filepath.Rel happily returns "../../elsewhere" and returns no error doing so,
+// so computing it was never a containment check. A run directory outside the
+// repository is a mutable rubric and a mutable set of artifacts that git never
+// saw: the evaluation would freeze inputs nobody can retrieve and publish
+// content addresses over files that were never committed.
+func runDirectoryInsideRepository(root, dir string) (string, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(absRoot, absDir)
+	if err != nil {
+		return "", fmt.Errorf("run directory %s is not under %s", dir, root)
+	}
+	rel = filepath.ToSlash(rel)
+	if rel == ".." || strings.HasPrefix(rel, "../") || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("run directory %s resolves to %s, which is outside the repository at %s; the evaluation's inputs and artifacts must be files git can be asked about", dir, rel, absRoot)
+	}
+	return rel, nil
+}
+
+// candidateWorktreeClean reports whether the candidate repository has no
+// uncommitted change.
+func candidateWorktreeClean(root string) (bool, error) {
+	return retrieval.GitRepoProbe().WorktreeClean(context.Background(), root)
+}
+
+// runDirRelativeForPrecondition is the run directory relative to the
+// repository root. Containment was already proved above, so a failure here is
+// impossible and resolves to the raw path rather than swallowing an error.
+func runDirRelativeForPrecondition(root, dir string) string {
+	rel, err := runDirectoryInsideRepository(root, dir)
+	if err != nil {
+		return dir
+	}
+	return rel
+}
+
+// gitCommitContaining names the commit that last wrote path, and refuses when
+// git has never seen it. The capture already requires a clean worktree, so the
+// committed bytes and the bytes on disk are the same bytes.
+func gitCommitContaining(root, path string) (string, error) {
+	out, err := exec.Command("git", "-C", root, "log", "-1", "--format=%H", "--", path).Output()
+	if err != nil {
+		return "", fmt.Errorf("git log for %s in %s: %w", path, root, err)
+	}
+	commit := strings.TrimSpace(string(out))
+	if commit == "" {
+		return "", fmt.Errorf("%s is not committed; the pre-registration must name the commit that contains the precondition record, and an uncommitted record has no such commit", path)
+	}
+	return commit, nil
 }
 
 func gitHead(root string) (string, error) {

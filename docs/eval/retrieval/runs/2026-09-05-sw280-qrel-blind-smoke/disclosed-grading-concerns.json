@@ -1,0 +1,19 @@
+[
+  {
+    "query_id": "ci-1086",
+    "kind": "counted_pass_not_supported",
+    "grade_sha256": [
+      "5b1bb46b4589a195403c17e5176074a28d151b8090efd05d9fd33bf62056108a",
+      "345e75760fc58917f5ebef1034779a0dd04d5ddfe486608282857822b3f3b0df"
+    ],
+    "summary": "ci-1086 is counted as a pass, and the bundle-only rule does not support it. The reviewed grade-3 operation is pflag's Changed (internal/eval/retrieval/testdata/datasets/cobra-v2.json), and the captured task_context/2 bundle for ci-1086 does not contain it. Both primaries were nevertheless graded pass. The query is NOT re-graded here: a grade that is already sealed is never re-sealed, and quietly correcting one is exactly the retry loop the append-only seal exists to exclude. It is disclosed instead, and it subtracts one from the corrected count.",
+    "evidence": [
+      "primary rater 2 states in its own response that the bundle does not show `.Changed` or `Flags().Changed`, and answers around the absence",
+      "primary rater 1 supplies `Changed` by analogy rather than from the bundle, and grade 5b1bb46b's own rationale acknowledges that the operation was reached by inference",
+      "the grade-3 answer span for ci-1086 names pflag.Changed, which does not appear anywhere in the preserved bundle bytes",
+      "raised by the SW-280 round-1 review (Codex, blocking finding 5); independently reproduced against the committed response, grade and bundle artifacts"
+    ],
+    "raised_by": "SW-280 round-1 independent review (Codex), reproduced by the round-1 fix pass",
+    "raised_at": "2026-09-05T00:00:00Z"
+  }
+]
