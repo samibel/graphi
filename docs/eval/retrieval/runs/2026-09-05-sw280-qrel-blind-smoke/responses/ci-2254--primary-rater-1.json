@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2254",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "21809cbe703aa87c520469be8814b5819bcfcdb3ab6937d2678a448053fd5671",
+  "bundle_sha256": "517944768067e72bb339da74d3f2aef965f8ba1886eececf76d8aa96bdedc8ce",
+  "prompt_sha256": "a2314f9f31165abe0977e95759ae15f3c048b458188da78de629e5aafa6c378f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To add a shorthand to an option, you use the `Shorthand` field in the `cmdOption` struct. This is defined in `doc/yaml_docs.go` at line 30 (evidence e32):\n\n```go\ntype cmdOption struct {\n\tName         string\n\tShorthand    string `yaml:\",omitempty\"`\n\tDefaultValue string `yaml:\"default_value,omitempty\"`\n\tUsage        string `yaml:\",omitempty\"`\n}\n```\n\nThe `Shorthand` field is a string member of the `cmdOption` type that holds the shorthand character or string for an option. The `yaml:\",omitempty\"` tag indicates it's optional in YAML serialization.",
+  "responded_at": "2026-09-05T13:53:45Z",
+  "sha256": "ae73cb2328d40155e6c7d6b668f71bbfedb34e4c70c4b873e34af8af50c9e0fc"
+}

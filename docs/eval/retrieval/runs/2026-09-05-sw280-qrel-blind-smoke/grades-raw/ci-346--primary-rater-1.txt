@@ -1,0 +1,15 @@
+PASS
+
+Checked against the reviewed grade-3 span args.go:73-81, anchor "func MinimumNArgs(n int) PositionalArgs {" — the built-in validator that makes N positional arguments mandatory (n=1).
+
+1. Answers the question asked. The question is "How to add a required argument?" and the response gives the procedure: set the Command struct's Args field to a built-in positional validator, specifically cobra.MinimumNArgs(n), with MinimumNArgs(1) named as the concrete way to require one argument. It does not drift to flags, required flags, or a nearby topic.
+
+2. Substantively correct. The claim is consistent with the args.go:73-81 grade-3 span: MinimumNArgs is exactly the mechanism that span identifies, and the response's description of its behaviour ("returns an error if fewer than 1 argument is provided") matches the span's semantics. It does not contradict the second grade-3 span (ExactArgs) — naming one of the two built-in validators satisfies "consistent with at least one reviewed grade-3 answer span". Nothing in the answer key contradicts the Args-field wiring the response describes.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes the rater was given:
+   - args.go:74 — present as evidence e4 (primary, source_match) and as the snippet e114 (args.go:68-80), whose text literally contains "// MinimumNArgs returns an error if there is not at least N args." and "func MinimumNArgs(n int) PositionalArgs {" plus the len(args) < n error branch. This is the load-bearing citation and it directly overlaps the grade-3 span.
+   - command.go:1139 — present as evidence e2 and snippet e112, which shows "func (c *Command) ValidateArgs(args []string) error" dispatching to c.Args(c, args), supporting the response's claim that ValidateArgs runs the validator.
+   - site/content/user_guide.md:367 — present as evidence e3/e52 and snippet e113, whose text reads "## Positional and Custom Arguments / Validation of positional arguments can be specified using the `Args` field of `Command`. / The following validators are built in:", supporting the Args-field claim.
+   The type PositionalArgs the response names also appears in the bundle (item "related: type cobra.PositionalArgs (args.go:22)" and snippet e118). Nothing cited is absent from the bytes, and no part of the answer is supplied from outside the bundle.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites only in-bundle evidence, is not INSUFFICIENT, and makes a specific checkable claim (use MinimumNArgs(1) in Args).

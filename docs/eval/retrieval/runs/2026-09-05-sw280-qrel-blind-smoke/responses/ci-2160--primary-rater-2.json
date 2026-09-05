@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2160",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "21dc654ef074a8582e90dd1f9dd16fc2236b34bbfd409b1fb48ce156dfefe309",
+  "bundle_sha256": "87807d194240248e124f6d8a61209743abe40e0897f76ce4149c8b9b3aee13b5",
+  "prompt_sha256": "bbf9dcd865d4516980629b34a11334fbdecb98005b549a7329a22ec72470bc34",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To make a subcommand show up in the \"Available Commands\" section of the help output, add it as a subcommand of the parent Command and make sure it passes the availability check that gates that section.\n\nEvidence:\n\n- command.go:1617 (`HasAvailableSubCommands`, snippet e66, lines 1611-1623): \"HasAvailableSubCommands determines if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'.\" It loops `for _, sub := range c.commands { if sub.IsAvailableCommand() { return true } }`. So any subcommand present in `c.commands` that satisfies `IsAvailableCommand()` is what populates the \"Available Commands\" list.\n\n- command.go:1562 (`IsAvailableCommand`, snippet e68, lines 1556-1568): defines the gate — \"IsAvailableCommand determines if a command is available as a non-help command (this includes all non deprecated/hidden commands).\" Its body: `if len(c.Deprecated) != 0 || c.Hidden { return false }` and `if c.HasParent() \u0026\u0026 c.Parent().helpCommand == c { return false }`. So a command counts as \"available\" (i.e., appears in the section) only if it has no `Deprecated` string set, `Hidden` is false, and it isn't the parent's auto-generated help command.\n\n- command.go:1052/1068 (`ExecuteC`, evidence e17) and command.go:1229 (`InitDefaultHelpCmd`, snippet e65, lines 1223-1235) show that the help/usage machinery (and the default help command) walks `c.commands`, reinforcing that entries come from whatever has been added to that slice.\n\n- command.go:1362 (`RemoveCommand`, snippet e70, lines 1356-1368) confirms `c.commands` is the backing slice that subcommands are added to/removed from (\"RemoveCommand removes one or more commands from a parent command\" by filtering `c.commands`).\n\n- site/content/user_guide.md:492 (snippet e67, lines 486-498) documents the user-facing behavior: \"Cobra automatically adds a help command to your application when you have subcommands... Every command will automatically have the '--help' flag added,\" consistent with the help template rendering whatever subcommands exist.\n\nPractical steps implied by this evidence:\n1. Create your `*cobra.Command` (e.g., `var myCmd = \u0026cobra.Command{Use: \"mycmd\", ...}`).\n2. Attach it to the parent command's subcommand slice (the parent's `c.commands`, mutated via the Add/Remove command methods such as `RemoveCommand` at command.go:1362 and the same slice referenced throughout command.go).\n3. Ensure it will pass `IsAvailableCommand()` (command.go:1562): do not set `Deprecated`, do not set `Hidden: true`, and don't mark it as the help command — otherwise `HasAvailableSubCommands()` (command.go:1617) will skip it and it won't be shown under \"Available Commands\" in the generated help/usage template.",
+  "responded_at": "2026-09-05T13:53:18Z",
+  "sha256": "e67403db106d609d72f954edfd1b7f7318d22899a081121a31f2060299ff962a"
+}

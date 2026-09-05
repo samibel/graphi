@@ -1,0 +1,24 @@
+To remove the default "use: XXX [command]" command, use the **RemoveCommand()** method.
+
+The primary evidence is from **command.go:1362** (evidence_ref e1), which defines the method:
+
+```go
+// RemoveCommand removes one or more commands from a parent command.
+func (c *Command) RemoveCommand(cmds ...*Command) {
+```
+
+This is the top-ranked result (score 300) and is demonstrated in a test helper function at **completions_test.go:2417** (evidence_ref e2), which shows practical usage:
+
+```go
+func removeCompCmd(rootCmd *Command) {
+	// Remove completion command for the next test
+	for _, cmd := range rootCmd.commands {
+		if cmd.Name() == compCmdName {
+			rootCmd.RemoveCommand(cmd)
+			return
+		}
+	}
+}
+```
+
+Additionally, you can prevent the default help command from being initialized in the first place by leveraging **InitDefaultHelpCmd()** at **command.go:1229** (evidence_ref e3), which only adds the default help command if the command has subcommands. The documentation in **site/content/user_guide.md:541** (evidence_ref e4) also mentions you can provide your own help command using `SetHelpCommand(cmd *Command)` to customize or replace the default help behavior entirely.

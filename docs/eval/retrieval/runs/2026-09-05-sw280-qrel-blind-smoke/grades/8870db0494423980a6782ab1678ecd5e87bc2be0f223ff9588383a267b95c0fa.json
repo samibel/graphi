@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "cb-29",
+  "response_sha256": "8870db0494423980a6782ab1678ecd5e87bc2be0f223ff9588383a267b95c0fa",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the single reviewed grade-3 span for cb-29: cobra.go:61-62, anchor \"var EnableCaseInsensitive\" (the package-level switch).\n\n1. Answers the question asked. The question is how to make command names case insensitive; the response states directly that you set the package-level variable cobra.EnableCaseInsensitive = true, and does not drift to a nearby topic (sorting, aliases, completion).\n\n2. Substantively correct. The claim is the same mechanism as the answer key: the package-level EnableCaseInsensitive switch at cobra.go:62. It also correctly describes the consumption path (commandNameMatches falls back to strings.EqualFold instead of ==), which is consistent with, not contradictory to, the key. Its closing caveat that there is no per-command setting and the mechanism is the single global variable agrees with the key's characterization of it as a package-level switch.\n\n3. Grounded in the bundle. Every cited item appears in the exact bundle bytes: evidence e115 (path cobra.go, span 56-68, role snippet) whose snippet text contains \"// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\" and \"var EnableCaseInsensitive = defaultCaseInsensitive\"; evidence e117 (command.go, span 1873-1885) whose snippet is the verbatim commandNameMatches body the response quotes, including the EnableCaseInsensitive branch and strings.EqualFold; and e6/e120 (command.go:770 relation and the command.go 761-773 snippet) for Command.findNext calling commandNameMatches, which the response uses to explain the runtime effect. The line references cobra.go:62, command.go:1879 and command.go:767 match the item reasons in the bundle's items array. Nothing cited is absent from the bytes, and no claim is supplied from outside the bundle.\n\nNo fail criterion applies: the response is not about a different question, does not contradict the grade-3 span, is not INSUFFICIENT, and is not hedged — it makes a single checkable claim.",
+  "graded_at": "2026-09-05T13:58:46Z",
+  "sha256": "d6a934310cfdfa75dac9c4104e5224bc532bf6d9512ac9505d64918246dea793"
+}

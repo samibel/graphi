@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-18",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "fc716d347e651ae9c9e3bff656afbd00521e1086ee478799d04ce217de3a9395",
+  "bundle_sha256": "5ee1c1e52f888e43b0e4e0a1f0985eccb1cf6f421e25864c2b065483d1efab0a",
+  "prompt_sha256": "c18dd128e2db19d8c30d7f95420f748803b6a06a4f39b7aacd3aebeaf2e71cc2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Hidden and deprecated commands are excluded from help output by being filtered out of the \"available\" command set that the help/usage templates iterate over, rather than by any special-casing inside the help renderer itself.\n\nThe core check is `cobra.Command.IsAvailableCommand` (command.go:1562, snippet spans 1556-1568):\n    func (c *Command) IsAvailableCommand() bool {\n        if len(c.Deprecated) != 0 || c.Hidden {\n            return false\n        }\n        if c.HasParent() \u0026\u0026 c.Parent().helpCommand == c {\n            return false\n        ...\n\nAny command whose `Deprecated` string is non-empty or whose `Hidden` flag is true immediately returns `false` here.\n\nThis predicate is what gates inclusion in the \"Available Commands\" section: `cobra.Command.HasAvailableSubCommands` (command.go:1617, snippet 1611-1623) loops over `c.commands` and returns true as soon as it finds a sub-command for which `sub.IsAvailableCommand()` is true — its own comment says it returns \"true on the first found available (non deprecated/help/hidden) sub command.\" The usage/help templates use this (and the underlying per-command `IsAvailableCommand` checks when listing) to decide which sub-commands actually get printed, so hidden/deprecated ones are simply skipped.\n\nA related predicate, `cobra.Command.IsAdditionalHelpTopicCommand` (command.go:1583, snippet 1577-1589), applies the same exclusion for the \"Additional help topics\" section: \"if a command is runnable, deprecated, or hidden it is not a 'help' command\" — `if c.Runnable() || len(c.Deprecated) != 0 || c.Hidden { return false }`. This feeds `HasHelpSubCommands` (command.go:1603).\n\n`Command.Help()` itself (command.go:473) just invokes `c.HelpFunc()(c, []string{})` — the exclusion logic lives in the availability predicates the help function's template consults, not in `Help()` directly.\n\nTest evidence confirms the hidden-exclusion behavior: `TestHiddenCommandIsHidden` (command_test.go:1771, snippet 1765-1777) creates a command with `Hidden: true` and asserts `c.IsAvailableCommand()` is false, with the comment \"test to ensure hidden commands do not show up in usage/help text.\" Similarly, doc/cmd_test.go:77 defines a `deprecatedCmd` with `Deprecated: \"Please use echo instead\"` (snippet 71-83) used to exercise deprecated-command handling in the generated docs.",
+  "responded_at": "2026-09-05T13:43:31Z",
+  "sha256": "52308adc0740ec0ee929fa3faf0e36b6c04b03e0e79696c1544e045914a8f15e"
+}

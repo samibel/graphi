@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1923",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "39c35efacdacc2ea5ee6a5fb8defff190cafeac2490a815d9381a2f4c4a4d3e7",
+  "bundle_sha256": "b77acee55c9645878dc2400535fca230116170d4fb54b345db4cad4d4697a6f6",
+  "prompt_sha256": "5f885015d188c58383dfd680d309c95494b55222b728da2e0b4c8f71bfafffc6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT the response only surfaces general Cobra completion documentation (site/content/completions/_index.md:1 \"Generating shell completions\", :7-19 \"Creating your own completion command\", :167 \"Dynamic completion of nouns\" via ValidArgsFunction, README.md:95 cobra-cli usage, site/content/user_guide.md:492 Help Command) and none of it addresses the specific case of a Cobra CLI that is invoked via os/exec (i.e., how a wrapping process should expose or forward shell completions for a subprocess it os.Exec's), so there is no evidence in this response to answer the question.",
+  "responded_at": "2026-09-05T13:52:26Z",
+  "sha256": "f63ba75ad3a59fb60ed51cfe281e1884dafe4393bfb42179f2598f3d1ba339c5"
+}

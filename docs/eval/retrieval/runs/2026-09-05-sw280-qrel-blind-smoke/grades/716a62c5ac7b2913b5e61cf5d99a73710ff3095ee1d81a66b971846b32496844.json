@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1923",
+  "response_sha256": "716a62c5ac7b2913b5e61cf5d99a73710ff3095ee1d81a66b971846b32496844",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against grade-3 span completions.go:193-207 (anchor \"initCompleteCmd adds a special hidden command\"), and secondarily against completions.go:243-247 (anchor \"The completion script expects :\u003cdirective\u003e\").\n\nGrounding (criterion 3) is satisfied: the response cites site/content/completions/_index.md:1 (e23, the \"Cobra will automatically provide your program with a fully functional `completion` command\" text), :167 (e24, ValidArgsFunction / dynamic completion of nouns) and :13 (e26, \"Creating your own completion command\") — all three paths, line numbers and snippet texts are present verbatim in the bundle bytes it was given.\n\nIt fails on criterion 2, substantive correctness. The question asks how a process that os/exec's a Cobra binary obtains completions. The key locates that in the hidden `__complete` / `__completeNoDesc` command added by initCompleteCmd (completions.go:193-207) — the caller execs the binary with `__complete` plus the words to complete — and in the output contract at completions.go:243-247, one completion per line on stdout followed by a final `:\u003cdirective\u003e` line. The response names neither. Instead it identifies the user-facing `completion` command (the one that emits a shell script) as the thing \"the parent shell invokes ... with specific arguments to retrieve completion suggestions\", which is the wrong command for this purpose and is contradicted by the key's placement of that role in the hidden command; and it closes with an unanchored claim that completion \"works through shell environment variables and command arguments\", which no grade-3 span supports and which the recorded mechanism contradicts.\n\nThe ValidArgsFunction point (e24) is true of Cobra but answers a nearby question — how a program supplies dynamic completions internally — not how an exec'ing wrapper drives it, so it is not a genuinely equivalent statement of either reviewed span. No part of the response makes a checkable claim consistent with a grade-3 span, so criterion 2 is not met and the pass criteria do not all hold.",
+  "graded_at": "2026-09-05T14:03:00Z",
+  "sha256": "1bc247f44bf75ccb24bc6187d9263af948659bda2454c949a97b537ee7d66e36"
+}

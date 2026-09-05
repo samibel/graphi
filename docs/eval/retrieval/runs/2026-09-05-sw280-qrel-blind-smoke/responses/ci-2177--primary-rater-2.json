@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2177",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "8daee77d7a6a1ccf1ee5f8f8c98aafe562d9a1bd8262bd8e55caf92c67fea998",
+  "bundle_sha256": "33fa1d97f04f64f10d7fa54a78c771c5a85568a7df4a94546be2cb3b5dd1b585",
+  "prompt_sha256": "cf2b436230cc950261b8064cb9ce88837a2bbd3f0c712934aede0364a91c103f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response does not contain a function or snippet that marks one specific flag as depending on another specific flag. What it does show, in flag_groups.go, is group-level flag marking: MarkFlagsOneRequired (flag_groups.go:49, snippet e61) marks a set of named flags so that at least one of them must be supplied (\"MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors if the command is invoked without at least one flag from the given set of flags\"), and it calls c.mergePersistentFlags() then c.Flags().Lookup(v) for each name, panicking if not found. Separately, shell_completions.go shows single-flag required-marking: MarkFlagRequired (shell_completions.go:38-39, snippet e58, \"func MarkFlagRequired(flags *pflag.FlagSet, name string) error { return flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{\"true\"}) }\") and the Command methods MarkFlagRequired (shell_completions.go:24) and MarkPersistentFlagRequired (shell_completions.go:31) that wrap it for a command's local or persistent flags. None of these establishes a \"flag A requires flag B\" dependency between two named flags — that would need a different function (e.g. a \"required-together\" or \"depends-on\" marker) that is not present anywhere in this response's items or evidence list. The only other flag-groups.go related function surfaced is enforceFlagGroupsForCompletion (flag_groups.go:225), but no snippet for it is included, so its behavior cannot be confirmed from this response either.",
+  "responded_at": "2026-09-05T13:53:39Z",
+  "sha256": "227870bb96f995759323b1ca039e042caf0251d882d69571214091cf0dfa2553"
+}

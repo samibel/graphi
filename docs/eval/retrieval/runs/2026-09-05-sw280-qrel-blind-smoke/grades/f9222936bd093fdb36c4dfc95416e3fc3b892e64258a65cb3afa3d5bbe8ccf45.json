@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1086",
+  "response_sha256": "f9222936bd093fdb36c4dfc95416e3fc3b892e64258a65cb3afa3d5bbe8ccf45",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against reviewed grade-3 span command.go:1794-1803, anchor \"Flag climbs up the command tree looking for matching flag.\" The response's second half names exactly that span: it quotes `func (c *Command) Flag(name string) (flag *flag.Flag)` with the `c.Flags().Lookup(name)` then `c.persistentFlag(name)` fallback, cites command.go:1795 and the persistent-flag fallback at command.go:1806, and states this yields the `*flag.Flag` on which a \"was it set\" check is performed — which is precisely the lookup-before-testing-Changed role the span's reason gives it. Nothing in the response contradicts the other grade-3 span (command.go:1146-1168, \"\u0026\u0026 !pflag.Changed\"); its closing paragraph merely observes that no `.Changed` snippet was present in the bundle it was given, which is a statement about bundle coverage, not a competing claim.\n\nBundle evidence cited: evidence e52 (command.go, line 1789, span 1789-1801, role snippet, text_hash c47a7e733993923f) — the response reproduces that snippet's `Flag` method body verbatim; item ref_id 544c86d495793fa1 \"method cobra.Command.Flag (command.go:1795)\"; item ref_id cb0d0080b34b32c7 / evidence e4 \"method cobra.Command.persistentFlag (command.go:1806)\"; and for its first claim, evidence e53 (flag_groups.go, line 182, span 182-194, text_hash 8e4805f3d935a9fe) plus item ref_id b99909a607849a6b \"function cobra.validateExclusiveFlagGroups (flag_groups.go:188)\" — the `for flagname, isSet := range flagnameAndStatus { if isSet` lines it quotes appear verbatim in those bytes. All cited paths, line numbers and snippet text are present in the bundle; nothing is supplied from outside it.\n\nCriterion 1 holds: the response addresses how \"was this flag set\" is determined, not a nearby question. Criterion 2 holds via the command.go:1794-1803 span. Criterion 3 holds: every quotation is traceable to e52/e53 in the given bytes. No fail criterion applies — the response is not INSUFFICIENT, does not refuse, and commits to two checkable located claims rather than hedging; the caveat about `Changed` not appearing in the bundle is an accurate scope note appended to claims already made.",
+  "graded_at": "2026-09-05T13:59:37Z",
+  "sha256": "345e75760fc58917f5ebef1034779a0dd04d5ddfe486608282857822b3f3b0df"
+}

@@ -1,0 +1,8 @@
+FAIL
+Checked against the single reviewed grade-3 span for ci-1758: command.go:1818-1840, anchor "// do it here after merging all flags and just before parse" — the key is that ParseFlags calls mergePersistentFlags and only then c.Flags().Parse(args), so a flag added to the set before that command is reached during Execute is picked up, and one added afterwards is not.
+
+The response is grounded in the bundle: it cites Flags() at command.go:1643, PersistentFlags() at command.go:1726, LocalFlags() at command.go:1669, AddFlagSet at command.go:1851, and the user_guide.md 257-270 / README.md:68 documentation regions, all of which appear in the given bytes (items list plus evidence e56, e58, e60, e61 and refs e1/e3/e5). So criterion 3 is satisfied.
+
+It fails criteria 1 and 2. It never states the parse-time deadline the grade-3 span turns on: it does not mention ParseFlags (command.go:1819, present in the bundle as the caller item with evidence e19 at command.go:1828), nor the ordering of mergePersistentFlags relative to Flags().Parse, even though the mergePersistentFlags body is quoted in the bundle at e58. Instead it reframes the question as whether the bundle demonstrates an API for adding an individual flag to a FlagSet, and answers that narrower question.
+
+It then explicitly concludes "INSUFFICIENT — ... does not demonstrate the API for adding individual flags dynamically at runtime." Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. This is an actual answered-and-declined response, not a missing, empty or refused submission, so it is graded rather than treated as a failure by rule.

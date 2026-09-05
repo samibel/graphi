@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1368",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "dd0a28f308614f8bdc46962c95c7c61f044d0171a3ff612710c73a286f7033ff",
+  "bundle_sha256": "707ce613428ba339c8282b5e4484044a1374c330528d70550e0bfd64aec0b946",
+  "prompt_sha256": "9e8a77e0651946ea1f96a06a5d35d2de865940393e6e7ca99624b4435c244223",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To write a custom help command, you can use `cmd.SetHelpCommand(cmd *Command)` to provide your own Help command (site/content/user_guide.md:541). Additionally, you can define custom help by overriding HelpFunc, as documented in the Help() method comment which states \"Can be defined by user by overriding HelpFunc\" (command.go:473). The cobra.Command type supports these customization approaches through the Help() method and SetHelpCommand() function to replace the default help behavior.",
+  "responded_at": "2026-09-05T13:51:09Z",
+  "sha256": "4b31e736230c50d4993c3ed31aeadc49c6aa45cdfad47126f75b064f66a9b323"
+}

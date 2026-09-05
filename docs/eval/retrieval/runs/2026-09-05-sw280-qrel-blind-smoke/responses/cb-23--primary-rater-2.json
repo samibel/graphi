@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-23",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "1addfa2e7da02d6a191809243a4cc8a9eebcdfcbbac135eb7615316c365e7cf4",
+  "bundle_sha256": "2718a4ffff1b78ff09f5ab7688d84200de245fd8f9aabe789062f21012670484",
+  "prompt_sha256": "b64901b7aa4c3fbc28e00320691a87a0b0fcef896c1aaa3cef45ceab2cf6aa8b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Registration happens in `(*Command).InitDefaultCompletionCmd()`, defined in completions.go:677-689 (evidence e177, seed 5, primary at completions.go:683):\n\n```\n// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:\n// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n```\n\nSo the mechanism, as far as the response evidence shows, is:\n\n1. It is a method on `*Command` meant to be called on the root command (same \"InitDefault*\" pattern as `InitDefaultHelpCmd`, command.go:1229, which is another of the seeds for this query).\n2. It first bails out (no-op) if `c.CompletionOptions.DisableDefaultCmd` is set, or if `!c.HasSubCommands()` — a root command with no subcommands gets no completion command. This call to `HasSubCommands` (command.go:1556) is a confirmed graph edge at completions.go:684 (evidence e47/e48).\n3. It then iterates `c.commands` and checks each existing command's `Name()` (command.go:1496, confirmed edge at completions.go:689, evidence e6-e17) and `HasAlias(...)` against `compCmdName`, to detect whether the program already registered its own `completion` command — in which case the default one is skipped (per the doc comment's point 3).\n\nWhat the response does NOT contain: the snippet for `InitDefaultCompletionCmd` is truncated at line 689 (mid-loop), so the actual `c.AddCommand(...)` call that performs the registration is not shown in source text. Likewise, no snippet in the response shows the call site that invokes `InitDefaultCompletionCmd()` on the root command (e.g., from inside `ExecuteC`, command.go:1052) — only bare line-number relation entries exist for that region of command.go (e.g. e147/e148 at command.go:1063-1064, e73/e85 at 1098-1099, e101 at 1120) without accompanying snippet text, so I can't quote or confirm the exact triggering call.",
+  "responded_at": "2026-09-05T13:44:50Z",
+  "sha256": "668e422446360f876a275f870b680410ac0001f736085d806b4b3f6e7e0effc7"
+}

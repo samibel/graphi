@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1111",
+  "response_sha256": "cedd32c43058d6611b77b39f6c267a024bbd7b1943ee5291dc15a6ccd30bcdb4",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against grade-3 span command.go:1097-1100 (anchor \"Run '%v --help' for usage.\") and its companion span command.go:230-231 (anchor \"SilenceErrors is an option to quiet errors down stream.\").\n\nCriterion 1 (answers the question asked): met. The response is about suppressing the \"Run 'xxxxx --help' for usage.\" line, not a nearby question.\n\nCriterion 3 (grounded in the bundle): met. It cites material actually present in the given bytes — the site/content/user_guide.md 548-560 snippet (evidence e30, which literally contains \"cmd.SetHelpFunc(f func(*Command, []string))\" and \"cmd.SetHelpTemplate(s string)\"), plus command.go:473 (Help, evidence e1/e27) and command.go:452 (HelpFunc, evidence e7/e33). Nothing it names is absent from the bundle.\n\nCriterion 2 (substantively correct): NOT met, and this is the failing criterion. The answer key states that this message is produced in exactly one place — ExecuteC at command.go:1097-1100 — and only when SilenceErrors is false on the command in scope, with command.go:230-231 naming SilenceErrors as the field a caller sets to turn that condition off. The response instead claims the line is controlled by the help path and can be removed by overriding it with SetHelpFunc or SetHelpTemplate. That contradicts the key: the usage hint is emitted alongside the error line by ExecuteC's error handling, not by the help function or the help template, so replacing the help func/template leaves the message intact. The response is not a different-but-equivalent location or mechanism (Help/HelpFunc at command.go:452-475 is a genuinely different code path from the ExecuteC error branch), and it never names SilenceErrors or any equivalent switch. It contradicts every reviewed grade-3 span.\n\nNot a not-graded case: the response is present, non-empty, non-refusing, and makes a checkable claim.",
+  "graded_at": "2026-09-05T13:59:39Z",
+  "sha256": "579f84575ceacac43f24eb6dc8efb24d2cceed4a6a73050102ee7fdbcaed876e"
+}

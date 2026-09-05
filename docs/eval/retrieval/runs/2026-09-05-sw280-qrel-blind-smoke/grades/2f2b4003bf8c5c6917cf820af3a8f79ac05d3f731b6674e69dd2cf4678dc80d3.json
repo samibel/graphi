@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2254",
+  "response_sha256": "2f2b4003bf8c5c6917cf820af3a8f79ac05d3f731b6674e69dd2cf4678dc80d3",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against the reviewed grade-3 span command.go:1217-1221 (anchor \"c.Flags().ShorthandLookup(\"), which pairs registering with BoolP(name, shorthand, ...) against the plain variant when the shorthand letter is taken, and secondarily against command.go:1183-1198 (anchor \"c.Flags().BoolP(\") where Cobra declares --help with the shorthand \"h\".\n\nThe response opens with INSUFFICIENT and explicitly concludes \"there isn't enough here to answer how you add one.\" Rubric fail criterion 4 applies directly: a response that says it cannot answer is an honest answer and a failed one. It makes no checkable claim about the operation named in either grade-3 span — it never states that the shorthand is supplied as the second argument to a *P-suffixed registration call (BoolP/StringP/VarP), only that such an API is what would be needed and is absent.\n\nThe bundle evidence it does cite is genuinely present in the bytes it was given: the cmdOption struct with its Shorthand field at doc/yaml_docs.go:30 (evidence e1/e32/e39), doc.genFlagResult at doc/yaml_docs.go:149 with flags.VisitAll over *pflag.Flag (e3/e34), and the user-guide sections it dismisses as unrelated — \"Defining your own help\" at site/content/user_guide.md:541 (e4/e35), Suggestions when \"unknown command\" at site/content/user_guide.md:694 (e2/e33), and Active Help for nouns at site/content/active_help.md:30 (e5/e36). Its characterisation of that evidence is accurate — the bundle carries no command.go span and no *P-style registration call — so grounding (criterion 3) is satisfied and the diagnosis of bundle insufficiency is correct on its face. But criteria 1 and 2 are not met: the question asked how to add a shorthand, and the response declines to answer rather than making a claim consistent with either grade-3 span. Under the rubric this is a graded FAIL, not an ungraded failure-by-rule, since a response was produced rather than being missing, empty or refused.",
+  "graded_at": "2026-09-05T14:04:36Z",
+  "sha256": "1ef2a5c90656312e9972a25575455eae815680248439afaf9329cb63613d5d71"
+}

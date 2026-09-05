@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1168",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "63a26ca706d86bb17e89408c2192992f84d039bd9cd5fb61dae93a22d99a6b13",
+  "bundle_sha256": "4ef5071868ccc0c0a238dadafd5aa7f6d1e31c6f6cc5035599c02a180f8091a8",
+  "prompt_sha256": "a242ab176bf3e36f34d81c838b2e4d85e0036c5204ebdb563305c27fccc86ad0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "You add/call other subcommands by attaching them to a parent command with `AddCommand`. This is documented in site/content/user_guide.md under the \"Organizing subcommands\" heading (line 191, snippet spanning 185-197):\n\n\"A command may have subcommands which in turn may have other subcommands. This is achieved by using `AddCommand`. In some cases, especially in larger applications, each subcommand may be defined in its own go package. The suggested approach is for the parent command to use `AddCommand` to add its most immediate [children].\"\n\nSo the pattern is: define each subcommand as its own `*cobra.Command` (optionally in its own package), then wire it into the command tree by calling `parentCmd.AddCommand(childCmd)` — this can be nested arbitrarily, since a subcommand can itself have further subcommands added the same way.\n\nSupporting evidence that a command's subcommands are tracked and queried via this same tree (command.go):\n- `func (c *Command) HasSubCommands() bool { return len(c.commands) \u003e 0 }` (command.go:1556) — checks whether AddCommand has been used to attach any children.\n- `func (c *Command) AllChildCommandsHaveGroup() bool` (command.go:1337) iterates `c.commands` (the slice populated by AddCommand) to check group assignment of each child.\n- `func (c *Command) HasAvailableSubCommands() bool` (command.go:1617) and `HasHelpSubCommands()` (command.go:1603) similarly iterate `c.commands`.\n- args.go's `legacyArgs` (args.go:28) explicitly branches on `cmd.HasSubCommands()` to decide whether to validate the invoked name against the subcommand list — i.e., calling/dispatching to \"other subcommands\" happens by cobra resolving `args[0]` against the `c.commands` tree built via AddCommand.\n\nI did not find an explicit code snippet showing an `AddCommand(...)` call site in this response (only the doc prose and the internal accessor methods that consume `c.commands`), so the concrete call-site syntax comes from the documentation text quoted above rather than a source snippet.",
+  "responded_at": "2026-09-05T13:50:21Z",
+  "sha256": "2a05eafbac20650dbb50a46dc5a7f34d886af2ff0ca5054dfd4285a9d8132622"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2161",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "402e5b75e56118abd88c34d6a2e1f15b5daa5368b2b12041c653ea5791f08c01",
+  "bundle_sha256": "f22d1df5bf47bec20fe082d81feb6da008f38c5c105a8a815c0286c9aae18cea",
+  "prompt_sha256": "f383258dd2fac30350a38857e693953d3232eb956b3be52ec4bfebb42bf3538c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To distinguish a default value from a manually set value of a flag, check the `flag.NoOptDefVal` field.\n\nThe response identifies two key functions that demonstrate this pattern:\n\n1. **`hasNoOptDefVal` function** (command.go:623, evidence e57): This function checks whether a flag has an optional default value by testing `flag.NoOptDefVal != \"\"`. The snippet shows: `return flag.NoOptDefVal != \"\"`. If this field is not empty, it indicates the flag has been configured with an optional default value.\n\n2. **`shortHasNoOptDefVal` function** (command.go:631, evidence e58): Similar logic applies to shorthand flags, using `fs.ShorthandLookup(name[:1])` to get the flag and then checking its `NoOptDefVal` field.\n\nThe approach is: if `flag.NoOptDefVal` is an empty string, the flag has no optional default (meaning any value provided is manually set). If `flag.NoOptDefVal` is non-empty, it contains the default value that will be used when the flag is present but has no argument provided.\n\nThis pattern is referenced in documentation generation functions like `genFlagResult` (doc/yaml_docs.go:149, evidence e55) and `manPrintFlags` (doc/man_docs.go:159, evidence e56), which iterate through flags using `VisitAll()` to inspect flag properties.",
+  "responded_at": "2026-09-05T13:53:14Z",
+  "sha256": "1130d13b1b6da106fa359317a4276a6edd1915439486e3e42fb4ffc359e052bc"
+}

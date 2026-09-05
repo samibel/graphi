@@ -1,0 +1,1 @@
+INSUFFICIENT the provided evidence shows postRun() exists as a method on Command (command.go:1021) that executes finalizers, but does not demonstrate how to pass a command status value to it.

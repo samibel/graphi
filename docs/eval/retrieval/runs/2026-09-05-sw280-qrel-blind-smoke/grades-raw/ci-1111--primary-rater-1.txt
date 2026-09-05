@@ -1,0 +1,11 @@
+FAIL
+
+Checked against grade-3 span command.go:1097-1100 (anchor "Run '%v --help' for usage.") and its companion span command.go:230-231 (anchor "SilenceErrors is an option to quiet errors down stream.").
+
+Criterion 1 (answers the question asked): met. The response is about suppressing the "Run 'xxxxx --help' for usage." line, not a nearby question.
+
+Criterion 3 (grounded in the bundle): met. It cites material actually present in the given bytes — the site/content/user_guide.md 548-560 snippet (evidence e30, which literally contains "cmd.SetHelpFunc(f func(*Command, []string))" and "cmd.SetHelpTemplate(s string)"), plus command.go:473 (Help, evidence e1/e27) and command.go:452 (HelpFunc, evidence e7/e33). Nothing it names is absent from the bundle.
+
+Criterion 2 (substantively correct): NOT met, and this is the failing criterion. The answer key states that this message is produced in exactly one place — ExecuteC at command.go:1097-1100 — and only when SilenceErrors is false on the command in scope, with command.go:230-231 naming SilenceErrors as the field a caller sets to turn that condition off. The response instead claims the line is controlled by the help path and can be removed by overriding it with SetHelpFunc or SetHelpTemplate. That contradicts the key: the usage hint is emitted alongside the error line by ExecuteC's error handling, not by the help function or the help template, so replacing the help func/template leaves the message intact. The response is not a different-but-equivalent location or mechanism (Help/HelpFunc at command.go:452-475 is a genuinely different code path from the ExecuteC error branch), and it never names SilenceErrors or any equivalent switch. It contradicts every reviewed grade-3 span.
+
+Not a not-graded case: the response is present, non-empty, non-refusing, and makes a checkable claim.

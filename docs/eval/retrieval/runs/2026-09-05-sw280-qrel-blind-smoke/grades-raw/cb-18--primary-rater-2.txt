@@ -1,0 +1,18 @@
+PASS
+
+Checked against the single reviewed grade-3 span for cb-18: command.go:1560-1576, anchor "func (c *Command) IsAvailableCommand(" — the predicate that hides hidden and deprecated commands from help.
+
+1. Answers the question asked. The response addresses how hidden and deprecated commands are kept out of help output, not a nearby question (it does not drift into how Hidden is set, how docs generation works, or how help is invoked; those appear only as supporting detail).
+
+2. Substantively correct. The response names IsAvailableCommand (command.go:1562) as "the core check" and quotes the exact guard `if len(c.Deprecated) != 0 || c.Hidden { return false }`, stating that any command with a non-empty Deprecated string or Hidden true returns false. That is the mechanism the grade-3 span identifies, at the same location inside the span's line range. It further explains correctly that the exclusion lives in the availability predicates the help template consults rather than in Help() itself, and that IsAdditionalHelpTopicCommand applies the same exclusion for the "Additional help topics" section. Nothing it claims is contradicted by the answer key.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes the rater was given:
+   - command.go:1562 / snippet span 1556-1568 — evidence e56, whose snippet text contains verbatim the IsAvailableCommand comment ("this includes all non deprecated/hidden commands") and the quoted guard; the quoted code matches e56 exactly, including the `c.HasParent() && c.Parent().helpCommand == c` clause.
+   - command.go:1617 / snippet 1611-1623 — evidence e54, source of the quoted comment "true on the first found available (non deprecated/help/hidden) sub command" and the `sub.IsAvailableCommand()` loop.
+   - command.go:1583 / snippet 1577-1589 — evidence e55, source of "if a command is runnable, deprecated, or hidden it is not a 'help' command" and the `c.Runnable() || len(c.Deprecated) != 0 || c.Hidden` guard.
+   - HasHelpSubCommands (command.go:1603) — item 3b13fc0e17341673 and snippet e58.
+   - Command.Help (command.go:473) and its body `c.HelpFunc()(c, []string{})` — evidence e52.
+   - TestHiddenCommandIsHidden (command_test.go:1771, snippet 1765-1777) — evidence e53, including the comment "test to ensure hidden commands do not show up in usage/help text" and the `Hidden: true` / `c.IsAvailableCommand()` assertion.
+   - doc/cmd_test.go:77 deprecatedCmd with `Deprecated: "Please use echo instead"` (snippet 71-83) — evidence e51.
+
+No fail criterion applies: the response is not about a different question, does not contradict the answer key, supplies nothing from outside the bundle, does not return INSUFFICIENT, and makes a definite checkable claim. The one soft spot — "the usage/help templates use this ... to decide which sub-commands actually get printed" — is an inference about the template, which is not itself in the bundle, but it is consistent with the grade-3 span and is not the load-bearing claim; the load-bearing claim (IsAvailableCommand is the exclusion predicate) is directly quoted from e56.

@@ -1,0 +1,11 @@
+PASS
+
+Checked against grade-3 span command.go:1115-1122, anchor "cmd.HelpFunc()(cmd, args)" — the span's substance is that the help path renders help by invoking HelpFunc and then yields a nil error, so Cobra does not terminate the process and control returns normally to the caller of Execute.
+
+The response names a genuinely equivalent location for that same mechanism: Command.Help() at command.go:473, which is the identical two-step body (c.HelpFunc()(c, []string{}) followed by return nil). Its claim — help output is produced through HelpFunc and the function then returns nil, which in Go signals normal completion without error — is consistent with that span rather than contradicting it; the response nowhere asserts that Cobra terminates the process itself.
+
+Bundle evidence cited: evidence ref e60, path command.go, span 467-479, role snippet — the response quotes that snippet's body verbatim ("func (c *Command) Help() error { c.HelpFunc()(c, []string{}); return nil }") and names both the ref id e60 and the line command.go:473, all of which appear in the bundle bytes it was given (item 53d7a740e756cde0, "primary: method cobra.Command.Help (command.go:473)", evidence_ref_ids e1/e60). Criterion 3 therefore holds: the grounding is in the bundle, not in prior knowledge of Cobra.
+
+Criterion 1 holds: the response is about the help path's post-help control flow, which is the question asked, not a nearby one. It is not INSUFFICIENT, not empty, and makes a checkable claim.
+
+Reservation, recorded but not disqualifying: the response covers only the first grade-3 span and never reaches the second (command.go:322-325, SetHelpFunc), so it does not tell a caller where to actually perform an exit; its phrase "returns nil to signal successful completion and exit" is loose about function return versus process termination. The rubric requires consistency with at least one reviewed span, not coverage of all of them, and the accompanying sentence ("indicates normal completion without error") resolves the looseness in the direction the answer key states. Pass.

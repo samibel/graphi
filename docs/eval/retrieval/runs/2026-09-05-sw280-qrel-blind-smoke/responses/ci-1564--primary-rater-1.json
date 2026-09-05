@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1564",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "80a1164c08e42d80f288e48632a886299aec0b0591c56e1472486a3b45426632",
+  "bundle_sha256": "fa6824af19f16887110f75530575e533b4d96464c5e824d915fbb5e499ecb405",
+  "prompt_sha256": "c7b901d5f85dddfd29de67226a23e9a1f023bebf1c28b054a42f335d43a54d6f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define the `Use` field in the Command struct with the argument syntax, as shown in command.go:45-57. The snippet states: \"Use is the one-line usage message. Recommended syntax is as follows: [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required. ... indicates that you can specify multiple values for the previous argument. | indicates mutually exclusive information.\"\n\nAlternatively, you can provide your own usage function or template using `SetUsageFunc()` or `SetUsageTemplate()` (site/content/user_guide.md:583), as documented in the \"Defining your own usage\" section.",
+  "responded_at": "2026-09-05T13:51:41Z",
+  "sha256": "29fc7c4e4929478144d55f031737f904994b0f619e8ead43854018fb79f110d7"
+}

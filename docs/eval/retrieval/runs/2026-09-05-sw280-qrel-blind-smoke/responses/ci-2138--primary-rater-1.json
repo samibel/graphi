@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2138",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "cd50880edf52091bab02583410346988e102c272a1c8dd33b8ac4e9ca411a58a",
+  "bundle_sha256": "990808473de839c9d1661f5c1d0cf4cba0cdb94e246655b11d29c5a1a9ba4b18",
+  "prompt_sha256": "5afe5fc7497dfa56f5176bc9ffdfa324f0660744a8e65875bed7ad64f84629aa",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Wrong subcommands are handled through the legacyArgs validation function in args.go (lines 22-34), which implements subcommand validity checking. When a root command with subcommands is executed, legacyArgs performs subcommand checking against the command tree. The Command.Find method in command.go (lines 720-732) locates the target command given the args and command tree, meant to be run on the highest node and searches down. Flag-related subcommand errors are reported through the flagCompError type in completions.go (lines 44-56), which formats errors like \"Subcommand 'X' does not support flag 'Y'\" (e132). The ExecuteC method in command.go (lines 1046-1058) is the core execution path that runs validation when executing a command.",
+  "responded_at": "2026-09-05T13:52:51Z",
+  "sha256": "6ca292ee6430d0e98687b5077e2cab2f20a5213b23fa408c4631c6d0da49bb59"
+}

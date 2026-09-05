@@ -1,0 +1,16 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-2250: command.go:1183-1198, anchor "c.Flags().BoolP(", whose stated mechanism is that the single-dash form exists because a flag is registered with the P variant, whose second argument is the one-letter shorthand (which is how -h becomes usable instead of --help).
+
+1. Answers the question asked. The question is how to use one "-" instead of two "--". The response answers exactly that: a single "-" prefixes the flag's one-letter shorthand, "--" prefixes the long name, and the two forms address the same flag. It does not drift to a neighbouring question (usage templates, suggestions, help customization) despite the bundle being dominated by such material.
+
+2. Substantively correct. The response's core claim — that a flag is usable with one dash only when it has been explicitly given a one-letter shorthand, and that -h is the shorthand for --help — is the same mechanism the grade-3 span records, stated from the consumer side rather than from the registration call site. The rater does not name BoolP or command.go:1183-1198 (that span's text was not in its bundle), but under the rubric's "genuinely equivalent mechanism" allowance the identification of the one-letter shorthand as the thing that creates the single-dash form is consistent with the key, and nothing in the response is contradicted by it. The added observation that --viper has no shorthand and therefore has no single-dash form is a correct corollary of the same mechanism, not a contradiction.
+
+3. Grounded in the bundle. Both citations resolve to bytes actually present in the bundle it was given:
+   - ref e46, site/content/user_guide.md snippet (span 577-589), quoted verbatim, including the lines "-h, --help  help for cobra-cli", "-l, --license string ...", and "--viper ...". This is the load-bearing evidence and it is in the bundle.
+   - ref e45, command_test.go snippet (span 1250-1262), from which it quotes the string "unknown shorthand flag: 'v' in -v" — present verbatim in the bundle's e45 snippet text.
+   Nothing in the response is sourced from outside the bundle; no Cobra API is asserted that the bundle does not display.
+
+Minor, non-disqualifying: the response narrows e46 to "lines 577-580" and e45 to "lines 1250-1252" when the quoted error string sits a line or two later inside the 1250-1262 span. The cited text is correct and present; only the sub-line attribution is loose, which is not a fail criterion.
+
+No fail criterion applies: not a different question, no contradiction of the key, not sourced from outside the bundle, not INSUFFICIENT, and not hedged — it makes the checkable claim that the single-dash form requires a declared one-letter shorthand.

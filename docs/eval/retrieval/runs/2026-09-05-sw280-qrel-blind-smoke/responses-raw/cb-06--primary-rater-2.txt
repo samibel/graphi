@@ -1,0 +1,32 @@
+GenZshCompletionNoDesc is a method on cobra.Command, defined in zsh_completions.go:42 (evidence e5/e33):
+
+	// GenZshCompletionNoDesc generates zsh completion file without descriptions
+	// and writes it to the passed writer.
+	func (c *Command) GenZshCompletionNoDesc(w io.Writer) error {
+		return c.genZshCompletion(w, false)
+	}
+
+It generates zsh completion output without descriptions and writes it to the io.Writer passed in, by delegating to the unexported helper genZshCompletion(w, includeDesc bool), passing includeDesc=false. That helper is defined at zsh_completions.go:80 (evidence e4/e32):
+
+	func (c *Command) genZshCompletion(w io.Writer, includeDesc bool) error {
+		buf := new(bytes.Buffer)
+		genZshComp(buf, c.Name(), includeDesc)
+		_, err := buf.WriteTo(w)
+		return err
+	}
+
+genZshCompletion in turn calls the package-level function genZshComp(buf, c.Name(), includeDesc) (zsh_completions.go:87, evidence e16/e7c0b8d04ca258149) to build the completion script into a buffer, then writes that buffer to w.
+
+GenZshCompletionNoDesc is the no-description writer counterpart to GenZshCompletionFileNoDesc (zsh_completions.go:36, evidence e1/e29), which instead writes to a file:
+
+	func (c *Command) GenZshCompletionFileNoDesc(filename string) error {
+		return c.genZshCompletionFile(filename, false)
+	}
+
+and it mirrors GenZshCompletion (zsh_completions.go:31, evidence e2/e30), which is the same writer-based method but with includeDesc=true (descriptions included):
+
+	func (c *Command) GenZshCompletion(w io.Writer) error {
+		return c.genZshCompletion(w, true)
+	}
+
+So, in short: GenZshCompletionNoDesc(w io.Writer) error writes zsh shell-completion code for the command (and its subcommands, via genZshComp) to w, omitting the completion descriptions that GenZshCompletion would otherwise include.

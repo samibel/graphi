@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2176",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a4b453f3b891ef2fd7508ba2ad1f394389c0141d3e29a37d050b14ffc3fa23ec",
+  "bundle_sha256": "c2ba2790a9820865c7e730ca024e3bc84b53916d45111e77c880bd4c8d9fd3ec",
+  "prompt_sha256": "2a4d22faba75ec5f610736a4669a9f8c7d97bc8a37ebeb3c6ef18da1851d7737",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response's snippets only show command-execution plumbing (e.g. `Command.Execute` at command.go:1038-1044 calling `c.ExecuteC()`, `Command.ExecuteC` at command.go:1052 and its context wrappers `ExecuteContextC`/`ExecuteContext`, the test helper `executeCommand`/`executeCommandC` at command_test.go:32-38, and `TestHiddenCommandExecutes` at command_test.go:1749 which only sets a boolean `executed = true` with no captured parameters) plus unrelated methods (`RemoveCommand` command.go:1362, `Name` command.go:1496, `InitDefaultHelpCmd` command.go:1229, `CommandPath` command.go:1426, `PrintErrf`/`Println` command.go:1421/1401). None of these snippets or evidence entries show any structure, field, or function (e.g. a call log, history slice, or spy/recorder) that stores which commands were executed along with their parameters/arguments. The response gives no evidence of such a recording mechanism.",
+  "responded_at": "2026-09-05T13:53:31Z",
+  "sha256": "bfc1f6000a11a81761333ae65ef2bb223e455ed20f224125eba1ef5a8615e31b"
+}

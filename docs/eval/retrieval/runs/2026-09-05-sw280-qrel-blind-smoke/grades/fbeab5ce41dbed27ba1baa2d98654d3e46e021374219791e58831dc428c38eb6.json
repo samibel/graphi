@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2252",
+  "response_sha256": "fbeab5ce41dbed27ba1baa2d98654d3e46e021374219791e58831dc428c38eb6",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-2252 (\"How do you place help at the top?\"). The single reviewed grade-3 span is command.go:584-596, anchor \"func (c *Command) HelpTemplate() string {\" — the default help layout and its resolution rule (a helpTemplate set on the command wins, otherwise the parent's is inherited).\n\nThe rater's response opens with the literal token INSUFFICIENT and concludes that \"the mechanism for placing help at the top cannot be determined from it.\" Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one, so this is a fail by rule regardless of the remaining criteria.\n\nFor the record on the other two criteria: the response is about the right question (criterion 1 satisfied), and its citations are genuinely present in the bundle — Command.Help at command.go:473 (item ref_id 53d7a740e756cde0, evidence e1/e37), HelpFunc at command.go:452 (evidence e2/e38), HelpTemplate at command.go:585 (evidence e4/e40), and the usage-template tail at command.go:579-581 quoted verbatim in the e40 snippet (span 579-591) — so criterion 3 would have been satisfiable. But criterion 2 is not met: the response makes no checkable claim about the mechanism at all, and explicitly denies that the bundle carries one, even though the e40 snippet it cites contains the very grade-3 anchor line \"func (c *Command) HelpTemplate() string {\" together with the helpTemplate-wins-then-inherit-from-parent resolution rule. The answer key is therefore not contradicted but not matched either; the response declined where the key's span was in the bytes it quoted.",
+  "graded_at": "2026-09-05T14:09:50Z",
+  "sha256": "d8939f860896313f75ca06712af88ade791cec8e9adc91d2436cb21a25ce9cf2"
+}

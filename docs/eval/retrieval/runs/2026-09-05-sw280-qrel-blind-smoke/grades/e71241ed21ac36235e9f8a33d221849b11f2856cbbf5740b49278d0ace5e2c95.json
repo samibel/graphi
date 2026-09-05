@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "cb-29",
+  "response_sha256": "e71241ed21ac36235e9f8a33d221849b11f2856cbbf5740b49278d0ace5e2c95",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the single reviewed grade-3 span for cb-29: cobra.go:61-62, anchor \"var EnableCaseInsensitive\" (the package-level switch).\n\n1. Answers the question asked: the question is how to make command names case insensitive; the response answers directly with the action to take — set the global variable cobra.EnableCaseInsensitive to true.\n\n2. Substantively correct: the response names exactly the location and mechanism in the answer key — EnableCaseInsensitive in cobra.go at line 62 — and correctly describes it as the package-level switch that turns case-insensitive command name matching on. It contradicts nothing in the key.\n\n3. Grounded in the bundle: the response cites evidence present in the given bytes. It cites e115 (snippet, cobra.go span 56-68), which contains \"// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\" and \"var EnableCaseInsensitive = defaultCaseInsensitive\" — the doc comment it quotes appears verbatim there. It also cites e117 (snippet, command.go span 1873-1885), which contains commandNameMatches with \"if EnableCaseInsensitive { return strings.EqualFold(s, t) }\" and the fallback \"return s == t\" — matching the response's description of the flag's effect. The item list in the same bundle also carries \"primary: variable cobra.EnableCaseInsensitive (cobra.go:62)\". No cited path, symbol, line or snippet is absent from the bundle, and nothing in the response requires prior Cobra knowledge.\n\nNo fail criterion applies: it is not about a different question, it does not contradict the key, it is not INSUFFICIENT, and it makes a concrete checkable claim rather than hedging.",
+  "graded_at": "2026-09-05T13:58:42Z",
+  "sha256": "21d3ce9b5f058a2fa27af02366ceebcfc8a0c95c4eb8fe46e75d6787d3095b65"
+}

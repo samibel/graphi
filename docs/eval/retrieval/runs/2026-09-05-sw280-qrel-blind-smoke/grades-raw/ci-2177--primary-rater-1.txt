@@ -1,0 +1,8 @@
+FAIL
+Checked against the single reviewed grade-3 span for ci-2177: flag_groups.go:31-45, anchor "// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors" — the key requires naming c.MarkFlagsRequiredTogether(names...) as the way one flag is made a dependency of another.
+
+The response opens with the literal token INSUFFICIENT and states that the bundle "does not show a specific API method for marking one flag as a dependency of another flag". Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one; it is also not a missing, empty or refused response, so it is graded rather than treated as a failure by rule.
+
+It further makes no checkable claim satisfying pass criterion 2: it does not name MarkFlagsRequiredTogether or any genuinely equivalent mechanism, and it affirmatively denies that such a mechanism is present, contradicting the reviewed grade-3 span.
+
+Bundle evidence the response did cite: it names MarkFlagRequired, MarkFlagsOneRequired and MarkPersistentFlagRequired, all of which do appear in the bytes — MarkFlagRequired at shell_completions.go:24 and :38 (items 38ccf62a06038215 / a18d4f837f0bde5d, snippets e58 and e62), MarkFlagsOneRequired at flag_groups.go:49 (item 7d36065e466013da, snippet e61), MarkPersistentFlagRequired at shell_completions.go:31 (item 7b37910bf264fc18) — plus "flag groups" via flag_groups.go (e45, e53) and enforceFlagGroupsForCompletion at flag_groups.go:225. So criterion 3 (grounding) is met, but criteria 1 and 2 are not: the cited material is used only to argue the answer is absent, not to answer the question, and the conclusion contradicts the answer key.

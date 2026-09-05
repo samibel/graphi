@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1148",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "61ea09e2d4a8b65b4da3f3ae4c8033d337b60e48033f1e0e5374922e9db7902c",
+  "bundle_sha256": "e52c04b89ab18b33e910b621b6cf7ebbfa3ff27cfbeb830fa8df1ddebf18cdbb",
+  "prompt_sha256": "62d4e44628f5eec1e03b3075cd6afb87c8cb052c298ab11a9cb1aef40c207a34",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "You should return errors from commands by using the ErrOrStderr() method to obtain an io.Writer that directs output to stderr. The snippet evidence shows this method at command.go:385: \"func (c *Command) ErrOrStderr() io.Writer { return c.getErr(os.Stderr) }\". Alternatively, you can use the PrintErr() method (command.go:1411) to directly print error messages to the error stream. These methods ensure errors are properly written to stderr rather than standard output.",
+  "responded_at": "2026-09-05T13:50:09Z",
+  "sha256": "c285577ac58969ff97d08aa97e5932b7242283beb8b3e796846a031f85362fcf"
+}

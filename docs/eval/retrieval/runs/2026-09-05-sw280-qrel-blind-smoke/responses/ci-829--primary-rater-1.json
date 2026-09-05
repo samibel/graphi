@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-829",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c49fe02f14b0019e07ae187a5089e45cae814f4f56633a9dac3eb7c523577796",
+  "bundle_sha256": "0f9cc3bacb03fd167088077843b2cd54e874b94794520dc87b03cfeafd2ddc20",
+  "prompt_sha256": "912eff2d780087a8ae01072cdab25e158af1d23fdb0776177f28a3d5544fc16f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the command.go:473 snippet (e60), the Help() method exits after a help command by returning nil:\n\n```go\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}\n```\n\nThe function calls HelpFunc() to display the help output, then returns nil to signal successful completion and exit. In Go, returning nil from an error-returning function indicates normal completion without error.",
+  "responded_at": "2026-09-05T13:55:48Z",
+  "sha256": "e2c52ccf4d204df5d0284eac75573583132919d5d3f7d7e8fb57906823e3d7ab"
+}

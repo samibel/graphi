@@ -1,0 +1,3 @@
+Define the `Use` field in the Command struct with the argument syntax, as shown in command.go:45-57. The snippet states: "Use is the one-line usage message. Recommended syntax is as follows: [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required. ... indicates that you can specify multiple values for the previous argument. | indicates mutually exclusive information."
+
+Alternatively, you can provide your own usage function or template using `SetUsageFunc()` or `SetUsageTemplate()` (site/content/user_guide.md:583), as documented in the "Defining your own usage" section.

@@ -1,0 +1,50 @@
+PASS
+
+Response content address: a697c3aab3e2eaec8d28bf13b5e6f0aa0421fd1d56e49bf3979805c60d48b32e
+Query id: ci-1758 — "is there a way to add flags dynamically?"
+
+Checked against the single reviewed grade-3 span: command.go:1818-1840,
+anchor "// do it here after merging all flags and just before parse" — ParseFlags calls
+mergePersistentFlags and only then c.Flags().Parse(args), so flags added to the set before
+parsing are picked up and flags added afterwards are not.
+
+1. Answers the question asked. The response answers the dynamic-flag question directly: yes,
+   flags are not static struct fields but live in *flag.FlagSet objects the command creates
+   lazily and returns as mutable pointers, so a caller can add flags at runtime via the
+   ordinary accessors; it explicitly notes there is no dedicated "dynamic flag" API. It does
+   not drift to a nearby question (flag groups, normalization, persistent-vs-local semantics
+   are used as support, not substituted for the answer).
+
+2. Substantively correct against the grade-3 span. The key's load-bearing content is the
+   deadline: additions count only before ParseFlags parses the merged set. The response states
+   exactly that — it names Command.ParseFlags (command.go:1819) as "where the accumulated
+   FlagSet is actually parsed — so additions must happen before parsing/execution", and its
+   closing caveat scopes the safe window as "before ParseFlags". It also reconstructs the
+   merge half of the mechanism from mergePersistentFlags (command.go:1849): Flags().AddFlagSet
+   (PersistentFlags()) plus Flags().AddFlagSet(parentsPflags), i.e. the same merge-then-parse
+   ordering the span describes. Nothing it claims is contradicted by the key; the mutable
+   lazily-created FlagSet framing is the equivalent mechanism the key's condition presupposes.
+
+3. Grounded in the bundle. Every citation appears in the bundle bytes the rater was given:
+   - snippet e60, command.go:1637-1649, Command.Flags with the
+     "if c.flags == nil { c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)" body —
+     the lazy mutable-set claim;
+   - snippet e61, command.go:1720-1732, Command.PersistentFlags with the same c.pflags pattern;
+   - snippet e56, command.go:1663-1675, Command.LocalFlags calling c.mergePersistentFlags();
+   - snippet e58, command.go:1843-1855, mergePersistentFlags with both AddFlagSet calls;
+   - relation evidence e8/e9 (command.go:1851, 1852) and e12 (command.go:1697), quoted by ref id
+     and line, matching the bundle's evidence array exactly;
+   - the caller item "method cobra.Command.ParseFlags (command.go:1819)" (ref_id
+     5270e37fbdabefc2, evidence e19 at command.go:1828), plus InitDefaultHelpFlag
+     (command.go:1186) and InitDefaultVersionFlag (command.go:1204), all present as bundle items;
+   - docs snippets e59 (site/content/user_guide.md:251-263), e55 (:264-276) and e57
+     (README.md:62-74), quoted accurately.
+   The response is careful about what the bundle does and does not carry: it flags that
+   ParseFlags appears by name only with no snippet, which is true of these bytes, and it does
+   not import Cobra knowledge from outside to fill that gap — it infers the ordering constraint
+   from the merge machinery and the ParseFlags entry actually present.
+
+No fail criterion applies: it is not about a different question, contradicts no grade-3 span,
+supplies nothing from outside the bundle, is not INSUFFICIENT, and the final caveat qualifies
+the precision of the deadline without dissolving the checkable claim ("additions must happen
+before parsing/execution").

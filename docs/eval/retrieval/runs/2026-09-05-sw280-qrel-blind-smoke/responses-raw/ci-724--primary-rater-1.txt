@@ -1,0 +1,1 @@
+INSUFFICIENT The user guide snippet at site/content/user_guide.md line 160-166 indicates how to create a version command but is truncated before showing the implementation code needed to make the version subcommand call root --version.

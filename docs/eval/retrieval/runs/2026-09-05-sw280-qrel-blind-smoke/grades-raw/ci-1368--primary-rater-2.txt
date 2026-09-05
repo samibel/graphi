@@ -1,0 +1,21 @@
+PASS
+
+Query ci-1368 ("How to write custom help command?"), response 97689d5a188b4c64a7363cc36b25911fb9c719e6efabc7e594de8154801b0ca4.
+
+Criterion 1 — answers the question asked: the response's lead claim is the operation for supplying your own help command, `cmd.SetHelpCommand(cmd *Command)` called on the root/parent command with a *Command the caller builds. That is the question, not a nearby one.
+
+Criterion 2 — substantively correct against the reviewed grade-3 spans:
+- Checked primarily against command.go:327-330, anchor "func (c *Command) SetHelpCommand(cmd *Command) {" — the operation for supplying your own help command. The response names exactly this operation and its argument type, so it is consistent with that span.
+- Also consistent with command.go:1226-1236, anchor "If c already has help command or c has no subcommands, it will do nothing." The response's third paragraph states the essential condition correctly: InitDefaultHelpCmd auto-installs the default only when helpCommand is still nil and the command has subcommands, so a help command set before Execute() is the one that gets used.
+- Also consistent with command.go:322-325, anchor "func (c *Command) SetHelpFunc(f func(*Command, []string)) {" — the response offers the alternative route (replace the rendering function rather than the command) and names a SetHelpFunc accessor for the HelpFunc field.
+No claim in the response contradicts any grade-3 span.
+
+Criterion 3 — grounded in the bundle: every load-bearing citation appears verbatim in the bundle bytes.
+- SetHelpCommand: cited as e4/e64, site/content/user_guide.md line 541, span 535-547. The e64 snippet in the bundle contains "### Defining your own help", "You can provide your own Help command or your own template for the default command to use with the following functions:" and the literal line "cmd.SetHelpCommand(cmd *Command)". The response's quotation of "SetHelpCommandGroupId()" is likewise inside that same e64 snippet.
+- The InitDefaultHelpCmd condition: cited as e3/e63, command.go line 1229, span 1223-1235. The e63 snippet contains "It is called automatically by executing the c or by calling help and usage.", "If c already has help command or c has no subcommands, it will do nothing." and "if c.helpCommand == nil {" — all three phrases the response quotes.
+- The HelpFunc override route: cited as e2/e62, command.go line 473, span 467-479. The e62 snippet contains "Can be defined by user by overriding HelpFunc." and the body "c.HelpFunc()(c, []string{})", both quoted accurately.
+- The closing aside: cited as e1/e61, command.go line 1603, span 1597-1609, whose snippet contains "HasHelpSubCommands determines if a command has any available 'help' sub commands" and IsAdditionalHelpTopicCommand — matching what the response says about it, and correctly flagged as peripheral.
+
+The only element not literally in the bundle bytes is the accessor name "SetHelpFunc"; the response presents it as an inference from the documented HelpFunc field ("setting that field (e.g. via a SetHelpFunc accessor)") rather than as a bundle quotation, and it happens to match grade-3 span command.go:322-325. It does not carry the answer — the passing claim (SetHelpCommand) is quoted directly out of e64 — so this is not an out-of-bundle supply under the fail criteria.
+
+No fail criterion applies: not off-question, not contradicting the key, not ungrounded, not INSUFFICIENT, not hedged past a checkable claim.

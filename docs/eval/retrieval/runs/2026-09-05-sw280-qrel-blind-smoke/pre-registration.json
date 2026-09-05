@@ -1,0 +1,1363 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "precondition_record_sha256": "c175fbf70391bee6c9bc2ef5fdec18814b3f1ef7730af94fb8c83bf3a08c4012",
+  "precondition_record_commit": "e48a1ba397392b30a1cecbbdfb4076a9bab61eff",
+  "recorded_at": "2026-09-05T13:39:51Z",
+  "derivation": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "n_source": "count of answerable holdout queries in the sealed dataset: split=holdout, stratum!=no_hit, at least one grade-3 span",
+    "dataset_sha256": "7de5ce6eef0e58d952b64ea7beaa0b09d158724b1eaa52bbd064ceebf53f35fc",
+    "n": 64,
+    "k": 56,
+    "floor": "3/4",
+    "level_basis_points": 9500,
+    "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+    "k_interval": {
+      "successes": 56,
+      "trials": 64,
+      "level_basis_points": 9500,
+      "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+      "lower_bound": "0.768473694033",
+      "upper_bound": "0.944457208820",
+      "lower_bound_bracket_low": "0.768473694033",
+      "lower_bound_bracket_high": "0.768473694033",
+      "upper_bound_bracket_low": "0.944457208820",
+      "upper_bound_bracket_high": "0.944457208820",
+      "meets_floor": true,
+      "floor": "3/4"
+    },
+    "k_minus_one_interval": {
+      "successes": 55,
+      "trials": 64,
+      "level_basis_points": 9500,
+      "method": "two-sided exact Clopper-Pearson binomial interval; the floor comparison is exact rational arithmetic on the upper tail at p = 3/4, and rendered endpoints are bisection brackets of width 2^-64",
+      "lower_bound": "0.749763164375",
+      "upper_bound": "0.933625928331",
+      "lower_bound_bracket_low": "0.749763164375",
+      "lower_bound_bracket_high": "0.749763164375",
+      "upper_bound_bracket_low": "0.933625928331",
+      "upper_bound_bracket_high": "0.933625928331",
+      "meets_floor": false,
+      "floor": "3/4"
+    }
+  },
+  "primary_raters": [
+    {
+      "id": "primary-rater-1",
+      "role": "primary",
+      "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+      "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+      "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It did not write any SW-266 slice, and did not harvest, annotate or review the cobra-v2 dataset. Its only input is the question text, the preserved bundle bytes and the frozen answer instructions, delivered as one file. Its model alias differs from the model that implemented this slice and from the model that annotated the dataset in SW-279 (Claude Opus 5).",
+      "participated_in_track": false
+    },
+    {
+      "id": "primary-rater-2",
+      "role": "primary",
+      "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+      "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+      "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It did not write any SW-266 slice and did not harvest, annotate or review the cobra-v2 dataset. Its model alias differs from primary-rater-1, from the implementer and from the SW-279 annotators. It shares a PROVIDER with both, which is a real and stated limit of this panel's independence.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "grader-1",
+    "role": "grader",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It rated nothing: it receives the question, the exact bundle, one already content-addressed response and the reviewed grade-3 answer spans, and applies the frozen rubric.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "adjudicator-1",
+    "role": "adjudicator",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "independence_basis": "Spawned as a fresh subagent with no conversation history from this track and no primary rating role. It answers from the same question text and the same bundle bytes as the primaries, and its response is frozen and content-addressed before any primary response or grade enters the same decision.",
+    "participated_in_track": false
+  },
+  "queries": [
+    {
+      "query_id": "cb-06",
+      "family_id": "cobra-family-2d492f7be96711e6",
+      "stratum": "exact_identifier",
+      "query_text_sha256": "ec7908152ae3725b160dc4a6176375d30bc0fa9f191fc9480efa26f617755999",
+      "bundle_sha256": "8656800793c3cf3ae91424a2722c5ffa6c34d57b4b2d9cd05915018ee40eee28",
+      "bundle_byte_count": 15818,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 719
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4776
+        }
+      ]
+    },
+    {
+      "query_id": "cb-10",
+      "family_id": "cobra-family-23650d8c8a193518",
+      "stratum": "exact_path",
+      "query_text_sha256": "502559784be28f4f1ac3ff6b6567bbc145c1f2bced2c841fb2c6639db3124ae4",
+      "bundle_sha256": "3499de7f16945a6da0e13df164580e400f212f6e515a8a7ed583ce02d8ef05ea",
+      "bundle_byte_count": 15373,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 613
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4552
+        }
+      ]
+    },
+    {
+      "query_id": "cb-17",
+      "family_id": "cobra-family-71c1d41e7b7119bf",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "3342c4e5cd007dc83c626ef428803bea347914743644161b4ed8657948c52407",
+      "bundle_sha256": "4a6ec724144565e924264ee6ccf73c5c938df471b46b8323ea5c0d09c8d7dec0",
+      "bundle_byte_count": 24638,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 766
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7052
+        }
+      ]
+    },
+    {
+      "query_id": "cb-18",
+      "family_id": "cobra-family-739b1623918e8297",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "fc716d347e651ae9c9e3bff656afbd00521e1086ee478799d04ce217de3a9395",
+      "bundle_sha256": "5ee1c1e52f888e43b0e4e0a1f0985eccb1cf6f421e25864c2b065483d1efab0a",
+      "bundle_byte_count": 21145,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 951
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6264
+        }
+      ]
+    },
+    {
+      "query_id": "cb-23",
+      "family_id": "cobra-family-f19ad6496e64ffe9",
+      "stratum": "architecture_flow",
+      "query_text_sha256": "1addfa2e7da02d6a191809243a4cc8a9eebcdfcbbac135eb7615316c365e7cf4",
+      "bundle_sha256": "2718a4ffff1b78ff09f5ab7688d84200de245fd8f9aabe789062f21012670484",
+      "bundle_byte_count": 39290,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 953
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10739
+        }
+      ]
+    },
+    {
+      "query_id": "cb-29",
+      "family_id": "cobra-family-d2510d7e75abb7a0",
+      "stratum": "config_docs",
+      "query_text_sha256": "e01254597f989d7d7013d79a12557aeae1bff4a6d3b1a0403b1b815955a98c91",
+      "bundle_sha256": "81ef4d0c110f46b50b634922a466655cae454fc42f7885381796215d9ab8b83e",
+      "bundle_byte_count": 30186,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 875
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 8501
+        }
+      ]
+    },
+    {
+      "query_id": "cb-34",
+      "family_id": "cobra-family-3c390f353c273cdb",
+      "stratum": "ambiguous",
+      "query_text_sha256": "8d59829c1e15afe1a7fae93e8e5e32d8511bec5fd598a09f4fea6033b31e8a66",
+      "bundle_sha256": "36fdfc2287d0ec947dd76fd1deb928a92e99cc54ee9644d94bc3192b3e10046f",
+      "bundle_byte_count": 17065,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 825
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5089
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2",
+      "family_id": "cobra-family-8bdd526837116ac3",
+      "stratum": "config_docs",
+      "query_text_sha256": "81a407d0ace84c8bfb2e82b5c40cde6a98ef714d196778cad1e7a84f944d5f9b",
+      "bundle_sha256": "54e533f6a9f350f3507f42ba6e4654c054f86d1cbfc85393cdc58b0fa46b5f25",
+      "bundle_byte_count": 42120,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 932
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 11336
+        }
+      ]
+    },
+    {
+      "query_id": "ci-43",
+      "family_id": "cobra-family-b144722fe678ece6",
+      "stratum": "nl_behaviour",
+      "query_text_sha256": "cda3f0a7b94dc4e6c878ad20bbceac74035f6e45faa7f4a103d513b52a8cd182",
+      "bundle_sha256": "86ede99dc49c3ccae932eb8a8fbef1fca0b06824a4994996159c144300216d6b",
+      "bundle_byte_count": 22129,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 855
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6511
+        }
+      ]
+    },
+    {
+      "query_id": "ci-298",
+      "family_id": "cobra-family-4f0ef84973382276",
+      "stratum": "config_docs",
+      "query_text_sha256": "15614063ef1772d6d4c3aff0a69017f5d7a539d3c4114d876d695f11d0315b2d",
+      "bundle_sha256": "e317b5a070369ddef0046cdccd725d705b969bf397bc946e145080c4c542a728",
+      "bundle_byte_count": 15725,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 791
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4647
+        }
+      ]
+    },
+    {
+      "query_id": "ci-316",
+      "family_id": "cobra-family-1bcef8025ba0a9c0",
+      "stratum": "config_docs",
+      "query_text_sha256": "725d47e1ea7ed6708bce905a3fd7cb6d1b41ee1dea163c386b5f5ff77e7552dd",
+      "bundle_sha256": "4ed6ec147843a94305cff8f7857885a89f5e2863e24fb511e9d58dda7acc53d4",
+      "bundle_byte_count": 37991,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1012
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10441
+        }
+      ]
+    },
+    {
+      "query_id": "ci-346",
+      "family_id": "cobra-family-2dac3eed574054fb",
+      "stratum": "config_docs",
+      "query_text_sha256": "2893e84e8f7095d0af86f5fcda07860debf395229ce69d73087f1b695801a4b1",
+      "bundle_sha256": "d894fbb948929ab7cf81135d53ceb1ebcfc875607aa29d962a84978ba8400505",
+      "bundle_byte_count": 29309,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 908
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 8217
+        }
+      ]
+    },
+    {
+      "query_id": "ci-434",
+      "family_id": "cobra-family-d47f9a93f453a267",
+      "stratum": "config_docs",
+      "query_text_sha256": "f206e96cdd00ef8c958118747ab58588f9081e97624a8cfb757bbcbcdf8b2ab5",
+      "bundle_sha256": "8afcbb51c1b0ec5ff91fcfc41ed583ec8b22083ce6cefbef9d812dc8b4948ac5",
+      "bundle_byte_count": 37569,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1014
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10447
+        }
+      ]
+    },
+    {
+      "query_id": "ci-470",
+      "family_id": "cobra-family-34f15dcf692eb04c",
+      "stratum": "config_docs",
+      "query_text_sha256": "5338d7484494d64ae31ba559d0827d5ee620499598e4d600dd2c0c9b0182e596",
+      "bundle_sha256": "6576e59e7f28ba55303b6948b844fc7dc54fc66cce5f17decfa915f632da2c78",
+      "bundle_byte_count": 22644,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 996
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6543
+        }
+      ]
+    },
+    {
+      "query_id": "ci-471",
+      "family_id": "cobra-family-2dac3eed574054fb",
+      "stratum": "config_docs",
+      "query_text_sha256": "8a35f380d06b5cfd4a6e5b6d6445cef34222bf334a549021a108854fdaab0da2",
+      "bundle_sha256": "bed3079b4a511681f0881006da888e91718941e9974fea680dc90c4eec9a77f5",
+      "bundle_byte_count": 20965,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 897
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6186
+        }
+      ]
+    },
+    {
+      "query_id": "ci-533",
+      "family_id": "cobra-family-c68cec614d25a76b",
+      "stratum": "config_docs",
+      "query_text_sha256": "95bdc88c437e2a3c9ee0e18c58999265b4c11b894414ddaa0d824d987ae2be4a",
+      "bundle_sha256": "9971019330b44233c263fd523a81dbad73ddc4a9e2403d0a743de20e48d4a0a4",
+      "bundle_byte_count": 20023,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 807
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5914
+        }
+      ]
+    },
+    {
+      "query_id": "ci-563",
+      "family_id": "cobra-family-e890b5e57973fefd",
+      "stratum": "config_docs",
+      "query_text_sha256": "b2de880fd7a44b856e59bc92881c315e1418809d1cbde6b09056d23729187c29",
+      "bundle_sha256": "6119eabfe039da90ed422c9c143eec7e2bb953674ce9a16018e2196a9bd42081",
+      "bundle_byte_count": 20530,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 972
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5933
+        }
+      ]
+    },
+    {
+      "query_id": "ci-674",
+      "family_id": "cobra-family-e0ec57b96c3bc141",
+      "stratum": "config_docs",
+      "query_text_sha256": "a99ae0596e3c3fb12a0c211a4fc8f2cb9255fa7f1a7eb8441fdba5c495634b73",
+      "bundle_sha256": "713e7dbbed04a5e1c232394e9d5e4277bbfdbbc18a203f1cbe8a9c770cf6f85a",
+      "bundle_byte_count": 20474,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 818
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6076
+        }
+      ]
+    },
+    {
+      "query_id": "ci-710",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "ba44ea13b5f29a121bbb86df0ba84da1ba3dd4cee84ead355c26aac53fa7a8bd",
+      "bundle_sha256": "c900a88414c16a786c15507669ae7b8d2e0088aebd8f2bc47625bbea0a9b630a",
+      "bundle_byte_count": 37388,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1030
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10280
+        }
+      ]
+    },
+    {
+      "query_id": "ci-724",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "1b0415777e1187d7d8c969cca0c53bdd1b205093c21d71b4e5d7a6dde71b38cc",
+      "bundle_sha256": "3eaead757842dc0a0ac6a5a6bbd882bd6e76ad76eebe0a83a5290ec79573351e",
+      "bundle_byte_count": 15774,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 548
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4781
+        }
+      ]
+    },
+    {
+      "query_id": "ci-725",
+      "family_id": "cobra-family-b3e186acd5654310",
+      "stratum": "config_docs",
+      "query_text_sha256": "a1a6bc05f2a5060552a84cc9767127dbba6d901b98e75775ccaa940b1b81d61e",
+      "bundle_sha256": "b93ed4d4d632762742b3a162f5c10c102ff379e60b543d3b9f8a4e54bba7755f",
+      "bundle_byte_count": 20410,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 725
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6179
+        }
+      ]
+    },
+    {
+      "query_id": "ci-821",
+      "family_id": "cobra-family-045117075d02a0e5",
+      "stratum": "config_docs",
+      "query_text_sha256": "63ffe360865b84cf102fead755603bee8403104cea63565dfdb79df27bd532ee",
+      "bundle_sha256": "fe84dcfe7149956c73de05941e49da2a2201f7247ef3b1b0afa851929de6b342",
+      "bundle_byte_count": 24782,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 861
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7266
+        }
+      ]
+    },
+    {
+      "query_id": "ci-827",
+      "family_id": "cobra-family-2dac3eed574054fb",
+      "stratum": "config_docs",
+      "query_text_sha256": "4be1cc40191d4a5ef2196afe07f4d82958c1ba0b816d29b771600983c9c6452d",
+      "bundle_sha256": "8a9ac2761800808e164753644e33627e8af0becca2b3f34546f05a9b9e592a0f",
+      "bundle_byte_count": 32927,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 914
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9151
+        }
+      ]
+    },
+    {
+      "query_id": "ci-829",
+      "family_id": "cobra-family-4f0ef84973382276",
+      "stratum": "config_docs",
+      "query_text_sha256": "c49fe02f14b0019e07ae187a5089e45cae814f4f56633a9dac3eb7c523577796",
+      "bundle_sha256": "0f9cc3bacb03fd167088077843b2cd54e874b94794520dc87b03cfeafd2ddc20",
+      "bundle_byte_count": 22453,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 989
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6467
+        }
+      ]
+    },
+    {
+      "query_id": "ci-852",
+      "family_id": "cobra-family-e890b5e57973fefd",
+      "stratum": "config_docs",
+      "query_text_sha256": "3ad7f4beccc891643f191938faf997e9c71425fe39f63f527940c3415bb7b98c",
+      "bundle_sha256": "38e792c6da68d211f04455afa21a029b44c8798c05890db4449ee6f214bfdefb",
+      "bundle_byte_count": 28373,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 830
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 8004
+        }
+      ]
+    },
+    {
+      "query_id": "ci-920",
+      "family_id": "cobra-family-d47f9a93f453a267",
+      "stratum": "config_docs",
+      "query_text_sha256": "75a4bcee426bb68dddd71dddfb4496a148ddfc9f5b15feaab1501548468bb8f0",
+      "bundle_sha256": "ef8783b105a9ab0dd343e1577180a866f04e2df6f87658cc5ebc3f089ebc2d73",
+      "bundle_byte_count": 21676,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 841
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6459
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1025",
+      "family_id": "cobra-family-8bdd526837116ac3",
+      "stratum": "config_docs",
+      "query_text_sha256": "d30f9274f45e9b39d7aa183b9eedf0d44a88356b65121b5c546faa1e15d29467",
+      "bundle_sha256": "f26f71a76b2b4050c5e196d1f739be62f2ddb5c8b9e9de148ce28513c67dd9f6",
+      "bundle_byte_count": 24384,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 914
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7243
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1060",
+      "family_id": "cobra-family-b3e186acd5654310",
+      "stratum": "config_docs",
+      "query_text_sha256": "4ea276c2c7e0e683f1bc824ff8028517289d8d714f75a34f70e75d48a1ef0cff",
+      "bundle_sha256": "592bc94ac250bc8009122cb15d7aeaf50e32327d0ab920693c15cc002aa9b231",
+      "bundle_byte_count": 27721,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1113
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 8012
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1086",
+      "family_id": "cobra-family-c4114d68be1d949e",
+      "stratum": "config_docs",
+      "query_text_sha256": "b9bf826129abec1dbbcd727823aa454876356e57146504ee6ad47f7a8a972eef",
+      "bundle_sha256": "38a2c853f6aa7ae3844c6a9c17045a5df3ecf1baf7aef5da97335faa4de46ae0",
+      "bundle_byte_count": 20772,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 812
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6244
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1098",
+      "family_id": "cobra-family-1de945f511d17446",
+      "stratum": "config_docs",
+      "query_text_sha256": "a98ff40516eac33308f8bf1ee1248da09835c666c1eded124ed3856f40827c67",
+      "bundle_sha256": "facb06a81d237ae9b2ae46ccbd84b4764f1f631ec391b89d8848af84af3b0317",
+      "bundle_byte_count": 26330,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 930
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7587
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1111",
+      "family_id": "cobra-family-689ec0d317686653",
+      "stratum": "config_docs",
+      "query_text_sha256": "675b6a84029da3aab14f51cd58cae327396fd667be07fa37d0cfb7f5f4c612c0",
+      "bundle_sha256": "1961644f2d27aa36b1be15016098b9255b90083e86a6cc5091fadec03a7694c4",
+      "bundle_byte_count": 14524,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 697
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4268
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1148",
+      "family_id": "cobra-family-0fc1fbed4bd7a68b",
+      "stratum": "config_docs",
+      "query_text_sha256": "61ea09e2d4a8b65b4da3f3ae4c8033d337b60e48033f1e0e5374922e9db7902c",
+      "bundle_sha256": "e52c04b89ab18b33e910b621b6cf7ebbfa3ff27cfbeb830fa8df1ddebf18cdbb",
+      "bundle_byte_count": 24288,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1044
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7095
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1151",
+      "family_id": "cobra-family-8782279ab4c47b52",
+      "stratum": "config_docs",
+      "query_text_sha256": "66b73c55d39c7cb65f38837b62f3ba5edfd1a85511e79695b4b4e7aaa94cda8a",
+      "bundle_sha256": "2dc4ab1ddbae8683ca121ac03d1268b3c92cdfbfeb9f6fb53dcb687331768a4c",
+      "bundle_byte_count": 32927,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 834
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9184
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1168",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "63a26ca706d86bb17e89408c2192992f84d039bd9cd5fb61dae93a22d99a6b13",
+      "bundle_sha256": "4ef5071868ccc0c0a238dadafd5aa7f6d1e31c6f6cc5035599c02a180f8091a8",
+      "bundle_byte_count": 17138,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 876
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5085
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1202",
+      "family_id": "cobra-family-1b1bb1e8402d0ab1",
+      "stratum": "config_docs",
+      "query_text_sha256": "acc172befdc6cd85a259cb321a17a9c828211de50c27ec2403fcf11ca2714fcd",
+      "bundle_sha256": "58bd78f014a8516b0dbdcf2c83d91c14a9e3d2c3bf98591a301fe6181aab6d3a",
+      "bundle_byte_count": 37076,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1083
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10269
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1221",
+      "family_id": "cobra-family-7bfa1390af7c814b",
+      "stratum": "config_docs",
+      "query_text_sha256": "93de10aecfc68920b1a0652dac9e6b3b0b02954675c77203a00356e62f5919f9",
+      "bundle_sha256": "e14e7438c11489be162bd4d9dac0f081f8ed904ddc0e1e2fa8b24130199c00ed",
+      "bundle_byte_count": 19136,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 857
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5663
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1289",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "5175869aec07cd3a31cf5cfe4a905227ef2c44193509d643c1d44b266634abe4",
+      "bundle_sha256": "b980b607ca44e81f94d6fe1348b447426f57d8d22fc7cddfae161b5359a90829",
+      "bundle_byte_count": 14378,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 573
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4303
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1300",
+      "family_id": "cobra-family-d8e876ec995c02eb",
+      "stratum": "config_docs",
+      "query_text_sha256": "107b8e26f5790a9e06f4ef4a9f0ce1fe6fc2e1a51b02396f59752d530fa489b3",
+      "bundle_sha256": "969930e6137f098e8bbc0cc6e62958e85bc79172e8bc90d768a7c617efabf6e8",
+      "bundle_byte_count": 34686,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 855
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9666
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1343",
+      "family_id": "cobra-family-37f0353f67a41908",
+      "stratum": "config_docs",
+      "query_text_sha256": "c3d7dfb312e73f3e3022a1ab5f787cca3da6893674ffe8ed0035a214620e7b56",
+      "bundle_sha256": "75debb24b17be49b3f237569e3bb1241c8c1d4f4a7e111ca84e583c30ff74d22",
+      "bundle_byte_count": 18279,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 872
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5397
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1368",
+      "family_id": "cobra-family-0ca6d7b52217efda",
+      "stratum": "config_docs",
+      "query_text_sha256": "dd0a28f308614f8bdc46962c95c7c61f044d0171a3ff612710c73a286f7033ff",
+      "bundle_sha256": "707ce613428ba339c8282b5e4484044a1374c330528d70550e0bfd64aec0b946",
+      "bundle_byte_count": 22638,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 994
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6541
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1416",
+      "family_id": "cobra-family-e890b5e57973fefd",
+      "stratum": "config_docs",
+      "query_text_sha256": "12bcba6132ed36666a58b1a54309120bb2e1dde97c68ca221f006500dded932d",
+      "bundle_sha256": "7dda67e6c5861722478f7f8a4fe77dd217b21a56dfa71978f140e79891c63003",
+      "bundle_byte_count": 27099,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 763
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7624
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1461",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "937ea02600712c12a30373bec14a02b06dcf7d9d8497c5f4505e16757f787859",
+      "bundle_sha256": "18463cc4e2559eae12ba8cca53646f556fe33b3441a2ad40cdda08f72c13c4b2",
+      "bundle_byte_count": 26664,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 812
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7519
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1499",
+      "family_id": "cobra-family-0b2d0298afbd3689",
+      "stratum": "config_docs",
+      "query_text_sha256": "7af27b154b8a077f896333b21fc0bde760288c78c867e43ab929f2bd95f2ab4a",
+      "bundle_sha256": "c1828fe28853af88d49990b5558af69599b478cc6b709c6de27eacb29f40941b",
+      "bundle_byte_count": 24278,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 978
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7116
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1505",
+      "family_id": "cobra-family-c2af783c9b83fcb1",
+      "stratum": "config_docs",
+      "query_text_sha256": "96ab4f93ae7fef5c2718a8016cc91052051032472841cf62090392c1df46369c",
+      "bundle_sha256": "3733be512a3536c36bd23dda0c1a86f1c67121fc6aaf8a208899389e6dca2bb5",
+      "bundle_byte_count": 22669,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1000
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6547
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1564",
+      "family_id": "cobra-family-2dac3eed574054fb",
+      "stratum": "config_docs",
+      "query_text_sha256": "80a1164c08e42d80f288e48632a886299aec0b0591c56e1472486a3b45426632",
+      "bundle_sha256": "fa6824af19f16887110f75530575e533b4d96464c5e824d915fbb5e499ecb405",
+      "bundle_byte_count": 21046,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 972
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6152
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1592",
+      "family_id": "cobra-family-2dac3eed574054fb",
+      "stratum": "config_docs",
+      "query_text_sha256": "c8d4c0934cbcea98a5eefb7ec1d569fd5d5618eea10a609cb019eb2da2397bd9",
+      "bundle_sha256": "710d82ca838fe66292d34f2efe289b0b25268aaad9edcbc4d3fdae0bea5c333d",
+      "bundle_byte_count": 28351,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 887
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7944
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1631",
+      "family_id": "cobra-family-d600f8434f37ad34",
+      "stratum": "config_docs",
+      "query_text_sha256": "4f29f07a352c3b1191fc637556bdbf8be72048cc71bd2a8e205b5ab4d31f7e55",
+      "bundle_sha256": "96ffff8fd4e7175e4d2cd7ab17cf461d21b1e2278a52e2ceca76debdd578d1f4",
+      "bundle_byte_count": 23404,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 919
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6883
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1758",
+      "family_id": "cobra-family-61c1c471ece39224",
+      "stratum": "config_docs",
+      "query_text_sha256": "6c99a923e785c7abb5a1178fa7ee9fb3b236202fbdc4fcfae82e5460bd5f33e4",
+      "bundle_sha256": "ce2026adc7aec41b685e07af9c9a0068543ab9d8a1b10b643b661892ee0d8f11",
+      "bundle_byte_count": 21717,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 852
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6377
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1790",
+      "family_id": "cobra-family-b59bc01e1695cc4d",
+      "stratum": "config_docs",
+      "query_text_sha256": "02c3e537e8ff89fbdb8ac6a898a8a36d6dd6ae62baaf8b69b983b6122871ac32",
+      "bundle_sha256": "3e94203f74747b7c34c207ff06c402dfe3a6184d5a23e34b1c15939d4ce6a900",
+      "bundle_byte_count": 11487,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 477
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 3360
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1861",
+      "family_id": "cobra-family-1b1bb1e8402d0ab1",
+      "stratum": "config_docs",
+      "query_text_sha256": "e0030e004db845a74dfa173469990e16fdf8ea23e84f3efdb3a27e49c57922ac",
+      "bundle_sha256": "5be78440ef030b1f5c6b26f468dbab19aa14b29ce148b0b5eb9ae5b70ae2c41a",
+      "bundle_byte_count": 23836,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1040
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7001
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1894",
+      "family_id": "cobra-family-2d492f7be96711e6",
+      "stratum": "config_docs",
+      "query_text_sha256": "0a4fe5a95fa1bff830073ba1f2c9173a26ab343d6a156e3404299ac94613b120",
+      "bundle_sha256": "0e12675809014d3921513b62598d0a53e59ad460f8ef11f3cd55185814036600",
+      "bundle_byte_count": 14047,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 618
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4011
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1923",
+      "family_id": "cobra-family-e5c2845da899edc1",
+      "stratum": "config_docs",
+      "query_text_sha256": "39c35efacdacc2ea5ee6a5fb8defff190cafeac2490a815d9381a2f4c4a4d3e7",
+      "bundle_sha256": "b77acee55c9645878dc2400535fca230116170d4fb54b345db4cad4d4697a6f6",
+      "bundle_byte_count": 12108,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 566
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 3481
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2007",
+      "family_id": "cobra-family-8bdd526837116ac3",
+      "stratum": "config_docs",
+      "query_text_sha256": "e62cf047aa2d21fe06375b164125282d5cdc2182d03406e7187342b4cdf64722",
+      "bundle_sha256": "5979f40d797806e9898f9cff9d72a21341380a687c6754c9e89425001557670f",
+      "bundle_byte_count": 34356,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 947
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9476
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2014",
+      "family_id": "cobra-family-bd4afc6a794098e9",
+      "stratum": "config_docs",
+      "query_text_sha256": "19cd79e2d3254d7c79faa6e661455413ff66cd27577f1cad18de491d2df8f694",
+      "bundle_sha256": "e118dde7ebda11ba844cbbe960461fa58abadb404cbe7c4682b4761fbb7b931b",
+      "bundle_byte_count": 33043,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1007
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9262
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2138",
+      "family_id": "cobra-family-1b1bb1e8402d0ab1",
+      "stratum": "config_docs",
+      "query_text_sha256": "cd50880edf52091bab02583410346988e102c272a1c8dd33b8ac4e9ca411a58a",
+      "bundle_sha256": "990808473de839c9d1661f5c1d0cf4cba0cdb94e246655b11d29c5a1a9ba4b18",
+      "bundle_byte_count": 33308,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 1056
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9381
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2150",
+      "family_id": "cobra-family-adb81bdf18673e8b",
+      "stratum": "config_docs",
+      "query_text_sha256": "d3824c250ee8631cd47a119b9567ad61dbb8a472469ecb13b9f0dfeed7050664",
+      "bundle_sha256": "051a47861b52b3b44ca55d6f0b3b5775bc68f097d8c95d287bd61e45617ee917",
+      "bundle_byte_count": 25961,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 830
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 7560
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2160",
+      "family_id": "cobra-family-d8c91de6a8020c1b",
+      "stratum": "config_docs",
+      "query_text_sha256": "21dc654ef074a8582e90dd1f9dd16fc2236b34bbfd409b1fb48ce156dfefe309",
+      "bundle_sha256": "87807d194240248e124f6d8a61209743abe40e0897f76ce4149c8b9b3aee13b5",
+      "bundle_byte_count": 22797,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 962
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6633
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2161",
+      "family_id": "cobra-family-c4114d68be1d949e",
+      "stratum": "config_docs",
+      "query_text_sha256": "402e5b75e56118abd88c34d6a2e1f15b5daa5368b2b12041c653ea5791f08c01",
+      "bundle_sha256": "f22d1df5bf47bec20fe082d81feb6da008f38c5c105a8a815c0286c9aae18cea",
+      "bundle_byte_count": 20484,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 748
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6195
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2176",
+      "family_id": "cobra-family-34555189768c3f66",
+      "stratum": "config_docs",
+      "query_text_sha256": "a4b453f3b891ef2fd7508ba2ad1f394389c0141d3e29a37d050b14ffc3fa23ec",
+      "bundle_sha256": "c2ba2790a9820865c7e730ca024e3bc84b53916d45111e77c880bd4c8d9fd3ec",
+      "bundle_byte_count": 33321,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 896
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 9326
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2177",
+      "family_id": "cobra-family-963237481aa8666b",
+      "stratum": "config_docs",
+      "query_text_sha256": "8daee77d7a6a1ccf1ee5f8f8c98aafe562d9a1bd8262bd8e55caf92c67fea998",
+      "bundle_sha256": "33fa1d97f04f64f10d7fa54a78c771c5a85568a7df4a94546be2cb3b5dd1b585",
+      "bundle_byte_count": 22655,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 943
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 6591
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2250",
+      "family_id": "cobra-family-4f0d442374007945",
+      "stratum": "config_docs",
+      "query_text_sha256": "30e8f362babf4df70103551190959327a631eddcc1e1d775ba7a793a7a3e37e3",
+      "bundle_sha256": "cbf62c620204313354c1d77dd31c871e7c0bb00157a8ca31e1ce6c2db384f3dc",
+      "bundle_byte_count": 19326,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 782
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5753
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2252",
+      "family_id": "cobra-family-ba7177f660fd64b2",
+      "stratum": "config_docs",
+      "query_text_sha256": "107b99acf4ccab2840ee697d53f0f9108e79d3f8d9eae02466e5650a188f8fb4",
+      "bundle_sha256": "da859ff7fa299399cc75e29d7698f3af074eea44c4ca217333b05b341a662cee",
+      "bundle_byte_count": 17846,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 807
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 5353
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2254",
+      "family_id": "cobra-family-07e94e54e84453c9",
+      "stratum": "config_docs",
+      "query_text_sha256": "21809cbe703aa87c520469be8814b5819bcfcdb3ab6937d2678a448053fd5671",
+      "bundle_sha256": "517944768067e72bb339da74d3f2aef965f8ba1886eececf76d8aa96bdedc8ce",
+      "bundle_byte_count": 16101,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 712
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 4732
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2291",
+      "family_id": "cobra-family-8bdd526837116ac3",
+      "stratum": "config_docs",
+      "query_text_sha256": "83dba85b9dbd18ceef1a527cbea30056677cfde67e28a48babaa9ee8c735b290",
+      "bundle_sha256": "3ec733a682befb9cf728a09920341f6c64e4a77e45e1378713edc3dde0750756",
+      "bundle_byte_count": 38158,
+      "bundle_boundary": "mcp_jsonrpc_response_bytes",
+      "bundle_token_counts": [
+        {
+          "tokenizer_id": "whitespace-fields-v1",
+          "tokens": 936
+        },
+        {
+          "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+          "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+          "tokens": 10588
+        }
+      ]
+    }
+  ],
+  "sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133"
+}

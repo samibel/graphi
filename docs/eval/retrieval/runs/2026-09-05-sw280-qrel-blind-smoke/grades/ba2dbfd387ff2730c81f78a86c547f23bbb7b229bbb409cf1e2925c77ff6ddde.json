@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2",
+  "response_sha256": "ba2dbfd387ff2730c81f78a86c547f23bbb7b229bbb409cf1e2925c77ff6ddde",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Response content address: ba2dbfd387ff2730c81f78a86c547f23bbb7b229bbb409cf1e2925c77ff6ddde (query ci-2).\n\nChecked against the single reviewed grade-3 answer span for ci-2: command.go:643-679, anchor `// \"--\" terminates the flags` — stripFlags() stops scanning at the literal `--` token, so nothing after it enters the `commands` slice that supplies subcommand candidates.\n\nThe response makes no claim about that span or any equivalent mechanism. It is an explicit INSUFFICIENT verdict: it states that the material it was given \"only cover[s] positional-argument validation ... none of which describe any mechanism, flag, or convention (e.g. an escaping/quoting technique or a `--` separator)\". It names `--` only to say it is absent, not to assert it as the answer, so there is no checkable claim consistent with the grade-3 span.\n\nBundle evidence the response did cite, all genuinely present in the bytes it was given: the args.go snippets at e199 (args.go:22-34, PositionalArgs / legacyArgs) and e198 (args.go:36-48, NoArgs); command.go:1362 RemoveCommand (item 085c68594070e1f5, evidence e1/e195); args_test.go:23 getCommand (item 1323ca1a5c81830e, evidence e2/e196); and the command.go:1420-1562 method snippets e200 (CommandPath), e201 (Name) and e202 (HasSubCommands). So the response is grounded, and its characterisation of what the bundle contains is accurate — the bundle carries command.go:643 only as a bare relation reference (e77, no snippet, no `--` anchor text) with no line-643 source text.\n\nGraded FAIL under the rubric's explicit fail criterion: \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one.\" Rubric pass criterion 2 also fails, since no claim is made that is consistent with the reviewed grade-3 span. This is a graded failure, not a failure-by-rule: the response is present and non-empty, so it is graded rather than mechanically excluded.",
+  "graded_at": "2026-09-05T14:03:08Z",
+  "sha256": "510e45d807bb711489403e01fb183286064f7d731897f319007c43628560d6f3"
+}

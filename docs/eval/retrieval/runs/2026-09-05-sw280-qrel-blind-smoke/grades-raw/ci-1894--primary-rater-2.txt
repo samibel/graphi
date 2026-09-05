@@ -1,0 +1,16 @@
+PASS
+
+Checked against the single reviewed grade-3 span: completions.go:104-116, anchor "DisableDescriptions bool" — the caller-facing switch CompletionOptions.DisableDescriptions, set on the root command's CompletionOptions field (command.go:201-203).
+
+1. Answers the question asked. The question is how to hide descriptions in completions; the response's leading claim is a direct instruction to set CompletionOptions.DisableDescriptions = true on the root command. It does not drift to a nearby question.
+
+2. Substantively correct. The response names exactly the mechanism in the answer key — the CompletionOptions.DisableDescriptions field, set on the root command — and quotes the field's own doc comment ("turns off all completion descriptions for shells"), which matches the span's anchor and reason. Nothing in the response contradicts the key; the secondary discussion of the --no-descriptions flag / DisableNoDescFlag is correctly framed as a related, per-invocation mechanism distinct from the program-set switch, so it does not displace or contradict the grade-3 answer.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+   - e31 (site/content/completions/_index.md:111-123 snippet), whose text in the bundle literally contains "To tell Cobra to completely disable descriptions for completions:" and "rootCmd.CompletionOptions.DisableDescriptions = true" — quoted verbatim by the response;
+   - e32 (completions.go:99-111 snippet), which in the bundle contains "type CompletionOptions struct", "DisableNoDescFlag bool" and "// DisableDescriptions turns off all completion descriptions for shells" — the response's quoted doc line;
+   - e30 (completions.go:94-106 snippet), which in the bundle contains compCmdNoDescFlagName = "no-descriptions" and compCmdNoDescFlagDesc = "disable completion descriptions" — both quoted accurately;
+   - e29 (site/content/completions/_index.md:446-458 snippet), which in the bundle contains "# Without descriptions" and "$ helm s[tab][tab]" — cited accurately.
+   The ref_ids, paths and line spans cited all correspond to evidence entries actually serialized in the bundle; no citation points at anything absent from those bytes.
+
+No fail criterion applies: the response is not about a different question, does not contradict the key, does not answer from outside the bundle, does not return INSUFFICIENT, and makes a single checkable, unhedged claim.

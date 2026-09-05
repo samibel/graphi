@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1631",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "4f29f07a352c3b1191fc637556bdbf8be72048cc71bd2a8e205b5ab4d31f7e55",
+  "bundle_sha256": "96ffff8fd4e7175e4d2cd7ab17cf461d21b1e2278a52e2ceca76debdd578d1f4",
+  "prompt_sha256": "2e16a5b37a33d4627519fc14b89962888b0f211b8f4f7df36e4d2cb3f8e8fa29",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, it is possible to remove error log output. The cobra.Command type provides SetOutput (command.go:283) which sets the destination for usage and error messages, with the note that SetOut and/or SetErr should be used instead. Additionally, ErrOrStderr (command.go:385) returns output to stderr through getErr, and PrintErr (command.go:1411) is a convenience method that prints to the defined Err output. The SetOutput method accepts an io.Writer parameter that can be configured to discard error output, and the documentation at command.go:277-289 states \"If output is nil, os.Stderr is used,\" indicating that error destinations are configurable rather than fixed to stderr.",
+  "responded_at": "2026-09-05T13:51:56Z",
+  "sha256": "ee0035a4f8ac00f36f9bf28bc55a91b3d0986a4fa5ada757ae8d52594e43af29"
+}

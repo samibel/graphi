@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2007",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e62cf047aa2d21fe06375b164125282d5cdc2182d03406e7187342b4cdf64722",
+  "bundle_sha256": "5979f40d797806e9898f9cff9d72a21341380a687c6754c9e89425001557670f",
+  "prompt_sha256": "ccc0214a62224288e74341fe45b8ff7ad2c68e453d6a3345b5b04e8587f8e15b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains references to flag-related functions like hasAllFlags (flag_groups.go:111), nonCompletableFlag (bash_completions.go:699), SetGlobalNormalizationFunc (command.go:364), and MarkFlagsMutuallyExclusive (flag_groups.go:65) but does not include code snippets or documentation showing the specific mechanism for ignoring flags including hyphens.",
+  "responded_at": "2026-09-05T13:52:38Z",
+  "sha256": "7e97631319686e4b43b41dbba77a2a123f12505cdd5a52917bf6fc12e881eb4b"
+}

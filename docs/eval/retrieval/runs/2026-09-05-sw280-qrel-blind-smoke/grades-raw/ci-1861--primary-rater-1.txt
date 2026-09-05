@@ -1,0 +1,14 @@
+PASS
+
+Checked against the grade-3 discovery span command.go:1292-1300, anchor "func (c *Command) Commands() []*Command" (Commands() returns the command's registered child commands). The response does not name Commands() by name, but it identifies the same mechanism and the same underlying state: it states that "The Command struct maintains sub-commands internally in the `c.commands` slice" and that "Discovery iterates through this slice to identify available sub-commands (excluding deprecated/hidden ones)", reaching that slice via HasSubCommands() and HasAvailableSubCommands(). Under pass criterion 2 that is a different but genuinely equivalent location/mechanism for the discovery step — c.commands is exactly the field Commands() exposes — and nothing it claims is contradicted by either reviewed span. Its execution half (Execute() delegating to ExecuteC(), which "traverse[s] the command tree to find matches") is likewise consistent with the second grade-3 span at command.go:724-748, anchor "cmd := c.findNext(nextSubCmd)", naming the public entry point rather than the internal Find/findNext resolution it drives; consistent, not contradictory.
+
+Answers the question asked: yes — it is structured as discovery then execution, the two halves the question puts together, not a nearby question.
+
+Grounded in the bundle: yes, on several distinct citations that appear in the given bytes.
+- HasSubCommands() at command.go:1556 with the body `len(c.commands) > 0` — present verbatim in snippet evidence e67 (command.go:1550-1562) and again in e72 (command.go:1556-1568); the item is also listed as seed 2, ref_id 21021a29c3b6d343.
+- HasAvailableSubCommands() at command.go:1617, described as looping over c.commands and testing each child with IsAvailableCommand() — present verbatim in snippet e69 (command.go:1611-1623), including the `for _, sub := range c.commands { if sub.IsAvailableCommand()` loop; listed as seed 4, ref_id b6177b2491c90bd2.
+- Execute() at command.go:1038 calling ExecuteC() and returning err — present in snippet e70 (command.go:1032-1044), whose doc comment "run through the command tree finding appropriate matches for commands and then corresponding flags" is the source of the response's closing sentence.
+- ExecuteC() at command.go:1052 returning (*Command, error) — present in snippet e66 (command.go:1046-1058).
+- The Command struct at command.go:51 (snippet e71) backs the claim about where sub-commands are held.
+
+No line the response cites is absent from the bundle, it supplies nothing that could only have come from outside knowledge of Cobra, it does not return INSUFFICIENT, and it makes concrete checkable claims rather than hedging. All three pass criteria hold; no fail criterion is triggered.

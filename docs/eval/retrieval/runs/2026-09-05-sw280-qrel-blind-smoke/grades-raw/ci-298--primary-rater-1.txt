@@ -1,0 +1,12 @@
+FAIL
+
+Response content address: 74886e76a9fb13e3b97203319f22bc37d032f3d9da5d70a2002aeee0e32708b8
+Query: ci-298 — "How do I make --help exit?"
+
+Checked against grade-3 span command.go:893-905, anchor `helpVal, err := c.Flags().GetBool("help")` — the mechanism by which --help terminates the command flow (execute() reads the help flag right after ParseFlags and returns flag.ErrHelp, skipping the body, ValidateArgs and all *Run hooks). Also compared against the second span, command.go:1116-1122, anchor `if errors.Is(err, flag.ErrHelp) {` — ExecuteC intercepting flag.ErrHelp, calling HelpFunc and returning nil.
+
+The response declares INSUFFICIENT. Under the frozen rubric's fail criteria, "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one." This is a graded failure, not an ungraded one: the response is present and non-empty, so it is not a missing/empty/refused case excluded from grading.
+
+Substance check, for the record: the response makes no claim consistent with either grade-3 span. It never reaches the flag.ErrHelp mechanism at command.go:893-905 or its interception at command.go:1116-1122, and instead reframes the question as needing example code for a custom help function that exits — a nearby question, not the one asked.
+
+Bundle grounding: the response does cite material genuinely present in the bundle — evidence e29 (command.go:467-479 snippet, `func (c *Command) Help() error { c.HelpFunc()(c, []string{}); return nil }`), cited as "Help() returns nil (command.go:473-479)", and evidence e35 / item bf34224148ea1883 (command.go:452, `HelpFunc returns either the function set by SetHelpFunc ... or a function with default help behavior`), cited as "HelpFunc() can be overridden (command.go:452)". So criterion 3 is satisfied, but criteria 1 and 2 are not, and the explicit INSUFFICIENT fail criterion applies. All three pass criteria must hold; they do not.

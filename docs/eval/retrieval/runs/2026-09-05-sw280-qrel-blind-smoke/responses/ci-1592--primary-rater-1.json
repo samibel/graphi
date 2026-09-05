@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1592",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c8d4c0934cbcea98a5eefb7ec1d569fd5d5618eea10a609cb019eb2da2397bd9",
+  "bundle_sha256": "710d82ca838fe66292d34f2efe289b0b25268aaad9edcbc4d3fdae0bea5c333d",
+  "prompt_sha256": "6005acf85f128f28c23463afe72a518c276aa5e9763067f077a03ac2ba0fb17b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To document or define a required argument in Cobra:\n\nDOCUMENTATION (in the Use field):\nAccording to command.go (line 45-57, evidence e106), the Command struct's Use field defines syntax conventions where \"[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\" This is the documentation convention for marking arguments as required in the usage string.\n\nDEFINITION/VALIDATION (programmatically):\nAccording to site/content/user_guide.md (line 361-373, evidence e108), \"Validation of positional arguments can be specified using the `Args` field of `Command`.\" The ValidateArgs method (command.go line 1139, evidence e107) enforces these argument rules at runtime.\n\nIn summary: document required arguments in the Use field without brackets, and define validation rules using the Args field of the Command struct.",
+  "responded_at": "2026-09-05T13:51:49Z",
+  "sha256": "24834e9ed8d107bc98faa8811b9a633b7c1f2289fcb5ac5519aa6e854e587bae"
+}

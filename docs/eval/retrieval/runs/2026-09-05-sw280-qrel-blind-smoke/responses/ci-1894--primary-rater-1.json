@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1894",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "0a4fe5a95fa1bff830073ba1f2c9173a26ab343d6a156e3404299ac94613b120",
+  "bundle_sha256": "0e12675809014d3921513b62598d0a53e59ad460f8ef11f3cd55185814036600",
+  "prompt_sha256": "3f6bcb9a5fb089085f5009e56fe7b55b0744f3eb9f858696b4cda9dd717d0358",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To hide the description in the completion, use one of these two approaches:\n\n1. **Programmatically disable descriptions**: Set `rootCmd.CompletionOptions.DisableDescriptions = true` (evidence: site/content/completions/_index.md:117, snippet e31).\n\n2. **Use the command-line flag**: Pass the `--no-descriptions` flag (evidence: completions.go:100, where `compCmdNoDescFlagName = \"no-descriptions\"` with description \"disable completion descriptions\", snippet e30).\n\nThe `CompletionOptions` type (completions.go:105, snippet e32) provides these control mechanisms: `DisableDescriptions` to turn off all completion descriptions for shells that support them, and `DisableNoDescFlag` to prevent creating the '--no-descriptions' flag itself if desired.",
+  "responded_at": "2026-09-05T13:52:15Z",
+  "sha256": "4433b37e1b48e36dd1899cf16956b5bf261141fb1b3016af5173c918f35048f0"
+}

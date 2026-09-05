@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-821",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "63ffe360865b84cf102fead755603bee8403104cea63565dfdb79df27bd532ee",
+  "bundle_sha256": "fe84dcfe7149956c73de05941e49da2a2201f7247ef3b1b0afa851929de6b342",
+  "prompt_sha256": "07024e596c908cf5e35a0338e5e676843e8d49cabcbcbd1da99e779d825cd9fb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response identifies methods for help flag initialization (InitDefaultHelpFlag in command.go:1186) and persistent flags documentation (site/content/user_guide.md:270), but does not provide evidence of a specific mechanism or configuration option to hide Global Flags from the help output.",
+  "responded_at": "2026-09-05T13:55:38Z",
+  "sha256": "8432b89cb2456bdc1632f0b3f8cf4bb88205942b43d8a7f312b2adb30aa66fdb"
+}

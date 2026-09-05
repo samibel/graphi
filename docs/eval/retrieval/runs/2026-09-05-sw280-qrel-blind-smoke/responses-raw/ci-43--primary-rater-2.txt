@@ -1,0 +1,22 @@
+No — the response gives no evidence that a command's own discoverability depends on whether its parent is runnable; the availability check only looks at the command's own flags.
+
+command.go:1562-1568 (e60), `IsAvailableCommand`:
+    func (c *Command) IsAvailableCommand() bool {
+        if len(c.Deprecated) != 0 || c.Hidden {
+            return false
+        }
+        if c.HasParent() && c.Parent().helpCommand == c {
+            return false
+        ...
+
+This is the only "availability"/discoverability gate in the snippets, and it checks exactly two things: (1) the command's own `Deprecated`/`Hidden` fields, and (2) whether the command itself is literally its parent's auto-generated `helpCommand`. Neither condition inspects `Parent().Runnable()` — a command is not excluded merely because its parent lacks a `Run`/`RunE`.
+
+`Runnable()` itself (command.go:1551, e61) is defined purely locally: `return c.Run != nil || c.RunE != nil` — it says nothing about parents or children.
+
+`HasAvailableSubCommands` (command.go:1617, e62) walks `c.commands` and includes a sub-command if `sub.IsAvailableCommand()` returns true — again gated only by that sub-command's own Hidden/Deprecated/help-command status, not by whether `c` (the parent) is itself runnable.
+
+The closest concept to "un-runnable parent" in the evidence is `IsAdditionalHelpTopicCommand` (command.go:1583, e64): a command that is itself not runnable, not deprecated, not hidden, and has no runnable sub-commands is classified as a "help topic" command — but that logic is about the command's own runnability plus its children's, not about its parent's runnability, and being a help-topic command is a documentation classification, not a suppression of discoverability (it is explicitly excluded from the "not available" check in `IsAvailableCommand`, which never even references `IsAdditionalHelpTopicCommand`).
+
+`hasSeeAlso` (doc/util.go:26, e63) filters a parent's children for the "See Also" doc section using `!c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand()` — again per-child, keyed off each child's own state, not the parent's runnability.
+
+So based strictly on this response: commands are not deliberately hidden/undiscoverable because their parent is un-runnable. Discoverability (`IsAvailableCommand`, `HasAvailableSubCommands`, the `hasSeeAlso` doc filter) is driven entirely by each command's own `Hidden`/`Deprecated` flags and whether it is its parent's synthesized help command — parent runnability plays no role in any of the cited functions.

@@ -1,0 +1,46 @@
+PASS
+
+Response content address: 815a2550c3af632eeb34a0994b2d1975d9e1b42b8d9c6a4b4452913bc81904e1
+Query: cb-17 "how does cobra report a flag parsing error to the user"
+
+Checked against the single reviewed grade-3 span for cb-17:
+command.go:497-511, anchor "func (c *Command) FlagErrorFunc(" — the handler invoked on a
+flag parse error, inherited from the parent by default.
+
+Criterion 1 (answers the question asked): met. The response's leading claim is a direct
+answer to how a flag parsing error reaches the user — cobra responds by showing the
+command's usage — and it does not drift to a nearby question. It goes further and
+explicitly separates the narrower completion-time `flagCompError` path from ordinary
+command-line flag-parse reporting, which is a discrimination in favour of the response
+rather than a substitution for the answer.
+
+Criterion 2 (substantively correct): met. The response names a different location from
+the grade-3 span — it never reaches command.go:497-511 or FlagErrorFunc — but nothing it
+claims is contradicted by that span. FlagErrorFunc is the customization hook for handling
+a flag parse error; the user-visible default report of that error is the usage message.
+The two describe the same reporting behaviour from the hook side and the user side, so
+the response is consistent with the key rather than in conflict with it. Applying the
+rubric's fail criteria: it is not about a different question, it does not contradict the
+grade-3 span, it is not INSUFFICIENT, and it is not hedged past a checkable claim — the
+claim "cobra reports a flag parsing error by printing the command's usage message" is
+definite and checkable.
+
+Criterion 3 (grounded in the bundle): met. The cited evidence is present verbatim in the
+bundle bytes the rater was given:
+- site/content/user_guide.md:554 (item c65dd1881df23199, evidence e4/e86, snippet span
+  548-560) carries the exact sentence quoted by the response — "When the user provides an
+  invalid flag or invalid command, Cobra responds by showing the user the 'usage'." — and
+  the SetHelpFunc / SetHelpTemplate lines it also quotes.
+- completions.go:45 and :50 (items 7bbce3f39865e155 and 7a87de85bb1cb8e7, evidence
+  e3/e85 and e2/e84) contain the `flagCompError` struct with fields subCommand/flagName
+  and the Error() method returning "Subcommand '...' does not support flag '...'",
+  exactly as the response reports.
+- getCompletions at completions.go:266 and checkIfFlagCompletion at completions.go:592
+  (items 09d2122b47b1204d and c1622644808264e0) appear as cited.
+- The response's stated gap is also accurate against the bytes: ExecuteC appears only as
+  a listing at command.go:1052 with relation evidence e20 at command.go:1098, and the
+  bundle carries no command.go snippet content, so no source-code view of the parse-error
+  path was available to it.
+
+The response supplies its answer from inside the bundle, marks the boundary of what the
+bundle supported, and its substantive claim stands consistent with the grade-3 span.

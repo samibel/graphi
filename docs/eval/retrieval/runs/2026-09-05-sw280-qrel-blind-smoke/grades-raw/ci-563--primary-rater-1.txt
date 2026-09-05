@@ -1,0 +1,15 @@
+PASS
+
+Checked against grade-3 span command.go:257-272, anchor "func (c *Command) SetContext(ctx context.Context) {" — the mechanism span covering Context() returning the command's stored context and SetContext replacing it.
+
+1. Answers the question asked. The response is about passing a context.Context so that pre/post-run hooks can read it, not about a nearby question (it does not drift into, e.g., cancellation or signal handling).
+
+2. Substantively correct against that span. The response names exactly the mechanism the answer key names: SetContext(ctx) stores a context on the *Command and cmd.Context() retrieves it inside the *Run lifecycle, with values read via cmd.Context().Value(key). Nothing it claims is contradicted by either grade-3 span; it simply does not discuss the second span (command.go:1109-1113, "cmd.ctx = c.ctx" root-to-target propagation), and the rubric requires consistency with at least one span, not all. Its citation of TestSetContextPreRunOverwrite is consistent with the span's "a hook can read the context, derive a new one, and store it back for later hooks on the same *Command".
+
+3. Grounded in the bundle. Every cited item is present in the given bytes:
+   - e52 — command.go span 264-276, snippet containing "func (c *Command) SetContext(ctx context.Context) {" and "c.ctx = ctx"; this is the same code as the reviewed grade-3 span.
+   - e49 — command.go span 258-270, snippet containing "func (c *Command) Context() context.Context {" and "return c.ctx".
+   - e51 — command.go span 1024-1036, snippet containing "func (c *Command) ExecuteContext(ctx context.Context) error {" and the doc line "Retrieve ctx by calling cmd.Context() inside your *Run lifecycle", quoted accurately by the response.
+   - e48 — cobra.go span 60-72, snippet containing "var EnableTraverseRunHooks = defaultTraverseRunHooks".
+   - e55 — command_test.go span 2513-2525, snippet containing "func TestSetContextPreRunOverwrite(t *testing.T) {" and "key := cmd.Context().Value(key{})".
+   Line references given (command.go:270, :1030, :264; cobra.go:66; command_test.go:2519-2525) match the item and evidence entries in the bundle. No claim is supplied from outside the bundle, the response is not INSUFFICIENT, and it makes a definite checkable claim rather than hedging.

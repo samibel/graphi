@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1505",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "96ab4f93ae7fef5c2718a8016cc91052051032472841cf62090392c1df46369c",
+  "bundle_sha256": "3733be512a3536c36bd23dda0c1a86f1c67121fc6aaf8a208899389e6dca2bb5",
+  "prompt_sha256": "3c0a87a335d2fb877c4f538ec0489af5c20d399da95a10dd7bf157769eda1c50",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the response evidence, there are two main approaches to remove the default help command from the root command:\n\n1. Using RemoveCommand: The RemoveCommand method (command.go:1362) can remove one or more commands from a parent command. This method can be used to remove the default help subcommand that Cobra automatically adds.\n\n2. Using SetHelpCommand: The documentation at site/content/user_guide.md:541 (\"Defining your own help\") references SetHelpCommand as a function that allows you to provide your own help command or customize the default one. This same approach could be used to remove or disable the help command by setting it appropriately.\n\nThe default help command is automatically added by Cobra when you have subcommands (site/content/user_guide.md:492: \"Cobra automatically adds a help command to your application when you have subcommands\"). It is added by the InitDefaultHelpCmd method (command.go:1229), which adds a default help command to a Command if it doesn't already have one and if the command has subcommands.\n\nTo remove it, you would use either RemoveCommand to remove the help subcommand from your root command's command list, or SetHelpCommand to replace or disable the default implementation.",
+  "responded_at": "2026-09-05T13:51:40Z",
+  "sha256": "2d5f13ea8c7713a960a8216d3d626746c7022dbd9f66caaaed4a5702d9a80077"
+}

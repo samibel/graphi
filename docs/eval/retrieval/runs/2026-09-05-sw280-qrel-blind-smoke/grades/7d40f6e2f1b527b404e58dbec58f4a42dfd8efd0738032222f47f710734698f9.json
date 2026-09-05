@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1098",
+  "response_sha256": "7d40f6e2f1b527b404e58dbec58f4a42dfd8efd0738032222f47f710734698f9",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-1098 (\"How to change the unknown command error code\"), response 7d40f6e2f1b527b404e58dbec58f4a42dfd8efd0738032222f47f710734698f9.\n\nChecked against the single reviewed grade-3 span: cobra.go:232-238, anchor \"exits with error code 1\" — the hard-coded exit status 1 in CheckErr, which a caller must stop using in order to choose a different exit code.\n\nCriterion 3 (grounded in the bundle) holds: everything the response cites is present in the preserved bytes — command.go:318 (SetFlagErrorFunc, snippet e89 span 312-324), command.go:500 (FlagErrorFunc, snippet e86 span 494-506), args.go:42 (NoArgs, snippet e87 span 36-48), and command_test.go:2747 (TestUnknownFlagShouldReturnSameErrorRegardlessOfArgPosition, snippet e85). No citation is invented.\n\nCriteria 1 and 2 fail. The question asks about the error *code* — the process exit status. The response answers a nearby question instead: how to customise the error *value/message* produced during flag parsing. SetFlagErrorFunc/FlagErrorFunc, as the bundle's own snippets state, set \"a function to generate an error when flag parsing fails\" and return the error unchanged; they never touch an exit status, and they are not even on the unknown-command path (args.go:42 NoArgs returns an error, it does not call the flag error hook). The response's claim that the unknown-command error can \"be customized by implementing your own error function through SetFlagErrorFunc\" is a mechanism the answer key does not support and that the cited bundle text contradicts.\n\nNothing in the response names the mechanism the key identifies — CheckErr's hard-coded exit code 1, or the need to handle Execute's returned error yourself and call os.Exit with a chosen status. The bundle contains no cobra.go / CheckErr evidence at all, so this is a retrieval-sufficiency failure rather than a rater-knowledge failure; either way the response is not consistent with the only reviewed grade-3 span, so under pass criteria 1 and 2 it fails.",
+  "graded_at": "2026-09-05T13:59:33Z",
+  "sha256": "2ba34724beb22e38d998b886b373dba8de4c20af01fc3d2e2b4d94e9190002d8"
+}

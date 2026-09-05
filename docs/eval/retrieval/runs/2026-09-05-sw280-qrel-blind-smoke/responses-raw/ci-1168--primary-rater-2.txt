@@ -1,0 +1,13 @@
+You add/call other subcommands by attaching them to a parent command with `AddCommand`. This is documented in site/content/user_guide.md under the "Organizing subcommands" heading (line 191, snippet spanning 185-197):
+
+"A command may have subcommands which in turn may have other subcommands. This is achieved by using `AddCommand`. In some cases, especially in larger applications, each subcommand may be defined in its own go package. The suggested approach is for the parent command to use `AddCommand` to add its most immediate [children]."
+
+So the pattern is: define each subcommand as its own `*cobra.Command` (optionally in its own package), then wire it into the command tree by calling `parentCmd.AddCommand(childCmd)` — this can be nested arbitrarily, since a subcommand can itself have further subcommands added the same way.
+
+Supporting evidence that a command's subcommands are tracked and queried via this same tree (command.go):
+- `func (c *Command) HasSubCommands() bool { return len(c.commands) > 0 }` (command.go:1556) — checks whether AddCommand has been used to attach any children.
+- `func (c *Command) AllChildCommandsHaveGroup() bool` (command.go:1337) iterates `c.commands` (the slice populated by AddCommand) to check group assignment of each child.
+- `func (c *Command) HasAvailableSubCommands() bool` (command.go:1617) and `HasHelpSubCommands()` (command.go:1603) similarly iterate `c.commands`.
+- args.go's `legacyArgs` (args.go:28) explicitly branches on `cmd.HasSubCommands()` to decide whether to validate the invoked name against the subcommand list — i.e., calling/dispatching to "other subcommands" happens by cobra resolving `args[0]` against the `c.commands` tree built via AddCommand.
+
+I did not find an explicit code snippet showing an `AddCommand(...)` call site in this response (only the doc prose and the internal accessor methods that consume `c.commands`), so the concrete call-site syntax comes from the documentation text quoted above rather than a source snippet.

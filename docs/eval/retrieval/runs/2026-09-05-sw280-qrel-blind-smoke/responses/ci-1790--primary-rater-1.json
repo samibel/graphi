@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1790",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "02c3e537e8ff89fbdb8ac6a898a8a36d6dd6ae62baaf8b69b983b6122871ac32",
+  "bundle_sha256": "3e94203f74747b7c34c207ff06c402dfe3a6184d5a23e34b1c15939d4ce6a900",
+  "prompt_sha256": "702ceb310ff2e017437b61c2bb90e9114d65d08807a6acfe266945792b90185c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains information about using the Cobra generator, help commands, and usage messages, but does not include specific testing patterns, test frameworks, or testing examples for cobra CLI applications.",
+  "responded_at": "2026-09-05T13:42:20Z",
+  "sha256": "64407ece508dd552f0914b6f612e07255da1742a02268728b8510c383c891f58"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "81a407d0ace84c8bfb2e82b5c40cde6a98ef714d196778cad1e7a84f944d5f9b",
+  "bundle_sha256": "54e533f6a9f350f3507f42ba6e4654c054f86d1cbfc85393cdc58b0fa46b5f25",
+  "prompt_sha256": "11af0cc13ecbde2e92c22cb1bcbf76c60ca81984e9e8dc26a0eeab5390c8ac57",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains information about command argument validation in Cobra (NoArgs, legacyArgs, ExactArgs validators) but does not include code or examples showing how to actually wrap arguments to prevent them from being interpreted as commands.",
+  "responded_at": "2026-09-05T13:52:31Z",
+  "sha256": "37e03e0cb7ebab9c12ba7b199db60fd903e49b8546cc3a248ac8acc1d3c6d8b8"
+}

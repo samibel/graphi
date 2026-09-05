@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-563",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "b2de880fd7a44b856e59bc92881c315e1418809d1cbde6b09056d23729187c29",
+  "bundle_sha256": "6119eabfe039da90ed422c9c143eec7e2bb953674ce9a16018e2196a9bd42081",
+  "prompt_sha256": "b5ff78f7375130423664db7040d59e519cb79c24d14a9af15e4f83806f5b0c7c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Pass context.Context between pre/post-run hooks by calling SetContext(ctx) on the command before execution or ExecuteContext(ctx) to execute with a context. Then retrieve it in your pre/post-run hook functions using cmd.Context() and access values with cmd.Context().Value(key).\n\nThe evidence shows:\n- Command.SetContext(ctx context.Context) at command.go:270 sets context on the command (evidence e52)\n- Command.ExecuteContext(ctx context.Context) at command.go:1030 executes with context, with documentation stating \"Retrieve ctx by calling cmd.Context() inside your *Run lifecycle\" (evidence e51)\n- Command.Context() at command.go:264 returns the command's context via `return c.ctx` (evidence e49)\n- EnableTraverseRunHooks variable at cobra.go:66 enables persistent pre-run and post-run hooks from all parents to execute (evidence e48)\n- TestSetContextPreRunOverwrite test at command_test.go:2519-2525 demonstrates accessing context in PreRun hooks via cmd.Context().Value(key{}) (evidence e55)",
+  "responded_at": "2026-09-05T13:55:04Z",
+  "sha256": "c178a19869e5b7b0f1a5c4b8fa60e1e99ac7cc6afb46e270ef49a3797859ae32"
+}

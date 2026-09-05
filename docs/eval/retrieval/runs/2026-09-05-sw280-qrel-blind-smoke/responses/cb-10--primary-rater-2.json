@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-10",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "502559784be28f4f1ac3ff6b6567bbc145c1f2bced2c841fb2c6639db3124ae4",
+  "bundle_sha256": "3499de7f16945a6da0e13df164580e400f212f6e515a8a7ed583ce02d8ef05ea",
+  "prompt_sha256": "f74b38a5c285c8b8c54992696d17b5bf45c35cf61fd842aca98cf477b66ccd5d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "active_help.go is part of the `cobra` package (Cobra CLI library, Copyright 2013-2023 The Cobra Authors, licensed under Apache License 2.0 — see the file header snippet at lines 1-7, evidence e39). It implements Cobra's \"ActiveHelp\" feature: shell-completion hint strings shown to users during tab completion.\n\nContents identified in the response, by symbol and line:\n\n- Constants block (lines 23-35, snippet e41):\n  - `activeHelpMarker = \"_activeHelp_ \"` (line 25) — the marker prefix used to tag ActiveHelp strings.\n  - `activeHelpEnvVarSuffix = \"_ACTIVE_HELP\"` (line 28)\n  - `activeHelpGlobalDisable = \"0\"` (line 30)\n  - `activeHelpGlobalEnvVar = \"COBRA_ACTIVE_HELP\"` (line 29) — global environment variable name that can disable ActiveHelp.\n  - Comment notes: \"The below values should not be changed: programs will be using them explicitly in their user documentation, and users will be using them explicitly.\"\n\n- `var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)` (line 33) — a regex used to substitute non-alphanumeric/underscore characters, presumably when building the per-program env-var name from the root command name.\n\n- `func AppendActiveHelp(compArray []string, activeHelpStr string) []string` (line 42, snippet e40, lines 36-48): adds an ActiveHelp string to a completion array by appending `fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr)`. Doc comment: \"Such strings will be processed by the completion script and will be shown as ActiveHelp to the user... This function can be called multiple times before and/or after completions are added to the array. Each time this function is called with the same array, the new ActiveHelp line will be shown below the previous ones when completion is triggered.\"\n\n- `func GetActiveHelpConfig(...)` (line 51) — per its doc comment (continuing after the AppendActiveHelp snippet): \"returns the value of the ActiveHelp environment variable `\u003cPROGRAM\u003e_ACTIVE_HELP` where `\u003cPROGRAM\u003e` is the name of the root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\"\n\n- `func activeHelpEnvVar(...)` (line 62) — an unexported helper function, presumably used by GetActiveHelpConfig to construct the per-program environment variable name (consistent with the regex at line 33 and the naming convention described in GetActiveHelpConfig's doc comment).\n\nRisk/impact: the response reports risk \"high\" for this file, with fan-in 11 (11 dependent files) (ref_id \"risk\", evidence e1). The related doc/*.go files and doc/*_test.go files (doc/cmd_test.go, doc/man_docs.go, doc/man_docs_test.go, doc/man_examples_test.go, doc/md_docs.go, doc/md_docs_test.go, doc/rest_docs.go, doc/yaml_docs_test.go, doc/rest_docs_test.go) appear as heuristic-tier (\"edge_tier\":\"heuristic\") same-directory-family relations rather than confirmed call/reference edges to active_help.go itself, so their direct connection to this specific file's functionality is not established by the response — no snippet or graph_relation of \"confirmed\" tier ties them to active_help.go's symbols.\n\nThe response gives no further code beyond these snippets (e.g., the full bodies of GetActiveHelpConfig or activeHelpEnvVar are not shown), so anything about their exact implementation beyond what's quoted above is not available from this data.",
+  "responded_at": "2026-09-05T13:43:25Z",
+  "sha256": "7ee4221ac7e43c923a179e1d90f3d6a1d3b7d52873c2961749076097ecaee7c9"
+}

@@ -1,0 +1,12 @@
+To add a shorthand to an option, you use the `Shorthand` field in the `cmdOption` struct. This is defined in `doc/yaml_docs.go` at line 30 (evidence e32):
+
+```go
+type cmdOption struct {
+	Name         string
+	Shorthand    string `yaml:",omitempty"`
+	DefaultValue string `yaml:"default_value,omitempty"`
+	Usage        string `yaml:",omitempty"`
+}
+```
+
+The `Shorthand` field is a string member of the `cmdOption` type that holds the shorthand character or string for an option. The `yaml:",omitempty"` tag indicates it's optional in YAML serialization.

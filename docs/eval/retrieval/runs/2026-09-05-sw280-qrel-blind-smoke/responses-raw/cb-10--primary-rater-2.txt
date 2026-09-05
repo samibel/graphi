@@ -1,0 +1,22 @@
+active_help.go is part of the `cobra` package (Cobra CLI library, Copyright 2013-2023 The Cobra Authors, licensed under Apache License 2.0 — see the file header snippet at lines 1-7, evidence e39). It implements Cobra's "ActiveHelp" feature: shell-completion hint strings shown to users during tab completion.
+
+Contents identified in the response, by symbol and line:
+
+- Constants block (lines 23-35, snippet e41):
+  - `activeHelpMarker = "_activeHelp_ "` (line 25) — the marker prefix used to tag ActiveHelp strings.
+  - `activeHelpEnvVarSuffix = "_ACTIVE_HELP"` (line 28)
+  - `activeHelpGlobalDisable = "0"` (line 30)
+  - `activeHelpGlobalEnvVar = "COBRA_ACTIVE_HELP"` (line 29) — global environment variable name that can disable ActiveHelp.
+  - Comment notes: "The below values should not be changed: programs will be using them explicitly in their user documentation, and users will be using them explicitly."
+
+- `var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)` (line 33) — a regex used to substitute non-alphanumeric/underscore characters, presumably when building the per-program env-var name from the root command name.
+
+- `func AppendActiveHelp(compArray []string, activeHelpStr string) []string` (line 42, snippet e40, lines 36-48): adds an ActiveHelp string to a completion array by appending `fmt.Sprintf("%s%s", activeHelpMarker, activeHelpStr)`. Doc comment: "Such strings will be processed by the completion script and will be shown as ActiveHelp to the user... This function can be called multiple times before and/or after completions are added to the array. Each time this function is called with the same array, the new ActiveHelp line will be shown below the previous ones when completion is triggered."
+
+- `func GetActiveHelpConfig(...)` (line 51) — per its doc comment (continuing after the AppendActiveHelp snippet): "returns the value of the ActiveHelp environment variable `<PROGRAM>_ACTIVE_HELP` where `<PROGRAM>` is the name of the root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`."
+
+- `func activeHelpEnvVar(...)` (line 62) — an unexported helper function, presumably used by GetActiveHelpConfig to construct the per-program environment variable name (consistent with the regex at line 33 and the naming convention described in GetActiveHelpConfig's doc comment).
+
+Risk/impact: the response reports risk "high" for this file, with fan-in 11 (11 dependent files) (ref_id "risk", evidence e1). The related doc/*.go files and doc/*_test.go files (doc/cmd_test.go, doc/man_docs.go, doc/man_docs_test.go, doc/man_examples_test.go, doc/md_docs.go, doc/md_docs_test.go, doc/rest_docs.go, doc/yaml_docs_test.go, doc/rest_docs_test.go) appear as heuristic-tier ("edge_tier":"heuristic") same-directory-family relations rather than confirmed call/reference edges to active_help.go itself, so their direct connection to this specific file's functionality is not established by the response — no snippet or graph_relation of "confirmed" tier ties them to active_help.go's symbols.
+
+The response gives no further code beyond these snippets (e.g., the full bodies of GetActiveHelpConfig or activeHelpEnvVar are not shown), so anything about their exact implementation beyond what's quoted above is not available from this data.

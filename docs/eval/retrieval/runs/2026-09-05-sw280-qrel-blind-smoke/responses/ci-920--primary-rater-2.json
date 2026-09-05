@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-920",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "75a4bcee426bb68dddd71dddfb4496a148ddfc9f5b15feaab1501548468bb8f0",
+  "bundle_sha256": "ef8783b105a9ab0dd343e1577180a866f04e2df6f87658cc5ebc3f089ebc2d73",
+  "prompt_sha256": "235d8983c5d9e40d35e2db4b75cc75a09b49321673ef60d3a3f94026cc528a69",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The response's most direct match is cobra.Command.HasFlags() (command.go:1752), whose doc comment answers this literally: \"HasFlags checks if the command contains any flags (local plus persistent from the entire structure).\" Its body is `return c.Flags().HasFlags()` (snippet e57, command.go:1746-1758). So to check if a command has any flags at all, call `cmd.HasFlags()`; there is a parallel `cmd.HasPersistentFlags()` (command.go:1757) that narrows the check to persistent flags only, implemented the same way via `c.PersistentFlags().HasFlags()`.\n\nIf instead the question means \"was a specific flag set (changed) by the user,\" the response does not show that mechanism directly (no `Flag.Changed` field appears anywhere in the payload). The closest related evidence is:\n- cobra.Command.Flag(name) (command.go:1795, snippet e56): looks up a single named flag by climbing the command tree — `flag = c.Flags().Lookup(name); if flag == nil { flag = c.persistentFlag(name) }` — this returns the *flag.Flag for a given name but doesn't itself report \"set\" status.\n- cobra.validateExclusiveFlagGroups (flag_groups.go:188, snippet e58): iterates a pre-built `map[string]map[string]bool` where the inner bool is named `isSet` per flag name, and collects the flags where `isSet` is true. This shows the *pattern* of checking \"is this flag set\" via an `isSet` boolean per flag name, but the response does not include the code that populates that `isSet` map, so it cannot show what test (e.g. `Flag.Changed`) actually produces it.\n\nIn short: for \"does the command have any flags,\" the evidence directly supports `cmd.HasFlags()` (command.go:1752). For \"was any particular flag actually set by the caller,\" the response only shows the surrounding lookup/aggregation code (Command.Flag, validateExclusiveFlagGroups) and not the underlying is-set determination, so that half of the question is not fully answered by this evidence.",
+  "responded_at": "2026-09-05T13:56:15Z",
+  "sha256": "5cfa25a68b27c2fee5ff5c15779a919c387358222f15682c7d8260883739f1df"
+}

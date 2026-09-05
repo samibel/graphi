@@ -1,0 +1,9 @@
+For os.Exec'd Cobra CLIs, use Cobra's built-in completion command mechanism:
+
+1. **Automatic completion command** (site/content/completions/_index.md:1, e23): Cobra automatically provides a fully functional `completion` command for shells (Bash, Zsh, fish, PowerShell), similar to how it provides the `help` command. When a CLI is spawned via os.Exec, the parent shell invokes this completion command with specific arguments to retrieve completion suggestions.
+
+2. **Dynamic completions** (site/content/completions/_index.md:167, e24): For runtime-determined completions, use the `ValidArgsFunction` field to provide a Go function that Cobra executes when it needs completion choices for nouns, rather than static `ValidArgs`.
+
+3. **Custom completion command** (site/content/completions/_index.md:13, e26): You can create your own completion command that takes precedence over the default one, providing backwards-compatibility for programs that already have their own completion command.
+
+The completion works through shell environment variables and command arguments that trigger the completion subcommand when the parent shell spawns the CLI via os.Exec.

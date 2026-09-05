@@ -1,0 +1,37 @@
+{
+  "query_id": "ci-1461",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-1461",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "937ea02600712c12a30373bec14a02b06dcf7d9d8497c5f4505e16757f787859",
+    "bundle_sha256": "18463cc4e2559eae12ba8cca53646f556fe33b3441a2ad40cdda08f72c13c4b2",
+    "prompt_sha256": "75335c8b3e3549b2200489c186a6e6f3f425a24106a4e5ff502d2dcf998f7b4d",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Use ExecuteC (or ExecuteContextC) on the root/parent command instead of Execute: it returns the sub-command that actually ran together with its error, so the parent gets the child's result back as the return value.\n\nEvidence in the response:\n- Snippet e103, command.go:1046-1058: `func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) { c.ctx = ctx; return c.ExecuteC() }` and `// ExecuteC executes the command.` `func (c *Command) ExecuteC() (cmd *Command, err error) { ... // Regardless of what command execute is called on, run on Root only / if c.HasParent() {`. The `(cmd *Command, err error)` signature is the channel that hands the executed sub-command and its error back to the caller on the parent/root. Item 18cb88eba73cd7c5 identifies this as method cobra.Command.ExecuteC (command.go:1052).\n- The parent/child linkage itself is exposed via `Parent()` (snippet e100, command.go:1843: `return c.parent`), `HasParent()` (snippet e98, command.go:1632: `return c.parent != nil`) and `Root()` (snippet e97, command.go:861: `if c.HasParent() { return c.Parent().Root() }; return c`), so from inside a sub-command's run function you can also reach the parent with `cmd.Parent()` / `cmd.Root()` and set state on it directly.\n\nCaveat: the response only shows the signature and first lines of ExecuteC, not the body that selects and runs the sub-command or the point where `cmd` is assigned, and it contains no snippet about capturing a sub-command's stdout/stderr output. If \"result\" means printed output rather than the executed command and its error, the response does not contain enough to answer that part.",
+    "responded_at": "2026-09-05T14:08:24Z",
+    "sha256": "8cb6a821771097d2fb615349c73ef94972bc772aa437996b4a7e2d034f873f05"
+  },
+  "disclosure": {
+    "query_id": "ci-1461",
+    "adjudicator_response_sha256": "8cb6a821771097d2fb615349c73ef94972bc772aa437996b4a7e2d034f873f05",
+    "disclosed_artifact_sha256": [
+      "16c777db7df581e331c0756e6f2e5a7a153d89f0ecd24686c0128db96a8d6705",
+      "17961dddc04fc41987b1aebeb86d72811d62a79c9bcf8c9b1c81747316470572",
+      "6e1b867c5d77661ba623b8934f4bd3422c49e918fb1296ac20544e5bc9169025",
+      "d5a948c64c511248068bf568797cfe40e3786811914a2e6a4f9136d129979da0"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

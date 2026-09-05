@@ -1,0 +1,11 @@
+FAIL
+
+Checked against the single reviewed grade-3 span for ci-2161: command.go:1146-1168, anchor "&& !pflag.Changed" — the key establishes that Cobra distinguishes a user-supplied flag from one still holding its default by testing the flag's Changed field, treating !Changed as "not set".
+
+Criterion 1 (answers the question asked): met. The response is about distinguishing a default value from a manually set flag value, not a nearby question.
+
+Criterion 3 (grounded in the bundle): met. It cites material actually present in the given bytes — hasNoOptDefVal at command.go:623 with snippet e57 ("return flag.NoOptDefVal != \"\""), shortHasNoOptDefVal at command.go:631 with snippet e58 ("fs.ShorthandLookup(name[:1])"), plus genFlagResult (doc/yaml_docs.go:149, e55) and manPrintFlags (doc/man_docs.go:159, e56). All four ref_ids and their snippets appear verbatim in the bundle.
+
+Criterion 2 (substantively correct): NOT met, and this is decisive. The response answers "check the flag.NoOptDefVal field" and states that an empty NoOptDefVal means "any value provided is manually set". NoOptDefVal is not the Changed mechanism and is not genuinely equivalent to it: it is the value pflag substitutes when a flag is present on the command line without an argument (e.g. --verbose with no value), a per-flag declaration made at registration time. It is identical for a run where the user never mentioned the flag and a run where the user set it explicitly, so it cannot discriminate default-versus-user-set at all. The answer key's mechanism — pflag.Flag.Changed, false until the flag is actually supplied — is what carries that distinction. The response never mentions Changed. Its central claim is therefore contradicted by the only reviewed grade-3 span, which is a fail under pass criterion 2 and under the fail criterion "the response contradicts every reviewed grade-3 answer span".
+
+Note for the run record, not part of the grade: the bundle's returned spans (command.go:617-649, 1789-1801) do not include the command.go:1146-1168 pin, and outcome was "partial" — but the rubric grades the response, and this response asserted a wrong mechanism rather than declaring INSUFFICIENT.

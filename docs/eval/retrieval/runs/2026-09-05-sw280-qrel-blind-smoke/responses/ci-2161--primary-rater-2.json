@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2161",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "402e5b75e56118abd88c34d6a2e1f15b5daa5368b2b12041c653ea5791f08c01",
+  "bundle_sha256": "f22d1df5bf47bec20fe082d81feb6da008f38c5c105a8a815c0286c9aae18cea",
+  "prompt_sha256": "f383258dd2fac30350a38857e693953d3232eb956b3be52ec4bfebb42bf3538c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response contains no evidence of the mechanism used to tell whether a flag was explicitly set versus left at its default (e.g. no snippet mentions a \"Changed\" field or equivalent). The only flag-value-related field surfaced is `NoOptDefVal`, in `hasNoOptDefVal` (command.go:623, snippet e57: \"flag := fs.Lookup(name); if flag == nil { return false }; return flag.NoOptDefVal != \\\"\\\"\") and `shortHasNoOptDefVal` (command.go:631, snippet e58) — but `NoOptDefVal` is the default value substituted when a flag is given with no explicit argument (e.g. `--foo` vs `--foo=bar`), not a marker of \"user set this flag manually\" versus \"flag is at its zero/default value.\" The other snippets (Command.Flag at command.go:1795, genFlagResult at doc/yaml_docs.go:149, manPrintFlags at doc/man_docs.go:159) only show flags being looked up or iterated via VisitAll and filtered on Deprecated/Hidden — none inspect or report a changed/set-vs-default state. So the response does not supply enough information to answer how default and manually-set flag values are distinguished.",
+  "responded_at": "2026-09-05T13:53:20Z",
+  "sha256": "3f9e890a463bb37ad3198d0a11c46f35c19b0f3d54b3ca3c852b13a736a12456"
+}

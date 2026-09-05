@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2150",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "d3824c250ee8631cd47a119b9567ad61dbb8a472469ecb13b9f0dfeed7050664",
+  "bundle_sha256": "051a47861b52b3b44ca55d6f0b3b5775bc68f097d8c95d287bd61e45617ee917",
+  "prompt_sha256": "b6078c4cdddc4a8648aa730e9bc30ebc84f5a194e0113a083ff3d40909e645ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The provided evidence shows flag-level hiding mechanisms (`flag.Hidden`) but does not explicitly demonstrate whether default values can be selectively hidden from help output independently of the flag itself.",
+  "responded_at": "2026-09-05T13:53:11Z",
+  "sha256": "aba3bc3e42440b6e85b3f5525bb8fc2c4578bd8df86a64d7c8422bd9a8e40a3a"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-17",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "3342c4e5cd007dc83c626ef428803bea347914743644161b4ed8657948c52407",
+  "bundle_sha256": "4a6ec724144565e924264ee6ccf73c5c938df471b46b8323ea5c0d09c8d7dec0",
+  "prompt_sha256": "fc233faf08e7bba88d1713b3ee92980d4260d3d632a73917475872446225d288",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra reports a flag parsing error to the user by printing the command's usage message. site/content/user_guide.md, under the heading \"## Usage Message\" (line 554, snippet span 548-560), states directly: \"When the user provides an invalid flag or invalid command, Cobra responds by showing the user the 'usage'.\" That same snippet shows the usage/help behavior is customizable per-command via `cmd.SetHelpFunc(f func(*Command, []string))` and `cmd.SetHelpTemplate(s string)`, and notes these propagate to child commands.\n\nThe response also surfaces a separate, narrower error path that should not be confused with general flag-parsing errors: completions.go defines a `flagCompError` type (completions.go:45, span 44-56) with fields `subCommand` and `flagName`, and an `Error()` method (completions.go:50) that returns the message `\"Subcommand '\u003csubCommand\u003e' does not support flag '\u003cflagName\u003e'\"`. That type is used specifically during shell-completion flag lookup (referenced from `getCompletions`, completions.go:266, and `checkIfFlagCompletion`, completions.go:592) — it's an internal completion-time error, not the mechanism for reporting an ordinary invalid/unparseable flag on the command line, which is the usage-message behavior described above.\n\nNo snippet in the response shows the actual code path that prints usage on a parse failure (e.g. no view of `ExecuteC` in command.go beyond its listing at line 1052/1098, and no snippet content from command.go), so the \"usage message on invalid flag\" claim rests on the user_guide.md documentation text rather than on a source-code snippet of the parse-error handling itself.",
+  "responded_at": "2026-09-05T13:43:26Z",
+  "sha256": "815a2550c3af632eeb34a0994b2d1975d9e1b42b8d9c6a4b4452913bc81904e1"
+}

@@ -1,0 +1,11 @@
+PASS
+
+Checked against the single reviewed grade-3 span for cb-10: active_help.go:1-67, anchor "package cobra", reason "The file named by the query."
+
+1. Answers the question asked. The query is the bare file name "active_help.go". The response describes that file — its role in the Cobra command-line framework and the symbols it declares — rather than a nearby file or a different question.
+
+2. Substantively correct. Every claim falls inside the graded span's line range (1-67) and is consistent with it: AppendActiveHelp at line 42, GetActiveHelpConfig at line 51, activeHelpEnvVar at line 62, the constant block at lines 25-30 (activeHelpMarker "_activeHelp_ ", activeHelpEnvVarSuffix "_ACTIVE_HELP", activeHelpGlobalEnvVar "COBRA_ACTIVE_HELP", activeHelpGlobalDisable "0"), and activeHelpEnvVarPrefixSubstRegexp at line 33. The identification of the file as Cobra's ActiveHelp source matches the span's anchor "package cobra". Nothing in the response contradicts the answer key.
+
+3. Grounded in the bundle. The response cites evidence refs that are present verbatim in the bundle bytes it was given: e1 (path "active_help.go", line 1, role primary, source_match) for the seed match; e39 (snippet active_help.go:1-7, "// Copyright 2013-2023 The Cobra Authors ... Apache License, Version 2.0") for the Cobra/Apache attribution; e40 (snippet active_help.go:36-48, containing "func AppendActiveHelp(compArray []string, activeHelpStr string) []string" and the completion-script documentation) for the function claim; e41 and e42 (snippets active_help.go:23-35 and 27-39, containing the const block and "var activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)") for the constants and regexp variable; e2-e9 for the related-symbol line numbers; and the "risk: high — fan-in 11, 11 dependent file(s)" item plus e11-e20 for the doc/ test relations. All of these strings appear in the preserved bundle; none of the response's content is supplied from outside it.
+
+Minor, non-disqualifying: describing the doc/ test files as "referenced by tests" slightly overstates edges the bundle marks edge_tier "heuristic", and the constant is rendered without its trailing space ("_activeHelp_" vs "_activeHelp_ "). Neither contradicts the grade-3 span nor removes the checkable claim, so neither triggers a fail criterion.

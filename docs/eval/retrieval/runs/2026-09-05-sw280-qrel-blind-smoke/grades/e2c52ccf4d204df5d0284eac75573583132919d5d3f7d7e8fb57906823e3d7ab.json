@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-829",
+  "response_sha256": "e2c52ccf4d204df5d0284eac75573583132919d5d3f7d7e8fb57906823e3d7ab",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against grade-3 span command.go:1115-1122, anchor \"cmd.HelpFunc()(cmd, args)\" — the span's substance is that the help path renders help by invoking HelpFunc and then yields a nil error, so Cobra does not terminate the process and control returns normally to the caller of Execute.\n\nThe response names a genuinely equivalent location for that same mechanism: Command.Help() at command.go:473, which is the identical two-step body (c.HelpFunc()(c, []string{}) followed by return nil). Its claim — help output is produced through HelpFunc and the function then returns nil, which in Go signals normal completion without error — is consistent with that span rather than contradicting it; the response nowhere asserts that Cobra terminates the process itself.\n\nBundle evidence cited: evidence ref e60, path command.go, span 467-479, role snippet — the response quotes that snippet's body verbatim (\"func (c *Command) Help() error { c.HelpFunc()(c, []string{}); return nil }\") and names both the ref id e60 and the line command.go:473, all of which appear in the bundle bytes it was given (item 53d7a740e756cde0, \"primary: method cobra.Command.Help (command.go:473)\", evidence_ref_ids e1/e60). Criterion 3 therefore holds: the grounding is in the bundle, not in prior knowledge of Cobra.\n\nCriterion 1 holds: the response is about the help path's post-help control flow, which is the question asked, not a nearby one. It is not INSUFFICIENT, not empty, and makes a checkable claim.\n\nReservation, recorded but not disqualifying: the response covers only the first grade-3 span and never reaches the second (command.go:322-325, SetHelpFunc), so it does not tell a caller where to actually perform an exit; its phrase \"returns nil to signal successful completion and exit\" is loose about function return versus process termination. The rubric requires consistency with at least one reviewed span, not coverage of all of them, and the accompanying sentence (\"indicates normal completion without error\") resolves the looseness in the direction the answer key states. Pass.",
+  "graded_at": "2026-09-05T14:07:17Z",
+  "sha256": "af1a2c277d984f2214ed94df2ef828fff75efccae101aa27e4b442d22db7ea33"
+}

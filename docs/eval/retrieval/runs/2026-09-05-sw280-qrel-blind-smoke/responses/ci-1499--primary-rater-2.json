@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1499",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "7af27b154b8a077f896333b21fc0bde760288c78c867e43ab929f2bd95f2ab4a",
+  "bundle_sha256": "c1828fe28853af88d49990b5558af69599b478cc6b709c6de27eacb29f40941b",
+  "prompt_sha256": "e80352c895a0993a1ba75b7deca00fad9c71ba736c1be0be7953b729cf0ffb4f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call Command.RemoveCommand(cmds ...*Command) on the parent command, passing the child command(s) to remove.\n\nEvidence: command.go:1362-1368 (ref_id e1/085c68594070e1f5) defines:\n\n    // RemoveCommand removes one or more commands from a parent command.\n    func (c *Command) RemoveCommand(cmds ...*Command) {\n        commands := []*Command{}\n    main:\n        for _, command := range c.commands {\n            for _, cmd := range cmds {\n                if command == cmd {\n                    command.parent = nil\n\nIt iterates the parent's c.commands, and for any command matching one of the ones passed in, drops it from the retained list (and clears its parent pointer), leaving the rest in place — so it removes only the specified command(s), not all of them.\n\nA concrete usage example is in completions_test.go:2417-2423 (ref_id e2/2079415768bacab3, snippet e72), the removeCompCmd helper:\n\n    func removeCompCmd(rootCmd *Command) {\n        // Remove completion command for the next test\n        for _, cmd := range rootCmd.commands {\n            if cmd.Name() == compCmdName {\n                rootCmd.RemoveCommand(cmd)\n                return\n            }\n        }\n\nThis finds the specific default/auto-added subcommand by name (here the default \"completion\" command, compCmdName) among rootCmd's children and calls rootCmd.RemoveCommand(cmd) on it — i.e., to remove a default \"use: XXX [command]\" that was auto-registered on a parent, locate it via its Name() (which derives from the Use string, per Command.Name() at command.go:1496: it takes c.Use and truncates at the first space) among the parent's commands and call parentCmd.RemoveCommand(thatCmd).\n\nThe response also lists two directly relevant tests — TestRemoveCommand (command_test.go:1450) and TestReplaceCommandWithRemove (command_test.go:1462) — which exercise this same RemoveCommand behavior, though their bodies are not included in the response bytes.",
+  "responded_at": "2026-09-05T13:51:28Z",
+  "sha256": "a9aeb17a28e777fbc8ad8e287b53daf3c29991d31722fcf97b00151bedc59133"
+}

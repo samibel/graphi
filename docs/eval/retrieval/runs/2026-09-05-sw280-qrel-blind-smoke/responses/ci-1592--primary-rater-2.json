@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1592",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c8d4c0934cbcea98a5eefb7ec1d569fd5d5618eea10a609cb019eb2da2397bd9",
+  "bundle_sha256": "710d82ca838fe66292d34f2efe289b0b25268aaad9edcbc4d3fdae0bea5c333d",
+  "prompt_sha256": "6005acf85f128f28c23463afe72a518c276aa5e9763067f077a03ac2ba0fb17b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "There are two distinct things this covers — documenting a required argument (in help text) and defining/enforcing it (in code) — and the response has evidence for both.\n\n1. Documenting a required argument in the command's usage string:\nIn command.go's Command struct doc comment (command.go:51, snippet e106, lines 45-57), the `Use` field's recommended syntax is spelled out:\n\"Use is the one-line usage message. Recommended syntax is as follows:\n  [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.\n  ... indicates that you can specify multiple values for the previous argument.\n  |   indicates mutually exclusive information...\"\nSo to document an argument as required, you simply write it in the `Use` string without enclosing it in square brackets; anything inside `[ ]` is treated as optional, and anything not bracketed is required by convention.\n\n2. Defining/enforcing a required (positional) argument in code:\nsite/content/user_guide.md, section \"Positional and Custom Arguments\" (dc8a54ad9f3b26fe, line 367; snippet e108, lines 361-373) states: \"Validation of positional arguments can be specified using the `Args` field of `Command`. The following validators are built in: - Number of arguments: - `NoArgs` - report an error if there are any positional args.\" The snippet is truncated after `NoArgs`, so the full list of built-in validators (e.g., anything for \"exactly N args\" or \"minimum args\") is not visible in this response.\n\nThis ties to command.go's `ValidateArgs` method (a63fab69c86b602b, command.go:1139, snippet e107, lines 1133-1145):\n```\nfunc (c *Command) ValidateArgs(args []string) error {\n\tif c.Args == nil {\n\t\treturn ArbitraryArgs(c, args)\n\t}\n\treturn c.Args(c, args)\n}\n```\nThis shows that if you set `Command.Args` to a validator function, that function is called against the parsed args to enforce your requirement (e.g., that a required argument is present); if `Args` is left nil, `ArbitraryArgs` (args.go:69, ref ca0ac9e7f5b714ac) is used instead, which imposes no such requirement.\n\nSummary: Document a required positional argument by naming it without brackets in `Command.Use` (per the comment at command.go:51-57); define/enforce it by setting `Command.Args` to a validator function, which `ValidateArgs` (command.go:1139) invokes during argument validation, per the \"Positional and Custom Arguments\" section of site/content/user_guide.md:367. The response does not include the exact built-in validator name for \"N required args\" (the snippet cuts off after `NoArgs`), so I cannot name the specific required-args validator function from this evidence alone.",
+  "responded_at": "2026-09-05T13:51:58Z",
+  "sha256": "2504e62f7edc7bd3d6392742d3f32cd1bb6dfbf8ff1db5068567e4702ab5ee79"
+}

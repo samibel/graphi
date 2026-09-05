@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-829",
+  "response_sha256": "6044c6d54d40d04d3227a35e4fe16661cd84696caf0aefb09b13c1d4c6f2892d",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Response 6044c6d54d40d04d3227a35e4fe16661cd84696caf0aefb09b13c1d4c6f2892d for ci-829 opens with the token INSUFFICIENT and its whole body argues that \"the mechanism to exit after a help command cannot be established from the evidence\". The rubric's fail criteria list this explicitly: a response that says it cannot answer (INSUFFICIENT) \"is an honest answer and a failed one\". It is not a missing, empty or refused response — it is a substantive declaration of insufficiency — so it is graded rather than treated as a failure by rule.\n\nChecked against grade-3 span command.go:1115-1122, anchor \"cmd.HelpFunc()(cmd, args)\" (help is rendered through HelpFunc inside ExecuteC, which returns a nil error, so Cobra never terminates the process and control returns to the caller of Execute). The response makes no claim consistent with this span; instead it asserts the opposite of what the key requires, stating the bundle contains \"no code for how Execute/ExecuteC handles the help path afterwards\" and \"no hook that lets a caller terminate once help has been printed\". Also checked against the second grade-3 span, command.go:322-325, anchor \"func (c *Command) SetHelpFunc(f func(*Command, []string)) {\" — the operation that replaces the function invoked for help, i.e. exactly the hook the response denies exists.\n\nBundle evidence the response did cite: e60 (command.go:467-479 snippet) for Command.Help calling c.HelpFunc()(c, []string{}) and returning nil, e61 (command.go:1223-1235 snippet, InitDefaultHelpCmd header), and the site/content/user_guide.md help prose (e62/e63/e64). Those citations are genuinely present in the bytes, so criterion 3 is satisfied, but criteria 1 and 2 are not: the response declines to answer the question asked and its \"no hook exists\" claim is contradicted by the bundle it was given — e63 (site/content/user_guide.md:548-560) literally contains the line \"cmd.SetHelpFunc(f func(*Command, []string))\", the documented form of the SetHelpFunc span, and e60 shows help returning nil rather than exiting, which is the ExecuteC behaviour the first span describes.",
+  "graded_at": "2026-09-05T14:10:06Z",
+  "sha256": "2742bfae3a71b232582cceaed09835a30664fd45e972cdd30284b705107572f9"
+}

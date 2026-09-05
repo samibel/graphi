@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1148",
+  "response_sha256": "5b8543e26de84918a6e00467e638a97315cafd721f977af7d6d7a4ac273a4e2a",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against grade-3 span command.go:134-135 anchor \"RunE func(cmd *Command, args []string) error\" (and the secondary span command.go:982-988 anchor \"if err := c.RunE(c, argWoFlags); err != nil {\"). The response makes no claim matching either span: it names neither RunE nor the execute() propagation path.\nThe response opens with \"INSUFFICIENT\", which the rubric's fail criteria list explicitly designates an honest answer and a failed one. It therefore also fails pass criterion 2 (substantively correct), since it asserts no checkable claim about the mechanism the question asks for.\nBundle evidence the response did cite, all genuinely present in the given bytes: e70 command.go:379-391 (ErrOrStderr / OutOrStderr snippet), e72 args.go:22-34 (PositionalArgs type and legacyArgs), e68 command.go:1287-1299 (Command.Commands sorting), e69 command.go:1597-1609 (HasHelpSubCommands), e75 command.go:1577-1589 (IsAdditionalHelpTopicCommand), and the doc-generation items GenMarkdownCustom (doc/md_docs.go:57), genMan (doc/man_docs.go:202), GenYamlCustom (doc/yaml_docs.go:93), GenReSTCustom (doc/rest_docs.go:62). So grounding (criterion 3) is satisfied and the characterization of that evidence is accurate — the bundle contains no snippet covering command.go:134-135 or 982-988 — but an accurate report of insufficiency is still a fail by rule.",
+  "graded_at": "2026-09-05T13:59:51Z",
+  "sha256": "6583fe3de1d632e985c87639307cd61a0fb9f403ac40ea24e3f21b5031b90762"
+}

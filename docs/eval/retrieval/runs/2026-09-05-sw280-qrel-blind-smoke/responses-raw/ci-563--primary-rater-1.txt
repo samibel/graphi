@@ -1,0 +1,8 @@
+Pass context.Context between pre/post-run hooks by calling SetContext(ctx) on the command before execution or ExecuteContext(ctx) to execute with a context. Then retrieve it in your pre/post-run hook functions using cmd.Context() and access values with cmd.Context().Value(key).
+
+The evidence shows:
+- Command.SetContext(ctx context.Context) at command.go:270 sets context on the command (evidence e52)
+- Command.ExecuteContext(ctx context.Context) at command.go:1030 executes with context, with documentation stating "Retrieve ctx by calling cmd.Context() inside your *Run lifecycle" (evidence e51)
+- Command.Context() at command.go:264 returns the command's context via `return c.ctx` (evidence e49)
+- EnableTraverseRunHooks variable at cobra.go:66 enables persistent pre-run and post-run hooks from all parents to execute (evidence e48)
+- TestSetContextPreRunOverwrite test at command_test.go:2519-2525 demonstrates accessing context in PreRun hooks via cmd.Context().Value(key{}) (evidence e55)

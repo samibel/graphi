@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1168",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "63a26ca706d86bb17e89408c2192992f84d039bd9cd5fb61dae93a22d99a6b13",
+  "bundle_sha256": "4ef5071868ccc0c0a238dadafd5aa7f6d1e31c6f6cc5035599c02a180f8091a8",
+  "prompt_sha256": "a242ab176bf3e36f34d81c838b2e4d85e0036c5204ebdb563305c27fccc86ad0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains helper methods for checking subcommand state (HasSubCommands, IsAvailableCommand, HasAvailableSubCommands in command.go) and documentation mentioning that subcommands are organized via AddCommand in site/content/user_guide.md:191, but does not include code examples showing how to programmatically invoke or call another subcommand from within a command's execution.",
+  "responded_at": "2026-09-05T13:50:19Z",
+  "sha256": "11878c3a28564059326322e2431a9ef8be2fbb02306741679ff76ad921a7de83"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2291",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "83dba85b9dbd18ceef1a527cbea30056677cfde67e28a48babaa9ee8c735b290",
+  "bundle_sha256": "3ec733a682befb9cf728a09920341f6c64e4a77e45e1378713edc3dde0750756",
+  "prompt_sha256": "f9ef442e7c1d57bcd627ee209b9978d2f0333410902c9953042543bb8a809eb7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set DisableFlagParsing: true on the cobra.Command that wraps the script execution, and forward the raw args slice straight through to the script instead of letting cobra parse it as flags.\n\nEvidence for the mechanism:\n- Command.ParseFlags (command.go, snippet spanning lines 1813-1825, ref e169) begins with:\n  \"func (c *Command) ParseFlags(args []string) error {\\n\\tif c.DisableFlagParsing {\\n\\t\\treturn nil\\n\\t}\\n\\n\\tif c.flagErrorBuf == nil {\\n\\t\\tc.flagErrorBuf = new(bytes.Buffer)\"\n  When DisableFlagParsing is true, ParseFlags returns immediately without touching args, so nothing that looks like a flag (uncertain/unknown flags meant for the script, not for your cmd) gets consumed, rejected, or reordered by cobra's own pflag-based FlagSet.\n- Command.execute (command.go:874, snippet e166) is the call site that invokes flag parsing before running the command body (\"func (c *Command) execute(a []string) (err error) { ... }\"), so the same args slice that ParseFlags leaves untouched is what reaches your Run/RunE function when DisableFlagParsing is set — i.e. args[0], args[1], ... arrive verbatim, including any dashed tokens.\n- Command.Flags() (command.go:1643, snippet e163) is the normal path that lazily builds the FlagSet (\"if c.flags == nil { c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError) ... }\") for commands that DO want cobra to validate flags — you deliberately bypass this for the script-runner subcommand so it never registers/validates flags it can't know in advance.\n- The pattern of disabling flag parsing to hand raw, unvalidated flag-like args to something else is exercised in cobra's own test suite: TestCompleteWithDisableFlagParsing (completions_test.go:2706, ref e84) is listed among the related/test items, confirming DisableFlagParsing is the established field for \"flags I don't want cobra to interpret.\"\n\nConcretely, in your cmd definition:\n1. Define the Command with DisableFlagParsing: true (so ParseFlags short-circuits per command.go:1819).\n2. In RunE(cmd *cobra.Command, args []string), treat args as the full, unmodified command line meant for the script (script path plus its own flags) rather than calling cmd.Flags() to look them up, since Command.Flags() would return an empty/irrelevant FlagSet for this command's own definitions.\n3. Pass that args slice straight to your script-invocation code (e.g. exec.Command(scriptPath, scriptArgs...)) without re-parsing it.\n\nCaveat: the retrieved response is capped/truncated (40 of 60 available items, 20 dropped) and skews heuristic (48.6% heuristic vs 42.3% confirmed edges), and it contains no snippet that actually shows an os/exec invocation or a \"script file\" execution helper — that part of the implementation (spawning the external script process) is not present in this response and must be written using standard library exec, not cobra APIs.",
+  "responded_at": "2026-09-05T13:54:19Z",
+  "sha256": "f0ff8704e3f2fad38cd45cd6e5007b8a1679412397ab1c563f1d02d571ac3671"
+}

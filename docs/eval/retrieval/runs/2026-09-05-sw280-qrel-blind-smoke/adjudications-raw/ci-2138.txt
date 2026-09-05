@@ -1,0 +1,12 @@
+A wrong (unknown) subcommand is handled by the default positional-args validator `legacyArgs` in args.go:28, which is the function the response surfaces as a primary seed (evidence e5, snippet e134, args.go:22-34).
+
+What the response shows about it:
+
+- `legacyArgs(cmd *Command, args []string) error` is a `PositionalArgs` validator (args.go:22: `type PositionalArgs func(cmd *Command, args []string) error`).
+- Its doc comment (args.go:24-27) states the policy: root commands with no subcommands accept arbitrary arguments; root commands *with* subcommands "will do subcommand validity checking"; subcommands always accept arbitrary arguments.
+- The body (args.go:29-34) first returns nil when `!cmd.HasSubCommands()` (graph edge e18, args.go:30 -> `Command.HasSubCommands`, command.go:1556, which is `len(c.commands) > 0` per snippet e137), then reaches the comment "root command with subcommands, do subcommand checking." at args.go:34.
+- The confirmed graph edges show what the check at that point uses to build its result: `Command.HasParent` is called at args.go:35 (e29) and `Command.CommandPath` at args.go:36 (e27). So the wrong-subcommand branch is the root-only case (no parent) and the error it produces incorporates the command path.
+
+How it fits into execution: `Command.ExecuteC` (command.go:1052, seed e1/e130) resolves the target command via `Command.Find` (command.go:726, snippet e135, "Find the target command given the args and command tree ... Only searches down"), with the call recorded at command.go:1090 (e6). `Find` walks the tree with `stripFlags` and returns the deepest matching command plus remaining args; the leftover unmatched argument is then what `legacyArgs` rejects.
+
+Caveat on completeness: the snippet for `legacyArgs` is truncated at args.go:34, so the exact error construction (the message text and the `return` at approximately args.go:35-37) is not in the response, only the fact that it calls `HasParent` and `CommandPath` there. The response also does not include the part of `ExecuteC` that invokes the args validator or how a `Find` error is surfaced. Note that `flagCompError.Error` (completions.go:50, snippet e132, "Subcommand '...' does not support flag '...'") is a shell-completion flag error, not the wrong-subcommand path.

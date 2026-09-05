@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1098",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a98ff40516eac33308f8bf1ee1248da09835c666c1eded124ed3856f40827c67",
+  "bundle_sha256": "facb06a81d237ae9b2ae46ccbd84b4764f1f631ec391b89d8848af84af3b0317",
+  "prompt_sha256": "73e4b8e491cb85ff5fbf19210019cd04890ead9280632fd7827406fe66a1fa10",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "There is no numeric \"error code\" for the unknown-command error in this response — it is a plain error string built with fmt.Errorf, and to change it you edit the format string(s) directly in args.go.\n\nEvidence (ref e87, path args.go, lines 36-48):\n\n    return fmt.Errorf(\"unknown command %q for %q%s\", args[0], cmd.CommandPath(), cmd.findSuggestions(args[0]))\n    }\n    return nil\n    }\n\n    // NoArgs returns an error if any args are included.\n    func NoArgs(cmd *Command, args []string) error {\n        if len(args) \u003e 0 {\n            return fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())\n        }\n        return nil\n    }\n\nThis shows two call sites producing the \"unknown command\" text: one just above NoArgs (the function ending at args.go:39, whose closing brace is shown at line 38, formatting \"unknown command %q for %q%s\" with cmd.findSuggestions appended), and the one inside NoArgs itself at args.go:42-44 (item ref_id 69888a9d4b149ed3, \"function cobra.NoArgs (args.go:42)\"), formatting \"unknown command %q for %q\". To change the wording (or append/remove data such as the suggestion suffix) of the unknown-command error, you edit these fmt.Errorf calls in args.go directly.\n\nNote this is distinct from flag-parsing errors: those go through a separate, overridable hook — Command.FlagErrorFunc (command.go:500, ref e2/e86) and Command.SetFlagErrorFunc (command.go:318, ref e5/e89) — which let a caller install a custom function to wrap/replace flag errors without editing cobra's source. No equivalent SetXErrorFunc hook for the \"unknown command\" error appears anywhere in this response's evidence, so nothing indicates it can be customized via a setter; the only mechanism shown is direct edits to the fmt.Errorf strings in args.go.",
+  "responded_at": "2026-09-05T13:50:04Z",
+  "sha256": "3ad32d3101c63b523a85b6790b380dcdb1810e56692dca39a1ef36a2c5abba5e"
+}

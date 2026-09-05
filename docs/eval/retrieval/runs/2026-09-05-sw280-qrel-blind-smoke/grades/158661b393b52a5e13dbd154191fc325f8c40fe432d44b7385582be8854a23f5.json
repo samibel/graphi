@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1564",
+  "response_sha256": "158661b393b52a5e13dbd154191fc325f8c40fe432d44b7385582be8854a23f5",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against grade-3 span command.go:52-61, anchor \"// Use is the one-line usage message.\" The response's core claim — that you make arguments appear in usage text by writing them into the command's `Use` field, using the documented notation ([ ] optional, unbracketed required, ... repeatable, | mutually exclusive) — is exactly what that span states. It is consistent with the second span (command.go:1436-1451, UseLine) as well, since it asserts the `Use` string is what gets rendered as the usage line; it contradicts neither span.\n\nGrounding in the bundle: the response cites evidence e56 (command.go, span 45-57), whose snippet bytes are present verbatim in the bundle and contain the `Command` struct with the `Use` field comment \"Use is the one-line usage message.\" plus the \"Recommended syntax\" lines for [ ], ... and |. The quoted syntax text matches those bytes. It additionally cites e5/e54 (command.go:446, `func (c *Command) Usage() error { return c.UsageFunc()(c) }`), ref dfb49659eaf139d8/e18 (Command.UsageFunc, command.go:426/447), and e51 (site/content/user_guide.md, span 577-589, \"Defining your own usage\" with SetUsageFunc/SetUsageTemplate) — all present in the bundle bytes with the quoted content. Nothing cited is absent from the bundle, and no part of the answer is supplied from outside it.\n\nRubric criteria 1 (answers the question asked), 2 (substantively correct against a reviewed grade-3 span), and 3 (grounded in bundle evidence) all hold. No fail criterion applies: it is not INSUFFICIENT, not hedged, and makes a checkable claim. The note about the UseLine composition step is absent from the response, but the answer key's first span alone is sufficient for a pass, and the response's supplementary Usage/UsageFunc rendering path does not contradict it.",
+  "graded_at": "2026-09-05T14:01:50Z",
+  "sha256": "6db420ffbfaeee24e3c80b1163a5cd4d5a3946afc884fb0fcb88646646029d34"
+}

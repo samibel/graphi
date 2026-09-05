@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-920",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "75a4bcee426bb68dddd71dddfb4496a148ddfc9f5b15feaab1501548468bb8f0",
+  "bundle_sha256": "ef8783b105a9ab0dd343e1577180a866f04e2df6f87658cc5ebc3f089ebc2d73",
+  "prompt_sha256": "235d8983c5d9e40d35e2db4b75cc75a09b49321673ef60d3a3f94026cc528a69",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To check if any flag was set, use the `cobra.Command.HasFlags()` method (command.go:1752), which returns a boolean indicating whether the command contains any flags (local plus persistent from the entire structure). The snippet shows:\n\n```\nfunc (c *Command) HasFlags() bool {\n\treturn c.Flags().HasFlags()\n}\n```\n\nAdditionally, to check for a specific flag, use the `cobra.Command.Flag(name string)` method (command.go:1795), which climbs up the command tree looking for a matching flag and returns the flag or nil if not found.",
+  "responded_at": "2026-09-05T13:56:05Z",
+  "sha256": "34430bfb8bc732a1eca32a36cb1d2e8ffd574467a6185948529f86bd84407a81"
+}

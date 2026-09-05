@@ -1,0 +1,9 @@
+Write the arguments directly into the command's `Use` field, following Cobra's documented syntax convention for that one-line usage message.
+
+Evidence: in command.go (ref e56, lines 45-57), the `Command` struct's `Use` field is commented as "the one-line usage message" with the "Recommended syntax": "[ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.", "... indicates that you can specify multiple values for the previous argument.", and "| indicates mutually exclusive information. You can use the argument to the left of the separator or the argument to the right of the separator." So to make an argument appear in the usage text, you type it into `Use` (e.g. `Use: "mycmd [arg1] arg2..."`), bracketing optional args, leaving required ones bare, and using `...` / `|` for repeated or mutually-exclusive args respectively.
+
+That `Use` string is what gets shown as usage: `Command.Usage()` (command.go:446, ref e5/e54) calls `c.UsageFunc()(c)` to print it, and `UsageFunc` (command.go:426, ref dfb49659eaf139d8/e18) supplies the default usage-rendering function.
+
+If instead you want to change how/what is displayed beyond editing `Use` (e.g. a fully custom usage layout), site/content/user_guide.md's "Defining your own usage" section (ref e51, lines 577-589) says you can override the default with:
+cmd.SetUsageFunc(f func(*Command) error)
+cmd.SetUsageTemplate(s string)

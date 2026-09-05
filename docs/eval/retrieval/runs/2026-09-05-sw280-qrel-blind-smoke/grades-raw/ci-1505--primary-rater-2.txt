@@ -1,0 +1,17 @@
+PASS
+
+Checked against the single reviewed grade-3 span: command.go:1226-1234, anchor "if c.helpCommand == nil {" (InitDefaultHelpCmd), whose reason is that the default help command is built only when c.helpCommand is nil and the command has subcommands, so supplying your own via SetHelpCommand suppresses the default.
+
+1. Answers the question asked. The question is how to remove the default help command from the root command. The response answers exactly that: install a replacement (or no-op/hidden) help command on the root command with rootCmd.SetHelpCommand(...) so Cobra's default is never installed, with RemoveCommand offered as the after-the-fact strip. It does not drift to a nearby question (e.g. hiding the --help flag or overriding HelpFunc as its main claim).
+
+2. Substantively correct. The response's central mechanism is identical to the key's: it reproduces the guard "if !c.HasSubCommands() { return }" / "if c.helpCommand == nil { c.helpCommand = &Command{" and reasons that because the assignment happens only when c.helpCommand is nil, setting it first via SetHelpCommand makes InitDefaultHelpCmd skip installing Cobra's default — "removing it by preemption". That is the key's controlling condition, stated in the same terms. Nothing in the response contradicts the span; the secondary RemoveCommand suggestion is an additional, non-contradicting route rather than a substitute claim.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+   - e63, command.go span 1223-1235, snippet text "// InitDefaultHelpCmd adds default help command to c." ... "if c.helpCommand == nil {\n\t\tc.helpCommand = &Command{" — this is the bundle evidence covering the grade-3 span, and the response quotes it verbatim.
+   - e64, site/content/user_guide.md span 535-547, "### Defining your own help ... cmd.SetHelpCommand(cmd *Command)" — the documented API the response names.
+   - e65, site/content/user_guide.md span 486-498, "## Help Command / Cobra automatically adds a help command to your application when you have subcommands." — quoted accurately.
+   - e67, command.go span 1356-1368, "// RemoveCommand removes one or more commands from a parent command." — quoted accurately for the fallback route.
+   - command.go:1229 (item "method cobra.Command.InitDefaultHelpCmd"), command.go:1362 (RemoveCommand), command.go:1293 (Commands) all appear as item reasons in the bundle.
+   No cited path, symbol or snippet line is absent from the bundle bytes, and no claim is supplied from outside them.
+
+No fail criterion applies: the response is not INSUFFICIENT, is not hedged past a checkable claim, and makes a specific, verifiable assertion about the nil-check in InitDefaultHelpCmd.

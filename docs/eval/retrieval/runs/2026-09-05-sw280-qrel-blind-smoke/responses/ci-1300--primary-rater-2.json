@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1300",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "107b8e26f5790a9e06f4ef4a9f0ce1fe6fc2e1a51b02396f59752d530fa489b3",
+  "bundle_sha256": "969930e6137f098e8bbc0cc6e62958e85bc79172e8bc90d768a7c617efabf6e8",
+  "prompt_sha256": "9432bae745bcad36ee15df65c495d53efd138a0ac9f012d2330e84e366bb2ecf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In this codebase (cobra), flags are validated after parsing via two Command methods, both gated on c.DisableFlagParsing (return nil if flag parsing is disabled) and both invoked as part of command execution (execute is recorded as a caller of ValidateFlagGroups: \"caller: method cobra.Command.execute (command.go:874)\"):\n\n1. Command.ValidateRequiredFlags() (command.go:1147, snippet lines 1141-1153): \"ValidateRequiredFlags validates all required flags are present and returns an error otherwise.\" It does `flags := c.Flags()` and builds a `missingFlagNames` slice, i.e. it walks the FlagSet returned by Flags() (command.go:1643, which lazily builds c.flags via flag.NewFlagSet) and reports any required flag that was never set.\n\n2. Command.ValidateFlagGroups() (flag_groups.go:81, snippet lines 75-87): \"ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the first error encountered.\" It also starts with `flags := c.Flags()` and then delegates to three package-level helpers that each take a `map[string]map[string]bash]bool` of flag name -\u003e isSet built from the flags' annotations:\n   - validateOneRequiredFlagGroups (flag_groups.go:167, snippet 161-173/182-194): iterates `sortedKeys(data)`, collects which flags in the group are `isSet`; if none are set, errors \"at least one of the flags in the group [%v] is required\" (flag_groups.go:183). The snippet just above it (161-164) shows the sibling \"required-together\" check's error: \"if any flags in the group [%v] are set they must all be set; missing %v\".\n   - validateExclusiveFlagGroups (flag_groups.go:188, snippet 182-194/203-215): same shape, but errors \"if any flags in the group [%v] are set none of the others can be; %v were all set\" (flag_groups.go:204) when more than one flag in a mutually-exclusive group is set.\n   - sortedKeys (flag_groups.go:209) is a shared helper that returns the group names in deterministic (sorted) order for iteration.\n\nTo set up which flags get checked this way, you register a group before execution with Command.MarkFlagsRequiredTogether(flagNames...) (flag_groups.go:33, snippet 27-39): it calls `c.mergePersistentFlags()`, then for each name does `f := c.Flags().Lookup(v)`, panicking with \"Failed to find flag %q and mark it as being required in a flag group\" if the flag doesn't exist, and otherwise marks it with an annotation constant (e.g. `oneRequired`, `mutuallyExclusive` per the const block in the same snippet). Equivalent marking methods exist for the one-required and mutually-exclusive groups (evidence shows constants `oneRequired = \"cobra_annotation_one_required\"` and `mutuallyExclusive = \"cobra_annotation_mutually_exclusive\"` at flag_groups.go:27-28).\n\nSo the validation flow is: mark flags into named groups via MarkFlags*Together/annotations ahead of time, then when the command executes, Command.execute (command.go:874) triggers ValidateFlagGroups() and ValidateRequiredFlags(), which read the actual \"is this flag set\" state off the FlagSet from Command.Flags() (command.go:1643) and return one of the group-specific errors above the moment the constraint is violated.",
+  "responded_at": "2026-09-05T13:51:12Z",
+  "sha256": "6f7d0ac8654406ad52a0ddf99369ac7822dc27487aaec29265a4773470fa24cc"
+}

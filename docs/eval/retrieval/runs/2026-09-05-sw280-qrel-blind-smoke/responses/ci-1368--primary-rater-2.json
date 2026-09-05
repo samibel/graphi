@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1368",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "dd0a28f308614f8bdc46962c95c7c61f044d0171a3ff612710c73a286f7033ff",
+  "bundle_sha256": "707ce613428ba339c8282b5e4484044a1374c330528d70550e0bfd64aec0b946",
+  "prompt_sha256": "9e8a77e0651946ea1f96a06a5d35d2de865940393e6e7ca99624b4435c244223",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To supply your own help command, call `cmd.SetHelpCommand(cmd *Command)` on the root/parent command, passing a `*Command` you've built yourself. This is documented in site/content/user_guide.md under the \"Defining your own help\" section (evidence ref e4/e64, line 541, span 535-547): \"You can provide your own Help command or your own template for the default command to use with the following functions: ```go cmd.SetHelpCommand(cmd *Command)\". The same section notes that if you use the generated `help` command instead, you can still customize its position in help output via `SetHelpCommandGroupId()` on the root command.\n\nIf you don't want a full replacement command but just custom help text/behavior, override the help function instead: `cobra.Command.Help()` (command.go:473, evidence e2/e62) is documented \"Can be defined by user by overriding HelpFunc\" and its body is just `c.HelpFunc()(c, []string{})` — i.e. Help() delegates to whatever `HelpFunc` is set on the command, so setting that field (e.g. via a `SetHelpFunc` accessor) is the lighter-weight customization path.\n\nOne implementation detail to be aware of: `cobra.Command.InitDefaultHelpCmd()` (command.go:1229, evidence e3/e63) auto-installs the default help command \"automatically by executing the c or by calling help and usage,\" but explicitly does nothing \"If c already has help command or c has no subcommands\" (it checks `if c.helpCommand == nil` before creating one). So calling `SetHelpCommand` with your own command before `Execute()` will prevent the default help command from overwriting it.\n\nAlso relevant but not detailed in this response: `HasHelpSubCommands()` (command.go:1603, evidence e1/e61) determines whether a command has any available additional-help-topic subcommands to list, which affects how custom/additional help entries show up in the default usage template.",
+  "responded_at": "2026-09-05T13:51:14Z",
+  "sha256": "97689d5a188b4c64a7363cc36b25911fb9c719e6efabc7e594de8154801b0ca4"
+}

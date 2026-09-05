@@ -1,0 +1,17 @@
+PASS
+
+Checked against grade-3 span command.go:257-272, anchor "func (c *Command) SetContext(ctx context.Context) {" — the mechanism where Context() returns the command's stored context and SetContext replaces it, so a hook can read, derive and store back for later hooks on the same *Command.
+
+1. Answers the question asked. The question is how to pass a context.Context between pre/post-run hooks. The response answers exactly that: mutate the single stored context on the *Command with SetContext in an earlier hook and read it back with Context() in a later one, giving the concrete call `cmd.SetContext(context.WithValue(cmd.Context(), yourKeyType{}, yourValue))` in PreRun and `cmd.Context().Value(yourKeyType{})` in the post-run hook. It is not a nearby question (not "how do I set a context at Execute time" — ExecuteContext is offered only as the seeding step).
+
+2. Substantively correct. The claim is consistent with the command.go:257-272 span: the response reproduces both halves of that span verbatim in effect — `func (c *Command) Context() context.Context { return c.ctx }` and `func (c *Command) SetContext(ctx context.Context) { c.ctx = ctx }` — and draws the right conclusion, that the ctx field on the one *Command is the shared carrier across hooks. It contradicts neither grade-3 span; it simply does not need the second (command.go:1109-1113 `cmd.ctx = c.ctx` root-to-target propagation) because it scopes its claim to hooks running against the same command, which is a correct scoping rather than a contradicting one. Rubric criterion 2 requires consistency with at least one span, which holds.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+   - e49 (command.go:258-270 snippet) contains the `func (c *Command) Context() context.Context {` / `return c.ctx` text and the SetContext signature line quoted by the response;
+   - e52 (command.go:264-276 snippet) contains the full `func (c *Command) SetContext(ctx context.Context) { c.ctx = ctx }` body — this is the span the answer key anchors on, and it is verbatim in the bundle;
+   - e51 (command.go:1024-1036 snippet) contains the ExecuteContext body and the doc comment the response quotes word for word, "Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs functions.";
+   - e50 (site/content/user_guide.md:599-611) contains the "PreRun and PostRun Hooks" section and the PersistentPreRun/PreRun/Run ordering the response cites for hook ordering;
+   - e55 (command_test.go:2513-2525) contains the TestSetContextPreRunOverwrite source the response quotes, including `key := cmd.Context().Value(key{})`.
+   The item-list references it names (e2, e3, e4, e5, e10, e11, e12, e25) all appear as evidence ref_ids in the bundle with the paths and lines the response attributes to them. Nothing cited is absent from the bytes, and nothing load-bearing comes from outside them.
+
+No fail criterion applies: it is on-question, contradicts no span, is not INSUFFICIENT, and makes a specific checkable claim (SetContext/Context on the shared *Command) rather than hedging.

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2150",
+  "response_sha256": "c8851ee711e8cf0cf7eaa0a8a28cc17cacb76c1b8a5083cd0f55ee339a6f0299",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-2150, response c8851ee711e8cf0cf7eaa0a8a28cc17cacb76c1b8a5083cd0f55ee339a6f0299.\n\nChecked against the single reviewed grade-3 span for this question:\ncommand.go:569-575, anchor \"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}\" — the point in\nthe default usage template that delegates the whole Flags / Global Flags block, and therefore the\nthing that must be replaced (e.g. via SetUsageTemplate) to suppress printed defaults.\n\nRubric criterion 1 (answers the question asked): the response is about the right question — it is\nscoped to hiding default flag values from help output.\n\nRubric criterion 3 (grounded in the bundle): satisfied. Everything the response cites is genuinely\npresent in the bundle bytes — nonCompletableFlag at bash_completions.go:699 with the\n`flag.Hidden || len(flag.Deprecated) \u003e 0` body (ref e2/e89), shortHasNoOptDefVal at command.go:631\nand its NoOptDefVal body (ref e5/e92), and genFlagResult at doc/yaml_docs.go:149 (ref e3/e90). No\noutside-the-bundle sourcing.\n\nRubric criterion 2 (substantively correct): not met. The response makes no affirmative claim that is\nconsistent with the grade-3 span. The usage-template line command.go:569-575 and the\nFlagUsages/UsageTemplate mechanism appear nowhere in what the response identified; the response's\nown survey (Hidden/Deprecated, NoOptDefVal, yaml doc generation) is all off the answer key, and it\nconcludes that no such mechanism is shown.\n\nDecisive fail criterion: the response is an explicit INSUFFICIENT. Under the rubric's fail criteria,\n\"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one.\"\nThis is a graded declination, not a missing/empty/refused response, so it is graded rather than\ntreated as a failure-by-rule non-grade. The bundle it was given surfaced InitDefaultHelpFlag,\ncompletion helpers and doc generators but never the usage-template block at command.go:569-575, so\nthe honest declination is recorded as a failure of the bundle's sufficiency, which is what this\nevaluation measures.",
+  "graded_at": "2026-09-05T14:03:40Z",
+  "sha256": "50977613e3574649d97ccf14b94588d255bd4d7bf03ef54845045616337fdf6d"
+}

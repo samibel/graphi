@@ -1,0 +1,23 @@
+The response shows one concrete place where "is this flag set" is checked as a boolean: in flag_groups.go's validateExclusiveFlagGroups function (flag_groups.go:188, snippet spans 182-194):
+
+    func validateExclusiveFlagGroups(data map[string]map[string]bool) error {
+        keys := sortedKeys(data)
+        for _, flagList := range keys {
+            flagnameAndStatus := data[flagList]
+            var set []string
+            for flagname, isSet := range flagnameAndStatus {
+                if isSet {
+
+Here each flag's "set" state is carried as a bool value (`isSet`) inside a `map[string]map[string]bool` (`data`), keyed by flag group then flag name; the check is simply `if isSet { ... }` while ranging over `flagnameAndStatus`. This is the pattern cobra uses internally to test whether a given flag was set when validating flag groups (e.g. required/exclusive flag group validation).
+
+Separately, to obtain a flag by name in the first place, command.go:1795 shows the `Flag` method (snippet spans 1789-1801):
+
+    func (c *Command) Flag(name string) (flag *flag.Flag) {
+        flag = c.Flags().Lookup(name)
+        if flag == nil {
+            flag = c.persistentFlag(name)
+        }
+
+This climbs the command tree (via `persistentFlag`, command.go:1806) to find the `*flag.Flag` for a given name, which would be the flag object on which a "was it set" check is normally performed.
+
+The response's evidence does not include the source of the `data` map itself (i.e., the code that populates `isSet`, such as a call to a flag's `Changed` field or `Flags().Changed(name)`), nor any snippet showing a `.Changed` field on the `flag.Flag`/`pflag.Flag` type. So while the response confirms the internal `isSet` boolean pattern used in flag-group validation (flag_groups.go:188-192) and how a flag is looked up by name (command.go:1795, 1806), it does not show the exact field/method (e.g. `Changed`) that cobra's `pflag.Flag` exposes for callers to directly test "was this flag set by the user."

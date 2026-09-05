@@ -1,0 +1,17 @@
+PASS
+
+Checked against grade-3 span command.go:1139-1144, anchor "func (c *Command) ValidateArgs(args []string) error {", and secondarily against command.go:89-90, anchor "Args PositionalArgs".
+
+1. Answers the question asked. The question is where to place sanity checks for command line args. The response names a placement directly: the validation function goes on the Command.Args field and is invoked by Command.ValidateArgs; concrete validators live in args.go. It does not drift to a nearby question (completion, flag parsing, suggestions).
+
+2. Substantively correct. The response's central claim — "The validation function is assigned to the Command.Args field, and ValidateArgs calls it during command execution" — is consistent with both reviewed grade-3 spans. It matches command.go:1139-1144 explicitly by naming ValidateArgs at command.go:1139 and reproducing the ArbitraryArgs fallback when c.Args is nil, which is exactly the role that span records. It also reaches the command.go:89-90 span's content (the Args PositionalArgs field as the place argument checks belong) by identifying the PositionalArgs type and stating that the validator is assigned to Command.Args. Nothing in the response contradicts either span.
+
+3. Grounded in the bundle. Every citation appears in the given bytes:
+   - command.go:1139 / the quoted ValidateArgs body — evidence e135, snippet span 1133-1145, text_hash 4b8b72843f5d21ca; the quoted code is verbatim from that snippet, including the ArbitraryArgs fallback. Also present as item a63fab69c86b602b ("method cobra.Command.ValidateArgs (command.go:1139)").
+   - NoArgs at args.go:42 — evidence e2 and item 69888a9d4b149ed3; the function body appears in snippet e134.
+   - legacyArgs at args.go:28 — evidence e5 and item f21a64459558a11d; body in snippet e137.
+   - PositionalArgs at args.go:22 with the exact signature "type PositionalArgs func(cmd *Command, args []string) error" — the first line of snippet e137 (args.go:22-34), quoted verbatim.
+   - ArbitraryArgs — item ca0ac9e7f5b714ac (args.go:69) and evidence e16 (command.go:1141).
+   No cited path, symbol, or line is absent from the bundle, and no claim is supplied from outside it.
+
+No fail criterion applies: the response is not about a different question, contradicts no grade-3 span, is not INSUFFICIENT, and makes a specific checkable placement claim rather than hedging.

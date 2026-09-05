@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1148",
+  "response_sha256": "c285577ac58969ff97d08aa97e5932b7242283beb8b3e796846a031f85362fcf",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Checked against grade-3 span command.go:134-135 anchor \"RunE func(cmd *Command, args []string) error\" and the second span command.go:982-988 anchor \"if err := c.RunE(c, argWoFlags); err != nil {\". The question asks for the mechanism by which a command returns an error; the key says it is the RunE field, whose non-nil return aborts execute() and propagates outward.\n\nCriterion 3 (grounded in the bundle) holds: the response cites command.go:385 ErrOrStderr with the snippet text \"func (c *Command) ErrOrStderr() io.Writer { return c.getErr(os.Stderr) }\", which is present in the bundle as evidence e3/e70, and command.go:1411 Command.PrintErr, present as ref_id 0799db0b50932ab9 / evidence e23. So the citations are real bundle bytes, not outside knowledge.\n\nCriterion 2 (substantively correct) fails. The response answers with error *output* — obtaining an io.Writer to stderr via ErrOrStderr and printing via PrintErr — which is a different mechanism from returning an error from a command. It is not consistent with either reviewed grade-3 span: it never names RunE, the error-returning command body, nor the propagation of a non-nil RunE result through execute(). Writing to stderr is not equivalent to returning an error value; a command that only prints to stderr returns nil and does not abort execute() or skip PostRun, which is the essential condition the second span supplies. Because the response's claim matches no grade-3 span and substitutes a different mechanism for the one asked about, criterion 2 is not met.\n\nCriterion 1 is also weak: the response addresses a nearby question (\"where should error text be written?\") rather than the one asked. The bundle did not surface the RunE declaration or the execute() call site, but the rubric grades the response, and this response makes a checkable claim that the answer key does not support. All three pass criteria must hold; two do not.",
+  "graded_at": "2026-09-05T13:59:48Z",
+  "sha256": "77b63cbc5076441e68ee6a166e99f6afbaa36ee05eda26ad3583bb0fe08c69c4"
+}

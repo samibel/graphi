@@ -1,0 +1,37 @@
+{
+  "query_id": "cb-17",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "cb-17",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "3342c4e5cd007dc83c626ef428803bea347914743644161b4ed8657948c52407",
+    "bundle_sha256": "4a6ec724144565e924264ee6ccf73c5c938df471b46b8323ea5c0d09c8d7dec0",
+    "prompt_sha256": "fc233faf08e7bba88d1713b3ee92980d4260d3d632a73917475872446225d288",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Based only on the response: when the user supplies an invalid flag, Cobra reports it by printing the command's usage message. The evidence is the documentation snippet e86 (site/content/user_guide.md, span 548-560, seed 4 \"content.Usage Message\" at line 554): \"## Usage Message — When the user provides an invalid flag or invalid command, Cobra responds by showing the user the 'usage'.\" The snippet also notes that this is the same text seen in the default help output (\"You may recognize this from the help above. That's because the default help ...\").\n\nThe response does not contain the actual Go code path that does this. The only code-level material is:\n- completions.go:45-51 (e84/e85): type flagCompError { subCommand, flagName } with Error() returning \"Subcommand '\u003csub\u003e' does not support flag '\u003cflag\u003e'\". This is a shell-completion error (used by Command.getCompletions at completions.go:266, e6/e7 at lines 324/335, and checkIfFlagCompletion at completions.go:592, e8 at line 662), not the general flag-parsing error path shown to an interactive user.\n- Command.ExecuteC (command.go:1052, heuristic edge at command.go:1098, e20) is listed as a caller/related item, and test names TestFParseErrWhitelistSameCommand / TestFParseErrWhitelistChildCommand (command_test.go:2374/2414) and TestUsageIsNotPrintedTwice (command_test.go:1256) suggest ExecuteC handles flag-parse errors and that usage printing is guarded against duplication and a parse-error whitelist exists — but no snippet of ExecuteC or those tests is included, so the concrete mechanism (which function formats/prints the error, where it is written, whether the error is also returned) cannot be confirmed from this response.\n\nSummary: documented behavior = the usage message is shown to the user on an invalid flag (user_guide.md:554-556); the implementing code (in or around Command.ExecuteC, command.go:1052) is referenced but its body is not present in the response.",
+    "responded_at": "2026-09-05T14:08:24Z",
+    "sha256": "7eb96ae673ff1d0b75063951a60adda57fe9d339fd8b239857ff39c4e938e990"
+  },
+  "disclosure": {
+    "query_id": "cb-17",
+    "adjudicator_response_sha256": "7eb96ae673ff1d0b75063951a60adda57fe9d339fd8b239857ff39c4e938e990",
+    "disclosed_artifact_sha256": [
+      "3f97a2ded23b428572a331494f83de4ae89b36782aa84a41fe0caef83e7964d0",
+      "815a2550c3af632eeb34a0994b2d1975d9e1b42b8d9c6a4b4452913bc81904e1",
+      "c9cea7fda89ec5fa9aab0b76bf00c7c080b478003ab99b341bdfccdcb9720c63",
+      "e5c00644d379b9d69ea7676a22cf917726db0fa5a8c9c4970708135481153fa3"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

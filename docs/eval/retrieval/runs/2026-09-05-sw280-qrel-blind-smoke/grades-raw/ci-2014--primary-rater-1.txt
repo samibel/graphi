@@ -1,0 +1,15 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-2014: command.go:1034-1040, anchor "// Execute uses the args (os.Args[1:] by default)", whose reason states the dispatch mechanism — Execute runs the supplied args through the command tree, matching the command and then its corresponding flags.
+
+1. Answers the question asked. The question is how to invoke one command from another with flags. The response answers with the dispatch path — call the Execute-family entry point, which walks the command tree, resolves the target command and parses its flags — rather than drifting to a nearby question (it does not answer about shell completion, flag declaration or argument validation, all of which were prominent in the bundle).
+
+2. Substantively correct. The key names Execute (command.go:1034-1040); the response names ExecuteC (command.go:1052) plus the traversal/lookup it performs. Under the rubric's "different but genuinely equivalent location or mechanism" allowance this is the same mechanism: the bundle itself shows Execute at command.go:1038 as a caller with relation evidence e73 at command.go:1039, and snippet e129 shows ExecuteContextC returning c.ExecuteC() immediately above "// ExecuteC executes the command." — i.e. ExecuteC is the body of the very dispatch the key describes. The response's supporting claims (Traverse parses args for each parent; Flags returns local plus inherited flags; Find locates the target command given args and the tree) are consistent with, and elaborate, the key's "matching the command and then its corresponding flags". Nothing it asserts is contradicted by the key.
+
+3. Grounded in the bundle. Every citation is present in the given bytes:
+- ExecuteC, command.go:1052 — seed 3 item (ref_id 18cb88eba73cd7c5), primary evidence e3 at command.go:1052, snippet e129 (span 1046-1058).
+- Traverse, command.go:790 — seed 2 item (ref_id 1879a67fa2cb83f9), evidence e2, and the quoted text "Traverse the command tree to find the command, and parse args for each parent" is verbatim from snippet e128 (span 784-796), which the response cites by both span and ref id.
+- Flags, command.go:1643 — related/callee item (ref_id 270294113953ddc9); the paraphrase "complete FlagSet that applies ... local and persistent declared here and by all parents" is verbatim from snippet e134 (span 1637-1649).
+- Find, command.go:726 — seed 4 item (ref_id e6d3046bf2018131), evidence e4, snippet e130 (span 720-732) carrying "Find the target command given the args and command tree".
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites nothing absent from the bundle, does not return INSUFFICIENT, and makes concrete checkable claims rather than hedging.

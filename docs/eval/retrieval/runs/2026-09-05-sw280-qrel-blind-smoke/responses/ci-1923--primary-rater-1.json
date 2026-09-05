@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1923",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "39c35efacdacc2ea5ee6a5fb8defff190cafeac2490a815d9381a2f4c4a4d3e7",
+  "bundle_sha256": "b77acee55c9645878dc2400535fca230116170d4fb54b345db4cad4d4697a6f6",
+  "prompt_sha256": "5f885015d188c58383dfd680d309c95494b55222b728da2e0b4c8f71bfafffc6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For os.Exec'd Cobra CLIs, use Cobra's built-in completion command mechanism:\n\n1. **Automatic completion command** (site/content/completions/_index.md:1, e23): Cobra automatically provides a fully functional `completion` command for shells (Bash, Zsh, fish, PowerShell), similar to how it provides the `help` command. When a CLI is spawned via os.Exec, the parent shell invokes this completion command with specific arguments to retrieve completion suggestions.\n\n2. **Dynamic completions** (site/content/completions/_index.md:167, e24): For runtime-determined completions, use the `ValidArgsFunction` field to provide a Go function that Cobra executes when it needs completion choices for nouns, rather than static `ValidArgs`.\n\n3. **Custom completion command** (site/content/completions/_index.md:13, e26): You can create your own completion command that takes precedence over the default one, providing backwards-compatibility for programs that already have their own completion command.\n\nThe completion works through shell environment variables and command arguments that trigger the completion subcommand when the parent shell spawns the CLI via os.Exec.",
+  "responded_at": "2026-09-05T13:52:26Z",
+  "sha256": "716a62c5ac7b2913b5e61cf5d99a73710ff3095ee1d81a66b971846b32496844"
+}

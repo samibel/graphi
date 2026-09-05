@@ -1,0 +1,13 @@
+To find what flags are being called in a command in this Cobra CLI codebase, use these methods on the `cobra.Command` type:
+
+1. **Command.Flags()** (command.go:1643) - Returns the complete FlagSet that applies to the command, including both local and persistent flags declared in the current command and all parent commands. This is the primary method to inspect all flags in effect for a command.
+
+2. **Command.LocalFlags()** (command.go:1669) - Returns only the local FlagSet specifically set in the current command, excluding inherited flags from parent commands.
+
+3. **Command.NonInheritedFlags()** (command.go:1721) - Returns all flags that were not inherited from parent commands (equivalent to LocalFlags).
+
+4. **Command.Flag(name string)** (command.go:1795) - Climbs up the command tree to lookup a specific flag by name. Searches both the command's flags and persistent flags from parent commands.
+
+5. **findFlag(cmd *Command, name string)** (completions.go:841) - Helper function that finds a flag by name in the command's FlagSet, handling both long flag names and short flag lookups.
+
+To inspect all flags called during command execution, call `cmd.Flags()` to get the complete FlagSet, which provides access to all flags that have been registered and are available for that command.

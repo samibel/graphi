@@ -1,0 +1,15 @@
+To implement a command for executing a script file with uncertain flags, use Cobra's command and flags handling:
+
+1. Define a Command using cobra.Command.Use (command.go:51 shows the Command type). The command's Use field specifies the command name.
+
+2. Access and define flags via Command.Flags() method (command.go:1643). The response snippet shows: "Flags returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents)." It returns a *flag.FlagSet that you can use to register flags with methods like String(), Bool(), etc.
+
+3. Parse incoming flag arguments using Command.ParseFlags(args []string) (command.go:1819). The response shows this is called during command execution to parse both persistent and local flags.
+
+4. In your command's Run function, access parsed flag values via the parsed FlagSet and pass them as arguments to your script execution.
+
+5. Handle the execution flow via Command.execute(a []string) (command.go:874). The response shows this handles the core execution logic including flag parsing, deprecated command handling, and running the associated function.
+
+6. For handling uncertain/dynamic flags at runtime, use the parsed FlagSet's Visit() method or Args() to inspect which flags were actually provided, then pass only those to your script execution.
+
+The key is that cobra.Command.Flags() returns a *flag.FlagSet, which provides methods to both register flags upfront and query which flags were parsed at runtime - allowing you to execute a script with only the flags that were actually specified.

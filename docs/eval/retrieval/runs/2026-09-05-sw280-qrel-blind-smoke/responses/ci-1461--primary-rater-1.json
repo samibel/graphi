@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1461",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "937ea02600712c12a30373bec14a02b06dcf7d9d8497c5f4505e16757f787859",
+  "bundle_sha256": "18463cc4e2559eae12ba8cca53646f556fe33b3441a2ad40cdda08f72c13c4b2",
+  "prompt_sha256": "75335c8b3e3549b2200489c186a6e6f3f425a24106a4e5ff502d2dcf998f7b4d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the JSON-RPC response provided, I can see evidence about command hierarchy navigation in the Cobra library, but the response does not contain sufficient information to fully answer how to get a sub-command result back to parent.\n\nThe response shows:\n\n1. **Parent navigation methods**: `Parent()` (command.go:1843) returns a command's parent command; `HasParent()` (command.go:1632) checks if a command has a parent; `Root()` (command.go:861) traverses to the root command.\n\n2. **Execution method**: `ExecuteC()` (command.go:1052) is shown executing commands and returns `(*Command, error)` — indicating the command and an error are returned, but the snippets don't show how custom results are passed between parent and child commands.\n\n3. **Command structure**: The primary seeds focus on parent-child command relationships and traversal, not result passing mechanisms.\n\nThe response summary states \"partial outcome\" and primary seeds point to command hierarchy traversal rather than inter-command communication. The ExecuteC method snippet shows execution flow but not a mechanism for passing application results from child to parent commands.\n\nINSUFFICIENT The response shows methods for accessing parent/child commands but does not contain code demonstrating how to pass custom results or data from a subcommand back to its parent command.",
+  "responded_at": "2026-09-05T13:51:24Z",
+  "sha256": "17961dddc04fc41987b1aebeb86d72811d62a79c9bcf8c9b1c81747316470572"
+}

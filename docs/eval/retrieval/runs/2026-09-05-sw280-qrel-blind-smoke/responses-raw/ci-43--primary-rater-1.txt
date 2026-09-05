@@ -1,0 +1,5 @@
+No. The response shows that command discoverability is controlled by Hidden and Deprecated fields, help-command status, and whether commands are additional help topics (determined by their own Runnable() status and subcommand properties).
+
+The IsAvailableCommand() method at command.go:1562 filters commands based on their own deprecated/hidden status and parent-relationship to help commands, not based on parent runnability. Similarly, HasAvailableSubCommands() at command.go:1617 determines visibility of subcommands by checking if they pass IsAvailableCommand(), and IsAdditionalHelpTopicCommand() at command.go:1583 classifies commands as help topics based on their own Runnable() status and subcommands' properties—not parent runnability.
+
+No evidence shows that commands with un-runnable parents are deliberately filtered from discovery mechanisms.

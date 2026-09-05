@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2014",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "19cd79e2d3254d7c79faa6e661455413ff66cd27577f1cad18de491d2df8f694",
+  "bundle_sha256": "e118dde7ebda11ba844cbbe960461fa58abadb404cbe7c4682b4761fbb7b931b",
+  "prompt_sha256": "0988d51083506137da2ea9ad23911586986af8c744e4b226cffeaac8951b57d6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based only on this response, the mechanism shown for dispatching from one command to another while carrying flags is cobra's own command-resolution path — ExecuteC → Find/Traverse → Flags/ParseFlags — not a documented \"call command X from command Y\" helper.\n\n1. Entry point is Command.ExecuteC (command.go:1052, snippet lines 1046-1058, ref e129): \"Regardless of what command execute is called on, run on Root only / if c.HasParent()\". So Execute()/ExecuteC() can be invoked on any *Command in the tree, but if that command has a parent it defers up to the root command before doing anything else — the root is always the actual dispatcher.\n\n2. The root then resolves which command in the tree the given args (which include any flags) actually target. Two evidenced ways:\n   - Command.Find (command.go:726, snippet lines 720-732, ref e130): \"Find the target command given the args and command tree / Meant to be run on the highest node. Only searches down.\" It uses an inner recursive `innerfind` that calls `stripFlags(innerArgs, c)` on each level's args to strip flags off before checking for a matching subcommand name, so flags in the arg slice do not prevent matching the right command.\n   - Command.Traverse (command.go:790, snippet lines 784-796, ref e128): \"Traverse the command tree to find the command, and parse args for each parent.\" Unlike Find, Traverse explicitly walks the args token-by-token (`flags := []string{}`, `inFlag := false`, looping `for i, arg := range args`) to separate out flag tokens (e.g. \"A long flag with a space separated value\") from the plain command-path tokens as it descends, i.e. it parses each parent's flags as it goes rather than deferring that to the end.\n\n3. Once the target command is found, its flags are exposed/merged via Command.Flags (command.go:1643, snippet lines 1637-1649, ref e134): \"Flags returns the complete FlagSet that applies to this command (local and persistent declared here and by all parents).\" Internally it lazily builds `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)` the first time it's called.\n\n4. Command.ParseFlags (command.go:1819, referenced via edges e28-e30 from completions.go:319/323 and command.go:823) is the call that actually applies the args to that FlagSet, and Command.getCompletions (completions.go:266, snippet lines 266-272+, ref e127) shows the same overall shape being reused for shell completion: it takes the trailing `args []string` (which mixes flags and sub-args), sets `toComplete := args[len(args)-1]`, `trimmedArgs := args[:len(args)-1]`, and works down from a `finalCmd *Command`.\n\nSo, per this response, the pattern for calling a command from another command \"with flags\" is: build the args slice containing the flag tokens and the subcommand path together, call Find or Traverse on the (root) command with that slice to resolve the target *Command and the remaining non-flag args, then that target command's Flags()/ParseFlags handle the flag values — there is no separate \"pass flags explicitly\" API surfaced in this response (e.g. no SetArgs, no direct RunE-to-RunE call is present in the evidence).",
+  "responded_at": "2026-09-05T13:53:16Z",
+  "sha256": "00055744c8959feb40a2a222e13256d887172e20d7e27f1ce23aa6ea9a38b1c0"
+}

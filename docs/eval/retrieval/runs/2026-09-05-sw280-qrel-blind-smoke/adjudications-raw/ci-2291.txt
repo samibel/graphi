@@ -1,0 +1,23 @@
+The response is from the cobra command library (package `cobra`, type `cobra.Command` at command.go:51). For a command that runs a script file and must accept flags the command itself does not know about, the relevant mechanism in the response is the `DisableFlagParsing` field on `Command`, honoured by `Command.ParseFlags`.
+
+Evidence:
+
+1. Snippet e169 (command.go:1813-1825), method `cobra.Command.ParseFlags` (command.go:1819):
+   ```
+   // ParseFlags parses persistent flag tree and local flags.
+   func (c *Command) ParseFlags(args []string) error {
+       if c.DisableFlagParsing {
+           return nil
+       }
+   ```
+   When `DisableFlagParsing` is true, ParseFlags returns immediately without parsing, so cobra will not reject unknown flags and the raw arguments (including any `-x`/`--foo` tokens meant for the script) are left for the command to handle itself. This is the direct answer to "uncertain flags": build the command as `&Command{Use: "run <script>", DisableFlagParsing: true, Run: ...}` and forward the received args to the script interpreter.
+
+2. `ParseFlags` is called from `Command.execute` (command.go:874): the caller/callee items list `cobra.Command.ParseFlags` as a callee of the seed `execute` with confirmed edges at command.go:888 (e10) and command.go:1831/1833 (e8, e9). So the skip happens on the normal execution path (`execute` -> `ParseFlags`), which also runs `InitDefaultHelpFlag` (command.go:1186, edge at 885, e36) and `InitDefaultVersionFlag` (command.go:1204, edge at 886, e16) before parsing.
+
+3. The test list confirms this is a supported, tested mode: `cobra.TestCompleteWithDisableFlagParsing` (completions_test.go:2706, item ref 4a0ac10eca446e75, evidence e84 at completions_test.go:2722).
+
+4. Alternative when you still want cobra to parse the command's own flags: snippet e166 (command.go:868-872) shows `Command.ArgsLenAtDash()`, which "will return the length of c.Flags().Args at the moment when a -- was found during args parsing". This supports the pattern `mycmd run script.sh -- --script-flag value`: everything after `--` is passed through as positional args, and `ArgsLenAtDash` tells you where the script's own arguments start.
+
+5. Flag definition for the flags you do know about is done on the FlagSet returned by `Command.Flags()` (command.go:1643, snippet e163: lazily creates `flag.NewFlagSet(c.Name(), flag.ContinueOnError)` with error output redirected to `c.flagErrorBuf`); e.g. the test at completions_test.go:2087-2093 (snippet e164) registers flags with `rootCmd.Flags().String(...)`.
+
+Limits of the evidence: the response does not include the `Command` struct body, the field declaration/doc comment of `DisableFlagParsing`, or the code in `execute` that passes the remaining args to `Run`, so the exact signature of the Run hook and how args are delivered after parsing is skipped cannot be confirmed from this response; the answer above rests on the `ParseFlags` early return (e169), the `execute` -> `ParseFlags` call edges (e8, e9, e10), and `ArgsLenAtDash` (e166).

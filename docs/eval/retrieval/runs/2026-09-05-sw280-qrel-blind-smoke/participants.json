@@ -1,0 +1,36 @@
+{
+  "primary_raters": [
+    {
+      "id": "primary-rater-1",
+      "role": "primary",
+      "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+      "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+      "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It did not write any SW-266 slice, and did not harvest, annotate or review the cobra-v2 dataset. Its only input is the question text, the preserved bundle bytes and the frozen answer instructions, delivered as one file. Its model alias differs from the model that implemented this slice and from the model that annotated the dataset in SW-279 (Claude Opus 5).",
+      "participated_in_track": false
+    },
+    {
+      "id": "primary-rater-2",
+      "role": "primary",
+      "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+      "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+      "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It did not write any SW-266 slice and did not harvest, annotate or review the cobra-v2 dataset. Its model alias differs from primary-rater-1, from the implementer and from the SW-279 annotators. It shares a PROVIDER with both, which is a real and stated limit of this panel's independence.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "grader-1",
+    "role": "grader",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "independence_basis": "Spawned as a fresh subagent with no conversation history from this track. It rated nothing: it receives the question, the exact bundle, one already content-addressed response and the reviewed grade-3 answer spans, and applies the frozen rubric.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "adjudicator-1",
+    "role": "adjudicator",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "independence_basis": "Spawned as a fresh subagent with no conversation history from this track and no primary rating role. It answers from the same question text and the same bundle bytes as the primaries, and its response is frozen and content-addressed before any primary response or grade enters the same decision.",
+    "participated_in_track": false
+  }
+}

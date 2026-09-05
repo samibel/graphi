@@ -1,0 +1,14 @@
+Set the package-level variable `cobra.EnableCaseInsensitive = true`. It is declared in cobra.go:62 with the comment "EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)" (evidence e115, cobra.go span 56-68).
+
+This flag is consumed by `commandNameMatches` in command.go:1879 (evidence e117, span 1873-1885):
+
+	func commandNameMatches(s string, t string) bool {
+		if EnableCaseInsensitive {
+			return strings.EqualFold(s, t)
+		}
+		return s == t
+	}
+
+So once `EnableCaseInsensitive` is set to true before command execution, comparisons of command names fall back to `strings.EqualFold` instead of exact `==` string comparison, making command name matching case-insensitive. This function is used by `Command.findNext` (command.go:767, evidence e6/e120) when resolving a subcommand name during execution, so enabling the flag affects how subcommands are looked up by name at runtime.
+
+No separate per-command setting is shown in this response — the mechanism is the single global variable `EnableCaseInsensitive`.

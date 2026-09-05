@@ -1,0 +1,10 @@
+FAIL
+Query ci-2007 ("Can I make it ignore flags including hyphen(-)?"), response 7e97631319686e4b43b41dbba77a2a123f12505cdd5a52917bf6fc12e881eb4b.
+
+The response opens with "INSUFFICIENT" and states that the bundle "does not include code snippets or documentation showing the specific mechanism for ignoring flags including hyphens." Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. It is a present, non-empty, non-refused-by-transport response, so it is graded rather than treated as a failure by rule.
+
+Checked against grade-3 span command.go:236-238, anchor "DisableFlagParsing disables the flag parsing." (and the companion span command.go:1818-1822, anchor "func (c *Command) ParseFlags(args []string) error {"). The response never names DisableFlagParsing, ParseFlags, or any equivalent pass-through mechanism, so it is consistent with neither grade-3 span and makes no checkable claim about the mechanism the question asks for. Pass criterion 2 (substantively correct) therefore does not hold.
+
+Bundle evidence the response did cite: hasAllFlags (flag_groups.go:111), nonCompletableFlag (bash_completions.go:699), SetGlobalNormalizationFunc (command.go:364), and MarkFlagsMutuallyExclusive (flag_groups.go:65) — all four do appear in the bundle bytes as item reasons, so criterion 3 (grounded) is satisfied. But those citations are offered only as support for the claim of insufficiency, not as an answer.
+
+Noted for the run, not as a grading factor: the bundle did carry the ParseFlags item (ref_id 5270e37fbdabefc2, "method cobra.Command.ParseFlags (command.go:1819)") as both a related and a caller entry, though it supplied no snippet text for it and no item touching command.go:236-238.

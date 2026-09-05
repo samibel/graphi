@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-18",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "fc716d347e651ae9c9e3bff656afbd00521e1086ee478799d04ce217de3a9395",
+  "bundle_sha256": "5ee1c1e52f888e43b0e4e0a1f0985eccb1cf6f421e25864c2b065483d1efab0a",
+  "prompt_sha256": "c18dd128e2db19d8c30d7f95420f748803b6a06a4f39b7aacd3aebeaf2e71cc2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Hidden and deprecated commands are excluded from help output through the `IsAvailableCommand()` method in command.go (lines 1562-1568). This method checks two conditions:\n1. Whether the command's `Deprecated` field is non-zero: `len(c.Deprecated) != 0`\n2. Whether the command's `Hidden` flag is set: `c.Hidden`\n\nIf either condition is true, the method returns false, marking the command as unavailable for display.\n\nThis exclusion mechanism is used in two key places:\n\n1. **HasAvailableSubCommands()** (command.go:1617-1623) - iterates through subcommands and only returns true if it finds one where `sub.IsAvailableCommand()` is true, ensuring only available (non-hidden, non-deprecated) subcommands are shown in the usage/help output.\n\n2. **IsAdditionalHelpTopicCommand()** (command.go:1583-1589) - explicitly checks `if c.Runnable() || len(c.Deprecated) != 0 || c.Hidden` to determine if a command should appear as an additional help topic, filtering out deprecated and hidden commands.\n\nThe test `TestHiddenCommandIsHidden` (command_test.go:1771-1777) confirms this behavior by verifying that commands with `Hidden: true` are reported as unavailable by `IsAvailableCommand()`.",
+  "responded_at": "2026-09-05T13:43:31Z",
+  "sha256": "3dd0235b8662286d38773932f074455a936604e784b81f719d90458fc53f8809"
+}

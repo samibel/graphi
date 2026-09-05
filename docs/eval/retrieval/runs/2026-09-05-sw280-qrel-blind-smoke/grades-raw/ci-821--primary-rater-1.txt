@@ -1,0 +1,10 @@
+FAIL
+
+Query: ci-821 — "Is there a way to not show `Global Flags` on --help."
+Response content address: 8432b89cb2456bdc1632f0b3f8cf4bb88205942b43d8a7f312b2adb30aa66fdb
+
+Checked against grade-3 span command.go:311-314 anchor "func (c *Command) SetUsageTemplate(s string) {" — the caller-facing operation that installs a replacement usage template without the Global Flags section — and against command.go:572-575 anchor "Global Flags:", the only site that emits the heading under {{if .HasAvailableInheritedFlags}}. The response names neither the heading site nor SetUsageTemplate, nor any equivalent mechanism.
+
+Bundle evidence the response did cite: cobra.Command.InitDefaultHelpFlag at command.go:1186 (item ref_id 1b7d7b255aa691cb, evidence e1/e78 snippet span 1180-1192) and site/content/user_guide.md:270 "Persistent Flags" (item ref_id 2ebf8a24970ff50b, evidence e2/e79 snippet span 264-276). Both citations are genuinely present in the bundle bytes, so grounding is satisfied — but grounding alone does not carry a pass.
+
+Rubric pass criterion 2 is not met: the response makes no claim consistent with either reviewed grade-3 span. It instead declares that the bundle shows no mechanism for suppressing the Global Flags section, which is the explicit INSUFFICIENT outcome. Per the fail criteria, "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one." The response is present and non-empty, so it is graded rather than treated as a failure-by-rule non-graded case.

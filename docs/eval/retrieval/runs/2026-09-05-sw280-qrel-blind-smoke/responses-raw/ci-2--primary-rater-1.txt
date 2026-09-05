@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains information about command argument validation in Cobra (NoArgs, legacyArgs, ExactArgs validators) but does not include code or examples showing how to actually wrap arguments to prevent them from being interpreted as commands.

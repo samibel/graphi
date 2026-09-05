@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2007",
+  "response_sha256": "7e97631319686e4b43b41dbba77a2a123f12505cdd5a52917bf6fc12e881eb4b",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-2007 (\"Can I make it ignore flags including hyphen(-)?\"), response 7e97631319686e4b43b41dbba77a2a123f12505cdd5a52917bf6fc12e881eb4b.\n\nThe response opens with \"INSUFFICIENT\" and states that the bundle \"does not include code snippets or documentation showing the specific mechanism for ignoring flags including hyphens.\" Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. It is a present, non-empty, non-refused-by-transport response, so it is graded rather than treated as a failure by rule.\n\nChecked against grade-3 span command.go:236-238, anchor \"DisableFlagParsing disables the flag parsing.\" (and the companion span command.go:1818-1822, anchor \"func (c *Command) ParseFlags(args []string) error {\"). The response never names DisableFlagParsing, ParseFlags, or any equivalent pass-through mechanism, so it is consistent with neither grade-3 span and makes no checkable claim about the mechanism the question asks for. Pass criterion 2 (substantively correct) therefore does not hold.\n\nBundle evidence the response did cite: hasAllFlags (flag_groups.go:111), nonCompletableFlag (bash_completions.go:699), SetGlobalNormalizationFunc (command.go:364), and MarkFlagsMutuallyExclusive (flag_groups.go:65) — all four do appear in the bundle bytes as item reasons, so criterion 3 (grounded) is satisfied. But those citations are offered only as support for the claim of insufficiency, not as an answer.\n\nNoted for the run, not as a grading factor: the bundle did carry the ParseFlags item (ref_id 5270e37fbdabefc2, \"method cobra.Command.ParseFlags (command.go:1819)\") as both a related and a caller entry, though it supplied no snippet text for it and no item touching command.go:236-238.",
+  "graded_at": "2026-09-05T14:03:05Z",
+  "sha256": "8edcd6df13a1f2b2583cd08c7d0f7d9ef6c235cb1df5ff2c66c0b1a45505d346"
+}

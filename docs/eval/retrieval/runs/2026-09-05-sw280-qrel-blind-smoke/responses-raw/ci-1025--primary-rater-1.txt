@@ -1,0 +1,1 @@
+INSUFFICIENT The provided snippets show flag parsing logic in the Traverse function (command.go:784-796) with an inFlag state variable and switch cases for different flag formats, but do not explicitly detail a specific escape mechanism for flag input.

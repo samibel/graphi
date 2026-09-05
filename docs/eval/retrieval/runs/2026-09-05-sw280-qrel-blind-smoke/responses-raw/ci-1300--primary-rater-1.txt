@@ -1,0 +1,14 @@
+To validate flags when they get set, Cobra provides several validation methods:
+
+1. **ValidateRequiredFlags()** (command.go:1147): Validates that all required flags are present. This method checks if any flags marked as required have been set, and returns an error if they're missing.
+
+2. **ValidateFlagGroups()** (flag_groups.go:81): Validates the mutuallyExclusive/oneRequired/requiredAsGroup logic. This is called to check flag group constraints after parsing. It handles three types of flag group validations:
+   - validateOneRequiredFlagGroups (flag_groups.go:167): Ensures at least one flag in a group is set
+   - validateExclusiveFlagGroups (flag_groups.go:188): Ensures only one flag in a group is set
+   - Required-together validation: Ensures if any flags in a group are set, all must be set
+
+3. **MarkFlagsRequiredTogether()** (flag_groups.go:33): Marks given flags with annotations so that Cobra errors if the command is invoked with a subset (but not all) of the given flags.
+
+The validation happens through flag group annotations that Cobra checks during command execution. The Flags() method (command.go:1643) returns the complete FlagSet that applies to the command, which contains all the flag definitions needed for validation.
+
+These validation methods should be called during command execution to ensure flag constraints are met before processing command logic.

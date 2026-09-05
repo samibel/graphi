@@ -1,0 +1,16 @@
+Set DisableFlagParsing: true on the cobra.Command that wraps the script execution, and forward the raw args slice straight through to the script instead of letting cobra parse it as flags.
+
+Evidence for the mechanism:
+- Command.ParseFlags (command.go, snippet spanning lines 1813-1825, ref e169) begins with:
+  "func (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tif c.flagErrorBuf == nil {\n\t\tc.flagErrorBuf = new(bytes.Buffer)"
+  When DisableFlagParsing is true, ParseFlags returns immediately without touching args, so nothing that looks like a flag (uncertain/unknown flags meant for the script, not for your cmd) gets consumed, rejected, or reordered by cobra's own pflag-based FlagSet.
+- Command.execute (command.go:874, snippet e166) is the call site that invokes flag parsing before running the command body ("func (c *Command) execute(a []string) (err error) { ... }"), so the same args slice that ParseFlags leaves untouched is what reaches your Run/RunE function when DisableFlagParsing is set — i.e. args[0], args[1], ... arrive verbatim, including any dashed tokens.
+- Command.Flags() (command.go:1643, snippet e163) is the normal path that lazily builds the FlagSet ("if c.flags == nil { c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError) ... }") for commands that DO want cobra to validate flags — you deliberately bypass this for the script-runner subcommand so it never registers/validates flags it can't know in advance.
+- The pattern of disabling flag parsing to hand raw, unvalidated flag-like args to something else is exercised in cobra's own test suite: TestCompleteWithDisableFlagParsing (completions_test.go:2706, ref e84) is listed among the related/test items, confirming DisableFlagParsing is the established field for "flags I don't want cobra to interpret."
+
+Concretely, in your cmd definition:
+1. Define the Command with DisableFlagParsing: true (so ParseFlags short-circuits per command.go:1819).
+2. In RunE(cmd *cobra.Command, args []string), treat args as the full, unmodified command line meant for the script (script path plus its own flags) rather than calling cmd.Flags() to look them up, since Command.Flags() would return an empty/irrelevant FlagSet for this command's own definitions.
+3. Pass that args slice straight to your script-invocation code (e.g. exec.Command(scriptPath, scriptArgs...)) without re-parsing it.
+
+Caveat: the retrieved response is capped/truncated (40 of 60 available items, 20 dropped) and skews heuristic (48.6% heuristic vs 42.3% confirmed edges), and it contains no snippet that actually shows an os/exec invocation or a "script file" execution helper — that part of the implementation (spawning the external script process) is not present in this response and must be written using standard library exec, not cobra APIs.

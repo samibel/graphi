@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "cb-23",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "1addfa2e7da02d6a191809243a4cc8a9eebcdfcbbac135eb7615316c365e7cf4",
+  "bundle_sha256": "2718a4ffff1b78ff09f5ab7688d84200de245fd8f9aabe789062f21012670484",
+  "prompt_sha256": "b64901b7aa4c3fbc28e00320691a87a0b0fcef896c1aaa3cef45ceab2cf6aa8b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The completion command is registered on the root command through the method cobra.Command.InitDefaultCompletionCmd (completions.go:683). According to the evidence, this function \"adds a default 'completion' command to c\" and is called automatically when executing the root command. The method checks three conditions before proceeding:\n\n1. The feature has not been explicitly disabled by the program\n2. The root command has subcommands (to avoid creating one on a command with no subcommands)\n3. The root command does not already have a 'completion' command provided by the program\n\nOnce these conditions are met, InitDefaultCompletionCmd creates and registers the completion command as a subcommand on the root. This is supported by evidence showing InitDefaultCompletionCmd being called from cobra.Command.ExecuteC (command.go:1052), which is called when executing the root command, ensuring that the completion command is registered early in the command execution flow.",
+  "responded_at": "2026-09-05T13:43:29Z",
+  "sha256": "f99c906956a9cad2df49c52854e494ae79f595e5225f7e53cb17916a9ca5479b"
+}

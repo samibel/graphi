@@ -1,0 +1,13 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-2250: command.go:1183-1198, anchor "c.Flags().BoolP(", whose stated mechanism is that a flag registered with the P variant carries a one-letter shorthand, which is exactly how -h becomes usable in place of --help.
+
+1. Answers the question asked. The question is how to use one dash instead of two. The response answers that directly: a single dash introduces the shorthand (single-letter) form of a flag, while two dashes introduce the long form.
+
+2. Substantively correct. The response does not name BoolP or command.go:1183-1198, but it identifies the same mechanism from the usage side — the one-letter shorthand registered alongside the long name — and gives the key's own worked example, -h as the short form of --help. Under the rubric's "different but genuinely equivalent mechanism" allowance this is consistent with the grade-3 span, and nothing in the response is contradicted by it.
+
+3. Grounded in the bundle. Both citations are present in the exact bytes the rater was given:
+   - site/content/user_guide.md lines 577-589 — evidence e46, whose snippet literally contains "-h, --help             help for cobra-cli" and "-l, --license string   name of license for the project", the two examples the response quotes.
+   - command_test.go:1256 and the string "unknown shorthand flag: 'v' in -v" — the bundle's primary item 22523f28e060b050 is labelled command_test.go:1256, and evidence e45 (span 1250-1262) contains that exact literal. The response's attribution of the literal to line 1256 rather than to the line a few above it inside the same quoted span is an imprecision within a cited snippet, not a citation of anything absent from the bundle, so it does not trigger a fail criterion.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites only bundle-present evidence, does not answer INSUFFICIENT, and makes a definite checkable claim.

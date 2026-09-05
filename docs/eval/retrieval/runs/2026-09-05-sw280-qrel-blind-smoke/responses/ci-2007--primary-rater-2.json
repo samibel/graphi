@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2007",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e62cf047aa2d21fe06375b164125282d5cdc2182d03406e7187342b4cdf64722",
+  "bundle_sha256": "5979f40d797806e9898f9cff9d72a21341380a687c6754c9e89425001557670f",
+  "prompt_sha256": "ccc0214a62224288e74341fe45b8ff7ad2c68e453d6a3345b5b04e8587f8e15b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response surfaces candidate symbols (e.g. flag_groups.go hasAllFlags/MarkFlagsMutuallyExclusive, bash_completions.go nonCompletableFlag, command.go Flags()/HasAvailableFlags/Traverse, and a TestStripFlags test reference at command_test.go:608) but includes no snippet showing the actual mechanism for treating hyphen-prefixed tokens as non-flags (e.g. DisableFlagParsing, an Args-parsing exception, or the body of stripFlags/Traverse's hyphen-handling branch) — the one relevant snippet, command.go:784-796 (Traverse), is truncated right where it reaches \"// A long flag with a space separated value\" and shows no code for that case, so there isn't enough here to state concretely how to make it ignore flags including a leading hyphen.",
+  "responded_at": "2026-09-05T13:52:48Z",
+  "sha256": "48acd1b112f5bed0386b83f9aa4f3c6a5de672d51cc568bf0a88fe5f8b1104e3"
+}

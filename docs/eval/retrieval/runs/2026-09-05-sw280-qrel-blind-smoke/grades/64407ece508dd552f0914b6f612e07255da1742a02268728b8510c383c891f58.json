@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1790",
+  "response_sha256": "64407ece508dd552f0914b6f612e07255da1742a02268728b8510c383c891f58",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-1790 (\"How to test a cobra CLI application?\"), response 64407ece508dd552f0914b6f612e07255da1742a02268728b8510c383c891f58.\n\nChecked against the single reviewed grade-3 span for this question: command.go:274-278, anchor \"particularly useful when testing\" — the SetArgs doc comment establishing that a test drives the CLI by setting the arguments on the root command and executing it.\n\nThe rater's response opens with INSUFFICIENT and makes no substantive claim about how to test a Cobra CLI. Rubric fail criterion 4 applies directly: \"the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one.\" It also fails pass criterion 2, since it asserts nothing that can be checked for consistency with the command.go:274-278 span.\n\nBundle evidence cited: the response cites no path, symbol or snippet line as support for an answer. It only characterises the bundle's contents in the negative, gesturing at the topics carried by e24 (site/content/user_guide.md:24-36, \"Using the Cobra Generator\"), e26 (site/content/user_guide.md:486-498, \"Help Command\") and e25 (site/content/user_guide.md:548-560, \"Usage Message\"), and stating that no testing pattern, framework or example appears. That is a description of absence, not a grounded claim, so pass criterion 3 is not satisfied either.\n\nNote on scope: this is a graded FAIL, not a failure-by-rule. The response is present and non-empty — an explicit INSUFFICIENT judgement, which the rubric lists among the graded fail criteria rather than among the ungraded missing/empty/refused cases.",
+  "graded_at": "2026-09-05T14:02:25Z",
+  "sha256": "e6c836b8f0058a886c401d40302acab739d2a973acb32ee9177081e525155ced"
+}

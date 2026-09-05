@@ -1,0 +1,11 @@
+Yes, there is a way to customize the entire deprecation message for a command.
+
+The deprecation message is customized by setting the `Deprecated` field on the `cobra.Command` struct to your custom message string. Evidence from the response shows:
+
+1. In doc/cmd_test.go:77 (snippet e34), a `deprecatedCmd` is defined with:
+   `Deprecated: "Please use echo instead",`
+
+2. In command_test.go:1493 (snippet e37), a test demonstrates:
+   `Deprecated: "This command is deprecated",`
+
+Both examples show that the entire deprecation message can be fully customized through the `Deprecated` field when defining a Command. The user guide (site/content/user_guide.md:599, snippet e35) references similar customization patterns using setter functions for other message types, indicating this is the standard mechanism for customizing deprecation messages in Cobra.

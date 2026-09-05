@@ -1,0 +1,20 @@
+There is no numeric "error code" for the unknown-command error in this response — it is a plain error string built with fmt.Errorf, and to change it you edit the format string(s) directly in args.go.
+
+Evidence (ref e87, path args.go, lines 36-48):
+
+    return fmt.Errorf("unknown command %q for %q%s", args[0], cmd.CommandPath(), cmd.findSuggestions(args[0]))
+    }
+    return nil
+    }
+
+    // NoArgs returns an error if any args are included.
+    func NoArgs(cmd *Command, args []string) error {
+        if len(args) > 0 {
+            return fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())
+        }
+        return nil
+    }
+
+This shows two call sites producing the "unknown command" text: one just above NoArgs (the function ending at args.go:39, whose closing brace is shown at line 38, formatting "unknown command %q for %q%s" with cmd.findSuggestions appended), and the one inside NoArgs itself at args.go:42-44 (item ref_id 69888a9d4b149ed3, "function cobra.NoArgs (args.go:42)"), formatting "unknown command %q for %q". To change the wording (or append/remove data such as the suggestion suffix) of the unknown-command error, you edit these fmt.Errorf calls in args.go directly.
+
+Note this is distinct from flag-parsing errors: those go through a separate, overridable hook — Command.FlagErrorFunc (command.go:500, ref e2/e86) and Command.SetFlagErrorFunc (command.go:318, ref e5/e89) — which let a caller install a custom function to wrap/replace flag errors without editing cobra's source. No equivalent SetXErrorFunc hook for the "unknown command" error appears anywhere in this response's evidence, so nothing indicates it can be customized via a setter; the only mechanism shown is direct edits to the fmt.Errorf strings in args.go.

@@ -1,0 +1,18 @@
+To make a subcommand show up in the "Available Commands" section of the help output, add it as a subcommand of the parent Command and make sure it passes the availability check that gates that section.
+
+Evidence:
+
+- command.go:1617 (`HasAvailableSubCommands`, snippet e66, lines 1611-1623): "HasAvailableSubCommands determines if a command has available sub commands that need to be shown in the usage/help default template under 'available commands'." It loops `for _, sub := range c.commands { if sub.IsAvailableCommand() { return true } }`. So any subcommand present in `c.commands` that satisfies `IsAvailableCommand()` is what populates the "Available Commands" list.
+
+- command.go:1562 (`IsAvailableCommand`, snippet e68, lines 1556-1568): defines the gate — "IsAvailableCommand determines if a command is available as a non-help command (this includes all non deprecated/hidden commands)." Its body: `if len(c.Deprecated) != 0 || c.Hidden { return false }` and `if c.HasParent() && c.Parent().helpCommand == c { return false }`. So a command counts as "available" (i.e., appears in the section) only if it has no `Deprecated` string set, `Hidden` is false, and it isn't the parent's auto-generated help command.
+
+- command.go:1052/1068 (`ExecuteC`, evidence e17) and command.go:1229 (`InitDefaultHelpCmd`, snippet e65, lines 1223-1235) show that the help/usage machinery (and the default help command) walks `c.commands`, reinforcing that entries come from whatever has been added to that slice.
+
+- command.go:1362 (`RemoveCommand`, snippet e70, lines 1356-1368) confirms `c.commands` is the backing slice that subcommands are added to/removed from ("RemoveCommand removes one or more commands from a parent command" by filtering `c.commands`).
+
+- site/content/user_guide.md:492 (snippet e67, lines 486-498) documents the user-facing behavior: "Cobra automatically adds a help command to your application when you have subcommands... Every command will automatically have the '--help' flag added," consistent with the help template rendering whatever subcommands exist.
+
+Practical steps implied by this evidence:
+1. Create your `*cobra.Command` (e.g., `var myCmd = &cobra.Command{Use: "mycmd", ...}`).
+2. Attach it to the parent command's subcommand slice (the parent's `c.commands`, mutated via the Add/Remove command methods such as `RemoveCommand` at command.go:1362 and the same slice referenced throughout command.go).
+3. Ensure it will pass `IsAvailableCommand()` (command.go:1562): do not set `Deprecated`, do not set `Hidden: true`, and don't mark it as the help command — otherwise `HasAvailableSubCommands()` (command.go:1617) will skip it and it won't be shown under "Available Commands" in the generated help/usage template.

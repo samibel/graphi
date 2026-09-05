@@ -1,0 +1,13 @@
+To make rootCmd behave as one of its children, set the `TraverseChildren` field to `true` on the root Command struct.
+
+This is evidenced by multiple test cases in the response:
+
+1. **TestTraverseWithBadChildFlag** (command_test.go:2247, e52): `rootCmd := &Command{Use: "root", TraverseChildren: true}`
+
+2. **TestTraverseNoParentFlags** (command_test.go:2209, e53): `rootCmd := &Command{Use: "root", TraverseChildren: true}`
+
+3. **TestTraverseWithParentFlags** (command_test.go:2187, e56): `rootCmd := &Command{Use: "root", TraverseChildren: true}`
+
+Additionally, children must be added to the root command using the `AddCommand` method (evidenced in e54 and e55): `rootCmd.AddCommand(childCmd)`
+
+When `TraverseChildren: true` is set on the root Command, it enables the root to traverse into and delegate behavior to its child commands.

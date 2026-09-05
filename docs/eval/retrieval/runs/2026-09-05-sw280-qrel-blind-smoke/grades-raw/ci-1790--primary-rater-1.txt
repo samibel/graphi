@@ -1,0 +1,10 @@
+FAIL
+Query ci-1790 ("How to test a cobra CLI application?"), response 64407ece508dd552f0914b6f612e07255da1742a02268728b8510c383c891f58.
+
+Checked against the single reviewed grade-3 span for this question: command.go:274-278, anchor "particularly useful when testing" — the SetArgs doc comment establishing that a test drives the CLI by setting the arguments on the root command and executing it.
+
+The rater's response opens with INSUFFICIENT and makes no substantive claim about how to test a Cobra CLI. Rubric fail criterion 4 applies directly: "the response says it cannot answer (INSUFFICIENT), which is an honest answer and a failed one." It also fails pass criterion 2, since it asserts nothing that can be checked for consistency with the command.go:274-278 span.
+
+Bundle evidence cited: the response cites no path, symbol or snippet line as support for an answer. It only characterises the bundle's contents in the negative, gesturing at the topics carried by e24 (site/content/user_guide.md:24-36, "Using the Cobra Generator"), e26 (site/content/user_guide.md:486-498, "Help Command") and e25 (site/content/user_guide.md:548-560, "Usage Message"), and stating that no testing pattern, framework or example appears. That is a description of absence, not a grounded claim, so pass criterion 3 is not satisfied either.
+
+Note on scope: this is a graded FAIL, not a failure-by-rule. The response is present and non-empty — an explicit INSUFFICIENT judgement, which the rubric lists among the graded fail criteria rather than among the ungraded missing/empty/refused cases.

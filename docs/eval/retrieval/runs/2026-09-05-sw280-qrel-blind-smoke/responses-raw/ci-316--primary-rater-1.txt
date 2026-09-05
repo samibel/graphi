@@ -1,0 +1,8 @@
+Yes, you can disable sorting of flags for a given command by setting the `SortFlags` field on the command's FlagSet to `false`. The test function `TestSortedFlags` (command_test.go:2135-2141) demonstrates this capability. The test comment states: "TestSortedFlags checks, if cmd.LocalFlags() is unsorted when cmd.Flags().SortFlags set to false." The code shows this pattern:
+
+```
+c := &Command{}
+c.Flags().SortFlags = false
+```
+
+This allows you to control flag sorting on a per-command basis by accessing the FlagSet through `cmd.Flags().SortFlags` and setting it to `false`.

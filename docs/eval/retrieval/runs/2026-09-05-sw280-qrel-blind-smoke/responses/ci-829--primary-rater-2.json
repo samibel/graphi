@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-829",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "c49fe02f14b0019e07ae187a5089e45cae814f4f56633a9dac3eb7c523577796",
+  "bundle_sha256": "0f9cc3bacb03fd167088077843b2cd54e874b94794520dc87b03cfeafd2ddc20",
+  "prompt_sha256": "912eff2d780087a8ae01072cdab25e158af1d23fdb0776177f28a3d5544fc16f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response shows how the help command/output itself is produced (e.g. command.go:473 `func (c *Command) Help() error { c.HelpFunc()(c, []string{}); return nil }`, and command.go:1229 `InitDefaultHelpCmd`), but none of the returned snippets or evidence contain any code that terminates/exits the process (no os.Exit, return-code, or \"exit after help\" logic is present anywhere in the response).",
+  "responded_at": "2026-09-05T13:55:48Z",
+  "sha256": "083a23eef9fcf343c3e23d7570fe90e0e1f1e2f515fd0d1699a523c7f07014a5"
+}

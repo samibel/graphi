@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1151",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "66b73c55d39c7cb65f38837b62f3ba5edfd1a85511e79695b4b4e7aaa94cda8a",
+  "bundle_sha256": "2dc4ab1ddbae8683ca121ac03d1268b3c92cdfbfeb9f6fb53dcb687331768a4c",
+  "prompt_sha256": "9c1152f2bc2c5b820d4bf783c1bd61d24fa26df24c2bf24399f63ba21f7a4d1f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the `Use` field of your root command to be different from the app name. The `Command.Name()` method (command.go:1496) extracts the command's name from the `Use` field by taking the first word. According to the snippet evidence (e134):\n\n```\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i \u003e= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}\n```\n\nThis means your app name (e.g., the binary name or program name) is independent from the root command's `Use` field, which determines the command name shown in help text and usage messages. You can assign different values to these independently during initialization, as shown in the test example (doc/cmd_test.go:47) with `rootCmd`.",
+  "responded_at": "2026-09-05T13:50:11Z",
+  "sha256": "695a4aa3095fa5b275d9aca178dbae7e772ce43fe4e825588af5ec02b15f4473"
+}

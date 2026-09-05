@@ -1,0 +1,25 @@
+There are two distinct things this covers — documenting a required argument (in help text) and defining/enforcing it (in code) — and the response has evidence for both.
+
+1. Documenting a required argument in the command's usage string:
+In command.go's Command struct doc comment (command.go:51, snippet e106, lines 45-57), the `Use` field's recommended syntax is spelled out:
+"Use is the one-line usage message. Recommended syntax is as follows:
+  [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required.
+  ... indicates that you can specify multiple values for the previous argument.
+  |   indicates mutually exclusive information..."
+So to document an argument as required, you simply write it in the `Use` string without enclosing it in square brackets; anything inside `[ ]` is treated as optional, and anything not bracketed is required by convention.
+
+2. Defining/enforcing a required (positional) argument in code:
+site/content/user_guide.md, section "Positional and Custom Arguments" (dc8a54ad9f3b26fe, line 367; snippet e108, lines 361-373) states: "Validation of positional arguments can be specified using the `Args` field of `Command`. The following validators are built in: - Number of arguments: - `NoArgs` - report an error if there are any positional args." The snippet is truncated after `NoArgs`, so the full list of built-in validators (e.g., anything for "exactly N args" or "minimum args") is not visible in this response.
+
+This ties to command.go's `ValidateArgs` method (a63fab69c86b602b, command.go:1139, snippet e107, lines 1133-1145):
+```
+func (c *Command) ValidateArgs(args []string) error {
+	if c.Args == nil {
+		return ArbitraryArgs(c, args)
+	}
+	return c.Args(c, args)
+}
+```
+This shows that if you set `Command.Args` to a validator function, that function is called against the parsed args to enforce your requirement (e.g., that a required argument is present); if `Args` is left nil, `ArbitraryArgs` (args.go:69, ref ca0ac9e7f5b714ac) is used instead, which imposes no such requirement.
+
+Summary: Document a required positional argument by naming it without brackets in `Command.Use` (per the comment at command.go:51-57); define/enforce it by setting `Command.Args` to a validator function, which `ValidateArgs` (command.go:1139) invokes during argument validation, per the "Positional and Custom Arguments" section of site/content/user_guide.md:367. The response does not include the exact built-in validator name for "N required args" (the snippet cuts off after `NoArgs`), so I cannot name the specific required-args validator function from this evidence alone.

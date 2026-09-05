@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-827",
+  "response_sha256": "d930cf32b7df6aa0dd70f8e8eba7a71cb38a7cd7259fd7ebe733c4a51660f867",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against both reviewed grade-3 spans for ci-827.\n\nSpan command.go:89-90 (anchor \"Args PositionalArgs\"): the response's central claim is that a sanity check is written as a function matching `func(cmd *Command, args []string) error` (a `PositionalArgs`) and assigned to a `Command`'s `Args` field. It names that field explicitly (\"set it as a `Command`'s `Args` field\", \"`Command.Args` ... is what actually runs the sanity check\"), so it names the location the key asks for. Adding that such validators live in args.go is an accurate elaboration, not a contradiction — the key's second span shows `c.Args` being what is invoked, and args.go is where the shipped `PositionalArgs` implementations sit.\n\nSpan command.go:1139-1144 (anchor \"func (c *Command) ValidateArgs(args []string) error {\"): the response independently states the role of the field — the check \"is invoked centrally from command.go:1139 via `(c *Command) ValidateArgs(args []string) error`\" and reproduces the fallback `if c.Args == nil { return ArbitraryArgs(c, args) }; return c.Args(c, args)`. That is exactly the mechanism the key records, including the ArbitraryArgs fallback when Args is unset. Nothing in the response contradicts either span.\n\nGrounding in the bundle: every citation is present in the given bytes. Snippet e135 (command.go span 1133-1145) carries the verbatim `func (c *Command) ValidateArgs(args []string) error {` body the response quotes; snippet e137 (args.go span 22-34) carries `type PositionalArgs func(cmd *Command, args []string) error` and `legacyArgs`; snippet e134 (args.go span 36-48) carries `NoArgs` at args.go:42. The item list in the bundle supplies `cobra.ArbitraryArgs (args.go:69)` and `cobra.MinimumNArgs (args.go:74)`, and `cobra.getCommand (args_test.go:23)` plus the args_test.go test items at 214/246/296/326/346/376/508 that the response cites for the test pattern. Snippet e133 also shows the `Args: args` assignment inside `getCommand`. No cited path, symbol or line is absent from the bundle, and nothing is supplied from outside it.\n\nThe response answers the question asked, makes a definite checkable claim, and is neither INSUFFICIENT nor hedged.",
+  "graded_at": "2026-09-05T14:06:59Z",
+  "sha256": "2d05bed0f78113730028d1deaa56fb40809437545c22bd943c4e2716db020c5c"
+}

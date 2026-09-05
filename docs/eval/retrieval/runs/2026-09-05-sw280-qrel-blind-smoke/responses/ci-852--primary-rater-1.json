@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-852",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "3ad7f4beccc891643f191938faf997e9c71425fe39f63f527940c3415bb7b98c",
+  "bundle_sha256": "38e792c6da68d211f04455afa21a029b44c8798c05890db4449ee6f214bfdefb",
+  "prompt_sha256": "2c4843c33fc4efc1ead63f9bb19ca7f30515c45869f66c087e0eabe4f70ad844",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Based on the JSON-RPC response provided, the evidence shows that Cobra's PreRun and PostRun Hooks (documented in site/content/user_guide.md:605) are executed in a specific order:\n\n- PersistentPreRun\n- PreRun\n- Run\n\nThe response demonstrates parameter transfer through closure variables. The testPersistentHooks function (command_test.go:1578-1590, snippet e107) shows this pattern: a `hookRunOrder` slice is declared in the outer scope and then captured and modified by the `validateHook` function called within the hooks. The snippet shows:\n\n```\nfunc testPersistentHooks(t *testing.T, expectedHookRunOrder []string) {\n\tvar hookRunOrder []string\n\n\tvalidateHook := func(args []string, hookName string) {\n\t\thookRunOrder = append(hookRunOrder, hookName)\n```\n\nThis demonstrates that variables can be shared between PersistentPreRun and Run functions through closures over variables in the command setup scope. This allows parameter/data transfer between the hook functions.\n\nThe response references command.go (line 1015) for the preRun method implementation and the Command type definition (command.go line 45), which would contain the hook field definitions, though the actual hook function signatures are not shown in the provided snippets.",
+  "responded_at": "2026-09-05T13:56:03Z",
+  "sha256": "c7c41b42573514b16c154d53e4b51a9a52dbba4a9b60b85c70b9169316edb363"
+}

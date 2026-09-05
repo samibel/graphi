@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains references to flag-related functions like hasAllFlags (flag_groups.go:111), nonCompletableFlag (bash_completions.go:699), SetGlobalNormalizationFunc (command.go:364), and MarkFlagsMutuallyExclusive (flag_groups.go:65) but does not include code snippets or documentation showing the specific mechanism for ignoring flags including hyphens.

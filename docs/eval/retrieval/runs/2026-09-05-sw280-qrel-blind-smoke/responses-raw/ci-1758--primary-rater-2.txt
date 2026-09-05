@@ -1,0 +1,13 @@
+Yes. The response shows that flags are held in a mutable *flag.FlagSet that a command's accessor methods hand back, and that the library itself adds flags to those sets at call time rather than only at a fixed declaration point.
+
+Concretely:
+- cobra.Command.Flags() (command.go:1643, snippet e60) returns "the complete FlagSet that applies to this command (local and persistent declared here and by all parents)" — it lazily creates c.flags on first call rather than requiring it to be built upfront.
+- cobra.Command.mergePersistentFlags() (command.go:1849, snippet e58) shows flags being added to a FlagSet programmatically at runtime:
+  "func (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"
+  This calls FlagSet.AddFlagSet twice to merge additional flag sets into c.Flags() — i.e., flags are added to the set dynamically, and this same merge is re-run whenever LocalFlags() (command.go:1669, which calls c.mergePersistentFlags() per snippet e56) or InheritedFlags() (command.go:1696, which also calls c.mergePersistentFlags() per snippet e62) is invoked.
+- cobra.Command.PersistentFlags() (command.go:1726, snippet e61) similarly lazily initializes c.pflags on first access, so a persistent FlagSet can be populated (and grown) at any point before it's consumed.
+- The README (README.md:68, snippet e57) and user_guide.md (lines 257-270, snippets e55/e59, section "Assign flags to a command" / "Persistent Flags") describe the standard pattern of obtaining one of these FlagSet objects (e.g. via PersistentFlags()) and adding a flag variable to it — the accessor is the extension point, and nothing in the cited code restricts calls to it to a single fixed time before execution.
+
+So the mechanism for adding flags dynamically is: obtain the FlagSet via Command.Flags() / Command.PersistentFlags() (etc.) and add to it — either directly or, as command.go:1849 demonstrates, by merging in another FlagSet with AddFlagSet — and this happens at call time (including being re-triggered on each LocalFlags()/InheritedFlags() invocation via mergePersistentFlags), not only once at static setup.
+
+One caveat: the response also lists flag_groups.go (file:flag_groups.go, score 450, and relation evidence e28-e30 at lines 34/50/66) as a related file that likely governs flag-group behavior, but no snippet text for flag_groups.go is included in this response, so I cannot cite its actual content as further support.

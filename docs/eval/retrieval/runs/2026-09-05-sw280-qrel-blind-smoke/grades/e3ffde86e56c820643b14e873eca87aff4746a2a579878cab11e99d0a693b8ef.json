@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2176",
+  "response_sha256": "e3ffde86e56c820643b14e873eca87aff4746a2a579878cab11e99d0a693b8ef",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-2176, response e3ffde86e56c820643b14e873eca87aff4746a2a579878cab11e99d0a693b8ef.\nThe response is an explicit INSUFFICIENT: \"INSUFFICIENT The response contains command execution methods but lacks evidence of the mechanism used to record or persist executed commands and parameters.\" Under the frozen rubric's fail criteria, a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. It is a present, non-empty, non-refused response, so it is graded rather than treated as a failure by rule.\nGrade-3 span checked against: command.go:940-966, anchor \"if p.PersistentPreRunE != nil {\" — the mechanism whereby Cobra walks from the executed command up its parents and invokes the inherited persistent pre-run hook with the executed command and its argument slice, so a single root hook observes every invocation. The companion span command.go:114-127, anchor \"PersistentPreRun: children of this command will inherit and execute.\", was also considered. The response makes no claim consistent with either span; it makes no positive claim about a mechanism at all, so criterion 2 (substantively correct) is not met and criterion 1 (answers the question asked) is met only in the sense that it addresses the right question while declining to answer it.\nBundle evidence cited by the response: none specifically. It refers only in general terms to \"command execution methods\", which loosely tracks the bundle's Execute/ExecuteC/ExecuteContext items (command.go:1038, 1052, 1046 and snippets e137/e139) and the executeCommand test helper (command_test.go:32, snippet e138), but it names no path, symbol or snippet line from the bundle bytes, so criterion 3 (grounded in the bundle) is also unmet.",
+  "graded_at": "2026-09-05T14:03:59Z",
+  "sha256": "217bdb2606893fabc0f614099aa8cae00f01dccc28d1b6d708cfa6582b415a17"
+}

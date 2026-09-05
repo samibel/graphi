@@ -1,0 +1,39 @@
+PASS
+
+Response content address: d5a948c64c511248068bf568797cfe40e3786811914a2e6a4f9136d129979da0
+Query id: ci-1461 ("How to get sub command result back to parent?")
+
+Criterion 1 — answers the question asked. The response is about how a subcommand's
+outcome reaches the parent/caller, not a nearby question. It states a single checkable
+claim: the outcome travels back as the (cmd, err) pair returned by ExecuteC (and by the
+Execute/ExecuteContext wrappers around it).
+
+Criterion 2 — substantively correct. Checked against grade-3 span command.go:982-988,
+anchor "if err := c.RunE(c, argWoFlags); err != nil {", whose reason is that the primary
+result channel is the error returned by the subcommand's RunE, which ends execute() and
+is handed back up to whatever invoked the tree. The response names the same mechanism at
+its outer surface rather than at the execute() internals: "err is whatever error that
+subcommand's run function produced", returned upward through ExecuteC. Under the rubric's
+allowance for a different but genuinely equivalent location or mechanism, this is the same
+error-propagation channel described one frame further out, so it is consistent with that
+span. It is also partially consonant with span command.go:996-1010, whose reason notes the
+parent is handed the executed child *Command — the response's "cmd is the specific
+*Command that ended up being executed". Nothing in the response is contradicted by any of
+the three spans: its closing statement that no field or method for passing arbitrary
+custom data appears is explicitly scoped to what the bundle contains, not a claim that
+cobra has none, so it does not contradict span command.go:268-272 (SetContext), which was
+absent from the bundle.
+
+Criterion 3 — grounded in the bundle. Every citation is present in the given bytes. The
+load-bearing one is evidence e103, the snippet at command.go:1046-1058, which literally
+contains "func (c *Command) ExecuteC() (cmd *Command, err error) {", the ExecuteContextC
+wrapper's "return c.ExecuteC()", the comment "Regardless of what command execute is called
+on, run on Root only" and the following "if c.HasParent() {" — all quoted accurately,
+including the item line command.go:1052 for ExecuteC. Supporting citations are also in the
+bundle: e100 (Parent, command.go:1843), e98 (HasParent, command.go:1632) and e97 (Root,
+command.go:861, with "c.Parent().Root()"). The answer is therefore derived from the bundle
+rather than from prior Cobra knowledge.
+
+No fail criterion applies: the response is not about a different question, does not
+contradict every grade-3 span, cites nothing absent from the bytes, does not answer
+INSUFFICIENT, and is not hedged past the point of a checkable claim.

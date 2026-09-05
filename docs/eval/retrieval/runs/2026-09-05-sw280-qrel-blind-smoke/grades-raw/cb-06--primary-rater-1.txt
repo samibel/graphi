@@ -1,0 +1,10 @@
+PASS
+Checked against the single reviewed grade-3 span for cb-06: zsh_completions.go:40-44, anchor "func (c *Command) GenZshCompletionNoDesc(".
+
+1. Answers the question asked: the question is the bare symbol "GenZshCompletionNoDesc"; the response identifies that symbol — its declaring type, location, signature and body — rather than a neighbouring symbol.
+
+2. Substantively correct: the response places GenZshCompletionNoDesc at zsh_completions.go:42, which falls inside the reviewed grade-3 span 40-44, and describes it as a method on cobra.Command taking an io.Writer and returning error, implemented as c.genZshCompletion(w, false). Nothing in the answer key contradicts this; the located declaration is the same one the key anchors. Its secondary remarks (GenZshCompletionFileNoDesc at :36, genZshCompletion at :80) are also consistent with the bundle and do not displace the primary claim.
+
+3. Grounded in the bundle: the response cites evidence id e33 by name, which is present in the bundle as {"ref_id":"e33","path":"zsh_completions.go","line":36,"span":"36-48","role":"snippet"} and whose snippet text literally contains "func (c *Command) GenZshCompletionNoDesc(w io.Writer) error {" followed by "return c.genZshCompletion(w, false)". The line number 42 also matches bundle item f99e84f7559cfc4e ("primary: method cobra.Command.GenZshCompletionNoDesc (zsh_completions.go:42)") and evidence e5. The cross-references to :36 and :80 likewise appear in the bundle (items 1bbb2147a6815f08 and ea2d7510811e4415, evidence e1/e4/e32). Every claim traces to bytes the rater was given; nothing is supplied from outside the bundle.
+
+No fail criterion applies: the response is not about a different question, does not contradict the answer key, is not INSUFFICIENT, and makes a specific checkable claim rather than hedging.

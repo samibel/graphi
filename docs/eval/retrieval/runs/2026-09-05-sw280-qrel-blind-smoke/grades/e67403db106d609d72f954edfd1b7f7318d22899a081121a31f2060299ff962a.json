@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-2160",
+  "response_sha256": "e67403db106d609d72f954edfd1b7f7318d22899a081121a31f2060299ff962a",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the reviewed grade-3 span command.go:1560-1576, anchor \"// IsAvailableCommand determines if a command is available as a non-help command\". The response reproduces that span's conditions exactly: not Deprecated, not Hidden, and not the parent's help command, and states these are what gate appearance in the \"Available Commands\" section. It also covers the substance of the second grade-3 span, command.go:1302-1329 (anchor \"// AddCommand adds one or more commands to this parent command.\"), by stating that the entry is created by attaching the command as a subcommand of the parent so that it lands in the parent's c.commands slice — a genuinely equivalent statement of the caller operation, arrived at from the bundle's RemoveCommand/AddGroup neighbourhood rather than from AddCommand itself, which the bundle did not include. Nothing in the response contradicts either span.\n\nAnswers the question asked: yes — it describes how to make a new entry appear under \"Available Commands\", not a nearby question about help templates or the help command.\n\nGrounded in the bundle: yes. It cites command.go:1617 / snippet e66 (lines 1611-1623, HasAvailableSubCommands, \"need to be shown in the usage/help default template under 'available commands'\"), command.go:1562 / snippet e68 (lines 1556-1568, IsAvailableCommand, including the Deprecated/Hidden and parent helpCommand guards), command.go:1229 / snippet e65 (InitDefaultHelpCmd), command.go:1362 / snippet e70 (RemoveCommand filtering c.commands), evidence e17 (command.go:1052/1068, ExecuteC), and site/content/user_guide.md:492 / snippet e67. Every one of those paths, line numbers, ref_ids and quoted snippet strings appears verbatim in the bundle bytes; no cited evidence is absent from them and no claim is supplied from outside the bundle.\n\nThe claim is checkable and unhedged, and the response is neither INSUFFICIENT nor empty.",
+  "graded_at": "2026-09-05T14:03:44Z",
+  "sha256": "6f4801c0535a3f4c16281db3c3a7c6fa27d7350eb9a48e432665232c41f00250"
+}

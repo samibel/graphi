@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-298",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "15614063ef1772d6d4c3aff0a69017f5d7a539d3c4114d876d695f11d0315b2d",
+  "bundle_sha256": "e317b5a070369ddef0046cdccd725d705b969bf397bc946e145080c4c542a728",
+  "prompt_sha256": "826239353ba7dc9ff207cc728e14f707483bd23e2775a71b774abd0378836978",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT the response shows that Command.Help() (command.go:473, snippet: \"func (c *Command) Help() error {\\n\\tc.HelpFunc()(c, []string{})\\n\\treturn nil\\n}\") only invokes HelpFunc and returns nil, and none of the other evidence (HelpFunc at command.go:452, InitDefaultHelpCmd at command.go:1229, the Command struct at command.go:51, the \"--help\" flag constant in command_test.go:2572, or the user_guide.md/active_help.md doc excerpts) shows any os.Exit call, early-return-from-Execute logic, or documented mechanism for causing the program to exit after --help runs, so there is no basis in this response for how to make --help exit.",
+  "responded_at": "2026-09-05T13:54:10Z",
+  "sha256": "4329bea2601701b4ec6c86f691fdfb0b8825691ef0dc11b9c3b18adf9e51825a"
+}

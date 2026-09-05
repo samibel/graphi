@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1025",
+  "response_sha256": "23d996e1a54247ee352cb3c51690330d15430d5df116c27557f6fee1b9d297a6",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "fail",
+  "rationale": "Query ci-1025 (\"Is there a way to escape flag input?\"). The response is present and non-empty, so it is gradable rather than a failure by rule.\n\nChecked against the single reviewed grade-3 span: command.go:236-238, anchor \"DisableFlagParsing disables the flag parsing.\" — the mechanism by which every flag is handed to the command as an argument instead of being parsed.\n\nThe response makes no claim matching that span. It opens with \"INSUFFICIENT\" and states that \"there is no basis here to say whether or how flag input can be escaped.\" Rubric fail criterion 4 applies directly: a response that says it cannot answer (INSUFFICIENT) is an honest answer and a failed one. It also fails pass criterion 2 (substantively correct), since it asserts no checkable claim consistent with the DisableFlagParsing span, and pass criterion 1 in effect, since it declines to answer the question asked.\n\nBundle evidence the response did cite (accurately, and all genuinely present in the given bytes): Command.Traverse at command.go:790 (item ref 1879a67fa2cb83f9, snippet e71), Command.Flag at command.go:1795 (544c86d495793fa1, snippet e72), Command.Flags at command.go:1643 (270294113953ddc9, snippet e76), Command.ParseFlags at command.go:1819 (5270e37fbdabefc2), plus doc.genFlagResult (doc/yaml_docs.go:149), doc.manPrintFlags (doc/man_docs.go:159) and cobra.writeRequiredFlag (bash_completions.go:593). So grounding (criterion 3) is satisfied, but grounding alone does not pass; the response's own reading of that evidence is that it does not answer the question, and the bundle indeed carries no snippet covering command.go:236-238 or DisableFlagParsing. The result is a correctly-reasoned refusal, which the rubric scores as FAIL.",
+  "graded_at": "2026-09-05T13:59:05Z",
+  "sha256": "015b514aff476e376880546b9c94b1f8b83fdb55b497179aaca25694e7985b79"
+}

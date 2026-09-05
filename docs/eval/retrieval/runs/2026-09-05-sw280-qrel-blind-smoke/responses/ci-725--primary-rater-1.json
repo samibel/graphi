@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-725",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a1a6bc05f2a5060552a84cc9767127dbba6d901b98e75775ccaa940b1b81d61e",
+  "bundle_sha256": "b93ed4d4d632762742b3a162f5c10c102ff379e60b543d3b9f8a4e54bba7755f",
+  "prompt_sha256": "e0a853e3c9cee84e1ed37204965a0795f7883330bcf1d31c3eea56d73d62c7d2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To make rootCmd behave as one of its children, set the `TraverseChildren` field to `true` on the root Command struct.\n\nThis is evidenced by multiple test cases in the response:\n\n1. **TestTraverseWithBadChildFlag** (command_test.go:2247, e52): `rootCmd := \u0026Command{Use: \"root\", TraverseChildren: true}`\n\n2. **TestTraverseNoParentFlags** (command_test.go:2209, e53): `rootCmd := \u0026Command{Use: \"root\", TraverseChildren: true}`\n\n3. **TestTraverseWithParentFlags** (command_test.go:2187, e56): `rootCmd := \u0026Command{Use: \"root\", TraverseChildren: true}`\n\nAdditionally, children must be added to the root command using the `AddCommand` method (evidenced in e54 and e55): `rootCmd.AddCommand(childCmd)`\n\nWhen `TraverseChildren: true` is set on the root Command, it enables the root to traverse into and delegate behavior to its child commands.",
+  "responded_at": "2026-09-05T13:55:27Z",
+  "sha256": "99fc1ae30ef501ac992fdf1ffc40f3e4fb653e7e57f8bb488519f0809a5c592f"
+}

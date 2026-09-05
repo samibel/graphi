@@ -123,6 +123,10 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		// SW-270: before/after of the bare-filename exact-path rule on the
 		// dev split; both sides carry the pinned static selector stamp.
 		"docs/eval/retrieval/runs/2026-09-04-sw270-bare-filename-path-rule",
+		// SW-280: the qrel-blind smoke evaluation's 64 preserved
+		// task_context/2 bundles carry the pinned static selector stamp, so a
+		// rotation invalidates the bundles the 31/64 pass count describes.
+		"docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)

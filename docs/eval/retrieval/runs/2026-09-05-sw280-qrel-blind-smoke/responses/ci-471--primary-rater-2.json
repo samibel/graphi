@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-471",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "8a35f380d06b5cfd4a6e5b6d6445cef34222bf334a549021a108854fdaab0da2",
+  "bundle_sha256": "bed3079b4a511681f0881006da888e91718941e9974fea680dc90c4eec9a77f5",
+  "prompt_sha256": "8a9596f5dd12a682a80ef9884dff8bce8407db1c43269b276b6be2e6542de5ad",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Set the `Args` field on your `cobra.Command` to one of the built-in `PositionalArgs` validator functions defined in args.go; the framework invokes it for you (via `c.Args(c, args)`, called from command.go around line 1141-1143) before running the command.\n\nThe response's snippets show the concrete options:\n\n- `cobra.ExactArgs(n int)` (args.go:94, snippet e54): returns a `PositionalArgs` closure that errors unless `len(args) != n` is false — i.e. requires exactly n args: `fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))`.\n- `cobra.MinimumNArgs(n int)` (args.go:74, snippet e57): errors if `len(args) \u003c n` — \"requires at least %d arg(s), only received %d\".\n- `cobra.RangeArgs(min, max int)` (args.go:104, snippet e53): errors if `len(args) \u003c min || len(args) \u003e max` — \"accepts between %d and %d arg(s), received %d\".\n- `cobra.ArbitraryArgs` (args.go:68/74 area, snippet e57): never errors, i.e. no enforcement.\n\nAll of these have signature `func(cmd *Command, args []string) error` matching the `PositionalArgs` type declared at args.go:22 (`type PositionalArgs func(cmd *Command, args []string) error`, snippet e59).\n\nUsage, per site/content/user_guide.md:367 (snippet e56): \"Validation of positional arguments can be specified using the `Args` field of `Command`.\" That section is titled \"Positional and Custom Arguments\" and lists the built-in validators under \"Number of arguments\", starting with `NoArgs` - report an error if there are any positional args (the doc snippet is truncated after that first bullet, so the remaining bullet list for ExactArgs/MinimumNArgs/MaximumNArgs/RangeArgs isn't shown verbatim in this response, but their implementations above confirm the mechanism).\n\nSo concretely, to enforce the number of required arguments you write:\n\n    cmd := \u0026cobra.Command{\n        Args: cobra.ExactArgs(2), // or MinimumNArgs(n), RangeArgs(min, max), etc.\n        ...\n    }\n\nand Cobra calls that function with the parsed positional args, returning an error (which aborts execution) if the count doesn't match.",
+  "responded_at": "2026-09-05T13:54:54Z",
+  "sha256": "57278e853eadb0104a2bd00f5f76e4ae3ee4b615a6937a224e8709c9890e1e68"
+}

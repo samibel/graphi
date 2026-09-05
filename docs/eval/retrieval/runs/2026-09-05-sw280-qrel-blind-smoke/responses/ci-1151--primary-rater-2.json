@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1151",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "66b73c55d39c7cb65f38837b62f3ba5edfd1a85511e79695b4b4e7aaa94cda8a",
+  "bundle_sha256": "2dc4ab1ddbae8683ca121ac03d1268b3c92cdfbfeb9f6fb53dcb687331768a4c",
+  "prompt_sha256": "9c1152f2bc2c5b820d4bf783c1bd61d24fa26df24c2bf24399f63ba21f7a4d1f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response shows how a command's displayed name is derived (cobra.Command.Name(), command.go:1496, snippet e134: \"Name returns the command's name: the first word in the use line\" — i.e. name is parsed from c.Use up to the first space) and how the root command is located (cobra.Command.Root(), command.go:861, snippet e135, which walks up via Parent()/HasParent() until no parent remains), but it contains no field, option, or documented mechanism for setting an application name that is distinct from the root command's Use/Name. The only place \"app\" appears is as a generic placeholder in site/content/user_guide.md:492 (\"This will be called when a user runs 'app help'\"), which is prose describing usage patterns, not a way to configure a separate app name. There is nothing in the evidence (e.g., no Annotations field, no AppName/DisplayName option, no doc/cmd_test.go usage showing this) that answers how to decouple the app name from the root command.",
+  "responded_at": "2026-09-05T13:50:16Z",
+  "sha256": "ea3769cca8691bc7ddd7cdf9970fed40842568b32cc991a5e6c8d845324fd855"
+}

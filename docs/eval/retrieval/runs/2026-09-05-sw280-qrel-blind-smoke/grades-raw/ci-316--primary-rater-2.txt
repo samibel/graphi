@@ -1,0 +1,11 @@
+PASS
+
+Checked against the single reviewed grade-3 span for ci-316: command.go:1668-1693, anchor "c.lflags.SortFlags = c.Flags().SortFlags" (LocalFlags() copies the command's own Flags().SortFlags onto the local flag set that help/usage renders, so setting it false on one command disables flag sorting for that command only).
+
+1. Answers the question asked. The question is whether flag sorting can be disabled for a given command; the response answers "Yes" and names the per-command control, explicitly distinguishing it from the package-level EnableCommandSorting (which sorts subcommands, not flags). It does not drift to the neighbouring command-sorting question.
+
+2. Substantively correct. The response's claim — each Command's own pflag.FlagSet, obtained via that command's Flags(), has a SortFlags field settable to false to stop alphabetical sorting of that command's flags in help/usage, and this is per-command rather than global — is the same mechanism the grade-3 span records. It states the assignment target (c.Flags().SortFlags = false) whose value the anchor line propagates into c.lflags; nothing in the key contradicts it, and its explicit "not a global switch" note matches the span's "for that command only" reason.
+
+3. Grounded in the bundle. Every citation appears in the given bytes: evidence e162 (command_test.go:2129-2141, the TestSortedFlags snippet whose doc comment reads "if cmd.LocalFlags() is unsorted when cmd.Flags().SortFlags set to false" and whose body contains "c.Flags().SortFlags = false") — quoted verbatim and correctly attributed to ref_id eac8a74ffa239f98 / command_test.go:2135; e159 (command.go:1637-1649, the Flags() definition, cited for the per-command FlagSet claim); e161 (cobra.go:53-65, EnableCommandSorting, quoted accurately for the contrast); and e158 (command.go:1287-1299, Command.Commands()). The load-bearing quote is reproduced faithfully from the bundle bytes, so the answer is supplied by the bundle rather than from prior knowledge of Cobra.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, cites only material present in the bundle, is not INSUFFICIENT, and makes a definite checkable claim.

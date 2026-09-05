@@ -1,0 +1,15 @@
+PASS
+
+Query ci-1221 ("How can I set a version dynamically?"), response 7f167f8940fd5b8f71b8e5eac2bb1e8fbfe3c4bbbe0962cbb0af7ada2c24617d.
+
+1. Answers the question asked. The response gives a procedure for setting the version — assign a string to the Version field on the root command, optionally customise the output with SetVersionTemplate — rather than answering a nearby question about flags or completions generally.
+
+2. Substantively correct. Checked against reviewed grade-3 span command.go:108-112 (anchor "Version defines the version for this command."), which holds that assigning the settable Version field is the mechanism, and a non-empty value causes a version flag to be added. The response's core claim ("set the `Version` field on the root command") matches that span. It is additionally consistent with grade-3 span command.go:1200-1224 (anchor "func (c *Command) InitDefaultVersionFlag() {"): the response states the version flag is initialised in InitDefaultVersionFlag at command.go:1204 and that it checks Version and returns early when empty, which is the source-defined condition in that span. Nothing in the response contradicts any grade-3 span; it does not reach the ordering point of span command.go:883-886 (late initialisation to allow caller override), but consistency with one span is what the rubric requires.
+
+3. Grounded in the bundle. Every citation appears in the exact bytes the rater was given:
+   - site/content/user_guide.md:592 — evidence e41, snippet span 586-598, containing verbatim "Cobra adds a top-level '--version' flag if the Version field is set on the root command." and "The template can be customized using the `cmd.SetVersionTemplate(s string)` function." Both quoted strings match the bundle text exactly.
+   - command.go:353 — evidence e44, snippet span 347-359, containing "func (c *Command) SetVersionTemplate(s string)".
+   - command.go:1204 — evidence e43, snippet span 1198-1210, containing "func (c *Command) InitDefaultVersionFlag() {" and "If c.Version is empty, it will do nothing." plus the `if c.Version == ""` early return the response describes.
+   The response names the evidence ref_ids (e41, e43, e44) as they appear in the bundle. No cited path, line or quotation is absent from the bundle, and no claim is supplied from outside it.
+
+No fail criterion applies: the response is on-question, contradicts no grade-3 span, is not INSUFFICIENT, is not a refusal or empty, and makes a concrete checkable claim rather than hedging.

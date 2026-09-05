@@ -1,0 +1,15 @@
+Set the `Use` field of your root command to be different from the app name. The `Command.Name()` method (command.go:1496) extracts the command's name from the `Use` field by taking the first word. According to the snippet evidence (e134):
+
+```
+// Name returns the command's name: the first word in the use line.
+func (c *Command) Name() string {
+	name := c.Use
+	i := strings.Index(name, " ")
+	if i >= 0 {
+		name = name[:i]
+	}
+	return name
+}
+```
+
+This means your app name (e.g., the binary name or program name) is independent from the root command's `Use` field, which determines the command name shown in help text and usage messages. You can assign different values to these independently during initialization, as shown in the test example (doc/cmd_test.go:47) with `rootCmd`.

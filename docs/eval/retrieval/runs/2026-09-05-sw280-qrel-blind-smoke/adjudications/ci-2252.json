@@ -1,0 +1,37 @@
+{
+  "query_id": "ci-2252",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-2252",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "107b99acf4ccab2840ee697d53f0f9108e79d3f8d9eae02466e5650a188f8fb4",
+    "bundle_sha256": "da859ff7fa299399cc75e29d7698f3af074eea44c4ca217333b05b341a662cee",
+    "prompt_sha256": "bc7f932fceeb304110c404224be9b5520ec77ca2aab827a5ae59466b1402dd98",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "INSUFFICIENT The response only shows the help dispatch plumbing (cobra.Command.Help at command.go:473, HelpFunc at command.go:452, HelpTemplate at command.go:585, plus the tail of the usage template at command.go:579-581) and nothing about any ordering, positioning, or \"top\" placement of help (no setter such as SetHelpFunc/SetHelpTemplate body, no template head, no sort/ordering code, and no docs), so the mechanism for placing help at the top cannot be determined from it.",
+    "responded_at": "2026-09-05T14:08:34Z",
+    "sha256": "fbeab5ce41dbed27ba1baa2d98654d3e46e021374219791e58831dc428c38eb6"
+  },
+  "disclosure": {
+    "query_id": "ci-2252",
+    "adjudicator_response_sha256": "fbeab5ce41dbed27ba1baa2d98654d3e46e021374219791e58831dc428c38eb6",
+    "disclosed_artifact_sha256": [
+      "0eb2a4ceb08e1b8741c268f87da9096d2cc1e106387473a2302932ff09812a8a",
+      "8169809869f6a94774a78eac9a803dbe4f60a5704ae263f51bfee07ac579f2c8",
+      "b1e67005d91470e3083f4fcb170965f67e8430c6dfee7996a13a1f0981fa1fff",
+      "e76f9e4f6e086edad30f0d342450eb57c020ca7e2849fbf9cea95d8da22901e8"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

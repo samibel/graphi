@@ -1,0 +1,17 @@
+Yes, for the error output that a Command emits — it is redirectable, so you can silence it by pointing the command's error writer at a writer that discards what it receives. Not for the package-level helpers, which write to os.Stderr directly.
+
+Evidence in the response:
+
+1. command.go:283 (snippet e71, span 277-289): `SetOutput(output io.Writer)` — comment: "SetOutput sets the destination for usage and error messages. If output is nil, os.Stderr is used. Deprecated: Use SetOut and/or SetErr instead". Body sets both `c.outWriter = output` and `c.errWriter = output`. So the error destination is a configurable field (`errWriter`), and the deprecation note names `SetErr` as the current way to set it (the body of SetErr itself is not in the response; only this comment references it).
+
+2. command.go:385 (snippet e72, span 379-391): `ErrOrStderr()` returns `c.getErr(os.Stderr)` — i.e. the configured err writer, falling back to os.Stderr only when none is set (getErr is listed as a callee at command.go:404, e14).
+
+3. command.go:1411 (snippet e74, span 1405-1417): `PrintErr` does `fmt.Fprint(c.ErrOrStderr(), i...)`, and `PrintErrln` calls `PrintErr`. Comment: "Print to the defined Err output, fallback to Stderr if not set." So the Command's error printing goes through the configurable writer; supplying a discarding writer via SetErr (or the deprecated SetOutput) removes it. Other callers of ErrOrStderr listed in the response (InitDefaultHelpCmd at command.go:1263/1267, UsageString at command.go:488, initCompleteCmd at completions.go:251) route through the same writer.
+
+Limits — output you cannot remove this way:
+
+- cobra.go:233 (snippet e73, span 227-239): `CheckErr(msg interface{})` does `fmt.Fprintln(os.Stderr, "Error:", msg)` then `os.Exit(1)` — hard-coded to os.Stderr, not the Command's writer. `WriteStringAndCheck` (cobra.go:241, e75) calls CheckErr.
+
+- completions.go:893 (snippet e69, span 887-899): `CompError(msg)` prefixes "[Error] " and calls `CompDebug(msg, true)` ("prints the specified completion message to stderr"); `CompErrorln` (completions.go:899) is the newline variant. The `true` argument is `printToStdErr`, and nothing in the response shows a way to turn it off from the caller (the body of CompDebug at completions.go:864 is not included).
+
+Note: the snippet for `ErrOrStderr` and `SetOutput` show the mechanism, but the response does not show the `SetErr` implementation or any explicit "discard" writer in the repository; the discarding writer would have to be supplied by the caller.

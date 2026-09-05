@@ -1,0 +1,9 @@
+Set the command's `Args` field to a `PositionalArgs` validator that requires at least one (or N) positional arguments — the built-in `cobra.MinimumNArgs` — rather than adding a "required argument" some other way.
+
+Evidence:
+- `args.go:74` (snippet spans 68-80) defines `MinimumNArgs`: `func MinimumNArgs(n int) PositionalArgs { return func(cmd *Command, args []string) error { if len(args) < n { return fmt.Errorf("requires at least %d arg(s), only received %d", n, len(args)) } return nil } }`. Assigning this to a command's `Args` field (e.g. `Args: cobra.MinimumNArgs(1)`) makes that many positional arguments required.
+- `args.go:16-28` shows the type this fits: `type PositionalArgs func(cmd *Command, args []string) error`, the signature any custom/built-in validator (including `MinimumNArgs`) must satisfy.
+- `command.go:1139` (`ValidateArgs`, snippet 1133-1145) shows how the field is consumed: `if c.Args == nil { return ArbitraryArgs(c, args) }; return c.Args(c, args)`. So if you don't set `Args`, `ArbitraryArgs` (`args.go:69`, "ArbitraryArgs never returns an error") is used instead and no argument is required — you must explicitly set `Args` to enforce a required argument.
+- `site/content/user_guide.md:367` (snippet 361-373), section "Positional and Custom Arguments": "Validation of positional arguments can be specified using the `Args` field of `Command`. The following validators are built in: - Number of arguments: - `NoArgs` - report an error if there are any positional args." (the built-in list continues past the truncated snippet, which is where `MinimumNArgs`/`ExactArgs`-style validators are documented).
+
+So concretely: on your `*cobra.Command`, set `Args: cobra.MinimumNArgs(1)` (or a custom `func(cmd *cobra.Command, args []string) error` matching `PositionalArgs`) to require at least one argument; leaving `Args` nil falls back to `ArbitraryArgs`, which accepts any number of arguments including zero.

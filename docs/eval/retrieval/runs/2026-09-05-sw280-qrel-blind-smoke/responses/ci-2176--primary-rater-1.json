@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-2176",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "a4b453f3b891ef2fd7508ba2ad1f394389c0141d3e29a37d050b14ffc3fa23ec",
+  "bundle_sha256": "c2ba2790a9820865c7e730ca024e3bc84b53916d45111e77c880bd4c8d9fd3ec",
+  "prompt_sha256": "2a4d22faba75ec5f610736a4669a9f8c7d97bc8a37ebeb3c6ef18da1851d7737",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains command execution methods but lacks evidence of the mechanism used to record or persist executed commands and parameters.",
+  "responded_at": "2026-09-05T13:53:20Z",
+  "sha256": "e3ffde86e56c820643b14e873eca87aff4746a2a579878cab11e99d0a693b8ef"
+}

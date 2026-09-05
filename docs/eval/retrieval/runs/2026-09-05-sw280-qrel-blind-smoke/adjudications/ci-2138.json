@@ -1,0 +1,37 @@
+{
+  "query_id": "ci-2138",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "ci-2138",
+    "rater_id": "adjudicator-1",
+    "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+    "model": "model alias \"fable\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+    "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+    "query_text_sha256": "cd50880edf52091bab02583410346988e102c272a1c8dd33b8ac4e9ca411a58a",
+    "bundle_sha256": "990808473de839c9d1661f5c1d0cf4cba0cdb94e246655b11d29c5a1a9ba4b18",
+    "prompt_sha256": "5afe5fc7497dfa56f5176bc9ffdfa324f0660744a8e65875bed7ad64f84629aa",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "A wrong (unknown) subcommand is handled by the default positional-args validator `legacyArgs` in args.go:28, which is the function the response surfaces as a primary seed (evidence e5, snippet e134, args.go:22-34).\n\nWhat the response shows about it:\n\n- `legacyArgs(cmd *Command, args []string) error` is a `PositionalArgs` validator (args.go:22: `type PositionalArgs func(cmd *Command, args []string) error`).\n- Its doc comment (args.go:24-27) states the policy: root commands with no subcommands accept arbitrary arguments; root commands *with* subcommands \"will do subcommand validity checking\"; subcommands always accept arbitrary arguments.\n- The body (args.go:29-34) first returns nil when `!cmd.HasSubCommands()` (graph edge e18, args.go:30 -\u003e `Command.HasSubCommands`, command.go:1556, which is `len(c.commands) \u003e 0` per snippet e137), then reaches the comment \"root command with subcommands, do subcommand checking.\" at args.go:34.\n- The confirmed graph edges show what the check at that point uses to build its result: `Command.HasParent` is called at args.go:35 (e29) and `Command.CommandPath` at args.go:36 (e27). So the wrong-subcommand branch is the root-only case (no parent) and the error it produces incorporates the command path.\n\nHow it fits into execution: `Command.ExecuteC` (command.go:1052, seed e1/e130) resolves the target command via `Command.Find` (command.go:726, snippet e135, \"Find the target command given the args and command tree ... Only searches down\"), with the call recorded at command.go:1090 (e6). `Find` walks the tree with `stripFlags` and returns the deepest matching command plus remaining args; the leftover unmatched argument is then what `legacyArgs` rejects.\n\nCaveat on completeness: the snippet for `legacyArgs` is truncated at args.go:34, so the exact error construction (the message text and the `return` at approximately args.go:35-37) is not in the response, only the fact that it calls `HasParent` and `CommandPath` there. The response also does not include the part of `ExecuteC` that invokes the args validator or how a `Find` error is surfaced. Note that `flagCompError.Error` (completions.go:50, snippet e132, \"Subcommand '...' does not support flag '...'\") is a shell-completion flag error, not the wrong-subcommand path.",
+    "responded_at": "2026-09-05T14:08:46Z",
+    "sha256": "d78bf89445928987f5beca68c66f1e855b9c98073bdce11fe10509eba257b846"
+  },
+  "disclosure": {
+    "query_id": "ci-2138",
+    "adjudicator_response_sha256": "d78bf89445928987f5beca68c66f1e855b9c98073bdce11fe10509eba257b846",
+    "disclosed_artifact_sha256": [
+      "46f841f795bc3a042d14385603f651652d3c4c2d2c9c5066090bfce1079dfe03",
+      "6ca292ee6430d0e98687b5077e2cab2f20a5213b23fa408c4631c6d0da49bb59",
+      "d9d61586ed99f9a399101c92d65ff634935f91554a10d7ef08f9f0f5443fae3b",
+      "ea383859b16237200a2cc5b901e054701fccf0f95308ddb6ead3518d77338b2a"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}

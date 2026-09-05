@@ -1,0 +1,1 @@
+INSUFFICIENT The provided evidence shows flag-level hiding mechanisms (`flag.Hidden`) but does not explicitly demonstrate whether default values can be selectively hidden from help output independently of the flag itself.

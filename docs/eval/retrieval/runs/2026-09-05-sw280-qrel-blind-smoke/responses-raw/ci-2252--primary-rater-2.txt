@@ -1,0 +1,40 @@
+Cobra doesn't have a distinct "help at the top" setting — help propagates upward through the command tree's parent chain, so "placing" it at the top means defining it on the root command.
+
+To output help you call `Help()` (command.go:473, snippet e37):
+```
+// Help puts out the help for the command.
+// Used when a user calls help [command].
+// Can be defined by user by overriding HelpFunc.
+func (c *Command) Help() error {
+	c.HelpFunc()(c, []string{})
+	return nil
+}
+```
+
+`Help()` delegates to `HelpFunc()` (command.go:452-458, snippet e38):
+```
+func (c *Command) HelpFunc() func(*Command, []string) {
+	if c.helpFunc != nil {
+		return c.helpFunc
+	}
+	if c.HasParent() {
+		return c.Parent().HelpFunc()
+	}
+```
+If the current command has no `helpFunc` of its own, it walks up via `HasParent()`/`Parent()` (command.go:1632, snippet e42; command.go:1843) to its parent's `HelpFunc()`, and so on until it reaches the top-level (root) command — or the built-in default if nothing was ever set.
+
+The help text template works the same way — `HelpTemplate()` (command.go:585-591, snippet e40):
+```
+func (c *Command) HelpTemplate() string {
+	if c.helpTemplate != "" {
+		return c.helpTemplate
+	}
+
+	if c.HasParent() {
+		return c.parent.HelpTemplate()
+```
+Again: if the command doesn't define its own `helpTemplate`, it inherits from its parent, recursing to the top.
+
+So concretely, to "place help at the top," you call `SetHelpFunc`/set the help template on the root command (the top of the command tree) rather than on each subcommand. Every subcommand that hasn't overridden its own help function/template will inherit that top-level definition, because `HelpFunc()` and `HelpTemplate()` both bubble up the parent chain until they hit the command at the top that has one defined.
+
+(For reference, the `--help` flag itself is defined as `const HelpFlag = "--help"` in command_test.go:2572, and Cobra's separate "Active Help" feature — shell-completion hints, not command help — is documented starting at site/content/active_help.md:1.)

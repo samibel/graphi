@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1861",
+  "rater_id": "primary-rater-2",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"sonnet\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "e0030e004db845a74dfa173469990e16fdf8ea23e84f3efdb3a27e49c57922ac",
+  "bundle_sha256": "5be78440ef030b1f5c6b26f468dbab19aa14b29ce148b0b5eb9ae5b70ae2c41a",
+  "prompt_sha256": "891af2e3d6b82234ddd40edd4a0c20ebe3b3be3ec766c5eefeb616eed1fafc0f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Sub-commands are discovered by walking the unexported `commands []*Command` slice stored on each `cobra.Command` (type defined at command.go:51), and execution is kicked off through `Execute`/`ExecuteC`.\n\nDiscovery:\n- `HasSubCommands` (command.go:1556-1558): `func (c *Command) HasSubCommands() bool { return len(c.commands) \u003e 0 }` — cheapest existence check.\n- `HasAvailableSubCommands` (command.go:1617 area, snippet at 1611-1623): iterates `for _, sub := range c.commands { if sub.IsAvailableCommand() { return true } }`, i.e. it dynamically walks the child list and filters out deprecated/hidden/help commands via `IsAvailableCommand` (command.go:1562, snippet 1556-1568): a command is unavailable if `len(c.Deprecated) != 0 || c.Hidden`, or if it is the parent's auto-generated help command (`c.HasParent() \u0026\u0026 c.Parent().helpCommand == c`).\n- `HasHelpSubCommands` (command.go:1603, snippet 1597-1609) does the analogous walk but tests `sub.IsAdditionalHelpTopicCommand()` to find help topics.\n- `InitDefaultHelpCmd` (command.go:1229, snippet 1223-1235) also checks `HasSubCommands()` before lazily attaching a default `help` command as one of `c.commands`.\n\nExecution:\n- `Execute()` (command.go:1038, snippet 1032-1044): `func (c *Command) Execute() error { _, err := c.ExecuteC(); return err }`.\n- `ExecuteContext`/`ExecuteContextC` (command.go:1030 and 1046, snippet 1046-1058) are thin wrappers that set `c.ctx` and then also call into `ExecuteC()`.\n- `ExecuteC()` (command.go:1052) is the real entry point: it defaults `c.ctx` to `context.Background()` if unset, then — per the comment in the snippet — \"Regardless of what command execute is called on, run on Root only\" when `c.HasParent()` is true, i.e. it walks up to the root command before doing the actual dispatch. The evidence graph shows `ExecuteC` calling out to `Traverse` (command.go:790, referenced at command.go:1088) for parsing/traversing the command tree, plus `checkCommandGroups`, `InitDefaultHelpCmd`, `InitDefaultCompletionCmd` (completions.go:683), and various `Print*`/`DebugFlags` helpers, but the response's snippet for `ExecuteC` is truncated at line 1058 (right after the `HasParent()` check begins), so the exact subcommand-matching/argument-splitting logic inside `ExecuteC` (beyond calling `Traverse`) is not included in this response.\n\nIn short: check/enumerate via `c.commands` + `HasSubCommands`/`HasAvailableSubCommands`/`IsAvailableCommand`, then execute via `Command.Execute()` -\u003e `Command.ExecuteC()`, which normalizes to the root command and uses `Traverse` (command.go:790) to walk the discovered sub-command tree before running the matched command.",
+  "responded_at": "2026-09-05T13:52:32Z",
+  "sha256": "bb45cf27d6f7c9a98143b1281b9eb3c58377d48a2e78997b85778fd509c51f97"
+}

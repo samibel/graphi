@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1894",
+  "response_sha256": "4433b37e1b48e36dd1899cf16956b5bf261141fb1b3016af5173c918f35048f0",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Checked against the single reviewed grade-3 answer span for ci-1894: completions.go:104-116, anchor \"DisableDescriptions bool\" — the caller-facing switch CompletionOptions.DisableDescriptions, which \"turns off all completion descriptions for shells that support them\", set on the root command's CompletionOptions field (command.go:201-203).\n\n1. Answers the question asked. The question is \"how to hide the description in the completion\"; the response answers exactly that, giving the way to suppress completion descriptions rather than a nearby question about generating or customizing completions.\n\n2. Substantively correct. The response's primary claim — set `rootCmd.CompletionOptions.DisableDescriptions = true` — is the same mechanism as the grade-3 span's anchor `DisableDescriptions bool` on `CompletionOptions`, and its gloss (\"turn off all completion descriptions for shells that support them\") matches the span's reason text. Its secondary claim, the `--no-descriptions` flag, is an additional per-invocation route and does not contradict the key; the mention of `DisableNoDescFlag` is correctly described as suppressing creation of that flag, not as hiding descriptions. Nothing in the response is contradicted by the answer key.\n\n3. Grounded in the bundle. Every citation is present in the bundle bytes:\n   - site/content/completions/_index.md:117 / snippet e31, which literally contains \"To tell Cobra to completely disable descriptions for completions:\" and \"rootCmd.CompletionOptions.DisableDescriptions = true\";\n   - completions.go:100 / snippet e30, which contains `compCmdNoDescFlagName = \"no-descriptions\"` and `compCmdNoDescFlagDesc = \"disable completion descriptions\"`;\n   - completions.go:105 / snippet e32, which contains the `CompletionOptions` struct with `DisableNoDescFlag bool` and the line `// DisableDescriptions turns off all completion descriptions for shells`.\n   No claim is supplied from outside the bundle.\n\nNo fail criterion applies: the response is on-question, contradicts no grade-3 span, cites bundle-present evidence, does not answer INSUFFICIENT, and makes a definite checkable claim rather than hedging.",
+  "graded_at": "2026-09-05T14:02:38Z",
+  "sha256": "b4624f87ad1a6fb4a6a479d96a2a6cf9f4f3d240cbef93d2c23be190e3e765b6"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "ci-1368",
+  "response_sha256": "4b31e736230c50d4993c3ed31aeadc49c6aa45cdfad47126f75b064f66a9b323",
+  "grader_id": "grader-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"opus\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "rubric_sha256": "cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2",
+  "outcome": "pass",
+  "rationale": "Question asked: \"How to write custom help command?\" The response addresses exactly that — how to supply your own help command — not a nearby question.\n\nChecked against grade-3 span command.go:327-330 anchor=\"func (c *Command) SetHelpCommand(cmd *Command) {\" (the operation for supplying your own help command). The response's primary claim is to use `cmd.SetHelpCommand(cmd *Command)` to provide your own Help command, which is consistent with that span's mechanism. It is additionally consistent with the second grade-3 span command.go:322-325 anchor=\"func (c *Command) SetHelpFunc(f func(*Command, []string)) {\" — the alternative route of replacing the render function — which the response covers by naming the HelpFunc override. It contradicts no reviewed span.\n\nGrounded in the bundle: the SetHelpCommand claim cites site/content/user_guide.md:541, which is present as evidence e4 and whose snippet e64 (span 535-547, \"### Defining your own help ... You can provide your own Help command or your own template for the default command to use with the following functions: ```go cmd.SetHelpCommand(cmd *Command)\") contains the literal call the response quotes. The HelpFunc claim cites command.go:473 with the quoted line \"Can be defined by user by overriding HelpFunc\", present as evidence e2 and verbatim inside snippet e62 (command.go span 467-479, the `func (c *Command) Help() error` comment block). Both citations therefore appear in the exact bytes the rater was given; nothing is supplied from outside the bundle.\n\nNo fail criterion applies: the response is not INSUFFICIENT, is not hedged, makes two checkable claims, and both are bundle-grounded and key-consistent.",
+  "graded_at": "2026-09-05T14:00:59Z",
+  "sha256": "799f5ff4874f213e7f80a9b0a3006f16e481891549622ad678bf99ae2db0e4d8"
+}

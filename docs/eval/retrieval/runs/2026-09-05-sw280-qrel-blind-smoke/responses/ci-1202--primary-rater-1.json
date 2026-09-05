@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "ci-1202",
+  "rater_id": "primary-rater-1",
+  "provider": "anthropic, via a fresh Claude Code subagent (subagent_type general-purpose)",
+  "model": "model alias \"haiku\" as resolved by this Claude Code harness; the exact model id behind the alias is chosen by the harness and is NOT independently verified in this record",
+  "pre_registration_sha256": "45849e5212292e0b524565f77589cdf7ef2356a7f5d761397a30ee1e9c8f4133",
+  "query_text_sha256": "acc172befdc6cd85a259cb321a17a9c828211de50c27ec2403fcf11ca2714fcd",
+  "bundle_sha256": "58bd78f014a8516b0dbdcf2c83d91c14a9e3d2c3bf98591a301fe6181aab6d3a",
+  "prompt_sha256": "47f32cf288ab46d0c0c0472b351ab8176157d6ea2388391d976d132c14f98c5d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "To add commands at runtime, use the `Command.AddCommand()` method in command.go:1303. As shown in the snippet, this method accepts one or more commands to add to a parent command:\n\n```go\n// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n    for i, x := range cmds {\n        if cmds[i] == c {\n            panic(\"Command can't be a child of itself\")\n        }\n        cmds[i].parent = c\n        // update max lengths\n```\n\nTo remove commands at runtime, use `Command.RemoveCommand()` at command.go:1362:\n\n```go\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n    commands := []*Command{}\nmain:\n    for _, command := range c.commands {\n        for _, cmd := range cmds {\n            if command == cmd {\n                command.parent = nil\n```\n\nCommands can be organized using `Command.AddGroup()` at command.go:1356 to group them logically.\n\nFor handling unknown commands, the validation logic is shown in `legacyArgs()` at args.go:28, which checks subcommand validity and determines whether to accept or validate arguments based on whether the command has subcommands.\n\nThe `Command.Commands()` method at command.go:1293 retrieves the sorted slice of child commands, and `Command.IsAdditionalHelpTopicCommand()` at command.go:1583 can help distinguish between regular and help-related commands.",
+  "responded_at": "2026-09-05T13:50:25Z",
+  "sha256": "6f46831471b7bb2c3a65ca25bd8b9ef5048bb1bf72bc1ddbab29c92ddd38a33c"
+}
