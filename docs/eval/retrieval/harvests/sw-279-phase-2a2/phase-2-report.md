@@ -548,8 +548,9 @@ already enforced at measurement time, now enforced at load time too.
    `annotator-A{1..5}-attestation.json` and `reviewer-R4-attestation.json`; each records its
    pre-rewrite digest in a `publication_note`, and **the pre-rewrite bytes are not retained**, so
    those "as produced" digests cannot be independently checked by anyone. Nothing else in those
-   files was changed. The other eight answerability attestations wrote repository-relative paths in
-   the first place and are committed exactly as produced.
+   files was changed. The other six of the twelve answerability attestations — `reviewer-R1`,
+   `R2`, `R3`, `R5`, and the re-annotation pass's `annotator-A6` and `reviewer-R6` — wrote
+   repository-relative paths in the first place and are committed exactly as produced.
 9. **Rejection evidence is cited, and the citations resolve, but the claims about them are not
    machine-checked.** See "How far 'positive, cited evidence' is machine-checked, exactly" above.
 
