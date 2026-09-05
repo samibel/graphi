@@ -61,7 +61,7 @@ ci-1086 is counted as a pass, and the bundle-only rule does not support it. The 
 - raised by the SW-280 round-1 review (Codex, blocking finding 5); independently reproduced against the committed response, grade and bundle artifacts
 
 - grades concerned: `5b1bb46b4589a195403c17e5176074a28d151b8090efd05d9fd33bf62056108a`, `345e75760fc58917f5ebef1034779a0dd04d5ddfe486608282857822b3f3b0df`
-- raised by SW-280 round-1 independent review (Codex), reproduced by the round-1 fix pass at 2026-09-05T00:00:00Z
+- raised by SW-280 round-1 independent review (Codex), reproduced by the round-1 fix pass at 2026-09-05T16:43:27Z
 
 ## Capture binding
 
@@ -134,7 +134,7 @@ Counts are authoritative; each stratum states its own `1/n` resolution.
 | grading_rubric | `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | true |
 | methodology | `docs/eval/retrieval/methodology.md` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | true |
 
-Compared at 2026-09-05T16:24:18Z. All match: true.
+Compared at 2026-09-05T16:43:35Z. All match: true.
 
 ## Capture provenance
 
