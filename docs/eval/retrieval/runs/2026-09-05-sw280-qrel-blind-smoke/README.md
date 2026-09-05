@@ -41,7 +41,7 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 | missing, empty or refused primary responses | 0 |
 | **RELEASE** | **NO** |
 
-- 31 of 64 queries passed, below the pre-registered k=56; there is no override, exception or waiver
+- the corrected pass count is 30 of 64, below the pre-registered k=56 (reviewed 31, corrected 30, and the release is decided on the smaller); there is no override, exception or waiver
 - 1 counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is 31 of 64 and the corrected count is 30 of 64, and the release is decided on the smaller of the two
 - the capture is not bound: the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes
 
@@ -134,7 +134,7 @@ Counts are authoritative; each stratum states its own `1/n` resolution.
 | grading_rubric | `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | `cd4d853ba57bd714ba1644be10c922cd84c4730b37b9bb66440feb6374ec08f2` | true |
 | methodology | `docs/eval/retrieval/methodology.md` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | `f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d` | true |
 
-Compared at 2026-09-05T16:43:35Z. All match: true.
+Compared at 2026-09-05T19:01:45Z. All match: true.
 
 ## Capture provenance
 

@@ -165,18 +165,29 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 // buildBlindEvalRunDir writes a complete, correctly ordered run directory with
 // n queries of which passes pass. It uses real repository files as the frozen
 // inputs so the end-of-run comparison genuinely reads them.
+//
+// The directory is created INSIDE the repository, and the frozen grading rubric
+// is a file inside it, because that is the shape every phase now requires: seal
+// and decide refuse a run directory that is not the one the precondition record
+// was frozen into, and the candidate binding's excluded path must be that same
+// directory. A fixture that lived in a temp directory outside the repository
+// would only prove those checks do not run.
 func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 	t.Helper()
 	root, err := repositoryRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
-	dir := t.TempDir()
+	dir, relRunDir := blindEvalFixtureRunDir(t, root)
 	read := retrieval.RepoFileSHA256Reader(root)
+	rubricPath := relRunDir + "/grading-rubric.md"
+	if err := os.WriteFile(filepath.Join(dir, "grading-rubric.md"), []byte("# fixture grading rubric\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	inputs := []struct{ role, path string }{
 		{"budgets", "docs/eval/retrieval-budgets.json"},
 		{"targets", "docs/eval/retrieval-targets.json"},
-		{"grading_rubric", "docs/eval/retrieval/README.md"},
+		{retrieval.PreconditionInputGradingRubric, rubricPath},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
 	precondition := retrieval.PreconditionRecord{
@@ -323,7 +334,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 			FrozenCandidateSHA:     precondition.CandidateSHA,
 			CandidateWorktreeClean: true,
 			CandidateMatchesFrozen: true,
-			CandidateExcludedPath:  "docs/eval/retrieval/runs/fixture",
+			CandidateExcludedPath:  relRunDir,
 			CheckoutSHA:            dataset.Dataset.RepoSHA,
 			CheckoutWorktreeClean:  true,
 		},
@@ -394,7 +405,39 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 			}
 		}
 	}
+	// The sidecar manifest, which the decision requires: without it a deleted
+	// capture provenance or a deleted concern record is indistinguishable from
+	// a run that never had one.
+	if _, err := retrieval.SealSidecarManifest(dir, pre); err != nil {
+		t.Fatal(err)
+	}
 	return dir
+}
+
+// blindEvalFixtureRunDir makes a throwaway run directory INSIDE the repository
+// and returns its absolute and repository-relative paths. It is removed when the
+// test ends, so the worktree it lives in stays clean.
+func blindEvalFixtureRunDir(t *testing.T, root string) (string, string) {
+	t.Helper()
+	parent := filepath.Join(root, "cmd", "retrieval-eval", "testdata")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	dir, err := os.MkdirTemp(parent, "blindeval-run-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		os.RemoveAll(dir)
+		// Remove is a no-op when another fixture still lives here, so the
+		// repository is left exactly as it was found.
+		os.Remove(parent)
+	})
+	rel, err := filepath.Rel(root, dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir, filepath.ToSlash(rel)
 }
 
 // M5: "the run directory must be inside the repository" was computed and never
@@ -508,5 +551,188 @@ func TestRetrievalEval_BlindEvalRefusesAPromptThatIsNotTheOneItPreRegistered(t *
 	}
 	if !strings.Contains(stderr.String(), "the pre-registered inputs rebuild to prompt") {
 		t.Errorf("stderr %q", stderr.String())
+	}
+}
+
+// N3 + N5, end to end: deleting the disclosed-concern record used to raise the
+// corrected count, and at the threshold that turns RELEASE: NO into
+// RELEASE: YES with nothing in the report to see. The manifest makes the
+// deletion a refusal, and the reason string names the count that actually fell
+// short.
+func TestRetrievalEval_BlindEvalRefusesADeletedDisclosedConcern(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := buildBlindEvalRunDir(t, 13, 13)
+
+	// The threshold itself: 13 of 13 against k=13 releases.
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("the at-k control did not release: exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "RELEASE: YES") {
+		t.Fatalf("the at-k control did not release: %s", stdout.String())
+	}
+
+	// Disclose one counted pass as unsupported. The corrected count is now 12
+	// of 13 and the release is decided on the smaller of the two.
+	artifacts, err := retrieval.LoadEvaluationArtifacts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	queryID := artifacts.PreRegistration.Queries[0].QueryID
+	var gradeSHAs []string
+	for _, grade := range artifacts.Grades {
+		if grade.QueryID == queryID {
+			gradeSHAs = append(gradeSHAs, grade.SHA256)
+		}
+	}
+	if len(gradeSHAs) == 0 {
+		t.Fatalf("query %s has no grade to raise a concern against", queryID)
+	}
+	concernsPath := filepath.Join(dir, retrieval.BlindEvalConcernsFile)
+	if err := retrieval.WriteBlindEvalJSON(concernsPath, []retrieval.GradingConcern{{
+		QueryID:     queryID,
+		Kind:        retrieval.ConcernCountedPassNotSupported,
+		GradeSHA256: gradeSHAs,
+		Summary:     "the fixture discloses this counted pass as unsupported by the bundle-only rule",
+		Evidence:    []string{"fixture"},
+		RaisedBy:    "fixture",
+		RaisedAt:    "2026-09-05T12:00:00Z",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := retrieval.SealSidecarManifest(dir, artifacts.PreRegistration); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code == exitOK {
+		t.Fatalf("a corrected count below k released: %s", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "RELEASE: NO") {
+		t.Errorf("stdout %q does not record RELEASE: NO", stdout.String())
+	}
+	// N5: the reviewed count is AT k, so a reason saying "reviewed count below
+	// k" would be false. The corrected count is the one that fell short.
+	if !strings.Contains(stdout.String(), "the corrected pass count is 12 of 13, below the pre-registered k=13") {
+		t.Errorf("stdout %q does not name the count that actually failed", stdout.String())
+	}
+
+	// N3: delete the disclosed concern. Before the manifest, this raised the
+	// corrected count back to 13 and released.
+	if err := os.Remove(concernsPath); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr)
+	if code == exitOK || strings.Contains(stdout.String(), "RELEASE: YES") {
+		t.Fatalf("deleting the disclosed concern produced a better outcome: exit=%d\nstdout: %s", code, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), retrieval.BlindEvalSidecarManifestFile) {
+		t.Errorf("stderr %q does not name the record that says the concern existed", stderr.String())
+	}
+}
+
+// N1 + N2, end to end: a candidate binding whose candidate_sha is not a commit
+// id and whose exclusion covers the whole repository was accepted as bound.
+func TestRetrievalEval_BlindEvalRefusesAFabricatedCandidateBinding(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := buildBlindEvalRunDir(t, 13, 13)
+
+	// Fabricate the provenance the way an operator who never had a real
+	// binding would: write it, then record the sidecars over it.
+	raw, err := os.ReadFile(filepath.Join(dir, retrieval.BlindEvalProvenanceFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var provenance retrieval.CandidateCaptureProvenance
+	if err := jsonUnmarshalStrict(raw, &provenance); err != nil {
+		t.Fatal(err)
+	}
+	provenance.Binding = &retrieval.CandidateBinding{
+		CandidateSHA:           "not-a-sha",
+		FrozenCandidateSHA:     provenance.Binding.FrozenCandidateSHA,
+		CandidateWorktreeClean: true,
+		CandidateMatchesFrozen: true,
+		CandidateExcludedPath:  ".",
+		CheckoutSHA:            provenance.Binding.CheckoutSHA,
+		CheckoutWorktreeClean:  true,
+	}
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(dir, retrieval.BlindEvalProvenanceFile), provenance); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(dir, retrieval.BlindEvalSidecarManifestFile)); err != nil {
+		t.Fatal(err)
+	}
+	pre, err := retrieval.LoadPreRegistration(filepath.Join(dir, retrieval.BlindEvalPreRegFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := retrieval.SealSidecarManifest(dir, pre); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr)
+	if code == exitOK || strings.Contains(stdout.String(), "RELEASE: YES") {
+		t.Fatalf("a fabricated candidate binding released: exit=%d\nstdout: %s", code, stdout.String())
+	}
+	for _, said := range []string{
+		"not a 40-character commit id",
+		"the excluded path is the only place the candidate tree is allowed to differ",
+	} {
+		if !strings.Contains(stdout.String(), said) {
+			t.Errorf("stdout %q does not say %q", stdout.String(), said)
+		}
+	}
+}
+
+// M5: containment was applied at freeze time only. Seal and decide would
+// operate on any directory at all, and neither refused a run directory so broad
+// that the candidate exclusion swallowed the implementation.
+func TestRetrievalEval_SealAndDecideApplyTheContainmentCheck(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("the repository root is refused", func(t *testing.T) {
+		if rel, err := runDirectoryInsideRepository(root, root); err == nil {
+			t.Fatalf("the repository root resolved to %q instead of being refused", rel)
+		} else if !strings.Contains(err.Error(), "excludes the entire implementation") {
+			t.Errorf("refusal %q does not say the exclusion swallows the implementation", err)
+		}
+	})
+	t.Run("a directory holding candidate source is refused", func(t *testing.T) {
+		if rel, err := runDirectoryInsideRepository(root, filepath.Join(root, "internal", "eval", "retrieval")); err == nil {
+			t.Fatalf("a run directory over the implementation resolved to %q", rel)
+		} else if !strings.Contains(err.Error(), "holds candidate source") {
+			t.Errorf("refusal %q does not name the swallowed source", err)
+		}
+	})
+
+	// And both phases apply it: a complete run directory copied somewhere else
+	// is refused by seal and by decide, because the precondition record names
+	// the directory this run was frozen into.
+	dir := buildBlindEvalRunDir(t, 13, 13)
+	elsewhere, _ := blindEvalFixtureRunDir(t, root)
+	if err := os.CopyFS(elsewhere, os.DirFS(dir)); err != nil {
+		t.Fatal(err)
+	}
+	for _, phase := range []string{blindEvalSeal, blindEvalDecide} {
+		t.Run(phase+" refuses a run directory that is not the frozen one", func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			if code := runBlindEval(blindEvalOptions{phase: phase, dir: elsewhere, root: root}, &stdout, &stderr); code == exitOK {
+				t.Fatalf("%s accepted a run directory this run was not frozen into", phase)
+			}
+			if !strings.Contains(stderr.String(), "is not the directory this run was frozen into") {
+				t.Errorf("stderr %q", stderr.String())
+			}
+		})
 	}
 }

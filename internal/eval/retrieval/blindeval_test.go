@@ -280,7 +280,7 @@ func fixtureCaptureProvenance(precondition PreconditionRecord) CandidateCaptureP
 			FrozenCandidateSHA:     precondition.CandidateSHA,
 			CandidateWorktreeClean: true,
 			CandidateMatchesFrozen: true,
-			CandidateExcludedPath:  "docs/eval/retrieval/runs/fixture",
+			CandidateExcludedPath:  "docs/eval/retrieval/runs/x",
 			CheckoutSHA:            "a0a6ae020bb3899ff0276067863e50523f897370",
 			CheckoutWorktreeClean:  true,
 		},

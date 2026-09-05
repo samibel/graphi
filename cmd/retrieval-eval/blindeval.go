@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -85,7 +86,7 @@ func blindEvalFrozenInputs(runDirRelative string) []struct{ role, path string } 
 	return []struct{ role, path string }{
 		{"budgets", "docs/eval/retrieval-budgets.json"},
 		{"targets", "docs/eval/retrieval-targets.json"},
-		{"grading_rubric", filepath.ToSlash(filepath.Join(runDirRelative, "grading-rubric.md"))},
+		{retrieval.PreconditionInputGradingRubric, filepath.ToSlash(filepath.Join(runDirRelative, "grading-rubric.md"))},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
 }
@@ -244,7 +245,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
-	runDirRelative, err := runDirectoryInsideRepository(o.root, o.dir)
+	runDirRelative, err := blindEvalRunDirectory(o.root, o.dir, precondition)
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
@@ -277,7 +278,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// a commit in which the record does not exist at all. An auditor following
 	// it found nothing, and a record created later could name any earlier
 	// commit as its own precedence evidence.
-	preconditionCommit, err := gitCommitContaining(o.root, filepath.ToSlash(filepath.Join(runDirRelativeForPrecondition(o.root, o.dir), retrieval.BlindEvalPreconditionFile)))
+	preconditionCommit, err := gitCommitContaining(o.root, filepath.ToSlash(filepath.Join(runDirRelative, retrieval.BlindEvalPreconditionFile)))
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
@@ -389,8 +390,25 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "retrieval-eval: -blind-eval decide needs -blind-eval-dir")
 		return exitUsage
 	}
+	// M5: containment was checked at freeze time only, so decide would read a
+	// run directory anywhere at all — including one assembled outside the
+	// repository, where the rubric and every artifact are files git never saw,
+	// or one so broad that the candidate exclusion swallows the
+	// implementation. It is checked BEFORE anything in the directory is read,
+	// because a directory this phase must not operate on is not a directory to
+	// start parsing records out of.
+	if _, err := runDirectoryInsideRepository(o.root, o.dir); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	artifacts, err := retrieval.LoadEvaluationArtifacts(o.dir)
 	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	// And it must be the directory this run was frozen into, which the
+	// precondition record names.
+	if _, err := blindEvalRunDirectory(o.root, o.dir, artifacts.Precondition); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -481,6 +499,79 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 	if rel == ".." || strings.HasPrefix(rel, "../") || filepath.IsAbs(rel) {
 		return "", fmt.Errorf("run directory %s resolves to %s, which is outside the repository at %s; the evaluation's inputs and artifacts must be files git can be asked about", dir, rel, absRoot)
 	}
+	// Inside the repository is not enough. The run directory is the one path
+	// the candidate binding excludes from its comparison against the frozen
+	// candidate, so a run directory at the root — or any directory that
+	// contains the candidate's own source — makes that exclusion swallow the
+	// implementation, and a later retrieval-improving commit then compares as
+	// identical to the frozen candidate.
+	if err := retrieval.CheckRunDirectoryRelativePath(rel); err != nil {
+		return "", err
+	}
+	if swallowed, err := runDirectoryHoldsCandidateSource(absDir); err != nil {
+		return "", err
+	} else if swallowed != "" {
+		return "", fmt.Errorf("run directory %s holds candidate source (%s); the candidate binding excludes the run directory from its comparison against the frozen candidate, so a run directory over the implementation excludes the very code the binding exists to pin", rel, swallowed)
+	}
+	return rel, nil
+}
+
+// runDirectoryHoldsCandidateSource names the first candidate source file found
+// under the run directory, or "" when there is none.
+//
+// "Is this exclusion too broad?" has no useful answer in the abstract; it has a
+// concrete one here. The exclusion is too broad exactly when it covers code
+// whose change the binding is supposed to notice, so this looks for that code.
+// A run directory that does not yet exist holds nothing, which is the state the
+// freeze phase legitimately starts from.
+func runDirectoryHoldsCandidateSource(absDir string) (string, error) {
+	found := ""
+	err := filepath.WalkDir(absDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if entry.IsDir() {
+			if entry.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasSuffix(entry.Name(), ".go") || entry.Name() == "go.mod" {
+			found = entry.Name()
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("examine run directory %s: %w", absDir, err)
+	}
+	return found, nil
+}
+
+// blindEvalRunDirectory resolves the run directory AND requires it to be the
+// directory the precondition record was frozen into.
+//
+// Containment was only ever checked at freeze time, so `seal` and `decide`
+// would happily operate on any directory at all — including one assembled
+// outside the repository after the fact. Requiring the frozen run directory as
+// well makes the phases agree about which run they are working on: the
+// precondition record is content-addressed, and the rubric path inside it is
+// the sealed statement of where this run lives.
+func blindEvalRunDirectory(root, dir string, precondition retrieval.PreconditionRecord) (string, error) {
+	rel, err := runDirectoryInsideRepository(root, dir)
+	if err != nil {
+		return "", err
+	}
+	frozen, err := retrieval.RunDirectoryFromPreconditionRecord(precondition)
+	if err != nil {
+		return "", err
+	}
+	if rel != frozen {
+		return "", fmt.Errorf("run directory %s is not the directory this run was frozen into (%s); the precondition record's grading rubric names the run directory, and a phase run over a different directory is a different run", rel, frozen)
+	}
 	return rel, nil
 }
 
@@ -488,17 +579,6 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 // uncommitted change.
 func candidateWorktreeClean(root string) (bool, error) {
 	return retrieval.GitRepoProbe().WorktreeClean(context.Background(), root)
-}
-
-// runDirRelativeForPrecondition is the run directory relative to the
-// repository root. Containment was already proved above, so a failure here is
-// impossible and resolves to the raw path rather than swallowing an error.
-func runDirRelativeForPrecondition(root, dir string) string {
-	rel, err := runDirectoryInsideRepository(root, dir)
-	if err != nil {
-		return dir
-	}
-	return rel
 }
 
 // gitCommitContaining names the commit that last wrote path, and refuses when

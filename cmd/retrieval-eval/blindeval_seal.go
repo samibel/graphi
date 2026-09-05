@@ -65,6 +65,12 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "retrieval-eval: -blind-eval seal needs -blind-eval-dir")
 		return exitUsage
 	}
+	// M5: the same containment the freeze phase applies, before anything in
+	// the directory is read.
+	if _, err := runDirectoryInsideRepository(o.root, o.dir); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	precondition, err := retrieval.LoadPreconditionRecord(filepath.Join(o.dir, retrieval.BlindEvalPreconditionFile))
 	if err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
@@ -72,6 +78,13 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	pre, err := retrieval.LoadPreRegistration(filepath.Join(o.dir, retrieval.BlindEvalPreRegFile))
 	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	// Sealing writes the append-only records and the sidecar manifest, and both
+	// are only evidence if they land in the run directory this evaluation was
+	// frozen into.
+	if _, err := blindEvalRunDirectory(o.root, o.dir, precondition); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -86,7 +99,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	rubricSHA := ""
 	for _, input := range precondition.Inputs {
-		if input.Role == "grading_rubric" {
+		if input.Role == retrieval.PreconditionInputGradingRubric {
 			rubricSHA = input.SHA256
 		}
 	}
@@ -212,8 +225,23 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		}
 		adjudications++
 	}
+	// The sidecars last, because the manifest records them as they are once
+	// everything else has been sealed. Without it, deleting the disclosed
+	// concern record raised the corrected count and nothing said so.
+	manifest, err := retrieval.SealSidecarManifest(o.dir, pre)
+	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	fmt.Fprintf(stdout, "retrieval-eval: sealed %d responses (%v), wrote %d grader packets, sealed %d grades and %d adjudications\n",
 		len(sealedResponses), counts, packets, grades, adjudications)
+	for _, seal := range manifest.Sidecars {
+		if seal.Present {
+			fmt.Fprintf(stdout, "retrieval-eval: sidecar %s bound at %s\n", seal.File, seal.SHA256)
+			continue
+		}
+		fmt.Fprintf(stdout, "retrieval-eval: sidecar %s recorded absent\n", seal.File)
+	}
 	return exitOK
 }
 

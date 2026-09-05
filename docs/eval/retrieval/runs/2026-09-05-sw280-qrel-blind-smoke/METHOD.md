@@ -57,10 +57,13 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
    in this slice evidences, is that no primary response or grade reached the adjudicator by another
    route — adjudicator blindness is instruction-enforced here too, and every adjudication artifact
    carries that limitation as a fixed, checked string rather than leaving it to a reader.
-6. **Decide.** Every frozen input hash is recomputed and compared, every prompt is rebuilt, and the
-   capture provenance is required to bind the bytes to the candidate implementation and the indexed
-   checkout they were recorded against. A pass count below `k`, any drifted input, or an unbound
-   capture records `RELEASE: NO`.
+6. **Decide.** Every frozen input hash is recomputed and compared, every prompt is rebuilt, the
+   sidecar manifest is required to account for every file the decision reads outside the sealed
+   records, and the capture provenance is required to bind the bytes to the candidate implementation
+   and the indexed checkout they were recorded against — with each of its commit ids checked for
+   being a commit id and its excluded path checked against the directory this run was frozen into.
+   A pass count below `k`, any drifted input, an unaccounted sidecar, or an unbound capture records
+   `RELEASE: NO` or refuses outright.
 
 ## Rules that have no exception
 
@@ -78,7 +81,25 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
   to `PASS` and re-running `seal` used to overwrite the sealed grade in place, and enough repetitions
   turned `RELEASE: NO` into `RELEASE: YES` with no flag and nothing in the report to see. The seal
   cannot defend against deleting a committed artifact and re-sealing in its place; that defence is
-  the run directory's own git history, where such a deletion is a visible removal.
+  the run directory's own git history, where such a deletion is a visible removal. **This limitation
+  now covers the sidecars too**, and it is the whole of what remains uncovered: deleting or replacing
+  `capture-provenance.json` or `disclosed-grading-concerns.json` is refused while
+  `sidecar-manifest.json` records them, and deleting the manifest is itself a refusal to decide, so
+  what is left is an author who removes the manifest **and** the sidecar together and re-seals both.
+  That is a deletion of committed files and git history is the evidence of it. Nothing here defends
+  against an author who rewrites the run directory's history.
+- **Every artifact the decision reads is accounted for.** The two sidecars are optional in shape and
+  load-bearing in effect: the provenance decides whether the capture is bound, and the concern record
+  subtracts from the corrected count. `sidecar-manifest.json` content-addresses both, and the
+  decision refuses when a recorded sidecar is absent, when its bytes differ from what was recorded,
+  when a sidecar the manifest does not name is present, or when the manifest belongs to another run.
+  The one transition it permits is a sidecar the manifest recorded as **absent** appearing later,
+  because a disclosed concern can only ever subtract and a provenance is assessed on its own content
+  before it binds anything. Deleting the concern record used to raise the corrected count silently,
+  and at the threshold that is `RELEASE: NO` becoming `RELEASE: YES`.
+- **A missing or unverifiable artifact never produces a better outcome than a present one.** Every
+  refusal above points the same way: when the decision cannot establish something, it refuses or
+  records `RELEASE: NO`.
 - **A disclosed grading concern may only ever subtract.** A counted pass the bundle-only rule does
   not support is disclosed beside the result and lowers the corrected count. There is no concern
   shape that raises a count, because converting a counted failure into a pass is precisely the
@@ -87,7 +108,16 @@ interval (`docs/eval/retrieval/methodology.md`, "Estimand and claim boundary").
 - **An unbound capture cannot release.** Recording a commit is not binding to it, so the capture
   refuses to run over a dirty candidate worktree or a dirty indexed checkout, and refuses when the
   candidate tree differs from the frozen candidate anywhere outside this run directory. A run whose
-  provenance carries no such binding records `RELEASE: NO` on that ground alone.
+  provenance carries no such binding records `RELEASE: NO` on that ground alone. A binding is also
+  not taken at its word: `candidate_sha`, `frozen_candidate_sha` and `checkout_sha` must each be a
+  40-character commit id, and the path the comparison excludes must be exactly the directory this run
+  was frozen into — which the precondition record already names, because the grading rubric it froze
+  lives there.
+- **The run directory may not swallow the implementation.** The run directory is the one path the
+  candidate comparison excludes, because the run writes into it after the freeze. `freeze`, `capture`,
+  `seal` and `decide` all refuse a run directory outside the repository, at the repository root, or
+  holding candidate source: an exclusion that broad makes `git diff … -- . ':(exclude)<path>'` return
+  nothing, so a later retrieval-improving commit would compare as identical to the frozen candidate.
 
 ## How to reproduce
 

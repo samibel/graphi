@@ -1341,6 +1341,9 @@ func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCapturePro
 	if p.TokenBudget != precondition.CandidateTokenBudget {
 		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the capture ran at a %d-token budget, but %d was frozen", p.TokenBudget, precondition.CandidateTokenBudget))
 	}
+	if !isLowerHexDigest(p.RepoSHA, 40) {
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the capture provenance records repo_sha %q, which is not a 40-character commit id", p.RepoSHA))
+	}
 	binding := p.Binding
 	if binding == nil {
 		assessment.Reasons = append(assessment.Reasons,
@@ -1349,6 +1352,31 @@ func AssessCaptureBinding(precondition PreconditionRecord, p CandidateCapturePro
 	}
 	assessment.CandidateSHA = binding.CandidateSHA
 	assessment.CheckoutSHA = binding.CheckoutSHA
+	// The booleans below are the binding's CONCLUSIONS, and they were trusted
+	// on sight. A hand-written binding naming candidate_sha "not-a-sha" and an
+	// unrelated excluded path was accepted as bound, which made the whole
+	// binding a claim the run makes about itself. So the fields are checked for
+	// what they must BE before their booleans are read: a commit id is 40 hex
+	// characters, and the excluded path is not free text — it is the one
+	// directory this run was frozen into, and the precondition record already
+	// names it, because the grading rubric it froze lives there.
+	for _, id := range []struct{ name, value string }{
+		{"candidate_sha", binding.CandidateSHA},
+		{"frozen_candidate_sha", binding.FrozenCandidateSHA},
+		{"checkout_sha", binding.CheckoutSHA},
+	} {
+		if !isLowerHexDigest(id.value, 40) {
+			assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the candidate binding records %s %q, which is not a 40-character commit id; a binding that does not name a commit binds nothing", id.name, id.value))
+		}
+	}
+	frozenRunDir, err := RunDirectoryFromPreconditionRecord(precondition)
+	switch {
+	case err != nil:
+		assessment.Reasons = append(assessment.Reasons, err.Error())
+	case binding.CandidateExcludedPath != frozenRunDir:
+		assessment.Reasons = append(assessment.Reasons, fmt.Sprintf("the candidate binding excluded %q from the comparison against the frozen candidate, and this run was frozen into %q; the excluded path is the only place the candidate tree is allowed to differ, so an excluded path that is not this run's directory is a hole of the operator's own choosing",
+			binding.CandidateExcludedPath, frozenRunDir))
+	}
 	if !binding.CandidateWorktreeClean {
 		assessment.Reasons = append(assessment.Reasons, "the candidate worktree was not clean at capture; uncommitted candidate code is not the candidate this run froze")
 	}
@@ -1514,8 +1542,18 @@ func EvaluateQrelBlindSmoke(a EvaluationArtifacts, comparison HashComparisonResu
 		effective = out.CorrectedPassCount
 	}
 	if effective < out.K {
+		// Name the count that actually fell short. This used to say "%d of %d
+		// queries passed" with the REVIEWED count, which is a false statement
+		// of the reason whenever the reviewed count reaches k and only the
+		// corrected count does not — exactly the case a disclosed concern
+		// creates, and exactly the case a reader most needs to understand.
+		decisive := "reviewed"
+		if out.CorrectedPassCount < out.PassCount {
+			decisive = "corrected"
+		}
 		out.Release = ReleaseNo
-		out.Reasons = append(out.Reasons, fmt.Sprintf("%d of %d queries passed, below the pre-registered k=%d; there is no override, exception or waiver", out.PassCount, out.N, out.K))
+		out.Reasons = append(out.Reasons, fmt.Sprintf("the %s pass count is %d of %d, below the pre-registered k=%d (reviewed %d, corrected %d, and the release is decided on the smaller); there is no override, exception or waiver",
+			decisive, effective, out.N, out.K, out.PassCount, out.CorrectedPassCount))
 	}
 	if len(out.DisclosedGradingConcerns) > 0 {
 		out.Reasons = append(out.Reasons, fmt.Sprintf("%d counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is %d of %d and the corrected count is %d of %d, and the release is decided on the smaller of the two", len(out.DisclosedGradingConcerns), out.PassCount, out.N, out.CorrectedPassCount, out.N))

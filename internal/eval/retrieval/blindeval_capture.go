@@ -130,8 +130,15 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.PathsDifferingOutside == nil {
 		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs a complete repository probe", QrelBlindSmokeEvaluationName)
 	}
-	if strings.TrimSpace(o.FrozenCandidateSHA) == "" {
-		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs the frozen candidate sha", QrelBlindSmokeEvaluationName)
+	if !isLowerHexDigest(o.FrozenCandidateSHA, 40) {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs the frozen candidate sha as a 40-character commit id, not %q", QrelBlindSmokeEvaluationName, o.FrozenCandidateSHA)
+	}
+	// The excluded path is the one hole in the comparison against the frozen
+	// candidate, so it is checked before it is used. A root or otherwise
+	// over-broad exclusion turns `git diff … -- . ':(exclude)<path>'` into a
+	// comparison that swallows the implementation and reports no difference.
+	if err := CheckRunDirectoryRelativePath(o.ExcludePath); err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: the candidate binding would exclude %q from its comparison against the frozen candidate: %w", QrelBlindSmokeEvaluationName, o.ExcludePath, err)
 	}
 	head, err := probe.HeadSHA(ctx, o.CandidateRoot)
 	if err != nil {

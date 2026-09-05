@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -32,6 +33,70 @@ const (
 	BlindEvalGradesDir        = "grades"
 	BlindEvalAdjudicationsDir = "adjudications"
 )
+
+// PreconditionInputGradingRubric is the frozen-input role of the grading
+// rubric. The rubric lives INSIDE the run directory, so the precondition
+// record's own path for it is the sealed, content-addressed statement of where
+// this run lives — which is what binds the candidate exclusion below.
+const PreconditionInputGradingRubric = "grading_rubric"
+
+// CheckRunDirectoryRelativePath refuses a run-directory path that is not a
+// proper repository-relative subdirectory.
+//
+// The run directory is not just a place to write files. It is the ONE path the
+// candidate binding excludes from its comparison against the frozen candidate,
+// because the run necessarily writes into it after the freeze. A run directory
+// at the repository root therefore turns that exclusion into
+// `git diff … -- . ':(exclude).'`, which returns nothing at all: every later
+// change to the implementation — including one that improves retrieval —
+// compares as identical to the frozen candidate, and the report says the frozen
+// candidate produced the rated bytes.
+func CheckRunDirectoryRelativePath(rel string) error {
+	trimmed := strings.TrimSpace(rel)
+	if trimmed == "" {
+		return fmt.Errorf("retrieval %s: the run directory has no repository-relative path", QrelBlindSmokeEvaluationName)
+	}
+	if trimmed != rel {
+		return fmt.Errorf("retrieval %s: the run directory %q is padded with whitespace", QrelBlindSmokeEvaluationName, rel)
+	}
+	if filepath.IsAbs(rel) || strings.HasPrefix(rel, "/") {
+		return fmt.Errorf("retrieval %s: the run directory %q is absolute; it is named relative to the repository root so git can be asked about it", QrelBlindSmokeEvaluationName, rel)
+	}
+	if cleaned := path.Clean(rel); cleaned != rel {
+		return fmt.Errorf("retrieval %s: the run directory %q is not a clean repository-relative path (it cleans to %q); a path that has to be normalised before it is compared is a path two checks can read differently", QrelBlindSmokeEvaluationName, rel, cleaned)
+	}
+	if rel == "." {
+		return fmt.Errorf("retrieval %s: the run directory is the repository root; the candidate binding excludes the run directory from its comparison against the frozen candidate, so a run directory at the root excludes the entire implementation and a later retrieval-improving commit would compare as identical to the frozen candidate", QrelBlindSmokeEvaluationName)
+	}
+	if rel == ".." || strings.HasPrefix(rel, "../") {
+		return fmt.Errorf("retrieval %s: the run directory %q is outside the repository; the evaluation's inputs and artifacts must be files git can be asked about", QrelBlindSmokeEvaluationName, rel)
+	}
+	return nil
+}
+
+// RunDirectoryFromPreconditionRecord reads the run directory out of the sealed
+// precondition record, from the frozen grading rubric's path.
+//
+// This is deliberately NOT a parameter. The excluded path in a capture binding
+// used to be whatever the binding said it was, so a binding could name an
+// unrelated — or an arbitrarily broad — directory and still be accepted. The
+// precondition record is content-addressed, the pre-registration names that
+// address, and all of the responses name the pre-registration, so the rubric's
+// path is the one statement of where this run lives that cannot be edited
+// alongside the file that quotes it.
+func RunDirectoryFromPreconditionRecord(rec PreconditionRecord) (string, error) {
+	for _, input := range rec.Inputs {
+		if input.Role != PreconditionInputGradingRubric {
+			continue
+		}
+		dir := path.Dir(filepath.ToSlash(input.Path))
+		if err := CheckRunDirectoryRelativePath(dir); err != nil {
+			return "", err
+		}
+		return dir, nil
+	}
+	return "", fmt.Errorf("retrieval %s: the precondition record froze no %s input, so nothing names the directory this run lives in", QrelBlindSmokeEvaluationName, PreconditionInputGradingRubric)
+}
 
 // WriteBlindEvalJSON writes v as indented JSON with a trailing newline.
 func WriteBlindEvalJSON(path string, v any) error {
@@ -61,31 +126,48 @@ func WriteBlindEvalJSON(path string, v any) error {
 // idempotent, because every field the seal derives comes from the raw file
 // rather than from the clock; re-sealing DIFFERENT material for an address that
 // already exists is refused and says so.
+//
+// The creation is EXCLUSIVE (O_CREATE|O_EXCL), not a read followed by an
+// ordinary write. Reading first and writing afterwards is a check/write race:
+// two seals of DIFFERING material can both observe an absent destination, both
+// proceed, and the last writer installs its grade over the first one's — the
+// same overwrite this helper exists to refuse, reached by running the command
+// twice at once instead of twice in a row. With an exclusive create only one
+// writer can create the file; every other writer takes the "already exists"
+// branch and is compared against what is actually on disk.
 func WriteBlindEvalJSONWriteOnce(kind, path string, v any) error {
 	encoded, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("retrieval %s: encode %s: %w", QrelBlindSmokeEvaluationName, path, err)
 	}
 	encoded = append(encoded, '\n')
-	existing, err := os.ReadFile(path)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("retrieval %s: create %s: %w", QrelBlindSmokeEvaluationName, filepath.Dir(path), err)
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	switch {
 	case err == nil:
+		if _, err := file.Write(encoded); err != nil {
+			file.Close()
+			return fmt.Errorf("retrieval %s: write %s: %w", QrelBlindSmokeEvaluationName, path, err)
+		}
+		if err := file.Close(); err != nil {
+			return fmt.Errorf("retrieval %s: write %s: %w", QrelBlindSmokeEvaluationName, path, err)
+		}
+		return nil
+	case os.IsExist(err):
+		existing, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return fmt.Errorf("retrieval %s: read existing %s at %s: %w", QrelBlindSmokeEvaluationName, kind, path, readErr)
+		}
 		if bytes.Equal(existing, encoded) {
 			return nil
 		}
 		return fmt.Errorf("retrieval %s: %s already exists at %s and the material being sealed differs from it; a sealed %s is append-only and is never re-sealed, re-graded, retried or replaced — delete nothing and change nothing, because a second answer for the same address is the retry loop this evaluation exists to exclude",
 			QrelBlindSmokeEvaluationName, kind, path, kind)
-	case os.IsNotExist(err):
 	default:
-		return fmt.Errorf("retrieval %s: read existing %s at %s: %w", QrelBlindSmokeEvaluationName, kind, path, err)
+		return fmt.Errorf("retrieval %s: create %s at %s: %w", QrelBlindSmokeEvaluationName, kind, path, err)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("retrieval %s: create %s: %w", QrelBlindSmokeEvaluationName, filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, encoded, 0o644); err != nil {
-		return fmt.Errorf("retrieval %s: write %s: %w", QrelBlindSmokeEvaluationName, path, err)
-	}
-	return nil
 }
 
 // WriteSealedAdjudication writes one adjudication, refusing to change the
@@ -254,6 +336,17 @@ func LoadEvaluationArtifacts(dir string) (EvaluationArtifacts, error) {
 	case os.IsNotExist(err):
 	default:
 		return artifacts, fmt.Errorf("retrieval %s: stat %s: %w", QrelBlindSmokeEvaluationName, concernsPath, err)
+	}
+	// Both sidecars above are read with "if the file is there, use it", and
+	// both feed the decision: the provenance decides whether the capture is
+	// bound, and the concern record subtracts from the corrected count. So an
+	// absent one used to be indistinguishable from one that had been deleted,
+	// and deleting a concern record raised the corrected count. The manifest
+	// is the record that they existed, it is mandatory, and it makes every
+	// deletion, substitution and forgery of a sidecar a refusal here rather
+	// than a better number later.
+	if err := CheckSidecarBinding(dir, artifacts.PreRegistration); err != nil {
+		return EvaluationArtifacts{}, err
 	}
 	return artifacts, nil
 }
