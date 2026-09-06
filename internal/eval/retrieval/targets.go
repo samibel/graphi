@@ -87,6 +87,11 @@ type StratumTarget struct {
 }
 
 // UnavailableBaseline records a baseline that produced no numbers.
+//
+// Since the comparator set became closed (SW-282 AC-4) nothing can populate
+// this list: a comparator that is not `ok` BLOCKS the derivation instead of
+// being listed beside a bar computed without it. The type and the field are
+// retained so the checked-in file's shape does not move.
 type UnavailableBaseline struct {
 	Baseline Baseline `json:"baseline"`
 	Reason   string   `json:"reason"`
@@ -105,7 +110,9 @@ type Targets struct {
 	FusionMinDelta   float64  `json:"fusion_min_delta"`
 	Split            string   `json:"split"`
 
-	Baselines            []Baseline               `json:"baselines"`
+	Baselines []Baseline `json:"baselines"`
+	// UnavailableBaselines is always empty and is kept for schema stability;
+	// see UnavailableBaseline.
 	UnavailableBaselines []UnavailableBaseline    `json:"unavailable_baselines"`
 	Strata               map[string]StratumTarget `json:"strata"`
 
@@ -121,8 +128,35 @@ type Targets struct {
 // not a bar, it is a restatement of what the candidate already does.
 var CandidatePipelineBaselines = []Baseline{BaselineChunkOnly, BaselineFusion, BaselineSemanticFirst}
 
-// ComparatorBaselines is the exact set a target may be derived from.
+// ComparatorBaselines are the single baselines a target may be derived from.
 var ComparatorBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly}
+
+// DerivationBaselines is the EXACT set a derivation report must carry: the
+// comparators plus the oracle that supplies the ceilings. The set is CLOSED IN
+// BOTH DIRECTIONS and every member must have run.
+//
+// "No candidate baseline" is not a comparator set, it is whatever happened to
+// run, and a bar derived from whatever happened to run is not a bar. Two
+// probes against the earlier open rule:
+//
+//   - remove hybrid_v1 and semantic_name_only from the derivation report and
+//     the derivation was ACCEPTED: architecture_flow's must_reach fell from
+//     0.4578575262772977 to 0.1 and the exact_identifier Top-1 floor from 1 to
+//     0.75 — turning both of the quality misses this story records into
+//     passes, with no gate anywhere reporting that anything had changed.
+//   - add one unapproved baseline scoring perfectly on architecture_flow and
+//     the derivation was ACCEPTED, manufacturing a must_reach of 1.
+//
+// So a missing member and an extra one are refused alike. So is a member that
+// is PRESENT but did not finish ok, which is the same laundering channel and
+// the only one that arrives by accident: leave semantic_name_only in the
+// report as `unavailable` and the derivation used to proceed over the two
+// comparators that did run, dropping the exact_identifier Top-1 floor from 1
+// to 0.75 — the value the shipped pipeline scores exactly — so the miss this
+// story records would have been printed as a PASS because an embedder failed
+// to load. A comparator that genuinely cannot run is a BLOCKED derivation to
+// report, not a bar to lower. See refuseNonComparatorReport.
+var DerivationBaselines = append(append([]Baseline{}, ComparatorBaselines...), BaselineOracle)
 
 // BundleCoveragePopulation is the population the coverage bar is set over. It
 // is not configurable: SelectTaskContextDevNLBehaviour picks it and
@@ -199,7 +233,7 @@ const TargetsNotes = "Retrieval targets, recalibrated by SW-282 from measured CO
 
 // DeriveTargets computes the targets file from a report (AC-7).
 //
-// It refuses two report shapes outright rather than working around them
+// It refuses four report shapes outright rather than working around them
 // (SW-282 AC-4):
 //
 //   - a report carrying a candidate-pipeline baseline (chunk_only, fusion,
@@ -207,6 +241,17 @@ const TargetsNotes = "Retrieval targets, recalibrated by SW-282 from measured CO
 //     it set its own bar. This is enforced HERE, not in whatever command line
 //     happened to be used, because a command-line convention is something a
 //     later run can forget.
+//   - a report whose baseline set is not exactly DerivationBaselines — a
+//     comparator missing, a comparator listed twice, or any other baseline
+//     present. The set the bar is computed over IS the bar; leaving a
+//     comparator out lowers it and adding a strong stranger raises it.
+//   - a report in which any comparator is present but did not finish `ok`.
+//     Deriving from whichever comparators happened to run is the same defect
+//     wearing a different hat, and it is the one that arrives by accident: a
+//     comparator that fails to run would quietly lower the bar and turn a
+//     recorded miss into a pass without anyone deciding to. A comparator that
+//     genuinely cannot run is a BLOCKED derivation to report, not a bar to
+//     lower.
 //   - a report carrying a holdout query result. The previous behaviour silently
 //     filtered holdout rows away, which makes "the holdout was never executed"
 //     and "the holdout was executed and dropped" produce identical output. The
@@ -237,14 +282,12 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 	competitors := map[Baseline]devAgg{}
 	var oracle *devAgg
 	for _, b := range rep.Baselines {
-		if b.Status != BaselineStatusOK {
-			out.UnavailableBaselines = append(out.UnavailableBaselines, UnavailableBaseline{Baseline: b.Name, Reason: b.Reason})
-			continue
-		}
-		// No split filter: refuseNonComparatorReport has already established
-		// that every row is a development row. Filtering here again would
-		// re-introduce the shape that hides a holdout row inside a
-		// dev-looking result.
+		// No status filter and no split filter: refuseNonComparatorReport has
+		// already established that the baselines are exactly the comparators,
+		// that each of them ran ok, and that every row is a development row.
+		// Skipping a not-ok baseline here would be the derivation narrowing
+		// its own comparator set, and filtering rows here would re-introduce
+		// the shape that hides a holdout row inside a dev-looking result.
 		_, strata, _ := AggregateAll(b.Queries, rep.TokenBudgets)
 		a := devAgg{strata: strata}
 		if b.Name == BaselineOracle {
@@ -254,6 +297,8 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 		competitors[b.Name] = a
 		out.Baselines = append(out.Baselines, b.Name)
 	}
+	// Unreachable while the comparator set is closed; kept as the backstop
+	// that would catch a future relaxation of it before a bar is written.
 	if len(competitors) == 0 {
 		return nil, fmt.Errorf("retrieval: no ok baseline other than the oracle; nothing to derive a target from")
 	}
@@ -322,8 +367,8 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 	return out, nil
 }
 
-// refuseNonComparatorReport is the derivation's closed world: comparators
-// only, development only.
+// refuseNonComparatorReport is the derivation's closed world: EXACTLY the
+// comparators, each of them run, development only.
 func refuseNonComparatorReport(r *Report) error {
 	candidate := map[Baseline]bool{}
 	for _, b := range CandidatePipelineBaselines {
@@ -339,6 +384,9 @@ func refuseNonComparatorReport(r *Report) error {
 		sort.Strings(offending)
 		return fmt.Errorf("retrieval: the report carries the candidate pipeline as a baseline (%s); a target derived from the candidate is the candidate's own value plus a delta, not a bar. Re-run with the comparator set only: %s plus %s for the ceilings",
 			strings.Join(offending, ", "), joinBaselines(ComparatorBaselines), BaselineOracle)
+	}
+	if err := refusePartialComparatorSet(r); err != nil {
+		return err
 	}
 	var holdout []string
 	for _, b := range r.Reproducible.Baselines {
@@ -356,6 +404,67 @@ func refuseNonComparatorReport(r *Report) error {
 		}
 		return fmt.Errorf("retrieval: the report carries %d holdout query result(s) (%s%s); the holdout may not be touched by a derivation, and silently dropping the rows cannot be told apart from never having executed them. Measure a development-only slice (retrieval.SelectDevSplit)",
 			len(holdout), strings.Join(shown, ", "), map[bool]string{true: ", …", false: ""}[len(holdout) > len(shown)])
+	}
+	return nil
+}
+
+// refusePartialComparatorSet closes the comparator set in both directions.
+//
+// The set the bar is computed over IS the bar, so the derivation may not be
+// handed a different set and asked to produce "the" targets. Dropping a
+// comparator lowers every best-single-baseline value it used to win, adding a
+// strong stranger raises them, and listing one twice lets the second copy
+// overwrite the first — three ways to move a bar with nothing on the record
+// saying it moved.
+func refusePartialComparatorSet(r *Report) error {
+	required := map[Baseline]bool{}
+	for _, b := range DerivationBaselines {
+		required[b] = true
+	}
+	status := map[Baseline]string{}
+	var extra, duplicate []string
+	for _, b := range r.Reproducible.Baselines {
+		if !required[b.Name] {
+			extra = append(extra, string(b.Name))
+			continue
+		}
+		if _, seen := status[b.Name]; seen {
+			duplicate = append(duplicate, string(b.Name))
+			continue
+		}
+		status[b.Name] = b.Status
+	}
+	var missing []string
+	for _, b := range DerivationBaselines {
+		if _, ok := status[b]; !ok {
+			missing = append(missing, string(b))
+		}
+	}
+	var problems []string
+	if len(missing) > 0 {
+		problems = append(problems, "missing: "+strings.Join(missing, ", "))
+	}
+	if len(extra) > 0 {
+		sort.Strings(extra)
+		problems = append(problems, "not in the comparator set: "+strings.Join(extra, ", "))
+	}
+	if len(duplicate) > 0 {
+		sort.Strings(duplicate)
+		problems = append(problems, "listed more than once: "+strings.Join(duplicate, ", "))
+	}
+	if len(problems) > 0 {
+		return fmt.Errorf("retrieval: the report's baselines are not the comparator set %s (%s); the set a target is computed over IS the target, so a derivation from whichever baselines happened to be in the report is not a bar — dropping a comparator lowers every best-single-baseline value it used to win and can turn a recorded miss into a pass, and adding one raises them. Measure the whole comparator set and derive from that; do not derive from a subset or a superset",
+			joinBaselines(DerivationBaselines), strings.Join(problems, "; "))
+	}
+	var notOK []string
+	for _, b := range DerivationBaselines {
+		if st := status[b]; st != BaselineStatusOK {
+			notOK = append(notOK, string(b)+" ("+st+")")
+		}
+	}
+	if len(notOK) > 0 {
+		return fmt.Errorf("retrieval: comparator(s) %s did not run; the derivation is BLOCKED, not narrowed to the ones that did. Deriving from whichever comparators happened to run is the same defect as leaving one out of the report, and it is the one that arrives by accident: the missing comparator's best values disappear from the bar, so a comparator that fails to run silently lowers it and can turn a recorded miss into a pass without anyone deciding to. If a comparator genuinely cannot run, report the blocked derivation and fix it — the previous targets stand until the whole set %s runs",
+			strings.Join(notOK, ", "), joinBaselines(DerivationBaselines))
 	}
 	return nil
 }

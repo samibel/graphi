@@ -1,6 +1,7 @@
 package retrieval
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -61,7 +62,14 @@ func syntheticReportWithSplits(withHoldout bool) *Report {
 			mk(BaselineHybridV1,
 				map[string]float64{"q1": 0.5, "q2": 1, "q3": 0.6, "q4": 0.8, "q5": 0.3},
 				map[string]float64{"q1": 0, "q2": 1, "q3": 1, "q4": 0, "q5": 0}),
-			{Name: BaselineSemanticNameOnly, Status: BaselineStatusUnavailable, Reason: "no embedder"},
+			// semantic_name_only is present and ok because the derivation
+			// now REFUSES a report in which any comparator is missing or did
+			// not run. Its scores are deliberately the weakest of the three
+			// so it never wins a best-baseline slot and the arithmetic the
+			// subtests below assert is exactly what it was.
+			mk(BaselineSemanticNameOnly,
+				map[string]float64{"q1": 0.1, "q2": 0.1, "q3": 0.1, "q4": 0.1, "q5": 0.1},
+				map[string]float64{"q1": 0, "q2": 0, "q3": 0, "q4": 0, "q5": 0}),
 			mk(BaselineOracle,
 				map[string]float64{"q1": 1, "q2": 1, "q3": 1, "q4": 1, "q5": 1},
 				map[string]float64{"q1": 1, "q2": 1, "q3": 1, "q4": 1, "q5": 1}),
@@ -126,6 +134,89 @@ func TestDeriveTargets(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), string(candidate)) {
 				t.Errorf("the refusal does not name %s: %v", candidate, err)
+			}
+		}
+	})
+	t.Run("a report missing a comparator is REFUSED, not derived from what ran (AC-4)", func(t *testing.T) {
+		// The reviewer's first probe. Under the earlier "anything that is not
+		// the candidate" rule, removing hybrid_v1 and semantic_name_only from
+		// the real derivation report was ACCEPTED: architecture_flow's
+		// must_reach fell from 0.4578575262772977 to 0.1 and the
+		// exact_identifier Top-1 floor from 1 to 0.75, turning both of the
+		// quality misses this story records into passes, with nothing
+		// anywhere reporting that a bar had moved.
+		for _, missing := range DerivationBaselines {
+			_, err := DeriveTargets(reportWithout(missing), DerivedFrom{}, "2026-08-30")
+			if err == nil {
+				t.Fatalf("DeriveTargets derived a bar from a report with the comparator %s removed", missing)
+			}
+			if !strings.Contains(err.Error(), string(missing)) {
+				t.Errorf("the refusal does not name the missing comparator %s: %v", missing, err)
+			}
+		}
+		// The probe verbatim: the two comparators the architecture_flow bar
+		// and the exact_identifier floor rest on, removed together.
+		if _, err := DeriveTargets(reportWithout(BaselineHybridV1, BaselineSemanticNameOnly), DerivedFrom{}, "2026-08-30"); err == nil {
+			t.Fatal("DeriveTargets accepted a report with hybrid_v1 and semantic_name_only removed; that derivation lowers the architecture_flow bar and the exact_identifier floor and turns two recorded misses into passes")
+		}
+	})
+	t.Run("a report carrying a baseline outside the comparator set is REFUSED (AC-4)", func(t *testing.T) {
+		// The reviewer's second probe. Under the earlier rule an unapproved
+		// baseline that happened to score perfectly on architecture_flow was
+		// ACCEPTED and manufactured a must_reach of 1. A stranger is refused
+		// whether it is invented or a real graphi baseline that is simply not
+		// in the approved set.
+		for _, stranger := range []Baseline{"unapproved_comparator", BaselineLexicalFullDocument} {
+			r2 := syntheticReport()
+			perfect := BaselineResult{Name: stranger, Status: BaselineStatusOK}
+			for _, q := range r2.Reproducible.Baselines[0].Queries {
+				q.Metrics = QueryMetrics{Scored: q.Stratum != StratumNoHit, NDCG10: 1, Top1: 1, Recall5: 1, Recall10: 1, MRR10: 1,
+					RecallAtTokens: map[string]float64{"600": 1}}
+				perfect.Queries = append(perfect.Queries, q)
+			}
+			perfect.Overall, perfect.Strata, perfect.Splits = AggregateAll(perfect.Queries, []int{600})
+			r2.Reproducible.Baselines = append(r2.Reproducible.Baselines, perfect)
+			_, err := DeriveTargets(r2, DerivedFrom{}, "2026-08-30")
+			if err == nil {
+				t.Fatalf("DeriveTargets derived a bar from a report carrying the unapproved baseline %s scoring perfectly", stranger)
+			}
+			if !strings.Contains(err.Error(), string(stranger)) {
+				t.Errorf("the refusal does not name %s: %v", stranger, err)
+			}
+		}
+		// A comparator listed twice is the same hole through a narrower door:
+		// the second copy overwrites the first in the best-value scan.
+		r3 := syntheticReport()
+		r3.Reproducible.Baselines = append(r3.Reproducible.Baselines, r3.Reproducible.Baselines[0])
+		if _, err := DeriveTargets(r3, DerivedFrom{}, "2026-08-30"); err == nil {
+			t.Fatal("DeriveTargets accepted a report listing lexical twice")
+		}
+	})
+	t.Run("a comparator that is present but did not run BLOCKS the derivation (AC-4)", func(t *testing.T) {
+		// This subtest replaces "unavailable baselines are listed, not
+		// silently dropped". That assertion is unreachable by construction
+		// now: a comparator that is not ok stops the derivation, so
+		// unavailable_baselines can never be non-empty, and keeping the old
+		// case would have asserted nothing. The property it protected — a
+		// comparator that produced no numbers must not vanish quietly — is
+		// enforced more strongly here, because "the comparator did not run"
+		// is precisely the channel that lowers a bar by accident.
+		if len(tg.UnavailableBaselines) != 0 {
+			t.Errorf("unavailable_baselines = %+v; a not-ok comparator refuses the derivation, so this list is structurally always empty", tg.UnavailableBaselines)
+		}
+		for _, absent := range DerivationBaselines {
+			r2 := syntheticReport()
+			for i := range r2.Reproducible.Baselines {
+				if r2.Reproducible.Baselines[i].Name == absent {
+					r2.Reproducible.Baselines[i] = BaselineResult{Name: absent, Status: BaselineStatusUnavailable, Reason: "no embedder"}
+				}
+			}
+			_, err := DeriveTargets(r2, DerivedFrom{}, "2026-08-30")
+			if err == nil {
+				t.Fatalf("DeriveTargets derived a bar while the comparator %s was unavailable; a bar derived from a partial set is a different bar", absent)
+			}
+			if !strings.Contains(err.Error(), string(absent)) || !strings.Contains(err.Error(), "BLOCKED") {
+				t.Errorf("the refusal for an unavailable %s does not name it and say the derivation is blocked: %v", absent, err)
 			}
 		}
 	})
@@ -215,11 +306,6 @@ func TestDeriveTargets(t *testing.T) {
 			t.Errorf("oracle ceiling = %v", tg.Strata[StratumNLBehaviour].Oracle)
 		}
 	})
-	t.Run("unavailable baselines are listed, not silently dropped", func(t *testing.T) {
-		if len(tg.UnavailableBaselines) != 1 || tg.UnavailableBaselines[0].Baseline != BaselineSemanticNameOnly {
-			t.Errorf("unavailable = %+v", tg.UnavailableBaselines)
-		}
-	})
 	t.Run("the file is stable JSON", func(t *testing.T) {
 		raw, err := MarshalTargets(tg)
 		if err != nil {
@@ -229,13 +315,77 @@ func TestDeriveTargets(t *testing.T) {
 			t.Errorf("targets json = %s", raw)
 		}
 	})
-	t.Run("a report without an ok non-oracle baseline is an error", func(t *testing.T) {
-		r3 := syntheticReport()
-		r3.Reproducible.Baselines = r3.Reproducible.Baselines[2:]
-		if _, err := DeriveTargets(r3, DerivedFrom{}, "2026-08-30"); err == nil {
-			t.Error("DeriveTargets over only unavailable/oracle baselines = nil error")
+	// "a report without an ok non-oracle baseline is an error" used to live
+	// here, over Baselines[2:]. It is subsumed: that shape is a report with
+	// two comparators missing, which the missing-comparator probe above
+	// already refuses by name. The len(competitors) == 0 guard it exercised is
+	// now unreachable and is kept in targets.go only as the backstop against a
+	// future relaxation of the closed set.
+}
+
+// reportWithout is the synthetic derivation report with the named baselines
+// removed — the shape the reviewer used to lower the bars.
+func reportWithout(names ...Baseline) *Report {
+	drop := map[Baseline]bool{}
+	for _, n := range names {
+		drop[n] = true
+	}
+	r := syntheticReport()
+	var kept []BaselineResult
+	for _, b := range r.Reproducible.Baselines {
+		if !drop[b.Name] {
+			kept = append(kept, b)
 		}
-	})
+	}
+	r.Reproducible.Baselines = kept
+	return r
+}
+
+// TestDeriveTargets_ReproducesTheCommittedFile is the positive control for the
+// closed comparator set.
+//
+// The refusals above prove the derivation says no. This proves it still says
+// yes to the one report it must: the committed derivation report reproduces
+// docs/eval/retrieval-targets.json BYTE FOR BYTE, so the rule that refuses a
+// partial or padded comparator set has not moved a single recorded bar. The
+// report path and its digest are read out of the targets file itself, so the
+// control cannot drift away from the file it is checking.
+func TestDeriveTargets_ReproducesTheCommittedFile(t *testing.T) {
+	root := repoRootForTest(t)
+	want, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(TargetsFilePath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var committed Targets
+	if err := json.Unmarshal(want, &committed); err != nil {
+		t.Fatal(err)
+	}
+	rel := committed.DerivedFrom.Report
+	if rel == "" {
+		t.Fatal("the targets file cites no derivation report")
+	}
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := SHA256Hex(raw); got != committed.DerivedFrom.SHA256 {
+		t.Fatalf("%s sha256 = %s, but the targets file cites %s", rel, got, committed.DerivedFrom.SHA256)
+	}
+	var r Report
+	if err := json.Unmarshal(raw, &r); err != nil {
+		t.Fatal(err)
+	}
+	tg, err := DeriveTargets(&r, DerivedFrom{Report: rel, SHA256: SHA256Hex(raw)}, committed.Date)
+	if err != nil {
+		t.Fatalf("the committed derivation report no longer derives: %v", err)
+	}
+	got, err := MarshalTargets(tg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("re-deriving %s from %s no longer reproduces it byte for byte (%d bytes derived, %d committed); the comparator-set rule must refuse bad reports without changing the one good derivation", TargetsFilePath, rel, len(got), len(want))
+	}
 }
 
 func TestDeriveBudgets(t *testing.T) {
@@ -806,6 +956,12 @@ func TestCheckTargets_EachGateBites(t *testing.T) {
 		c := w.expectMiss(t, "bundle_coverage")
 		if !strings.Contains(c.Detail, "not lowered to the observed value") {
 			t.Errorf("coverage miss detail = %q", c.Detail)
+		}
+		// The mirror of the smoke subtest's assertion below: breaking one gate
+		// must leave the other standing, or the subtest has not shown which
+		// gate it made bite. The two answer different questions.
+		if s := w.check(t, "").checkNamed("qrel_blind_smoke"); !s.Met {
+			t.Error("the smoke gate should still be met; only the coverage measurement was edited")
 		}
 	})
 	t.Run("an aggregate that disagrees with its own per-query records is a MISS", func(t *testing.T) {

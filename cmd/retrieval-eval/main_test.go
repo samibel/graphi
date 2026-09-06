@@ -168,6 +168,12 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 		// COMPARATOR-ONLY run over the DEVELOPMENT slice of the fixture
 		// dataset. The budgets derivation is unchanged and still reads the
 		// full seven-baseline report.
+		//
+		// The comparator run is given the mock embedder because the whole
+		// comparator set must have RUN: semantic_name_only reports
+		// `unavailable` without one, and AC-4 blocks the derivation rather
+		// than computing a lower bar from the comparators that did run. The
+		// blocked case is asserted below rather than being the input here.
 		src, err := retrieval.LoadDataset(fixtureDataset)
 		if err != nil {
 			t.Fatal(err)
@@ -182,7 +188,7 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 		}
 		comparators := filepath.Join(dir, "comparators.json")
 		if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", devDataset,
-			"-out", comparators, "-repeats", "1",
+			"-out", comparators, "-repeats", "1", "-embedder", "mock",
 			"-baseline", "lexical", "-baseline", "hybrid_v1", "-baseline", "semantic_name_only", "-baseline", "oracle_upper_bound"},
 			&bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
 			t.Fatal("comparator-only run failed")
@@ -222,6 +228,35 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 			}
 			if !strings.Contains(w2.String(), "candidate pipeline") {
 				t.Errorf("refusal text = %q", w2.String())
+			}
+		})
+
+		t.Run("a comparator-only run whose embedder is absent BLOCKS the derivation", func(t *testing.T) {
+			// The same command line minus -embedder: semantic_name_only
+			// reports `unavailable`, and the bar computed from the two
+			// comparators that did run would be a DIFFERENT bar — on the real
+			// SW-282 report exactly that dropped the exact_identifier Top-1
+			// floor from 1 to 0.75 and would have printed a recorded miss as a
+			// PASS. A comparator that cannot run is a blocked derivation, not
+			// a lower target.
+			noEmbedder := filepath.Join(dir, "comparators-no-embedder.json")
+			if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", devDataset,
+				"-out", noEmbedder, "-repeats", "1",
+				"-baseline", "lexical", "-baseline", "hybrid_v1", "-baseline", "semantic_name_only", "-baseline", "oracle_upper_bound"},
+				&bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
+				t.Fatal("comparator-only run without an embedder failed")
+			}
+			blocked := filepath.Join(dir, "blocked.json")
+			var w2 bytes.Buffer
+			if code := run([]string{"-derive", "-targets-report", noEmbedder, "-targets-out", blocked, "-date", "2026-08-30"},
+				&bytes.Buffer{}, &w2); code == exitOK {
+				t.Fatal("derive wrote a targets file from a run in which semantic_name_only did not run")
+			}
+			if !strings.Contains(w2.String(), "semantic_name_only") || !strings.Contains(w2.String(), "BLOCKED") {
+				t.Errorf("refusal text = %q", w2.String())
+			}
+			if _, err := os.Stat(blocked); !os.IsNotExist(err) {
+				t.Errorf("a blocked derivation still wrote %s (stat err %v)", blocked, err)
 			}
 		})
 		bb, err := os.ReadFile(budgets)
