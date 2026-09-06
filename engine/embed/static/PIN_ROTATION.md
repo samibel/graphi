@@ -38,10 +38,18 @@ file containing all of the following:
    round-trip recorded.
 5. A fresh SW-264 `task_context/2` AC-9 measurement equivalent to
    `docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/`.
-   Record the grade-3 coverage and full provenance before SW-266 (or a later
-   release gate) calibrates a threshold from it. Any threshold or baseline
-   derived from an invalidated run must be recalibrated from the replacement;
-   `docs/eval/retrieval-targets.json` stays untouched until SW-266.
+   Record the grade-3 coverage and full provenance before a release gate
+   calibrates a threshold from it. Any threshold or baseline derived from an
+   invalidated run must be recalibrated from the replacement.
+6. A fresh derivation of `docs/eval/retrieval-targets.json`. This instruction
+   used to read "`docs/eval/retrieval-targets.json` stays untouched until
+   SW-266"; SW-266 is spent and SW-282 rewrote the file. Its bars are now
+   DERIVED from this pinned embedder's `semantic_name_only` numbers on the
+   development split (see the SW-282 runs enumerated below), so a rotation
+   invalidates them: re-measure the comparator-only development slice, re-derive
+   the file, re-run the gate, and record the new per-target verdict in
+   `docs/eval/retrieval/targets-gate-expectations.json`. Re-measuring without
+   re-deriving leaves a bar the rotated model was never compared against.
 
 ## Records made stale by the next rotation
 

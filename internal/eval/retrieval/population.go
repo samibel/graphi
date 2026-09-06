@@ -196,6 +196,12 @@ func ComputeAnswerablePopulation(ds *Loaded, datasetFile string) (*AnswerablePop
 		rec.Excluded = append(rec.Excluded, excluded...)
 		if split == SplitDev {
 			rec.Dev = comp
+			// The superseded count is a DEVELOPMENT count, so it is taken
+			// here, from this split's exclusions alone. Taking it from
+			// rec.Excluded after the loop would add the holdout's exclusions
+			// to it: correct today only because the holdout happens to have
+			// none, and silently wrong the first time it has one.
+			rec.SupersededDevCount = comp.Answerable + len(excluded)
 		} else {
 			rec.Holdout = comp
 		}
@@ -204,7 +210,6 @@ func ComputeAnswerablePopulation(ds *Loaded, datasetFile string) (*AnswerablePop
 	rec.SavingsConfigDocs = rec.Dev.ConfigDocs + rec.Holdout.ConfigDocs
 	rec.SavingsConfigDocsFraction = fmt.Sprintf("%d/%d", rec.SavingsConfigDocs, rec.SavingsPopulation)
 	rec.SavingsConfigDocsRendered = renderPercent(rec.SavingsConfigDocs, rec.SavingsPopulation)
-	rec.SupersededDevCount = rec.Dev.Answerable + len(rec.Excluded)
 	rec.SupersededDevCountRecordedIn = "projects/graphi/stories/SW-279/approval.md recorded " +
 		fmt.Sprintf("%d", rec.SupersededDevCount) +
 		" answerable development queries under the looser \"not no_hit\" reading; SW-282 corrects it to the contractual count."

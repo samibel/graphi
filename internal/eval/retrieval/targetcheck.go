@@ -51,12 +51,24 @@ const BundleCoverageMeasurementPath = "docs/eval/retrieval/runs/2026-09-06-sw282
 // are required (AC-3).
 const QrelBlindSmokeOutcomePath = "docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/outcome.json"
 
-// floatComparisonEpsilon guards against the last bit of double
-// representation when a stored target is compared with a value recomputed
-// from raw samples. It is NOT a shortfall tolerance: it is eleven orders of
-// magnitude below what a five-query stratum can resolve, and SW-282 deleted
-// the one numeric shortfall exception this package had.
-const floatComparisonEpsilon = 1e-9
+// A quality target is compared EXACTLY. There is deliberately no epsilon.
+//
+// An earlier draft of this file added 1e-9 to the observed value before both
+// quality comparisons, described as a representation guard. It was not one: a
+// target set 5e-10 above the observed architecture_flow value was reported
+// PASS, which is a numeric-shortfall exception written into the comparison
+// operator rather than into a named constant — exactly what SW-282 AC-5
+// forbids, and what deleting this package's one named shortfall constant was
+// for. TestTargets_NoNumericShortfallExceptionRemains scans for the name; this
+// comment and the test below cover the operator.
+//
+// No representation guard is needed. Both sides of the comparison are IEEE-754
+// doubles that survive the JSON round trip bit-for-bit (encoding/json emits the
+// shortest decimal that reparses to the same float64), and the bar itself is a
+// stored constant, not a re-derived one. When a value must be EQUAL to a bar,
+// equality of the two float64s is the correct test; when it must merely reach
+// it, >= is. TestTargets_QualityComparisonHasNoEpsilon pins this: a target one
+// half-nanounit above the observed value MISSES.
 
 // TargetCheck is one target's verdict.
 type TargetCheck struct {
@@ -166,7 +178,7 @@ func CheckTargets(in TargetCheckInputs) (*TargetCheckResult, error) {
 			continue
 		}
 		check.Observed = fmt.Sprintf("%.17g", v)
-		check.Met = v+floatComparisonEpsilon >= ft.MustReach
+		check.Met = v >= ft.MustReach
 		if !check.Met {
 			check.Detail = fmt.Sprintf("shortfall %.17g over a %d-query stratum (resolution 1/%d)", ft.MustReach-v, st.DevQueries, st.DevQueries)
 		}
@@ -192,7 +204,7 @@ func CheckTargets(in TargetCheckInputs) (*TargetCheckResult, error) {
 			break
 		}
 		nrCheck.Observed = fmt.Sprintf("%.17g", v)
-		nrCheck.Met = v+floatComparisonEpsilon >= ei.NoRegression.Floor
+		nrCheck.Met = v >= ei.NoRegression.Floor
 	}
 	res.Checks = append(res.Checks, nrCheck)
 
@@ -278,6 +290,13 @@ func checkBundleCoverage(tg *Targets, in TargetCheckInputs) TargetCheck {
 			strings.Join(m.Dataset.QueryIDs, ", "), strings.Join(bc.Population.QueryIDs, ", "))
 	case m.Aggregate.TotalQueries != bc.Population.N:
 		check.Detail = fmt.Sprintf("the measurement scored %d queries, the target's population is %d", m.Aggregate.TotalQueries, bc.Population.N)
+	case len(m.Queries) != m.Aggregate.TotalQueries || coveredQueryCount(m.Queries) != m.Aggregate.CoveredQueries:
+		// The aggregate is a summary of the per-query records in the same
+		// file. Reading only the summary means an edited per-query `covered`
+		// leaves a stale 6/6 standing and the gate prints PASS over a
+		// measurement that says otherwise. Recount instead of trusting.
+		check.Detail = fmt.Sprintf("%s summarises %d of %d covered, but its own per-query records are %d of %d; the aggregate is a summary of those records, not a separate claim",
+			path, m.Aggregate.CoveredQueries, m.Aggregate.TotalQueries, coveredQueryCount(m.Queries), len(m.Queries))
 	case m.Aggregate.CoveredQueries < bc.Threshold.CoveredQueriesRequired:
 		check.Detail = fmt.Sprintf("%d of %d covered; %d misses exceeds the maximum of %d. The bar is whole queries and is not lowered to the observed value",
 			m.Aggregate.CoveredQueries, m.Aggregate.TotalQueries, m.Aggregate.TotalQueries-m.Aggregate.CoveredQueries, bc.Threshold.MaxMisses)
@@ -287,6 +306,17 @@ func checkBundleCoverage(tg *Targets, in TargetCheckInputs) TargetCheck {
 		check.Met = true
 	}
 	return check
+}
+
+// coveredQueryCount recounts coverage from the per-query records.
+func coveredQueryCount(qs []TaskContextQueryResult) int {
+	n := 0
+	for _, q := range qs {
+		if q.Covered {
+			n++
+		}
+	}
+	return n
 }
 
 // checkQrelBlindSmokeGate enforces the bundle-sufficiency smoke evaluation.

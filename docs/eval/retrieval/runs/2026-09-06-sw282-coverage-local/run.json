@@ -42,5 +42,5 @@
       "sha256": "814c900a6f62ab4b99375cdaecda263940b5664fd6826a14073116153a373d7f"
     }
   ],
-  "notes": "SW-264 task_context/2 AC-9 run directory. measurement.json is the aggregate and provenance record; dataset-dev-nl-behaviour.json contains only the measured dev stratum; raw/\u003cquery\u003e.json contains the exact bundle and SpanMatches pairs. File digests are over the bytes on disk."
+  "notes": "SW-282 AC-2 task_context/2 run directory. measurement.json is the aggregate and provenance record; dataset-dev-nl-behaviour.json contains only the measured dev stratum; raw/\u003cquery\u003e.json contains the exact bundle and SpanMatches pairs. File digests are over the bytes on disk."
 }

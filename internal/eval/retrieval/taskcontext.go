@@ -1084,7 +1084,12 @@ func WriteTaskContextRunDir(dir string, run *TaskContextRun) error {
 		FormatVersion: TaskContextFormatVersion, HarnessVersion: TaskContextHarnessVersion,
 		ScorerVersion: TaskContextScorerVersion, Measurement: measurementFile, Dataset: datasetFile,
 		Files: files,
-		Notes: "SW-264 task_context/2 AC-9 run directory. measurement.json is the aggregate and provenance record; dataset-dev-nl-behaviour.json contains only the measured dev stratum; raw/<query>.json contains the exact bundle and SpanMatches pairs. File digests are over the bytes on disk.",
+		// The provenance is the measurement's own, not the story that first
+		// wrote this exporter: a hard-coded "SW-264" stamped every later run
+		// with the wrong origin (SW-282's coverage run indexed itself as an
+		// SW-264 run while its README and measurement said SW-282 AC-2).
+		Notes: fmt.Sprintf("%s %s task_context/2 run directory. measurement.json is the aggregate and provenance record; dataset-dev-nl-behaviour.json contains only the measured dev stratum; raw/<query>.json contains the exact bundle and SpanMatches pairs. File digests are over the bytes on disk.",
+			run.Measurement.Story, run.Measurement.AC),
 	}
 	indexBytes, err := taskContextMarshal(index)
 	if err != nil {

@@ -3,6 +3,7 @@ package retrieval
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -329,6 +330,16 @@ const targetsGateExpectationsPath = "docs/eval/retrieval/targets-gate-expectatio
 // The material facts of the recorded verdict, asserted in code as well as in
 // the JSON, so regenerating the expectations file cannot quietly launder a
 // changed outcome past review.
+//
+// The two *Observed constants were, in an earlier draft, only ever passed to
+// t.Logf. That made the claim above false for them: a gate report edited to a
+// different but still-missing architecture_flow value regenerated
+// targets-gate-expectations.json and exited 0. They are compared for real
+// below. Note what the assertion does and does not buy: it binds the digits
+// this test records to the digits the gate prints from the committed report.
+// What binds those digits to the WORLD is TestAC9Evidence_RoundTripsFromRaw,
+// which recomputes every published metric from raw/ and dataset.json — that is
+// the test an edited report fails, and it is the guard to cite.
 const (
 	gateExpectedMissCount                 = 3
 	gateExpectedFirstMiss                 = "architecture_flow fusion_target"
@@ -471,6 +482,23 @@ func TestTargets_GateVerdictMatchesCheckedInExpectations(t *testing.T) {
 	if ei.NoRegression == nil || !approx(ei.NoRegression.Floor, gateExpectedExactIdentifierFloor) {
 		t.Errorf("exact_identifier no_regression = %+v, recorded floor %.17g", ei.NoRegression, gateExpectedExactIdentifierFloor)
 	}
+	// The observed values, ASSERTED against the digits the gate itself
+	// rendered. Compared as the printed strings because those digits are the
+	// record: %.17g round-trips a float64 exactly, so an inequality here is a
+	// changed observation, never a formatting artefact.
+	for _, want := range []struct {
+		target string
+		value  float64
+	}{
+		{StratumArchitectureFlow + " fusion_target", gateExpectedArchitectureFlowObserved},
+		{StratumExactIdentifier + " no_regression", gateExpectedExactIdentifierObserved},
+	} {
+		got := byName[want.target].Observed
+		if rendered := fmt.Sprintf("%.17g", want.value); got != rendered {
+			t.Errorf("target %q: observed %s, recorded %s. The recorded observation is a fact about the committed gate report; a changed report is a new run, not an edit.", want.target, got, rendered)
+		}
+	}
+
 	t.Logf("recorded MISS on %s: %s %.17g < must_reach %.17g over %d dev queries (resolution 1/%d)",
 		StratumArchitectureFlow, GateBaseline, gateExpectedArchitectureFlowObserved, gateExpectedArchitectureFlowMustReach, af.DevQueries, af.DevQueries)
 	t.Logf("recorded MISS on %s: %s top1 %.17g < floor %.17g over %d dev queries (resolution 1/%d; the shortfall is exactly one query)",
@@ -513,6 +541,105 @@ func TestTargets_NoNumericShortfallExceptionRemains(t *testing.T) {
 	if scanned == 0 {
 		t.Fatal("scanned no package source files; the absence check asserted nothing")
 	}
+}
+
+// TestTargets_QualityComparisonHasNoEpsilon is AC-5's operational half.
+//
+// Deleting a named shortfall constant is worth nothing if the comparison
+// operator grants one instead. An earlier draft of targetcheck.go added
+// floatComparisonEpsilon = 1e-9 to the observed value before BOTH quality
+// comparisons, described as a guard on the last bit of a double. It was not
+// one: a target set 5e-10 above the observed architecture_flow value was
+// reported PASS. That is a working numeric-shortfall exception — six orders of
+// magnitude wider than one ULP near 0.33, and written where no name-based
+// absence check could ever find it.
+//
+// A quality bar is compared exactly. A target above the observed value misses,
+// however narrowly; a target the observed value exactly equals is reached.
+func TestTargets_QualityComparisonHasNoEpsilon(t *testing.T) {
+	root := repoRootForTest(t)
+	targetsRaw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(TargetsFilePath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	reportAbs := resolveRepoPath(t, GateReportPath)
+	coverageAbs := resolveRepoPath(t, BundleCoverageMeasurementPath)
+	smokeAbs := resolveRepoPath(t, QrelBlindSmokeOutcomePath)
+
+	const name = StratumArchitectureFlow + " fusion_target"
+	const observed = gateExpectedArchitectureFlowObserved
+
+	// The checked-in gate report and the checked-in supporting artifacts are
+	// read unchanged; only the bar moves, and only in a temporary copy of the
+	// targets file under a temporary root.
+	checkWithBar := func(t *testing.T, mustReach float64) TargetCheck {
+		t.Helper()
+		var tg Targets
+		if err := json.Unmarshal(targetsRaw, &tg); err != nil {
+			t.Fatal(err)
+		}
+		st := tg.Strata[StratumArchitectureFlow]
+		if st.FusionTarget == nil {
+			t.Fatalf("%s carries no fusion_target", StratumArchitectureFlow)
+		}
+		ft := *st.FusionTarget
+		ft.MustReach = mustReach
+		st.FusionTarget = &ft
+		tg.Strata[StratumArchitectureFlow] = st
+		raw, err := marshalStable(&tg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dir := t.TempDir()
+		dst := filepath.Join(dir, filepath.FromSlash(TargetsFilePath))
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(dst, raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		res, err := CheckTargets(TargetCheckInputs{
+			RepoRoot: dir, ReportPath: reportAbs, CoveragePath: coverageAbs,
+			SmokeOutcomePath: smokeAbs, RequireCandidateSHA: GateCandidateSHA,
+		})
+		if err != nil {
+			t.Fatalf("CheckTargets: %v", err)
+		}
+		for _, c := range res.Checks {
+			if c.Name == name {
+				return c
+			}
+		}
+		t.Fatalf("target %q was not checked", name)
+		return TargetCheck{}
+	}
+
+	t.Run("a bar 5e-10 above the observed value MISSES", func(t *testing.T) {
+		bar := observed + 5e-10
+		if bar == observed {
+			t.Fatalf("the constructed bar %.17g is not distinguishable from the observed value; the case asserts nothing", bar)
+		}
+		if c := checkWithBar(t, bar); c.Met {
+			t.Errorf("target %q reported MET at must_reach %.17g against observed %.17g. A shortfall of 5e-10 is a shortfall: the comparison must be exact, not epsilon-widened. (required %s; observed %s)",
+				name, bar, observed, c.Required, c.Observed)
+		}
+	})
+
+	t.Run("a bar one ULP above the observed value MISSES", func(t *testing.T) {
+		bar := math.Nextafter(observed, math.Inf(1))
+		if c := checkWithBar(t, bar); c.Met {
+			t.Errorf("target %q reported MET at must_reach %.17g against observed %.17g; the next representable double above the observation is still above it", name, bar, observed)
+		}
+	})
+
+	t.Run("a bar exactly equal to the observed value is REACHED", func(t *testing.T) {
+		// The control. Without it the two cases above would also pass if the
+		// comparison were broken in the opposite direction.
+		if c := checkWithBar(t, observed); !c.Met {
+			t.Errorf("target %q reported MISS at must_reach exactly %.17g; >= means the bar is reached when it is met exactly (required %s; observed %s; %s)",
+				name, observed, c.Required, c.Observed, c.Detail)
+		}
+	})
 }
 
 // TestTargetsFile_ShapeAndImmutability is AC-2 and AC-6 against the checked-in
@@ -681,6 +808,18 @@ func TestCheckTargets_EachGateBites(t *testing.T) {
 			t.Errorf("coverage miss detail = %q", c.Detail)
 		}
 	})
+	t.Run("an aggregate that disagrees with its own per-query records is a MISS", func(t *testing.T) {
+		// The aggregate is a summary, not a second source. Reading only the
+		// summary lets an edited per-query `covered` leave a stale 6/6
+		// standing and the gate print PASS over a measurement that says a
+		// query was missed.
+		w := base.clone(t)
+		w.setPerQueryCovered(t, 0, false)
+		c := w.expectMiss(t, "bundle_coverage")
+		if !strings.Contains(c.Detail, "per-query records") {
+			t.Errorf("inconsistent-aggregate detail = %q", c.Detail)
+		}
+	})
 	t.Run("an absent coverage measurement is a MISS, not a pass", func(t *testing.T) {
 		w := base.clone(t)
 		w.remove(t, w.coverageRel)
@@ -814,12 +953,19 @@ func (w *syntheticGateWorld) remove(t *testing.T, rel string) {
 
 func (w *syntheticGateWorld) writeCoverage(t *testing.T, covered, total int, ids []string) {
 	t.Helper()
+	// The per-query records are written too, and they agree with the
+	// aggregate: the aggregate is a summary of them, and the gate recounts.
+	queries := make([]TaskContextQueryResult, 0, total)
+	for i, id := range ids {
+		queries = append(queries, TaskContextQueryResult{ID: id, Covered: i < covered})
+	}
 	m := TaskContextMeasurement{
 		FormatVersion: TaskContextFormatVersion, HarnessVersion: TaskContextHarnessVersion, ScorerVersion: TaskContextScorerVersion,
 		EligibleForThreshold: true,
 		Dataset:              TaskContextDatasetRef{QueryIDs: ids, QueryCount: total},
 		Bundle:               TaskContextBundleRef{TokenBudget: TaskContextTokenBudget},
 		Aggregate:            TaskContextAggregate{CoveredQueries: covered, TotalQueries: total},
+		Queries:              queries,
 	}
 	raw, err := marshalStable(m)
 	if err != nil {
@@ -840,6 +986,29 @@ func (w *syntheticGateWorld) writeSmoke(t *testing.T, release string) {
 		t.Fatal(err)
 	}
 	w.write(t, w.smokeRel, raw)
+}
+
+// setPerQueryCovered edits ONE per-query record in the coverage measurement and
+// leaves the aggregate alone, which is the shape the gate must not accept.
+func (w *syntheticGateWorld) setPerQueryCovered(t *testing.T, i int, covered bool) {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(w.root, filepath.FromSlash(w.coverageRel)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m TaskContextMeasurement
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	if i >= len(m.Queries) {
+		t.Fatalf("coverage measurement carries %d per-query records, wanted to edit index %d", len(m.Queries), i)
+	}
+	m.Queries[i].Covered = covered
+	out, err := marshalStable(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.write(t, w.coverageRel, out)
 }
 
 func (w *syntheticGateWorld) setSmokeRelease(t *testing.T, release string) {
