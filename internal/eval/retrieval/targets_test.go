@@ -220,6 +220,74 @@ func TestDeriveTargets(t *testing.T) {
 			}
 		}
 	})
+	t.Run("a comparator measured over no queries, or over a different population, BLOCKS the derivation (AC-4)", func(t *testing.T) {
+		// The reviewer's third probe, and the hole the name and status checks
+		// above leave open. On the real derivation report: keep all four
+		// comparators PRESENT and each `status: ok`, empty only the hybrid_v1
+		// and semantic_name_only query arrays, and the derivation returned
+		// rc=0 and wrote architecture_flow must_reach 0.1 and the
+		// exact_identifier Top-1 floor 0.75 — both of the quality misses this
+		// story records printed as passes. An empty population contributes no
+		// metric to the best-single-baseline scan, so it is exactly as absent
+		// from the bar as a comparator left out of the report, while the
+		// report still looks complete. Unlike a forged report this arrives by
+		// ACCIDENT: a comparator that ran but produced no rows, a report
+		// written or filtered part-way, a selector that matched nothing.
+		for _, blank := range DerivationBaselines {
+			r2 := syntheticReport()
+			for i := range r2.Reproducible.Baselines {
+				if r2.Reproducible.Baselines[i].Name == blank {
+					r2.Reproducible.Baselines[i].Queries = nil
+				}
+			}
+			_, err := DeriveTargets(r2, DerivedFrom{}, "2026-08-30")
+			if err == nil {
+				t.Fatalf("DeriveTargets derived a bar while the comparator %s carried no query results; a bar computed over an empty comparator is not a bar", blank)
+			}
+			if !strings.Contains(err.Error(), string(blank)) || !strings.Contains(err.Error(), "BLOCKED") {
+				t.Errorf("the refusal for an unmeasured %s does not name it and say the derivation is blocked: %v", blank, err)
+			}
+		}
+		// The probe verbatim: the two comparators the architecture_flow bar
+		// and the exact_identifier floor rest on, emptied together.
+		if _, err := DeriveTargets(reportWithEmptyPopulation(BaselineHybridV1, BaselineSemanticNameOnly), DerivedFrom{}, "2026-08-30"); err == nil {
+			t.Fatal("DeriveTargets accepted a report whose hybrid_v1 and semantic_name_only comparators are present and ok but carry no query results; that derivation lowers the architecture_flow bar and the exact_identifier floor and turns two recorded misses into passes")
+		}
+
+		// A non-empty population that is not its peers' is refused for the
+		// same reason: every value here is a plain mean over a stratum's
+		// queries, so a comparator scored on a different set has answered a
+		// different question, and comparing the means lets the population
+		// pick the winner.
+		t.Run("a population smaller than its peers'", func(t *testing.T) {
+			r2 := syntheticReport()
+			for i := range r2.Reproducible.Baselines {
+				if r2.Reproducible.Baselines[i].Name == BaselineSemanticNameOnly {
+					// Drop q1 alone: still four scored queries, still ok.
+					r2.Reproducible.Baselines[i].Queries = r2.Reproducible.Baselines[i].Queries[1:]
+				}
+			}
+			err := derivationRefusal(t, r2, "a comparator measured over four of the five queries its peers ran")
+			if !strings.Contains(err.Error(), string(BaselineSemanticNameOnly)) || !strings.Contains(err.Error(), "q1") {
+				t.Errorf("the refusal does not name the comparator and the query it differs by: %v", err)
+			}
+		})
+		t.Run("the same NUMBER of queries, but not the same queries", func(t *testing.T) {
+			// Equal counts are the trap this check must not fall into: five
+			// queries against five, but q1 twice and q3 never.
+			r2 := syntheticReport()
+			for i := range r2.Reproducible.Baselines {
+				if r2.Reproducible.Baselines[i].Name == BaselineHybridV1 {
+					qs := r2.Reproducible.Baselines[i].Queries
+					r2.Reproducible.Baselines[i].Queries = append([]QueryResult{qs[0], qs[0]}, qs[2:]...)
+				}
+			}
+			err := derivationRefusal(t, r2, "a comparator measured over as many queries as its peers, but not the same ones")
+			if !strings.Contains(err.Error(), string(BaselineHybridV1)) || !strings.Contains(err.Error(), "q3") {
+				t.Errorf("the refusal does not name the comparator and the query it differs by: %v", err)
+			}
+		})
+	})
 	t.Run("the coverage target is written in whole queries over the measured population", func(t *testing.T) {
 		bc := tg.BundleCoverage
 		if bc == nil {
@@ -244,8 +312,15 @@ func TestDeriveTargets(t *testing.T) {
 			}
 			r2.Reproducible.Baselines[i].Queries = kept
 		}
-		if _, err := DeriveTargets(r2, DerivedFrom{}, "2026-08-30"); err == nil {
+		// Every comparator loses the same queries, so the four populations
+		// stay identical and non-empty and the comparator-population refusal
+		// does not fire. Asserted, so this subtest cannot quietly decay into
+		// a second test of that refusal and stop testing coverage at all.
+		_, err := DeriveTargets(r2, DerivedFrom{}, "2026-08-30")
+		if err == nil {
 			t.Error("DeriveTargets wrote a coverage target over an unmeasured population")
+		} else if !strings.Contains(err.Error(), "bundle-coverage population") {
+			t.Errorf("the refusal is no longer the coverage one, so this subtest no longer tests coverage: %v", err)
 		}
 	})
 	t.Run("conceptual strata carry a fusion target above the best baseline", func(t *testing.T) {
@@ -339,6 +414,37 @@ func reportWithout(names ...Baseline) *Report {
 	}
 	r.Reproducible.Baselines = kept
 	return r
+}
+
+// reportWithEmptyPopulation keeps every named comparator PRESENT and `ok` and
+// empties only its query results — the shape a comparator that ran but
+// produced no rows leaves behind.
+func reportWithEmptyPopulation(names ...Baseline) *Report {
+	blank := map[Baseline]bool{}
+	for _, n := range names {
+		blank[n] = true
+	}
+	r := syntheticReport()
+	for i := range r.Reproducible.Baselines {
+		if blank[r.Reproducible.Baselines[i].Name] {
+			r.Reproducible.Baselines[i].Queries = nil
+		}
+	}
+	return r
+}
+
+// derivationRefusal asserts DeriveTargets refused the report and returns the
+// refusal, so a caller can go on to check what it names.
+func derivationRefusal(t *testing.T, r *Report, what string) error {
+	t.Helper()
+	tg, err := DeriveTargets(r, DerivedFrom{}, "2026-08-30")
+	if err == nil {
+		t.Fatalf("DeriveTargets derived a bar from %s; architecture_flow must_reach = %+v", what, tg.Strata[StratumArchitectureFlow].FusionTarget)
+	}
+	if !strings.Contains(err.Error(), "BLOCKED") {
+		t.Errorf("the refusal for %s does not say the derivation is blocked: %v", what, err)
+	}
+	return err
 }
 
 // TestDeriveTargets_ReproducesTheCommittedFile is the positive control for the

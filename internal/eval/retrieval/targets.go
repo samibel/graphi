@@ -233,7 +233,7 @@ const TargetsNotes = "Retrieval targets, recalibrated by SW-282 from measured CO
 
 // DeriveTargets computes the targets file from a report (AC-7).
 //
-// It refuses four report shapes outright rather than working around them
+// It refuses five report shapes outright rather than working around them
 // (SW-282 AC-4):
 //
 //   - a report carrying a candidate-pipeline baseline (chunk_only, fusion,
@@ -252,6 +252,12 @@ const TargetsNotes = "Retrieval targets, recalibrated by SW-282 from measured CO
 //     recorded miss into a pass without anyone deciding to. A comparator that
 //     genuinely cannot run is a BLOCKED derivation to report, not a bar to
 //     lower.
+//   - a report in which a comparator is present and `ok` but was measured over
+//     an empty query population, or over a population different from its
+//     peers'. Closing the set by name and by status still leaves the set open
+//     by POPULATION: a comparator scored on nothing contributes no metric to
+//     the best-single-baseline scan and is therefore indistinguishable from
+//     one that was never in the report at all. See refusePartialComparatorSet.
 //   - a report carrying a holdout query result. The previous behaviour silently
 //     filtered holdout rows away, which makes "the holdout was never executed"
 //     and "the holdout was executed and dropped" produce identical output. The
@@ -408,7 +414,8 @@ func refuseNonComparatorReport(r *Report) error {
 	return nil
 }
 
-// refusePartialComparatorSet closes the comparator set in both directions.
+// refusePartialComparatorSet closes the comparator set in every direction it
+// can be opened: by NAME, by STATUS, and by QUERY POPULATION.
 //
 // The set the bar is computed over IS the bar, so the derivation may not be
 // handed a different set and asked to produce "the" targets. Dropping a
@@ -416,12 +423,40 @@ func refuseNonComparatorReport(r *Report) error {
 // strong stranger raises them, and listing one twice lets the second copy
 // overwrite the first — three ways to move a bar with nothing on the record
 // saying it moved.
+//
+// The name and status checks alone leave a fourth way, and it is the one that
+// arrives by accident rather than by intent. A comparator can be PRESENT and
+// `ok` and still have been measured over nothing, or over a different set of
+// queries from its peers: a run that produced no rows, a report written or
+// filtered part-way, a selector that matched nothing. Nothing downstream
+// notices, because AggregateAll over an empty slice yields no metrics at all
+// and the best-single-baseline scan simply skips the metrics a comparator does
+// not carry. Emptying the hybrid_v1 and semantic_name_only query arrays of the
+// committed derivation report — leaving all four names present and all four
+// `ok` — used to be ACCEPTED, and dropped architecture_flow's must_reach from
+// 0.4578575262772977 to 0.1 and the exact_identifier Top-1 floor from 1 to
+// 0.75, turning both of the quality misses this story records into passes.
+//
+// So the population is checked too, and "the same population" is defined
+// operationally as THE IDENTICAL MULTISET OF QUERY IDS, taken against the
+// first comparator in DerivationBaselines. That is the strictest reading and
+// the only one that makes the comparison mean anything: every value in the
+// targets file is a plain mean over a stratum's per-query values, so a
+// comparator measured over a different or smaller population has not answered
+// the same question less well — it has answered a different question. The
+// queries it was never asked cannot count against it, and the queries its
+// peers were never asked cannot count against them, so comparing the two means
+// lets the population rather than retrieval quality pick the winner and set
+// the bar. Equal COUNTS are not enough for the same reason: two comparators
+// scored on forty-four different queries each are no more comparable than one
+// scored on forty-four and one on three.
 func refusePartialComparatorSet(r *Report) error {
 	required := map[Baseline]bool{}
 	for _, b := range DerivationBaselines {
 		required[b] = true
 	}
 	status := map[Baseline]string{}
+	population := map[Baseline][]string{}
 	var extra, duplicate []string
 	for _, b := range r.Reproducible.Baselines {
 		if !required[b.Name] {
@@ -433,6 +468,7 @@ func refusePartialComparatorSet(r *Report) error {
 			continue
 		}
 		status[b.Name] = b.Status
+		population[b.Name] = measuredPopulation(b)
 	}
 	var missing []string
 	for _, b := range DerivationBaselines {
@@ -466,7 +502,75 @@ func refusePartialComparatorSet(r *Report) error {
 		return fmt.Errorf("retrieval: comparator(s) %s did not run; the derivation is BLOCKED, not narrowed to the ones that did. Deriving from whichever comparators happened to run is the same defect as leaving one out of the report, and it is the one that arrives by accident: the missing comparator's best values disappear from the bar, so a comparator that fails to run silently lowers it and can turn a recorded miss into a pass without anyone deciding to. If a comparator genuinely cannot run, report the blocked derivation and fix it — the previous targets stand until the whole set %s runs",
 			strings.Join(notOK, ", "), joinBaselines(DerivationBaselines))
 	}
+	var unmeasured []string
+	for _, b := range DerivationBaselines {
+		if len(population[b]) == 0 {
+			unmeasured = append(unmeasured, string(b))
+		}
+	}
+	if len(unmeasured) > 0 {
+		return fmt.Errorf("retrieval: comparator(s) %s are present and ok but carry NO query results; the derivation is BLOCKED. A comparator measured over an empty population contributes no metric to the best-single-baseline scan, so it is exactly as absent from the bar as one left out of the report altogether — with the difference that the report still looks complete. This arrives by accident: a comparator that ran but produced no rows, a report written or filtered part-way, a selector that matched nothing. It is refused rather than averaged around: a bar derived from an empty comparator is not a bar. Re-measure the whole comparator set %s over one query population",
+			strings.Join(unmeasured, ", "), joinBaselines(DerivationBaselines))
+	}
+	reference := DerivationBaselines[0]
+	var differing []string
+	for _, b := range DerivationBaselines[1:] {
+		diff := populationDifference(population[reference], population[b])
+		if len(diff) == 0 {
+			continue
+		}
+		shown := diff
+		if len(shown) > 5 {
+			shown = shown[:5]
+		}
+		differing = append(differing, fmt.Sprintf("%s measured %d quer%s to %s's %d — %s%s",
+			b, len(population[b]), map[bool]string{true: "y", false: "ies"}[len(population[b]) == 1],
+			reference, len(population[reference]), strings.Join(shown, ", "),
+			map[bool]string{true: ", …", false: ""}[len(diff) > len(shown)]))
+	}
+	if len(differing) > 0 {
+		return fmt.Errorf("retrieval: the comparators were not all measured over the same query population (%s); the derivation is BLOCKED. \"The same population\" means the IDENTICAL MULTISET OF QUERY IDS, compared here against %s, and equal counts are not enough — two comparators scored on different queries are not comparable however many each ran. Every value in the targets file is a plain mean over a stratum's per-query values, so a comparator measured over a different or smaller population has not answered the same question less well, it has answered a different question: the queries it was never asked cannot count against it, and its peers' unasked queries cannot count against them. Picking a best single baseline across such means lets the population, not retrieval quality, choose the winner and set the bar. Re-measure the whole comparator set %s over one population",
+			strings.Join(differing, "; "), reference, joinBaselines(DerivationBaselines))
+	}
 	return nil
+}
+
+// measuredPopulation is the population a baseline was measured over: the sorted
+// ids of its query results, duplicates kept so a query counted twice is not
+// mistaken for the same population as one counted once.
+func measuredPopulation(b BaselineResult) []string {
+	ids := make([]string, 0, len(b.Queries))
+	for _, q := range b.Queries {
+		ids = append(ids, q.ID)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+// populationDifference names the query ids whose multiplicity differs between
+// two populations, as "<id> (<n here> vs <n in the reference>)". An id present
+// in one and absent from the other reads as 0 on that side, and a duplicate
+// reads as 2 against 1, so one format covers every way two populations can
+// disagree. The result is sorted, so a refusal is reproducible.
+func populationDifference(reference, got []string) []string {
+	refN, gotN := map[string]int{}, map[string]int{}
+	for _, id := range reference {
+		refN[id]++
+	}
+	for _, id := range got {
+		gotN[id]++
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, id := range append(append([]string{}, reference...), got...) {
+		if seen[id] || refN[id] == gotN[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, fmt.Sprintf("%s (%d here vs %d)", id, gotN[id], refN[id]))
+	}
+	sort.Strings(out)
+	return out
 }
 
 func joinBaselines(bs []Baseline) string {
