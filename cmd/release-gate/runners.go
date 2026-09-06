@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/internal/bench"
+	"github.com/samibel/graphi/internal/eval/retrieval"
 	"github.com/samibel/graphi/internal/evalreport"
 )
 
@@ -45,6 +46,21 @@ func DefaultGates() map[string]Runner {
 			timeout:    10 * time.Minute,
 			score:      100,
 			run:        bench.RunEnvironmentIndependent,
+		},
+		// retrieval-targets makes docs/eval/retrieval-targets.json executable
+		// (SW-282 AC-7). Before this gate the file was written by
+		// `retrieval-eval -derive` and read back by exactly one test, and no
+		// release command evaluated it — a target nothing enforces is a note.
+		// The command exits non-zero on the first missed target and names it,
+		// so a recalibrated bar the shipped pipeline misses blocks the release
+		// line instead of sitting in a JSON file nobody runs.
+		"retrieval-targets": &shellRunner{
+			name:    "retrieval-targets",
+			cmd:     "go",
+			args:    []string{"run", "./cmd/retrieval-eval", "-check-targets", retrieval.GateReportPath},
+			env:     append(os.Environ(), "CGO_ENABLED=0"),
+			timeout: 5 * time.Minute,
+			score:   100,
 		},
 	}
 }

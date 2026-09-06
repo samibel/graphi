@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "date": "2026-08-30",
-  "immutable_until": "SW-266",
-  "notes": "SW-258 retrieval targets, written ONCE from measured baselines before any fusion exists. Per stratum: the best single-baseline value of every aggregate metric over the DEV split (holdout is never used to set a target), the oracle ceiling the scorer can reach, a fusion_target on the conceptual strata (best + min_delta on the target metric, capped at the ceiling), and the Top-1 no-regression floor on exact_identifier. Immutable until the story named in immutable_until; regenerate only from a report checked in beside it (derived_from names the report and its sha256).",
+  "date": "2026-09-06",
+  "immutable_until": "SW-283",
+  "notes": "Retrieval targets, recalibrated by SW-282 from measured COMPARATOR baselines over the DEV split alone. Comparator set: lexical, hybrid_v1, semantic_name_only, plus oracle_upper_bound for the ceilings. chunk_only, fusion and semantic_first are the candidate pipeline and are REFUSED as single baselines by DeriveTargets — a bar set to the candidate plus a delta is not a bar. A report carrying any holdout query result is refused outright rather than filtered, because a silently discarded holdout row cannot be told apart from one that was never executed; the holdout is never used to set a target. Per stratum the file records the best single-baseline value of every aggregate metric over the dev split, the oracle ceiling the scorer can reach, and on the conceptual strata a fusion_target: BEST SINGLE BASELINE OVER THE DEVELOPMENT SPLIT PLUS fusion_min_delta 0.10, CAPPED AT THE ORACLE CEILING. exact_identifier carries no fusion delta; it carries the Top-1 no_regression floor, the best single baseline's Top-1, which the shipped pipeline may not fall below. Each stratum's dev_queries IS ITS POPULATION SIZE AND ITS RESOLUTION: every aggregate here is a plain mean over that many per-query values, so one query moves it by 1/dev_queries and a shortfall smaller than one query's influence is not evidence of a difference. architecture_flow has five development queries and exact_identifier four; write no bar, and read no miss, to more precision than that. bundle_coverage is the SW-264 gate SW-266 carried in: over the six dev nl_behaviour queries SelectTaskContextDevNLBehaviour selects, at token budget 1200, a query is covered when any task_context/2 bundle evidence citation satisfies SpanMatches for any grade-3 judgement, and the bar is every query covered with zero misses, expressed in whole queries because the population's resolution is 1/6. THE BUNDLE-COVERAGE GATE SUPPLEMENTS AND DOES NOT REPLACE the qrel-blind bundle-sufficiency smoke gate: coverage asserts a reviewed grade-3 span is PRESENT in the bundle bytes, the smoke gate asserts a reader could ANSWER from those bytes, SW-280 is the direct evidence that the two can disagree (31 of 64 against a pre-registered k=56), and the gate requires BOTH and fails when either is unmet or absent. Every target is enforced by `go run ./cmd/retrieval-eval -check-targets <report>` and by the release-gate retrieval-targets runner; a target no command enforces is a note, not a target. Immutable until the story named in immutable_until; regenerate only from a report checked in beside it (derived_from names the report and its sha256).",
   "derived_from": {
-    "report": "docs/eval/retrieval/runs/2026-08-30-local/cobra-v1-report.json",
-    "sha256": "c4023fcfa683d1ce937b8bc9e604563944858cb5ce8cbdc0fa82b2c20a65e43f",
+    "report": "docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local/cobra-v2-dev-report.json",
+    "sha256": "e7b09f7cb40b8a59f8c9fa656652777992d32a287a2326da338daa839789f8ee",
     "repo": "cobra",
     "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
-    "dataset": "cobra-v1",
-    "dataset_sha256": "be604ff7b17db5c35b0c63ddbb5d758633535e81e6771858ff860c724fb50d82",
-    "candidate_sha": "8f1d1111739e0b86fc513f9b6a58802c5817bb91",
+    "dataset": "cobra-v2-dev",
+    "dataset_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+    "candidate_sha": "e824197cf4610e3824587e0cb76dcb7a17d9410f+dirty",
     "runner_class": "local"
   },
   "target_metric": "ndcg@10",
@@ -22,14 +22,10 @@
   "split": "dev",
   "baselines": [
     "lexical",
-    "hybrid_v1"
+    "hybrid_v1",
+    "semantic_name_only"
   ],
-  "unavailable_baselines": [
-    {
-      "baseline": "semantic_name_only",
-      "reason": "no embedder configured; run `graphi setup-embedder ...`"
-    }
-  ],
+  "unavailable_baselines": [],
   "strata": {
     "ambiguous": {
       "dev_queries": 4,
@@ -43,8 +39,8 @@
           "value": 1.6666666666666667
         },
         "mrr@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.5
+          "baseline": "semantic_name_only",
+          "value": 0.53125
         },
         "ndcg@10": {
           "baseline": "hybrid_v1",
@@ -71,8 +67,8 @@
           "value": 0.3125
         },
         "top1": {
-          "baseline": "hybrid_v1",
-          "value": 0.25
+          "baseline": "semantic_name_only",
+          "value": 0.5
         }
       },
       "oracle_ceiling": {
@@ -92,32 +88,32 @@
       "dev_queries": 5,
       "best_single_baseline": {
         "first_relevant_found": {
-          "baseline": "hybrid_v1",
-          "value": 0.6
+          "baseline": "semantic_name_only",
+          "value": 0.8
         },
         "first_relevant_rank_mean": {
           "baseline": "hybrid_v1",
           "value": 2.3333333333333335
         },
         "mrr@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.26666666666666666
+          "baseline": "semantic_name_only",
+          "value": 0.2935714285714286
         },
         "ndcg@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.22862302249679978
+          "baseline": "semantic_name_only",
+          "value": 0.35785752627729767
         },
         "recall@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.35
+          "baseline": "semantic_name_only",
+          "value": 0.5
         },
         "recall@1200tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.2833333333333333
+          "baseline": "semantic_name_only",
+          "value": 0.4
         },
         "recall@2000tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.35
+          "baseline": "semantic_name_only",
+          "value": 0.5
         },
         "recall@5": {
           "baseline": "hybrid_v1",
@@ -128,8 +124,8 @@
           "value": 0.2833333333333333
         },
         "top1": {
-          "baseline": "lexical",
-          "value": 0
+          "baseline": "semantic_name_only",
+          "value": 0.2
         }
       },
       "oracle_ceiling": {
@@ -146,54 +142,54 @@
       },
       "fusion_target": {
         "metric": "ndcg@10",
-        "best_baseline": "hybrid_v1",
-        "best_value": 0.22862302249679978,
+        "best_baseline": "semantic_name_only",
+        "best_value": 0.35785752627729767,
         "min_delta": 0.1,
-        "must_reach": 0.32862302249679975
+        "must_reach": 0.4578575262772977
       }
     },
     "config_docs": {
-      "dev_queries": 5,
+      "dev_queries": 19,
       "best_single_baseline": {
         "first_relevant_found": {
           "baseline": "hybrid_v1",
-          "value": 0.8
+          "value": 0.631578947368421
         },
         "first_relevant_rank_mean": {
-          "baseline": "hybrid_v1",
-          "value": 1.25
+          "baseline": "semantic_name_only",
+          "value": 2.25
         },
         "mrr@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.7
+          "baseline": "semantic_name_only",
+          "value": 0.48947368421052634
         },
         "ndcg@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.41117404924150963
+          "baseline": "semantic_name_only",
+          "value": 0.3418283850548437
         },
         "recall@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.36666666666666664
+          "baseline": "semantic_name_only",
+          "value": 0.29912280701754385
         },
         "recall@1200tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.31666666666666665
+          "baseline": "semantic_name_only",
+          "value": 0.27543859649122804
         },
         "recall@2000tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.36666666666666664
+          "baseline": "semantic_name_only",
+          "value": 0.29912280701754385
         },
         "recall@5": {
-          "baseline": "hybrid_v1",
-          "value": 0.26666666666666666
+          "baseline": "semantic_name_only",
+          "value": 0.26228070175438595
         },
         "recall@600tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.26666666666666666
+          "baseline": "semantic_name_only",
+          "value": 0.22543859649122808
         },
         "top1": {
-          "baseline": "hybrid_v1",
-          "value": 0.6
+          "baseline": "semantic_name_only",
+          "value": 0.42105263157894735
         }
       },
       "oracle_ceiling": {
@@ -205,7 +201,7 @@
         "recall@1200tok": 1,
         "recall@2000tok": 1,
         "recall@5": 1,
-        "recall@600tok": 0.7333333333333333,
+        "recall@600tok": 0.793859649122807,
         "top1": 1
       }
     },
@@ -217,40 +213,40 @@
           "value": 1
         },
         "first_relevant_rank_mean": {
-          "baseline": "hybrid_v1",
-          "value": 1.25
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "mrr@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.875
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "ndcg@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.7003201168888918
+          "baseline": "semantic_name_only",
+          "value": 0.9623997250456581
         },
         "recall@10": {
-          "baseline": "lexical",
-          "value": 0.6666666666666666
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "recall@1200tok": {
-          "baseline": "lexical",
-          "value": 0.6666666666666666
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "recall@2000tok": {
-          "baseline": "lexical",
-          "value": 0.6666666666666666
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "recall@5": {
-          "baseline": "lexical",
-          "value": 0.5833333333333333
+          "baseline": "semantic_name_only",
+          "value": 1
         },
         "recall@600tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.5833333333333333
+          "baseline": "semantic_name_only",
+          "value": 0.9166666666666666
         },
         "top1": {
-          "baseline": "lexical",
-          "value": 0.75
+          "baseline": "semantic_name_only",
+          "value": 1
         }
       },
       "oracle_ceiling": {
@@ -267,8 +263,8 @@
       },
       "no_regression": {
         "metric": "top1",
-        "baseline": "lexical",
-        "floor": 0.75
+        "baseline": "semantic_name_only",
+        "floor": 1
       }
     },
     "exact_path": {
@@ -332,40 +328,40 @@
       "dev_queries": 6,
       "best_single_baseline": {
         "first_relevant_found": {
-          "baseline": "hybrid_v1",
-          "value": 0.5
+          "baseline": "semantic_name_only",
+          "value": 0.8333333333333334
         },
         "first_relevant_rank_mean": {
           "baseline": "hybrid_v1",
           "value": 1
         },
         "mrr@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.5
+          "baseline": "semantic_name_only",
+          "value": 0.611111111111111
         },
         "ndcg@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.30582721007823904
+          "baseline": "semantic_name_only",
+          "value": 0.44497025306999105
         },
         "recall@10": {
-          "baseline": "hybrid_v1",
-          "value": 0.27777777777777773
+          "baseline": "semantic_name_only",
+          "value": 0.38888888888888884
         },
         "recall@1200tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.2222222222222222
+          "baseline": "semantic_name_only",
+          "value": 0.3333333333333333
         },
         "recall@2000tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.27777777777777773
+          "baseline": "semantic_name_only",
+          "value": 0.38888888888888884
         },
         "recall@5": {
-          "baseline": "hybrid_v1",
-          "value": 0.2222222222222222
+          "baseline": "semantic_name_only",
+          "value": 0.25
         },
         "recall@600tok": {
-          "baseline": "hybrid_v1",
-          "value": 0.2222222222222222
+          "baseline": "semantic_name_only",
+          "value": 0.2916666666666667
         },
         "top1": {
           "baseline": "hybrid_v1",
@@ -386,10 +382,10 @@
       },
       "fusion_target": {
         "metric": "ndcg@10",
-        "best_baseline": "hybrid_v1",
-        "best_value": 0.30582721007823904,
+        "best_baseline": "semantic_name_only",
+        "best_value": 0.44497025306999105,
         "min_delta": 0.1,
-        "must_reach": 0.4058272100782391
+        "must_reach": 0.544970253069991
       }
     },
     "no_hit": {
@@ -404,5 +400,32 @@
         "negative_hit_rate@5": 0
       }
     }
+  },
+  "bundle_coverage": {
+    "population": {
+      "dataset": "cobra-v2-dev",
+      "split": "dev",
+      "stratum": "nl_behaviour",
+      "selector": "retrieval.SelectTaskContextDevNLBehaviour: q.stratum == nl_behaviour AND q.split == dev; no caller-selectable split",
+      "query_ids": [
+        "cb-11",
+        "cb-12",
+        "cb-13",
+        "cb-14",
+        "cb-15",
+        "cb-16"
+      ],
+      "n": 6
+    },
+    "token_budget": 1200,
+    "credit_rule": "a query is covered when any task_context/2 bundle evidence citation satisfies retrieval.SpanMatches(evidence.path, evidence.line, judgement) for any grade-3 judgement",
+    "threshold": {
+      "covered_queries_required": 6,
+      "max_misses": 0
+    },
+    "resolution": "1/6",
+    "resolution_note": "one query moves the aggregate by 1/6 (16.7 percentage points); extra decimal places add no evidence, so the bar is stated in whole queries",
+    "threshold_source": "Not calibrated from any measurement. The bar is zero mechanical coverage misses over the whole population, which is what the no-complete-case miss rule in docs/eval/retrieval/methodology.md already implies and what SW-264 measured on the same six queries (grade3_span_coverage 1, coverage_resolution_fraction 1/6, docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/measurement.json). If a re-measurement misses, the miss is recorded and becomes the recovery story's input; the threshold is NOT lowered to the observed value.",
+    "supplements": "This gate SUPPLEMENTS and does not replace the qrel-blind bundle-sufficiency smoke gate (qrel-blind smoke evaluation, SW-266 AC-7). Coverage asserts that a reviewed grade-3 span is PRESENT in the bundle bytes; the smoke gate asserts that a reader could ANSWER from those bytes. SW-280 is the direct evidence that the two can disagree: 31 of 64 against a pre-registered k=56, with graders repeatedly locating the span outside the retrieved bytes. The retrieval-targets gate requires BOTH and fails when either is unmet or absent."
   }
 }

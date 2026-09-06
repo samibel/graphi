@@ -4,11 +4,25 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 )
 
-// ImmutableUntil marks the checked-in targets and budgets as frozen until the
-// story that may rewrite them (AC-7, AC-8).
-const ImmutableUntil = "SW-266"
+// The two checked-in files used to share one immutability milestone. They no
+// longer can: SW-282 rewrites the targets file and must leave the budgets file
+// byte-identical, and a single constant cannot express two different next
+// stories. Splitting it is the whole point — a shared constant made "which
+// file may this story rewrite?" unanswerable.
+
+// TargetsImmutableUntil marks docs/eval/retrieval-targets.json frozen until the
+// story that may next rewrite it. SW-266's slices are spent; the next rewrite
+// belongs to the retrieval recovery story that fixes the misses this file now
+// records (SW-282 AC-5, OQ-1).
+const TargetsImmutableUntil = "SW-283"
+
+// BudgetsImmutableUntil marks docs/eval/retrieval-budgets.json frozen. SW-282
+// does not recalibrate budgets and leaves that file byte-identical, so its
+// milestone does not move.
+const BudgetsImmutableUntil = "SW-266"
 
 // TargetsSchemaVersion pins docs/eval/retrieval-targets.json.
 const TargetsSchemaVersion = 1
@@ -94,19 +108,115 @@ type Targets struct {
 	Baselines            []Baseline               `json:"baselines"`
 	UnavailableBaselines []UnavailableBaseline    `json:"unavailable_baselines"`
 	Strata               map[string]StratumTarget `json:"strata"`
+
+	// BundleCoverage is the SW-264 bundle-coverage gate SW-266 carried in and
+	// SW-282 finally set. It is not derived from any measurement: the bar is
+	// zero mechanical coverage misses, which is what the aggregate's own
+	// no-miss rule already implies.
+	BundleCoverage *BundleCoverage `json:"bundle_coverage,omitempty"`
 }
 
+// CandidatePipelineBaselines are the engine/retrieval pipeline modes. They are
+// the CANDIDATE, never a comparator: a bar set to "the candidate plus 0.10" is
+// not a bar, it is a restatement of what the candidate already does.
+var CandidatePipelineBaselines = []Baseline{BaselineChunkOnly, BaselineFusion, BaselineSemanticFirst}
+
+// ComparatorBaselines is the exact set a target may be derived from.
+var ComparatorBaselines = []Baseline{BaselineLexical, BaselineHybridV1, BaselineSemanticNameOnly}
+
+// BundleCoveragePopulation is the population the coverage bar is set over. It
+// is not configurable: SelectTaskContextDevNLBehaviour picks it and
+// RunTaskContextV2 hard-wires that selector.
+type BundleCoveragePopulation struct {
+	Dataset  string   `json:"dataset"`
+	Split    string   `json:"split"`
+	Stratum  string   `json:"stratum"`
+	Selector string   `json:"selector"`
+	QueryIDs []string `json:"query_ids"`
+	N        int      `json:"n"`
+}
+
+// BundleCoverageThreshold is the bar, expressed in WHOLE QUERIES. There is
+// deliberately no share, percentage or fractional field: on a six-query
+// population one query is 16.7 points, so a decimal threshold would invent
+// precision the sample cannot support — the defect that produced SW-263's
+// 0.00084 miss.
+type BundleCoverageThreshold struct {
+	CoveredQueriesRequired int `json:"covered_queries_required"`
+	MaxMisses              int `json:"max_misses"`
+}
+
+// BundleCoverage is the checked-in coverage target.
+type BundleCoverage struct {
+	Population      BundleCoveragePopulation `json:"population"`
+	TokenBudget     int                      `json:"token_budget"`
+	CreditRule      string                   `json:"credit_rule"`
+	Threshold       BundleCoverageThreshold  `json:"threshold"`
+	Resolution      string                   `json:"resolution"`
+	ResolutionNote  string                   `json:"resolution_note"`
+	ThresholdSource string                   `json:"threshold_source"`
+	Supplements     string                   `json:"supplements"`
+}
+
+// BundleCoverageSupplements is the statement AC-3 requires beside the target.
+const BundleCoverageSupplements = "This gate SUPPLEMENTS and does not replace the qrel-blind bundle-sufficiency smoke gate (" +
+	QrelBlindSmokeEvaluationName + ", SW-266 AC-7). Coverage asserts that a reviewed grade-3 span is PRESENT in the bundle bytes; " +
+	"the smoke gate asserts that a reader could ANSWER from those bytes. SW-280 is the direct evidence that the two can disagree: " +
+	"31 of 64 against a pre-registered k=56, with graders repeatedly locating the span outside the retrieved bytes. " +
+	"The retrieval-targets gate requires BOTH and fails when either is unmet or absent."
+
+// BundleCoverageThresholdSource explains where the bar came from, so nobody
+// reads it as calibrated from the report beside it.
+const BundleCoverageThresholdSource = "Not calibrated from any measurement. The bar is zero mechanical coverage misses over the whole " +
+	"population, which is what the no-complete-case miss rule in docs/eval/retrieval/methodology.md already implies and what SW-264 " +
+	"measured on the same six queries (grade3_span_coverage 1, coverage_resolution_fraction 1/6, " +
+	"docs/eval/retrieval/runs/2026-09-02-sw264-task-context-v2-static-local/measurement.json). " +
+	"If a re-measurement misses, the miss is recorded and becomes the recovery story's input; the threshold is NOT lowered to the observed value."
+
 // TargetsNotes explains the file to a reader who has only the JSON.
-const TargetsNotes = "SW-258 retrieval targets, written ONCE from measured baselines before any fusion exists. Per stratum: the best " +
-	"single-baseline value of every aggregate metric over the DEV split (holdout is never used to set a target), the oracle " +
-	"ceiling the scorer can reach, a fusion_target on the conceptual strata (best + min_delta on the target metric, capped at " +
-	"the ceiling), and the Top-1 no-regression floor on exact_identifier. Immutable until the story named in immutable_until; " +
-	"regenerate only from a report checked in beside it (derived_from names the report and its sha256)."
+const TargetsNotes = "Retrieval targets, recalibrated by SW-282 from measured COMPARATOR baselines over the DEV split alone. " +
+	"Comparator set: lexical, hybrid_v1, semantic_name_only, plus oracle_upper_bound for the ceilings. " +
+	"chunk_only, fusion and semantic_first are the candidate pipeline and are REFUSED as single baselines by DeriveTargets — " +
+	"a bar set to the candidate plus a delta is not a bar. A report carrying any holdout query result is refused outright rather " +
+	"than filtered, because a silently discarded holdout row cannot be told apart from one that was never executed; the holdout is " +
+	"never used to set a target. Per stratum the file records the best single-baseline value of every aggregate metric over the dev " +
+	"split, the oracle ceiling the scorer can reach, and on the conceptual strata a fusion_target: BEST SINGLE BASELINE OVER THE " +
+	"DEVELOPMENT SPLIT PLUS fusion_min_delta 0.10, CAPPED AT THE ORACLE CEILING. exact_identifier carries no fusion delta; it carries " +
+	"the Top-1 no_regression floor, the best single baseline's Top-1, which the shipped pipeline may not fall below. Each stratum's " +
+	"dev_queries IS ITS POPULATION SIZE AND ITS RESOLUTION: every aggregate here is a plain mean over that many per-query values, so " +
+	"one query moves it by 1/dev_queries and a shortfall smaller than one query's influence is not evidence of a difference. " +
+	"architecture_flow has five development queries and exact_identifier four; write no bar, and read no miss, to more precision " +
+	"than that. bundle_coverage " +
+	"is the SW-264 gate SW-266 carried in: over the six dev nl_behaviour queries SelectTaskContextDevNLBehaviour selects, at token " +
+	"budget 1200, a query is covered when any task_context/2 bundle evidence citation satisfies SpanMatches for any grade-3 " +
+	"judgement, and the bar is every query covered with zero misses, expressed in whole queries because the population's resolution " +
+	"is 1/6. THE BUNDLE-COVERAGE GATE SUPPLEMENTS AND DOES NOT REPLACE the qrel-blind bundle-sufficiency smoke gate: coverage " +
+	"asserts a reviewed grade-3 span is PRESENT in the bundle bytes, the smoke gate asserts a reader could ANSWER from those bytes, " +
+	"SW-280 is the direct evidence that the two can disagree (31 of 64 against a pre-registered k=56), and the gate requires BOTH " +
+	"and fails when either is unmet or absent. Every target is enforced by `go run ./cmd/retrieval-eval -check-targets <report>` and by the release-gate " +
+	"retrieval-targets runner; a target no command enforces is a note, not a target. Immutable until the story named in " +
+	"immutable_until; regenerate only from a report checked in beside it (derived_from names the report and its sha256)."
 
 // DeriveTargets computes the targets file from a report (AC-7).
+//
+// It refuses two report shapes outright rather than working around them
+// (SW-282 AC-4):
+//
+//   - a report carrying a candidate-pipeline baseline (chunk_only, fusion,
+//     semantic_first). Admitting the candidate as a "single baseline" would let
+//     it set its own bar. This is enforced HERE, not in whatever command line
+//     happened to be used, because a command-line convention is something a
+//     later run can forget.
+//   - a report carrying a holdout query result. The previous behaviour silently
+//     filtered holdout rows away, which makes "the holdout was never executed"
+//     and "the holdout was executed and dropped" produce identical output. The
+//     holdout may not be touched, so the honest answer is to refuse the report.
 func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 	if r == nil {
 		return nil, fmt.Errorf("retrieval: no report")
+	}
+	if err := refuseNonComparatorReport(r); err != nil {
+		return nil, err
 	}
 	rep := r.Reproducible
 	from.Repo, from.RepoSHA = rep.Repo.Name, rep.Repo.SHA
@@ -114,7 +224,7 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 	from.CandidateSHA, from.RunnerClass = rep.CandidateSHA, rep.RunnerClass
 
 	out := &Targets{
-		SchemaVersion: TargetsSchemaVersion, Date: date, ImmutableUntil: ImmutableUntil, Notes: TargetsNotes,
+		SchemaVersion: TargetsSchemaVersion, Date: date, ImmutableUntil: TargetsImmutableUntil, Notes: TargetsNotes,
 		DerivedFrom: from, Metric: TargetMetric, ConceptualStrata: append([]string(nil), ConceptualStrata...),
 		FusionMinDelta: FusionMinDelta, Split: SplitDev,
 		UnavailableBaselines: []UnavailableBaseline{}, Strata: map[string]StratumTarget{},
@@ -131,13 +241,11 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 			out.UnavailableBaselines = append(out.UnavailableBaselines, UnavailableBaseline{Baseline: b.Name, Reason: b.Reason})
 			continue
 		}
-		var dev []QueryResult
-		for _, q := range b.Queries {
-			if q.Split == SplitDev {
-				dev = append(dev, q)
-			}
-		}
-		_, strata, _ := AggregateAll(dev, rep.TokenBudgets)
+		// No split filter: refuseNonComparatorReport has already established
+		// that every row is a development row. Filtering here again would
+		// re-introduce the shape that hides a holdout row inside a
+		// dev-looking result.
+		_, strata, _ := AggregateAll(b.Queries, rep.TokenBudgets)
 		a := devAgg{strata: strata}
 		if b.Name == BaselineOracle {
 			oracle = &a
@@ -206,7 +314,100 @@ func DeriveTargets(r *Report, from DerivedFrom, date string) (*Targets, error) {
 		}
 		out.Strata[s] = st
 	}
+	coverage, err := deriveBundleCoverage(r)
+	if err != nil {
+		return nil, err
+	}
+	out.BundleCoverage = coverage
 	return out, nil
+}
+
+// refuseNonComparatorReport is the derivation's closed world: comparators
+// only, development only.
+func refuseNonComparatorReport(r *Report) error {
+	candidate := map[Baseline]bool{}
+	for _, b := range CandidatePipelineBaselines {
+		candidate[b] = true
+	}
+	var offending []string
+	for _, b := range r.Reproducible.Baselines {
+		if candidate[b.Name] {
+			offending = append(offending, string(b.Name))
+		}
+	}
+	if len(offending) > 0 {
+		sort.Strings(offending)
+		return fmt.Errorf("retrieval: the report carries the candidate pipeline as a baseline (%s); a target derived from the candidate is the candidate's own value plus a delta, not a bar. Re-run with the comparator set only: %s plus %s for the ceilings",
+			strings.Join(offending, ", "), joinBaselines(ComparatorBaselines), BaselineOracle)
+	}
+	var holdout []string
+	for _, b := range r.Reproducible.Baselines {
+		for _, q := range b.Queries {
+			if q.Split == SplitHoldout {
+				holdout = append(holdout, string(b.Name)+"/"+q.ID)
+			}
+		}
+	}
+	if len(holdout) > 0 {
+		sort.Strings(holdout)
+		shown := holdout
+		if len(shown) > 5 {
+			shown = shown[:5]
+		}
+		return fmt.Errorf("retrieval: the report carries %d holdout query result(s) (%s%s); the holdout may not be touched by a derivation, and silently dropping the rows cannot be told apart from never having executed them. Measure a development-only slice (retrieval.SelectDevSplit)",
+			len(holdout), strings.Join(shown, ", "), map[bool]string{true: ", …", false: ""}[len(holdout) > len(shown)])
+	}
+	return nil
+}
+
+func joinBaselines(bs []Baseline) string {
+	out := make([]string, 0, len(bs))
+	for _, b := range bs {
+		out = append(out, string(b))
+	}
+	return strings.Join(out, ", ")
+}
+
+// deriveBundleCoverage writes the coverage target. The POPULATION comes from
+// the report (the dev nl_behaviour query IDs it actually measured); the
+// THRESHOLD comes from the rule — every query covered, zero misses — and from
+// nothing that was observed, so the bar is not set and passed on the same
+// observations.
+func deriveBundleCoverage(r *Report) (*BundleCoverage, error) {
+	ids := map[string]bool{}
+	for _, b := range r.Reproducible.Baselines {
+		for _, q := range b.Queries {
+			if q.Split == SplitDev && q.Stratum == StratumNLBehaviour {
+				ids[q.ID] = true
+			}
+		}
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("retrieval: the report measured no %s/%s query, so the bundle-coverage population cannot be recorded", SplitDev, StratumNLBehaviour)
+	}
+	ordered := make([]string, 0, len(ids))
+	for id := range ids {
+		ordered = append(ordered, id)
+	}
+	sort.Strings(ordered)
+	n := len(ordered)
+	return &BundleCoverage{
+		Population: BundleCoveragePopulation{
+			Dataset:  r.Reproducible.Dataset.ID,
+			Split:    SplitDev,
+			Stratum:  StratumNLBehaviour,
+			Selector: "retrieval.SelectTaskContextDevNLBehaviour: q.stratum == " + StratumNLBehaviour + " AND q.split == " + SplitDev + "; no caller-selectable split",
+			QueryIDs: ordered,
+			N:        n,
+		},
+		TokenBudget:     TaskContextTokenBudget,
+		CreditRule:      TaskContextMatchingRule,
+		Threshold:       BundleCoverageThreshold{CoveredQueriesRequired: n, MaxMisses: 0},
+		Resolution:      fmt.Sprintf("1/%d", n),
+		ResolutionNote:  fmt.Sprintf("one query moves the aggregate by 1/%d (%.1f percentage points); extra decimal places add no evidence, so the bar is stated in whole queries", n, 100/float64(n)),
+		ThresholdSource: BundleCoverageThresholdSource,
+		Supplements:     BundleCoverageSupplements,
+	}, nil
 }
 
 // MarshalTargets renders the targets file.
@@ -283,7 +484,7 @@ const BudgetsNotes = "SW-258 retrieval performance budgets (spec open question 5
 // DeriveBudgets computes the budgets file (AC-8). Every size class is
 // present; a class without a measurement reads UNKNOWN.
 func DeriveBudgets(measurements []FixtureMeasurement, date string) (*Budgets, error) {
-	out := &Budgets{SchemaVersion: BudgetsSchemaVersion, Date: date, ImmutableUntil: ImmutableUntil, Notes: BudgetsNotes,
+	out := &Budgets{SchemaVersion: BudgetsSchemaVersion, Date: date, ImmutableUntil: BudgetsImmutableUntil, Notes: BudgetsNotes,
 		HeadroomFactor: BudgetHeadroom, Fixtures: map[string]FixtureBudget{}}
 	known := map[string]bool{}
 	for _, c := range FixtureClasses {

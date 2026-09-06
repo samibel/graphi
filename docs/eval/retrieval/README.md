@@ -2,8 +2,9 @@
 
 > **Package:** `internal/eval/retrieval` · **Entry point:** `cmd/retrieval-eval` ·
 > **PR gate:** `go test ./internal/eval/retrieval` (hermetic, over `testdata/fixture-repo`) ·
-> **Targets:** `docs/eval/retrieval-targets.json` · **Budgets:** `docs/eval/retrieval-budgets.json`
-> (both immutable until SW-266).
+> **Targets:** `docs/eval/retrieval-targets.json` (recalibrated by SW-282, immutable until **SW-283**) ·
+> **Budgets:** `docs/eval/retrieval-budgets.json` (immutable until **SW-266**, left byte-identical by SW-282) ·
+> **Enforced by:** `go run ./cmd/retrieval-eval -check-targets <report>` and the release-gate `retrieval-targets` runner.
 
 `internal/eval` is the static token-parity harness over prebuilt context strings; it never runs a
 retrieval pipeline and cannot produce Recall/MRR/NDCG. This harness is its sibling: it runs real
@@ -158,7 +159,10 @@ go run ./cmd/retrieval-eval -field-parity -manifest corpus/manifest.json -repo c
   -out /tmp/sw272-field-parity-report.json \
   -export-raw docs/eval/retrieval/runs/<date>-sw272-field-parity
 
-# Regenerate the frozen files (only from reports checked in beside them; immutable until SW-266)
+# Regenerate the frozen files (only from reports checked in beside them; see immutable_until in each file).
+# The targets derivation REFUSES a report carrying the candidate pipeline (chunk_only / fusion /
+# semantic_first) or any holdout query result, so -targets-report names a comparator-only run over a
+# development-only dataset slice; -budget-* still read full runs.
 go run ./cmd/retrieval-eval -derive -targets-report <cobra-report.json> \
   -budget-small <fixture-report.json> -budget-medium <cobra-report.json> -budget-large <grpc-go-report.json> \
   -targets-out docs/eval/retrieval-targets.json -budgets-out docs/eval/retrieval-budgets.json
@@ -234,27 +238,131 @@ zero samples and an empty query set in both records; zero queries, `UNKNOWN` agg
 
 ## Targets and budgets
 
-`docs/eval/retrieval-targets.json` (AC-7): per stratum, the best single-baseline value of every
+`docs/eval/retrieval-targets.json`: per stratum, the best single-baseline value of every
 metric over the dev split, the oracle ceiling, a `fusion_target` on `nl_behaviour` and
 `architecture_flow` (best `ndcg@10` + 0.10, capped at the ceiling) and the Top-1 `no_regression`
 floor on `exact_identifier`. `docs/eval/retrieval-budgets.json` (AC-8): per fixture size class —
 small = the in-tree fixture, medium = cobra, large = grpc-go (performance-only dataset) — index
 time, worst indexed-baseline query p95 and peak RSS with the measurement each came from and
 budget = measured × 2.0; a class with no measurement reads `UNKNOWN`. Both carry `date`,
-`derived_from` (report path + sha256) and `immutable_until: "SW-266"`. The reports they were derived
+`derived_from` (report path + sha256) and their own `immutable_until`. The reports they were derived
 from are checked in under `docs/eval/retrieval/runs/`.
+
+### SW-282: the targets became executable, and they are missed
+
+Until SW-282 the targets file was written by `-derive` and read back by exactly one Go test. No
+release command evaluated it, so a missed target was invisible outside that test. It is now enforced
+two ways, both reading one implementation (`retrieval.CheckTargets`):
+
+```bash
+go run ./cmd/retrieval-eval -check-targets docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/cobra-v2-dev-report.json
+```
+
+and the `retrieval-targets` runner in `cmd/release-gate` (`DefaultGates`, and `requiredGates` so an
+absent gate is detected as absent rather than read as a pass). Comparisons use the stored values or
+exact integer counts, never rounded display decimals.
+
+The file was recalibrated on 2026-09-06 from
+`runs/2026-09-06-sw282-recalibration-local/` — a comparator-only
+(`lexical`, `hybrid_v1`, `semantic_name_only`, plus `oracle_upper_bound`) run over the
+development-only slice of the frozen release dataset `cobra-v2`, with the production static embedder
+configured so `semantic_name_only` is no longer `unavailable`. `DeriveTargets` **refuses** a report
+carrying a candidate-pipeline baseline (a bar set to the candidate plus a delta is not a bar) and
+**refuses** a report carrying any holdout row rather than filtering it out (a dropped holdout row
+cannot be told apart from one that was never executed).
+
+The shipped pipeline is graded against a **separately committed** report,
+`runs/2026-09-06-sw282-gate-local/`, and `CheckTargets` refuses to grade the report the targets were
+derived from. Today's verdict, recorded in `targets-gate-expectations.json` and re-derived on every
+PR:
+
+| target | required | observed | verdict |
+|---|---|---|---|
+| `nl_behaviour` fusion_target | ≥ 0.54497025306999103 | 0.63677401077084517 | PASS |
+| `architecture_flow` fusion_target | ≥ 0.4578575262772977 | 0.32777888533499866 | **MISS** |
+| `exact_identifier` no_regression | top1 ≥ 1 | 0.75 | **MISS** |
+| `bundle_coverage` | 6 of 6, 0 misses, budget 1200 | 6 of 6 | PASS |
+| `qrel_blind_smoke` | `RELEASE: YES` | `RELEASE: NO` (31/64 vs k=56) | **MISS** |
+
+The misses are **recorded, not excepted**. SW-263's `0.00085` numeric shortfall exception was
+deleted rather than restated: a tolerance four orders of magnitude below what a five-query stratum
+can resolve asserts nothing. SW-263's recorded −0.00084 MISS against the old bar stands as
+history. Fixing these misses is the recovery story's job; the release line is red until then, which
+is the gate working.
+
+### `bundle_coverage`: the SW-264 gate, and what it does NOT say
+
+`bundle_coverage` gates the six dev `nl_behaviour` queries `SelectTaskContextDevNLBehaviour` selects
+(`cb-11`…`cb-16`), at token budget 1200, under `retrieval.TaskContextMatchingRule`. Its threshold
+is written in **whole queries** — `covered_queries_required: 6`, `max_misses: 0` — with the
+population's resolution (`1/6`, 16.7 percentage points) beside it. There is no decimal share,
+percentage or fractional threshold field, and a test enumerates the object's keys and fails if any
+number in it is not an integer. The bar is zero mechanical misses because that is what the
+aggregate's own no-miss rule implies, not because it is what SW-264 happened to measure; if a
+re-measurement misses, the miss is recorded and the threshold is not lowered to it.
+
+**It supplements and does not replace the qrel-blind bundle-sufficiency smoke gate**
+(`runs/2026-09-05-sw280-qrel-blind-smoke/`). Coverage asserts that a reviewed grade-3 span is
+*present* in the bundle bytes; the smoke gate asserts that a reader could *answer* from those bytes.
+SW-280 is the direct evidence that the two can disagree — 31 of 64 against a pre-registered
+`k=56`, with graders repeatedly locating the span outside the retrieved bytes. The
+`retrieval-targets` gate requires **both** and fails when either is unmet **or absent**.
+
+### The `cobra-v2` holdout has been opened and is spent
+
+SW-280 opened the sealed holdout: all 64 answerable holdout queries were bundled, answered and
+graded. It **can no longer validate a target, a threshold or a changed candidate** — any such
+prospective validation from here requires a *fresh* holdout, stratified before it is sealed. No
+target in the targets file is set from or gated on a holdout observation, and `DeriveTargets`
+refuses a report that carries one.
+
+### Answerable population and stratum composition
+
+`answerable-population.json` records the corrected counts, recomputed from `cobra-v2.json` by a test
+that fails on drift. "Answerable" is SW-266 AC-2's definition: not `no_hit` **and** at least one
+grade-3 answer span. Under it the development split holds **40** queries, the holdout **64**, and
+the full savings population **104** — not the 41/105 that a looser `stratum != no_hit` count
+produced and that SW-279's approval recorded. The one query the two readings disagree about,
+`cb-31` (`ambiguous`, five grade-2 judgements, no grade-3 span), is named with its reason in the
+exclusion record.
+
+`retrieval.AnswerableQueries` resolves that disagreement in favour of the contract;
+`retrieval.AnswerableHoldout` still **refuses** it, and the asymmetry is deliberate: the holdout's
+`N` fixes a pre-registered `k` before any response is opened, so an ambiguous holdout population must
+stop the run, whereas the development split pre-registers nothing.
+
+The composition binds what may be claimed. The answerable holdout is **57 of 64 `config_docs`
+(89%)** and the full 104-query answerable savings population is **76 of 104 (73%)**. Any future
+claim resting on this holdout is either narrowed to `config_docs` or requires a holdout stratified
+before sealing — a mostly-`config_docs` sample may not be presented as generic developer
+questions. That constraint is recorded rather than executed: expressing it inside the claim grammar
+would change `allowedClaimShape` and therefore the frozen contract version.
+
+### Superseded frozen-input digest (SW-280's precondition record)
+
+`runs/2026-09-05-sw280-qrel-blind-smoke/end-of-run-hash-comparison.json` froze
+`docs/eval/retrieval-targets.json` at sha256
+`26a5ea05657d18b687f42f53fbebde2876e016de90b0d22b21f0441f236a0592`. **SW-282** rewrote that file,
+which now hashes to `07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d`. The sealed
+run is evidence and has not been edited: its frozen targets digest is **historical**, and the drift
+is by design rather than a defect. `docs/eval/retrieval-budgets.json`, the dataset, the grading
+rubric and the methodology are all still byte-identical to what that run froze, and
+`TestQrelBlindSmoke_CommittedRunFrozenInputsStillHashTheSameAtRest` still fails for any of them.
 
 ## SW-263 AC-9 evaluation runs
 
 The `chunk_only`, `fusion` and `fusion+graph` baselines in this harness
 are the SW-263 retrieval ablations (`engine/retrieval` in
 `ModeLexicalOnly`, `ModeFusionNoGraph`, and `ModeAuto` respectively).
-The AC-9 gate in `internal/eval/retrieval/targets_test.go`
-(`TestReport_MeetsAC9GateAgainstTargetsFile`) compares the most recent
-checked-in cobra run's fusion ndcg@10 against the targets file's
-`fusion_target.must_reach` on `nl_behaviour` and `architecture_flow`,
-and the fusion top1 against the `no_regression.floor` on
-`exact_identifier`.
+The gate in `internal/eval/retrieval/targets_test.go` is now
+`TestTargets_GateVerdictMatchesCheckedInExpectations`. It evaluates the
+targets file through `retrieval.CheckTargets` against the EXPLICIT
+named report `retrieval.GateReportPath` (bound to
+`retrieval.GateCandidateSHA`, never picked by filesystem mtime) and
+compares the per-target verdict against
+`docs/eval/retrieval/targets-gate-expectations.json`, failing on drift
+in EITHER direction. `TestReport_MeetsAC9GateAgainstTargetsFile` and
+its numeric shortfall exception were removed by SW-282.
 
 **Embedder caveat (read this before citing fusion numbers):** the fusion
 ablations require a configured embedder; the SW-258 targets were derived
@@ -280,9 +388,9 @@ spec's final numbers.
 The 2026-08-31 cobra run (`docs/eval/retrieval/runs/2026-08-31-local/`)
 is the SW-263 AC-9 evaluation: the `README.md` in that directory records
 the actual numbers and the embedder id, and the verdict against the
-targets (gate PASS / MISS). Per the story, if the target is missed the
-story does not go to review and the miss is reported with the actual
-per-stratum numbers.
+targets of the day. Since SW-282 the gated run is
+`docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/` and the targets
+are the recalibrated ones.
 
 ## What this harness does not do
 

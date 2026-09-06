@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "story": "SW-282",
+  "note": "SW-282 recorded per-target verdict of docs/eval/retrieval-targets.json against the committed gate report. The recalibrated architecture_flow bar and the recalibrated exact_identifier Top-1 floor are MISSED by the shipped pipeline, and the qrel-blind smoke evaluation recorded RELEASE: NO. Those misses are recorded here, not fixed and not excepted: SW-282 sets targets and may not change retrieval behaviour, and the release-gate retrieval-targets runner is RED until the recovery story closes them. TestTargets_GateVerdictMatchesCheckedInExpectations fails on drift in EITHER direction — a bar that starts passing must be recorded here deliberately.",
+  "targets_file_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+  "result": {
+    "targets_file": "docs/eval/retrieval-targets.json",
+    "report": "docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/cobra-v2-dev-report.json",
+    "report_sha256": "39ac0140a93f106dc990b3545bcd6d459ae3f0d003220881e6a443db5d0f7edf",
+    "candidate_sha": "e824197cf4610e3824587e0cb76dcb7a17d9410f+dirty",
+    "baseline": "semantic_first",
+    "checks": [
+      {
+        "name": "nl_behaviour fusion_target",
+        "kind": "fusion_target",
+        "required": "semantic_first ndcg@10 >= 0.54497025306999103 (best semantic_name_only 0.44497025306999105 + min_delta 0.10, ceiling 1)",
+        "observed": "0.63677401077084517",
+        "met": true
+      },
+      {
+        "name": "architecture_flow fusion_target",
+        "kind": "fusion_target",
+        "required": "semantic_first ndcg@10 >= 0.4578575262772977 (best semantic_name_only 0.35785752627729767 + min_delta 0.10, ceiling 1)",
+        "observed": "0.32777888533499866",
+        "met": false,
+        "detail": "shortfall 0.13007864094229904 over a 5-query stratum (resolution 1/5)"
+      },
+      {
+        "name": "exact_identifier no_regression",
+        "kind": "no_regression",
+        "required": "semantic_first top1 >= 1 (best single baseline semantic_name_only)",
+        "observed": "0.75",
+        "met": false
+      },
+      {
+        "name": "bundle_coverage",
+        "kind": "bundle_coverage",
+        "required": "6 of 6 queries covered, at most 0 miss(es), at token budget 1200",
+        "observed": "6 of 6 covered (docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local/measurement.json)",
+        "met": true
+      },
+      {
+        "name": "qrel_blind_smoke",
+        "kind": "qrel_blind_smoke",
+        "required": "qrel-blind smoke evaluation outcome present and RELEASE: YES",
+        "observed": "RELEASE: NO (31 of 64 passed against a pre-registered k=56)",
+        "met": false,
+        "detail": "the smoke evaluation recorded RELEASE: NO. There is no override: the corrected pass count is 30 of 64, below the pre-registered k=56 (reviewed 31, corrected 30, and the release is decided on the smaller); there is no override, exception or waiver; 1 counted pass(es) are disclosed as unsupported by the bundle-only rule; the reviewed count is 31 of 64 and the corrected count is 30 of 64, and the release is decided on the smaller of the two; the capture is not bound: the capture recorded no candidate binding: neither the candidate implementation nor the indexed checkout is bound to the commit this run names, so a worktree modified without committing — one that makes retrieval return the expected answers — would leave this report saying the frozen candidate produced these bytes"
+      }
+    ],
+    "miss_count": 3,
+    "first_miss": "architecture_flow fusion_target"
+  }
+}

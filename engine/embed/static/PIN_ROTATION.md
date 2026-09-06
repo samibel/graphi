@@ -84,6 +84,25 @@ and become stale when `PinnedRevision` changes:
   real-tokenizer counts, which `internal/eval/tokenizer/PIN_ROTATION.md` governs
   separately. Added when this governance gate caught the run's absence — the
   second time the gate has bitten on a genuinely new production-static run.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local/` — SW-282's
+  comparator-only development report. `docs/eval/retrieval-targets.json` is
+  DERIVED from it: on both conceptual strata the best single baseline is now
+  `semantic_name_only`, produced by this pinned embedder, so a rotation moves
+  `architecture_flow`'s bar (0.4578575262772977) and `nl_behaviour`'s
+  (0.544970253069991) and invalidates the `exact_identifier` Top-1 floor of 1.
+  Rotating the pin therefore requires re-deriving the targets file, not only
+  re-measuring.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/` — SW-282's gating
+  report over the same development slice with the full default baseline set.
+  The recorded per-target verdict in
+  `docs/eval/retrieval/targets-gate-expectations.json` (and the release-line
+  `retrieval-targets` gate) is a statement about these numbers, so a rotation
+  invalidates the recorded MISS on `architecture_flow` and on the
+  `exact_identifier` floor as well as the PASS on `nl_behaviour`.
+- `docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local/` — SW-282's 6/6
+  grade-3 `task_context/2` coverage re-measurement over `cobra-v2`'s dev
+  `nl_behaviour` queries, which the `bundle_coverage` target is enforced
+  against. A rotation changes the bundles and therefore the coverage count.
 - `docs/eval/static-embedder-cross-arch/2026-09-03-sw271/` — the byte-exact
   `darwin/arm64` versus `darwin/amd64` vector record for this revision.
 

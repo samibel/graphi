@@ -51,6 +51,16 @@ type TaskContextOptions struct {
 	EmbedderSelector string
 	Candidate        TaskContextCandidate
 
+	// Story, AC, RecomputeNote and RecomputeCommand label the run and tell a
+	// reader how to reproduce it. They default to SW-264's values, which is
+	// what every field was hard-coded to before SW-282 re-used this harness
+	// over the frozen release dataset: a generated README that names the wrong
+	// story is a provenance defect, not a cosmetic one.
+	Story            string
+	AC               string
+	RecomputeNote    string
+	RecomputeCommand string
+
 	WorkDir string
 	Log     io.Writer
 }
@@ -92,6 +102,9 @@ type TaskContextMeasurement struct {
 	Aggregate            TaskContextAggregate          `json:"aggregate"`
 	Queries              []TaskContextQueryResult      `json:"queries"`
 	RecomputeCommand     string                        `json:"recompute_command"`
+	// RecomputeNote is omitted when the run uses SW-264's default preamble, so
+	// re-running SW-264's measurement still writes its committed bytes.
+	RecomputeNote string `json:"recompute_note,omitempty"`
 }
 
 // TaskContextEligibilityCheck is one condition that must hold before the
@@ -386,6 +399,20 @@ func taskContextAllPassed(checks []TaskContextEligibilityCheck) bool {
 	return true
 }
 
+// orDefault returns v, or fallback when v is empty.
+func orDefault(v, fallback string) string {
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+// taskContextRecomputeNote is SW-264's preamble, kept as the default so that
+// re-running SW-264's measurement still produces its committed bytes.
+func taskContextRecomputeNote() string {
+	return "Set SW264_AC9_MODEL_DIR to the pinned static model directory and SW264_AC9_COBRA_ROOT to the pinned cobra checkout. The command fails before running if either input is missing."
+}
+
 func taskContextRecomputeCommand() string {
 	return `: "${SW264_AC9_MODEL_DIR:?set to your potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b model dir}"
 : "${SW264_AC9_COBRA_ROOT:?set to the cobra checkout at a0a6ae020bb3899ff0276067863e50523f897370}"
@@ -637,8 +664,8 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 		FormatVersion:  TaskContextFormatVersion,
 		HarnessVersion: TaskContextHarnessVersion,
 		ScorerVersion:  TaskContextScorerVersion,
-		Story:          "SW-264",
-		AC:             "AC-9",
+		Story:          orDefault(o.Story, "SW-264"),
+		AC:             orDefault(o.AC, "AC-9"),
 		Candidate:      o.Candidate,
 		Dataset: TaskContextDatasetRef{
 			ID:            o.Dataset.Dataset.ID,
@@ -672,7 +699,8 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 			Scorer:        "internal/eval/retrieval.SpanMatches",
 			MatchingRule:  TaskContextMatchingRule,
 		},
-		RecomputeCommand: taskContextRecomputeCommand(),
+		RecomputeCommand: orDefault(o.RecomputeCommand, taskContextRecomputeCommand()),
+		RecomputeNote:    o.RecomputeNote,
 	}
 	run.Measurement = measurement
 
@@ -1083,9 +1111,9 @@ func taskContextREADME(m *TaskContextMeasurement) string {
 			q.ID, q.ItemCount, q.EvidenceCitationCount, q.EmittedSnippetWhitespaceTokens,
 			q.EngineReportedSnippetTokens, q.ItemCapApplied, q.ItemsDropped, q.Truncated)
 	}
-	return fmt.Sprintf(`# SW-264 AC-9 — task_context/2 production-static measurement
+	return fmt.Sprintf(`# %s %s — task_context/2 production-static measurement
 
-This run measures every dev query in the pinned cobra-v1 nl_behaviour stratum. It does not use or copy holdout queries. The measured population contains %d queries and the observed grade-3 span coverage is %d/%d (%.6f).
+This run measures every dev query in the pinned %s nl_behaviour stratum. It does not use or copy holdout queries. The measured population contains %d queries and the observed grade-3 span coverage is %d/%d (%.6f).
 
 The coverage resolution is %s (%.6f): one query changes the aggregate by that amount. Coverage is a hit metric, not a cost metric. The bundle cost observed alongside it was:
 
@@ -1100,14 +1128,14 @@ eligible_for_threshold is %t because every eligibility check in measurement.json
 
 ## Recompute
 
-Set SW264_AC9_MODEL_DIR to the pinned static model directory and SW264_AC9_COBRA_ROOT to the pinned cobra checkout. The command fails before running if either input is missing.
+%s
 
 ~~~bash
 %s
 ~~~
 
 run.json content-addresses measurement.json, the dev-only dataset slice, this README, and each raw query record.
-`, m.Dataset.QueryCount, m.Aggregate.CoveredQueries, m.Aggregate.TotalQueries, m.Aggregate.Coverage,
+`, m.Story, m.AC, m.Dataset.ID, m.Dataset.QueryCount, m.Aggregate.CoveredQueries, m.Aggregate.TotalQueries, m.Aggregate.Coverage,
 		m.Aggregate.CoverageResolutionFraction, m.Aggregate.CoverageResolution, costs.String(),
-		m.Embedder.ModelFingerprint, m.Embedder.PersistedVectors, m.Repo.SHA, m.EligibleForThreshold, m.RecomputeCommand)
+		m.Embedder.ModelFingerprint, m.Embedder.PersistedVectors, m.Repo.SHA, m.EligibleForThreshold, orDefault(m.RecomputeNote, taskContextRecomputeNote()), m.RecomputeCommand)
 }

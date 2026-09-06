@@ -92,6 +92,27 @@ const timeLayout = time.RFC3339
 // readings a reader might use — "not no_hit" and "carries a grade-3 span" — are
 // BOTH computed, and a disagreement between them is refused rather than
 // resolved silently, because which one was used would then decide N.
+//
+// The development split does NOT behave this way, and the asymmetry is
+// deliberate (SW-282 AC-1). `AnswerableQueries` in population.go resolves the
+// same disagreement in favour of the contractual reading and carries on. The
+// difference is what the count is for:
+//
+//   - Here, N fixes the pre-registered minimum passing count k BEFORE any
+//     holdout response is opened. An ambiguous N would mean an ambiguous k, and
+//     a k that could be argued after the fact is not pre-registered at all. The
+//     only safe answer is to stop the run.
+//   - On the development split nothing is pre-registered. A development
+//     population is a measured quantity, not a commitment, and refusing every
+//     development measurement because one query is ambiguous would block the
+//     work that resolves the ambiguity. So the contract is read and the
+//     excluded query is named (`cb-31` on cobra-v2, five grade-2 judgements and
+//     no grade-3 span) in
+//     docs/eval/retrieval/answerable-population.json.
+//
+// Neither behaviour may be generalised over the other: relaxing this function
+// would let a disputed N choose k, and tightening AnswerableQueries would stop
+// development on an ambiguity it exists to record.
 func AnswerableHoldout(ds *Dataset) ([]Query, error) {
 	if ds == nil {
 		return nil, fmt.Errorf("retrieval %s: no dataset", QrelBlindSmokeEvaluationName)

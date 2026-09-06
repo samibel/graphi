@@ -33,6 +33,7 @@ func TestRetrievalEval_FlagSetIsEnumeratedAndCarriesNoOverride(t *testing.T) {
 		"budget-small",
 		"budgets-out",
 		"check-claim",
+		"check-targets",
 		"checkout",
 		"dataset",
 		"date",

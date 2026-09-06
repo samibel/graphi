@@ -1,0 +1,266 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "story": "SW-282",
+  "ac": "AC-2",
+  "eligible_for_threshold": true,
+  "eligibility": [
+    {
+      "name": "pinned_dataset",
+      "passed": true,
+      "detail": "observed source sha256 2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c; required 2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c"
+    },
+    {
+      "name": "dev_nl_behaviour_only",
+      "passed": true,
+      "detail": "observed 6/6 selected records with split=dev and stratum=nl_behaviour"
+    },
+    {
+      "name": "pinned_repo",
+      "passed": true,
+      "detail": "observed checkout HEAD a0a6ae020bb3899ff0276067863e50523f897370; option and dataset both require it"
+    },
+    {
+      "name": "production_static_embedder",
+      "passed": true,
+      "detail": "selector static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b produced model fingerprint static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b"
+    },
+    {
+      "name": "generation_reloaded_ready",
+      "passed": true,
+      "detail": "observed 768 persisted vectors; generation g-7687b9587e84be54; state ready; requested fingerprint matched=true"
+    },
+    {
+      "name": "real_retrieval_instance",
+      "passed": true,
+      "detail": "constructed non-nil=true; called once 6/6; ready 6/6; retrieval/2/semantic_first 6/6; fingerprinted 6/6; ready bundle 6/6"
+    },
+    {
+      "name": "rooted_reader_and_1200_token_budget",
+      "passed": true,
+      "detail": "snippets 6/6; engine reported budget 1200 for 6/6 and stayed within it 6/6; emitted-evidence whitespace recount stayed within 1200 for 6/6"
+    },
+    {
+      "name": "established_span_scorer",
+      "passed": true,
+      "detail": "6/6 queries scored by ScoreTaskContextBundle, which calls SpanMatches for every evidence/grade-3 pair"
+    },
+    {
+      "name": "raw_bundles_and_matches",
+      "passed": true,
+      "detail": "observed 6/6 raw bundle, judgement, and match records prepared for content-addressed export"
+    },
+    {
+      "name": "complete_provenance",
+      "passed": true,
+      "detail": "candidate sha=e824197cf4610e3824587e0cb76dcb7a17d9410f+dirty; base sha=e824197cf4610e3824587e0cb76dcb7a17d9410f; diff sha256=334ef6b5ea9ce6fbb5b53329270812b913c3124788ca5e1f2052b15308853508; source digests=2; exact recomputation command present=true"
+    }
+  ],
+  "candidate": {
+    "sha": "e824197cf4610e3824587e0cb76dcb7a17d9410f+dirty",
+    "base_sha": "e824197cf4610e3824587e0cb76dcb7a17d9410f",
+    "dirty": true,
+    "diff_sha256": "334ef6b5ea9ce6fbb5b53329270812b913c3124788ca5e1f2052b15308853508",
+    "source_files": [
+      {
+        "file": "internal/eval/retrieval/taskcontext.go",
+        "sha256": "ba087a30b2d7565b9ab5ef0904bc29429c20bd12bbeeb6c25710adeda5eab963"
+      },
+      {
+        "file": "internal/eval/retrieval/taskcontext_test.go",
+        "sha256": "880b7ed7937955547a184a616edb557d8dfa240d110e98c34b14be098cf41a11"
+      }
+    ]
+  },
+  "dataset": {
+    "id": "cobra-v2-dev",
+    "source_file": "docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local/dataset.json",
+    "source_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+    "measured_slice_file": "dataset-dev-nl-behaviour.json",
+    "measured_slice_sha256": "0549b84e842facb995107fb040fbdadf894bcb4daac7d8f86dfb10087fdff718",
+    "stratum": "nl_behaviour",
+    "split": "dev",
+    "query_count": 6,
+    "query_ids": [
+      "cb-11",
+      "cb-12",
+      "cb-13",
+      "cb-14",
+      "cb-15",
+      "cb-16"
+    ],
+    "grade": 3,
+    "selection_rule": "SelectTaskContextDevNLBehaviour: q.stratum == nl_behaviour AND q.split == dev; no caller-selectable split"
+  },
+  "repo": {
+    "name": "cobra",
+    "sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "nodes": 938,
+    "edges": 4036,
+    "files": 58
+  },
+  "embedder": {
+    "selector": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "model_fingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+    "index_fingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:237746f3ac409cc36658773ffd10d1c9",
+    "generation_id": "g-7687b9587e84be54",
+    "persisted_vectors": 768,
+    "dimension": 256,
+    "semantic_state": "ready"
+  },
+  "retrieval": {
+    "construction": "engine/retrieval.New(resolve.Deps{Query, Search}, readySearchService, graphstore)",
+    "non_nil": true,
+    "state": "ready",
+    "version": "retrieval/2",
+    "strategy": "semantic_first",
+    "method": "task_context/2 -\u003e engine/retrieval ModeAuto (production adapter)"
+  },
+  "bundle": {
+    "method_version": "task_context/2",
+    "reader": "engine/context.RootedReader over the pinned cobra checkout",
+    "token_budget": 1200,
+    "scorer": "internal/eval/retrieval.SpanMatches",
+    "matching_rule": "a query is covered when any task_context/2 bundle evidence citation satisfies retrieval.SpanMatches(evidence.path, evidence.line, judgement) for any grade-3 judgement"
+  },
+  "aggregate": {
+    "covered_queries": 6,
+    "total_queries": 6,
+    "grade3_span_coverage": 1,
+    "coverage_resolution_fraction": "1/6",
+    "coverage_resolution": 0.16666666666666666,
+    "truncated_queries": 4,
+    "coverage_cost_note": "grade3_span_coverage is binary hit coverage and excludes item, citation, token, and truncation cost; inspect per-query cost fields separately"
+  },
+  "queries": [
+    {
+      "id": "cb-11",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 40,
+      "evidence_citation_count": 153,
+      "snippet_count": 8,
+      "emitted_snippet_whitespace_tokens": 500,
+      "engine_reported_snippet_tokens": 500,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 0,
+      "item_cap_applied": 40,
+      "items_available": 56,
+      "items_dropped": 16,
+      "truncated": true,
+      "grade3_judgements": 1,
+      "match_count": 4,
+      "raw_file": "raw/cb-11.json",
+      "raw_sha256": "62db252e3613035fb92bc47f70891e5f64c2b7029ffd41b8215575f1aff3dd3c"
+    },
+    {
+      "id": "cb-12",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 40,
+      "evidence_citation_count": 129,
+      "snippet_count": 8,
+      "emitted_snippet_whitespace_tokens": 605,
+      "engine_reported_snippet_tokens": 605,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 0,
+      "item_cap_applied": 40,
+      "items_available": 52,
+      "items_dropped": 12,
+      "truncated": true,
+      "grade3_judgements": 1,
+      "match_count": 8,
+      "raw_file": "raw/cb-12.json",
+      "raw_sha256": "78e8f9174584d2bd032713e6984600151310aa687251306663db23da19bcab6b"
+    },
+    {
+      "id": "cb-13",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 40,
+      "evidence_citation_count": 89,
+      "snippet_count": 8,
+      "emitted_snippet_whitespace_tokens": 580,
+      "engine_reported_snippet_tokens": 580,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 0,
+      "item_cap_applied": 40,
+      "items_available": 47,
+      "items_dropped": 7,
+      "truncated": true,
+      "grade3_judgements": 1,
+      "match_count": 8,
+      "raw_file": "raw/cb-13.json",
+      "raw_sha256": "05b2ea366d67a0a9603dbd9b51f51d068dcee6d208d2d8136bd112491a5662d2"
+    },
+    {
+      "id": "cb-14",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 34,
+      "evidence_citation_count": 44,
+      "snippet_count": 7,
+      "emitted_snippet_whitespace_tokens": 380,
+      "engine_reported_snippet_tokens": 403,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 23,
+      "item_cap_applied": 40,
+      "items_available": 34,
+      "items_dropped": 0,
+      "truncated": false,
+      "grade3_judgements": 2,
+      "match_count": 3,
+      "raw_file": "raw/cb-14.json",
+      "raw_sha256": "8612cc7056035613ea6ab370852179da2b4699fc74d4a39762d0741fb9c98213"
+    },
+    {
+      "id": "cb-15",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 40,
+      "evidence_citation_count": 81,
+      "snippet_count": 8,
+      "emitted_snippet_whitespace_tokens": 517,
+      "engine_reported_snippet_tokens": 517,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 0,
+      "item_cap_applied": 40,
+      "items_available": 44,
+      "items_dropped": 4,
+      "truncated": true,
+      "grade3_judgements": 1,
+      "match_count": 10,
+      "raw_file": "raw/cb-15.json",
+      "raw_sha256": "179ef91a88de0e0cbd3798f48ae83c4ea184a111117f2c1bead648904d23a9a6"
+    },
+    {
+      "id": "cb-16",
+      "stratum": "nl_behaviour",
+      "split": "dev",
+      "covered": true,
+      "item_count": 37,
+      "evidence_citation_count": 45,
+      "snippet_count": 8,
+      "emitted_snippet_whitespace_tokens": 618,
+      "engine_reported_snippet_tokens": 618,
+      "engine_reported_token_budget": 1200,
+      "engine_minus_emitted_snippet_tokens": 0,
+      "item_cap_applied": 40,
+      "items_available": 37,
+      "items_dropped": 0,
+      "truncated": false,
+      "grade3_judgements": 1,
+      "match_count": 2,
+      "raw_file": "raw/cb-16.json",
+      "raw_sha256": "814c900a6f62ab4b99375cdaecda263940b5664fd6826a14073116153a373d7f"
+    }
+  ],
+  "recompute_command": ": \"${GRAPHI_STATIC_MODEL_DIR:?set to your potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b model dir}\"\n: \"${SW282_COBRA_ROOT:?set to the cobra checkout at a0a6ae020bb3899ff0276067863e50523f897370}\"\nSW282_DEV_SLICE_OUT=/tmp/cobra-v2-dev.json CGO_ENABLED=0 \\\ngo test ./internal/eval/retrieval -run '^TestSW282_WriteDevSlice$' -count=1 -v\nSW282_COVERAGE_MEASURE=1 SW282_DEV_SLICE=/tmp/cobra-v2-dev.json CGO_ENABLED=0 \\\ngo test ./internal/eval/retrieval -run '^TestSW282_CoverageMeasurement$' -count=1 -v",
+  "recompute_note": "Set GRAPHI_STATIC_MODEL_DIR to the pinned static model directory, SW282_COBRA_ROOT to the pinned cobra checkout, and SW282_DEV_SLICE to the development-only slice written by TestSW282_WriteDevSlice. The command fails before running if any input is missing."
+}

@@ -163,10 +163,39 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 	})
 
 	t.Run("derive writes targets and budgets citing the report", func(t *testing.T) {
+		// Since SW-282 the targets derivation refuses a report carrying the
+		// candidate pipeline or a holdout row, so its input is a
+		// COMPARATOR-ONLY run over the DEVELOPMENT slice of the fixture
+		// dataset. The budgets derivation is unchanged and still reads the
+		// full seven-baseline report.
+		src, err := retrieval.LoadDataset(fixtureDataset)
+		if err != nil {
+			t.Fatal(err)
+		}
+		slice, err := retrieval.SelectDevSplit(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		devDataset := filepath.Join(dir, "fixture-dev.json")
+		if err := os.WriteFile(devDataset, slice.Raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		comparators := filepath.Join(dir, "comparators.json")
+		if code := run([]string{"-manifest", "corpus/manifest.json", "-repo", FixtureRepoName, "-dataset", devDataset,
+			"-out", comparators, "-repeats", "1",
+			"-baseline", "lexical", "-baseline", "hybrid_v1", "-baseline", "semantic_name_only", "-baseline", "oracle_upper_bound"},
+			&bytes.Buffer{}, &bytes.Buffer{}); code != exitOK {
+			t.Fatal("comparator-only run failed")
+		}
+		comparatorBytes, err := os.ReadFile(comparators)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		targets := filepath.Join(dir, "targets.json")
 		budgets := filepath.Join(dir, "budgets.json")
 		var w bytes.Buffer
-		if code := run([]string{"-derive", "-targets-report", out, "-budget-small", out,
+		if code := run([]string{"-derive", "-targets-report", comparators, "-budget-small", out,
 			"-targets-out", targets, "-budgets-out", budgets, "-date", "2026-08-30"}, &bytes.Buffer{}, &w); code != exitOK {
 			t.Fatalf("derive exit %d\n%s", code, w.String())
 		}
@@ -178,9 +207,23 @@ func TestRetrievalEval_FixtureRunExportAndAggregate(t *testing.T) {
 		if err := json.Unmarshal(tb, &tg); err != nil {
 			t.Fatal(err)
 		}
-		if tg.DerivedFrom.Report != out || tg.DerivedFrom.SHA256 != retrieval.SHA256Hex(b) || tg.ImmutableUntil != retrieval.ImmutableUntil {
+		if tg.DerivedFrom.Report != comparators || tg.DerivedFrom.SHA256 != retrieval.SHA256Hex(comparatorBytes) || tg.ImmutableUntil != retrieval.TargetsImmutableUntil {
 			t.Errorf("targets derived_from = %+v", tg.DerivedFrom)
 		}
+		if tg.BundleCoverage == nil || tg.BundleCoverage.Threshold.MaxMisses != 0 {
+			t.Errorf("targets bundle_coverage = %+v, want a whole-query bar with zero misses", tg.BundleCoverage)
+		}
+
+		t.Run("the full seven-baseline report is refused as a derivation input", func(t *testing.T) {
+			var w2 bytes.Buffer
+			if code := run([]string{"-derive", "-targets-report", out, "-targets-out", filepath.Join(dir, "refused.json"), "-date", "2026-08-30"},
+				&bytes.Buffer{}, &w2); code == exitOK {
+				t.Fatal("derive accepted a report carrying the candidate pipeline")
+			}
+			if !strings.Contains(w2.String(), "candidate pipeline") {
+				t.Errorf("refusal text = %q", w2.String())
+			}
+		})
 		bb, err := os.ReadFile(budgets)
 		if err != nil {
 			t.Fatal(err)

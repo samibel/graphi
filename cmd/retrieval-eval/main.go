@@ -50,6 +50,7 @@
 //	    -export-raw <dir> -checkout <dir> -embedder <selector>
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
+//	go run ./cmd/retrieval-eval -check-targets <report.json>
 //	go run ./cmd/retrieval-eval -setup-tokenizer [-tokenizer-local <dir>] [-tokenizer-dir <dir>]
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
@@ -130,6 +131,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 	date := fs.String("date", "", "date stamped into the run directory and derived files (default today, UTC)")
 	embedder := fs.String("embedder", "", "embedder selector — one of: empty (lexical-only by intent; fusion/semantic baselines report unavailable with the typed reason), `ollama:host:port` (loopback only), `static:<model>@<revision>` (production), or `onnx:<model>` (under //go:build embed_onnx). A non-empty selector that fails to construct, register, generate, reload or serve causes exit 1 and NO publishable report")
 
+	checkTargets := fs.String("check-targets", "", "evaluate every target in "+retrieval.TargetsFilePath+" against this report and the committed coverage and smoke-evaluation artifacts; exit non-zero on the first miss and name it. A target this file states but no command evaluates is a note, not a target")
 	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
 	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
 
@@ -177,6 +179,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return exitOK
 	case *aggregate != "":
 		return runAggregate(*aggregate, *out, stderr)
+	case *checkTargets != "":
+		root, err := repositoryRoot()
+		if err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		return runCheckTargets(root, *checkTargets, stdout, stderr)
 	case *blindEval != "":
 		root, err := repositoryRoot()
 		if err != nil {
