@@ -1,0 +1,1 @@
+Execute() error is a *Command method defined in command.go:1038–1041. It calls c.ExecuteC(), discards the returned command, and returns the error. Its comment says execution walks the command tree to find matching commands and their flags (lines 1036–1037).

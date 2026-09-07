@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 28,
+  "previous_sha256": "a670ca0b836d95905c71d2db67932b52453e03ede32b5e9f11e3885389419d8c",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v2-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "325abab2df7a15d11d184ba94ad23eb6b3d359230934692cdb36d7a40df19b39",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a flag, register a Go callback with cmd.RegisterFlagCompletionFunc(flagName, callback). The callback signature is func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective), so it receives the command, arguments, and text to complete and returns candidate strings plus a directive (completions.go:133). Register only after the named flag exists, and check the returned error: absent flags and duplicate registrations are rejected (lines 134–142). The supplied response does not document directive values or positional-argument completion registration.\n",
+  "sha256": "78cddfc3b6f1f52b4cc86d3f59408661a8e8c96b2e04238a2f0bc062bc23a42e"
+}

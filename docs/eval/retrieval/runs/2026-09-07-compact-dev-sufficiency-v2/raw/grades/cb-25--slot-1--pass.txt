@@ -1,0 +1,1 @@
+PASS: The answer gives the concrete switch required by the development key: cmd.CompletionOptions.DisableDefaultCmd = true before creation. The exact comment at completions.go:106–107 says it prevents default completion-command creation, and the early return at 684–686 shows the condition. The timing advice follows directly from checking the switch during creation.

@@ -1,0 +1,1 @@
+PASS: The answer names both environment controls and the root-name transformation required by the development key. active_help.go:46–50 explicitly defines <PROGRAM>_ACTIVE_HELP, uppercasing and replacement, and the COBRA_ACTIVE_HELP=0 override. The constants at lines 28–29 confirm the variable names; no omitted implementation is needed for these claims.

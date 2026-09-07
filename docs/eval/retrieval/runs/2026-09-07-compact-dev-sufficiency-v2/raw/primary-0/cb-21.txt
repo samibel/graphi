@@ -1,0 +1,1 @@
+Call parent.AddCommand(children...). In command.go:1302–1308, AddCommand iterates the supplied commands, panics if a child is the parent itself, and sets each child's parent pointer with cmds[i].parent = c. It then starts updating maximum usage lengths (lines 1309–1311); the rest of child-list insertion is outside the supplied span.

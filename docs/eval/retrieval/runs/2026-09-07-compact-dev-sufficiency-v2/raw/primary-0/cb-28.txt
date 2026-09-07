@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows GroupID setters and group collection helpers, but no documentation or consuming logic explaining the group ID's effect on command behavior or presentation.

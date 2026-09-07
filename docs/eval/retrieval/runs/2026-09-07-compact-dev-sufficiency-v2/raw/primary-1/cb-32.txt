@@ -1,0 +1,1 @@
+`(*Command).Execute() error` is in `command.go:1038–1041`. It calls `c.ExecuteC()`, discards the returned command, and returns the error. The preceding comment describes traversing the command tree to find matching commands and corresponding flags (`command.go:1036–1037`).

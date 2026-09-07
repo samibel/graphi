@@ -1,0 +1,1 @@
+PASS: The answer locates the exact requested Execute method, matching the development key. command.go:1038–1041 directly shows the receiver, error return, call to ExecuteC, discarded first result, and returned error; lines 1036–1037 support the tree-and-flags description. All required claims are present in the exact bundle.

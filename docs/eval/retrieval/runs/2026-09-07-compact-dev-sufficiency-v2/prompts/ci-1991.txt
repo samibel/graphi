@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to retrieve parent command flag value?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How to retrieve parent command flag value?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1855,"end_line":1874,"text":"// updateParentsPflags updates c.parentsPflags by adding\n// new persistent flags of all parents.\n// If c.parentsPflags == nil, it makes new.\nfunc (c *Command) updateParentsPflags() {\n\tif c.parentsPflags == nil {\n\t\tc.parentsPflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tc.parentsPflags.SetOutput(c.flagErrorBuf)\n\t\tc.parentsPflags.SortFlags = false\n\t}\n\n\tif c.globNormFunc != nil {\n\t\tc.parentsPflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.Root().PersistentFlags().AddFlagSet(flag.CommandLine)\n\n\tc.VisitParents(func(parent *Command) {\n\t\tc.parentsPflags.AddFlagSet(parent.PersistentFlags())\n\t})\n}"},{"path":"command.go","start_line":73,"end_line":77,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help \u003cthis-command\u003e' output.\n\tLong string"},{"path":"command.go","start_line":1766,"end_line":1766,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command."},{"path":"command.go","start_line":1695,"end_line":1695,"text":"// InheritedFlags returns all flags which were inherited from parent commands."},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1806,"end_line":1806,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {"},{"path":"command.go","start_line":1669,"end_line":1670,"text":"func (c *Command) LocalFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":1795,"end_line":1795,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {"}],"provenance":{"input_sha256":"bbb44fe45e99e433e901e273ce3ee23c8c542a7034d204cd39d8157ba42ac56e","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

@@ -1,0 +1,1 @@
+Check that the command's Version field is nonempty and that you have not already defined a version flag. command.go:108–110 says a nonempty Version enables the automatic boolean version flag and printing that value; InitDefaultVersionFlag does nothing for an empty Version or an existing version flag (command.go:1202–1206). Set a nonempty Version to enable the default behavior.

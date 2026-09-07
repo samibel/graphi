@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies Flags() and InheritedFlags() as returning flag sets, but supplies no enumeration API or complete membership logic for listing all flags associated with a command.

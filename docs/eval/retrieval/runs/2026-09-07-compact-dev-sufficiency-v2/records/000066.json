@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 66,
+  "previous_sha256": "208430ede9bf2c1064d797e46cca2e5fba076f127f773794ee8fb0d3653a3aa3",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "03b13ad30c3f02b2222e9ec9b6b2fd16e38915d4ac5100fbfd8fb51b1bf3e0a0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default completion command is initialized by `(*Command).InitDefaultCompletionCmd` in `completions.go:683–710`. It generates autocompletion scripts for a selected shell, and creation is skipped if disabled, if there are no subcommands, or if a command already has the completion name or alias. The constructed command uses `NoArgs`, `NoFileCompletions`, the configured hidden status and group ID, and is added with `c.AddCommand(completionCmd)`.\n",
+  "sha256": "a964a8b9cf4e80b292c11e8340991cf9f24b5d6626a58691bd570b2b6b83a185"
+}

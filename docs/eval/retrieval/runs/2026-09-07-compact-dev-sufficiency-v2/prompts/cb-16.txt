@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+where is the levenshtein distance computed
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"where is the levenshtein distance computed\"; read in order (139/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"cobra.go","start_line":187,"end_line":197,"text":"// ld compares two strings and returns the levenshtein distance between them.\nfunc ld(s, t string, ignoreCase bool) int {\n\tif ignoreCase {\n\t\ts = strings.ToLower(s)\n\t\tt = strings.ToLower(t)\n\t}\n\td := make([][]int, len(s)+1)\n\tfor i := range d {\n\t\td[i] = make([]int, len(t)+1)\n\t}\n\tfor i := range d {"},{"path":"command.go","start_line":836,"end_line":842,"text":"\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance\n\t\t\tsuggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))\n\t\t\tif suggestByLevenshtein || suggestByPrefix {\n\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t}\n\t\t\tfor _, explicitSuggestion := range cmd.SuggestFor {"},{"path":"command.go","start_line":246,"end_line":248,"text":"\tDisableFlagsInUseLine bool\n\n\t// DisableSuggestions disables the suggestions based on Levenshtein distance"},{"path":"command.go","start_line":1496,"end_line":1498,"text":"func (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")"},{"path":"command.go","start_line":390,"end_line":390,"text":"func (c *Command) InOrStdin() io.Reader {"},{"path":"command.go","start_line":414,"end_line":414,"text":"func (c *Command) getIn(def io.Reader) io.Reader {"},{"path":"doc/util.go","start_line":52,"end_line":52,"text":"func (s byName) Less(i, j int) bool { return s[i].Name() \u003c s[j].Name() }"},{"path":"cobra.go","start_line":241,"end_line":241,"text":"func WriteStringAndCheck(b io.StringWriter, s string) {"}],"provenance":{"input_sha256":"f46290ed805dc9749822361611319e0405993299254dc697e666f0e22780f3ef","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

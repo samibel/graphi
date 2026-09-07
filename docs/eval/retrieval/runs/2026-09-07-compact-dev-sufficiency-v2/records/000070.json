@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 70,
+  "previous_sha256": "19548356447b47fe3ea276cb5d4fe5444e5ad6aeda39322d4611b19f5dc4334d",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2a7d6e98919edf9626cda73dcca5d393f721b278db144ded25ee5d9e3ca89965",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags, call `cmd.MarkFlagsMutuallyExclusive(\"first\", \"second\")` with their names. The variadic method merges persistent flags, looks up each name, and panics if any flag is missing (`flag_groups.go:65–71`). Each call defines a separate group, allowing a flag to belong to multiple groups (line 72). The completion behavior hides other members when one flag in the group is present (line 223).\n",
+  "sha256": "e9960c31fb6152278b4c6cf4b5268730cf4b5db449808932564d73de7d546a4b"
+}

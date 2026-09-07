@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to access Persistent Flags values in init function?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How to access Persistent Flags values in init function?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":84,"end_line":90,"text":"\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n\n\t// Expected arguments\n\tArgs PositionalArgs"},{"path":"cobra.go","start_line":97,"end_line":101,"text":"// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}"},{"path":"command.go","start_line":1186,"end_line":1190,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {"},{"path":"command.go","start_line":1204,"end_line":1210,"text":"func (c *Command) InitDefaultVersionFlag() {\n\tif c.Version == \"\" {\n\t\treturn\n\t}\n\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"version\") == nil {"},{"path":"command.go","start_line":1461,"end_line":1461,"text":"\t\tif x.HasFlags() || x.HasPersistentFlags() {"},{"path":"command.go","start_line":1757,"end_line":1757,"text":"func (c *Command) HasPersistentFlags() bool {"},{"path":"command.go","start_line":1726,"end_line":1726,"text":"func (c *Command) PersistentFlags() *flag.FlagSet {"},{"path":"command.go","start_line":1806,"end_line":1806,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {"}],"provenance":{"input_sha256":"e08d5d32192d94214942469de071813b38ab4733b06cc67e885004a70ce5832f","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

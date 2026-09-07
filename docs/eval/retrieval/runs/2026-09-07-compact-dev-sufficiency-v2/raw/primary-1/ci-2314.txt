@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that help initialization can be overridden but omits how `-h` is registered relative to `--help` and how the parser and help handler distinguish their use.

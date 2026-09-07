@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "c00c13b0f1b08afd11a86632722a922d8c82c2c29be0df03e9b2204516023668",
+  "sequence": 120,
+  "previous_sha256": "336b378fd654a8f54b81474f6b962735d7fe6c07092e3dfc262b07c9b81de264",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v2-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "a964a8b9cf4e80b292c11e8340991cf9f24b5d6626a58691bd570b2b6b83a185",
+  "outcome": "pass",
+  "rationale": "PASS: The answer concretely identifies InitDefaultCompletionCmd, the primary completion target in the development key. completions.go:683–710 contains the disable/no-subcommands/existing-name-or-alias guards, script-generation descriptions, NoArgs and NoFileCompletions settings, hidden/group configuration, and AddCommand. The same exact span supports the optional no-description-flag condition described in slot 0.\n",
+  "sha256": "8c2ebba95cee10f38efe606b798d3db58ce612bc7bff79e4f49d9f73bc85e938"
+}

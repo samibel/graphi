@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+ExecuteC
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"ExecuteC\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":1052,"end_line":1076,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding\n\tc.InitDefaultHelpCmd()\n\t// initialize completion at the last point to allow for user overriding\n\tc.InitDefaultCompletionCmd()\n\n\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()\n\n\targs := c.args"},{"path":"command.go","start_line":1044,"end_line":1049,"text":"// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}"},{"path":"command.go","start_line":1030,"end_line":1031,"text":"func (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx"},{"path":"command.go","start_line":1039,"end_line":1041,"text":"\t_, err := c.ExecuteC()\n\treturn err\n}"}],"provenance":{"input_sha256":"850f317e8c7f7771834fa9c43001e418fb8df88f125f9e70e7109bb129dcc167","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

@@ -1,0 +1,1 @@
+Required flags are checked by (*Command).ValidateRequiredFlags in command.go:1147–1166. It skips validation when DisableFlagParsing is true, visits c.Flags(), and collects unchanged flags whose BashCompOneRequiredFlag annotation is "true". Missing flags produce the error required flag(s) "..." not set. The provided span does not show its execution call site.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response gives flag accessor signatures and says local nonpersistent flags do not persist to subcommands, but omits how to declare, inherit, and retrieve a global flag from a subcommand.

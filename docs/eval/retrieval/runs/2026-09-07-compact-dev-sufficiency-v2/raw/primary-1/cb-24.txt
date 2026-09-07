@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `enforceFlagGroupsForCompletion` collecting annotation status (`flag_groups.go:225–240`) but omits the subsequent code that changes completion behavior for required and mutually exclusive groups.

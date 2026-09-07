@@ -1,0 +1,1 @@
+Use cmd.SetArgs([]string{...}) to supply the flag arguments for your test. command.go:274–278 explicitly documents SetArgs as overriding the usual os.Args[1:] input and being particularly useful for testing; its implementation stores the supplied slice in c.args.

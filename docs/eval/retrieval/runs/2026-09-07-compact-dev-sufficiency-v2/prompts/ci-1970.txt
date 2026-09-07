@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to get a list of flags associated with a particular command ?
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"How to get a list of flags associated with a particular command ?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":82,"end_line":86,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command."},{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1643,"end_line":1646,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {"},{"path":"command.go","start_line":1806,"end_line":1807,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"flag_groups.go","start_line":33,"end_line":33,"text":"func (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {"},{"path":"command.go","start_line":1849,"end_line":1849,"text":"func (c *Command) mergePersistentFlags() {"},{"path":"command.go","start_line":1767,"end_line":1767,"text":"func (c *Command) HasInheritedFlags() bool {"},{"path":"command.go","start_line":1696,"end_line":1696,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {"}],"provenance":{"input_sha256":"89bf3d49162645d342d47660c68b72884e56f22c534e8a36b1646c1707d6d837","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----

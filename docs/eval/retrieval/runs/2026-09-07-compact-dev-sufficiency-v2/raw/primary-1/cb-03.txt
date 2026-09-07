@@ -1,0 +1,1 @@
+`GenMarkdownTree(cmd *cobra.Command, dir string) error` in `doc/md_docs.go:119–129` generates Markdown pages for a command and its descendants in the given directory. It delegates to `GenMarkdownTreeCustom` with an empty file prepender and identity link handler. Its comment warns that hyphenated command names can collide, illustrating `sub-third` versus `sub third`.

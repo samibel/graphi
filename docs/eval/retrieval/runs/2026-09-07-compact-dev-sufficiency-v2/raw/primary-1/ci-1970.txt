@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Flags()` and `InheritedFlags()` signatures, but no enumeration API or complete flag-set composition behavior needed to obtain a list of the command's flags.

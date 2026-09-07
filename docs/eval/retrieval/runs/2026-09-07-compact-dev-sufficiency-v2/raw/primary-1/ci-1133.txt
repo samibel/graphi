@@ -1,0 +1,1 @@
+For a reference `cmd` to the executing command, call `cmd.Flag("name")` to retrieve its flag object, or `cmd.Flags().Lookup("name")`. The shown `Flag` method starts with exactly that lookup (`command.go:1795–1798`), and `Flags` returns a `*flag.FlagSet` (`command.go:1643`). The bundle does not establish how to obtain the executing command reference or retrieve a typed flag value.

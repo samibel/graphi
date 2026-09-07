@@ -1,0 +1,1 @@
+INSUFFICIENT The response documents OnInitialize registration (cobra.go:97–101), but does not show when flags are parsed relative to initialization or how their values should be accessed.

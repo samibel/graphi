@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how are unknown command suggestions computed
+
+----- BEGIN task_context/compact-dev/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s) for \"how are unknown command suggestions computed\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/2","sources":[{"path":"command.go","start_line":832,"end_line":843,"text":"func (c *Command) SuggestionsFor(typedName string) []string {\n\tsuggestions := []string{}\n\tfor _, cmd := range c.commands {\n\t\tif cmd.IsAvailableCommand() {\n\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance\n\t\t\tsuggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))\n\t\t\tif suggestByLevenshtein || suggestByPrefix {\n\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t}\n\t\t\tfor _, explicitSuggestion := range cmd.SuggestFor {\n\t\t\t\tif strings.EqualFold(typedName, explicitSuggestion) {"},{"path":"command.go","start_line":750,"end_line":758,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance \u003c= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) \u003e 0 {"},{"path":"command.go","start_line":246,"end_line":249,"text":"\tDisableFlagsInUseLine bool\n\n\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages."},{"path":"site/content/user_guide.md","start_line":694,"end_line":695,"text":"## Suggestions when \"unknown command\" happens\n"},{"path":"command.go","start_line":1362,"end_line":1364,"text":"func (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:"},{"path":"command.go","start_line":1229,"end_line":1229,"text":"func (c *Command) InitDefaultHelpCmd() {"},{"path":"command.go","start_line":1496,"end_line":1496,"text":"func (c *Command) Name() string {"},{"path":"command.go","start_line":1556,"end_line":1556,"text":"func (c *Command) HasSubCommands() bool {"}],"provenance":{"input_sha256":"753336fbbd69ee9f55dc9183381002360c11e3d3bb40ad505d88576ecdcfa277","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/2 RESPONSE BYTES -----
