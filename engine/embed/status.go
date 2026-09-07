@@ -275,21 +275,10 @@ func loadStatus(ctx context.Context, metaDir string, reg *Registry, graphGenerat
 // substitutes the documented placeholder so the store's fingerprint
 // comparison matches the build's.
 func fingerprintForEmbedder(emb Embedder, graphGen string) Fingerprint {
-	fp := Fingerprint{
-		ModelID:         emb.ID(),
-		Revision:        embedderRevision(emb),
-		ModelSHA256:     embedderModelSHA(emb),
-		TokenizerSHA256: embedderTokenizerSHA(emb),
-		Dim:             emb.Dim(),
-		DocumentSchema:  DocumentSchema,
-		ChunkerConfig:   embedderChunkerConfig(emb),
+	if graphGen == "" {
+		graphGen = GraphGenerationPlaceholder
 	}
-	if graphGen != "" {
-		fp.GraphGeneration = graphGen
-	} else {
-		fp.GraphGeneration = GraphGenerationPlaceholder
-	}
-	return fp
+	return FingerprintFor(emb, graphGen)
 }
 
 // generationRowStats computes the span-method share and the distinct

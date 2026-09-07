@@ -127,6 +127,12 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		// task_context/2 bundles carry the pinned static selector stamp, so a
 		// rotation invalidates the bundles the 31/64 pass count describes.
 		"docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke",
+		"docs/eval/retrieval/runs/2026-09-06-architecture-dev",
+		"docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev",
+		"docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev",
+		"docs/eval/retrieval/runs/2026-09-06-qwen-dev",
+		// Development recovery measurements and the rejected source prior.
+		"docs/eval/retrieval/runs/2026-09-06-recovery-dev",
 		// SW-282: the three runs that recalibrate, gate and coverage-check
 		// docs/eval/retrieval-targets.json. The recalibration run is the one
 		// that matters most for a rotation — the targets file's bars are now
@@ -135,6 +141,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local",
 		"docs/eval/retrieval/runs/2026-09-06-sw282-gate-local",
 		"docs/eval/retrieval/runs/2026-09-06-sw282-recalibration-local",
+		"docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)

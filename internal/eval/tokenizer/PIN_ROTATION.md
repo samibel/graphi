@@ -45,6 +45,31 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/` — the qrel-blind smoke evaluation.
   Its preserved `task_context/2` bundles carry real-tokenizer counts under the current pin, so a
   rotation must list this directory as stale and regenerate those counts before it can pass.
+- `docs/eval/retrieval/runs/2026-09-06-recovery-dev/` — development-only MCP
+  captures from independent indexes. The preserved payload token counts and
+  their reproducibility comparison must be recomputed after a rotation.
+- `docs/eval/retrieval/runs/2026-09-06-architecture-dev/` — development-only
+  MCP captures for the architecture-ranking experiment.
+- `docs/eval/retrieval/runs/2026-09-06-qwen-dev/` — opt-in alternative-model
+  development experiment; any complete MCP payload counts use the pinned
+  tokenizer. Failed attempts are not complete quality measurements.
+- `docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev/` — development-only
+  exact MCP source-selection ablations and final independent-build captures.
+- `docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev/` — development-only
+  candidate-admission and grouped-declaration captures; all complete MCP
+  payload counts must be recomputed after a tokenizer rotation.
+- `docs/eval/retrieval/runs/2026-09-06-release-preflight-dev/` — development-only
+  frozen GrepRead comparator transcripts and exact per-response token counts;
+  the counts must be recomputed after a tokenizer rotation. This diagnostic
+  blocks a savings claim; it publishes no savings aggregate.
+- `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
+  answer-source recovery capture; all complete MCP payloads are preserved and
+  verified across two independent index builds.
+- `docs/eval/retrieval/runs/2026-09-07-grepread-v2-dev/` — development-only
+  comparator prototype; its exact response-prefix and transcript counts must
+  be recomputed after a tokenizer rotation.
+- `docs/eval/retrieval/runs/2026-09-07-compact-wire-dev/` — development-only
+  compact task-context frontier; every paired row uses the pinned tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

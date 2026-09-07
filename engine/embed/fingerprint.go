@@ -53,6 +53,18 @@ type Fingerprint struct {
 	GraphGeneration string
 }
 
+// FingerprintFor reconstructs the same provider identity for build and reload.
+// It does not probe or dial. Late dimensions may be filled from the persisted
+// model-specific generation by the reload caller.
+func FingerprintFor(emb Embedder, graphGeneration string) Fingerprint {
+	return Fingerprint{
+		ModelID: emb.ID(), Revision: embedderRevision(emb),
+		ModelSHA256: embedderModelSHA(emb), TokenizerSHA256: embedderTokenizerSHA(emb),
+		Dim: emb.Dim(), DocumentSchema: DocumentSchema,
+		ChunkerConfig: embedderChunkerConfig(emb), GraphGeneration: graphGeneration,
+	}
+}
+
 // fingerprintFields (the FIXED order Canonical emits) is documented in
 // the encodeCanonical call below. The order is inlined at the call site
 // so the encoding's source of truth is one place, not a separate

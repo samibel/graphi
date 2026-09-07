@@ -80,6 +80,51 @@ at a local artifact directory the loader reads the cached bytes and validates
 the SHA-256 against the pin table; a mismatch surfaces as a typed error (the
 air-gapped path, AC-6).
 
+### Explicit pinned Ollama models (experimental)
+
+The legacy `ollama` and `ollama:host:port` selectors keep `nomic-embed-text`.
+An explicit model uses query parameters on the loopback endpoint:
+
+```sh
+# Model installation is explicit; indexing/search never downloads a model.
+ollama pull qwen3-embedding:0.6b
+curl --fail http://127.0.0.1:11434/api/tags
+curl --fail http://127.0.0.1:11434/api/version
+
+# Values below are examples from the 2026-09-06 local experiment. Verify the
+# actual installed full digest and server version before using this selector.
+export GRAPHI_EMBEDDER='ollama:127.0.0.1:11434?model=qwen3-embedding:0.6b&digest=ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d&context=8192&runtime=0.33.3&profile=qwen3-code-v1&compute=cpu'
+```
+
+`model`, `digest` (full SHA-256), `context` (requested input context), `runtime`
+(Ollama server version), and `profile` are required for explicit selection.
+Unknown/repeated parameters fail. `profile=plain-v1` leaves queries unchanged;
+`qwen3-code-v1` applies a fixed code-search instruction to queries only.
+Documents retain their admitted source bytes. `compute=cpu` requests zero GPU
+layers and one CPU thread; omitted/`auto` uses the daemon's automatic placement.
+These choices all enter the model identity. Changing them requires reindexing.
+The explicit CPU mode allows two minutes per HTTP request for long capsules;
+auto and legacy modes retain the 30-second deadline. This does not change
+source admission, query repeats, or the bundle token budget.
+
+The local GPU determinism probe failed. Single-thread CPU passed both the
+complete ranking repeats and the 44-query independent-index MCP byte check.
+However, this configuration improved architecture ranking while reducing
+complete-answer-span coverage from 33/40 to 27/40 development questions. It
+is not recommended as a replacement for the current Potion configuration.
+See [the development comparison](eval/retrieval/runs/2026-09-06-qwen-dev/README.md)
+for full results and limits; no cross-platform determinism claim is made.
+
+Construction and reload do not contact Ollama. Before and after an embedding
+batch the adapter verifies the installed digest and runtime version; a mismatch
+fails, including when embedding a search query. Requests use `/api/embed` with
+`truncate:false` and an explicit `num_ctx`, so oversized input is rejected rather
+than silently truncated. Dimension changes and redirects are also rejected.
+This still trusts the local daemon: its embedding response does not attest the
+model digest atomically, so before/after checks cannot prove absence of a
+concurrent change-and-revert of the same tag. Do not retag models during runs.
+The graphi binary remains CGo-free; Ollama is an additional local runtime.
+
 On the first semantic search after process start, the static embedder loads the
 local model and verifies the pinned file hashes before freshness and empty-query
 short circuits; that result is memoised for later queries. If the artifact is

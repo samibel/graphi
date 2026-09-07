@@ -532,6 +532,7 @@ func (a *TaskContextRetriever) Retrieve(ctx context.Context, req resolve.Retriev
 			Span:       row.Span,
 			Region:     row.Region,
 			Explain: resolve.RetrieverExplain{
+				Base:           row.Explain.Base,
 				LexicalRank:    row.Explain.LexicalRank,
 				SemanticRank:   row.Explain.SemanticRank,
 				RRF:            row.Explain.RRF,
@@ -994,23 +995,7 @@ func buildTaskContextIndex(ctx context.Context, root, workDir, selector string, 
 }
 
 func taskContextFingerprint(emb embed.Embedder, graphGeneration string) embed.Fingerprint {
-	fp := embed.Fingerprint{
-		ModelID: emb.ID(), Dim: emb.Dim(), DocumentSchema: embed.DocumentSchema,
-		GraphGeneration: graphGeneration,
-	}
-	if v, ok := emb.(interface{ Revision() string }); ok {
-		fp.Revision = v.Revision()
-	}
-	if v, ok := emb.(interface{ ModelSHA256() string }); ok {
-		fp.ModelSHA256 = v.ModelSHA256()
-	}
-	if v, ok := emb.(interface{ TokenizerSHA256() string }); ok {
-		fp.TokenizerSHA256 = v.TokenizerSHA256()
-	}
-	if v, ok := emb.(interface{ ChunkerConfig() string }); ok {
-		fp.ChunkerConfig = v.ChunkerConfig()
-	}
-	return fp
+	return embed.FingerprintFor(emb, graphGeneration)
 }
 
 // WriteTaskContextRunDir writes the checked-in run directory: a published

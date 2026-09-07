@@ -146,12 +146,16 @@ func renderRetrievalRows(ctx context.Context, p Params, res resolve.RetrieverRes
 // / lexical_path_override / fused). Stamping it on every row makes the v2
 // output trace back to the strategy named in the summary.
 func retrievalReason(r resolve.RetrieverRow) string {
-	return fmt.Sprintf(
+	reason := fmt.Sprintf(
 		"match: %s [%s:%s] final %d [lexical_rank %d, semantic_rank %d, rrf %d, graph %d, classification %d; region: %s]",
 		r.NodeID, r.Path, r.Span, r.Final,
 		r.Explain.LexicalRank, r.Explain.SemanticRank, r.Explain.RRF, r.Explain.Graph, r.Explain.Classification,
 		regionName(r.Region),
 	)
+	if r.Explain.Base != 0 {
+		reason += fmt.Sprintf("; base %d", r.Explain.Base)
+	}
+	return reason
 }
 
 // regionName returns a human-readable label for the retrieval row's region

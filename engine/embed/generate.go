@@ -20,8 +20,8 @@ import (
 // wraps this text in the document shape for that comparison.
 // embedderRevision returns the embedder's revision tag, or "" when the
 // adapter does not expose one. The pinned static embedder's revision
-// lives in its ID() (the @<revision> segment); Ollama is a model-tag
-// identity and reports "".
+// lives in its ID() (the @<revision> segment). Explicitly pinned Ollama
+// selectors expose the serving runtime version; legacy selectors report "".
 func embedderRevision(emb Embedder) string {
 	if r, ok := emb.(interface{ Revision() string }); ok {
 		return r.Revision()
@@ -31,8 +31,8 @@ func embedderRevision(emb Embedder) string {
 
 // embedderModelSHA returns the model's pinned SHA-256 (lowercase hex)
 // when the adapter exposes one. The static adapter's model digest is
-// already in its ID(); Ollama has no native digest binding in v0, so
-// the field reads "" until /api/show's digest is plumbed in.
+// already in its ID(). Explicitly pinned Ollama selectors expose their
+// model manifest digest; legacy selectors report "".
 func embedderModelSHA(emb Embedder) string {
 	if m, ok := emb.(interface{ ModelSHA256() string }); ok {
 		return m.ModelSHA256()
@@ -42,7 +42,8 @@ func embedderModelSHA(emb Embedder) string {
 
 // embedderTokenizerSHA returns the tokenizer's pinned SHA-256 when the
 // adapter exposes one. The static adapter's tokenizer digest is
-// already in its ID(); Ollama reads "" until binding lands.
+// already in its ID(). Pinned Ollama selectors bind the GGUF tokenizer
+// through the model manifest digest; legacy selectors report "".
 func embedderTokenizerSHA(emb Embedder) string {
 	if t, ok := emb.(interface{ TokenizerSHA256() string }); ok {
 		return t.TokenizerSHA256()
@@ -364,16 +365,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	if graphGeneration == "" {
 		graphGeneration = GraphGenerationPlaceholder
 	}
-	fp := Fingerprint{
-		ModelID:         emb.ID(),
-		Revision:        embedderRevision(emb),
-		ModelSHA256:     embedderModelSHA(emb),
-		TokenizerSHA256: embedderTokenizerSHA(emb),
-		Dim:             emb.Dim(),
-		DocumentSchema:  DocumentSchema,
-		ChunkerConfig:   embedderChunkerConfig(emb),
-		GraphGeneration: graphGeneration,
-	}
+	fp := FingerprintFor(emb, graphGeneration)
 
 	// AC-4 carry-forward: when the store holds a READY generation under
 	// the SAME embedding-space fingerprint, lookup each prior row by

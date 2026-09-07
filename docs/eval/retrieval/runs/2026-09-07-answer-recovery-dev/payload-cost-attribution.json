@@ -1,0 +1,2236 @@
+{
+  "version": "dev-task-context-payload-cost/1",
+  "scope": "development_only",
+  "input_sha256": "9ab813c03a414b5d5d698581c9f293d78cbbc218f9a2452b96454f5516675b1d",
+  "dataset_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "attribution_order": [
+    "envelope",
+    "json_structure_and_escaping",
+    "provenance_and_metadata",
+    "summary",
+    "source_and_evidence_text"
+  ],
+  "byte_accounting": "exact ordered marginals; decoded_value_bytes separately exposes semantic text and wire expansion",
+  "token_accounting": "exact ordered marginals over complete valid responses; order is material because BPE tokenization is non-additive",
+  "independent_builds_verified": 2,
+  "observations": [
+    {
+      "query_id": "cb-01",
+      "payload_sha256": "850f317e8c7f7771834fa9c43001e418fb8df88f125f9e70e7109bb129dcc167",
+      "full_bytes": 24145,
+      "full_tokens": 7134,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7467,
+          "ordered_marginal_tokens": 2012,
+          "wire_bytes_minus_decoded_values": 7467
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7485,
+          "ordered_marginal_wire_bytes": 7389,
+          "ordered_marginal_tokens": 2369,
+          "isolated_value_tokens": 2468,
+          "token_interaction_vs_isolated": -99,
+          "wire_bytes_minus_decoded_values": -96
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 413,
+          "ordered_marginal_wire_bytes": 419,
+          "ordered_marginal_tokens": 164,
+          "isolated_value_tokens": 161,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 7915,
+          "ordered_marginal_wire_bytes": 8780,
+          "ordered_marginal_tokens": 2561,
+          "isolated_value_tokens": 1965,
+          "token_interaction_vs_isolated": 596,
+          "wire_bytes_minus_decoded_values": 865
+        }
+      ]
+    },
+    {
+      "query_id": "cb-02",
+      "payload_sha256": "1e456a1ad8fff612c41708d1013057d31ee14e935c5b6e64853b057ce608ccf9",
+      "full_bytes": 24155,
+      "full_tokens": 6894,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7895,
+          "ordered_marginal_tokens": 2109,
+          "wire_bytes_minus_decoded_values": 7895
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6731,
+          "ordered_marginal_wire_bytes": 6632,
+          "ordered_marginal_tokens": 2020,
+          "isolated_value_tokens": 2120,
+          "token_interaction_vs_isolated": -100,
+          "wire_bytes_minus_decoded_values": -99
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 433,
+          "ordered_marginal_wire_bytes": 439,
+          "ordered_marginal_tokens": 167,
+          "isolated_value_tokens": 164,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8237,
+          "ordered_marginal_wire_bytes": 9099,
+          "ordered_marginal_tokens": 2570,
+          "isolated_value_tokens": 1998,
+          "token_interaction_vs_isolated": 572,
+          "wire_bytes_minus_decoded_values": 862
+        }
+      ]
+    },
+    {
+      "query_id": "cb-03",
+      "payload_sha256": "4dbb240a455e1ade9291c2d0e97b62fad9a26b94525446712c6694e1def54907",
+      "full_bytes": 23761,
+      "full_tokens": 7111,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7025,
+          "ordered_marginal_tokens": 1892,
+          "wire_bytes_minus_decoded_values": 7025
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6732,
+          "ordered_marginal_wire_bytes": 6640,
+          "ordered_marginal_tokens": 2135,
+          "isolated_value_tokens": 2226,
+          "token_interaction_vs_isolated": -91,
+          "wire_bytes_minus_decoded_values": -92
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 422,
+          "ordered_marginal_wire_bytes": 428,
+          "ordered_marginal_tokens": 165,
+          "isolated_value_tokens": 162,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8374,
+          "ordered_marginal_wire_bytes": 9578,
+          "ordered_marginal_tokens": 2891,
+          "isolated_value_tokens": 2085,
+          "token_interaction_vs_isolated": 806,
+          "wire_bytes_minus_decoded_values": 1204
+        }
+      ]
+    },
+    {
+      "query_id": "cb-04",
+      "payload_sha256": "a05166fd0c11df944f280189995dba19ee8b6ddddd21b8c39df96cf39b9bcd6e",
+      "full_bytes": 25391,
+      "full_tokens": 7262,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7939,
+          "ordered_marginal_tokens": 2131,
+          "wire_bytes_minus_decoded_values": 7939
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7841,
+          "ordered_marginal_wire_bytes": 7740,
+          "ordered_marginal_tokens": 2447,
+          "isolated_value_tokens": 2548,
+          "token_interaction_vs_isolated": -101,
+          "wire_bytes_minus_decoded_values": -101
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 433,
+          "ordered_marginal_wire_bytes": 439,
+          "ordered_marginal_tokens": 166,
+          "isolated_value_tokens": 163,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8467,
+          "ordered_marginal_wire_bytes": 9183,
+          "ordered_marginal_tokens": 2490,
+          "isolated_value_tokens": 1977,
+          "token_interaction_vs_isolated": 513,
+          "wire_bytes_minus_decoded_values": 716
+        }
+      ]
+    },
+    {
+      "query_id": "cb-07",
+      "payload_sha256": "54af13bfd2a33b2c9f67833c8940192ddff6b3ab29529da2cc9207ee54424502",
+      "full_bytes": 13549,
+      "full_tokens": 4042,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 6011,
+          "ordered_marginal_tokens": 1625,
+          "wire_bytes_minus_decoded_values": 6011
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 5412,
+          "ordered_marginal_wire_bytes": 5331,
+          "ordered_marginal_tokens": 1673,
+          "isolated_value_tokens": 1747,
+          "token_interaction_vs_isolated": -74,
+          "wire_bytes_minus_decoded_values": -81
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 418,
+          "ordered_marginal_wire_bytes": 424,
+          "ordered_marginal_tokens": 164,
+          "isolated_value_tokens": 161,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 1453,
+          "ordered_marginal_wire_bytes": 1693,
+          "ordered_marginal_tokens": 552,
+          "isolated_value_tokens": 381,
+          "token_interaction_vs_isolated": 171,
+          "wire_bytes_minus_decoded_values": 240
+        }
+      ]
+    },
+    {
+      "query_id": "cb-08",
+      "payload_sha256": "deb9148a4ccd5dee67625e3f8e9c13b79086eae3f300b926b11c09b5a060729e",
+      "full_bytes": 11766,
+      "full_tokens": 3536,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 5166,
+          "ordered_marginal_tokens": 1395,
+          "wire_bytes_minus_decoded_values": 5166
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 4244,
+          "ordered_marginal_wire_bytes": 4173,
+          "ordered_marginal_tokens": 1322,
+          "isolated_value_tokens": 1386,
+          "token_interaction_vs_isolated": -64,
+          "wire_bytes_minus_decoded_values": -71
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 418,
+          "ordered_marginal_wire_bytes": 424,
+          "ordered_marginal_tokens": 165,
+          "isolated_value_tokens": 162,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 1631,
+          "ordered_marginal_wire_bytes": 1913,
+          "ordered_marginal_tokens": 626,
+          "isolated_value_tokens": 436,
+          "token_interaction_vs_isolated": 190,
+          "wire_bytes_minus_decoded_values": 282
+        }
+      ]
+    },
+    {
+      "query_id": "cb-09",
+      "payload_sha256": "cb267702aa0c1450895dbabb46cb213d3204942e29e4498d0afdd43de95c453c",
+      "full_bytes": 13329,
+      "full_tokens": 3865,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 6011,
+          "ordered_marginal_tokens": 1625,
+          "wire_bytes_minus_decoded_values": 6011
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 5573,
+          "ordered_marginal_wire_bytes": 5492,
+          "ordered_marginal_tokens": 1737,
+          "isolated_value_tokens": 1811,
+          "token_interaction_vs_isolated": -74,
+          "wire_bytes_minus_decoded_values": -81
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 424,
+          "ordered_marginal_wire_bytes": 430,
+          "ordered_marginal_tokens": 166,
+          "isolated_value_tokens": 163,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 1248,
+          "ordered_marginal_wire_bytes": 1306,
+          "ordered_marginal_tokens": 309,
+          "isolated_value_tokens": 260,
+          "token_interaction_vs_isolated": 49,
+          "wire_bytes_minus_decoded_values": 58
+        }
+      ]
+    },
+    {
+      "query_id": "cb-11",
+      "payload_sha256": "28cc6b696ef1ada11754f54984ccc9d8f974dffdbc6b97dc6b26b78874867849",
+      "full_bytes": 32689,
+      "full_tokens": 9851,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 10695,
+          "ordered_marginal_tokens": 2836,
+          "wire_bytes_minus_decoded_values": 10695
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9655,
+          "ordered_marginal_wire_bytes": 9530,
+          "ordered_marginal_tokens": 2981,
+          "isolated_value_tokens": 3134,
+          "token_interaction_vs_isolated": -153,
+          "wire_bytes_minus_decoded_values": -125
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 489,
+          "ordered_marginal_wire_bytes": 495,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 175,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 10093,
+          "ordered_marginal_wire_bytes": 11879,
+          "ordered_marginal_tokens": 3828,
+          "isolated_value_tokens": 2659,
+          "token_interaction_vs_isolated": 1169,
+          "wire_bytes_minus_decoded_values": 1786
+        }
+      ]
+    },
+    {
+      "query_id": "cb-12",
+      "payload_sha256": "d3b0246e2aee36ab4f0271e8988861e431b1fe1758af257bf734f5f99178c778",
+      "full_bytes": 29594,
+      "full_tokens": 9101,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9568,
+          "ordered_marginal_tokens": 2554,
+          "wire_bytes_minus_decoded_values": 9568
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8791,
+          "ordered_marginal_wire_bytes": 8676,
+          "ordered_marginal_tokens": 2736,
+          "isolated_value_tokens": 2869,
+          "token_interaction_vs_isolated": -133,
+          "wire_bytes_minus_decoded_values": -115
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 491,
+          "ordered_marginal_wire_bytes": 497,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 178,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9065,
+          "ordered_marginal_wire_bytes": 10763,
+          "ordered_marginal_tokens": 3602,
+          "isolated_value_tokens": 2359,
+          "token_interaction_vs_isolated": 1243,
+          "wire_bytes_minus_decoded_values": 1698
+        }
+      ]
+    },
+    {
+      "query_id": "cb-13",
+      "payload_sha256": "753336fbbd69ee9f55dc9183381002360c11e3d3bb40ad505d88576ecdcfa277",
+      "full_bytes": 27378,
+      "full_tokens": 8340,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8115,
+          "ordered_marginal_tokens": 2170,
+          "wire_bytes_minus_decoded_values": 8115
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8286,
+          "ordered_marginal_wire_bytes": 8191,
+          "ordered_marginal_tokens": 2643,
+          "isolated_value_tokens": 2752,
+          "token_interaction_vs_isolated": -109,
+          "wire_bytes_minus_decoded_values": -95
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 477,
+          "ordered_marginal_wire_bytes": 483,
+          "ordered_marginal_tokens": 175,
+          "isolated_value_tokens": 172,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9018,
+          "ordered_marginal_wire_bytes": 10499,
+          "ordered_marginal_tokens": 3324,
+          "isolated_value_tokens": 2269,
+          "token_interaction_vs_isolated": 1055,
+          "wire_bytes_minus_decoded_values": 1481
+        }
+      ]
+    },
+    {
+      "query_id": "cb-14",
+      "payload_sha256": "a48cd24533ba4ce70c789716b6b95b504a61f17570cdaedcf17925322629aeba",
+      "full_bytes": 27296,
+      "full_tokens": 7661,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8624,
+          "ordered_marginal_tokens": 2293,
+          "wire_bytes_minus_decoded_values": 8624
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8200,
+          "ordered_marginal_wire_bytes": 8099,
+          "ordered_marginal_tokens": 2500,
+          "isolated_value_tokens": 2608,
+          "token_interaction_vs_isolated": -108,
+          "wire_bytes_minus_decoded_values": -101
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 511,
+          "ordered_marginal_wire_bytes": 517,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 178,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9107,
+          "ordered_marginal_wire_bytes": 9966,
+          "ordered_marginal_tokens": 2659,
+          "isolated_value_tokens": 2033,
+          "token_interaction_vs_isolated": 626,
+          "wire_bytes_minus_decoded_values": 859
+        }
+      ]
+    },
+    {
+      "query_id": "cb-15",
+      "payload_sha256": "84ead4e991d80d3e840a06ae46894be09cfc29941faf27b31a4f3df81eb41cf2",
+      "full_bytes": 29547,
+      "full_tokens": 9275,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9851,
+          "ordered_marginal_tokens": 2620,
+          "wire_bytes_minus_decoded_values": 9851
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8948,
+          "ordered_marginal_wire_bytes": 8831,
+          "ordered_marginal_tokens": 2842,
+          "isolated_value_tokens": 2985,
+          "token_interaction_vs_isolated": -143,
+          "wire_bytes_minus_decoded_values": -117
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 464,
+          "ordered_marginal_wire_bytes": 470,
+          "ordered_marginal_tokens": 175,
+          "isolated_value_tokens": 172,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8564,
+          "ordered_marginal_wire_bytes": 10305,
+          "ordered_marginal_tokens": 3610,
+          "isolated_value_tokens": 2383,
+          "token_interaction_vs_isolated": 1227,
+          "wire_bytes_minus_decoded_values": 1741
+        }
+      ]
+    },
+    {
+      "query_id": "cb-16",
+      "payload_sha256": "f46290ed805dc9749822361611319e0405993299254dc697e666f0e22780f3ef",
+      "full_bytes": 26497,
+      "full_tokens": 7981,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8260,
+          "ordered_marginal_tokens": 2206,
+          "wire_bytes_minus_decoded_values": 8260
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8204,
+          "ordered_marginal_wire_bytes": 8108,
+          "ordered_marginal_tokens": 2642,
+          "isolated_value_tokens": 2753,
+          "token_interaction_vs_isolated": -111,
+          "wire_bytes_minus_decoded_values": -96
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 475,
+          "ordered_marginal_wire_bytes": 481,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 175,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8542,
+          "ordered_marginal_wire_bytes": 9558,
+          "ordered_marginal_tokens": 2927,
+          "isolated_value_tokens": 2199,
+          "token_interaction_vs_isolated": 728,
+          "wire_bytes_minus_decoded_values": 1016
+        }
+      ]
+    },
+    {
+      "query_id": "cb-19",
+      "payload_sha256": "0d32108ce984b0e2cd6a345e89a4717f0d1730027341e719a8417bf3b0a9589e",
+      "full_bytes": 27393,
+      "full_tokens": 8440,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8388,
+          "ordered_marginal_tokens": 2237,
+          "wire_bytes_minus_decoded_values": 8388
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8266,
+          "ordered_marginal_wire_bytes": 8163,
+          "ordered_marginal_tokens": 2670,
+          "isolated_value_tokens": 2789,
+          "token_interaction_vs_isolated": -119,
+          "wire_bytes_minus_decoded_values": -103
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 512,
+          "ordered_marginal_wire_bytes": 518,
+          "ordered_marginal_tokens": 184,
+          "isolated_value_tokens": 181,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8843,
+          "ordered_marginal_wire_bytes": 10234,
+          "ordered_marginal_tokens": 3321,
+          "isolated_value_tokens": 2377,
+          "token_interaction_vs_isolated": 944,
+          "wire_bytes_minus_decoded_values": 1391
+        }
+      ]
+    },
+    {
+      "query_id": "cb-20",
+      "payload_sha256": "632d688d93055463cfff264fc86ac58092893a186cc0b0fb0321150d8adb4775",
+      "full_bytes": 28886,
+      "full_tokens": 8734,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8809,
+          "ordered_marginal_tokens": 2352,
+          "wire_bytes_minus_decoded_values": 8809
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8780,
+          "ordered_marginal_wire_bytes": 8673,
+          "ordered_marginal_tokens": 2780,
+          "isolated_value_tokens": 2907,
+          "token_interaction_vs_isolated": -127,
+          "wire_bytes_minus_decoded_values": -107
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 496,
+          "ordered_marginal_wire_bytes": 502,
+          "ordered_marginal_tokens": 179,
+          "isolated_value_tokens": 176,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9274,
+          "ordered_marginal_wire_bytes": 10812,
+          "ordered_marginal_tokens": 3395,
+          "isolated_value_tokens": 2407,
+          "token_interaction_vs_isolated": 988,
+          "wire_bytes_minus_decoded_values": 1538
+        }
+      ]
+    },
+    {
+      "query_id": "cb-21",
+      "payload_sha256": "4bef8d855bfdbfa2b451089ec22e40252efa1c85431fbc82cb0f944261b28d6d",
+      "full_bytes": 31517,
+      "full_tokens": 9774,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9735,
+          "ordered_marginal_tokens": 2586,
+          "wire_bytes_minus_decoded_values": 9735
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8567,
+          "ordered_marginal_wire_bytes": 8451,
+          "ordered_marginal_tokens": 2670,
+          "isolated_value_tokens": 2806,
+          "token_interaction_vs_isolated": -136,
+          "wire_bytes_minus_decoded_values": -116
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 496,
+          "ordered_marginal_wire_bytes": 502,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 178,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 10472,
+          "ordered_marginal_wire_bytes": 12739,
+          "ordered_marginal_tokens": 4309,
+          "isolated_value_tokens": 2812,
+          "token_interaction_vs_isolated": 1497,
+          "wire_bytes_minus_decoded_values": 2267
+        }
+      ]
+    },
+    {
+      "query_id": "cb-22",
+      "payload_sha256": "dbc781d2df1ddde5ab72c190876ad24ed944f616b5666c29b85b45c9061c7a68",
+      "full_bytes": 25791,
+      "full_tokens": 7660,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8426,
+          "ordered_marginal_tokens": 2240,
+          "wire_bytes_minus_decoded_values": 8426
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7718,
+          "ordered_marginal_wire_bytes": 7613,
+          "ordered_marginal_tokens": 2452,
+          "isolated_value_tokens": 2566,
+          "token_interaction_vs_isolated": -114,
+          "wire_bytes_minus_decoded_values": -105
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 493,
+          "ordered_marginal_wire_bytes": 499,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 175,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8185,
+          "ordered_marginal_wire_bytes": 9163,
+          "ordered_marginal_tokens": 2762,
+          "isolated_value_tokens": 2069,
+          "token_interaction_vs_isolated": 693,
+          "wire_bytes_minus_decoded_values": 978
+        }
+      ]
+    },
+    {
+      "query_id": "cb-24",
+      "payload_sha256": "142653b5acf55aaa9f86ff9ea1e3d813e2a9507bc891565313233d6a28e49e62",
+      "full_bytes": 29644,
+      "full_tokens": 8938,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9532,
+          "ordered_marginal_tokens": 2537,
+          "wire_bytes_minus_decoded_values": 9532
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9143,
+          "ordered_marginal_wire_bytes": 9029,
+          "ordered_marginal_tokens": 2866,
+          "isolated_value_tokens": 3003,
+          "token_interaction_vs_isolated": -137,
+          "wire_bytes_minus_decoded_values": -114
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 482,
+          "ordered_marginal_wire_bytes": 488,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9123,
+          "ordered_marginal_wire_bytes": 10505,
+          "ordered_marginal_tokens": 3330,
+          "isolated_value_tokens": 2288,
+          "token_interaction_vs_isolated": 1042,
+          "wire_bytes_minus_decoded_values": 1382
+        }
+      ]
+    },
+    {
+      "query_id": "cb-25",
+      "payload_sha256": "d20ca8a801cc7198d889d0401b81287a7e70333a021a2afdf19b9954ef216e26",
+      "full_bytes": 29254,
+      "full_tokens": 8357,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9428,
+          "ordered_marginal_tokens": 2502,
+          "wire_bytes_minus_decoded_values": 9428
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8943,
+          "ordered_marginal_wire_bytes": 8828,
+          "ordered_marginal_tokens": 2761,
+          "isolated_value_tokens": 2884,
+          "token_interaction_vs_isolated": -123,
+          "wire_bytes_minus_decoded_values": -115
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 482,
+          "ordered_marginal_wire_bytes": 488,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9624,
+          "ordered_marginal_wire_bytes": 10420,
+          "ordered_marginal_tokens": 2889,
+          "isolated_value_tokens": 2307,
+          "token_interaction_vs_isolated": 582,
+          "wire_bytes_minus_decoded_values": 796
+        }
+      ]
+    },
+    {
+      "query_id": "cb-26",
+      "payload_sha256": "89b9c993677f9a77e42055021b4be7157cd27d8dc2861e63b781895d28c87413",
+      "full_bytes": 28013,
+      "full_tokens": 8135,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8585,
+          "ordered_marginal_tokens": 2285,
+          "wire_bytes_minus_decoded_values": 8585
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8628,
+          "ordered_marginal_wire_bytes": 8522,
+          "ordered_marginal_tokens": 2721,
+          "isolated_value_tokens": 2835,
+          "token_interaction_vs_isolated": -114,
+          "wire_bytes_minus_decoded_values": -106
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 480,
+          "ordered_marginal_wire_bytes": 486,
+          "ordered_marginal_tokens": 175,
+          "isolated_value_tokens": 172,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9306,
+          "ordered_marginal_wire_bytes": 10330,
+          "ordered_marginal_tokens": 2926,
+          "isolated_value_tokens": 2262,
+          "token_interaction_vs_isolated": 664,
+          "wire_bytes_minus_decoded_values": 1024
+        }
+      ]
+    },
+    {
+      "query_id": "cb-27",
+      "payload_sha256": "dd3090cae7ebdfd482eb8687796fe5b19a7bc160b5796c3c847a02be81557a02",
+      "full_bytes": 27551,
+      "full_tokens": 8460,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8793,
+          "ordered_marginal_tokens": 2338,
+          "wire_bytes_minus_decoded_values": 8793
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8040,
+          "ordered_marginal_wire_bytes": 7932,
+          "ordered_marginal_tokens": 2566,
+          "isolated_value_tokens": 2684,
+          "token_interaction_vs_isolated": -118,
+          "wire_bytes_minus_decoded_values": -108
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 477,
+          "ordered_marginal_wire_bytes": 483,
+          "ordered_marginal_tokens": 176,
+          "isolated_value_tokens": 173,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8730,
+          "ordered_marginal_wire_bytes": 10253,
+          "ordered_marginal_tokens": 3352,
+          "isolated_value_tokens": 2335,
+          "token_interaction_vs_isolated": 1017,
+          "wire_bytes_minus_decoded_values": 1523
+        }
+      ]
+    },
+    {
+      "query_id": "cb-28",
+      "payload_sha256": "4b836b5c6fdc615ef7da4140a9a93150681ce1c5abf132c6a5607526c11fdbc8",
+      "full_bytes": 26023,
+      "full_tokens": 7646,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8568,
+          "ordered_marginal_tokens": 2280,
+          "wire_bytes_minus_decoded_values": 8568
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7476,
+          "ordered_marginal_wire_bytes": 7370,
+          "ordered_marginal_tokens": 2355,
+          "isolated_value_tokens": 2469,
+          "token_interaction_vs_isolated": -114,
+          "wire_bytes_minus_decoded_values": -106
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 472,
+          "ordered_marginal_wire_bytes": 478,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8459,
+          "ordered_marginal_wire_bytes": 9517,
+          "ordered_marginal_tokens": 2806,
+          "isolated_value_tokens": 2099,
+          "token_interaction_vs_isolated": 707,
+          "wire_bytes_minus_decoded_values": 1058
+        }
+      ]
+    },
+    {
+      "query_id": "cb-30",
+      "payload_sha256": "845754555f4578d3d7c5ce09b07b4017ff0e2df9e492b011379babdab279d4f1",
+      "full_bytes": 26932,
+      "full_tokens": 8129,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8423,
+          "ordered_marginal_tokens": 2242,
+          "wire_bytes_minus_decoded_values": 8423
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8023,
+          "ordered_marginal_wire_bytes": 7918,
+          "ordered_marginal_tokens": 2513,
+          "isolated_value_tokens": 2626,
+          "token_interaction_vs_isolated": -113,
+          "wire_bytes_minus_decoded_values": -105
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 479,
+          "ordered_marginal_wire_bytes": 485,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 175,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8742,
+          "ordered_marginal_wire_bytes": 10016,
+          "ordered_marginal_tokens": 3168,
+          "isolated_value_tokens": 2280,
+          "token_interaction_vs_isolated": 888,
+          "wire_bytes_minus_decoded_values": 1274
+        }
+      ]
+    },
+    {
+      "query_id": "cb-31",
+      "payload_sha256": "8b833c9b4171df33bc8e73ccccb79a1dc206f33de145f391b6a87a3d8751d954",
+      "full_bytes": 24335,
+      "full_tokens": 7220,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7038,
+          "ordered_marginal_tokens": 1891,
+          "wire_bytes_minus_decoded_values": 7038
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6571,
+          "ordered_marginal_wire_bytes": 6480,
+          "ordered_marginal_tokens": 2064,
+          "isolated_value_tokens": 2153,
+          "token_interaction_vs_isolated": -89,
+          "wire_bytes_minus_decoded_values": -91
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 410,
+          "ordered_marginal_wire_bytes": 416,
+          "ordered_marginal_tokens": 163,
+          "isolated_value_tokens": 160,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9293,
+          "ordered_marginal_wire_bytes": 10311,
+          "ordered_marginal_tokens": 3074,
+          "isolated_value_tokens": 2336,
+          "token_interaction_vs_isolated": 738,
+          "wire_bytes_minus_decoded_values": 1018
+        }
+      ]
+    },
+    {
+      "query_id": "cb-32",
+      "payload_sha256": "c247459bec63e4d05028c7dc4f7b16f26e55a3f3513d07bc29d1cd130bbee3bf",
+      "full_bytes": 24955,
+      "full_tokens": 7644,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7516,
+          "ordered_marginal_tokens": 2021,
+          "wire_bytes_minus_decoded_values": 7516
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6777,
+          "ordered_marginal_wire_bytes": 6679,
+          "ordered_marginal_tokens": 2125,
+          "isolated_value_tokens": 2221,
+          "token_interaction_vs_isolated": -96,
+          "wire_bytes_minus_decoded_values": -98
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 412,
+          "ordered_marginal_wire_bytes": 418,
+          "ordered_marginal_tokens": 163,
+          "isolated_value_tokens": 160,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8727,
+          "ordered_marginal_wire_bytes": 10252,
+          "ordered_marginal_tokens": 3307,
+          "isolated_value_tokens": 2237,
+          "token_interaction_vs_isolated": 1070,
+          "wire_bytes_minus_decoded_values": 1525
+        }
+      ]
+    },
+    {
+      "query_id": "cb-33",
+      "payload_sha256": "7204b8c61c17c891fa9da95cb299d1f398ed86585fdfc1b231c5b9568eb4813c",
+      "full_bytes": 27947,
+      "full_tokens": 8295,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8838,
+          "ordered_marginal_tokens": 2370,
+          "wire_bytes_minus_decoded_values": 8838
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8832,
+          "ordered_marginal_wire_bytes": 8725,
+          "ordered_marginal_tokens": 2796,
+          "isolated_value_tokens": 2916,
+          "token_interaction_vs_isolated": -120,
+          "wire_bytes_minus_decoded_values": -107
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 410,
+          "ordered_marginal_wire_bytes": 416,
+          "ordered_marginal_tokens": 163,
+          "isolated_value_tokens": 160,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8872,
+          "ordered_marginal_wire_bytes": 9878,
+          "ordered_marginal_tokens": 2938,
+          "isolated_value_tokens": 2229,
+          "token_interaction_vs_isolated": 709,
+          "wire_bytes_minus_decoded_values": 1006
+        }
+      ]
+    },
+    {
+      "query_id": "cb-35",
+      "payload_sha256": "662d6bba2bfd3cf9dbb8892e8adb858f1d9ec2afca5f2eb8b20e1892fc14c1ba",
+      "full_bytes": 19540,
+      "full_tokens": 5723,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 5265,
+          "ordered_marginal_tokens": 1402,
+          "wire_bytes_minus_decoded_values": 5265
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 4710,
+          "ordered_marginal_wire_bytes": 4641,
+          "ordered_marginal_tokens": 1422,
+          "isolated_value_tokens": 1488,
+          "token_interaction_vs_isolated": -66,
+          "wire_bytes_minus_decoded_values": -69
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 417,
+          "ordered_marginal_wire_bytes": 423,
+          "ordered_marginal_tokens": 163,
+          "isolated_value_tokens": 160,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8211,
+          "ordered_marginal_wire_bytes": 9121,
+          "ordered_marginal_tokens": 2708,
+          "isolated_value_tokens": 2061,
+          "token_interaction_vs_isolated": 647,
+          "wire_bytes_minus_decoded_values": 910
+        }
+      ]
+    },
+    {
+      "query_id": "cb-36",
+      "payload_sha256": "4a6eae931295965966bbd6e446aae072a7f9685287f6db7daed6636d89413435",
+      "full_bytes": 22217,
+      "full_tokens": 6408,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7926,
+          "ordered_marginal_tokens": 2104,
+          "wire_bytes_minus_decoded_values": 7926
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7177,
+          "ordered_marginal_wire_bytes": 7078,
+          "ordered_marginal_tokens": 2210,
+          "isolated_value_tokens": 2306,
+          "token_interaction_vs_isolated": -96,
+          "wire_bytes_minus_decoded_values": -99
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 458,
+          "ordered_marginal_wire_bytes": 464,
+          "ordered_marginal_tokens": 172,
+          "isolated_value_tokens": 169,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 6005,
+          "ordered_marginal_wire_bytes": 6659,
+          "ordered_marginal_tokens": 1894,
+          "isolated_value_tokens": 1455,
+          "token_interaction_vs_isolated": 439,
+          "wire_bytes_minus_decoded_values": 654
+        }
+      ]
+    },
+    {
+      "query_id": "cb-37",
+      "payload_sha256": "197659d879698d98bae15c5805cfc8e3c785aaa5158def441dad1cc6bfbb1fe8",
+      "full_bytes": 20753,
+      "full_tokens": 5978,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 7912,
+          "ordered_marginal_tokens": 2100,
+          "wire_bytes_minus_decoded_values": 7912
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6664,
+          "ordered_marginal_wire_bytes": 6565,
+          "ordered_marginal_tokens": 2050,
+          "isolated_value_tokens": 2151,
+          "token_interaction_vs_isolated": -101,
+          "wire_bytes_minus_decoded_values": -99
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 462,
+          "ordered_marginal_wire_bytes": 468,
+          "ordered_marginal_tokens": 172,
+          "isolated_value_tokens": 169,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 5280,
+          "ordered_marginal_wire_bytes": 5718,
+          "ordered_marginal_tokens": 1628,
+          "isolated_value_tokens": 1307,
+          "token_interaction_vs_isolated": 321,
+          "wire_bytes_minus_decoded_values": 438
+        }
+      ]
+    },
+    {
+      "query_id": "cb-38",
+      "payload_sha256": "eae38014ef473b53796ba56214af2803f5058290993ef1733366eff7fec55481",
+      "full_bytes": 29405,
+      "full_tokens": 8797,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9328,
+          "ordered_marginal_tokens": 2478,
+          "wire_bytes_minus_decoded_values": 9328
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8991,
+          "ordered_marginal_wire_bytes": 8880,
+          "ordered_marginal_tokens": 2897,
+          "isolated_value_tokens": 3026,
+          "token_interaction_vs_isolated": -129,
+          "wire_bytes_minus_decoded_values": -111
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 457,
+          "ordered_marginal_wire_bytes": 463,
+          "ordered_marginal_tokens": 172,
+          "isolated_value_tokens": 169,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9659,
+          "ordered_marginal_wire_bytes": 10644,
+          "ordered_marginal_tokens": 3222,
+          "isolated_value_tokens": 2559,
+          "token_interaction_vs_isolated": 663,
+          "wire_bytes_minus_decoded_values": 985
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1133",
+      "payload_sha256": "033943e1419629c3c15f8d62cfbcf356bc4c50ccce868a912f608e1cb79602d9",
+      "full_bytes": 29338,
+      "full_tokens": 9058,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9540,
+          "ordered_marginal_tokens": 2534,
+          "wire_bytes_minus_decoded_values": 9540
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8853,
+          "ordered_marginal_wire_bytes": 8739,
+          "ordered_marginal_tokens": 2853,
+          "isolated_value_tokens": 2989,
+          "token_interaction_vs_isolated": -136,
+          "wire_bytes_minus_decoded_values": -114
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 490,
+          "ordered_marginal_wire_bytes": 496,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 177,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8955,
+          "ordered_marginal_wire_bytes": 10473,
+          "ordered_marginal_tokens": 3462,
+          "isolated_value_tokens": 2387,
+          "token_interaction_vs_isolated": 1075,
+          "wire_bytes_minus_decoded_values": 1518
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1222",
+      "payload_sha256": "97a120eebcc195cade0f96ff84c033ad140c16db9f9c53eb6dc254c4789e9c71",
+      "full_bytes": 27974,
+      "full_tokens": 8065,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8170,
+          "ordered_marginal_tokens": 2174,
+          "wire_bytes_minus_decoded_values": 8170
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8310,
+          "ordered_marginal_wire_bytes": 8215,
+          "ordered_marginal_tokens": 2573,
+          "isolated_value_tokens": 2678,
+          "token_interaction_vs_isolated": -105,
+          "wire_bytes_minus_decoded_values": -95
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 479,
+          "ordered_marginal_wire_bytes": 485,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 10168,
+          "ordered_marginal_wire_bytes": 11014,
+          "ordered_marginal_tokens": 3113,
+          "isolated_value_tokens": 2498,
+          "token_interaction_vs_isolated": 615,
+          "wire_bytes_minus_decoded_values": 846
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1236",
+      "payload_sha256": "04abc27b8b191b254a2ab8a0e83d476ee4a66cea38bb98612ecacf2fb5a81cf1",
+      "full_bytes": 30152,
+      "full_tokens": 9269,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 10285,
+          "ordered_marginal_tokens": 2732,
+          "wire_bytes_minus_decoded_values": 10285
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9249,
+          "ordered_marginal_wire_bytes": 9128,
+          "ordered_marginal_tokens": 2897,
+          "isolated_value_tokens": 3046,
+          "token_interaction_vs_isolated": -149,
+          "wire_bytes_minus_decoded_values": -121
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 469,
+          "ordered_marginal_wire_bytes": 475,
+          "ordered_marginal_tokens": 176,
+          "isolated_value_tokens": 173,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8567,
+          "ordered_marginal_wire_bytes": 10174,
+          "ordered_marginal_tokens": 3436,
+          "isolated_value_tokens": 2295,
+          "token_interaction_vs_isolated": 1141,
+          "wire_bytes_minus_decoded_values": 1607
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1358",
+      "payload_sha256": "d7023fe78efb32371b29a56e1155695e2a9a4a38e09a64cd552d478db3787c2f",
+      "full_bytes": 30885,
+      "full_tokens": 9154,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 10572,
+          "ordered_marginal_tokens": 2810,
+          "wire_bytes_minus_decoded_values": 10572
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9732,
+          "ordered_marginal_wire_bytes": 9608,
+          "ordered_marginal_tokens": 2980,
+          "isolated_value_tokens": 3133,
+          "token_interaction_vs_isolated": -153,
+          "wire_bytes_minus_decoded_values": -124
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 470,
+          "ordered_marginal_wire_bytes": 476,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8851,
+          "ordered_marginal_wire_bytes": 10139,
+          "ordered_marginal_tokens": 3159,
+          "isolated_value_tokens": 2202,
+          "token_interaction_vs_isolated": 957,
+          "wire_bytes_minus_decoded_values": 1288
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1408",
+      "payload_sha256": "6d64fc0cb9f846ccca62814e98a7e1f197f7c4bd5c6a05b039f5323d46a8bb75",
+      "full_bytes": 30893,
+      "full_tokens": 9267,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 10146,
+          "ordered_marginal_tokens": 2693,
+          "wire_bytes_minus_decoded_values": 10146
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9275,
+          "ordered_marginal_wire_bytes": 9155,
+          "ordered_marginal_tokens": 2952,
+          "isolated_value_tokens": 3097,
+          "token_interaction_vs_isolated": -145,
+          "wire_bytes_minus_decoded_values": -120
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 473,
+          "ordered_marginal_wire_bytes": 479,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9682,
+          "ordered_marginal_wire_bytes": 11023,
+          "ordered_marginal_tokens": 3416,
+          "isolated_value_tokens": 2480,
+          "token_interaction_vs_isolated": 936,
+          "wire_bytes_minus_decoded_values": 1341
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1970",
+      "payload_sha256": "89bf3d49162645d342d47660c68b72884e56f22c534e8a36b1646c1707d6d837",
+      "full_bytes": 30669,
+      "full_tokens": 9173,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 10786,
+          "ordered_marginal_tokens": 2863,
+          "wire_bytes_minus_decoded_values": 10786
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9491,
+          "ordered_marginal_wire_bytes": 9365,
+          "ordered_marginal_tokens": 2970,
+          "isolated_value_tokens": 3127,
+          "token_interaction_vs_isolated": -157,
+          "wire_bytes_minus_decoded_values": -126
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 498,
+          "ordered_marginal_wire_bytes": 504,
+          "ordered_marginal_tokens": 182,
+          "isolated_value_tokens": 179,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8714,
+          "ordered_marginal_wire_bytes": 9924,
+          "ordered_marginal_tokens": 3130,
+          "isolated_value_tokens": 2263,
+          "token_interaction_vs_isolated": 867,
+          "wire_bytes_minus_decoded_values": 1210
+        }
+      ]
+    },
+    {
+      "query_id": "ci-1991",
+      "payload_sha256": "bbb44fe45e99e433e901e273ce3ee23c8c542a7034d204cd39d8157ba42ac56e",
+      "full_bytes": 29170,
+      "full_tokens": 8724,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9651,
+          "ordered_marginal_tokens": 2562,
+          "wire_bytes_minus_decoded_values": 9651
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8965,
+          "ordered_marginal_wire_bytes": 8850,
+          "ordered_marginal_tokens": 2858,
+          "isolated_value_tokens": 2995,
+          "token_interaction_vs_isolated": -137,
+          "wire_bytes_minus_decoded_values": -115
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 475,
+          "ordered_marginal_wire_bytes": 481,
+          "ordered_marginal_tokens": 177,
+          "isolated_value_tokens": 173,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8914,
+          "ordered_marginal_wire_bytes": 10098,
+          "ordered_marginal_tokens": 3099,
+          "isolated_value_tokens": 2270,
+          "token_interaction_vs_isolated": 829,
+          "wire_bytes_minus_decoded_values": 1184
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2249",
+      "payload_sha256": "a731f9b46f2da81df02956913936f84965980cbc557a2f78a74b87dd51260f5d",
+      "full_bytes": 31425,
+      "full_tokens": 9757,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9432,
+          "ordered_marginal_tokens": 2514,
+          "wire_bytes_minus_decoded_values": 9432
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 9107,
+          "ordered_marginal_wire_bytes": 8994,
+          "ordered_marginal_tokens": 2884,
+          "isolated_value_tokens": 3024,
+          "token_interaction_vs_isolated": -140,
+          "wire_bytes_minus_decoded_values": -113
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 461,
+          "ordered_marginal_wire_bytes": 467,
+          "ordered_marginal_tokens": 175,
+          "isolated_value_tokens": 171,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 10359,
+          "ordered_marginal_wire_bytes": 12442,
+          "ordered_marginal_tokens": 4156,
+          "isolated_value_tokens": 2782,
+          "token_interaction_vs_isolated": 1374,
+          "wire_bytes_minus_decoded_values": 2083
+        }
+      ]
+    },
+    {
+      "query_id": "ci-2314",
+      "payload_sha256": "b242a60de0c2ac3ab1438c07a369f06441f3df83a0d8cf71895eaa70c17cdf24",
+      "full_bytes": 27131,
+      "full_tokens": 8182,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8928,
+          "ordered_marginal_tokens": 2376,
+          "wire_bytes_minus_decoded_values": 8928
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8425,
+          "ordered_marginal_wire_bytes": 8317,
+          "ordered_marginal_tokens": 2723,
+          "isolated_value_tokens": 2851,
+          "token_interaction_vs_isolated": -128,
+          "wire_bytes_minus_decoded_values": -108
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 486,
+          "ordered_marginal_wire_bytes": 492,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 177,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8239,
+          "ordered_marginal_wire_bytes": 9304,
+          "ordered_marginal_tokens": 2874,
+          "isolated_value_tokens": 2088,
+          "token_interaction_vs_isolated": 786,
+          "wire_bytes_minus_decoded_values": 1065
+        }
+      ]
+    },
+    {
+      "query_id": "ci-467",
+      "payload_sha256": "73ddf1e3e46258c1f2846722624fbd007502defd72b4d948fdc72d5bfea82ce6",
+      "full_bytes": 34323,
+      "full_tokens": 10590,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 12243,
+          "ordered_marginal_tokens": 3242,
+          "wire_bytes_minus_decoded_values": 12243
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 10515,
+          "ordered_marginal_wire_bytes": 10375,
+          "ordered_marginal_tokens": 3187,
+          "isolated_value_tokens": 3360,
+          "token_interaction_vs_isolated": -173,
+          "wire_bytes_minus_decoded_values": -140
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 485,
+          "ordered_marginal_wire_bytes": 491,
+          "ordered_marginal_tokens": 181,
+          "isolated_value_tokens": 178,
+          "token_interaction_vs_isolated": 3,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9064,
+          "ordered_marginal_wire_bytes": 11124,
+          "ordered_marginal_tokens": 3952,
+          "isolated_value_tokens": 2633,
+          "token_interaction_vs_isolated": 1319,
+          "wire_bytes_minus_decoded_values": 2060
+        }
+      ]
+    },
+    {
+      "query_id": "ci-511",
+      "payload_sha256": "e08d5d32192d94214942469de071813b38ab4733b06cc67e885004a70ce5832f",
+      "full_bytes": 28940,
+      "full_tokens": 8864,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 9040,
+          "ordered_marginal_tokens": 2401,
+          "wire_bytes_minus_decoded_values": 9040
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8718,
+          "ordered_marginal_wire_bytes": 8609,
+          "ordered_marginal_tokens": 2827,
+          "isolated_value_tokens": 2955,
+          "token_interaction_vs_isolated": -128,
+          "wire_bytes_minus_decoded_values": -109
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 488,
+          "ordered_marginal_wire_bytes": 494,
+          "ordered_marginal_tokens": 179,
+          "isolated_value_tokens": 175,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 9220,
+          "ordered_marginal_wire_bytes": 10707,
+          "ordered_marginal_tokens": 3429,
+          "isolated_value_tokens": 2406,
+          "token_interaction_vs_isolated": 1023,
+          "wire_bytes_minus_decoded_values": 1487
+        }
+      ]
+    },
+    {
+      "query_id": "ci-678",
+      "payload_sha256": "f55625b17a4592518f689ce86907fe1c8db88a8e70f3d4053bab59009c797d47",
+      "full_bytes": 30499,
+      "full_tokens": 9659,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8927,
+          "ordered_marginal_tokens": 2374,
+          "wire_bytes_minus_decoded_values": 8927
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 8611,
+          "ordered_marginal_wire_bytes": 8502,
+          "ordered_marginal_tokens": 2734,
+          "isolated_value_tokens": 2855,
+          "token_interaction_vs_isolated": -121,
+          "wire_bytes_minus_decoded_values": -109
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 460,
+          "ordered_marginal_wire_bytes": 466,
+          "ordered_marginal_tokens": 176,
+          "isolated_value_tokens": 172,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 10227,
+          "ordered_marginal_wire_bytes": 12514,
+          "ordered_marginal_tokens": 4347,
+          "isolated_value_tokens": 2853,
+          "token_interaction_vs_isolated": 1494,
+          "wire_bytes_minus_decoded_values": 2287
+        }
+      ]
+    },
+    {
+      "query_id": "ci-771",
+      "payload_sha256": "0e16621a75ca53fbd4932e6499b95a7cccc458f7033234e3507cc47f763845c1",
+      "full_bytes": 21661,
+      "full_tokens": 5930,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 6971,
+          "ordered_marginal_tokens": 1847,
+          "wire_bytes_minus_decoded_values": 6971
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 6599,
+          "ordered_marginal_wire_bytes": 6512,
+          "ordered_marginal_tokens": 1990,
+          "isolated_value_tokens": 2083,
+          "token_interaction_vs_isolated": -93,
+          "wire_bytes_minus_decoded_values": -87
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 501,
+          "ordered_marginal_wire_bytes": 507,
+          "ordered_marginal_tokens": 184,
+          "isolated_value_tokens": 180,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 7231,
+          "ordered_marginal_wire_bytes": 7581,
+          "ordered_marginal_tokens": 1881,
+          "isolated_value_tokens": 1610,
+          "token_interaction_vs_isolated": 271,
+          "wire_bytes_minus_decoded_values": 350
+        }
+      ]
+    },
+    {
+      "query_id": "ci-943",
+      "payload_sha256": "a0da7cbd58cd5875ebda984508317563b7e51ef6e0ed8b203d6c58fac2e3703b",
+      "full_bytes": 25336,
+      "full_tokens": 7402,
+      "categories": [
+        {
+          "name": "envelope",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 90,
+          "ordered_marginal_tokens": 28,
+          "wire_bytes_minus_decoded_values": 90
+        },
+        {
+          "name": "json_structure_and_escaping",
+          "decoded_value_bytes": 0,
+          "ordered_marginal_wire_bytes": 8110,
+          "ordered_marginal_tokens": 2158,
+          "wire_bytes_minus_decoded_values": 8110
+        },
+        {
+          "name": "provenance_and_metadata",
+          "decoded_value_bytes": 7547,
+          "ordered_marginal_wire_bytes": 7447,
+          "ordered_marginal_tokens": 2405,
+          "isolated_value_tokens": 2510,
+          "token_interaction_vs_isolated": -105,
+          "wire_bytes_minus_decoded_values": -100
+        },
+        {
+          "name": "summary",
+          "decoded_value_bytes": 463,
+          "ordered_marginal_wire_bytes": 469,
+          "ordered_marginal_tokens": 178,
+          "isolated_value_tokens": 174,
+          "token_interaction_vs_isolated": 4,
+          "wire_bytes_minus_decoded_values": 6
+        },
+        {
+          "name": "source_and_evidence_text",
+          "decoded_value_bytes": 8312,
+          "ordered_marginal_wire_bytes": 9220,
+          "ordered_marginal_tokens": 2633,
+          "isolated_value_tokens": 2025,
+          "token_interaction_vs_isolated": 608,
+          "wire_bytes_minus_decoded_values": 908
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "queries": 44,
+    "full_bytes": 1167649,
+    "full_tokens": 349485,
+    "mean_bytes": 26537.477272727272,
+    "mean_tokens": 7942.840909090909,
+    "categories": [
+      {
+        "name": "envelope",
+        "decoded_value_bytes": 0,
+        "ordered_marginal_wire_bytes": 3960,
+        "ordered_marginal_tokens": 1232,
+        "wire_bytes_minus_decoded_values": 3960,
+        "share_of_full_bytes": 0.0033914301301161565,
+        "share_of_full_tokens": 0.0035251870609611284
+      },
+      {
+        "name": "json_structure_and_escaping",
+        "decoded_value_bytes": 0,
+        "ordered_marginal_wire_bytes": 377938,
+        "ordered_marginal_tokens": 100713,
+        "wire_bytes_minus_decoded_values": 377938,
+        "share_of_full_bytes": 0.32367432336258584,
+        "share_of_full_tokens": 0.28817545817417056
+      },
+      {
+        "name": "provenance_and_metadata",
+        "decoded_value_bytes": 352805,
+        "ordered_marginal_wire_bytes": 348195,
+        "ordered_marginal_tokens": 110798,
+        "isolated_value_tokens": 115940,
+        "token_interaction_vs_isolated": -5142,
+        "wire_bytes_minus_decoded_values": -4610,
+        "share_of_full_bytes": 0.2982017712514634,
+        "share_of_full_tokens": 0.317032204529522
+      },
+      {
+        "name": "summary",
+        "decoded_value_bytes": 20461,
+        "ordered_marginal_wire_bytes": 20725,
+        "ordered_marginal_tokens": 7677,
+        "isolated_value_tokens": 7536,
+        "token_interaction_vs_isolated": 141,
+        "wire_bytes_minus_decoded_values": 264,
+        "share_of_full_bytes": 0.017749340769357917,
+        "share_of_full_tokens": 0.021966608008927423
+      },
+      {
+        "name": "source_and_evidence_text",
+        "decoded_value_bytes": 365022,
+        "ordered_marginal_wire_bytes": 416831,
+        "ordered_marginal_tokens": 129065,
+        "isolated_value_tokens": 93216,
+        "token_interaction_vs_isolated": 35849,
+        "wire_bytes_minus_decoded_values": 51809,
+        "share_of_full_bytes": 0.35698313448647667,
+        "share_of_full_tokens": 0.3693005422264189
+      }
+    ]
+  }
+}

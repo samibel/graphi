@@ -1,16 +1,14 @@
 // Package retrieval is the deep retrieval module that backs graphi's semantic
-// search. Its shipped ModeAuto owns semantic-first composition end to end:
+// search. Its shipped ModeAuto owns candidate composition end to end:
 //
-//   - eligible semantic candidates, ordered by quantised cosine and canonical
-//     node_id, form an immutable prefix unique by node_id;
-//   - delegated hybrid_v1 candidates backfill remaining positions in lexical
-//     order, skipping emitted node_ids and paths saturated at maxPerFile;
+//   - natural-language queries jointly rank lexical and semantic candidates,
+//     including bounded direct-callee expansion before the result limit;
 //   - non-ready semantic states return the delegated lexical rows unchanged,
 //     with their exact typed state and repair reason;
-//   - exact paths containing '/' use the lexical list, while exact identifiers
-//     retain semantic-first ordering.
+//   - exact paths use the lexical list; actual identifier equality takes
+//     precedence over semantic similarity, without promoting approximate names;
 //   - a typed, byte-stable Explain block per row (LexicalRank, SemanticRank,
-//     RRF, Graph, Classification, Final) and a typed Summary stamped with
+//     Base, RRF, Graph, Classification, Final) and a typed Summary stamped with
 //     the retrieval version, weights hash, model fingerprint and index
 //     fingerprint so the bytes are reproducible across runs and architectures.
 //
@@ -38,7 +36,9 @@ import (
 
 	"github.com/samibel/graphi/core/graphstore"
 	"github.com/samibel/graphi/core/model"
+	"github.com/samibel/graphi/engine/agenttools/hybridsearch"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
+	"github.com/samibel/graphi/engine/query"
 	"github.com/samibel/graphi/engine/search"
 )
 
@@ -46,12 +46,20 @@ import (
 // audit value that lets a downstream caller tell the SW-263 release from any
 // later revision that breaks serialization.
 //
-// SW-263 / owner decision 2026-09-01 (semantic-first redirection): the
-// shipped ModeAuto no longer means symmetric RRF fusion; it means the
-// semantic-prefix / lexical-backfill pipeline the reviewer's replacement
-// AC-2 codifies. The version bump to retrieval/2 is the audit signal
-// every reader of the bytes gets when shipped behaviour moves.
-const retrievalVersion = "retrieval/2"
+// retrieval/3 added exact-name precedence to the semantic-first strategy.
+// retrieval/4 (SW-282) replaces the natural-language sub-dispatch's
+// immutable semantic prefix with a shared candidate scoring pass over the
+// lexical+semantic union (engine/retrieval/flow.go), plus a bounded
+// wrapper->callee expansion that admits a top candidate's direct callees
+// before the Top-K cut. Exact-identifier and exact-path handling and the
+// evaluator-only fusion controls are unchanged.
+// retrieval/5 preserves /4's ranking, exposes its complete score arithmetic,
+// hashes its active weights and propagates bounded graph-read errors.
+// retrieval/6 preserves the evidence score and makes lexical candidate
+// admission term-order independent through search_hybrid/1.1.
+// retrieval/7 adds a single deterministic tail view for explicit
+// initialization-function lifecycle questions.
+const retrievalVersion = "retrieval/7"
 
 // Version is the exported form of retrievalVersion. SW-264 stamps it on
 // every search_hybrid/2 and task_context/2 summary so a reader of the
@@ -79,10 +87,9 @@ const (
 )
 
 // Mode is the retrieval mode (AC-1 Request.Mode). The default (zero value)
-// ModeAuto is the SHIPPED semantic-first pipeline (reviewer's replacement
-// AC-2): when the semantic generation is ready the result begins with the
-// semantic prefix and lexical only backfills unfilled positions; on any
-// non-ready state it returns lexical-only rows unchanged.
+// ModeAuto is the shipped ready pipeline. Natural-language requests use shared
+// evidence ranking; exact identifiers and paths have dedicated dispatches.
+// On any non-ready state it returns lexical-only rows unchanged.
 //
 // The two fusion modes (ModeFusionNoGraph, ModeFusionGraph) are
 // evaluator-only — they implement symmetric RRF over the lexical+semantic
@@ -104,14 +111,9 @@ const (
 type Mode int
 
 const (
-	// ModeAuto is the SHIPPED semantic-first pipeline. When the semantic
-	// generation is ready the result begins with the first
-	// min(Limit, len(S)) rows of S (the AC-3 quantised-ordered semantic
-	// candidates, unique by canonical node_id) in exactly that relative
-	// order; lexical candidates only backfill unfilled positions, with a
-	// `MaxPerFile=3` cap seeded from the prefix. On any non-ready state
-	// the result is the delegated lexical list unchanged — the AC-7 byte
-	// parity contract with `search_hybrid` is preserved on that path.
+	// ModeAuto selects shared evidence ranking for natural language, exact
+	// equality precedence for names, and lexical order for paths. Non-ready
+	// states preserve delegated lexical rows (the AC-7 fallback contract).
 	ModeAuto Mode = iota
 	// ModeLexicalOnly: ignore semantic candidates regardless of state.
 	// Used by the "chunk-only" ablation in the AC-9 eval harness.
@@ -173,6 +175,10 @@ const (
 // candidates) is zero, not nil — zero is the typed "did not contribute"
 // value and is distinct from a real zero contribution.
 type Explain struct {
+	// Base is the quantised semantic score, or the documented candidate-pool
+	// floor/inherited caller base on the evidence-ranked natural-language path.
+	// Zero on legacy exact/path/fallback and evaluator-only fusion paths.
+	Base int `json:",omitempty"`
 	// LexicalRank is 1-based over the lexical candidate list, 0 when the row
 	// is semantic-only.
 	LexicalRank int
@@ -186,11 +192,13 @@ type Explain struct {
 	// Graph is the bounded rerank contribution (integer): the segment /
 	// prefix / path / full-coverage / definition-bonus / classification
 	// penalty / degree-point score from the audited integer signals.
+	// On evidence-ranked rows it is name/callee support above Base, including
+	// the caller ceiling; it can therefore be negative when that ceiling binds.
 	Graph int
 	// Classification is the integer penalty applied for vendor / generated
 	// paths (negative or zero — never positive, never a "bonus").
 	Classification int
-	// Final is the final integer score (RRF + Graph + Classification).
+	// Final is the final integer score (Base + RRF + Graph + Classification).
 	Final int
 }
 
@@ -210,6 +218,9 @@ type Row struct {
 	// serialization, never the literal parsed source.
 	Span string
 	// Region is the AC-11 audit tag the pipeline stamps on every row to
+	// record provenance. Natural-language rows use "evidence_ranked";
+	// exact-name equality uses "exact_identifier". The following legacy tags
+	// still apply to the other dispatches.
 	// record how it entered the result. The shipped semantic-first mode
 	// stamps "semantic_prefix" on rows the AC-3 quantised semantic list
 	// emitted and "lexical_backfill" on rows the delegated hybrid_v1
@@ -233,16 +244,12 @@ type Summary struct {
 	// RetrievalVersion stamps the retrieval method. retrieval/1 was
 	// symmetric-RRF fusion; retrieval/2 is semantic-first.
 	RetrievalVersion string
-	// Strategy names the ordering strategy actually applied to this
-	// result (AC-11 truthfulness). One of:
+	// Strategy is the historical pipeline dispatch label. RetrievalVersion
+	// and Row.Region identify the concrete ordering revision. One of:
 	//   "semantic_first" — ModeAuto / ModeSemanticRequired on a ready
-	//     generation (the prefix comes from the AC-3 quantised semantic
-	//     list and the backfill comes from the delegated hybrid_v1
-	//     candidates; an exact-PATH query under that strategy takes
-	//     the lexical list L unchanged under the path-override
-	//     sub-dispatch — the Strategy name stays "semantic_first"
-	//     because the dispatch IS semantic-first, the override is a
-	//     documented sub-case);
+	//     generation. This compatibility label does NOT promise an immutable
+	//     semantic prefix in retrieval/4 and later: natural-language rows use
+	//     evidence ranking, while exact names and paths have dedicated rules;
 	//   "lexical_only" — ModeLexicalOnly, or any shipped mode whose
 	//     semantic generation is not ready (the AC-7 byte parity path);
 	//   "fusion_no_graph" — ModeFusionNoGraph (evaluator-only);
@@ -294,6 +301,13 @@ type Result struct {
 // engine/search.Service. Limit is the per-source top-k.
 type lexicalProvider interface {
 	search(ctx context.Context, query string, limit int) ([]lexicalHit, error)
+}
+
+// readyLexicalProvider optionally supplies the term-balanced candidate method
+// for a ready semantic generation. Non-ready and explicit lexical-only paths
+// continue through lexicalProvider.search, preserving search_hybrid/1 bytes.
+type readyLexicalProvider interface {
+	searchReady(ctx context.Context, query string, limit int) ([]lexicalHit, error)
 }
 
 // SemanticProvider is the semantic candidate source. It is satisfied by
@@ -407,7 +421,12 @@ var defaultRerankWeights = rerankWeights{
 // weight struct — the same audit discipline hybridsearch.weightsHash uses
 // (so a caller comparing the two hashes sees the same shape).
 func weightsHash() string {
-	b, _ := json.Marshal(defaultRerankWeights)
+	b, _ := json.Marshal(struct {
+		Rerank                                                      rerankWeights
+		NameTerm, WrapperWidth, CalleeCap, CalleeDecay, FloorMargin int
+		LifecycleFocusWords                                         int
+		LexicalMethod                                               string
+	}{defaultRerankWeights, nameTermWeight, wrapperExpansionWidth, calleeExpansionCap, calleeBaseDecay, lexicalFloorMargin, lifecycleFocusWords, hybridsearch.FairCandidateMethodVersion})
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])[:8]
 }
@@ -511,8 +530,26 @@ func newEngine(lexical lexicalProvider, semantic semanticProvider, graph graphRe
 // when the semantic path is active, so semantic-only candidates
 // receive the same bounded degree boost lexical-only rows already get
 // via the delegating bridge (SW-263 / decision-ac9 defect 3).
+//
+// calleeCandidates is the SW-282 bounded wrapper->callee expansion seam
+// (engine/retrieval/flow.go): a second selective graph read per top
+// candidate — never a whole-graph scan (docs/adr/0003-selective-read-contract.md).
+// A reader with no node-hydration capability returns (nil, nil); callee
+// expansion then degrades to a no-op, the same posture inboundDegree
+// takes when graph is nil.
 type graphReader interface {
 	inboundDegree(ctx context.Context, id string, cap int) (int, error)
+	calleeCandidates(ctx context.Context, id string, limit int) ([]calleeCandidate, error)
+}
+
+// calleeCandidate is the minimal row-shaped metadata calleeCandidates
+// returns for one bounded direct "calls" callee.
+type calleeCandidate struct {
+	NodeID        string
+	Kind          string
+	QualifiedName string
+	Path          string
+	Line          int
 }
 
 // BoundedDegreeReader is the minimal port the production composition
@@ -553,6 +590,58 @@ func (d *degreeAdapter) inboundDegree(ctx context.Context, id string, cap int) (
 	return len(edges), nil
 }
 
+// calleeCandidates implements the SW-282 bounded wrapper->callee expansion
+// read: at most `limit` direct "calls" edges out of id, hydrated through the
+// same NodesByID batch read taskctx's v2 neighbor hop already uses. Every
+// backend the harness ships (SQLiteStore, MemStore) satisfies both
+// BoundedGraphLookup (the declared port) and GraphLookup (asserted here,
+// exactly as documented on the graphReader/calleeCandidates doc comment);
+// a hypothetical future backend that only satisfies the bounded port
+// degrades to (nil, nil) rather than erroring.
+func (d *degreeAdapter) calleeCandidates(ctx context.Context, id string, limit int) ([]calleeCandidate, error) {
+	if d == nil || d.src == nil || limit <= 0 {
+		return nil, nil
+	}
+	edges, _, err := d.src.OutgoingBounded(ctx, model.NodeId(id), limit, query.EdgeKindCalls)
+	if err != nil {
+		return nil, err
+	}
+	if len(edges) == 0 {
+		return nil, nil
+	}
+	lookup, ok := d.src.(graphstore.GraphLookup)
+	if !ok {
+		return nil, nil
+	}
+	ids := make([]model.NodeId, len(edges))
+	for i, e := range edges {
+		ids[i] = e.To()
+	}
+	nodes, err := lookup.NodesByID(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[model.NodeId]model.Node, len(nodes))
+	for _, n := range nodes {
+		byID[n.ID()] = n
+	}
+	out := make([]calleeCandidate, 0, len(edges))
+	for _, e := range edges {
+		n, ok := byID[e.To()]
+		if !ok || n.SourcePath() == "" {
+			continue
+		}
+		out = append(out, calleeCandidate{
+			NodeID:        string(n.ID()),
+			Kind:          n.Kind(),
+			QualifiedName: n.QualifiedName(),
+			Path:          n.SourcePath(),
+			Line:          n.Line(),
+		})
+	}
+	return out, nil
+}
+
 // compile-time guard: every backend the harness ships satisfies
 // BoundedDegreeReader through BoundedGraphLookup, so a future
 // backend that forgets to will fail the build at this line.
@@ -577,27 +666,51 @@ type engine struct {
 //   - ModeSemanticRequired: if the semantic generation is not ready,
 //     return the typed unavailability response (no rows, no error).
 //     Otherwise identical to ModeAuto.
-//   - ModeAuto (the SHIPPED mode): semantic-first. When ready, the
-//     result begins with the AC-3 quantised semantic prefix and
-//     lexical only backfills unfilled positions. When not ready, the
+//   - ModeAuto (the SHIPPED mode): shared evidence ranking for natural
+//     language, with dedicated exact-name/path rules. When not ready, the
 //     result is the delegated lexical list unchanged (the AC-7
 //     byte parity path). On the ready path an exact-PATH query
 //     (one matching the documented isExactPath rule) returns the
 //     delegated lexical list L unchanged under the path-override
-//     sub-dispatch, stamped with the path-override region — the
-//     owner-decided split that lifts the exact-IDENTIFIER override
-//     but keeps the exact-PATH one (2026-09-01).
+//     sub-dispatch, stamped with the path-override region. An actual
+//     identifier equality match is promoted ahead of approximate matches.
 //   - ModeFusionNoGraph / ModeFusionGraph: EVALUATOR-ONLY symmetric
 //     RRF fusion, with or without the bounded graph rerank. No
 //     production surface may select these.
 func (e *engine) Retrieve(ctx context.Context, req Request) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, err
+	}
 	req = normaliseRequest(req)
 	state, reason, semHits, semFP, idxFP := e.semanticOutcome(ctx, req)
-	lexHits, err := e.lexical.search(ctx, req.Query, candidateK)
+	if state == StateReady && (req.Mode == ModeAuto || req.Mode == ModeSemanticRequired) {
+		if focused := lifecycleFocusedQuery(req.Query); focused != "" {
+			out, focusErr := e.semantic.search(ctx, focused, candidateK)
+			if focusErr != nil {
+				mustStderr("retrieval: lifecycle semantic search failed: %v\n", focusErr)
+			} else if out.Available {
+				semHits = mergeFocusedSemanticHits(semHits, out.Hits)
+			}
+		}
+	}
+	var lexHits []lexicalHit
+	var err error
+	if state == StateReady && req.Mode != ModeLexicalOnly {
+		if ready, ok := e.lexical.(readyLexicalProvider); ok {
+			lexHits, err = ready.searchReady(ctx, req.Query, candidateK)
+		} else {
+			lexHits, err = e.lexical.search(ctx, req.Query, candidateK)
+		}
+	} else {
+		lexHits, err = e.lexical.search(ctx, req.Query, candidateK)
+	}
 	if err != nil {
 		return Result{}, err
 	}
-	rows, strategy := e.dispatch(ctx, req, state, lexHits, semHits)
+	rows, strategy, err := e.dispatch(ctx, req, state, lexHits, semHits)
+	if err != nil {
+		return Result{}, err
+	}
 	res := Result{
 		Rows:        finaliseRows(rows, req.Limit),
 		Degradation: state,
@@ -643,23 +756,18 @@ func normaliseRequest(req Request) Request {
 // AC-11 truthfulness: the strategy name on every Result records which
 // branch ran, and every row's Region records how it entered the
 // pipeline (semantic_prefix / lexical_backfill / lexical_only /
-// lexical_path_override / fused).
+// lexical_path_override / exact_identifier / fused).
 //
 // On the ready path the shipped ModeAuto (and ModeSemanticRequired) takes
 // a further sub-dispatch: an exact-PATH query — a query matching the
 // documented isExactPath constant — returns the delegated lexical list
-// unchanged under the semantic-first strategy. The path rule is the
-// part of the AC-6 override the measurement kept; the IDENTIFIER rule
-// stays lifted because the evidence only ever supported lifting
-// identifiers (semantic_name_only beat hybrid_v1 on every dev
-// exact_identifier query; on exact_path both scored 1.0 on dev, so
-// nothing justified removing the path override). The override is a
-// documented constant, never learned, and the test
-// TestSemanticFirst_PathOverrideRestored_IdentifierLifted pins the split.
-func (e *engine) dispatch(ctx context.Context, req Request, state State, lexHits []lexicalHit, semHits []semanticHit) ([]row, string) {
+// unchanged under the semantic-first strategy. Identifier-shaped queries
+// promote actual qualified-name/suffix equality, retaining semantic ordering
+// for approximate matches. No dataset-specific name or path enters dispatch.
+func (e *engine) dispatch(ctx context.Context, req Request, state State, lexHits []lexicalHit, semHits []semanticHit) ([]row, string, error) {
 	switch req.Mode {
 	case ModeLexicalOnly:
-		return e.lexicalOnlyRows(lexHits), strategyLexicalOnly
+		return e.lexicalOnlyRows(lexHits), strategyLexicalOnly, nil
 	case ModeFusionNoGraph:
 		if state != StateReady {
 			// AC-7 fallback: an experimental fusion mode on a non-ready
@@ -667,58 +775,47 @@ func (e *engine) dispatch(ctx context.Context, req Request, state State, lexHits
 			// The cap is bypassed (AC-5 vs AC-7 — the amendment scopes AC-5
 			// to the semantic/fused path; the evaluator's degraded-state
 			// measurements report unavailable instead).
-			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly
+			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly, nil
 		}
-		return e.fusionRows(ctx, req, lexHits, semHits, false /* withGraph */), strategyFusionNoGraph
+		return e.fusionRows(ctx, req, lexHits, semHits, false /* withGraph */), strategyFusionNoGraph, nil
 	case ModeFusionGraph:
 		if state != StateReady {
-			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly
+			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly, nil
 		}
-		return e.fusionRows(ctx, req, lexHits, semHits, true /* withGraph */), strategyFusionGraph
+		return e.fusionRows(ctx, req, lexHits, semHits, true /* withGraph */), strategyFusionGraph, nil
 	case ModeSemanticRequired:
 		if state != StateReady {
 			// Refuse: typed unavailability, no rows, no error. The caller
 			// is told via Summary.Strategy == "unavailable" that the result
 			// is intentionally empty.
-			return nil, strategyUnavailable
+			return nil, strategyUnavailable, nil
 		}
-		return e.readyDispatch(req, lexHits, semHits)
+		return e.readyDispatch(ctx, req, lexHits, semHits)
 	default: // ModeAuto
 		if state != StateReady {
 			// AC-7 fallback: the shipped ModeAuto returns the delegated
 			// lexical list unchanged when the semantic generation is not
 			// ready. The bytes are identical to search_hybrid's audit
 			// output (AC-7) and to ModeLexicalOnly.
-			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly
+			return e.lexicalOnlyRows(lexHits), strategyLexicalOnly, nil
 		}
-		return e.readyDispatch(req, lexHits, semHits)
+		return e.readyDispatch(ctx, req, lexHits, semHits)
 	}
 }
 
-// readyDispatch is the SHIPPED ready-path strategy selection. The
-// semantic-first pipeline takes the AC-3 quantised semantic list S as
-// the prefix and the delegated hybrid_v1 list L as backfill, EXCEPT
-// when the query matches the documented isExactPath rule — then the
-// lexical list L is the result, in lexical order, with the
-// semantic-first strategy stamped on the summary and the
-// lexical_path_override region stamped on every row. This sub-dispatch
-// lives here so ModeAuto and ModeSemanticRequired share the exact same
-// behaviour on the ready path.
-func (e *engine) readyDispatch(req Request, lexHits []lexicalHit, semHits []semanticHit) ([]row, string) {
+// readyDispatch shares the exact-path, exact-name and natural-language rules
+// between ModeAuto and ModeSemanticRequired. The historical strategy label is
+// retained; the version and per-row regions identify the applied algorithm.
+func (e *engine) readyDispatch(ctx context.Context, req Request, lexHits []lexicalHit, semHits []semanticHit) ([]row, string, error) {
 	if isExactPath(req.Query) {
-		// Owner decision 2026-09-01 (delta_brief on the
-		// semantic-first-local run): restore the exact-PATH override;
-		// keep the exact-IDENTIFIER lift. The path rule is the part of
-		// the AC-6 override the measurement kept; the identifier rule
-		// stays lifted because the evidence only supported lifting
-		// identifiers. Strategy stays "semantic_first" because the
-		// dispatch is still the semantic-first dispatch — the path
-		// override is a sub-case. Region "lexical_path_override" tells
-		// a reader of the bytes that the rows came from the lexical
-		// path, not the semantic prefix.
-		return e.lexicalPathOverrideRows(lexHits), strategySemanticFirst
+		// Paths retain the delegated lexical ranking, with an explicit region.
+		return e.lexicalPathOverrideRows(lexHits), strategySemanticFirst, nil
 	}
-	return e.semanticFirstRows(lexHits, semHits, req.Limit), strategySemanticFirst
+	if isExactIdentifier(req.Query) {
+		return e.exactNameFirstRows(req.Query, lexHits, semHits, req.Limit), strategySemanticFirst, nil
+	}
+	rows, err := e.naturalLanguageRows(ctx, req.Query, lexHits, semHits)
+	return rows, strategySemanticFirst, err
 }
 
 // Strategy name constants (AC-11). They are package-private string

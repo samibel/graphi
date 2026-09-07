@@ -1,0 +1,9 @@
+=== RUN   TestRecoveryDevCapture
+    recovery_dev_test.go:97: independent build 1/2: constructing ollama:127.0.0.1:11434?model=qwen3-embedding:0.6b&digest=ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d&context=8192&runtime=0.33.3&profile=qwen3-code-v1&compute=cpu
+    recovery_dev_test.go:115: independent build 1/2: 768 input documents, capturing all 44 dev queries
+    recovery_dev_test.go:97: independent build 2/2: constructing ollama:127.0.0.1:11434?model=qwen3-embedding:0.6b&digest=ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d&context=8192&runtime=0.33.3&profile=qwen3-code-v1&compute=cpu
+    recovery_dev_test.go:115: independent build 2/2: 768 input documents, capturing all 44 dev queries
+    recovery_dev_test.go:225: independent builds: 44/44 identical MCP bytes, digests and token counts; distinct freshness generations=true
+--- PASS: TestRecoveryDevCapture (1705.85s)
+PASS
+ok  	github.com/samibel/graphi/internal/eval/retrieval	1706.910s

@@ -53,6 +53,10 @@ file containing all of the following:
 
 ## Records made stale by the next rotation
 
+- `docs/eval/retrieval/runs/2026-09-06-qwen-dev/` — opt-in alternative-model
+  experiment; its Potion reference captures depend on the current static pin.
+  Qwen attempts are separately labeled and do not rotate this pin or its gates.
+
 The following checked-in artifacts were produced by the current pinned model
 and become stale when `PinnedRevision` changes:
 
@@ -113,6 +117,21 @@ and become stale when `PinnedRevision` changes:
   against. A rotation changes the bundles and therefore the coverage count.
 - `docs/eval/static-embedder-cross-arch/2026-09-03-sw271/` — the byte-exact
   `darwin/arm64` versus `darwin/amd64` vector record for this revision.
+- `docs/eval/retrieval/runs/2026-09-06-recovery-dev/` — development-only
+  before/after retrieval and MCP source-retention diagnostics, including a
+  rejected implementation-priority experiment. All three ranking runs and
+  the preserved MCP payloads become stale on model rotation. This records
+  their dependency on the unchanged pin; it authorizes no release claim.
+- `docs/eval/retrieval/runs/2026-09-06-architecture-dev/` — development-only
+  candidate-ranking experiment and independent MCP captures.
+- `docs/eval/retrieval/runs/2026-09-06-bundle-selection-dev/` — development-only
+  source-selection ablations, final ranking and exact MCP payload captures.
+- `docs/eval/retrieval/runs/2026-09-06-candidate-admission-dev/` — development-only
+  term-balanced candidate admission and non-displacing grouped-declaration
+  context measurement, including exact MCP payload captures from two indexes.
+- `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
+  lifecycle-focus and exact referenced-definition recovery measurement. Its
+  ranking report and two-index MCP payload capture use this pinned model.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

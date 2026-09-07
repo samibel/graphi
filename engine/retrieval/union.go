@@ -9,6 +9,7 @@ import (
 // view (Result.Rows); row stays unexported to keep the package's public
 // surface minimal (AC-1).
 type row struct {
+	baseScore     int // semantic/floor/caller base, separate from graph/name support
 	nodeID        string
 	documentID    string
 	kind          string
@@ -40,6 +41,7 @@ func (r row) toRow() Row {
 		Span:       r.span,
 		Region:     r.region,
 		Explain: Explain{
+			Base:           r.baseScore,
 			LexicalRank:    r.lexicalRank,
 			SemanticRank:   r.semanticRank,
 			RRF:            r.rrfScore,

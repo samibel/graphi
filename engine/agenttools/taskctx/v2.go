@@ -6,8 +6,8 @@
 // came from a retrieval row); every neighbour reached via an edge carries
 // claim_type="graph_relation" with the edge's provenance tier on EdgeTier.
 // Bundle ordering matches v1's bands (answer span → definition → callers/
-// callees → tests/config) and the bundle bound holds under a 1200-token
-// budget exactly as v1's does.
+// callees → tests/config). Source selection uses parser declaration boundaries
+// and query-focused windows while retaining the same 1200-token snippet budget.
 //
 // AC-8 graceful fallback: with no embedder configured (Deps.Retrieval == nil)
 // or a non-ready generation, /2 falls back to the v1 lexical seeding path
@@ -43,9 +43,30 @@ import (
 const MethodVersionV2 = "task_context/2"
 
 // retrievalSeedLimit is the cap on retrieval seeds AssembleV2 promotes to
-// the primary band. It mirrors seedLimit (5) for the v1 lexical path so
-// the bundle widths are comparable across versions.
+// the primary band (Reason "primary: ..."). It mirrors seedLimit (5) for the
+// v1 lexical path so the bundle widths are comparable across versions. This
+// is the OUTPUT-visible cut: the number of items a reader sees labeled as
+// "the" answer stays 5, unchanged by SW-282's bundle-selection work below.
 const retrievalSeedLimit = 5
+
+// candidatePoolLimit is the ordinary bounded INTERNAL retrieval pool
+// resolveSeedsV2 hydrates for multi-word queries on the ready path — wider
+// than retrievalSeedLimit. Single-word names, paths and topics retain five
+// candidates and the earlier depth allocation. Explicit initialization-
+// lifecycle questions receive one additional internal candidate so the
+// matching focused semantic row can cross the same handoff. With the wider pool,
+// declarations ranked just outside the top 5 (a real answer the SW-282
+// architecture-flow ranking work now surfaces, e.g. at rank 6-10) are
+// available to source selection at all. Rows beyond retrievalSeedLimit are
+// NOT primary items: when selected as source they get a "candidate: ..." item
+// (still claim_type=source_match, carrying the row's real span provenance and
+// rank position, so every source stays traceably cited), ranked below every
+// primary seed, and compete for a spot in the snippet budget on the same
+// footing as any other candidate. This is a single bounded retrieval call
+// (Limit=candidatePoolLimit instead of retrievalSeedLimit); it adds no new
+// graph read and stays well under the existing candidateK=50 the retrieval
+// module itself already computes internally.
+const candidatePoolLimit = 15
 
 // Retrieve is the narrow interface the v2 path reads from Deps.Retrieval.
 // The retrieval module's own Retriever (resolve.Retriever) already exposes
@@ -86,22 +107,43 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 	if len(seeds) == 0 {
 		return shape.Empty(tool, p.Task), nil
 	}
+	// seeds is the full bounded candidate pool (up to candidatePoolLimit).
+	// primarySeeds is the retrievalSeedLimit-wide OUTPUT-visible primary
+	// band, unchanged from before SW-282's bundle-selection widening: the
+	// graph-relation neighbor hop below still anchors only to these, exactly
+	// as it always has. extraCandidates (indices [retrievalSeedLimit:]) are
+	// the widened internal pool: real retrieval rows, each getting its own
+	// traceably-cited "candidate:" item below, eligible for the snippet
+	// budget on equal footing with everything else, but never promoted to a
+	// primary item and never expanding the graph-relation hop's fan-out.
+	primarySeeds := seeds
+	if len(primarySeeds) > retrievalSeedLimit {
+		primarySeeds = primarySeeds[:retrievalSeedLimit]
+	}
+	var extraCandidates []model.Node
+	var extraRows []resolve.RetrieverRow
+	if len(seeds) > retrievalSeedLimit {
+		extraCandidates = seeds[retrievalSeedLimit:]
+		if len(retrievalRows) > retrievalSeedLimit {
+			extraRows = retrievalRows[retrievalSeedLimit:]
+		}
+	}
 
-	// One bounded hop per seed: inbound + outbound, all kinds.
+	// One bounded hop per primary seed: inbound + outbound, all kinds.
 	scores := map[model.NodeId]*neighborScore{}
 	tally := shape.TierTally{}
 	truncated := false
 	fanIn := 0
 	var inboundNeighborIDs []model.NodeId
-	seedIDs := make(map[model.NodeId]int, len(seeds))
+	seedIDs := make(map[model.NodeId]int, len(primarySeeds))
 	seedFiles := map[string]struct{}{}
-	for i, s := range seeds {
+	for i, s := range primarySeeds {
 		seedIDs[s.ID()] = i
 		if s.SourcePath() != "" {
 			seedFiles[s.SourcePath()] = struct{}{}
 		}
 	}
-	for _, s := range seeds {
+	for _, s := range primarySeeds {
 		in, trunc, err := bounded.IncomingBounded(ctx, s.ID(), edgesPerSeed)
 		if err != nil {
 			return nil, err
@@ -212,7 +254,7 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		return s
 	}
 	itemByNode := map[model.NodeId]int{}
-	for i, s := range seeds {
+	for i, s := range primarySeeds {
 		// Span preservation: when the seed came from a retrieval row, the
 		// row's "start-end" span travels through to the evidence so a reader
 		// of the bytes can tell the cited range exactly. /1 stamped only
@@ -242,6 +284,46 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 			RefID:          string(s.ID()),
 			Rank:           bandPrimary<<20 + seedScore(i),
 			Reason:         fmt.Sprintf("primary: %s %s (%s:%d) score %d [seed %d, %s]", s.Kind(), s.QualifiedName(), s.SourcePath(), s.Line(), seedScore(i), i+1, method),
+			EvidenceRefIDs: []string{evID},
+		})
+	}
+
+	// Band 9 (candidate sub-tier): the widened internal retrieval pool
+	// beyond the primary 5 (SW-282). Same claim_type=source_match shape and
+	// span provenance as a primary seed — these ARE real retrieval rows,
+	// just ranked further down — so every one stays as traceably cited as a
+	// primary seed. seedScore's decay continues from the same index, so a
+	// candidate's numeric Rank always sorts below every primary seed's
+	// (never above bandPrimary's lowest primary score) without needing a
+	// new band constant that would renumber the shared v1/v2 wire format.
+	// The distinguishing "candidate:" reason prefix — not "primary:" — is
+	// what tells a reader these did not make the top-5 cut; a query-rank
+	// number ([seed 6, search], etc.) is preserved exactly as for primary
+	// seeds. These do not enter the graph-relation neighbor hop above
+	// (primarySeeds is unaffected), so this adds no new bounded graph read.
+	for j, s := range extraCandidates {
+		i := retrievalSeedLimit + j
+		var span string
+		var line int
+		if j < len(extraRows) {
+			row := extraRows[j]
+			span = row.Span
+			line = parseSpanLine(span, s.Line())
+		}
+		if line == 0 {
+			line = s.Line()
+		}
+		var evID string
+		if span != "" {
+			evID = ev.AddSourceMatchWithSpan(s.SourcePath(), line, "candidate", span)
+		} else {
+			evID = ev.AddSourceMatch(s.SourcePath(), line, "candidate")
+		}
+		itemByNode[s.ID()] = len(items)
+		items = append(items, contract.Item{
+			RefID:          string(s.ID()),
+			Rank:           bandPrimary<<20 + seedScore(i),
+			Reason:         fmt.Sprintf("candidate: %s %s (%s:%d) score %d [seed %d, %s]", s.Kind(), s.QualifiedName(), s.SourcePath(), s.Line(), seedScore(i), i+1, method),
 			EvidenceRefIDs: []string{evID},
 		})
 	}
@@ -387,10 +469,14 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		})
 	}
 
-	// Band 1: read order.
-	readOrder := make([]string, 0, len(seeds)+3)
+	// Band 1: read order. Anchored to primarySeeds (not the widened
+	// candidate pool) — this is a cosmetic suggestion list, not a citation
+	// band, and keeping its width at retrievalSeedLimit+3 (as before SW-282)
+	// avoids letting it eat item-cap headroom the candidate/related bands
+	// now compete for.
+	readOrder := make([]string, 0, len(primarySeeds)+3)
 	seenRead := map[string]struct{}{}
-	for _, s := range seeds {
+	for _, s := range primarySeeds {
 		if s.SourcePath() == "" {
 			continue
 		}
@@ -401,7 +487,7 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 		readOrder = append(readOrder, s.SourcePath())
 	}
 	for _, f := range files {
-		if len(readOrder) >= len(seeds)+3 {
+		if len(readOrder) >= len(primarySeeds)+3 {
 			break
 		}
 		if _, dup := seenRead[f.path]; dup {
@@ -426,10 +512,16 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 	budget := p.tokenBudget()
 	snippetSummary := "snippets disabled"
 	snippetHint := ""
+	selectedSource := map[model.NodeId]bool{}
 	if budget > 0 && p.Reader != nil {
 		var cands []enginecontext.Candidate
 		candNode := []model.NodeId{}
+		seenCandidate := map[model.NodeId]bool{}
 		add := func(n model.Node) {
+			if seenCandidate[n.ID()] {
+				return
+			}
+			seenCandidate[n.ID()] = true
 			cands = append(cands, enginecontext.Candidate{
 				Path:      n.SourcePath(),
 				StartLine: n.Line(),
@@ -453,12 +545,21 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 				taken++
 			}
 		}
+		if symbols, ok := p.Deps.Query.Reader().(graphstore.SymbolLookupPort); ok {
+			definitions, err := referencedDefinitions(ctx, p.Task, cands, p.Reader, symbols)
+			if err != nil {
+				return nil, err
+			}
+			for _, definition := range definitions {
+				add(definition)
+			}
+		}
 		total := len(cands)
 		readable := enginecontext.FilterReadable(p.Reader, cands)
 		if len(readable) < total {
 			snippetHint = "some sources were unreadable from this working directory; run from the repository root to include every snippet"
 		}
-		bundle, err := enginecontext.Assemble(p.Task, readable, enginecontext.Options{Budget: budget, ContextLines: snippetContext}, p.Reader)
+		bundle, err := enginecontext.AssembleDefinitions(ctx, p.Task, readable, enginecontext.Options{Budget: budget, ContextLines: snippetContext}, p.Reader)
 		if err != nil {
 			return nil, err
 		}
@@ -467,18 +568,30 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 			evID := ev.AddSnippetWithHash(snip.Citation.Path, snip.Citation.StartLine, "snippet", span, snip.Text)
 			idx := int(snip.Rank)
 			if idx >= 0 && idx < len(candNode) {
+				selectedSource[candNode[idx]] = true
 				if itemIdx, ok := itemByNode[candNode[idx]]; ok {
 					items[itemIdx].EvidenceRefIDs = append(items[itemIdx].EvidenceRefIDs, evID)
 				}
 			}
 		}
-		snippetSummary = fmt.Sprintf("%d/%d snippet tokens", bundle.Tokens, budget)
+		snippetSummary = fmt.Sprintf("%d/%d snippet tokens; %s", bundle.Tokens, budget, bundle.MethodVersion)
 		if len(bundle.Snippets) < len(readable) && snippetHint == "" {
-			snippetHint = fmt.Sprintf("raise token_budget (>%d) to include %d more snippet(s)", budget, len(readable)-len(bundle.Snippets))
+			snippetHint = "some candidate sources were omitted; ask a narrower follow-up for missing details"
 		}
 	}
+	// A broader INTERNAL pool must not charge the actor for rejected
+	// candidates. Preserve graph-relation items and the primary band; extra
+	// retrieval-only items enter the response only when they carry source.
+	keptItems := items[:0]
+	for _, item := range items {
+		if strings.HasPrefix(item.Reason, "candidate:") && !selectedSource[model.NodeId(item.RefID)] {
+			continue
+		}
+		keptItems = append(keptItems, item)
+	}
+	items = keptItems
 
-	summary := buildV2Summary(len(seeds), p.Task, related, callers, callees, tests, configs, fileRows, string(level), snippetSummary, degradation, retrievalSummary)
+	summary := buildV2Summary(len(primarySeeds), len(extraCandidates), p.Task, related, callers, callees, tests, configs, fileRows, string(level), snippetSummary, degradation, retrievalSummary)
 	r := &contract.Result{
 		Outcome:    contract.OutcomeFound,
 		Summary:    summary,
@@ -490,6 +603,22 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The item cap must also retire citations used only by discarded items.
+	// Source snippets have their own token budget and remain readable evidence
+	// even when a related item is capped; never discard their source bytes here.
+	usedEvidence := make(map[string]bool)
+	for _, item := range out.Items {
+		for _, ref := range item.EvidenceRefIDs {
+			usedEvidence[ref] = true
+		}
+	}
+	evidence := make([]contract.Evidence, 0, len(out.Evidence))
+	for _, ev := range out.Evidence {
+		if usedEvidence[ev.RefID] || ev.Snippet != "" {
+			evidence = append(evidence, ev)
+		}
+	}
+	out.Evidence = evidence
 	if truncated {
 		out.Limits.Truncated = true
 		if out.Outcome == contract.OutcomeFound {
@@ -508,21 +637,33 @@ func AssembleV2(ctx context.Context, p Params) (*contract.Result, error) {
 //   - the token fallback) and stamp degradation="lexical_only".
 //   - Retrieval reports a non-ready state: same lexical fallback, with the typed
 //     degradation stamp verbatim.
-//   - Retrieval reports "ready": seed from the top retrieval rows. Each row's
-//     NodeID is matched against the graph; rows whose NodeID is not resolvable
-//     (e.g. an external document with no source path) are dropped. The seed
-//     resolution method is reported as MethodSearch so the per-item reason
-//     names the seed provenance honestly.
+//   - Retrieval reports "ready": seed from the top retrieval rows, up to
+//     candidatePoolLimit for multi-word queries, retrievalSeedLimit for single
+//     words. Each row's NodeID is matched against the graph; rows whose
+//     NodeID is not resolvable (e.g. an external document with no source
+//     path) are dropped. The seed resolution method is reported as
+//     MethodSearch so the per-item reason names the seed provenance
+//     honestly.
 //
-// The function always returns at most retrievalSeedLimit seeds; the v1 seed
-// resolution caps at seedLimit (5), so a v2 reader can compare the bundle
-// widths apples-to-apples across versions.
+// The function returns at most candidatePoolLimit resolved rows on the ordinary
+// ready path (one more for an explicit lifecycle focus); AssembleV2 promotes
+// only the first retrievalSeedLimit of them to
+// primary items, exactly as before this change. The v1 fallback path (both
+// non-ready branches below) is unaffected and keeps its original seedLimit
+// (5) width.
 func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]model.Node, resolve.Method, string, resolve.RetrieverSummary, []resolve.RetrieverRow, error) {
 	if deps.Retrieval == nil {
 		nodes, method, err := resolveSeeds(ctx, deps, task)
 		return nodes, method, "lexical_only", resolve.RetrieverSummary{}, nil, err
 	}
-	res, err := deps.Retrieval.Retrieve(ctx, resolve.RetrieverRequest{Query: task, Limit: retrievalSeedLimit})
+	poolLimit := candidatePoolLimit
+	if needsLifecycleCandidate(task) {
+		poolLimit++
+	}
+	if len(strings.Fields(task)) < 2 {
+		poolLimit = retrievalSeedLimit
+	}
+	res, err := deps.Retrieval.Retrieve(ctx, resolve.RetrieverRequest{Query: task, Limit: poolLimit})
 	if err != nil {
 		// An infrastructure error on the retrieval path is the same fail-soft
 		// posture as AC-7 in SW-263: fall back to lexical seeding, no error
@@ -549,33 +690,41 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 	if err != nil {
 		return nil, "", "ready", res.Summary, res.Rows, err
 	}
-	// Keep the retrieval order (Final desc) — but cap at retrievalSeedLimit
+	// Keep the retrieval order (Final desc) — but cap at the chosen poolLimit
 	// and dedupe on canonical node id, matching the v1 lexical path's
 	// first-N-wins behaviour. The matching row is recorded in
-	// rowBySeedID so the per-seed span survives to the evidence step.
-	rowBySeedID := map[model.NodeId]resolve.RetrieverRow{}
-	for _, r := range res.Rows {
-		rowBySeedID[model.NodeId(r.NodeID)] = r
+	// rowOrder so the per-seed span survives to the evidence step. NodesByID has
+	// set semantics: iterate retrieval rows, not its canonical-ID-sorted output.
+	nodeByID := map[model.NodeId]model.Node{}
+	for _, n := range hydrated {
+		nodeByID[n.ID()] = n
 	}
 	seen := map[model.NodeId]bool{}
 	nodes := make([]model.Node, 0, len(hydrated))
 	rowOrder := make([]resolve.RetrieverRow, 0, len(hydrated))
-	for _, n := range hydrated {
+	for _, r := range res.Rows {
+		n, ok := nodeByID[model.NodeId(r.NodeID)]
+		if !ok || n.SourcePath() == "" {
+			continue
+		}
 		if seen[n.ID()] {
 			continue
 		}
 		seen[n.ID()] = true
 		nodes = append(nodes, n)
-		if r, ok := rowBySeedID[n.ID()]; ok {
-			rowOrder = append(rowOrder, r)
-		} else {
-			rowOrder = append(rowOrder, resolve.RetrieverRow{})
-		}
-		if len(nodes) >= retrievalSeedLimit {
+		rowOrder = append(rowOrder, r)
+		if len(nodes) >= poolLimit {
 			break
 		}
 	}
 	return nodes, resolve.MethodSearch, "ready", res.Summary, rowOrder, nil
+}
+
+func needsLifecycleCandidate(task string) bool {
+	terms := identifierTerms(task)
+	lifecycle := containsTerm(terms, "init") || containsTerm(terms, "initialize") || containsTerm(terms, "initialization")
+	callable := containsTerm(terms, "function") || containsTerm(terms, "hook") || containsTerm(terms, "callback")
+	return lifecycle && callable
 }
 
 // parseSpanLine returns the 1-based start line of a "start-end" span, falling
@@ -627,13 +776,23 @@ func dominantTier(t shape.TierTally) string {
 // preserved (so existing summary parsers that key on "task_context:" still
 // find the call), with the /2 audit stamp appended and the AC-8 degradation
 // trailer when the fallback ran.
-func buildV2Summary(seeds int, task string, related, callers, callees, tests, configs, files int, riskLevel, snippetSummary, degradation string, retrieval resolve.RetrieverSummary) string {
+func buildV2Summary(seeds, candidates int, task string, related, callers, callees, tests, configs, files int, riskLevel, snippetSummary, degradation string, retrieval resolve.RetrieverSummary) string {
 	versionStamp := retrieval.RetrievalVersion
 	if versionStamp == "" {
 		versionStamp = "retrieval/0"
 	}
-	base := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s (%s; %s; weights %s; model %s; index %s; %s",
-		seeds, task, related, callers, callees, tests, configs, files, riskLevel, MethodVersionV2, versionStamp, retrieval.WeightsHash, retrieval.ModelFingerprint, retrieval.IndexFingerprint, snippetSummary)
+	// IndexFingerprint contains an operational freshness nonce. Keep it in
+	// the retrieval diagnostics, where it is used to reject stale vectors;
+	// it is not content identity and must not enter actor-visible token costs.
+	base := fmt.Sprintf("task_context/2: %d seed(s) for %q — %d related, %d callers, %d callees, %d tests, %d configs, %d files, risk %s (%s; %s; weights %s; model %s; %s",
+		seeds, task, related, callers, callees, tests, configs, files, riskLevel, MethodVersionV2, versionStamp, retrieval.WeightsHash, retrieval.ModelFingerprint, snippetSummary)
+	if candidates > 0 {
+		// SW-282: the widened internal candidate pool beyond the primary
+		// seeds, honestly counted so a reader can tell this bundle drew on
+		// more retrieval rows than the primary band shows (see the
+		// "candidate: ..." items).
+		base += fmt.Sprintf("; %d candidate(s) considered", candidates)
+	}
 	if retrieval.Strategy != "" {
 		base += "; strategy " + retrieval.Strategy
 	}
