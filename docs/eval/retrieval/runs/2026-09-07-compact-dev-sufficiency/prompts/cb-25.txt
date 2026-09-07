@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do I disable the default completion command
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"15 ranked source span(s) for \"how do I disable the default completion command\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"completions.go","start_line":683,"end_line":685,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn"},{"path":"completions.go","start_line":105,"end_line":107,"text":"type CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool"},{"path":"site/content/completions/_index.md","start_line":91,"end_line":93,"text":"\n## Adapting the default completion command\n"},{"path":"site/content/completions/_index.md","start_line":14,"end_line":15,"text":"\nIf you do not wish to use the default `completion` command, you can choose to"},{"path":"completions.go","start_line":118,"end_line":119,"text":"// NoFileCompletions can be used to disable file completion for commands that should\n// not trigger file completions."},{"path":"site/content/docgen/_index.md","start_line":16,"end_line":17,"text":"\nYou may call `cmd.InitDefaultCompletionCmd()` to document the default autocompletion command."},{"path":"site/content/active_help.md","start_line":132,"end_line":133,"text":"## Active Help with Cobra's default completion command\n"},{"path":"zsh_completions.go","start_line":31,"end_line":32,"text":"func (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)"},{"path":"powershell_completions.go","start_line":323,"end_line":323,"text":"func (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {"},{"path":"command.go","start_line":342,"end_line":342,"text":"func (c *Command) SetCompletionCommandGroupID(groupID string) {"},{"path":"powershell_completions.go","start_line":288,"end_line":288,"text":"func (c *Command) genPowerShellCompletion(w io.Writer, includeDesc bool) error {"},{"path":"powershell_completions.go","start_line":312,"end_line":312,"text":"func (c *Command) GenPowerShellCompletion(w io.Writer) error {"},{"path":"command.go","start_line":1226,"end_line":1226,"text":"// InitDefaultHelpCmd adds default help command to c."},{"path":"command.go","start_line":1556,"end_line":1556,"text":"func (c *Command) HasSubCommands() bool {"},{"path":"command.go","start_line":1312,"end_line":1312,"text":"\t\t\tc.commandsMaxUseLen = usageLen"}],"provenance":{"input_sha256":"d20ca8a801cc7198d889d0401b81287a7e70333a021a2afdf19b9954ef216e26","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

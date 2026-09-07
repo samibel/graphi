@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 75,
+  "previous_sha256": "ee45007caf0073c98f723cc95dd3933bdd1f0edaf2aa06d4bcdf57d01e275b83",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2ab6a7457a065743ef0ff5ff5dd9a873c0e58abc7948e08896c7295a91f29c69",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response documents user overrides of help initialization and `HelpFunc` (`command.go:883–884,472–474`), but does not show how `-h` and `--help` are defined or whether their handling can be distinguished.\n",
+  "sha256": "0be876978d7cb780fe2c1a407385f9947d2ee56f6075bcbc6265192235cafcd0"
+}

@@ -1,0 +1,1 @@
+The named file's preserved GenMan comment and body prefix at doc/man_docs.go:103-108 directly support generation to a writer and nil-header handling, including the writer requirement. fillHeader at 118-124 supports the title transformation and section default; 82-86 supports the options fields and consumer.

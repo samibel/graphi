@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 126,
+  "previous_sha256": "3ba57ccfa4e6543a73df531e8e66dae2a05861c88312fedd2ed65d1f99f25936",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "7d823664f868f8930d0d567a45b649257e52cf9f20cf46c8737003bd978f501f",
+  "outcome": "pass",
+  "rationale": "The concrete Version setting and conditions are supported by the preserved field comment at command.go:108-109. The execution-time initialization and no-op cases are explicitly described at 1201-1203. The answer properly limits the conclusion because no application configuration is in the bundle.\n",
+  "sha256": "55af3cd1a8d9e60cffa55f17890140d9662dabab8ad3e76ec23ecf457a0c400a"
+}

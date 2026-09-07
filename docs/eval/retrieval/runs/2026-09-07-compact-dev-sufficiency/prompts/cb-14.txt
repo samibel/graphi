@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does the shell completion request get dispatched to the completion logic
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"16 ranked source span(s) for \"how does the shell completion request get dispatched to the completion logic\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"completions.go","start_line":201,"end_line":203,"text":"\t\tArgs:                  MinimumNArgs(1),\n\t\tShort:                 \"Request shell completion choices for the specified command-line\",\n\t\tLong: fmt.Sprintf(\"%[2]s is a special command that is used by the shell completion logic\\n%[1]s\","},{"path":"site/content/completions/powershell.md","start_line":1,"end_line":2,"text":"# Generating PowerShell Completions For Your Own cobra.Command\n"},{"path":"completions.go","start_line":27,"end_line":28,"text":"\t// ShellCompRequestCmd is the name of the hidden command that is used to request\n\t// completion results from the program.  It is used by the shell completion scripts."},{"path":"site/content/completions/_index.md","start_line":1,"end_line":2,"text":"# Generating shell completions\n"},{"path":"site/content/completions/zsh.md","start_line":2,"end_line":4,"text":"\nPlease refer to [Shell Completions](_index.md) for details.\n"},{"path":"completions.go","start_line":30,"end_line":30,"text":"\t// ShellCompNoDescRequestCmd is the name of the hidden command that is used to request"},{"path":"site/content/completions/fish.md","start_line":2,"end_line":4,"text":"\nPlease refer to [Shell Completions](_index.md) for details.\n"},{"path":"site/content/completions/bash.md","start_line":2,"end_line":4,"text":"\nPlease refer to [Shell Completions](_index.md) for details.\n"},{"path":"site/content/completions/_index.md","start_line":516,"end_line":518,"text":"\n## PowerShell completions\n"},{"path":"site/content/user_guide.md","start_line":739,"end_line":741,"text":"\n## Generating shell completions\n"},{"path":".github/labeler.yml","start_line":13,"end_line":15,"text":"\n# changes to shell completions\n\"area/shell-completion\":"},{"path":"site/content/completions/_index.md","start_line":7,"end_line":9,"text":"- fish\n- PowerShell\n"},{"path":"site/content/completions/_index.md","start_line":111,"end_line":112,"text":"\nTo tell Cobra to completely disable descriptions for completions:"},{"path":"site/content/completions/_index.md","start_line":416,"end_line":417,"text":"### Bash legacy dynamic completions\n"},{"path":"site/content/completions/_index.md","start_line":116,"end_line":118,"text":"\n# Customizing completions\n"},{"path":"site/content/completions/_index.md","start_line":480,"end_line":481,"text":"  * You should instead use `RegisterFlagCompletionFunc()`.\n"}],"provenance":{"input_sha256":"a48cd24533ba4ce70c789716b6b95b504a61f17570cdaedcf17925322629aeba","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to test inherited flags?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"16 ranked source span(s) for \"How to test inherited flags?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command_test.go","start_line":1687,"end_line":1689,"text":"// Related to https://github.com/spf13/cobra/issues/521.\nfunc TestNormPassedOnInherited(t *testing.T) {\n\ttoUpper := func(f *pflag.FlagSet, name string) pflag.NormalizedName {"},{"path":"doc/man_docs_test.go","start_line":153,"end_line":154,"text":"func TestManPrintFlagsHidesShortDeprecated(t *testing.T) {\n\tc := \u0026cobra.Command{}"},{"path":"command_test.go","start_line":754,"end_line":755,"text":"func TestChildFlagShadowsParentPersistentFlag(t *testing.T) {\n\tparent := \u0026Command{Use: \"parent\", Run: emptyRun}"},{"path":"command_test.go","start_line":2160,"end_line":2162,"text":"// Related to https://github.com/spf13/cobra/issues/443.\nfunc TestMergeCommandLineToFlags(t *testing.T) {\n\tpflag.Bool(\"boolflag\", false, \"\")"},{"path":"command_test.go","start_line":836,"end_line":837,"text":"func TestPersistentRequiredFlags(t *testing.T) {\n\tparent := \u0026Command{Use: \"parent\", Run: emptyRun}"},{"path":"command_test.go","start_line":2134,"end_line":2136,"text":"// Related to https://github.com/spf13/cobra/issues/404.\nfunc TestSortedFlags(t *testing.T) {\n\tc := \u0026Command{}"},{"path":"completions_test.go","start_line":2086,"end_line":2088,"text":"// still be able to know there is a problem.\nfunc TestFlagCompletionConcurrentRegistration(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Run: emptyRun}"},{"path":"bash_completions_test.go","start_line":245,"end_line":245,"text":"func TestBashCompletionDeprecatedFlag(t *testing.T) {"},{"path":"command_test.go","start_line":861,"end_line":861,"text":"func TestPersistentRequiredFlagsWithDisableFlagParsing(t *testing.T) {"},{"path":"command.go","start_line":1767,"end_line":1768,"text":"func (c *Command) HasInheritedFlags() bool {\n\treturn c.InheritedFlags().HasFlags()"},{"path":"command.go","start_line":1696,"end_line":1697,"text":"func (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":1721,"end_line":1722,"text":"func (c *Command) NonInheritedFlags() *flag.FlagSet {\n\treturn c.LocalFlags()"},{"path":"command.go","start_line":1790,"end_line":1790,"text":"func (c *Command) HasAvailableInheritedFlags() bool {"},{"path":"command.go","start_line":1726,"end_line":1726,"text":"func (c *Command) PersistentFlags() *flag.FlagSet {"},{"path":"completions.go","start_line":50,"end_line":50,"text":"func (e *flagCompError) Error() string {"},{"path":"command.go","start_line":1669,"end_line":1669,"text":"func (c *Command) LocalFlags() *flag.FlagSet {"}],"provenance":{"input_sha256":"a731f9b46f2da81df02956913936f84965980cbc557a2f78a74b87dd51260f5d","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

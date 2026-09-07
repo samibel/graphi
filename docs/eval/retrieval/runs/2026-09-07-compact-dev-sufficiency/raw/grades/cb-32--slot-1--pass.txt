@@ -1,0 +1,1 @@
+The response identifies Execute and correctly describes its wrapper behavior using command.go:1036-1040. ExecuteContext's assignment, delegation and lifecycle-context guidance are all preserved at command.go:1028-1032.

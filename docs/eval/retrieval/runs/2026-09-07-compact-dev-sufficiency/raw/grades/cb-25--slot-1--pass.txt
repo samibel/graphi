@@ -1,0 +1,1 @@
+The answer gives the concrete disabling setting. completions.go:105-107 names DisableDefaultCmd and explicitly states its purpose, while 683-685 shows the initializer returning when the option is set, supporting the timing and effect.

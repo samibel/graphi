@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 67,
+  "previous_sha256": "730edff11cbaa71edfde10074ac5eea0c5d25a5be04eecb8ae00a4b1e3e3b98c",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "2a5a61687e44c4755d4b0ac4fdc933c74eb4d6e1ed5feabb250a082093225975",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "On the currently executing `*Command`, use `cmd.Flag(\"flag-name\")` to obtain the flag object. `Flag(name string)` returns `*flag.Flag`, first looks up the name in `c.Flags()`, and is documented to climb the command tree for a match (`command.go:1794–1796`). If you specifically want the lookup in that command's flag set, the shown expression is `cmd.Flags().Lookup(\"flag-name\")` (`command.go:1796`).\n",
+  "sha256": "d271c4525dc45516d2f8982984ff5f346dc3370bc3faa034c09f219d77cba64d"
+}

@@ -1,0 +1,1 @@
+The concrete marking call follows the preserved variadic declaration at flag_groups.go:64-66, with the all-flags-defined condition at 128-129. ValidateFlagGroups' comment at 79 supports its role, and line 223 states that the other mutually exclusive flags are hidden when one is present. No missing registration loop, panic text or lifecycle ordering is asserted.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 103,
+  "previous_sha256": "82317601589b0793812accf280e5717db6abd611c1e4a90f35a9cc9359737a8b",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "3cdf73cb94f9dfc8fc3eaa8eaf6c5153a63e31fcc81b9dd541dc326a41128264",
+  "outcome": "pass",
+  "rationale": "The program-specific variable and replacement rule are directly supported by site/content/active_help.md:143. The exact suffix and global name are visible at active_help.go:28-29. The answer concretely addresses which variables exist without inventing omitted value or precedence rules.\n",
+  "sha256": "bfde7e4b1ba885f359c005a293ed0d5df911145dbb39fb3d0196155a5817ee54"
+}

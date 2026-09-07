@@ -1,0 +1,1 @@
+Set the global `cobra.EnablePrefixMatching = true` before command execution. It defaults to false (`cobra.go:46`, `cobra.go:54–55`), and the tests enable it with `EnablePrefixMatching = true` (`command_test.go:305–306`). When enabled, matching considers command-name or alias prefixes through `cmd.hasNameOrAliasPrefix(next)` (`command.go:774–775`).

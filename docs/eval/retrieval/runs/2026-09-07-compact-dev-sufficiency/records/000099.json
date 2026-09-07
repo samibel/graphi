@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 99,
+  "previous_sha256": "a231e68ecb3273d5706bd998edc85afdb561633f0e63a42fbb978f8e099c802e",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "b3e2292f6f98eb9f4c60943121306ee46dcde1aa9eaf3619f61fb7cd0d411687",
+  "outcome": "pass",
+  "rationale": "The propagation explanation identifies mergePersistentFlags, whose preserved comment at command.go:1848 explicitly says it adds missing persistent flags from all parents. Lines 1849-1851 show updateParentsPflags and the current persistent-set addition, while 1725-1727 identifies that set and 1669-1670 shows a caller of the merge. The recursive lookup comment at 1805-1807 supports the helper description. The response accurately marks parent traversal and collision internals as absent.\n",
+  "sha256": "3c953416618f7417950386b5c0869c10fc98480ec107e17096e2877dd60dd28a"
+}

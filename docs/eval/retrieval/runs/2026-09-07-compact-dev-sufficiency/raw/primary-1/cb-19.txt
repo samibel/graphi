@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes an `Execute` signature (`command.go:1038`), a root-execution comment (`command.go:1057–1058`), and a persistent-pre-run traversal comment (`command.go:943–944`), but omits the connected execution flow and ordering of validation and Run hooks.

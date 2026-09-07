@@ -1,0 +1,1 @@
+The program-specific variable and replacement rule are directly supported by site/content/active_help.md:143. The exact suffix and global name are visible at active_help.go:28-29. The answer concretely addresses which variables exist without inventing omitted value or precedence rules.

@@ -1,0 +1,1 @@
+The proposed assignment follows directly from the boolean field and purpose comment at completions.go:105-107. The preserved early-return guard in InitDefaultCompletionCmd at 683-685 establishes why setting it before initialization prevents default-command creation.

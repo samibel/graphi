@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 70,
+  "previous_sha256": "445e798e6b5157f6a200c001cec8e526f87141b70867845b2317f71d75a90abe",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "bf383789dfd90513ade011e5f6303e9c0d73db5539ffab210db8a3050f7fb0d7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags, call `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")`, substituting their names. The method accepts variadic flag names and addresses invocation with more than one flag from the set (`flag_groups.go:64–66`). `ValidateFlagGroups` validates mutual-exclusion logic (`flag_groups.go:79`), and groups are considered only when all their flags are defined (`flag_groups.go:128–129`). During completion, the presence of one mutually exclusive flag causes the others to be marked hidden (`flag_groups.go:223`).\n",
+  "sha256": "19d6784a00c3c7d1c8d7d2f0beaed1aea6eb395fe83c8f25fa9bb6083365612d"
+}

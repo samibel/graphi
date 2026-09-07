@@ -1,0 +1,1 @@
+For a command object you already have, inspect `cmd.CalledAs()`. The excerpt identifies this method and documents an empty string when the command has not been called; its implementation checks `c.commandCalledAs.called` (`command.go:1516–1518`). The response does not show an API returning the selected command object directly.

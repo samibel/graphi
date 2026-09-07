@@ -1,0 +1,1 @@
+INSUFFICIENT The excerpts show `Flag`, `Flags`, and `InheritedFlags` signatures and a persistent-flag merge call (`command.go:1795,1643,1696–1697`), but do not establish how global flags are registered, inherited, or read from a subcommand.

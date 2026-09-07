@@ -1,0 +1,1 @@
+The requested variable name and normalization rule are explicitly preserved in site/content/active_help.md:143. active_help.go:28-29 supplies the suffix and global-variable constant. The response limits itself to these names and correctly leaves unsupported precedence and value semantics unspecified.

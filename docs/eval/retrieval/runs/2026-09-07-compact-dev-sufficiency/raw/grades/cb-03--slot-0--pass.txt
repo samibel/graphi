@@ -1,0 +1,1 @@
+The requested function and full signature are visible at doc/md_docs.go:125. Entire-tree generation is established by site/content/docgen/md.md:60, the custom callback parameters and iteration by doc/md_docs.go:132-134, and the cited test invocation/error check by doc/md_docs_test.go:103-104.

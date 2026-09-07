@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 11,
+  "previous_sha256": "16438c00131cbfb3f63c1962db8d10ab50bee113a7721a5b6f6d01d52ec55cae",
+  "kind": "response",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "c0d5b5cfea7da7719f270ac56ee0235762fefc5e4217bb4cace3d4cfe07ea6cb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response identifies a hidden request command used by shell scripts (`completions.go:27–28`) but omits its handler and the calls that dispatch the request into completion logic.\n",
+  "sha256": "3e67c1e60359f117026045631328b367e77440f519301d10f80f4142a0f98f14"
+}

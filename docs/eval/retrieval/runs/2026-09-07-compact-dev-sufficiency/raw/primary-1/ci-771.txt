@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows a flag-completion callback registration (`site/content/completions/_index.md:351`) and lists bash, zsh, fish, and PowerShell as supported shells (`site/content/user_guide.md:742`), but omits the integration or protocol needed to create completion support for another shell.

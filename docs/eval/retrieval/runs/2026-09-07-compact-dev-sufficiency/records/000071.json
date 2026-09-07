@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 71,
+  "previous_sha256": "19d6784a00c3c7d1c8d7d2f0beaed1aea6eb395fe83c8f25fa9bb6083365612d",
+  "kind": "response",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e89b97088fbe237e223db0e5374e1211b7f23e980eae81feeaecdf7c3fa62e34",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The excerpts show `Flag`, `Flags`, and `InheritedFlags` signatures and a persistent-flag merge call (`command.go:1795,1643,1696–1697`), but do not establish how global flags are registered, inherited, or read from a subcommand.\n",
+  "sha256": "4219ebfa915fbc1891b64f03d6ea865249f4734019664506456f7f1f579163d5"
+}

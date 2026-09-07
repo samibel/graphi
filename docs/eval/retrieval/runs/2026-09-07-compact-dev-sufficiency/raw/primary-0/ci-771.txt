@@ -1,0 +1,1 @@
+INSUFFICIENT The response lists supported shells (`site/content/user_guide.md:742`) and a flag callback signature (`site/content/completions/_index.md:351`), but omits the target-shell generation or integration mechanism needed to create custom completion for another shell.

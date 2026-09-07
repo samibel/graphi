@@ -1,0 +1,1 @@
+`ExecuteC` is a method on `*Command` that executes the command and returns `(cmd *Command, err error)` (`command.go:1051–1052`). It initializes an absent context with `context.Background()` (`command.go:1053–1054`). `ExecuteContextC` sets `c.ctx` before calling it (`command.go:1046–1048`), while `Execute` calls it and returns only the error (`command.go:1038–1040`).

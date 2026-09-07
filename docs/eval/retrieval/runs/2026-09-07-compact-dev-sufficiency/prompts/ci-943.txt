@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Why does `--version` not work?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"17 ranked source span(s) for \"Why does `--version` not work?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command.go","start_line":1201,"end_line":1203,"text":"// It is called automatically by executing the c.\n// If c already has a version flag, it will do nothing.\n// If c.Version is empty, it will do nothing."},{"path":"command.go","start_line":107,"end_line":109,"text":"\n\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command_test.go","start_line":2571,"end_line":2571,"text":"const VersionFlag = \"--version\""},{"path":"command.go","start_line":599,"end_line":599,"text":"func (c *Command) VersionTemplate() string {"},{"path":"command_test.go","start_line":1108,"end_line":1108,"text":"func TestVersionTemplate(t *testing.T) {"},{"path":"command.go","start_line":353,"end_line":353,"text":"func (c *Command) SetVersionTemplate(s string) {"},{"path":"command_test.go","start_line":1120,"end_line":1120,"text":"func TestShorthandVersionTemplate(t *testing.T) {"},{"path":".github/dependabot.yml","start_line":1,"end_line":2,"text":"version: 2\nupdates:"},{"path":"site/content/user_guide.md","start_line":591,"end_line":593,"text":"\n## Version Flag\n"},{"path":"CONDUCT.md","start_line":2,"end_line":3,"text":"\n### Versioning"},{"path":"command.go","start_line":1632,"end_line":1632,"text":"func (c *Command) HasParent() bool {"},{"path":"command_test.go","start_line":74,"end_line":74,"text":"func checkStringContains(t *testing.T, got, expected string) {"},{"path":"command_test.go","start_line":32,"end_line":32,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1496,"end_line":1496,"text":"func (c *Command) Name() string {"},{"path":"command.go","start_line":1849,"end_line":1850,"text":"func (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()"},{"path":"command.go","start_line":1565,"end_line":1566,"text":"\t}\n"}],"provenance":{"input_sha256":"a0da7cbd58cd5875ebda984508317563b7e51ef6e0ed8b203d6c58fac2e3703b","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

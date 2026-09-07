@@ -1,0 +1,1 @@
+The answer gives a concrete single-flag lookup on the command in hand, matching a primary answer-key mechanism. command.go:1794-1796 explicitly provides the Flag method, return type, own-set lookup and tree-search comment. The alternative Flags().Lookup expression is directly present in that body; no unsupported route for obtaining the executing command is asserted.

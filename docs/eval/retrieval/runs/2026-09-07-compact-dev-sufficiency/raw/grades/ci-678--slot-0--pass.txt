@@ -1,0 +1,1 @@
+The response gives the concrete SetArgs call needed to supply test flag arguments. command.go:275-277 preserves both its testing purpose and assignment of the caller's string slice to c.args. The example is an application of that signature; it does not claim an unseen execution path or provide unsupported assertions.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 120,
+  "previous_sha256": "6830dba972e494203fda3e51d79926609449be74f9908ee3c53740b88c42e4de",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-grader-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "0086d9d3081db3ee2ddb32f2e93977e52e66203e9feaf293b0cb02569b25eb8e",
+  "outcome": "pass",
+  "rationale": "The required procedure is concrete and supported: MarkFlagsMutuallyExclusive accepts the supplied names at flag_groups.go:65, and the adjacent condition at 64 establishes the more-than-one-flag constraint. The already-defined requirement is supported by 128-129. The supplementary hiding behavior is stated at line 223; the answer does not invent validator internals or an exact error message.\n",
+  "sha256": "5bdc66b3e45e54ade240e1b6b7fd7d887826911da44d342f8d2c4f478fd177ef"
+}

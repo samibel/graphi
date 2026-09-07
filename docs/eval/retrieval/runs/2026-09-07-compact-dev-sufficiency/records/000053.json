@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 53,
+  "previous_sha256": "78796aae5502bd79164e1b8c59286746beb992e7c8b5b5a022fb5042b30fc427",
+  "kind": "response",
+  "query_id": "cb-16",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "fedaeb892e5e2ba223b82c66c5bc55db997b091b199d4bc88eb08db7d84f484c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Levenshtein distance is computed by `ld(s, t string, ignoreCase bool) int` in `cobra.go:187–188`. The command suggestion code calls `ld(typedName, cmd.Name(), true)` for available commands and compares the result to `c.SuggestionsMinimumDistance` (`command.go:835–837`).\n",
+  "sha256": "b1445e0e50a8d11929a58fe04f12a9f08a9c2b4b0b61d04cf8bee331cd5e7cb8"
+}

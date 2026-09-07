@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 23,
+  "previous_sha256": "148a90452bfdf075ea3cb315188b8e557c3eeeeea8f195459f9eb6294f387106",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e85e867779842d1f05bf77ea7103e48fb02e7d36fc2d718ee8556180046ec464",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response identifies `GenManTree` and `GenManTreeFromOpts` as generating man pages for a command and its descendants (`doc/man_docs.go:33`, `doc/man_docs.go:46`), but omits their signatures, required options, and usage examples needed to give a concrete invocation.\n",
+  "sha256": "a510d3e535d048690042b87fa992eaf34dd72c96ddc48541f88f0e7b434f2997"
+}

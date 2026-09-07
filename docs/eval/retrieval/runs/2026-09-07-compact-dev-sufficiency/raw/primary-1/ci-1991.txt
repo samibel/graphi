@@ -1,0 +1,1 @@
+INSUFFICIENT The excerpts show `Parent()` returning `c.parent` (`command.go:1843–1844`) and name flag accessors, but omit the API or example for extracting a parent flag's value.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response mentions overridable help initialization (`command.go:883–884`) but omits the definition and parsing of `-h` versus `--help`, so it cannot establish whether or how they can have different handlers.

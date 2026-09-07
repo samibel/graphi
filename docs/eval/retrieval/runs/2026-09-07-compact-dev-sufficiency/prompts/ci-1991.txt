@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to retrieve parent command flag value?
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"17 ranked source span(s) for \"How to retrieve parent command flag value?\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command.go","start_line":1858,"end_line":1859,"text":"func (c *Command) updateParentsPflags() {\n\tif c.parentsPflags == nil {"},{"path":"command.go","start_line":1766,"end_line":1766,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command."},{"path":"command.go","start_line":1695,"end_line":1695,"text":"// InheritedFlags returns all flags which were inherited from parent commands."},{"path":"site/content/user_guide.md","start_line":287,"end_line":289,"text":"\n### Local Flag on Parent Commands\n"},{"path":"command.go","start_line":1795,"end_line":1795,"text":"func (c *Command) Flag(name string) (flag *flag.Flag) {"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"},{"path":"command.go","start_line":1806,"end_line":1806,"text":"func (c *Command) persistentFlag(name string) (flag *flag.Flag) {"},{"path":"command.go","start_line":1843,"end_line":1844,"text":"func (c *Command) Parent() *Command {\n\treturn c.parent"},{"path":"command.go","start_line":1757,"end_line":1757,"text":"func (c *Command) HasPersistentFlags() bool {"},{"path":"command.go","start_line":1726,"end_line":1726,"text":"func (c *Command) PersistentFlags() *flag.FlagSet {"},{"path":"command.go","start_line":1632,"end_line":1632,"text":"func (c *Command) HasParent() bool {"},{"path":"command.go","start_line":1669,"end_line":1669,"text":"func (c *Command) LocalFlags() *flag.FlagSet {"},{"path":"completions.go","start_line":841,"end_line":841,"text":"func findFlag(cmd *Command, name string) *pflag.Flag {"},{"path":"command_test.go","start_line":863,"end_line":864,"text":"\t// commands that disable flag parsing\n"},{"path":"command.go","start_line":1302,"end_line":1302,"text":"// AddCommand adds one or more commands to this parent command."},{"path":"command.go","start_line":72,"end_line":73,"text":"\n\t// The group id under which this subcommand is grouped in the 'help' output of its parent."},{"path":"command.go","start_line":939,"end_line":940,"text":"\n\tparents := make([]*Command, 0, 5)"}],"provenance":{"input_sha256":"bbb44fe45e99e433e901e273ce3ee23c8c542a7034d204cd39d8157ba42ac56e","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

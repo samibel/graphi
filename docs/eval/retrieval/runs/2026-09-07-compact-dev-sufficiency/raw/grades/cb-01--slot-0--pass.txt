@@ -1,0 +1,1 @@
+The answer identifies the exact ExecuteC declaration requested by the identifier query. Preserved command.go:1051-1054 supplies its receiver, return types and nil-context initialization; command.go:1038-1040 and 1046-1048 directly support both wrapper relationships.

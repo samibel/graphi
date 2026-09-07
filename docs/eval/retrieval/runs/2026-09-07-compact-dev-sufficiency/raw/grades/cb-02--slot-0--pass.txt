@@ -1,0 +1,1 @@
+The exact requested declaration is present in flag_groups.go:65. Its name and adjacent condition at line 64 support the mutual-exclusion description; line 66 and command.go:1849-1852 show persistent-flag merging. The stated annotation string is explicitly present at flag_groups.go:28.

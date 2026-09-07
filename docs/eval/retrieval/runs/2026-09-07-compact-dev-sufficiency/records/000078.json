@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 78,
+  "previous_sha256": "1946d81a4150cc62c93ad520b899b1ed57f066a226ea94a736b97bec4c41ad1d",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-primary-b-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "71bd89179537b880a6d013ec0080d209c1812c5fc668d0d16fb16a3d0301f30d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Supply the test's flag arguments with `cmd.SetArgs([]string{\"--flag-name\", \"value\"})`, replacing the placeholders with a defined flag and its value. `(*Command).SetArgs(a []string)` assigns the slice to `c.args`, and its comment explicitly identifies testing as a use case (`command.go:275–277`). The excerpt does not include a complete execution-and-assertion example.\n",
+  "sha256": "572981e0641fc3fce2a68d60ea98ea05cfc70fd7376eed809eab5c918edb11c4"
+}

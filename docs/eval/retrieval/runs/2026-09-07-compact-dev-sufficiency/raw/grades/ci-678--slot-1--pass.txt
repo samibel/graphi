@@ -1,0 +1,1 @@
+The answer-key entry point SetArgs is concretely used with a slice of test arguments. command.go:275-277 directly supports its testing purpose, signature and stored arguments. The example explicitly treats the flag and value as placeholders and the answer accurately notes the missing full execution/assertion example.

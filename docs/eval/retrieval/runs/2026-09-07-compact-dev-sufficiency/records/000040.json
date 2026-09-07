@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "d50b1aabc0ef895fd86abc1dacc1a0178e23c1250aaa49bfdaf9a29029989a2d",
+  "sequence": 40,
+  "previous_sha256": "b1f4174193a93645b4b564d54cb0be7f2e06f280a4cc365443500691242e01b4",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-primary-a-20260907",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "48ecf2ec9323e5df426c9fc31975271cf7561feaa412a97a04a2ab8757b4a492",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Check that the command's `Version` is nonempty, for example `cmd.Version = \"1.0.0\"`. Automatic version-flag setup does nothing when `c.Version` is empty or a version flag already exists (`command.go:1201–1203`). The `Version` field's documentation says a nonempty value causes a boolean `version` flag to be added when the command does not already define one (`command.go:108–109`). These are supported causes to check; the response does not include your command configuration to identify which applies.\n",
+  "sha256": "60e7207ca7862e2c4e9133400075f9a71ee8463192c8a4497c7d3cc37518f437"
+}

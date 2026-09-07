@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do persistent flags propagate from parent to child commands
+
+----- BEGIN task_context/compact-dev/1 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"14 ranked source span(s) for \"how do persistent flags propagate from parent to child commands\"; read in order (140/140 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/1","sources":[{"path":"command_test.go","start_line":754,"end_line":755,"text":"func TestChildFlagShadowsParentPersistentFlag(t *testing.T) {\n\tparent := \u0026Command{Use: \"parent\", Run: emptyRun}"},{"path":"command.go","start_line":1725,"end_line":1727,"text":"// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {"},{"path":"command_test.go","start_line":783,"end_line":784,"text":"func TestPersistentFlagsOnChild(t *testing.T) {\n\tvar childCmdArgs []string"},{"path":"command.go","start_line":1848,"end_line":1851,"text":"// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())"},{"path":"command.go","start_line":1805,"end_line":1807,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {"},{"path":"command.go","start_line":1756,"end_line":1759,"text":"// HasPersistentFlags checks if the command contains persistent flags.\nfunc (c *Command) HasPersistentFlags() bool {\n\treturn c.PersistentFlags().HasFlags()\n}"},{"path":"command_test.go","start_line":866,"end_line":867,"text":"\tparent.PersistentFlags().Bool(\"foo\", false, \"\")\n\tflag := parent.PersistentFlags().Lookup(\"foo\")"},{"path":"command.go","start_line":123,"end_line":124,"text":"\t//\n\t// PersistentPreRun: children of this command will inherit and execute."},{"path":"site/content/user_guide.md","start_line":287,"end_line":289,"text":"\n### Local Flag on Parent Commands\n"},{"path":"command.go","start_line":1669,"end_line":1671,"text":"func (c *Command) LocalFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n"},{"path":"command_test.go","start_line":2209,"end_line":2209,"text":"func TestTraverseNoParentFlags(t *testing.T) {"},{"path":"command.go","start_line":1302,"end_line":1302,"text":"// AddCommand adds one or more commands to this parent command."},{"path":"site/content/user_guide.md","start_line":269,"end_line":271,"text":"\n### Persistent Flags\n"},{"path":"cobra_test.go","start_line":24,"end_line":24,"text":"\t\tt.Error(e)"}],"provenance":{"input_sha256":"632d688d93055463cfff264fc86ac58092893a186cc0b0fb0321150d8adb4775","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b","source_selection":"context-definitions/3","source_order":"preserved_snippet_order","source_budget":140,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/1 RESPONSE BYTES -----

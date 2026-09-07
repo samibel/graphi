@@ -1,0 +1,1 @@
+The response correctly offers source-supported causes rather than diagnosing an unseen command configuration. command.go:108-109 states the nonempty-Version and no-existing-version-flag conditions; 1201-1203 explicitly confirms automatic setup and both no-op cases. The suggested Version assignment directly addresses the visible empty-value condition.

@@ -1,0 +1,1 @@
+The concrete setting is supported by cobra.go:54-55 and the assignment in command_test.go:305-306; cobra.go:46 establishes the false default. command.go:774-775 shows that the enabled switch gates a name-or-alias-prefix predicate. Setting the switch before execution follows from its use at lookup time.

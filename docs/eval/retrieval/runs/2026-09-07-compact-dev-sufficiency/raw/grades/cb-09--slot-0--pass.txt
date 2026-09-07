@@ -1,0 +1,1 @@
+The path query is answered with concrete declarations in shell_completions.go. Lines 42-46 and 58-63 explicitly establish extension filtering and delegation through Flags versus PersistentFlags; lines 35-38 explicitly establish completion prioritization and the missing-required-flag error.

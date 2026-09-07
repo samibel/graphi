@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `Find(args)` as a downward search from the highest node (`command.go:725–727`) but omits its body and the matching logic of `findNext` (`command.go:767–768`), which are needed to explain how arguments select a subcommand.

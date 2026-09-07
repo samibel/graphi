@@ -1,0 +1,1 @@
+INSUFFICIENT The response lists tree-generator signatures (`doc/man_docs.go:38,48`, `doc/md_docs.go:125,133`, `doc/yaml_docs.go:53,60`) and promises one YAML file per command (`site/content/docgen/yaml.md:56`), but provides no traversal, recursion, ordering, or filtering implementation.
