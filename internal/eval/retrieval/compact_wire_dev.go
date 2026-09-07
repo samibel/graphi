@@ -22,7 +22,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextDevVersion = "task_context/compact-dev/1"
+const CompactTaskContextDevVersion = "task_context/compact-dev/2"
 
 // CompactTaskContextDevSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -160,15 +160,17 @@ type compactTaskContextDevCandidate struct {
 	anchor int
 	from   int
 	to     int
+	cost   int
 	score  int
 	order  int
 }
 
-// compactTaskContextDevSelect spends breadth before depth. Each ranked source
-// first contributes its strongest query-matching line; remaining budget then
-// grows those anchors outwards one complete line at a time. This prevents one
-// long early declaration from consuming the entire response before later
-// exact definitions can contribute any source bytes.
+// compactTaskContextDevSelect retains a small number of coherent regions.
+// Ranking considers the whole region and discounts test-name/comment matches
+// unless the question explicitly asks about tests. The budget is then split by
+// rank before unused quota is returned to the strongest regions. This prevents
+// a long tail of one-line anchors from starving the implementation bodies that
+// make the response answerable.
 func compactTaskContextDevSelect(query string, evidence []contract.Evidence, items []contract.Item, budget int) ([]CompactTaskContextDevSource, int, error) {
 	referenced := make(map[string]bool)
 	for _, item := range items {
@@ -177,6 +179,16 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 	}
 	mode, patterns := grepReadV2QueryPlan(query)
+	documentFrequency := make(map[string]int, len(patterns))
+	for _, item := range evidence {
+		haystack := strings.ToLower(item.Path + "\n" + item.Snippet)
+		for _, pattern := range patterns {
+			if strings.Contains(haystack, strings.ToLower(pattern)) {
+				documentFrequency[strings.ToLower(pattern)]++
+			}
+		}
+	}
+	testIntent := compactTaskContextDevTestIntent(patterns)
 	candidates := make([]compactTaskContextDevCandidate, 0, len(evidence))
 	for order, item := range evidence {
 		if item.ClaimType != "" || item.TextHash != shape.TextHash(item.Snippet) {
@@ -188,12 +200,16 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 		lines := strings.Split(item.Snippet, "\n")
 		anchor, lineScore := compactTaskContextDevAnchor(mode, patterns, item.Path, lines)
-		score := lineScore*1000 - order
+		score := compactTaskContextDevRegionScore(mode, patterns, documentFrequency, item, lineScore, testIntent) - order
 		if !referenced[item.RefID] {
 			// task_context/2's bounded exact-definition bridge deliberately
 			// emits its admitted definition as standalone source. It is not
 			// an item/ref-id join omission, so retain that query-derived signal.
-			score += 1_000_000
+			if mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath {
+				score += 1_000_000
+			} else {
+				score += 20_000
+			}
 		}
 		candidates = append(candidates, compactTaskContextDevCandidate{
 			item: item, lines: lines, start: start, anchor: anchor,
@@ -207,6 +223,16 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		return candidates[i].order < candidates[j].order
 	})
 
+	maxSources := 8
+	weights := []int{10, 6, 4, 3, 2, 1, 1, 1}
+	if mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath {
+		maxSources = 4
+		weights = []int{10, 3, 1, 1}
+	}
+	if len(candidates) > maxSources {
+		candidates = candidates[:maxSources]
+	}
+
 	remaining := budget
 	admitted := make([]bool, len(candidates))
 	for i := range candidates {
@@ -215,33 +241,29 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			continue
 		}
 		admitted[i] = true
+		candidates[i].cost = cost
 		remaining -= cost
 	}
-	// Grow every admitted anchor in ranked round-robin order. Prefer the next
-	// line after an anchor (usually implementation) and then the preceding line
-	// (usually declaration/doc); alternate thereafter.
-	for radius := 1; remaining > 0; radius++ {
+	totalWeight := 0
+	for i := range candidates {
+		if admitted[i] {
+			totalWeight += weights[i]
+		}
+	}
+	for i := range candidates {
+		if !admitted[i] {
+			continue
+		}
+		quota := budget * weights[i] / totalWeight
+		for candidates[i].cost < quota && remaining > 0 && compactTaskContextDevGrow(&candidates[i], &remaining) {
+		}
+	}
+	// A short declaration or paragraph may not use its quota. Return that space
+	// to the strongest regions instead of creating more one-line fragments.
+	for remaining > 0 {
 		changed := false
 		for i := range candidates {
-			if !admitted[i] {
-				continue
-			}
-			for _, lineIndex := range []int{candidates[i].anchor + radius, candidates[i].anchor - radius} {
-				if lineIndex < 0 || lineIndex >= len(candidates[i].lines) || lineIndex >= candidates[i].from && lineIndex <= candidates[i].to {
-					continue
-				}
-				cost := len(strings.Fields(candidates[i].lines[lineIndex]))
-				if cost > remaining {
-					continue
-				}
-				if lineIndex == candidates[i].to+1 {
-					candidates[i].to = lineIndex
-				} else if lineIndex == candidates[i].from-1 {
-					candidates[i].from = lineIndex
-				} else {
-					continue
-				}
-				remaining -= cost
+			if admitted[i] && compactTaskContextDevGrow(&candidates[i], &remaining) {
 				changed = true
 			}
 		}
@@ -262,6 +284,72 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		})
 	}
 	return out, budget - remaining, nil
+}
+
+func compactTaskContextDevRegionScore(mode GrepReadV2Mode, patterns []string, frequencies map[string]int, item contract.Evidence, lineScore int, testIntent bool) int {
+	score := lineScore * 1000
+	haystack := strings.ToLower(item.Path + "\n" + item.Snippet)
+	for _, pattern := range patterns {
+		pattern = strings.ToLower(pattern)
+		if !strings.Contains(haystack, pattern) {
+			continue
+		}
+		frequency := frequencies[pattern]
+		if frequency < 1 {
+			frequency = 1
+		}
+		score += 12_000 / frequency
+	}
+	lowerPath := strings.ToLower(item.Path)
+	isTest := strings.HasSuffix(lowerPath, "_test.go")
+	switch {
+	case isTest && testIntent:
+		score += 5_000
+	case isTest:
+		score -= 30_000
+	case strings.HasSuffix(lowerPath, ".go"):
+		score += 15_000
+	case strings.HasSuffix(lowerPath, ".md"):
+		score += 5_000
+	}
+	if mode == GrepReadV2ExactPath && strings.EqualFold(item.Path, patterns[0]) {
+		score += 1_000_000
+	}
+	return score
+}
+
+func compactTaskContextDevTestIntent(patterns []string) bool {
+	for _, pattern := range patterns {
+		if strings.EqualFold(pattern, "test") {
+			return true
+		}
+	}
+	return false
+}
+
+// compactTaskContextDevGrow adds one adjacent complete line. Forward lines are
+// preferred because an anchor is normally a declaration or heading; once the
+// region reaches its end, preceding documentation/context is added.
+func compactTaskContextDevGrow(candidate *compactTaskContextDevCandidate, remaining *int) bool {
+	lineIndex := candidate.to + 1
+	if lineIndex >= len(candidate.lines) {
+		lineIndex = candidate.from - 1
+	}
+	if lineIndex < 0 || lineIndex >= len(candidate.lines) {
+		return false
+	}
+	cost := len(strings.Fields(candidate.lines[lineIndex]))
+	if cost > *remaining {
+		return false
+	}
+	if lineIndex == candidate.to+1 {
+		candidate.to = lineIndex
+	} else {
+		candidate.from = lineIndex
+	}
+	candidate.cost += cost
+	*remaining -= cost
+	return true
 }
 
 func compactTaskContextDevAnchor(mode GrepReadV2Mode, patterns []string, path string, lines []string) (int, int) {
@@ -323,7 +411,7 @@ func compactTaskContextDevProvenance(summary, inputSHA string, budget int) (Comp
 	}
 	p := CompactTaskContextDevProvenance{
 		InputSHA256: inputSHA, Method: fields[0], Retrieval: fields[1], Weights: value("weights "),
-		Model: value("model "), SourceOrder: "preserved_snippet_order", Budget: budget,
+		Model: value("model "), SourceOrder: "ranked_coherent_regions", Budget: budget,
 		BudgetUnit: "whitespace-fields-v1",
 	}
 	for _, field := range fields {
@@ -340,7 +428,7 @@ func compactTaskContextDevProvenance(summary, inputSHA string, budget int) (Comp
 
 // ParseCompactTaskContextDev validates the exact wire interface. Unknown
 // fields fail closed: changing the representation requires a new explicit
-// version instead of silently changing the meaning of compact-dev/1.
+// version instead of silently changing the meaning of compact-dev/2.
 func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStructured, error) {
 	var envelope compactTaskContextDevEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -362,7 +450,7 @@ func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStruct
 		return "", CompactTaskContextDevStructured{}, fmt.Errorf("compact task_context dev: invalid structured content identity")
 	}
 	p := structured.Provenance
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.Weights == "" || p.Model == "" || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "preserved_snippet_order" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.Weights == "" || p.Model == "" || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
 		return "", CompactTaskContextDevStructured{}, fmt.Errorf("compact task_context dev: invalid provenance")
 	}
 	seen := make(map[string]bool)

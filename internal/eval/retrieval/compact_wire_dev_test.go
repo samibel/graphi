@@ -3,6 +3,7 @@ package retrieval
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -109,6 +110,49 @@ func compactTaskContextDevFixtureInput(t *testing.T, counter PayloadCounter) Pre
 		Confidence: contract.Confidence{Distribution: map[string]float64{"confirmed": 1}, Top: "confirmed", Method: "edge_tiers"},
 	}
 	return equalRecallFixturePayload(t, bundle, counter)
+}
+
+func TestCompactTaskContextDevSelect_KeepsCoherentImplementationAheadOfTestNameDecoys(t *testing.T) {
+	query := "how are commands added to a parent and their parent pointer set"
+	targetText := strings.Join([]string{
+		"func (c *Command) AddCommand(cmds ...*Command) {",
+		"\tfor _, x := range cmds {",
+		"\t\tif x == nil {",
+		"\t\t\tcontinue",
+		"\t\t}",
+		"\t\tc.commands = append(c.commands, x)",
+		"\t\tx.parent = c",
+		"\t}",
+		"}",
+	}, "\n")
+	evidence := []contract.Evidence{{
+		RefID: "target", Path: "command.go", Line: 100, Span: "100-108", Role: "snippet",
+		Snippet: targetText, TextHash: shape.TextHash(targetText),
+	}}
+	items := []contract.Item{{RefID: "target-item", EvidenceRefIDs: []string{"target"}}}
+	for i := 0; i < 14; i++ {
+		ref := fmt.Sprintf("decoy-%02d", i)
+		text := fmt.Sprintf("// command parent pointer set when added to the root command tree\nfunc TestUnrelated%02d(t *testing.T) {}", i)
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: "command_test.go", Line: 200 + i*2, Span: fmt.Sprintf("%d-%d", 200+i*2, 201+i*2),
+			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{RefID: ref + "-item", EvidenceRefIDs: []string{ref}})
+	}
+
+	sources, used, err := compactTaskContextDevSelect(query, evidence, items, 140)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if used > 140 {
+		t.Fatalf("used %d source fields, want <= 140", used)
+	}
+	for _, source := range sources {
+		if source.Path == "command.go" && strings.Contains(source.Text, "c.commands = append") && strings.Contains(source.Text, "x.parent = c") {
+			return
+		}
+	}
+	t.Fatalf("coherent AddCommand implementation was fragmented: %+v", sources)
 }
 
 // TestCompactTaskContextDevFrontier is opt-in and DEVELOPMENT-ONLY. Bundle
