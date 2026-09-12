@@ -8,6 +8,9 @@ The compiled-in inputs are the two-build `bundles-after.json` from
 `GrepRead/2` transcripts from `2026-09-07-grepread-v2-dev`. The command combines
 both retrieval channels and builds compact responses for all 44 development
 questions before consulting qrels to register the 40 answerable questions.
+For compact-dev/5, `prepare -repository` additionally hydrates exact Go
+declarations and one bounded query-relevant reference from a clean Cobra
+checkout whose HEAD must equal the dataset's pinned repository SHA.
 Source budget is 250; `MinimumPassCount(40)` derives k=36. There are no dataset,
 budget, k or threshold overrides.
 
@@ -54,11 +57,13 @@ The variables below name only the new diagnostic directory and candidate SHA.
 ```sh
 GRAPHI_DEV_RUN=docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency
 GRAPHI_DEV_SHA=<exact-40-hex-candidate-commit>
+GRAPHI_COBRA_CHECKOUT=<clean-checkout-at-the-pinned-cobra-sha>
 
 CGO_ENABLED=0 go run ./cmd/compact-sufficiency-dev prepare \
   -run-dir "$GRAPHI_DEV_RUN" -candidate-sha "$GRAPHI_DEV_SHA" \
   -candidate-files "$GRAPHI_DEV_RUN/candidate-files.json" \
-  -participants "$GRAPHI_DEV_RUN/participants.json"
+  -participants "$GRAPHI_DEV_RUN/participants.json" \
+  -repository "$GRAPHI_COBRA_CHECKOUT"
 
 CGO_ENABLED=0 go run ./cmd/compact-sufficiency-dev response \
   -run-dir "$GRAPHI_DEV_RUN" -query <query-id> -slot 0 \

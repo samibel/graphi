@@ -139,6 +139,67 @@ func TestCompactTaskContextDev_GrepReadFallbackIsQueryBoundAndDeterministic(t *t
 	}
 }
 
+func TestCompactTaskContextDev_RepositoryHydratesCallingDeclaration(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	definition := "func (c *Command) ParseFlags(args []string) error {\n\treturn nil\n}"
+	bundle := contract.Result{
+		Outcome: contract.OutcomePartial,
+		Summary: `task_context/2: 1 seed(s) for "where are flags parsed before pre run hooks" — 1 files (task_context/2; retrieval/7; weights abc123; model fixture-model; 7/1200 snippet tokens; context-definitions/3; strategy semantic_first; degradation: ready)`,
+		Items: []contract.Item{{
+			RefID: "parse-item", Rank: 1,
+			Reason:         "candidate: method fixture.Command.ParseFlags (flow.go:5) score 1 [seed]",
+			EvidenceRefIDs: []string{"parse-definition"},
+		}},
+		Evidence: []contract.Evidence{{
+			RefID: "parse-definition", Path: "flow.go", Line: 5, Span: "5-7", Role: "snippet",
+			Snippet: definition, TextHash: shape.TextHash(definition),
+		}},
+		Confidence: contract.Confidence{Distribution: map[string]float64{"confirmed": 1}, Top: "confirmed", Method: "edge_tiers"},
+	}
+	input := equalRecallFixturePayload(t, bundle, counter)
+	repositoryLines := []string{
+		"package fixture",
+		"",
+		"type Command struct{}",
+		"",
+		"func (c *Command) ParseFlags(args []string) error {",
+		"\treturn nil",
+		"}",
+		"",
+		"func (c *Command) execute(args []string) error {",
+		"\tif err := c.ParseFlags(args); err != nil {",
+		"\t\treturn err",
+		"\t}",
+	}
+	for range 180 {
+		repositoryLines = append(repositoryLines, "\tprepare()")
+	}
+	repositoryLines = append(repositoryLines,
+		"\tc.preRun()",
+		"\treturn nil",
+		"}",
+	)
+	repository := fstest.MapFS{"flow.go": {Data: []byte(strings.Join(repositoryLines, "\n") + "\n")}}
+
+	payload, err := BuildCompactTaskContextDevWithRepository(
+		"where are flags parsed before pre run hooks", input, nil, repository, 100, counter,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	if !strings.Contains(joined, "c.ParseFlags(args)") || !strings.Contains(joined, "c.preRun()") {
+		t.Fatalf("calling declaration was not hydrated: %+v", structured.Sources)
+	}
+}
+
 func compactTaskContextDevFixtureInput(t *testing.T, counter PayloadCounter) PreservedPayload {
 	t.Helper()
 	bundle := contract.Result{
@@ -442,6 +503,12 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 			"verbose production summary and limits.next: concise fallback plus explicit provenance/budget/truncated retain their operational meaning",
 		},
 	}
+	payloadDir := os.Getenv("GRAPHI_COMPACT_WIRE_DEV_PAYLOAD_DIR")
+	if payloadDir != "" {
+		if err := os.MkdirAll(payloadDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	budgets := []int{80, 100, 120, 140, 160, 180, 200, 250, 300, 450, 600, 900, 1200}
 	for _, budget := range budgets {
 		g := grid{SourceBudget: budget}
@@ -450,15 +517,20 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 		for _, member := range members {
 			query := queries[member.QueryID]
 			transcript := grepTranscripts[member.QueryID]
-			first, err := BuildCompactTaskContextDevWithGrepRead(query.Text, inputs[member.QueryID], &transcript, budget, counter)
+			first, err := BuildCompactTaskContextDevWithRepository(query.Text, inputs[member.QueryID], &transcript, os.DirFS(repositoryRoot), budget, counter)
 			if err != nil {
 				t.Fatalf("budget %d query %s: %v", budget, member.QueryID, err)
 			}
-			second, err := BuildCompactTaskContextDevWithGrepRead(query.Text, inputs[member.QueryID], &transcript, budget, counter)
+			second, err := BuildCompactTaskContextDevWithRepository(query.Text, inputs[member.QueryID], &transcript, os.DirFS(repositoryRoot), budget, counter)
 			if err != nil || !reflect.DeepEqual(first, second) || !bytes.Equal(first.Bytes, second.Bytes) {
 				t.Fatalf("budget %d query %s is not byte reproducible: %v", budget, member.QueryID, err)
 			}
 			g.ByteIdentical++
+			if payloadDir != "" && budget == CompactDevSufficiencyBudget {
+				if err := os.WriteFile(filepath.Join(payloadDir, member.QueryID+".json"), first.Bytes, 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
 			score, err := ScoreCompactTaskContextDev(os.DirFS(repositoryRoot), query, first.Bytes, member.Target, counter)
 			if err != nil {
 				t.Fatalf("budget %d query %s score: %v", budget, member.QueryID, err)

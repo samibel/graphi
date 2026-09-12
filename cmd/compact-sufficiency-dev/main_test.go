@@ -221,7 +221,7 @@ func TestCapturePreparationRejectsIncompleteUnknownAndSymlinkInputs(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := buildCaptures(datasetRaw, bad, real); err == nil {
+	if _, _, err := buildCaptures(datasetRaw, bad, real, nil); err == nil {
 		t.Fatal("incomplete captures accepted")
 	}
 	artifact["unknown"] = json.RawMessage(`true`)
@@ -229,7 +229,7 @@ func TestCapturePreparationRejectsIncompleteUnknownAndSymlinkInputs(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := buildCaptures(datasetRaw, bad, real); err == nil {
+	if _, _, err := buildCaptures(datasetRaw, bad, real, nil); err == nil {
 		t.Fatal("unknown capture field accepted")
 	}
 	// Even a clean commit containing a self-consistent, edited artifact cannot

@@ -29,7 +29,7 @@ const (
 
 const usage = `compact-sufficiency-dev PHASE [flags]
 
-  prepare  -run-dir REL -candidate-sha GIT_SHA -candidate-files MANIFEST.json -participants PARTICIPANTS.json
+  prepare  -run-dir REL -candidate-sha GIT_SHA -candidate-files MANIFEST.json -participants PARTICIPANTS.json -repository COBRA_CHECKOUT
   response -run-dir REL -query ID -slot 0|1|2 -status answered|empty|missing|refused -response-file ANSWER.txt
   grade    -run-dir REL -query ID -slot 0|1|2 -outcome pass|fail -rationale-file REASON.txt
   decide   -run-dir REL [-seal]
@@ -45,6 +45,7 @@ writes outcome.json once and closes further appends. All results are dev-only.
 
 type options struct {
 	phase, runDir, candidateSHA, candidateFiles, participants string
+	repository                                                string
 	query, status, responseFile, outcome, rationaleFile       string
 	slot                                                      int
 	seal                                                      bool
@@ -58,13 +59,14 @@ func main() {
 }
 
 func run(args []string, out io.Writer, root string) error {
+	rootInjected := root != ""
 	if len(args) == 0 || args[0] == "-h" || args[0] == "--help" {
 		_, err := io.WriteString(out, usage)
 		return err
 	}
 	o := options{phase: args[0]}
 	allowed := map[string]string{
-		"prepare":  "run-dir candidate-sha candidate-files participants",
+		"prepare":  "run-dir candidate-sha candidate-files participants repository",
 		"response": "run-dir query slot status response-file",
 		"grade":    "run-dir query slot outcome rationale-file",
 		"decide":   "run-dir seal",
@@ -78,6 +80,7 @@ func run(args []string, out io.Writer, root string) error {
 	flags.StringVar(&o.candidateSHA, "candidate-sha", "", "exact candidate HEAD")
 	flags.StringVar(&o.candidateFiles, "candidate-files", "", "JSON array of sorted path/sha256 records")
 	flags.StringVar(&o.participants, "participants", "", "frozen four-participant identity JSON")
+	flags.StringVar(&o.repository, "repository", "", "clean pinned source checkout used for declaration hydration")
 	flags.StringVar(&o.query, "query", "", "registered query ID")
 	flags.IntVar(&o.slot, "slot", -1, "primary 0/1 or adjudicator 2")
 	flags.StringVar(&o.status, "status", "", "response status")
@@ -151,6 +154,12 @@ func run(args []string, out io.Writer, root string) error {
 		return err
 	}
 	if o.phase == "prepare" {
+		// The binary always requires a source checkout. Tests inject a temporary
+		// module root and may omit it to exercise the append-only protocol with
+		// the frozen pre-v5 fixture captures.
+		if o.repository == "" && !rootInjected {
+			return fmt.Errorf("prepare requires -repository for compact-dev/5")
+		}
 		return prepare(root, dir, datasetRaw, real, o, out)
 	}
 	var reg retrieval.CompactDevSufficiencyRegistration
@@ -297,7 +306,14 @@ func prepare(root, dir string, datasetRaw []byte, real retrieval.PayloadCounter,
 	if retrieval.SHA256Hex(grepReadRaw) != devGrepReadSHA256 {
 		return fmt.Errorf("fixed GrepRead/2 artifact digest changed")
 	}
-	first, second, err := buildCaptures(datasetRaw, artifactRaw, real, grepReadRaw)
+	var repository fs.FS
+	if o.repository != "" {
+		repository, err = verifiedSourceRepository(o.repository, datasetRaw)
+		if err != nil {
+			return err
+		}
+	}
+	first, second, err := buildCaptures(datasetRaw, artifactRaw, real, repository, grepReadRaw)
 	if err != nil {
 		return err
 	}
@@ -319,7 +335,7 @@ func prepare(root, dir string, datasetRaw []byte, real retrieval.PayloadCounter,
 // Diagnostics are explicitly opaque here. Retrieval receives only question
 // text and preserved production bytes. Qrels are decoded after BOTH complete
 // 44-query builds finish, solely to choose the predeclared 40-question panel.
-func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter, grepReadRaw ...[]byte) (map[string]retrieval.PreservedPayload, map[string]retrieval.PreservedPayload, error) {
+func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter, repository fs.FS, grepReadRaw ...[]byte) (map[string]retrieval.PreservedPayload, map[string]retrieval.PreservedPayload, error) {
 	var projection struct {
 		Queries []struct {
 			ID    string `json:"id"`
@@ -411,7 +427,13 @@ func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter
 			if value, ok := grepReads[row.QueryID]; ok {
 				transcript = &value
 			}
-			payload, err := retrieval.BuildCompactTaskContextDevWithGrepRead(texts[row.QueryID], row.Capture.Payload, transcript, retrieval.CompactDevSufficiencyBudget, real)
+			var payload retrieval.PreservedPayload
+			var err error
+			if repository != nil {
+				payload, err = retrieval.BuildCompactTaskContextDevWithRepository(texts[row.QueryID], row.Capture.Payload, transcript, repository, retrieval.CompactDevSufficiencyBudget, real)
+			} else {
+				payload, err = retrieval.BuildCompactTaskContextDevWithGrepRead(texts[row.QueryID], row.Capture.Payload, transcript, retrieval.CompactDevSufficiencyBudget, real)
+			}
 			if err != nil {
 				return nil, nil, err
 			}
@@ -438,6 +460,35 @@ func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter
 		}
 	}
 	return selected[0], selected[1], nil
+}
+
+func verifiedSourceRepository(path string, datasetRaw []byte) (fs.FS, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	info, err := os.Stat(absolute)
+	if err != nil {
+		return nil, fmt.Errorf("source repository is not a directory: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("source repository is not a directory")
+	}
+	var identity struct {
+		RepoSHA string `json:"repo_sha"`
+	}
+	if err := json.Unmarshal(datasetRaw, &identity); err != nil || len(identity.RepoSHA) != 40 {
+		return nil, fmt.Errorf("development dataset has no valid repository identity")
+	}
+	head, err := exec.Command("git", "-C", absolute, "rev-parse", "HEAD").Output()
+	if err != nil || strings.TrimSpace(string(head)) != identity.RepoSHA {
+		return nil, fmt.Errorf("source repository HEAD does not match development dataset")
+	}
+	status, err := exec.Command("git", "-C", absolute, "status", "--porcelain=v1", "--untracked-files=all").Output()
+	if err != nil || len(status) != 0 {
+		return nil, fmt.Errorf("source repository must be clean")
+	}
+	return os.DirFS(absolute), nil
 }
 
 func verifyCandidate(root, runDir, sha string, files []retrieval.CompactDevCandidateFile) error {
