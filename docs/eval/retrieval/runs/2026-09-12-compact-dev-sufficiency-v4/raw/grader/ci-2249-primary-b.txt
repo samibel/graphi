@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-2249:primary-b
+Outcome: pass
+Rationale: Provides concrete HasInheritedFlags and InheritedFlags().Lookup assertions, with the merge precondition and parent persistent declaration supported by the supplied snippets.

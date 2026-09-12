@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how does cobra find the subcommand for the given arguments
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s) for \"how does cobra find the subcommand for the given arguments\"; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"completions.go","start_line":468,"end_line":477,"text":"\t\t\t// Always complete ValidArgs, even if we are completing a subcommand name.\n\t\t\t// This is for commands that have both subcommands and ValidArgs.\n\t\t\tif len(finalCmd.ValidArgs) \u003e 0 {\n\t\t\t\tif len(finalArgs) == 0 {\n\t\t\t\t\t// ValidArgs are only for the first argument\n\t\t\t\t\tfor _, validArg := range finalCmd.ValidArgs {\n\t\t\t\t\t\tif strings.HasPrefix(validArg, toComplete) {\n\t\t\t\t\t\t\tcompletions = append(completions, validArg)\n\t\t\t\t\t\t}\n\t\t\t\t\t}"},{"path":"completions.go","start_line":497,"end_line":503,"text":"\t\t\t// even if we already found sub-commands.\n\t\t\t// This is for commands that have subcommands but also specify a ValidArgsFunction.\n\t\t}\n\t}\n\n\t// Find the completion function for the flag or command\n\tvar completionFn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)"},{"path":"command.go","start_line":1079,"end_line":1081,"text":"\tif c.args == nil \u0026\u0026 filepath.Base(os.Args[0]) != \"cobra.test\" {\n\t\targs = os.Args[1:]\n\t}"},{"path":"command.go","start_line":1089,"end_line":1089,"text":"\t} else {"},{"path":"command.go","start_line":724,"end_line":728,"text":"// Find the target command given the args and command tree\n// Meant to be run on the highest node. Only searches down.\nfunc (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n"},{"path":"command.go","start_line":750,"end_line":751,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {"},{"path":"command.go","start_line":787,"end_line":789,"text":"\n// Traverse the command tree to find the command, and parse args for\n// each parent."},{"path":"command.go","start_line":767,"end_line":768,"text":"func (c *Command) findNext(next string) *Command {\n\tmatches := make([]*Command, 0)"},{"path":"args.go","start_line":25,"end_line":26,"text":"// - root commands with no subcommands can take arbitrary arguments\n// - root commands with subcommands will do subcommand validity checking"},{"path":"args.go","start_line":35,"end_line":35,"text":"\tif !cmd.HasParent() \u0026\u0026 len(args) \u003e 0 {"},{"path":"command.go","start_line":1571,"end_line":1572,"text":"\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true"},{"path":"args.go","start_line":27,"end_line":27,"text":"// - subcommands will always accept arbitrary arguments"},{"path":"command.go","start_line":788,"end_line":788,"text":"// Traverse the command tree to find the command, and parse args for"}],"provenance":{"input_sha256":"cc7822d5ae7f11edcef2a9b36618bd6cb117261e6db621a4781af5a573c5f920","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

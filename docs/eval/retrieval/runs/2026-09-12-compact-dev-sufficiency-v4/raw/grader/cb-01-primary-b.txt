@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-01:primary-b
+Outcome: pass
+Rationale: Identifies ExecuteC and accurately summarizes the visible context, root delegation, setup, and command resolution; explicitly limits claims to the partial body in command.go:1051-1092.

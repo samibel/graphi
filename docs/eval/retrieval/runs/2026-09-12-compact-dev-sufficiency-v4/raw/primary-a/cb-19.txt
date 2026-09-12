@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Execute` delegating to `ExecuteC` and fragments around `preRun`, but omits command resolution, validation, and the actual ordered Run-hook calls needed to describe the lifecycle.

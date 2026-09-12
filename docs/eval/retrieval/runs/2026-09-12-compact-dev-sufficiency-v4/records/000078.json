@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 78,
+  "previous_sha256": "beef2fd81fbffc7472dad9435f9f24b0d6fef2cfa4e46da52c9cef6738a3d5ba",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "f0b82a649cabb900a2a39383f524f7fc548e32b60ce3af314e5a5808e05b720c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Pass the desired flag arguments with `cmd.SetArgs([]string{\"--a=foo\"})` before running the command in the test. `SetArgs(a []string)` directly sets `c.args`, overriding the usual `os.Args[1:]`, and its comment specifically calls this useful for testing (`command.go:274–278`). A supplied flag-group test uses `[]string{\"--a=foo\"}` as its argument input (`flag_groups_test.go:65–66`). Use a flag name defined by your command.\n",
+  "sha256": "129440a11ed5f339008b9e17ef50a8e4626fffb684702e409103b82e1576ab6b"
+}

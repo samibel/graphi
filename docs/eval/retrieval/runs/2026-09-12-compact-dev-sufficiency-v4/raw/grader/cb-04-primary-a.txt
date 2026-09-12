@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-04:primary-a
+Outcome: pass
+Rationale: Correctly explains callback signature, missing/duplicate flag rejection, mutex-protected registration, and accessor, all shown in completions.go:132-161.

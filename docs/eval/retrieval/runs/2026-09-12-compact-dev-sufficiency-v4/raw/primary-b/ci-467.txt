@@ -1,0 +1,1 @@
+INSUFFICIENT The response names `Traverse`, `Find`, and `stripFlags`, but omits the traversal-selection condition and argument-handling logic needed to establish which flags or positional arguments can appear between the root and a subcommand.

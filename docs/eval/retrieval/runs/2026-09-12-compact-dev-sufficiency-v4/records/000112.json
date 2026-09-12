@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 112,
+  "previous_sha256": "f3f6050ccea44be5f1140b7763d5a05418c9b8aa9b6d06707341be2e44508ed7",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ed3a0c68ec5feb64b6112b130274e12df7c96cadff02ae95caa1147536b56689",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-26:primary-b\nOutcome: pass\nRationale: Correctly names normalized \u003cPROGRAM\u003e_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 global override, explicitly documented in active_help.go:46-64.\n",
+  "sha256": "32fab3028d63b2bb85b07a3076dfd1517d04d9d4f31938a1bd629ea220b9d5d4"
+}

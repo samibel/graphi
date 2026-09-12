@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to check what command was chosen
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s) for \"How to check what command was chosen\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"command.go","start_line":1057,"end_line":1059,"text":"\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()"},{"path":"command.go","start_line":1073,"end_line":1084,"text":"\t// are properly created also\n\tc.checkCommandGroups()\n\n\targs := c.args\n\n\t// Workaround FAIL with \"go test -v\" or \"cobra.test -test.v\", see #155\n\tif c.args == nil \u0026\u0026 filepath.Base(os.Args[0]) != \"cobra.test\" {\n\t\targs = os.Args[1:]\n\t}\n\n\t// initialize the hidden command to be used for shell completion\n\tc.initCompleteCmd(args)"},{"path":"command.go","start_line":1226,"end_line":1230,"text":"// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {"},{"path":"command.go","start_line":1234,"end_line":1234,"text":"\tif c.helpCommand == nil {"},{"path":"command.go","start_line":1515,"end_line":1518,"text":"// CalledAs returns the command name or alias that was used to invoke\n// this command or an empty string if the command has not been called.\nfunc (c *Command) CalledAs() string {\n\tif c.commandCalledAs.called {"},{"path":"command.go","start_line":1527,"end_line":1530,"text":"\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()\n\t\treturn true\n\t}"},{"path":"command.go","start_line":1361,"end_line":1363,"text":"// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"},{"path":"command.go","start_line":1496,"end_line":1497,"text":"func (c *Command) Name() string {\n\tname := c.Use"},{"path":"command.go","start_line":1303,"end_line":1304,"text":"func (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {"},{"path":"command.go","start_line":328,"end_line":329,"text":"func (c *Command) SetHelpCommand(cmd *Command) {\n\tc.helpCommand = cmd"},{"path":"command.go","start_line":1426,"end_line":1427,"text":"func (c *Command) CommandPath() string {\n\tif c.HasParent() {"},{"path":"command.go","start_line":1172,"end_line":1173,"text":"func (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {"},{"path":"command.go","start_line":1170,"end_line":1170,"text":"// checkCommandGroups checks if a command has been added to a group that does not exists."}],"provenance":{"input_sha256":"261f5ef3fda6106db87001bf985f6c11e9d4fb4a91d0da9055fdcc85c48f9e18","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

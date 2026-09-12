@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+what is the lifecycle of running a root command from Execute to the Run hooks
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s) for \"what is the lifecycle of running a root command from Execute to the Run hooks\"; read in order (211/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"command.go","start_line":943,"end_line":944,"text":"\t\t\t// When EnableTraverseRunHooks is set:\n\t\t\t// - Execute all persistent pre-runs from the root parent till this command."},{"path":"command.go","start_line":922,"end_line":932,"text":"\n\tif !c.Runnable() {\n\t\treturn flag.ErrHelp\n\t}\n\n\tc.preRun()\n\n\tdefer c.postRun()\n\n\targWoFlags := c.Flags().Args()\n\tif c.DisableFlagParsing {"},{"path":"command.go","start_line":1057,"end_line":1058,"text":"\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {"},{"path":"command.go","start_line":1059,"end_line":1062,"text":"\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook"},{"path":"command.go","start_line":1027,"end_line":1031,"text":"// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx"},{"path":"command.go","start_line":1043,"end_line":1047,"text":"// ExecuteContextC is the same as ExecuteC(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx"},{"path":"command.go","start_line":1038,"end_line":1039,"text":"func (c *Command) Execute() error {\n\t_, err := c.ExecuteC()"},{"path":"command.go","start_line":1551,"end_line":1553,"text":"func (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"command.go","start_line":257,"end_line":258,"text":"// Context returns underlying command context. If command was executed\n// with ExecuteContext or the context was set with SetContext, the"},{"path":"command_test.go","start_line":2588,"end_line":2589,"text":"func TestNoRootRunCommandExecutedWithoutVersionSet(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Long: \"Long description\"}"},{"path":"command_test.go","start_line":2574,"end_line":2575,"text":"func TestNoRootRunCommandExecutedWithVersionSet(t *testing.T) {\n\trootCmd := \u0026Command{Use: \"root\", Version: \"1.0.0\", Long: \"Long description\"}"},{"path":"command.go","start_line":1550,"end_line":1550,"text":"// Runnable determines if the command is itself runnable."}],"provenance":{"input_sha256":"d8d12b4dd2177cfd92856c9aca68071c85a38d5a8972281ec0b661d0f2fb44a9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

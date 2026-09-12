@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how `Flag(name)` and `Parent()` locate a parent flag object, but omits the flag-value access API needed to give a concrete way to retrieve its value.

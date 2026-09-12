@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 23,
+  "previous_sha256": "99628844d9a86468977b30440d4583e59e472446f59b0f1c31649158785f774d",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "cccb6b82384bd65d4aa94e8b7e9baf1e26873cc07af28d19235b595285f4841f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `GenManTreeFromOpts(cmd, opts)` from `doc/man_docs.go`, setting `opts.Path` to the destination directory and optionally supplying `opts.Header`. Its documented contract is to generate a man page for the command and all descendants, writing pages into `opts.Path` (`doc/man_docs.go:46–49`). A nil header is replaced with `\u0026GenManHeader{}`; child iteration skips unavailable commands and additional help topics (`doc/man_docs.go:48–56`). The returned `error` should be checked. `GenManTree` is also documented as a tree-generation entry point whose header may be nil (`doc/man_docs.go:33–34`).\n",
+  "sha256": "92983a1a835ee0a514944010e0ef089b03d1c5d5162ae188a9eb6e3e52a69aa2"
+}

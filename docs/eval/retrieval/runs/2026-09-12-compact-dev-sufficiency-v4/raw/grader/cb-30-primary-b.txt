@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-30:primary-b
+Outcome: pass
+Rationale: Gives a supported tree-generation API with Path, optional Header, error handling, and visible child filtering from GenManTreeFromOpts.

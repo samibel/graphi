@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies the tree-generator entry points and says they generate pages for descendants, but omits the traversal bodies needed to establish recursion, command filtering, and traversal order.

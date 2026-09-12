@@ -1,0 +1,1 @@
+INSUFFICIENT The response names `SuggestionsFor` and mentions Levenshtein distance, but omits the selection logic, thresholds, and candidate filtering needed to explain how unknown-command suggestions are computed.

@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-32:primary-b
+Outcome: pass
+Rationale: Correctly identifies Execute, its documented argument/command behavior, its ExecuteC wrapper implementation, and shown context variant.

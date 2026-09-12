@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 94,
+  "previous_sha256": "2c8b6ac2973158cea77030b05c84aeb138e7d1c09fa03aede4243c77d296de6e",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "6908eab7313ec78c6b1a594dd6f43ef5bd882d159059234cd37b3055288826b6",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-09:primary-b\nOutcome: pass\nRationale: Answers the path query with package and required/filename flag helper behavior supported by shell_completions.go snippets.\n",
+  "sha256": "edc94b87c84adefe3dcd674a0bb00b265a1212b0b0ebb9ca88a54ce2bbb2dc31"
+}

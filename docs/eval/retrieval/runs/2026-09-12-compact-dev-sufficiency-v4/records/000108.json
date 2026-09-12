@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 108,
+  "previous_sha256": "0b73686295a761f5d74ab9fe15393dc6a13d023475d3c7b88cfe8955ea9468ac",
+  "kind": "grade",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "bc3fb81524e134637c89d1b95a1a97cd0b339247e2fa01e146456c4f0904aa0c",
+  "outcome": "pass",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-24:primary-b\nOutcome: pass\nRationale: Accurately describes required-group and mutually-exclusive completion metadata changes and DisableFlagParsing bypass using the explicit enforceFlagGroupsForCompletion contract.\n",
+  "sha256": "45435d03abee7d95d941270eec3856ea1ac4e77d4b7565aaeea09b0b34b91c95"
+}

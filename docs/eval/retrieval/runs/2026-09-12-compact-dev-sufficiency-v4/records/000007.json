@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 7,
+  "previous_sha256": "f60ab68682a9ce15b09311846b457256fcf03e10196ab39b79063d01a4923b54",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "0d9d718be0192355a1a129f4e9b269a782e3d6d05e30e49370b7060a77ca07ce",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` belongs to package `cobra` and provides flag helpers (`shell_completions.go:15–30`). `(*Command).MarkFlagRequired` delegates to `MarkFlagRequired(c.Flags(), name)`; its documented effects are prioritizing the flag in completion and reporting an error if invocation omits it. A corresponding persistent-required helper is documented at lines 28–30. `MarkFlagFilename` limits completion to specified file extensions (`shell_completions.go:42–43`), and `MarkPersistentFlagFilename` applies that helper to `c.PersistentFlags()` (`shell_completions.go:58–62`).\n",
+  "sha256": "ec031367a30e0dc22036a81a813fb05ebbb74e9b28897b362fc424026ab0e213"
+}

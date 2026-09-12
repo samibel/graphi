@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: ci-1970:primary-a
+Outcome: pass
+Rationale: Provides an actionable, supported alternative to Flags(): enumerate and combine LocalFlags and InheritedFlags via VisitAll; visible inherited-set filtering supports excluding locally shadowed names.

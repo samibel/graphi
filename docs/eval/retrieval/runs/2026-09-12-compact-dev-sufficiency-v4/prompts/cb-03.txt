@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+GenMarkdownTree
+
+----- BEGIN task_context/compact-dev/4 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"GenMarkdownTree\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/4","sources":[{"path":"doc/md_docs.go","start_line":56,"end_line":97,"text":"// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)\n\tname := cmd.CommandPath()\n\n\tbuf.WriteString(\"## \" + name + \"\\n\\n\")\n\tbuf.WriteString(cmd.Short + \"\\n\\n\")\n\tif len(cmd.Long) \u003e 0 {\n\t\tbuf.WriteString(\"### Synopsis\\n\\n\")\n\t\tbuf.WriteString(cmd.Long + \"\\n\\n\")\n\t}\n\n\tif cmd.Runnable() {\n\t\tbuf.WriteString(fmt.Sprintf(\"```\\n%s\\n```\\n\\n\", cmd.UseLine()))\n\t}\n\n\tif len(cmd.Example) \u003e 0 {\n\t\tbuf.WriteString(\"### Examples\\n\\n\")\n\t\tbuf.WriteString(fmt.Sprintf(\"```\\n%s\\n```\\n\\n\", cmd.Example))\n\t}\n\n\tif err := printOptions(buf, cmd, name); err != nil {\n\t\treturn err\n\t}\n\tif hasSeeAlso(cmd) {\n\t\tbuf.WriteString(\"### SEE ALSO\\n\\n\")\n\t\tif cmd.HasParent() {\n\t\t\tparent := cmd.Parent()\n\t\t\tpname := parent.CommandPath()\n\t\t\tlink := pname + markdownExtension\n\t\t\tlink = strings.ReplaceAll(link, \" \", \"_\")\n\t\t\tbuf.WriteString(fmt.Sprintf(\"* [%s](%s)\\t - %s\\n\", pname, linkHandler(link), parent.Short))\n\t\t\tcmd.VisitParents(func(c *cobra.Command) {\n\t\t\t\tif c.DisableAutoGenTag {\n\t\t\t\t\tcmd.DisableAutoGenTag = c.DisableAutoGenTag\n\t\t\t\t}\n\t\t\t})\n\t\t}\n"},{"path":"doc/md_docs.go","start_line":119,"end_line":126,"text":"// GenMarkdownTree will generate a markdown page for this command and all\n// descendants in the directory given. The header may be nil.\n// This function may not work correctly if your command names have `-` in them.\n// If you have `cmd` with two subcmds, `sub` and `sub-third`,\n// and `sub` has a subcommand called `third`, it is undefined which\n// help output will be in the file `cmd-sub-third.1`.\nfunc GenMarkdownTree(cmd *cobra.Command, dir string) error {\n\tidentity := func(s string) string { return s }"},{"path":"doc/md_docs.go","start_line":131,"end_line":134,"text":"// GenMarkdownTreeCustom is the the same as GenMarkdownTree, but\n// with custom filePrepender and linkHandler.\nfunc GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {\n\tfor _, c := range cmd.Commands() {"},{"path":"doc/md_docs.go","start_line":119,"end_line":119,"text":"// GenMarkdownTree will generate a markdown page for this command and all"}],"provenance":{"input_sha256":"320df98d29beb1f5a260e73bf6b9e977d58c1ededecc007eff125b8aa974fa83","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/4 RESPONSE BYTES -----

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 105,
+  "previous_sha256": "0cfe1c40a58582b6ac23d422860f1cb7e6f916ea0fc52d9c476a0094735063f7",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "34f10430f7c9660e94fc44afa8e33cead498c7f20607c0bffc96b1e11a0b6825",
+  "outcome": "fail",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: cb-21:primary-a\nOutcome: fail\nRationale: Identifies AddCommand and the parent-pointer assignment, but omits adding the child to the parent's command collection, an essential part of the requested addition mechanism in the development key; the bundle stops before that operation.\n",
+  "sha256": "97df043ed47546f2b1f1b0abe36ed014dd01ca4d7e493073f7dde7abeebc25ec"
+}

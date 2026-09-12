@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 50,
+  "previous_sha256": "47ed5cbb83883bbd59e1a72220ab5323be56e7999505830ebfbed3bf6d9a54cb",
+  "kind": "response",
+  "query_id": "cb-13",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "feefb2af68461553d5e5ba0edef29b6aafeab0cd4c39d48aa44666d47cbba966",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response names `SuggestionsFor` and mentions Levenshtein-based suggestions (`command.go:831–833` and `248–249`), but omits the candidate selection, distance threshold, and suggestion-building logic needed to explain how suggestions are computed.\n",
+  "sha256": "85c8ae632df0d4848f4cca28407f1fd9195fe4d7fc7d2821aec6f2e96b00fed0"
+}

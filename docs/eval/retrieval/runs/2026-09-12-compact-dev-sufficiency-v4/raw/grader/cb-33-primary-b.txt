@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-33:primary-b
+Outcome: pass
+Rationale: Accurately identifies Flags and its lazy cached flag-set/error-buffer initialization, distinguishing the documented full-set contract from the visible inherited-flag merge.

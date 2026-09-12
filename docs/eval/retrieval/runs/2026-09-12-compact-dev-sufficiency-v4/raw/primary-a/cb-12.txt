@@ -1,0 +1,1 @@
+INSUFFICIENT The response identifies `Find` (`command.go:724–728`) and `findNext` (`command.go:767–768`) but omits the argument processing and matching logic needed to explain how a subcommand is selected.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows customizable help functions and default-help initialization, but omits the `-h` shorthand registration and parsing behavior needed to determine how to handle it separately from `--help`.

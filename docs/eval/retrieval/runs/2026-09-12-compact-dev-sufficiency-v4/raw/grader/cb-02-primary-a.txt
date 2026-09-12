@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-02:primary-a
+Outcome: pass
+Rationale: Correctly identifies the mutually exclusive marker, annotation append mechanism, missing-flag/error handling, and validation entry point shown in flag_groups.go:63-90.

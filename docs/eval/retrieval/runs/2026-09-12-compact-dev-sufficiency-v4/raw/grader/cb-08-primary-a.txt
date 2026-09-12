@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-08:primary-a
+Outcome: pass
+Rationale: Answers the path query with the visible GenMan API and accurate fillHeader defaults, epoch parsing, date formatting, and attribution conditions.

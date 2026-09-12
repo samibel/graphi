@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 32,
+  "previous_sha256": "c3ad163c4d058a604d285a0efa74804f13fa49b79ef8f517e4d717c89a0ffa45",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "294fd975ee3543a0a1a06d5df54331b5bc29dc84daf1ffdb0101698297ada3fa",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.LocalFlags()` for flags specifically declared on the command and `cmd.InheritedFlags()` for flags inherited from parents (`command.go:1668–1671`, `1695–1717`). Iterate those returned flag sets with `VisitAll`, collecting each flag's `Name`; the response demonstrates that callback pattern with `c.parentsPflags.VisitAll(func(f *flag.Flag) { ... f.Name ... })` (`command.go:1712–1716`). Combining the local and inherited sets gives the associated flags without duplicating shadowed parent names: `InheritedFlags` excludes flags already present in the local set (`command.go:1707–1717`).\n",
+  "sha256": "3e89ec576e9eecda99f9f799a365abb64840514f1ab9abcb5dbf4655cd98aa5a"
+}

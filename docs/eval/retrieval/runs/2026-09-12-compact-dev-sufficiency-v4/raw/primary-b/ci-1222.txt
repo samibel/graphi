@@ -1,0 +1,7 @@
+For a flag, write a Go callback with this signature and register it through `cmd.RegisterFlagCompletionFunc(flagName, callback)`:
+
+```go
+func callback(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+The callback returns completion strings and a shell-completion directive; its parameters provide the command, arguments, and text to complete. This exact registration API and callback type are shown at `completions.go:133–134`, with the same function type stored in `flagCompletionFunctions` at `completions.go:36–37`. The registration method returns an error that the caller should handle. The response does not include directive constants or an argument-completion API, so it supports this flag-callback shape but not specific directive choices or a positional-argument example.

@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-26:primary-a
+Outcome: pass
+Rationale: Correctly names normalized <PROGRAM>_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 global override, explicitly documented in active_help.go:46-64.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 28,
+  "previous_sha256": "99dfb6042187e1f314277e1151610ad305d8d0bdc29997b17f50a982743ecb8c",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v4-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e27436aa0d3a0a082a7e66b342a6b4aaa7a89b54f7c9e0a7d26320f41f625a0f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a flag, write a Go callback with signature `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)` and pass it to `cmd.RegisterFlagCompletionFunc(\"flag-name\", callback)`, checking its returned error. This exact registration API is shown at `completions.go:133–134`; the callback map at `completions.go:36–37` confirms the same function type. The callback receives the command, argument slice, and text to complete, and returns completion strings plus a shell directive. The response does not provide directive meanings or a command-argument callback registration API.\n",
+  "sha256": "cb59dbcdfe527a7f43df22007a47b88831302695d0679ed28ab9662e57261cb0"
+}

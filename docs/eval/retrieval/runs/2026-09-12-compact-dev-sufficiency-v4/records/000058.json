@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 58,
+  "previous_sha256": "a88d10e8d8f0bb530f926c47b52dbecd44e5fb4b7300eea05eab13e9fab11463",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "7d66dc0d3aca38c6b09f19d8dfeca76e573e4d0c1503c20d69a76120b2fb323d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).enforceFlagGroupsForCompletion` adjusts flag metadata so ordinary completion can honor groups (`flag_groups.go:220–228`): when a flag in a group is present, the other group flags are marked required; when no flags in a one-required group are present, all group flags are marked required; and when a mutually exclusive flag is present, the other flags in its group are hidden. The latter prevents those conflicting flags from being suggested (`flag_groups.go:273–274`). Required flags are prioritized by shell completion (`shell_completions.go:21–22`). Enforcement returns immediately when `DisableFlagParsing` is true (`flag_groups.go:225–228`).\n",
+  "sha256": "bc3fb81524e134637c89d1b95a1a97cd0b339247e2fa01e146456c4f0904aa0c"
+}

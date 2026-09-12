@@ -1,0 +1,4 @@
+Participant: codex-v4-grader-20260912
+Response: cb-35:primary-a
+Outcome: pass
+Rationale: Identifies the default completion command and accurately describes visible creation guards, command configuration, Bash child setup, and generator APIs.

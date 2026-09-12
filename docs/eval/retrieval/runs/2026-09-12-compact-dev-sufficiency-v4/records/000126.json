@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b2e144f36a7e34853aa6c65c6114d7878a590ecdfc518f7670f56ebc31254b74",
+  "sequence": 126,
+  "previous_sha256": "e0c5a370b981d789c8ff8afac4da9fe98bee8a9648ce3f53b8570b96421e2b01",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v4-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "c21a476260becd71753255fceaf2b54da516eb96478a7129747d2bf98802df1f",
+  "outcome": "fail",
+  "rationale": "Participant: codex-v4-grader-20260912\nResponse: ci-1222:primary-b\nOutcome: fail\nRationale: The callback declaration and flag registration are supported, but the answer explicitly lacks the positional-argument completion API and usable directive choices, leaving essential completion behavior unspecified.\n",
+  "sha256": "79df0f52d1161b9ccd10bb003355df59259f63c9e63873009d7797cb5d70bf23"
+}
