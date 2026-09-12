@@ -196,6 +196,52 @@ func TestCompactTaskContextDevSelect_KeepsCoherentImplementationAheadOfTestNameD
 	t.Fatalf("coherent AddCommand implementation was fragmented: %+v", sources)
 }
 
+func TestCompactTaskContextDevSelect_PreservesSymbolDocsAndDistantBodyBranch(t *testing.T) {
+	query := "how is the version flag handled"
+	lines := []string{
+		"// execute handles command flags.",
+		"// Version behavior is part of execution.",
+		"func (c *Command) execute(args []string) error {",
+		"c.InitDefaultVersionFlag()",
+	}
+	for i := 0; i < 12; i++ {
+		lines = append(lines, "prepare()")
+	}
+	lines = append(lines,
+		"if c.Version != \"\" {",
+		"versionVal, err := c.Flags().GetBool(\"version\")",
+		"if versionVal {",
+		"return renderVersion(c)",
+		"}",
+		"}",
+		"return nil",
+		"}",
+	)
+	text := strings.Join(lines, "\n")
+	evidence := []contract.Evidence{{
+		RefID: "execute", Path: "command.go", Line: 100, Span: fmt.Sprintf("100-%d", 99+len(lines)), Role: "snippet",
+		Snippet: text, TextHash: shape.TextHash(text),
+	}}
+	items := []contract.Item{{
+		RefID: "execute-item", Reason: "candidate: method cobra.Command.execute (command.go:102) score 1 [seed 6, search]",
+		EvidenceRefIDs: []string{"execute"},
+	}}
+	sources, used, err := compactTaskContextDevSelect(query, evidence, items, 55)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if used > 55 {
+		t.Fatalf("used %d source fields, want <= 55", used)
+	}
+	joined := ""
+	for _, source := range sources {
+		joined += source.Text + "\n"
+	}
+	if !strings.Contains(joined, "Version behavior is part of execution") || !strings.Contains(joined, `GetBool("version")`) || !strings.Contains(joined, "if versionVal") {
+		t.Fatalf("documentation or distant version branch missing: %+v", sources)
+	}
+}
+
 // TestCompactTaskContextDevFrontier is opt-in and DEVELOPMENT-ONLY. Bundle
 // construction finishes without judgements; scoring and the paired comparison
 // happen only after each response has been serialized and preserved.
@@ -396,7 +442,6 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 			"verbose production summary and limits.next: concise fallback plus explicit provenance/budget/truncated retain their operational meaning",
 		},
 	}
-
 	budgets := []int{80, 100, 120, 140, 160, 180, 200, 250, 300, 450, 600, 900, 1200}
 	for _, budget := range budgets {
 		g := grid{SourceBudget: budget}
