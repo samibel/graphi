@@ -1,0 +1,1 @@
+FAIL: The response explains creation of the default version flag but omits the essential execution behavior from the development key: reading the parsed version flag, rendering VersionTemplate, and returning before Run. Those facts are absent from the bundle, so the answer is not sufficient for how the flag is handled.

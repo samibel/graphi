@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 26,
+  "previous_sha256": "336db3cb1c1d866701a7d68b6176e21595d6b74cf696ba63c72a4b8f6ba8d426",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "396b8ef14bd44c036156dbe3f0b8d5bb6645f40fefa0f69aa50ad58d1285b375",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "On execution, `InitDefaultCompletionCmd` adds a `completion` command that generates shell scripts, unless default completion is disabled, the command has no subcommands, or a command/alias named `completion` already exists (`completions.go:678-696`). The generated command accepts no positional arguments, disables file completion, can be hidden or assigned a group ID, and respects options for disabling descriptions and the `--no-descriptions` flag (`completions.go:697-715`, `completions.go:93-104`). Individual generators, such as `GenBashCompletion`, write the actual script (`bash_completions.go:685-687`).\n",
+  "sha256": "67ae22bea115222b1a2f8e5f22445e5f8c60c6c90077af2e428abfa0c352980b"
+}

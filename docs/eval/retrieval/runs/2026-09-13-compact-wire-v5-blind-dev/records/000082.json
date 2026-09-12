@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 82,
+  "previous_sha256": "029c1ed78f09646ffe806c6e1845ab3c96e4e2cf9c58d08aa3b9bf1a6dc9fba6",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1408d8c82101c13d97293321166493e26fac4e7eddaa0b850673b0c5113408bf",
+  "outcome": "pass",
+  "rationale": "PASS: The response accurately summarizes the visible portion of ExecuteC and its wrappers, with its claims directly supported by command.go:1035-1082.\n",
+  "sha256": "7e0bf9ecedd053c433a337d115b19a71294e541adfa74487c5204839789ab781"
+}

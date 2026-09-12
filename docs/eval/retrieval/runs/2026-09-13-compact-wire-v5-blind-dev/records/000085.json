@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 85,
+  "previous_sha256": "86ed1d27f6d5fc2a0e481672515dd18d73ba8d8d3ceb4fae033947bc0a05d1b6",
+  "kind": "grade",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "93aaed19d36863c20efec943289da62d89ac22492c8ab6a67979bf0e9164b5dd",
+  "outcome": "pass",
+  "rationale": "PASS: The response correctly describes GenMarkdownTree's delegation and the recursive custom generator, including filtering, naming, and output, all visible in doc/md_docs.go:119-158.\n",
+  "sha256": "e65aa776e2679a0542ed308a1ec20e77a250f34dbd16b24cd56709d05985632b"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 115,
+  "previous_sha256": "5f2d5d8e60e7a0f0f152909c8663fe57a1e340b99b8fff01ef779957848c9f3c",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ee5a207cd675013d4fb0982d0b3b53d4b8805a220d560f783b14f70aa3daf24f",
+  "outcome": "pass",
+  "rationale": "PASS: The program-specific variable transformation and global COBRA_ACTIVE_HELP=0 override are explicitly supported by active_help.go:27-29 and 45-67.\n",
+  "sha256": "41fae0e7a22d7c0b94e45797f80b5a708fc2d9dde9912a04c86726e299eeb77b"
+}

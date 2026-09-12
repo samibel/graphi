@@ -1,0 +1,1 @@
+PASS: For the broad query, the answer accurately explains the bundled default completion command, its guards, purpose, and controlling options.

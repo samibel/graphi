@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 37,
+  "previous_sha256": "7331d1352982b3e8f36dc0ab765a86518c6bb3dd65a2730d31ff31e3fc9c50ed",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "9abe938e074c8da88b823bff527866feda393f44651426d2ec76af063ccc3250",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `OnInitialize` registration and that flag parsing occurs before `c.preRun`, but it omits the initializer invocation and the API needed to read a persistent flag's parsed value inside that callback.\n",
+  "sha256": "560e1df9d2d8e2bdc5af86f0f3d60c4b9a449b752ff32a03859dc7768f62cbc8"
+}

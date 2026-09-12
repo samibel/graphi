@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 97,
+  "previous_sha256": "f75ef8471f975c7847b92d8b0b9bc1759124a967cc8ef4d7368d21aa59d2d092",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "74618c34d3a41f210335812a3434fb03bb88dba2950b459637293815e05a86bc",
+  "outcome": "pass",
+  "rationale": "PASS: The recursive Find algorithm, use of stripFlags/findNext, remaining arguments, and legacyArgs condition are all correctly described from command.go:724-748.\n",
+  "sha256": "550f49147f98459dc85509086770df447b886b4b4329275d62a0f038f85e89d6"
+}

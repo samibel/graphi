@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows a `Traverse` routine that parses arguments for each parent and that execution chooses between `Traverse` and `Find`, but it omits the condition/configuration that enables traversal and does not establish which intervening positional arguments or flags are accepted.

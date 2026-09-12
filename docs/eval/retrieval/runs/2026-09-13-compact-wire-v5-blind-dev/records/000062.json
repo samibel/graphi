@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 62,
+  "previous_sha256": "e95952022577bc911dc97df95bcc4d56de210a79f9fbc0bdfdf6af56b5f525b4",
+  "kind": "response",
+  "query_id": "cb-28",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "469ce43e4a0c018214eb51936de405d3acaa49f91c94fe6da3ef418bc2ca140a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.GroupID` assigns a subcommand to a named group in its parent's help output (`command.go:73-75`). Groups themselves have an `ID` and display `Title`, are added to a parent with `AddGroup`, and can be queried with `Groups`/`ContainsGroup` (`command.go:41-46`, `command.go:1331-1359`). Separate setters place Cobra's default help and completion commands into a requested group (`command.go:332-346`).\n",
+  "sha256": "76e6fd039b6d3b3574eea444b546d643ec4fb6f7a565fd02ad20b5d08752b7f7"
+}

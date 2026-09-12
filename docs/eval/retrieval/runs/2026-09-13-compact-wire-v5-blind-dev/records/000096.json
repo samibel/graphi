@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 96,
+  "previous_sha256": "cdc79041c572c13ab0598f078a2f814719ffd6ce08388974fd0a35327c8d14ac",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6941448a7f9fcbcaa217e773f4215ccedab1687150c1832339d74e68a62fb26f",
+  "outcome": "pass",
+  "rationale": "PASS: The response directly locates required-flag validation and accurately describes the complete bundled implementation.\n",
+  "sha256": "f75ef8471f975c7847b92d8b0b9bc1759124a967cc8ef4d7368d21aa59d2d092"
+}

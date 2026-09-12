@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how to override the command's general `HelpFunc` and that Cobra initializes a default help flag, but it does not show whether `-h` and `--help` can be distinguished or how their parsing is represented.

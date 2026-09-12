@@ -1,0 +1,1 @@
+Set the command's `Version` field to a non-empty string. Cobra only adds its default boolean `version` flag when `Command.Version` is non-empty and no custom `version` flag already exists; otherwise initialization does nothing (`command.go:108-109`, `command.go:1202-1203`). The default output template prints the command name followed by `version <Version>` (`command.go:598-609`).

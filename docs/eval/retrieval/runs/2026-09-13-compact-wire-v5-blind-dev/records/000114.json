@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 114,
+  "previous_sha256": "329a2b551d96da3133f7147c61a6e0cbd54f1a8ac62064445a4b51429aeb0336",
+  "kind": "grade",
+  "query_id": "cb-25",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "537cc467b3e593d0c85f7d24ba1396829d881a06ef4fde1bdb1e3bfebbe18ae7",
+  "outcome": "pass",
+  "rationale": "PASS: The response gives the correct caller action and supports it with the bundled CompletionOptions field and InitDefaultCompletionCmd guard.\n",
+  "sha256": "5f2d5d8e60e7a0f0f152909c8663fe57a1e340b99b8fff01ef779957848c9f3c"
+}

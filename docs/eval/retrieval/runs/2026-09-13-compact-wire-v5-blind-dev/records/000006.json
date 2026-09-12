@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 6,
+  "previous_sha256": "3e8c9e12324e1f69b403966996b63cb0f71b4147b38efa573c84c379f24f6d6a",
+  "kind": "response",
+  "query_id": "cb-08",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "47afb5739cf38af3c17acfde986b22a11b8cb749371a403d9bc94a057ceec607",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/man_docs.go` contains man-page generation and header setup. `GenMan` accepts an optional header, fills defaults from the command path, generates the page, renders it through `md2man`, and writes it to the supplied writer (`doc/man_docs.go:103-116`). `fillHeader` defaults the title, section, date, and generated-source text; it honors `SOURCE_DATE_EPOCH` for reproducible dates and errors if that value is invalid (`doc/man_docs.go:118-141`). Tree generation is configured through `GenManTreeOptions` (`doc/man_docs.go:82-88`).\n",
+  "sha256": "9b7d7d77492accad23a1064058142d010e2ae7c28ffb1eb729b94262fef70ac6"
+}

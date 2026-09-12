@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 91,
+  "previous_sha256": "b72a82cce3b44a9133a604f92ee45e43457bf1f82b91a71a8fce6750e7cd4beb",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9b7d7d77492accad23a1064058142d010e2ae7c28ffb1eb729b94262fef70ac6",
+  "outcome": "pass",
+  "rationale": "PASS: The answer accurately summarizes GenMan, fillHeader, and GenManTreeOptions from the exact doc/man_docs.go bytes supplied for this path query.\n",
+  "sha256": "6bd5d9689e223f969e1402884440ae464c35ecc7df4662a85b1e25b07c5f3980"
+}

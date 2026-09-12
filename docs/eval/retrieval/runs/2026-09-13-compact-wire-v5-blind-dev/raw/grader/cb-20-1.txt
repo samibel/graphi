@@ -1,0 +1,1 @@
+PASS: The response concretely and correctly explains persistent-flag propagation using the exact supplied PersistentFlags, mergePersistentFlags, and persistentFlag implementations.

@@ -1,0 +1,1 @@
+FAIL: The bundle shows Flag lookup fragments but never shows that a run hook receives cmd *Command. That unsupported premise is essential to the proposed procedure, so the answer fails the byte-support requirement.

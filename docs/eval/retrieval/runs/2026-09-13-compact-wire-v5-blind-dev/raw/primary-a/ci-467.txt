@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that `Traverse` parses arguments for each parent (`command.go:788-793`) and that execution may choose `Traverse` instead of `Find` (`command.go:1088-1098`), but it omits the controlling option and the rules needed to answer which intervening arguments or flags are accepted.

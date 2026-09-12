@@ -1,0 +1,1 @@
+PASS: The answer gives a correct, supported overview of the named file using its constants, helper, validator, and command entry point.

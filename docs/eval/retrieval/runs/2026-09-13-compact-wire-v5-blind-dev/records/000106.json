@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 106,
+  "previous_sha256": "9e9317b391574e50236abc1326280a6f1d9920e9caeb95f87f5423760cda6edc",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9772c19cb332950ed60f2a3f115403b309adf9134254e230cb5cecb0b68901b9",
+  "outcome": "pass",
+  "rationale": "PASS: The response concretely and correctly explains persistent-flag propagation using the exact supplied PersistentFlags, mergePersistentFlags, and persistentFlag implementations.\n",
+  "sha256": "dfc0e4d592ce97e36448060855ccf38c03cdc3fb5624cc5e6f33596b0a9eab6f"
+}

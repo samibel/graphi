@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 142,
+  "previous_sha256": "b8aa61f08e36588ef7bc5a50a857845a5b5df9a47cd4d37f26c2e6f4d7feaf2c",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1ff88fb21b4f2d180c9c84c939e1153258bddc37fcc1ae23411dda98b91a9a35",
+  "outcome": "pass",
+  "rationale": "PASS: The mutually exclusive flag procedure and its conditions are concrete, correct, and fully supported by the bundled method.\n",
+  "sha256": "a282eb3c72ddf1b0e743ad905d5d19437db279798a6a142cc095794daa318366"
+}

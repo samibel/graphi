@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 27,
+  "previous_sha256": "67ae22bea115222b1a2f8e5f22445e5f8c60c6c90077af2e428abfa0c352980b",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "aa2ebc431ed57e998681cbf92f65caae0fe24cb4e3fdceb85cbbc1908a5fa8ff",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use the `*Command` passed to the currently executing Run hook and call `cmd.Flag(\"name\")`; `Flag` looks in the command's effective flag set (`command.go:1795-1797`). If you need the selected command outside the hook, use `ExecuteC`/`ExecuteContextC`, whose signatures return `*Command` along with the error (`command.go:1045-1056`). Plain `Execute` discards that command and returns only the error (`command.go:1035-1042`).\n",
+  "sha256": "0ad9fe043291874df60d0c0236d1ccd7a15f9feaf1c640c7418f3636ba0d31b6"
+}

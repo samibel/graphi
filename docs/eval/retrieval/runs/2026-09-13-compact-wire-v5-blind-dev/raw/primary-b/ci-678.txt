@@ -1,0 +1,1 @@
+Use `cmd.SetArgs([]string{"--flag-name", "value"})` before calling `Execute` in the test. `SetArgs` overrides the default `os.Args[1:]` specifically for cases such as testing (`command.go:274-279`). The command's complete applicable flags are exposed by `Flags()` (`command.go:1641-1653`).

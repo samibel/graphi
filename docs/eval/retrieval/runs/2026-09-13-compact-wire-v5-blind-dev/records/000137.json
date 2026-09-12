@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 137,
+  "previous_sha256": "faf3261b91ba9e6946e17197be016336de3fade37ea80cd6d1ed24368521e9dd",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e532cb6a66c267945aef9bf6d3797da9812c0e486d95a3c3bfa68d0415043cce",
+  "outcome": "fail",
+  "rationale": "FAIL: Flag callback registration is supported, but the response also presents ValidArgsFunction as the positional-completion mechanism and cites site/content/completions/_index.md:477-478, which is absent from this prompt bundle. The development key treats that positional half as a required part of the generic question.\n",
+  "sha256": "d743e513384f2b8ddec7e7d595acda68b6e32c403b64eb42608ac742fea9cab3"
+}

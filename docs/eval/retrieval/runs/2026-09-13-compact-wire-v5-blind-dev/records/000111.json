@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 111,
+  "previous_sha256": "2f969051584baf6e8474d11304773608e83088eeee66726674d8334ff6e99bb0",
+  "kind": "grade",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "23f28fd74bf806899976fdd4361d227dfab8f815928d875d6dd10fd77d275f35",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle only supplies the enforcement summary comments and group-state helper, not the enforcement body or its completion caller. The response also omits required-together groups, so it is not a complete, byte-supported explanation of how all flag groups are enforced during completion.\n",
+  "sha256": "8d51bb5c45cbfa28ef29a74d9f4f9b6155fbd5219ec10efc2ba5eeb3f0a396dd"
+}

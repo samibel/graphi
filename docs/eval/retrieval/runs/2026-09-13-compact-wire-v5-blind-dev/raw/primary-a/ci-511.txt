@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `OnInitialize` registration and that flag parsing occurs before `c.preRun`, but it omits the initializer invocation and the API needed to read a persistent flag's parsed value inside that callback.

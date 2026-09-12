@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 23,
+  "previous_sha256": "b51e36ea5637703237ff9b14ad282cf00b5374f4f42aed47d46eadfdea448bd8",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0bae88605fb648de46876b463316ea83ae1ec8dcdd9f0cce4c07eccf8059b92e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `GenManTree(root, header, dir)` for the simple API (`doc/man_docs.go:33-38`), or `GenManTreeFromOpts(root, opts)` when you need an output path or custom command separator. The options version recursively generates all available, non-help-topic descendants, defaults the section to `1` and separator to `_`, writes each page as `\u003ccommand_path\u003e.\u003csection\u003e` under `opts.Path`, and delegates page rendering to `GenMan` (`doc/man_docs.go:46-80`). The header may be nil (`doc/man_docs.go:33-34`).\n",
+  "sha256": "a6e1ee3667b3c4bea951dceb9909a200ad9303ff31ed80e6a0f29d5c9a95bf2e"
+}

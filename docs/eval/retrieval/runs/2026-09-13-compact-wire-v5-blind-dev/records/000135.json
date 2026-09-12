@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 135,
+  "previous_sha256": "80af4e4d54ebc870cd772b56e9e347bbe71263f61074086d5fa79401a817aa7b",
+  "kind": "grade",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "0ad9fe043291874df60d0c0236d1ccd7a15f9feaf1c640c7418f3636ba0d31b6",
+  "outcome": "fail",
+  "rationale": "FAIL: The response's primary instruction assumes a Run hook receives the executing *Command, but the bundle contains no Run/RunE signature or invocation showing that fact. The development key requires that missing connection, so external knowledge cannot make this answer supported.\n",
+  "sha256": "469740bdea876de93ff91e63c8f6d22c9f7fc5ef610c8a10d2fa5eeb47c88926"
+}

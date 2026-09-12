@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 45,
+  "previous_sha256": "503447c0c959e18524f34a9409b5820f437c331564384bb2c5ae346ac4c2722b",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "a11e17a5bb596befc6293c3e92b61c31e1ab18787949384510a6164a8b2ad2ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` implements Cobra's flag-group annotations and validation. It defines annotation keys for required-together, one-required, and mutually-exclusive groups (`flag_groups.go:25-29`), includes helpers such as `hasAllFlags` (`flag_groups.go:111-119`), and validates required-together groups by reporting partially set groups and their sorted missing flags (`flag_groups.go:144-165`). `ValidateFlagGroups` is the command-level entry point and bypasses validation when flag parsing is disabled (`flag_groups.go:81-82`).\n",
+  "sha256": "9bdc805b055e2d4b31cb7022f943e43a4f2d74d70ed7bbdf572e14567c3238e3"
+}

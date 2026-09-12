@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 92,
+  "previous_sha256": "6bd5d9689e223f969e1402884440ae464c35ecc7df4662a85b1e25b07c5f3980",
+  "kind": "grade",
+  "query_id": "cb-08",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2a61898eb0dbf08fd237eadd26ac94c455f13a65d4c9c0f822c1c94408f7ba35",
+  "outcome": "pass",
+  "rationale": "PASS: The response is concrete and supported by the bundled GenMan, fillHeader, and options definitions in doc/man_docs.go.\n",
+  "sha256": "5c3ef5ba0521d5bbf5984a47745b855c68208de6de23bfe307fbc138afeb3676"
+}

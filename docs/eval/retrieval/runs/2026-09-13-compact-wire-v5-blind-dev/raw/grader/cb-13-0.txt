@@ -1,0 +1,1 @@
+PASS: The Levenshtein, prefix, and SuggestFor conditions and the formatting/default-threshold behavior are all explicitly present in command.go:750-766 and 831-851.

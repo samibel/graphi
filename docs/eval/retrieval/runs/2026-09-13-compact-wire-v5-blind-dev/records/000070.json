@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 70,
+  "previous_sha256": "abbf90a99f4fd73fa4ab209c3d32f6c847d8a4782e16d9a66ac1a2681929098f",
+  "kind": "response",
+  "query_id": "ci-1358",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "398642063923a4531ef7d61aa4c0e07e363c153c20e3834efc6e91bfedc9bbb9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "After defining the flags on the command, call `cmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\", ...)`. Cobra annotates every named flag as one mutually-exclusive group and errors if more than one is supplied (`flag_groups.go:62-78`). Every named flag must already exist; otherwise this method panics (`flag_groups.go:67-71`). Separate calls create separate groups and allow a flag to belong to multiple groups (`flag_groups.go:72-76`).\n",
+  "sha256": "1ff88fb21b4f2d180c9c84c939e1153258bddc37fcc1ae23411dda98b91a9a35"
+}

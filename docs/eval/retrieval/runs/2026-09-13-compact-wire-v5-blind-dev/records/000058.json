@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 58,
+  "previous_sha256": "4b4036f32b71e14ce1a2ec3ce801692e43c0b8ac01a951fa845638a60548c28a",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e4036c9acc1095ab1d8edb16eb44ad0d2d7b260f9a34bff721edd9a65a8cc865",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`enforceFlagGroupsForCompletion` adjusts flag metadata so ordinary completion produces valid choices: when no flag in a one-required group is present, it marks all members required; when one member of a mutually-exclusive group is present, it hides the others (`flag_groups.go:220-226`, `flag_groups.go:273`). Group state comes from annotations: `processFlagForGroupAnnotation` ignores incomplete groups, initializes every member as unset, and records each flag's `Changed` state (`flag_groups.go:121-142`). It does nothing when flag parsing is disabled (`flag_groups.go:225-226`).\n",
+  "sha256": "bfdde05c20804580f86e44dd2441e9a46905c94e409199bbd43ebda65f5dffd8"
+}

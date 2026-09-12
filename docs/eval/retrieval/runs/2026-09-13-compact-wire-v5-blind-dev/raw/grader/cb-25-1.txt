@@ -1,0 +1,1 @@
+PASS: The response gives the correct caller action and supports it with the bundled CompletionOptions field and InitDefaultCompletionCmd guard.

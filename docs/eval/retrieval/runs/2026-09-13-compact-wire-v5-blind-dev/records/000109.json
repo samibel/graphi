@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 109,
+  "previous_sha256": "18b7d2beac67d40b9231bf2efd2dca95b39126ffe0987b541350bf9044e7f8e2",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "294ccb9195913f3bd3f6805cff46f6e0b79f70562c94d587a9ec7b74998b5743",
+  "outcome": "pass",
+  "rationale": "PASS: The response accurately describes the children-first recursion, filtering, filename construction, and GenMan call shown in doc/man_docs.go:46-80.\n",
+  "sha256": "799dc8ba8164b24bd1d8490c427edaf84906bc38f34730f0534e2c3e802d088f"
+}

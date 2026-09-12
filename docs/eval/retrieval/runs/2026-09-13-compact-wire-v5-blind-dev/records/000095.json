@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 95,
+  "previous_sha256": "4b07bc0bda094e80e00979cc841878db501a2ce60ff4dbf610685a5e89072d99",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "01802fddf5698118839fac7ccd52fc2064961114bb7351668f2584d0753d9a6f",
+  "outcome": "pass",
+  "rationale": "PASS: The answer identifies ValidateRequiredFlags and correctly explains its annotation scan, Changed check, disabled-parsing guard, and error from command.go:1146-1169.\n",
+  "sha256": "cdc79041c572c13ab0598f078a2f814719ffd6ce08388974fd0a35327c8d14ac"
+}

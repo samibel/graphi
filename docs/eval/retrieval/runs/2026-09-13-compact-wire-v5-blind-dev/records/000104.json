@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 104,
+  "previous_sha256": "37256d72b6652ce460f8c7202b019723a0be9b185b6cd4579a858e54f98526d2",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8b6c938eceb037d17a94912c08a569643eac2716298900f12766728fa3feff54",
+  "outcome": "pass",
+  "rationale": "PASS: The location, signature, algorithm, and caller are all accurately supported by cobra.go:187-222 and command.go:836-838.\n",
+  "sha256": "6d9377eb36724031e9ccc6f1a7ae699b01a5c6c3d1a0d10546f362ebe87df052"
+}

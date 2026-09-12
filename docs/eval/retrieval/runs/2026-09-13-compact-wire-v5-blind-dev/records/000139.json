@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 139,
+  "previous_sha256": "237766b70bb03e8e69190fe226c069700854543b5154612dc3a230972819fe30",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a167b83486a0c68c12fd9734accca3c18acda29518158f088b101e51cabb4445",
+  "outcome": "fail",
+  "rationale": "FAIL: CalledAs is supported, but the response's ExecuteC route cites command.go:1051-1056 and 1035-1042, neither of which is in this prompt bundle. The claim that ExecuteC returns the selected command is a material unsupported addition.\n",
+  "sha256": "e40744a63508c7ea9a51e558d44f4223ef5ef1c4ba7ba6157cab3a3fe658ed6f"
+}

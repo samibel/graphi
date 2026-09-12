@@ -1,0 +1,1 @@
+Call `ExecuteC` (or `ExecuteContextC`) and inspect the returned `*Command`; its signature returns the command plus an error (`command.go:1045-1056`). On that command, `CalledAs()` tells you the exact command name or alias used to invoke it, returning an empty string if it has not been called (`command.go:1515-1523`).

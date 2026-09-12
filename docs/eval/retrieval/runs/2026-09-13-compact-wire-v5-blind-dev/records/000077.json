@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 77,
+  "previous_sha256": "d3fbc4693624cc7d3c8c3d334b4f54c737c12263820d56eff73c4c7df401fcae",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "9abe938e074c8da88b823bff527866feda393f44651426d2ec76af063ccc3250",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows that flags are parsed before `c.preRun()` and that `OnInitialize` registers initializer functions, but it does not show where those initializers run or an API/example for reading a persistent flag value from them.\n",
+  "sha256": "2d7b070dab17351fddee134bfe52161775beb2bfc069aaf66a7c12f18b0fef00"
+}

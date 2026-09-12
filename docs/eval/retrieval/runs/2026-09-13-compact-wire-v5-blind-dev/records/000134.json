@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 134,
+  "previous_sha256": "18ad61358a9054b34ebc20ab131b1baf5dea12df283ea3c558e395b48395ef37",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e7b0ec5407d586a6fca9da5b6805541791a6702ab112a2fd2922cade2bd6d6b4",
+  "outcome": "pass",
+  "rationale": "PASS: The cause and remedy for a missing --version flag and the default output format are concrete and supported by the exact bundle bytes.\n",
+  "sha256": "80af4e4d54ebc870cd772b56e9e347bbe71263f61074086d5fa79401a817aa7b"
+}

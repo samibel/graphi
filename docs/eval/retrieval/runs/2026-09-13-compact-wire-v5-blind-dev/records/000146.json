@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 146,
+  "previous_sha256": "db0d3a682efd1572ae116475159837550c36b24b9f95b5d41c28f86aed97a7df",
+  "kind": "grade",
+  "query_id": "ci-1970",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "31e089a403dd7fae675041c1d40561c8aa27e9cf07a836dcb4ed98ff7b040a0d",
+  "outcome": "pass",
+  "rationale": "PASS: The response provides a concrete list-of-flags procedure and supports VisitAll with the bundled InheritedFlags implementation.\n",
+  "sha256": "c1e1a01feb294a5d28cff3a88dae10ab7ce1ecf90db9bf437f3b643ec24bb50b"
+}

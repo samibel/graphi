@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 128,
+  "previous_sha256": "9404ed8de15cbb6004b59d6211aa8b3cc6530f73804a5d25402c8fba30380432",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "78dcf1e6e32bbd96781c8570f3de9d1a2891395d3a2d084a5528dd1bd1a0a3a8",
+  "outcome": "pass",
+  "rationale": "PASS: For the broad query, the answer accurately explains the bundled default completion command, its guards, purpose, and controlling options.\n",
+  "sha256": "d5a232f1378ce276d5338add29a99d2301fc759f3ac05d2bfa9b84027013131a"
+}

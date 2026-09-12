@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 117,
+  "previous_sha256": "840865c09a898a3b12a6edddc4ea66a1e98549326f4d3b17527b92f87dd7ef3c",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2130dc166c1fd190ae7687797dbdb5965b4c6fc9db04d0c2f8bb0faa78829c03",
+  "outcome": "pass",
+  "rationale": "PASS: The opt-in assignment, false default, warning, and gated prefix lookup are all present in cobra.go:45-56 and command.go:774-777.\n",
+  "sha256": "dba0440f324fb68ca290e37afb84e05b69b4c401ca9ffadc67c2539812b7cd93"
+}

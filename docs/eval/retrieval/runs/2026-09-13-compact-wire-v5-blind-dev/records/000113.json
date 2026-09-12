@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 113,
+  "previous_sha256": "2206225dafdbad368433620c18b7682a4ea3945060b650c16e9279e1a8b73194",
+  "kind": "grade",
+  "query_id": "cb-25",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "026dc3a147b74e5845cca5b9e3c25de740d36c63ca80ad85e3174be3fdf44061",
+  "outcome": "pass",
+  "rationale": "PASS: The exact setting and the early-return condition are both explicitly shown in completions.go:103-117 and 683-687.\n",
+  "sha256": "329a2b551d96da3133f7147c61a6e0cbd54f1a8ac62064445a4b51429aeb0336"
+}

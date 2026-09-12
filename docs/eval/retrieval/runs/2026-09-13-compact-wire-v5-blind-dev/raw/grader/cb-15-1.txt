@@ -1,0 +1,1 @@
+FAIL: The answer covers flag initialization but not what happens when --version is invoked: the execution-time check, template rendering, and early return. The bundle does not contain that key span, so this is not a sufficient answer to the behavior question.

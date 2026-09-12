@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 110,
+  "previous_sha256": "799dc8ba8164b24bd1d8490c427edaf84906bc38f34730f0534e2c3e802d088f",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "4b4036f32b71e14ce1a2ec3ce801692e43c0b8ac01a951fa845638a60548c28a",
+  "outcome": "pass",
+  "rationale": "PASS: The documentation-tree walk and output naming are correctly and sufficiently explained from the full bundled generator body.\n",
+  "sha256": "2f969051584baf6e8474d11304773608e83088eeee66726674d8334ff6e99bb0"
+}

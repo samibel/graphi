@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 32,
+  "previous_sha256": "e348d1c7bf3c860f05b89deb5b726b61a95439616e0a7427d22fbd5acc99933b",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f87411af0beddeba457e25e6e9464fc58573a97f2865916412ab991929c21975",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use `cmd.Flags()` for the command's effective flag set; persistent flags from the command and its parents are merged into it by `mergePersistentFlags` (`command.go:1643`, `command.go:1847-1853`). For separate views, `cmd.LocalFlags()` returns locally defined flags (`command.go:1669-1670`), while `cmd.InheritedFlags()` builds and returns parent flags that are not shadowed locally (`command.go:1695-1718`). Iterate the returned `pflag.FlagSet` to obtain the list.\n",
+  "sha256": "3819a60e785655bb296e93d09ab3cd5e063e64795b4c5757b550e4722c73db36"
+}

@@ -1,0 +1,1 @@
+PASS: The proposed assertions and inspection route are concrete and supported by command.go:1695-1719, 1766-1770, and 1788-1792.

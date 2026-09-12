@@ -1,0 +1,1 @@
+PASS: The location, signature, algorithm, and caller are all accurately supported by cobra.go:187-222 and command.go:836-838.

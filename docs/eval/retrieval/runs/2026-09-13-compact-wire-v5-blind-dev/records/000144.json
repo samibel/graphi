@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 144,
+  "previous_sha256": "63d79f9ae364089e3e9d069d3439abbb538ff97a86c335ae1c3ee3163a9b4732",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "a294a4e40b95421ea7f6f03762ae340ac11cfdf7330acfcdc8cd67f7a4761a0f",
+  "outcome": "pass",
+  "rationale": "PASS: The answer correctly uses Command.Flag for an ancestor persistent flag and accurately explains the shorthand-resolution helper from the exact supplied spans.\n",
+  "sha256": "bdf604b3dfe82240e1c14ad2790d0c79915e3d161901a8d34268b37c488bed0e"
+}

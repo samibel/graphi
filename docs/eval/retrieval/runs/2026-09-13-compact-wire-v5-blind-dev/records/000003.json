@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 3,
+  "previous_sha256": "38fced985f386a03c624b0db2075621459254aad0e54f127c2a888c045037030",
+  "kind": "response",
+  "query_id": "cb-03",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0fa0ee8974e08c875b7fcc3455d3ba0f30931a198e116cef531690c98756f5bf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenMarkdownTree(cmd, dir)` generates Markdown for the command and all descendants by delegating to `GenMarkdownTreeCustom` with an empty file prepender and identity link handler (`doc/md_docs.go:119-130`). The custom function recursively visits available, non-help-topic children, then writes the current command to `\u003cCommandPath with spaces replaced by underscores\u003e.md` under `dir` and calls `GenMarkdownCustom` (`doc/md_docs.go:131-158`). Command-name collisions involving `-` are explicitly documented as undefined (`doc/md_docs.go:119-125`).\n",
+  "sha256": "93aaed19d36863c20efec943289da62d89ac22492c8ab6a67979bf0e9164b5dd"
+}

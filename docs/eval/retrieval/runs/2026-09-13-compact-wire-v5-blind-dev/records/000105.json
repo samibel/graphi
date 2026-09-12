@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "b6a6a65bca7b5ad863245d02550e44dd29baf9bb16b56cc262c00d1452183ad2",
+  "sequence": 105,
+  "previous_sha256": "6d9377eb36724031e9ccc6f1a7ae699b01a5c6c3d1a0d10546f362ebe87df052",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v5-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "83dc24625a34915c4fb17835fee1ecde67f3955962ac3ed964d825f2ec14a4e4",
+  "outcome": "pass",
+  "rationale": "PASS: The declaration, merging, and lookup of parent persistent flags are accurately described from command.go:1725-1735, 1805-1816, and 1847-1857.\n",
+  "sha256": "9e9317b391574e50236abc1326280a6f1d9920e9caeb95f87f5423760cda6edc"
+}
