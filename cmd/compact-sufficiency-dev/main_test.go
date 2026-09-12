@@ -44,7 +44,7 @@ func fixture(t *testing.T) cliFixture {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	for _, relative := range []string{devDatasetPath, devCapturePath} {
+	for _, relative := range []string{devDatasetPath, devCapturePath, devGrepReadPath} {
 		raw, err := os.ReadFile(filepath.Join(sourceRoot, relative))
 		if err != nil {
 			t.Fatal(err)

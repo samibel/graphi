@@ -19,10 +19,12 @@ import (
 )
 
 const (
-	devDatasetPath   = "docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/dataset.json"
-	devDatasetSHA256 = "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c"
-	devCapturePath   = "docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/bundles-after.json"
-	devCaptureSHA256 = "9ab813c03a414b5d5d698581c9f293d78cbbc218f9a2452b96454f5516675b1d"
+	devDatasetPath    = "docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/dataset.json"
+	devDatasetSHA256  = "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c"
+	devCapturePath    = "docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/bundles-after.json"
+	devCaptureSHA256  = "9ab813c03a414b5d5d698581c9f293d78cbbc218f9a2452b96454f5516675b1d"
+	devGrepReadPath   = "docs/eval/retrieval/runs/2026-09-07-grepread-v2-dev/grepread-v2.json"
+	devGrepReadSHA256 = "ed58d7d0d9e1e6f7f6f790ebfb7a1249ecd6d80aea34de97b8e9c05a473f436b"
 )
 
 const usage = `compact-sufficiency-dev PHASE [flags]
@@ -33,7 +35,7 @@ const usage = `compact-sufficiency-dev PHASE [flags]
   decide   -run-dir REL [-seal]
 
 Run directories are proper repository-relative subdirectories. Dataset and
-two-build input paths are compiled in; source budget is 140 and k is derived.
+two-build input paths are compiled in; source budget is 250 and k is derived.
 Only prompts/<query>.txt may be sent to answerers. Slot 2 is a fresh blind
 adjudicator and is accepted only after two answered primary grades disagree.
 INSUFFICIENT is a mechanical failure. Every response/grade is a first attempt;
@@ -288,7 +290,14 @@ func prepare(root, dir string, datasetRaw []byte, real retrieval.PayloadCounter,
 	if retrieval.SHA256Hex(artifactRaw) != devCaptureSHA256 {
 		return fmt.Errorf("fixed two-build capture artifact digest changed")
 	}
-	first, second, err := buildCaptures(datasetRaw, artifactRaw, real)
+	grepReadRaw, err := readInside(root, devGrepReadPath)
+	if err != nil {
+		return err
+	}
+	if retrieval.SHA256Hex(grepReadRaw) != devGrepReadSHA256 {
+		return fmt.Errorf("fixed GrepRead/2 artifact digest changed")
+	}
+	first, second, err := buildCaptures(datasetRaw, artifactRaw, real, grepReadRaw)
 	if err != nil {
 		return err
 	}
@@ -310,7 +319,7 @@ func prepare(root, dir string, datasetRaw []byte, real retrieval.PayloadCounter,
 // Diagnostics are explicitly opaque here. Retrieval receives only question
 // text and preserved production bytes. Qrels are decoded after BOTH complete
 // 44-query builds finish, solely to choose the predeclared 40-question panel.
-func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter) (map[string]retrieval.PreservedPayload, map[string]retrieval.PreservedPayload, error) {
+func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter, grepReadRaw ...[]byte) (map[string]retrieval.PreservedPayload, map[string]retrieval.PreservedPayload, error) {
 	var projection struct {
 		Queries []struct {
 			ID    string `json:"id"`
@@ -330,6 +339,34 @@ func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter
 	}
 	if len(texts) != 44 {
 		return nil, nil, fmt.Errorf("fixed development capture population must contain 44 queries")
+	}
+	grepReads := map[string]retrieval.GrepReadV2Transcript{}
+	if len(grepReadRaw) > 1 {
+		return nil, nil, fmt.Errorf("at most one GrepRead/2 artifact is accepted")
+	}
+	if len(grepReadRaw) == 1 {
+		var artifact struct {
+			DatasetSHA256 string `json:"dataset_sha256"`
+			Queries       []struct {
+				QueryID    string                         `json:"query_id"`
+				Transcript retrieval.GrepReadV2Transcript `json:"transcript"`
+			} `json:"queries"`
+		}
+		if err := json.Unmarshal(grepReadRaw[0], &artifact); err != nil {
+			return nil, nil, err
+		}
+		if artifact.DatasetSHA256 != retrieval.SHA256Hex(datasetRaw) || len(artifact.Queries) != len(texts) {
+			return nil, nil, fmt.Errorf("GrepRead/2 artifact is not bound to the full development dataset")
+		}
+		for _, row := range artifact.Queries {
+			if texts[row.QueryID] == "" || row.Transcript.Query != texts[row.QueryID] || grepReads[row.QueryID].Query != "" {
+				return nil, nil, fmt.Errorf("GrepRead/2 query identity missing, duplicate or outside dev population")
+			}
+			if err := row.Transcript.Validate(); err != nil {
+				return nil, nil, err
+			}
+			grepReads[row.QueryID] = row.Transcript
+		}
 	}
 	type row struct {
 		QueryID    string                            `json:"query_id"`
@@ -370,7 +407,11 @@ func buildCaptures(datasetRaw, artifactRaw []byte, real retrieval.PayloadCounter
 			if texts[row.QueryID] == "" || row.Capture.QueryID != row.QueryID || built[index][row.QueryID].Bytes != nil {
 				return nil, nil, fmt.Errorf("capture query identity missing, duplicate or outside dev population")
 			}
-			payload, err := retrieval.BuildCompactTaskContextDev(texts[row.QueryID], row.Capture.Payload, retrieval.CompactDevSufficiencyBudget, real)
+			var transcript *retrieval.GrepReadV2Transcript
+			if value, ok := grepReads[row.QueryID]; ok {
+				transcript = &value
+			}
+			payload, err := retrieval.BuildCompactTaskContextDevWithGrepRead(texts[row.QueryID], row.Capture.Payload, transcript, retrieval.CompactDevSufficiencyBudget, real)
 			if err != nil {
 				return nil, nil, err
 			}

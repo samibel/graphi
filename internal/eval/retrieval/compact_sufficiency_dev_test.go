@@ -73,7 +73,7 @@ func TestCompactDevSufficiencyRegistration_DeterministicBlindAndDerived(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	if reg.K != k || k != 36 || reg.N != 40 || reg.SourceBudget != 140 || reg.Scope != CompactDevSufficiencyScope {
+	if reg.K != k || k != 36 || reg.N != 40 || reg.SourceBudget != CompactDevSufficiencyBudget || reg.Scope != CompactDevSufficiencyScope {
 		t.Fatalf("invalid registration: N=%d k=%d scope=%s", reg.N, reg.K, reg.Scope)
 	}
 	for _, q := range reg.Queries {
@@ -173,7 +173,7 @@ func TestCompactDevSufficiencyRegistration_RejectsValidButDifferentCaptures(t *t
 	}
 	q := reg.Queries[0]
 	input := compactTaskContextDevFixtureInput(t, real)
-	for _, budget := range []int{139, 140} {
+	for _, budget := range []int{CompactDevSufficiencyBudget - 1, CompactDevSufficiencyBudget} {
 		p, err := BuildCompactTaskContextDev(q.Query+" altered", input, budget, real)
 		if err != nil {
 			t.Fatal(err)

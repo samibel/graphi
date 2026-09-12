@@ -21,7 +21,7 @@ import (
 const (
 	CompactDevSufficiencyVersion    = "compact-dev-sufficiency/1"
 	CompactDevSufficiencyScope      = "development_diagnostic_not_release"
-	CompactDevSufficiencyBudget     = 140
+	CompactDevSufficiencyBudget     = 250
 	CompactDevSufficiencyPopulation = 40
 	compactDevRegistrationFile      = "pre-registration.json"
 )

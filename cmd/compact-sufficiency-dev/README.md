@@ -3,11 +3,13 @@
 This is the `compact-dev-sufficiency/1` diagnostic, always labelled
 `development_diagnostic_not_release`. The compiled-in dataset is only
 `docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/dataset.json` (digest pinned).
-The compiled-in production input is the two-build `bundles-after.json` from
-`2026-09-07-answer-recovery-dev`. The command builds compact responses for all
-44 development questions before consulting qrels to register the 40 answerable
-questions. Source budget is 140; `MinimumPassCount(40)` derives k=36. There are
-no dataset, budget, k or threshold overrides.
+The compiled-in inputs are the two-build `bundles-after.json` from
+`2026-09-07-answer-recovery-dev` and the query-only, source-verified
+`GrepRead/2` transcripts from `2026-09-07-grepread-v2-dev`. The command combines
+both retrieval channels and builds compact responses for all 44 development
+questions before consulting qrels to register the 40 answerable questions.
+Source budget is 250; `MinimumPassCount(40)` derives k=36. There are no dataset,
+budget, k or threshold overrides.
 
 The candidate must be committed and clean except for the exact run directory.
 Run directories must be named repository-relative subdirectories beneath

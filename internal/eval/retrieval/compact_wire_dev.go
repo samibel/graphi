@@ -22,7 +22,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextDevVersion = "task_context/compact-dev/2"
+const CompactTaskContextDevVersion = "task_context/compact-dev/3"
 
 // CompactTaskContextDevSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -79,9 +79,19 @@ type compactTaskContextDevEnvelope struct {
 // BuildCompactTaskContextDev turns one preserved production bundle into a
 // single-encoded development response. budget is measured with the same
 // whitespace-fields rule as the frozen task_context source budget. Complete
-// source lines are admitted in preserved snippet order; a final snippet may be
-// shortened only at a line boundary. No ranking judgement is consulted.
+// source lines are admitted by the versioned coherent-region selector; a final
+// snippet may be shortened only at a line boundary. No ranking judgement is
+// consulted.
 func BuildCompactTaskContextDev(query string, input PreservedPayload, budget int, real PayloadCounter) (PreservedPayload, error) {
+	return BuildCompactTaskContextDevWithGrepRead(query, input, nil, budget, real)
+}
+
+// BuildCompactTaskContextDevWithGrepRead combines the semantic task_context
+// bundle with a separately versioned, query-only GrepRead/2 transcript before
+// source selection. This is the structural fallback for questions whose
+// answer never entered the semantic candidate bytes. The transcript is
+// complete before selection and exposes no judgement or target span.
+func BuildCompactTaskContextDevWithGrepRead(query string, input PreservedPayload, grepRead *GrepReadV2Transcript, budget int, real PayloadCounter) (PreservedPayload, error) {
 	if strings.TrimSpace(query) == "" {
 		return PreservedPayload{}, fmt.Errorf("compact task_context dev: empty query")
 	}
@@ -98,12 +108,23 @@ func BuildCompactTaskContextDev(query string, input PreservedPayload, budget int
 	if err := contract.ValidateResult(&bundle); err != nil {
 		return PreservedPayload{}, fmt.Errorf("compact task_context dev: invalid input bundle: %w", err)
 	}
-	provenance, err := compactTaskContextDevProvenance(bundle.Summary, input.SHA256, budget)
+	inputSHA := input.SHA256
+	if grepRead != nil {
+		if err := grepRead.Validate(); err != nil {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: invalid GrepRead/2 transcript: %w", err)
+		}
+		if grepRead.Query != query {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: GrepRead/2 query does not match")
+		}
+		inputSHA = SHA256Hex([]byte(input.SHA256 + "\n" + grepRead.DigestSHA256()))
+	}
+	provenance, err := compactTaskContextDevProvenance(bundle.Summary, inputSHA, budget)
 	if err != nil {
 		return PreservedPayload{}, err
 	}
 
 	all := make([]contract.Evidence, 0)
+	selectionItems := append([]contract.Item(nil), bundle.Items...)
 	seen := make(map[string]bool)
 	for _, evidence := range bundle.Evidence {
 		if evidence.Snippet == "" {
@@ -116,7 +137,22 @@ func BuildCompactTaskContextDev(query string, input PreservedPayload, budget int
 		seen[key] = true
 		all = append(all, evidence)
 	}
-	sources, used, err := compactTaskContextDevSelect(query, all, bundle.Items, budget)
+	if grepRead != nil {
+		additional, err := compactTaskContextDevGrepReadEvidence(*grepRead)
+		if err != nil {
+			return PreservedPayload{}, err
+		}
+		for _, evidence := range additional {
+			key := evidence.Path + "\x00" + evidence.Span
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			all = append(all, evidence)
+			selectionItems = append(selectionItems, contract.Item{RefID: "grepread:" + evidence.RefID, EvidenceRefIDs: []string{evidence.RefID}})
+		}
+	}
+	sources, used, err := compactTaskContextDevSelect(query, all, selectionItems, budget)
 	if err != nil {
 		return PreservedPayload{}, err
 	}
@@ -153,16 +189,66 @@ func BuildCompactTaskContextDev(query string, input PreservedPayload, budget int
 	}, nil
 }
 
+func compactTaskContextDevGrepReadEvidence(transcript GrepReadV2Transcript) ([]contract.Evidence, error) {
+	makeEvidence := func(refID, path string, start, end int, text string) (contract.Evidence, error) {
+		text = strings.TrimSuffix(text, "\n")
+		text = strings.TrimSuffix(text, "\r")
+		if path == "" || start < 1 || end < start || len(strings.Split(text, "\n")) != end-start+1 {
+			return contract.Evidence{}, fmt.Errorf("compact task_context dev: invalid GrepRead/2 source %s:%d-%d", path, start, end)
+		}
+		return contract.Evidence{
+			RefID: "grepread-" + refID, Path: path, Line: start, Span: fmt.Sprintf("%d-%d", start, end),
+			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+		}, nil
+	}
+
+	var out []contract.Evidence
+	for index, row := range strings.Split(string(transcript.Ledger.Responses[0].Bytes), "\n") {
+		if row == "" || strings.HasPrefix(row, "grep:error:") {
+			continue
+		}
+		fields := strings.SplitN(row, ":", 4)
+		if len(fields) != 4 {
+			return nil, fmt.Errorf("compact task_context dev: malformed GrepRead/2 grep row")
+		}
+		line, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return nil, fmt.Errorf("compact task_context dev: malformed GrepRead/2 grep line")
+		}
+		evidence, err := makeEvidence(fmt.Sprintf("grep-%d", index+1), fields[0], line, line, fields[3])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, evidence)
+	}
+	for index, read := range transcript.Reads {
+		if read.EndLine < read.StartLine {
+			continue
+		}
+		if read.ResponseSequence < 1 || read.ResponseSequence > len(transcript.Ledger.Responses) {
+			return nil, fmt.Errorf("compact task_context dev: GrepRead/2 response sequence outside ledger")
+		}
+		payload := transcript.Ledger.Responses[read.ResponseSequence-1]
+		evidence, err := makeEvidence(fmt.Sprintf("read-%d", index+1), read.Path, read.StartLine, read.EndLine, string(payload.Bytes))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, evidence)
+	}
+	return out, nil
+}
+
 type compactTaskContextDevCandidate struct {
-	item   contract.Evidence
-	lines  []string
-	start  int
-	anchor int
-	from   int
-	to     int
-	cost   int
-	score  int
-	order  int
+	item     contract.Evidence
+	lines    []string
+	start    int
+	anchor   int
+	from     int
+	to       int
+	cost     int
+	score    int
+	order    int
+	fallback bool
 }
 
 // compactTaskContextDevSelect retains a small number of coherent regions.
@@ -179,12 +265,16 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 	}
 	mode, patterns := grepReadV2QueryPlan(query)
-	documentFrequency := make(map[string]int, len(patterns))
+	documentFrequencies := [2]map[string]int{make(map[string]int, len(patterns)), make(map[string]int, len(patterns))}
 	for _, item := range evidence {
+		channel := 0
+		if strings.HasPrefix(item.RefID, "grepread-") {
+			channel = 1
+		}
 		haystack := strings.ToLower(item.Path + "\n" + item.Snippet)
 		for _, pattern := range patterns {
 			if strings.Contains(haystack, strings.ToLower(pattern)) {
-				documentFrequency[strings.ToLower(pattern)]++
+				documentFrequencies[channel][strings.ToLower(pattern)]++
 			}
 		}
 	}
@@ -200,7 +290,12 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 		lines := strings.Split(item.Snippet, "\n")
 		anchor, lineScore := compactTaskContextDevAnchor(mode, patterns, item.Path, lines)
-		score := compactTaskContextDevRegionScore(mode, patterns, documentFrequency, item, lineScore, testIntent) - order
+		fallback := strings.HasPrefix(item.RefID, "grepread-")
+		frequencies := documentFrequencies[0]
+		if fallback {
+			frequencies = documentFrequencies[1]
+		}
+		score := compactTaskContextDevRegionScore(mode, patterns, frequencies, item, lineScore, testIntent) - order
 		if !referenced[item.RefID] {
 			// task_context/2's bounded exact-definition bridge deliberately
 			// emits its admitted definition as standalone source. It is not
@@ -214,7 +309,12 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		candidates = append(candidates, compactTaskContextDevCandidate{
 			item: item, lines: lines, start: start, anchor: anchor,
 			from: anchor, to: anchor, score: score, order: order,
+			fallback: fallback,
 		})
+	}
+	candidates, err := compactTaskContextDevMergeSameAnchor(candidates)
+	if err != nil {
+		return nil, 0, err
 	}
 	sort.SliceStable(candidates, func(i, j int) bool {
 		if candidates[i].score != candidates[j].score {
@@ -223,11 +323,32 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		return candidates[i].order < candidates[j].order
 	})
 
-	maxSources := 8
-	weights := []int{10, 6, 4, 3, 2, 1, 1, 1}
+	maxSources := 10
+	weights := []int{18, 8, 5, 3, 2, 2, 1, 1, 1, 1}
 	if mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath {
 		maxSources = 4
 		weights = []int{10, 3, 1, 1}
+	} else {
+		selected := make([]compactTaskContextDevCandidate, 0, maxSources)
+		semantic, fallback := 0, 0
+		for _, candidate := range candidates {
+			if candidate.fallback {
+				if fallback >= 2 {
+					continue
+				}
+				fallback++
+			} else {
+				if semantic >= 8 {
+					continue
+				}
+				semantic++
+			}
+			selected = append(selected, candidate)
+			if len(selected) == maxSources {
+				break
+			}
+		}
+		candidates = selected
 	}
 	if len(candidates) > maxSources {
 		candidates = candidates[:maxSources]
@@ -243,6 +364,14 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		admitted[i] = true
 		candidates[i].cost = cost
 		remaining -= cost
+	}
+	// A lone comment/signature line is rarely actionable. Give every admitted
+	// region one adjacent complete line before weighted depth allocation; this
+	// pairs declaration comments with values and signatures with first steps.
+	for i := range candidates {
+		if admitted[i] && remaining > 0 {
+			compactTaskContextDevGrow(&candidates[i], &remaining)
+		}
 	}
 	totalWeight := 0
 	for i := range candidates {
@@ -273,17 +402,76 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	}
 
 	out := make([]CompactTaskContextDevSource, 0, len(candidates))
+	seenOutput := make(map[string]bool, len(candidates))
 	for i, candidate := range candidates {
 		if !admitted[i] {
 			continue
 		}
 		text := strings.Join(candidate.lines[candidate.from:candidate.to+1], "\n")
+		key := fmt.Sprintf("%s\x00%d\x00%d", candidate.item.Path, candidate.start+candidate.from, candidate.start+candidate.to)
+		if seenOutput[key] {
+			continue
+		}
+		seenOutput[key] = true
 		out = append(out, CompactTaskContextDevSource{
 			Path: candidate.item.Path, Start: candidate.start + candidate.from,
 			End: candidate.start + candidate.to, Text: text,
 		})
 	}
 	return out, budget - remaining, nil
+}
+
+// Semantic retrieval and GrepRead/2 often land on the same declaration with
+// different context windows. Treat that as corroboration of one region, not
+// two sources competing for budget. The merge is allowed only at the exact
+// same absolute anchor and verifies every overlapping source line.
+func compactTaskContextDevMergeSameAnchor(in []compactTaskContextDevCandidate) ([]compactTaskContextDevCandidate, error) {
+	byAnchor := make(map[string]int, len(in))
+	out := make([]compactTaskContextDevCandidate, 0, len(in))
+	for _, candidate := range in {
+		absoluteAnchor := candidate.start + candidate.anchor
+		key := fmt.Sprintf("%s\x00%d", candidate.item.Path, absoluteAnchor)
+		index, ok := byAnchor[key]
+		if !ok {
+			byAnchor[key] = len(out)
+			out = append(out, candidate)
+			continue
+		}
+		prior := &out[index]
+		start := min(prior.start, candidate.start)
+		end := max(prior.start+len(prior.lines)-1, candidate.start+len(candidate.lines)-1)
+		lines := make([]string, end-start+1)
+		set := make([]bool, len(lines))
+		copyLines := func(source compactTaskContextDevCandidate) error {
+			for i, line := range source.lines {
+				at := source.start + i - start
+				if set[at] && lines[at] != line {
+					return fmt.Errorf("compact task_context dev: overlapping source differs at %s:%d", source.item.Path, start+at)
+				}
+				lines[at], set[at] = line, true
+			}
+			return nil
+		}
+		if err := copyLines(*prior); err != nil {
+			return nil, err
+		}
+		if err := copyLines(candidate); err != nil {
+			return nil, err
+		}
+		for i, present := range set {
+			if !present {
+				return nil, fmt.Errorf("compact task_context dev: source gap at %s:%d", candidate.item.Path, start+i)
+			}
+		}
+		prior.start = start
+		prior.lines = lines
+		prior.anchor = absoluteAnchor - start
+		prior.from, prior.to, prior.cost = prior.anchor, prior.anchor, 0
+		prior.score = max(prior.score, candidate.score)
+		prior.order = min(prior.order, candidate.order)
+		prior.fallback = prior.fallback && candidate.fallback
+	}
+	return out, nil
 }
 
 func compactTaskContextDevRegionScore(mode GrepReadV2Mode, patterns []string, frequencies map[string]int, item contract.Evidence, lineScore int, testIntent bool) int {
@@ -308,7 +496,7 @@ func compactTaskContextDevRegionScore(mode GrepReadV2Mode, patterns []string, fr
 	case isTest:
 		score -= 30_000
 	case strings.HasSuffix(lowerPath, ".go"):
-		score += 15_000
+		score += 30_000
 	case strings.HasSuffix(lowerPath, ".md"):
 		score += 5_000
 	}
@@ -411,7 +599,7 @@ func compactTaskContextDevProvenance(summary, inputSHA string, budget int) (Comp
 	}
 	p := CompactTaskContextDevProvenance{
 		InputSHA256: inputSHA, Method: fields[0], Retrieval: fields[1], Weights: value("weights "),
-		Model: value("model "), SourceOrder: "ranked_coherent_regions", Budget: budget,
+		Model: compactTaskContextDevModelFingerprint(value("model ")), SourceOrder: "ranked_coherent_regions", Budget: budget,
 		BudgetUnit: "whitespace-fields-v1",
 	}
 	for _, field := range fields {
@@ -426,9 +614,20 @@ func compactTaskContextDevProvenance(summary, inputSHA string, budget int) (Comp
 	return p, nil
 }
 
+// The complete input digest already binds the full model selector. Repeating
+// its long implementation identity on every compact response spends source
+// capacity without adding an independently checkable invariant.
+func compactTaskContextDevModelFingerprint(model string) string {
+	if model == "" {
+		return ""
+	}
+	digest := SHA256Hex([]byte(model))
+	return "sha256:" + digest[:16]
+}
+
 // ParseCompactTaskContextDev validates the exact wire interface. Unknown
 // fields fail closed: changing the representation requires a new explicit
-// version instead of silently changing the meaning of compact-dev/2.
+// version instead of silently changing the meaning of compact-dev/3.
 func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStructured, error) {
 	var envelope compactTaskContextDevEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -450,7 +649,7 @@ func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStruct
 		return "", CompactTaskContextDevStructured{}, fmt.Errorf("compact task_context dev: invalid structured content identity")
 	}
 	p := structured.Provenance
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.Weights == "" || p.Model == "" || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != "task_context/2" || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !isLowerHexDigest(strings.TrimPrefix(p.Model, "sha256:"), 16) || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.Budget < 1 || p.Budget > SavingsCandidateBudget || p.BudgetUnit != "whitespace-fields-v1" {
 		return "", CompactTaskContextDevStructured{}, fmt.Errorf("compact task_context dev: invalid provenance")
 	}
 	seen := make(map[string]bool)

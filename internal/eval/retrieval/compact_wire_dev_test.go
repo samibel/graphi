@@ -35,8 +35,13 @@ func TestCompactTaskContextDev_IsSingleEncodedDeterministicAndSourceVerifiable(t
 		t.Fatal(err)
 	}
 	result := wire["result"].(map[string]any)
-	if _, ok := result["structuredContent"].(map[string]any); !ok {
+	structured, ok := result["structuredContent"].(map[string]any)
+	if !ok {
 		t.Fatal("structuredContent is not a directly encoded object")
+	}
+	provenance := structured["provenance"].(map[string]any)
+	if got := provenance["model"]; got != compactTaskContextDevModelFingerprint("fixture-model") || bytes.Contains(first.Bytes, []byte("fixture-model")) {
+		t.Fatalf("model provenance = %v; full model selector must not be repeated on the wire", got)
 	}
 	text := result["content"].([]any)[0].(map[string]any)["text"].(string)
 	if strings.HasPrefix(strings.TrimSpace(text), "{") {
@@ -96,6 +101,42 @@ func TestCompactTaskContextDev_FailsClosedOnMalformedDigestAndSourceDrift(t *tes
 			t.Fatalf("error = %v", err)
 		}
 	})
+}
+
+func TestCompactTaskContextDev_GrepReadFallbackIsQueryBoundAndDeterministic(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	input := compactTaskContextDevFixtureInput(t, counter)
+	query := "where is fallback answer handled"
+	transcript := GrepReadV2(fstest.MapFS{
+		"fallback.go": {Data: []byte("package fallback\n\nfunc HandleFallbackAnswer() error {\n\treturn nil\n}\n")},
+	}, query)
+	if err := transcript.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	first, err := BuildCompactTaskContextDevWithGrepRead(query, input, &transcript, 20, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := BuildCompactTaskContextDevWithGrepRead(query, input, &transcript, 20, counter)
+	if err != nil || !bytes.Equal(first.Bytes, second.Bytes) {
+		t.Fatalf("fallback build is not deterministic: %v", err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(first.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, source := range structured.Sources {
+		found = found || source.Path == "fallback.go" && strings.Contains(source.Text, "HandleFallbackAnswer")
+	}
+	if !found {
+		t.Fatalf("GrepRead/2 fallback source was not retained: %+v", structured.Sources)
+	}
+	drifted := transcript
+	drifted.Query = "a different query"
+	if _, err := BuildCompactTaskContextDevWithGrepRead(query, input, &drifted, 20, counter); err == nil {
+		t.Fatal("mismatched GrepRead/2 query was accepted")
+	}
 }
 
 func compactTaskContextDevFixtureInput(t *testing.T, counter PayloadCounter) PreservedPayload {
@@ -224,6 +265,10 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 			t.Fatal("input bundle builds differ", row.QueryID)
 		}
 	}
+	queryTexts := make(map[string]string, len(loaded.Dataset.Queries))
+	for _, query := range loaded.Dataset.Queries {
+		queryTexts[query.ID] = query.Text
+	}
 
 	grepReadRaw, err := os.ReadFile(grepReadPath)
 	if err != nil {
@@ -242,9 +287,10 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 		Identical  int      `json:"identical_transcripts"`
 		Misses     []string `json:"zero_overlap_query_ids"`
 		Queries    []struct {
-			QueryID string `json:"query_id"`
-			Grade3  int    `json:"grade3_spans"`
-			Tokens  *int   `json:"tokens_to_first_overlap"`
+			QueryID    string               `json:"query_id"`
+			Grade3     int                  `json:"grade3_spans"`
+			Tokens     *int                 `json:"tokens_to_first_overlap"`
+			Transcript GrepReadV2Transcript `json:"transcript"`
 		} `json:"queries"`
 	}
 	if err := json.Unmarshal(grepReadRaw, &grepRead); err != nil {
@@ -254,7 +300,12 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 		t.Fatal("GrepRead/2 artifact shape or identity is invalid")
 	}
 	grepTokens := make(map[string]int)
+	grepTranscripts := make(map[string]GrepReadV2Transcript)
 	for _, row := range grepRead.Queries {
+		if err := row.Transcript.Validate(); err != nil || row.Transcript.Query != queryTexts[row.QueryID] {
+			t.Fatal("invalid GrepRead/2 transcript", row.QueryID, err)
+		}
+		grepTranscripts[row.QueryID] = row.Transcript
 		if row.Grade3 == 0 {
 			continue
 		}
@@ -297,6 +348,8 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 		ByteIdentical          int      `json:"byte_identical_rebuilds"`
 		CandidateMeanTokens    float64  `json:"candidate_mean_tokens"`
 		CandidateMedianTokens  float64  `json:"candidate_median_tokens"`
+		CandidateMaxTokens     int      `json:"candidate_max_tokens"`
+		CandidateWithin1200    int      `json:"candidate_within_1200_tokens"`
 		MeanSourceBytes        float64  `json:"mean_source_bytes"`
 		MeanSourceRealTokens   float64  `json:"mean_source_cl100k_tokens"`
 		MedianSourceSpans      float64  `json:"median_source_spans"`
@@ -351,11 +404,12 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 		var savingPercents []float64
 		for _, member := range members {
 			query := queries[member.QueryID]
-			first, err := BuildCompactTaskContextDev(query.Text, inputs[member.QueryID], budget, counter)
+			transcript := grepTranscripts[member.QueryID]
+			first, err := BuildCompactTaskContextDevWithGrepRead(query.Text, inputs[member.QueryID], &transcript, budget, counter)
 			if err != nil {
 				t.Fatalf("budget %d query %s: %v", budget, member.QueryID, err)
 			}
-			second, err := BuildCompactTaskContextDev(query.Text, inputs[member.QueryID], budget, counter)
+			second, err := BuildCompactTaskContextDevWithGrepRead(query.Text, inputs[member.QueryID], &transcript, budget, counter)
 			if err != nil || !reflect.DeepEqual(first, second) || !bytes.Equal(first.Bytes, second.Bytes) {
 				t.Fatalf("budget %d query %s is not byte reproducible: %v", budget, member.QueryID, err)
 			}
@@ -384,6 +438,10 @@ func TestCompactTaskContextDevFrontier(t *testing.T) {
 				g.Reached++
 			} else {
 				g.Misses = append(g.Misses, member.QueryID)
+			}
+			g.CandidateMaxTokens = max(g.CandidateMaxTokens, r.CandidateTokens)
+			if r.CandidateTokens <= SavingsCandidateBudget {
+				g.CandidateWithin1200++
 			}
 			if score.FullSpanCount > 0 {
 				g.CompleteQueries++
