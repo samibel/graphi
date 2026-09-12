@@ -139,6 +139,43 @@ func TestCompactTaskContextDev_GrepReadFallbackIsQueryBoundAndDeterministic(t *t
 	}
 }
 
+func TestCompactTaskContextDev_RepositoryHydratesDeclarationAroundGrepHit(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	input := compactTaskContextDevFixtureInput(t, counter)
+	lines := []string{
+		"package fixture",
+		"",
+		"// executeRequest dispatches completion to the powershell generator.",
+		"func executeRequest(shell string) error {",
+	}
+	for range 50 {
+		lines = append(lines, "\tprepare()")
+	}
+	lines = append(lines,
+		"\treturn runHandler()",
+		"}",
+	)
+	repository := fstest.MapFS{"completion.go": {Data: []byte(strings.Join(lines, "\n") + "\n")}}
+	query := "where does completion dispatch to the powershell generator"
+	transcript := GrepReadV2(repository, query)
+
+	payload, err := BuildCompactTaskContextDevWithRepository(query, input, &transcript, repository, 140, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	if !strings.Contains(joined, "func executeRequest(shell string) error") || !strings.Contains(joined, "return runHandler()") {
+		t.Fatalf("enclosing GrepRead declaration was not retained: %+v", structured.Sources)
+	}
+}
+
 func TestCompactTaskContextDev_RepositoryHydratesCallingDeclaration(t *testing.T) {
 	counter := equalRecallFixtureCounter()
 	definition := "func (c *Command) ParseFlags(args []string) error {\n\treturn nil\n}"
@@ -178,6 +215,14 @@ func TestCompactTaskContextDev_RepositoryHydratesCallingDeclaration(t *testing.T
 		"\tc.preRun()",
 		"\treturn nil",
 		"}",
+		"",
+		"var initializers []func()",
+		"",
+		"func (c *Command) preRun() {",
+		"\tfor _, initialize := range initializers {",
+		"\t\tinitialize()",
+		"\t}",
+		"}",
 	)
 	repository := fstest.MapFS{"flow.go": {Data: []byte(strings.Join(repositoryLines, "\n") + "\n")}}
 
@@ -195,8 +240,48 @@ func TestCompactTaskContextDev_RepositoryHydratesCallingDeclaration(t *testing.T
 	for _, source := range structured.Sources {
 		joined += source.Text + "\n"
 	}
-	if !strings.Contains(joined, "c.ParseFlags(args)") || !strings.Contains(joined, "c.preRun()") {
+	if !strings.Contains(joined, "c.ParseFlags(args)") || !strings.Contains(joined, "c.preRun()") || !strings.Contains(joined, "range initializers") {
 		t.Fatalf("calling declaration was not hydrated: %+v", structured.Sources)
+	}
+}
+
+func TestCompactTaskContextDevSelect_PrefersWholeNamedSymbol(t *testing.T) {
+	executeContext := "func (c *Command) ExecuteContext() error {\n\treturn c.Execute()\n}"
+	execute := "func (c *Command) Execute() error {\n\treturn c.ExecuteC()\n}"
+	evidence := []contract.Evidence{
+		{RefID: "context", Path: "context.go", Line: 1, Span: "1-3", Role: "snippet", Snippet: executeContext, TextHash: shape.TextHash(executeContext)},
+		{RefID: "execute", Path: "execute.go", Line: 1, Span: "1-3", Role: "snippet", Snippet: execute, TextHash: shape.TextHash(execute)},
+	}
+	items := []contract.Item{
+		{Reason: "candidate: method fixture.Command.ExecuteContext (context.go:1) score 1 [seed]", EvidenceRefIDs: []string{"context"}},
+		{Reason: "candidate: method fixture.Command.Execute (execute.go:1) score 1 [seed]", EvidenceRefIDs: []string{"execute"}},
+	}
+	sources, _, err := compactTaskContextDevSelect("what happens from Execute to run hooks", evidence, items, 12)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) == 0 || sources[0].Path != "execute.go" {
+		t.Fatalf("exactly named entrypoint did not win: %+v", sources)
+	}
+}
+
+func TestCompactTaskContextDevSelect_PreservesCLIFlagIntent(t *testing.T) {
+	helpFunc := "func (c *Command) HelpFunc() {}"
+	helpFlag := "func (c *Command) InitDefaultHelpFlag() {}"
+	evidence := []contract.Evidence{
+		{RefID: "help-func", Path: "help.go", Line: 1, Span: "1-1", Role: "snippet", Snippet: helpFunc, TextHash: shape.TextHash(helpFunc)},
+		{RefID: "help-flag", Path: "flag.go", Line: 1, Span: "1-1", Role: "snippet", Snippet: helpFlag, TextHash: shape.TextHash(helpFlag)},
+	}
+	items := []contract.Item{
+		{Reason: "candidate: method fixture.Command.HelpFunc (help.go:1) score 1 [seed]", EvidenceRefIDs: []string{"help-func"}},
+		{Reason: "candidate: method fixture.Command.InitDefaultHelpFlag (flag.go:1) score 1 [seed]", EvidenceRefIDs: []string{"help-flag"}},
+	}
+	sources, _, err := compactTaskContextDevSelect("can -h and --help be handled differently", evidence, items, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) == 0 || sources[0].Path != "flag.go" {
+		t.Fatalf("CLI flag spelling did not select the flag declaration: %+v", sources)
 	}
 }
 

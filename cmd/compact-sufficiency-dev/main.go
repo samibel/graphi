@@ -156,9 +156,9 @@ func run(args []string, out io.Writer, root string) error {
 	if o.phase == "prepare" {
 		// The binary always requires a source checkout. Tests inject a temporary
 		// module root and may omit it to exercise the append-only protocol with
-		// the frozen pre-v5 fixture captures.
+		// the frozen pre-v6 fixture captures.
 		if o.repository == "" && !rootInjected {
-			return fmt.Errorf("prepare requires -repository for compact-dev/5")
+			return fmt.Errorf("prepare requires -repository for compact-dev/6")
 		}
 		return prepare(root, dir, datasetRaw, real, o, out)
 	}
