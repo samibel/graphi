@@ -1,0 +1,1 @@
+FAIL: It explains ValidateRequiredFlags itself but does not answer where it is invoked in the execution sequence before Run, which was absent from the bundle.

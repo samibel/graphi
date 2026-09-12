@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 132,
+  "previous_sha256": "906d72f35b3cd08581b462e37f935778a9110cfa0f88d1ec7c5bd5a145b621cc",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9aeae2a85f7d721d7c117968655bc9a2b78e8e56f8fcc580012e979b5af16ffc",
+  "outcome": "fail",
+  "rationale": "FAIL: It covers only flag completion and omits ValidArgsFunction for positional-argument completion, one of the two principal Go completion mechanisms.",
+  "sha256": "93a12364b95b865e18541a725668de8f307e5635519b23e291924b1bfa2aea78"
+}

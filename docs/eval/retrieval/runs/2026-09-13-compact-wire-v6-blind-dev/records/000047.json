@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 47,
+  "previous_sha256": "33dc661cc2a508eaa2499ee7a89778be3782f31e10d98b223a1aa37282d41ae7",
+  "kind": "response",
+  "query_id": "cb-32",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "bf2105b83b87aeb27bc6b2d7ca66dfdd8a5b26f771835b88242600e5705a0f6d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Execute()` uses `os.Args[1:]` by default, walks the command tree to match commands and flags, calls `ExecuteC`, and returns only its error (`command.go:1035-1042`). To supply a context, `ExecuteContext` assigns `c.ctx` before calling `Execute` (`command.go:1027-1034`).",
+  "sha256": "20ee6163d4b8269d0a21f2c506af0a5b0d93424cdeef3af6edee66985a17f5e8"
+}

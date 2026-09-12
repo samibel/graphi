@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 32,
+  "previous_sha256": "3b6c764bbf87ce77a1eb5e7fbfeeb61b434133e1744e2cdfc4f4bb7a7eeb1a87",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "19c69e9ff31d40330e827d0a9dd167372bff83ef4fd7f3362dc92f4fde1be5b2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`parent.AddCommand(children...)` sets each child's private `parent` field to the receiving command, updates maximum display lengths, propagates any global normalization function, appends the child to `c.commands`, and marks sorting stale. It panics if a command is added as its own child (`command.go:1302-1330`). `Parent()` returns the stored pointer (`command.go:1842-1845`).",
+  "sha256": "9df4fa79a2e9c50e4930690071502786b294b212f5bc9924acae6e10b4d44a2a"
+}

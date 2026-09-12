@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 99,
+  "previous_sha256": "fdc5dd481863abb441186ba7851c81493d79718fba5f68074b187227b8123153",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "704deba69d51a40a2eda4261e274db8dc621945c602c1a362c3a5ef5808ee27c",
+  "outcome": "fail",
+  "rationale": "FAIL: The bundle shows ld being called with true but does not define that parameter as case-insensitive; the answer supplies that missing behavior from evidence absent from the bundle.",
+  "sha256": "d30e3b37e6ce47857a4c0be7c8d315bdc177fb797ec7231706e5afd0351e4b0b"
+}

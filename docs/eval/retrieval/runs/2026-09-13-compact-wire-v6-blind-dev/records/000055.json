@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 55,
+  "previous_sha256": "2525de792d3e463736520defc27a1b6f1a8b59b83e656f99a827bc6568e90e68",
+  "kind": "response",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "092fe37d316eb158ef8f4716cf0893dfe358b93a13aef83b7ece82a8017719b5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Register a callback with `cobra.OnInitialize(func() { ... })` instead of trying to read execution-time values directly in Go's package `init`. `OnInitialize` stores functions to run when a command's `Execute` is called (`cobra.go:97-101`), and `(*Command).preRun` executes those callbacks during command processing (`command.go:1015-1019,926-937`). Persistent flags are available from `PersistentFlags()` (`command.go:1725-1735`).",
+  "sha256": "218675221460985acdc3dacc4b249d1df89996bb76e8e8230b0047993818b0c9"
+}

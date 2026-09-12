@@ -1,0 +1,1 @@
+PASS: It correctly explains SetArgs as the testing override for os.Args[1:].

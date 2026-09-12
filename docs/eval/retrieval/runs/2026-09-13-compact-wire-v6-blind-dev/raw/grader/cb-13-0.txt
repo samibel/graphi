@@ -1,0 +1,1 @@
+FAIL: The bundle shows ld being called with true but does not define that parameter as case-insensitive; the answer supplies that missing behavior from evidence absent from the bundle.

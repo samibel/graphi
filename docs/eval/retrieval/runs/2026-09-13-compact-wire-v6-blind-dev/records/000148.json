@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 148,
+  "previous_sha256": "a7986f7dcf4830dcc3fb8f9110f3ab3a40f9f7f996bbd6f5fa9fbf54c8543705",
+  "kind": "grade",
+  "query_id": "ci-511",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "218675221460985acdc3dacc4b249d1df89996bb76e8e8230b0047993818b0c9",
+  "outcome": "pass",
+  "rationale": "PASS: It gives the intended OnInitialize substitute for package-init-time reads and correctly locates execution of those callbacks during command processing.",
+  "sha256": "b1f44b517100c4e7ca2e606ae41906a2535ecb455f57a85b33cff340686fa96a"
+}

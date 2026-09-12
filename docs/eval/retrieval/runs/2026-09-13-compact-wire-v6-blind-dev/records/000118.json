@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 118,
+  "previous_sha256": "0401491aa5d814c03d4afc832a1112bd6f689729e1904a29cbf688ecac33549a",
+  "kind": "grade",
+  "query_id": "cb-27",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f17f44835b7b4a5d9dc964fa7c8a3571a057138af78104282d27ca1eff15c33d",
+  "outcome": "pass",
+  "rationale": "PASS: It gives the exact package-level switch and correctly identifies where that switch enables prefix matching.",
+  "sha256": "de9a98f7474a00b8810659b68c4b43f3fb2a477c223a090d783adda1800861a5"
+}

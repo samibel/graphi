@@ -1,0 +1,1 @@
+PASS: It accurately describes collection into parentsPflags and merging into the child's applicable Flags set.

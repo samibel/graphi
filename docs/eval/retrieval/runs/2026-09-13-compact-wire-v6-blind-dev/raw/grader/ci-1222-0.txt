@@ -1,0 +1,1 @@
+FAIL: It covers only flag completion and omits ValidArgsFunction for positional-argument completion, one of the two principal Go completion mechanisms.

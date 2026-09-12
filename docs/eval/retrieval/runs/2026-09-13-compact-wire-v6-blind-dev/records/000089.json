@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 89,
+  "previous_sha256": "3c8fab24e6718ddb535a3f981e2679fac4bd88118a9f013c58b5ef0d9558a574",
+  "kind": "grade",
+  "query_id": "cb-07",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "4ff68208097c110b6da3da252fa1be868828af0a45ddcfa435cbc492d4504c04",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately identifies the named file's flag-group constants, helper, and required-group validation behavior from supplied spans.",
+  "sha256": "ec83e517c6527ee3cf9fac2b9d2b1f0849120416c839276ca1bf4acfffe78484"
+}

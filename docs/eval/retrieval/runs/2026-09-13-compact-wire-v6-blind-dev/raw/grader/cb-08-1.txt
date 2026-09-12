@@ -1,0 +1,1 @@
+PASS: It correctly describes the file's man-page rendering and header-defaulting behavior using only supplied evidence.

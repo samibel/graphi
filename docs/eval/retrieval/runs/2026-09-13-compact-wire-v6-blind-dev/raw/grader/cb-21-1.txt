@@ -1,0 +1,1 @@
+PASS: It accurately covers the parent-pointer assignment and all significant AddCommand bookkeeping shown in the bundle.

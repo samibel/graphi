@@ -1,0 +1,1 @@
+PASS: It correctly identifies the hidden commands and the precise Run-to-getCompletions dispatch shown in the response.

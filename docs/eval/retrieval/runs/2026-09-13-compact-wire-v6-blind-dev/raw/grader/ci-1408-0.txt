@@ -1,0 +1,1 @@
+PASS: It correctly instructs declaring a persistent parent flag and resolving it from the subcommand through Flag's inherited lookup.

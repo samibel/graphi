@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 84,
+  "previous_sha256": "64ecbc5b0be8bc0bc2d8596915b9b1a6d0137e578da23cc79bcf77472b9c64bf",
+  "kind": "grade",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "00602f346b2d5b293f14db7acd711a0b90638afb41245200a79723146a152657",
+  "outcome": "fail",
+  "rationale": "FAIL: It accurately describes registration and panic conditions but omits the resulting enforcement that rejects invocation with multiple group members.",
+  "sha256": "405332f2d7424cb34db705a1b6ba1284aecb5b8ffdca307d53d0cad7ab23f809"
+}

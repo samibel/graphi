@@ -1,0 +1,1 @@
+PASS: It fully and correctly summarizes AddCommand's parent assignment, bookkeeping, normalization propagation, append, and self-child guard.

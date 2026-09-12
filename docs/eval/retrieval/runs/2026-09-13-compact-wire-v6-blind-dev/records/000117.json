@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 117,
+  "previous_sha256": "8ddf9007812211c728841e4af5fa3e2fcf2754a00118627b8100eefd2625e2d5",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "75eb26e3bdf56652d73b6e8854d14300b021906e30a494df07010d4b893ef034",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately identifies both \u003cPROGRAM\u003e_ACTIVE_HELP and the COBRA_ACTIVE_HELP=0 override.",
+  "sha256": "0401491aa5d814c03d4afc832a1112bd6f689729e1904a29cbf688ecac33549a"
+}

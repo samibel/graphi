@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 35,
+  "previous_sha256": "b26b90af6e0c01a22dfa8bc291bc6fb0653e1da62f71ed5f9313a417a2cde061",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c9d644f96b5f18fd0f2c3213fc16b5ffe1e20db33039f25556a3eb4b2f1a731b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`enforceFlagGroupsForCompletion` first returns when flag parsing is disabled (`flag_groups.go:225-228`). Group processing reads each flag's annotations, ignores a group unless all its flags exist, initializes member states, and records each member's `Changed` status (`flag_groups.go:121-142`). Its documented mutually-exclusive behavior is to hide the other group members when one is present, allowing normal completion filtering to enforce the group (`flag_groups.go:220-224,273`).",
+  "sha256": "981c7dbad1bf5df385d25263c581551afe653794a7fccc1d8eb148c63e099dcb"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 150,
+  "previous_sha256": "7d418b091db5d56ed6e38233cc52b86e22ce0a2fd7ac7d558d5def70f6d5aff8",
+  "kind": "grade",
+  "query_id": "ci-678",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "66e0026bfa962227ccdd00b682366b1f45dd3888e39d34a0645fe237e2ab87ba",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly explains SetArgs as the testing override for os.Args[1:].",
+  "sha256": "be375041aef8a46519c2035966ab4ecbf89c16c39d92b342f8e4173680e84bfa"
+}

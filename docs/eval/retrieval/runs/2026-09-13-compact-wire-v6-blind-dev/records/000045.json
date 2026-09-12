@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 45,
+  "previous_sha256": "491dbe19029996ffa3aac51253a1b8b4bdc13482aba6043f884eb7824728cd71",
+  "kind": "response",
+  "query_id": "cb-30",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6d73284d988d6018053bce6f79c164c0a9d4dba629cc1db3543b29a9424832f3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `doc.GenManTree(cmd, header, dir)`. It generates a man page for the command and every descendant and accepts a nil header; internally it calls `GenManTreeFromOpts` with the destination path and `\"-\"` command separator (`doc/man_docs.go:33-45`). Names containing `-` can produce ambiguous filenames, as documented in the same span.",
+  "sha256": "cd6854523511edd91ac35e3d1252edfaaa7f6edc1a3c7074ffa8839e8c5be84c"
+}

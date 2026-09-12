@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 10,
+  "previous_sha256": "4ff68208097c110b6da3da252fa1be868828af0a45ddcfa435cbc492d4504c04",
+  "kind": "response",
+  "query_id": "cb-07",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "efa00f356eab3cd065f7d9a49025dc73732a9dfc2eff8c501a15728d388bd359",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flag_groups.go` defines annotations for required-together, one-required, and mutually-exclusive flag groups (`flag_groups.go:25-31`). It also contains group validation such as `validateRequiredFlagGroups`, which reports partially set groups with sorted missing flags (`flag_groups.go:144-165`), plus helpers such as `hasAllFlags` and `Command.ValidateFlagGroups` (`flag_groups.go:81-82,111-119`).",
+  "sha256": "a2fa7a9b41962ce63fa53c45cce3309aaceef2a11d8a9e8b786963faba2e2f3d"
+}

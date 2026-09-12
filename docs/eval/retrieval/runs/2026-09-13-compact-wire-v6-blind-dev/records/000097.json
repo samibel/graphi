@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 97,
+  "previous_sha256": "991d73e62941d2067b2f13268809e9a6db77b139bddf8e4dd5e6298f9f81c314",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "fd0628375000dbb2161c6e42c2833b5f3eb11516099a261d7381fd7708de9a73",
+  "outcome": "fail",
+  "rationale": "FAIL: It explains Find's recursion but not how findNext actually matches command names, aliases, and unique prefixes, a material part of how the subcommand is chosen.",
+  "sha256": "f8efec69c0a59118f15f405960c15f99fd0651caf637385fa128fb5748c10b86"
+}

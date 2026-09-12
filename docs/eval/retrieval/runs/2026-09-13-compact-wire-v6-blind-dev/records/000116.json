@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 116,
+  "previous_sha256": "16348abf81e4c9cbe056eb496019c939bac77449fc5dfe15f0af73524d20b5b2",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bb83247b539ca3b4f561396388e42cb1802b7eaba59bc4644206284a3db59ba1",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly names the program-specific variable, its normalization rule, and the global disabling override.",
+  "sha256": "8ddf9007812211c728841e4af5fa3e2fcf2754a00118627b8100eefd2625e2d5"
+}

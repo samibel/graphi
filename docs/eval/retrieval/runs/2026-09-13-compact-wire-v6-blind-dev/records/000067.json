@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 67,
+  "previous_sha256": "c60ebb7eb0c0eeb995181f1728fb5bd2b448434ca26c21f3b732730ca0ebb00c",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0d31280e815cb736edd150e542a4d9ff0a5eb366af2f7b7fd8425fd800c6ae79",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.CalledAs()` on the selected command. It returns the exact command name or alias used to invoke it, or an empty string if it has not been called (`command.go:1515-1523`). Prefix matching also records whether the matching name or alias was used (`command.go:1527-1538`).",
+  "sha256": "03eb7a0cf08ef825b8816e11cec1b60ed01b457e7f02ab5a0e7ad84f1cfccb28"
+}

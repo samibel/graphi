@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 105,
+  "previous_sha256": "4a771c2ace025bc9ddca0d479f28a6084048eaf9dad998c0993fac612c8440c8",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "115e43a43b8d954ed3178905c9b2bf8aadc4a91e5d1861b154554cedc48b545d",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly locates ld, summarizes its dynamic-programming implementation and optional case folding, and identifies its suggestion caller.",
+  "sha256": "ec4ef43a82a84a5f51dcfadf371ab6044e75c3eae67f2a1609311ac8487017c8"
+}

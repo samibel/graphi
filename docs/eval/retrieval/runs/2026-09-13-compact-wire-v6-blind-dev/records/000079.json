@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 79,
+  "previous_sha256": "dc8f789a918e8dbafee60f97f6535dec7681067e791f171b20565fe16b6f1fc5",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "206ca7e34522eb0a1f1f019065901a3ec4368fde1aa79fdef3a5d920b02ed739",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra's default handling does not distinguish them: `InitDefaultHelpFlag` creates one Boolean `help` flag with `h` as its shorthand (`command.go:1183-1201`). It will not create that default if a `help` flag already exists, but the response does not establish a supported mechanism for giving `-h` and `--help` separate behavior.",
+  "sha256": "6f2d1cd301b7620355342631b4609cf836d18a22744c71214126c6c91e8a9f90"
+}

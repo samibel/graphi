@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 66,
+  "previous_sha256": "9aeae2a85f7d721d7c117968655bc9a2b78e8e56f8fcc580012e979b5af16ffc",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "54d5f53a0fbd68d47016d96702398251f3fd461c48a4641a787b58e509824c56",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "For a flag, write a function with signature `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)` and register it with `cmd.RegisterFlagCompletionFunc(flagName, fn)` (`completions.go:133-134`). For positional arguments use `ValidArgsFunction`; both mechanisms are portable across Bash, Zsh, Fish, and PowerShell (`site/content/completions/_index.md:477-479`).",
+  "sha256": "c60ebb7eb0c0eeb995181f1728fb5bd2b448434ca26c21f3b732730ca0ebb00c"
+}

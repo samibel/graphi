@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 60,
+  "previous_sha256": "a7a450a15c5d3e14bcca62666914981b63d198d4969e224e0fec798e4b2a7549",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "95bf0914909913d0ba3668c2b0196b85c18a0a0dbfbf0622de1bdc79469cdc94",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Implement the custom completion in Go with `ValidArgsFunction` for arguments and `RegisterFlagCompletionFunc` for flags; these are portable across Bash, Zsh, Fish, and PowerShell (`site/content/completions/_index.md:477-479`). Shell scripts request results through the hidden `__complete` or `__completeNoDesc` commands (`completions.go:25-34`), instead of relying on Zsh-specific or legacy Bash scripting.",
+  "sha256": "6cf829554f4a0978e6e7a76daf8e7bec138eacba4c00a4ef3fe8d67a748aae0e"
+}

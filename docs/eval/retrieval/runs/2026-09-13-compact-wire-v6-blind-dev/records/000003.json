@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 3,
+  "previous_sha256": "a94d4073c7ddc638fecdaab9fb7cea6cbf6e48335ade56dae278420e290887ce",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "724d957ead78b5928896945ffd017c30534587f4332c05a7c3deea80e6c2444d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames...)` merges persistent flags, verifies every named flag exists (panicking otherwise), and annotates each with the space-joined group under `cobra_annotation_mutually_exclusive`. Repeated calls append groups, so a flag may belong to multiple groups (`flag_groups.go:25-29,63-78`).",
+  "sha256": "c515f7370704b362ea78f17cfbce19f68d7a7ecf88515a0a71aa7cb0e1fe232a"
+}

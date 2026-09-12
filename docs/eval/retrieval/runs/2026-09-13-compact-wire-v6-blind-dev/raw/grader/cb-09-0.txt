@@ -1,0 +1,1 @@
+PASS: It correctly identifies the file's shell-completion annotations and the local versus persistent filename helpers.

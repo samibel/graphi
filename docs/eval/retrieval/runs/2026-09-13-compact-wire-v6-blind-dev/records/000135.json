@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 135,
+  "previous_sha256": "f7615bfbe5b31a09734cdc0cec9607efe69f98df350d85bfca00e2c78f4536d9",
+  "kind": "grade",
+  "query_id": "ci-1236",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "d7b610296a17f15dfa2d7bcbcfd077c2bd6a513c27f64c118fa12bfa21c08a7f",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly explains CalledAs's selected-command state and empty result for a command that was not called.",
+  "sha256": "e88c4634fc038ba7b9d662c731a920a6b026d81bce086f4b6516307294a23240"
+}

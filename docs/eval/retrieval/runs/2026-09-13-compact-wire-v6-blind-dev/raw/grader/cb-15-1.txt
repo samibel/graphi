@@ -1,0 +1,1 @@
+FAIL: It covers flag initialization only and misses the material behavior when --version is actually supplied during execution.

@@ -1,0 +1,1 @@
+PASS: It directly explains the hidden request commands and the Run callback's dispatch to getCompletions, including supported error behavior.

@@ -1,0 +1,1 @@
+FAIL: It covers only ExecuteC's initial setup and argument defaulting, omitting the command-selection and execution behavior central to the function.

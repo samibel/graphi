@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 103,
+  "previous_sha256": "0d67961c89e04c64633d0f6cf09fb41008529eccd60b21f7b89a6b9db9012004",
+  "kind": "grade",
+  "query_id": "cb-15",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "7a30c6eeed4939d908678ac0bc0323c7d1e593a74a47e44e93f192a3c6b166b3",
+  "outcome": "fail",
+  "rationale": "FAIL: It explains creation and completion suppression but omits execution-time handling: reading the version flag, rendering VersionTemplate to stdout, and returning before Run.",
+  "sha256": "0648687807a60646f34493f807563c4303ca0b8b2d8fbdb7ca69a43005120289"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 146,
+  "previous_sha256": "92ced4b622582e00496a7aa4e9c878f00028c2e7ec233070f59aa4c49fa66b12",
+  "kind": "grade",
+  "query_id": "ci-467",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "bacaf4235d1c26c1d0859dfafedcb2c4f28a3530e860624cdbc3e05fc82d7145",
+  "outcome": "fail",
+  "rationale": "FAIL: It addresses parent flags with TraverseChildren but omits the other half of the question: a positional argument cannot precede the subcommand because the first non-flag token is used for lookup.",
+  "sha256": "7d3f35f4a7d85571c7e72d35534716da1710c28821ae0a0f9cabda916d1fe00b"
+}

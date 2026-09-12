@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 88,
+  "previous_sha256": "6874231ada35e789fc75f7e9ba6be7edf80843400857d5f65930199ce2c683b1",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "20de1434515bc7d96a27f27381114754a2a4abd7eb49552d440ba4701b7ec63e",
+  "outcome": "pass",
+  "rationale": "PASS: It gives the correct callback shape and accurately explains lookup errors, duplicate-registration errors, and map storage.",
+  "sha256": "3c8fab24e6718ddb535a3f981e2679fac4bd88118a9f013c58b5ef0d9558a574"
+}

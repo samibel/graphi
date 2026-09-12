@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 87,
+  "previous_sha256": "f23203a76b794bd94bb1f1d011da1f22fc666acc26382b1e4b3be2e73c0a6bd4",
+  "kind": "grade",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "7d56f770f302b5707c73a2a70b35ac64e3d12c4aaee457de2e5805d9da43c432",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly describes registration, both error cases, and mutex-protected storage in the supplied global map.",
+  "sha256": "6874231ada35e789fc75f7e9ba6be7edf80843400857d5f65930199ce2c683b1"
+}

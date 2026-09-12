@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 50,
+  "previous_sha256": "915195a7a5f57821f38ee1262786aa1d2071e6d9df6ceeb43aea36d193f8f358",
+  "kind": "response",
+  "query_id": "cb-33",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "b364c8ee23d8e2cb02e6c06b885d64da3a2411439c1476935568868649e3ccef",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).Flags()` returns the complete applicable `*flag.FlagSet`, covering local flags and persistent flags declared by the command and its parents. It lazily creates that set with `ContinueOnError`, creates a shared error buffer if needed, and directs flag output there (`command.go:1641-1653`).",
+  "sha256": "36fade23252ebae7f3367cf8d612939819ac4e9f5670ad446ba8ff0b73ebaf1c"
+}

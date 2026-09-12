@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 138,
+  "previous_sha256": "af1de3c96c97dbaa785621959875357138b6690df363bb070e1b86518ac294a7",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "5b102770dd7d4311efba49ffa6b9d902e05f31768956ddf32bc3216487f962de",
+  "outcome": "pass",
+  "rationale": "PASS: It correctly instructs declaring a persistent parent flag and resolving it from the subcommand through Flag's inherited lookup.",
+  "sha256": "cac198afc4b8a874b13fe0136aae5ff4b08e0e69ff99f57efba656c5ccf511ff"
+}

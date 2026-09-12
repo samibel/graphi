@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 110,
+  "previous_sha256": "9206dc1ded94795e00e23b40162ab4ff1b298714dd80c3d321847c04a5312b25",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v6-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9df4fa79a2e9c50e4930690071502786b294b212f5bc9924acae6e10b4d44a2a",
+  "outcome": "pass",
+  "rationale": "PASS: It accurately covers the parent-pointer assignment and all significant AddCommand bookkeeping shown in the bundle.",
+  "sha256": "59c3868889cc9f87a395ff2808630954841863b4472e8e529fb9cb47071adf1f"
+}

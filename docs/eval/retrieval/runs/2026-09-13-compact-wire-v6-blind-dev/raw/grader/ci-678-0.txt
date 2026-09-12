@@ -1,0 +1,1 @@
+PASS: It gives the exact testing procedure of supplying flag arguments through SetArgs before execution.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "sequence": 1,
+  "previous_sha256": "0297f0438f6aa2cc646a2985501f606f28ab620dac7596c8fb9f6864567f704c",
+  "kind": "response",
+  "query_id": "cb-01",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v6-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "98a231a8f3a44596dcf6584f753865ea95d30398675acfde425761be654ff30f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).ExecuteC` initializes a background context if needed, redirects execution from a child to its root, invokes the Windows pre-execution hook, initializes default help/completion commands, checks command groups, and uses configured args or `os.Args[1:]` by default (`command.go:1051-1082`). It returns the selected `*Command` and an error; `Execute` discards the command and returns only the error (`command.go:1035-1041`).",
+  "sha256": "3c34ee8b16e4294691bcc287ebf18679f5c7f903211b349d4e3df3a07f694214"
+}
