@@ -1,0 +1,1 @@
+SetArgs([]string) is directly preserved and stores c.args, supporting the test-argument procedure identified as the answer by the development key; output setters are also shown.

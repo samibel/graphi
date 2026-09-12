@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 35,
+  "previous_sha256": "d6b7083e7581ec4b9bcdffca6ee263d43caeb2b3a6cd45c71f181a3ef7de4822",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "a9f643e3ee032cb5931cfef146816dbf99c915a09eda895889c1c7d3f8f4af86",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response omits the registration and parsing behavior of `-h` and `--help`, including the shorthand relationship and override rules needed to handle them differently.\n",
+  "sha256": "046e96fe916ca70ca4cd08e7a983cc20a7d8028a59c1caab11b8cc24629e4eef"
+}

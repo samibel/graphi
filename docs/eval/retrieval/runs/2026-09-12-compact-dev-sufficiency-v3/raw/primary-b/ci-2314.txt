@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the help flag's shorthand definition and processing, so it does not establish how to give -h and --help distinct behavior.

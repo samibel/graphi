@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 67,
+  "previous_sha256": "4b275d41d823059caf8d99916e2a9b441c0537248dedde16ce04fdfb90e0a2e3",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "9cf432667f23047ed31331dc2d06bdcfe610a6fb7fa3b4721a8a85f074e1341c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "On the currently executing command object, use cmd.Flag(\"flag-name\") or cmd.Flags().Lookup(\"flag-name\") to obtain the flag. Flag begins with exactly that lookup in command.go:1795-1798, and Flags returns a *flag.FlagSet (command.go:1643). The supplied snippet does not show a typed value getter.\n",
+  "sha256": "bda4946779c26b0c0a011a1a676a59a2fdbcd8bc27a6a21c66a3210414f00e79"
+}

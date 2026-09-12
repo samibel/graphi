@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 112,
+  "previous_sha256": "6fb738f284f392267897e218af380a3542de1637a7bd534361e9df17aadbf39b",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "ecb513e63d65f423ddf520ff80acf20b0f0928125d0318638e2896ca5dfeb2e1",
+  "outcome": "pass",
+  "rationale": "The preserved GetActiveHelpConfig documentation/body and global-name constant support the exact environment-variable names, normalization and override.\n",
+  "sha256": "40f366989c0dd38861aec40ef2d751dc9072e534d501c91e0ae3e6fe64a26690"
+}

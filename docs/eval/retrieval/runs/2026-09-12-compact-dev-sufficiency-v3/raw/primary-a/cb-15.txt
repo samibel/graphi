@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how `InitDefaultVersionFlag` creates the flag but omits the execution branch that reads its value, renders version output, and determines whether command hooks run.

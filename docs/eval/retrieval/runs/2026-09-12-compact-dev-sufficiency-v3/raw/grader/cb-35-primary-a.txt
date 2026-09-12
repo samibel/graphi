@@ -1,0 +1,1 @@
+The preserved default-completion initializer and Bash help support generation purpose, creation guards, configuration and session command; GenBashCompletion writes to a writer.

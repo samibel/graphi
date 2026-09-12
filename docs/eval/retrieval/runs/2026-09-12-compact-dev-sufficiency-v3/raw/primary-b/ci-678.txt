@@ -1,0 +1,1 @@
+Set the test's argument slice with cmd.SetArgs([]string{"--boolflag"}) for an already-defined boolflag. SetArgs stores the supplied slice in c.args (command.go:276-278); the response also shows a boolean flag declaration in TestMergeCommandLineToFlags (command_test.go:2161-2162). The supplied spans do not show the subsequent parsing or execution step.

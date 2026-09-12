@@ -1,0 +1,1 @@
+command.go:1795-1798 shows the named Flag accessor starting with Flags().Lookup, supporting the concrete single-flag operation in the development key.

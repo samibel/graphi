@@ -1,0 +1,1 @@
+Supply the test's command-line arguments with `cmd.SetArgs([]string{"--your-flag=value"})`, substituting a flag your command defines. `SetArgs` stores the supplied slice as `c.args` (`command.go:276–278`). To capture test output, the same excerpt provides `SetOut` and `SetErr` (`command.go:288–298`).

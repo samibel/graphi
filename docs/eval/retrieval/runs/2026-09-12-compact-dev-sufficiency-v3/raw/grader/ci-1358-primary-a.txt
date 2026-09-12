@@ -1,0 +1,1 @@
+The preserved marker body supports defining existing flags before grouping, persistent merging, appended annotations and unknown-flag panic; completion hiding is documented.

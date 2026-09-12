@@ -1,0 +1,1 @@
+Use `cmd.CalledAs()` on the command you want to check. It returns `c.commandCalledAs.name` when `c.commandCalledAs.called` is true, otherwise an empty string (`command.go:1517–1522`). Thus it exposes the recorded invocation name for a command marked as called; the provided excerpt does not show where that called state is set.

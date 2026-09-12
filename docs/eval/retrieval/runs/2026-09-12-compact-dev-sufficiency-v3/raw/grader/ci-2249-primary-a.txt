@@ -1,0 +1,1 @@
+HasInheritedFlags and InheritedFlags bodies support both concrete checks, local-shadow exclusion and merge; HasAvailableInheritedFlags documents excluding hidden/deprecated flags.

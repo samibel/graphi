@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 107,
+  "previous_sha256": "c430bdcdfa93aee955b23e4b75a43e87a47f36a15568a904d5b2c6f715d6d2b2",
+  "kind": "grade",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-grader-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "response_sha256": "f9d8b08067e580e42e90d29a32b77631eade0fb3e2e1bda6b5194099d505058a",
+  "outcome": "pass",
+  "rationale": "GenManTreeFromOpts visibly recurses through available non-help children before current-page setup, providing a correct tree-walk explanation supported by the development key.\n",
+  "sha256": "b5246a5d0cdef375574a0571bd4376eb9448a56ace40d9092e67188f5498a532"
+}

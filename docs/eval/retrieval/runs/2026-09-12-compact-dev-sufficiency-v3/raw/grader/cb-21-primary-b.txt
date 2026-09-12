@@ -1,0 +1,1 @@
+command.go:1302-1329 contains the concrete AddCommand operation and every stated parent-pointer and command-list update.

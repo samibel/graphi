@@ -1,0 +1,1 @@
+active_help.go:46-62 documents the program-specific variable naming and global COBRA_ACTIVE_HELP=0 override, and the body reads them accordingly.

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 26,
+  "previous_sha256": "5b2e61d6e2eb29623fd8936d6bf2ba5fa5a053c1ff88f2de82f070e4f4e1b170",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "fa7c5fc9df8e551ecac148960187f2951196e8349841e1d24e1eb725f6056f1e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default `completion` command generates shell autocompletion scripts. `InitDefaultCompletionCmd` creates it unless default completion is disabled, there are no subcommands, or an existing command name/alias already matches (`completions.go:683–708`). It sets `NoArgs`, `NoFileCompletions`, visibility, and group ID. The Bash subcommand's help shows `source \u003c(PROGRAM completion bash)` for loading completion in the current session and notes the `bash-completion` dependency (`completions.go:713–728`). `GenBashCompletion(w)` separately generates a script into a writer (`bash_completions.go:686–697`).\n",
+  "sha256": "1045d76c05ab788b701981b1499a99d83757760a8ab62687af020e5796489016"
+}

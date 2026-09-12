@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows group-ID setters and group-list helpers but omits how GroupID is used to affect command behavior or display.

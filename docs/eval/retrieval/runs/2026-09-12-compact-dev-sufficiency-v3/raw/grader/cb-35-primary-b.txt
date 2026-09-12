@@ -1,0 +1,1 @@
+completions.go:683-728 and bash_completions.go:686-697 directly support the described default command, Bash dependency/example and generator sequence.

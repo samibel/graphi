@@ -1,0 +1,1 @@
+The merge body adds own and collected parent persistent flags to Flags, while the preserved updateParentsPflags comment and local accessors support the remaining claims.

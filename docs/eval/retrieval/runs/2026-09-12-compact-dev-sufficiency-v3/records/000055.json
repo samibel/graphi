@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 55,
+  "previous_sha256": "8ac880f5870cb15ddf9ac046688cbfcd1b940a4fb2c48ded3ae05b5cd29094c9",
+  "kind": "response",
+  "query_id": "cb-20",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "e9f9f2d0e00bb78fe5d636d9635c0f386a872f9992a0829f482281309409d6a8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Persistent flags propagate through mergePersistentFlags: it calls updateParentsPflags, then adds both the command's PersistentFlags() and the collected parentsPflags to c.Flags() (command.go:1849-1853). The updateParentsPflags comment explicitly says it adds new persistent flags from all parents and creates the collection if needed (command.go:1855-1863). LocalFlags triggers this merge; LocalNonPersistentFlags filters out persistent flags and is explicitly documented as not propagating to subcommands (command.go:1655-1670).\n",
+  "sha256": "ff7ffe08d5a92cffd81381bc5c67fd248fd9b5e4ec5ed940ae7101f47967ad93"
+}

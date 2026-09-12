@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+what is the lifecycle of running a root command from Execute to the Run hooks
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"what is the lifecycle of running a root command from Execute to the Run hooks\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"command.go","start_line":916,"end_line":944,"text":"\t\t\tif err != nil {\n\t\t\t\tc.Println(err)\n\t\t\t}\n\t\t\treturn err\n\t\t}\n\t}\n\n\tif !c.Runnable() {\n\t\treturn flag.ErrHelp\n\t}\n\n\tc.preRun()\n\n\tdefer c.postRun()\n\n\targWoFlags := c.Flags().Args()\n\tif c.DisableFlagParsing {\n\t\targWoFlags = a\n\t}\n\n\tif err := c.ValidateArgs(argWoFlags); err != nil {\n\t\treturn err\n\t}\n\n\tparents := make([]*Command, 0, 5)\n\tfor p := c; p != nil; p = p.Parent() {\n\t\tif EnableTraverseRunHooks {\n\t\t\t// When EnableTraverseRunHooks is set:\n\t\t\t// - Execute all persistent pre-runs from the root parent till this command."},{"path":"command.go","start_line":1057,"end_line":1059,"text":"\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()"},{"path":"command.go","start_line":1551,"end_line":1552,"text":"func (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil"},{"path":"command.go","start_line":1550,"end_line":1550,"text":"// Runnable determines if the command is itself runnable."},{"path":"command.go","start_line":1030,"end_line":1031,"text":"func (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx"},{"path":"command.go","start_line":1046,"end_line":1047,"text":"func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx"},{"path":"command.go","start_line":1038,"end_line":1039,"text":"func (c *Command) Execute() error {\n\t_, err := c.ExecuteC()"},{"path":"command.go","start_line":257,"end_line":258,"text":"// Context returns underlying command context. If command was executed\n// with ExecuteContext or the context was set with SetContext, the"},{"path":"site/content/user_guide.md","start_line":607,"end_line":608,"text":"It is possible to run functions before or after the main `Run` function of your command. The `PersistentPreRun` and `PreRun` functions will be executed before `Run`. `PersistentPostRun` and `PostRun` will be executed after `Run`.  The `Persistent*Run` functions will be inherited by children if they do not declare their own.  The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared.  These functions are run in the following order:\n"},{"path":"command.go","start_line":1402,"end_line":1403,"text":"\tc.Print(fmt.Sprintln(i...))\n}"}],"provenance":{"input_sha256":"d8d12b4dd2177cfd92856c9aca68071c85a38d5a8972281ec0b661d0f2fb44a9","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

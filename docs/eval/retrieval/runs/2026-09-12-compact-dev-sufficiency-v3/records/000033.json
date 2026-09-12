@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 33,
+  "previous_sha256": "cf1da56cfdd12199ba1f4f126b36f94056e259b2247d3ae5bd63a0d626a6aeb6",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "1ad91ccce50ea3c133ca0b507ee1fa9bd1af774c54d326c5ae5fe4d2a3196922",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows how parent persistent flags are collected and exposed through `InheritedFlags`, but omits the flag-value retrieval API needed to read a parent's flag value.\n",
+  "sha256": "7a875638de7260df8b121dc0d13001ef1f10b3674054a707fc6060b560c630c6"
+}

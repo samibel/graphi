@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to define mutually exlusive flags
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s) for \"How to define mutually exlusive flags\"; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"flag_groups.go","start_line":65,"end_line":86,"text":"func (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a mutually exclusive flag group\", v))\n\t\t}\n\t\t// Each time this is called is a single new entry; this allows it to be a member of multiple groups if needed.\n\t\tif err := c.Flags().SetAnnotation(v, mutuallyExclusive, append(f.Annotations[mutuallyExclusive], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n}\n\n// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the\n// first error encountered.\nfunc (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tflags := c.Flags()"},{"path":"flag_groups.go","start_line":128,"end_line":129,"text":"\t\t\t\t// Only consider this flag group at all if all the flags are defined.\n\t\t\t\tif !hasAllFlags(flags, flagnames...) {"},{"path":"flag_groups.go","start_line":223,"end_line":224,"text":"// - when a flag in a mutually exclusive group is present, other flags in the group will be marked as hidden\n// This allows the standard completion logic to behave appropriately for flag groups"},{"path":"flag_groups.go","start_line":79,"end_line":80,"text":"// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the\n// first error encountered."},{"path":"flag_groups.go","start_line":63,"end_line":63,"text":"// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors"},{"path":"flag_groups.go","start_line":273,"end_line":274,"text":"\t// If a flag that is mutually exclusive to others is present, we hide the other\n\t// flags of that group so the shell completion does not suggest them"},{"path":"flag_groups.go","start_line":144,"end_line":145,"text":"func validateRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"flag_groups.go","start_line":167,"end_line":168,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"flag_groups.go","start_line":188,"end_line":189,"text":"func validateExclusiveFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"command.go","start_line":1643,"end_line":1644,"text":"func (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {"}],"provenance":{"input_sha256":"14a4491a4b31fb2c48a0c1ca09bdc1b89103c2183829a37d4b4c3c450f8b5b7a","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

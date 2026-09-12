@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+ExecuteC
+
+----- BEGIN task_context/compact-dev/3 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s) for \"ExecuteC\"; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/3","sources":[{"path":"command.go","start_line":1052,"end_line":1093,"text":"func (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only\n\tif c.HasParent() {\n\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding\n\tc.InitDefaultHelpCmd()\n\t// initialize completion at the last point to allow for user overriding\n\tc.InitDefaultCompletionCmd()\n\n\t// Now that all commands have been created, let's make sure all groups\n\t// are properly created also\n\tc.checkCommandGroups()\n\n\targs := c.args\n\n\t// Workaround FAIL with \"go test -v\" or \"cobra.test -test.v\", see #155\n\tif c.args == nil \u0026\u0026 filepath.Base(os.Args[0]) != \"cobra.test\" {\n\t\targs = os.Args[1:]\n\t}\n\n\t// initialize the hidden command to be used for shell completion\n\tc.initCompleteCmd(args)\n\n\tvar flags []string\n\tif c.TraverseChildren {\n\t\tcmd, flags, err = c.Traverse(args)\n\t} else {\n\t\tcmd, flags, err = c.Find(args)\n\t}\n\tif err != nil {\n\t\t// If found parse to a subcommand and then failed, talk about the subcommand"},{"path":"command.go","start_line":1046,"end_line":1057,"text":"func (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}\n\n// ExecuteC executes the command.\nfunc (c *Command) ExecuteC() (cmd *Command, err error) {\n\tif c.ctx == nil {\n\t\tc.ctx = context.Background()\n\t}\n\n\t// Regardless of what command execute is called on, run on Root only"},{"path":"command.go","start_line":1029,"end_line":1033,"text":"// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}"},{"path":"command.go","start_line":1038,"end_line":1041,"text":"func (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}"}],"provenance":{"input_sha256":"6dca94b7a852e7262302b11f0503c55a54558fb7ecf523039be83a59881a9da2","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/3 RESPONSE BYTES -----

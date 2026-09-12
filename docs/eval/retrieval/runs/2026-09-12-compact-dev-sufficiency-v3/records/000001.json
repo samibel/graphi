@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 1,
+  "previous_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "kind": "response",
+  "query_id": "cb-01",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v3-primary-a-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "857bd1947a309cf8a244addc7e0788a18912bbee45e95b8d2bff38324fb16e75",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).ExecuteC` is defined in `command.go:1052` and returns `(*Command, error)`. The shown code supplies a background context if needed, delegates child calls to the root, runs the optional pre-execution hook, initializes help and completion commands, checks command groups, selects explicit or process arguments, and resolves the command with `Traverse` or `Find` (`command.go:1052–1093`). `Execute` discards its command return and returns the error (`command.go:1038–1041`); `ExecuteContextC` sets the context before calling it (`command.go:1046–1049`). The rest of ExecuteC is not shown.\n",
+  "sha256": "578cb73d4a1b6776394e78546b17ec1419f23558ea1e99a110af783037313e81"
+}

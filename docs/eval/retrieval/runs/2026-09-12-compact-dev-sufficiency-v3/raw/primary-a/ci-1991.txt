@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows how parent persistent flags are collected and exposed through `InheritedFlags`, but omits the flag-value retrieval API needed to read a parent's flag value.

@@ -1,0 +1,1 @@
+doc/man_docs.go:82-141 preserves the options, GenMan contract and header-default implementation described in the answer.

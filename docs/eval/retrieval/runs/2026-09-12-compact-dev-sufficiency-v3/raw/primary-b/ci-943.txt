@@ -1,0 +1,1 @@
+Check that your command's Version field is nonempty, for example cmd.Version = "1.0.0". InitDefaultVersionFlag does nothing when Version is empty or a version flag already exists (command.go:1202-1209). The Version field documentation says a nonempty value enables an automatically added boolean --version flag that prints that value, and adds -v if available (command.go:108-112).

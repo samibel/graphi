@@ -1,0 +1,1 @@
+command.go:1849-1863 shows the persistent-flag merge and documents collecting all parents; LocalFlags visibly invokes it and nonpersistent propagation is documented.

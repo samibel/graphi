@@ -1,0 +1,1 @@
+(*Command).Execute() error calls ExecuteC(), discards the returned command, and returns its error (command.go:1038-1041). Its documentation says it uses arguments, defaulting to os.Args[1:], to find matches through the command tree (command.go:1035-1036). ExecuteContext sets c.ctx before delegating to Execute (command.go:1030-1033).

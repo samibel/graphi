@@ -1,0 +1,1 @@
+The preserved Flag signature/lookup and Flags signature support obtaining a named flag from the command object; the answer makes no unsupported typed-getter claim.

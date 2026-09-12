@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "059ac9d74dd5201134166278049ba3a4219d3c890462c9fd5953439eec297088",
+  "sequence": 60,
+  "previous_sha256": "6fb9cfe9564dce7072d705d1507831c27337477ed2760c5fa43ac7d5495d5888",
+  "kind": "response",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v3-primary-b-20260912",
+    "provider": "openai",
+    "model": "gpt-6-astra"
+  },
+  "prompt_sha256": "86ddcc33289be76f0adf2389d0abb0387b78ec634ae496dcda98e5a44a7ca098",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use \u003cPROGRAM\u003e_ACTIVE_HELP, with the root command name uppercased and non-ASCII-alphanumeric characters replaced by underscores. GetActiveHelpConfig reads this program-specific variable unless COBRA_ACTIVE_HELP is \"0\", which globally forces the result to \"0\" (active_help.go:46-62). The global variable's literal name is also defined at active_help.go:29.\n",
+  "sha256": "ecb513e63d65f423ddf520ff80acf20b0f0928125d0318638e2896ca5dfeb2e1"
+}
