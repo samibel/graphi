@@ -1,0 +1,1 @@
+`SetOutput` changes both `c.outWriter` and `c.errWriter`, so it sets the destinations for usage and error messages. Evidence: `command.go:279-286`, especially `c.outWriter = output` and `c.errWriter = output`.

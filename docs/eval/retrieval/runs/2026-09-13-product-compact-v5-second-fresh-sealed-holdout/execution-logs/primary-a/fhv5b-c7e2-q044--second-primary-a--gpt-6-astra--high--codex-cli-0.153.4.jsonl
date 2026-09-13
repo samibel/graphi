@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-d3f3-77d2-9434-ea95b0e36420"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains no man-page generation code showing how a command is rendered into a byte buffer or how relationships and history are included."}}
+{"type":"turn.completed","usage":{"input_tokens":17528,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":34,"reasoning_output_tokens":0}}

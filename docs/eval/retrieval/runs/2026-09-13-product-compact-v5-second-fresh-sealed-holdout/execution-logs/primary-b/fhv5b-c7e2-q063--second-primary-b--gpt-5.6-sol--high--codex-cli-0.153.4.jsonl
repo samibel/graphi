@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-3ace-7711-be3d-c85ed6d9c7d5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. Hidden or deprecated children still count as subcommands: `HasSubCommands()` checks only `len(c.commands) > 0` ([command.go, lines 1555–1558]). They are excluded only from “available” subcommands because `IsAvailableCommand()` returns false for deprecated or hidden commands ([command.go, lines 1560–1565]), which affects `HasAvailableSubCommands()` ([command.go, lines 1615–1629])."}}
+{"type":"turn.completed","usage":{"input_tokens":16523,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":0}}

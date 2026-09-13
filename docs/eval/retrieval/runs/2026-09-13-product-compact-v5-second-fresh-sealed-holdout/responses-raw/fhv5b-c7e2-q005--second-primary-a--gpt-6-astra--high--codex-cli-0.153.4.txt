@@ -1,0 +1,1 @@
+`MaximumNArgs(n)` rejects a positional-argument list when `len(args) > n`, returning `accepts at most %d arg(s), received %d` with the limit and actual count. Otherwise, it returns `nil` (`args.go`, lines 84–89).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-41b2-7200-acdb-aa609bd95773"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOutput` changes both `c.outWriter` and `c.errWriter`, so it sets the destinations for usage and error messages. Evidence: `command.go:279-286`, especially `c.outWriter = output` and `c.errWriter = output`."}}
+{"type":"turn.completed","usage":{"input_tokens":16440,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":58,"reasoning_output_tokens":0}}

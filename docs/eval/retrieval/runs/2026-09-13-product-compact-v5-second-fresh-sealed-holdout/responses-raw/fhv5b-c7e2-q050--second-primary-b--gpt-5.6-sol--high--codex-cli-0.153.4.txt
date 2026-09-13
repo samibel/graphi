@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains `Command.Root()` and command hook definitions in `command.go`, but no user-guide text recommending root-command file placement or top-level error handling.

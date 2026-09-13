@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5e-1a73-7bf0-8a00-52ce12e7e855"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Before execution, `Command.Context()` returns `nil` when no context was explicitly supplied. After calling `Execute()` or `ExecuteC()`, it returns `context.Background()`: the comment in `command.go:258–263` explicitly says these methods replace a nil context with a background context. `Context()` returns `c.ctx` directly (`command.go:264–266`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17318,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":81,"reasoning_output_tokens":0}}

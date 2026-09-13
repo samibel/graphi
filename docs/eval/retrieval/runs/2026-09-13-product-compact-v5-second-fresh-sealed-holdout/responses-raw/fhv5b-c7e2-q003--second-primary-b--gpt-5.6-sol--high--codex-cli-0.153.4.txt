@@ -1,0 +1,1 @@
+`ArbitraryArgs` performs no validation. It always returns `nil`, regardless of the command or arguments (`args.go:68–71`, symbol `ArbitraryArgs`; comment: “never returns an error”). It is also the default when `Command.Args` is `nil` (`command.go:1139–1144`, `ValidateArgs`).

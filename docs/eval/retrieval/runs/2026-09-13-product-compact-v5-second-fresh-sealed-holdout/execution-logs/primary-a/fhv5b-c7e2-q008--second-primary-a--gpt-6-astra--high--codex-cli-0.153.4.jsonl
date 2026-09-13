@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-0aa5-7cd2-a1be-73d029431e7b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AddTemplateFunc` registers the supplied function in `templateFuncs` under the supplied `name`, using `templateFuncs[name] = tmplFunc` (`cobra.go`, line 86). The comment at lines 83–84 says it is available for Usage and Help template generation."}}
+{"type":"turn.completed","usage":{"input_tokens":17480,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

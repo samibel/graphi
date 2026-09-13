@@ -1,0 +1,1 @@
+`ExactArgs(n)` accepts the argument list only when `len(args) == n`. Otherwise, it returns `fmt.Errorf("accepts %d arg(s), received %d", n, len(args))`; on an exact match, it returns `nil` (`args.go`, lines 92–101, symbol `ExactArgs`).

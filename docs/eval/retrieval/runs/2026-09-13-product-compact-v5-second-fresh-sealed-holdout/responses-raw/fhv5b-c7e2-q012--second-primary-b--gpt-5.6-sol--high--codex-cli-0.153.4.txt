@@ -1,0 +1,7 @@
+In `cobra.go`, `Gt` converts both operands to `int64` representations, then compares `left > right`:
+
+- Collections (`Array`, `Chan`, `Map`, `Slice`): their lengths via `int64(Value.Len())`.
+- Signed integers (`Int`, `Int8`, `Int16`, `Int32`, `Int64`): their direct values via `Value.Int()`.
+- Strings: base-10 signed 64-bit integers via `strconv.ParseInt(Value.String(), 10, 64)`; parse errors are ignored.
+
+Evidence: `cobra.go`, `Gt`, lines 111–139, especially the two kind switches and `return left > right`.

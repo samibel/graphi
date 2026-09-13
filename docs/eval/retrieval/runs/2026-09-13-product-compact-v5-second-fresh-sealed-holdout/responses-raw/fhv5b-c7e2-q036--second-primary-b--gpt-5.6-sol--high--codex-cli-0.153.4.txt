@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `GenBashCompletion` calling `gen(buf, c)` between `writePreamble` and `writePostscript` (`bash_completions.go:685–697`), but does not include `gen` or the command-function assembly/tree-walking implementation.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-78f6-7eb1-b2ca-ffe0fcb49927"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`FlagErrorFunc()` resolves it recursively from the parent command. In `command.go:497–510`, it:\n\n1. Returns `c.flagErrorFunc` if set.\n2. If `c.HasParent()`, returns `c.parent.FlagErrorFunc()`.\n3. At the root, returns a default handler that simply returns the original `err`."}}
+{"type":"turn.completed","usage":{"input_tokens":16684,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":0}}

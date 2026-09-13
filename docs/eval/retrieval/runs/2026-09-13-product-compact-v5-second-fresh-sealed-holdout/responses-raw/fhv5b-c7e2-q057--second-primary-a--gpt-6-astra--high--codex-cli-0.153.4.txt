@@ -1,0 +1,1 @@
+The child returns the root’s help template. In `command.go:585–591`, `HelpTemplate()` returns its own `c.helpTemplate` if nonempty; otherwise, it calls `c.parent.HelpTemplate()`, recursively reaching the root’s defined template.

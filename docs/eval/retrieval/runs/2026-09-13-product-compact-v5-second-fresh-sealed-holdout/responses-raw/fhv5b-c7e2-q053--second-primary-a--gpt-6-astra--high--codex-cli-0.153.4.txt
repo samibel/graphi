@@ -1,0 +1,3 @@
+Enable `Command.TraverseChildren` by setting it to `true`. Cobra will then parse local flags on each parent before executing the descendant target.
+
+By default, only the target command’s local flags are parsed and parent local flags are ignored (`site/content/user_guide.md`, lines 290–292). The `TraverseChildren bool` declaration confirms that it “parses flags on all parents before executing child command” (`command.go`, lines 224–225).

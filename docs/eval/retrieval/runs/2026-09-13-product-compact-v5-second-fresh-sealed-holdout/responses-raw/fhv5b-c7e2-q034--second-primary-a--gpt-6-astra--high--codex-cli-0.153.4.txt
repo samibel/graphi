@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes `stripFlags` (`command.go:643–679`) and part of `ParseFlags` (`command.go:1818–1838`), but omits the command lookup implementation needed to trace child selection, tree descent, and preservation of flags and remaining arguments.

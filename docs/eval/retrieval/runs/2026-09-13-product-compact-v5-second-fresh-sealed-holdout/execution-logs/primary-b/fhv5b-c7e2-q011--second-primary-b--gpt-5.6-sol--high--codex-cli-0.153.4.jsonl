@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-d025-7933-bf48-7d67d41becdd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Callbacks passed to `OnFinalize` are retained by appending them to the package-level `finalizers` slice. Specifically, `cobra.go:105-107` defines `OnFinalize(y ...func())` and executes:\n\n```go\nfinalizers = append(finalizers, y...)\n```\n\nThus, all variadic callback functions are preserved in their supplied order."}}
+{"type":"turn.completed","usage":{"input_tokens":16657,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

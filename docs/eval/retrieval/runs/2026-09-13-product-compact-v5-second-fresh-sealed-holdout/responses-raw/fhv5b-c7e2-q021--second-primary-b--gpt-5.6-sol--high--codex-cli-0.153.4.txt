@@ -1,0 +1,7 @@
+In `doc/man_docs.go`:
+
+- Section defaults to `"1"` and is overridden by `opts.Header.Section` when non-empty. A nil header is first replaced with `&GenManHeader{}` (lines 49–52, 62–65).
+- Separator defaults to `"_"` and is overridden by `opts.CommandSeparator` when non-empty (lines 67–70).
+- The basename is `cmd.CommandPath()` with spaces replaced by the separator. The output filename is `filepath.Join(opts.Path, basename+"."+section)` (lines 71–72).
+
+Thus, for command path `foo bar`, defaults produce `opts.Path/foo_bar.1`.

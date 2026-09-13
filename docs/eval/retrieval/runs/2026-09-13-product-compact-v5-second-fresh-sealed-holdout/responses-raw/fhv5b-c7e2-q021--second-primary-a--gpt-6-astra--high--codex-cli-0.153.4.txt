@@ -1,0 +1,5 @@
+In `doc/man_docs.go`, `GenManTreeFromOpts` chooses:
+
+- **Section:** defaults to `"1"`, overridden by a nonempty `header.Section` (lines 61–64). It uses `opts.Header`, substituting an empty `GenManHeader` if nil (lines 49–52).
+- **Separator:** defaults to `"_"`, overridden by a nonempty `opts.CommandSeparator` (lines 66–69).
+- **Output filename:** replaces every space in `cmd.CommandPath()` with the separator, then builds `filepath.Join(opts.Path, basename+"."+section)` and opens it with `os.Create(filename)` (lines 70–72).

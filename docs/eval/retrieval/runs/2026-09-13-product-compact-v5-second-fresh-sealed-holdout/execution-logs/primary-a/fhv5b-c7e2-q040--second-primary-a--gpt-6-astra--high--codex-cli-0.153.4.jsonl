@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-3f7d-7ec0-8b8d-511074703f58"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows only the opening checks of `InitDefaultHelpCmd` (`command.go:1229–1234`), omitting the help command’s construction, its completion and execution handlers, and the code that reattaches it to the root."}}
+{"type":"turn.completed","usage":{"input_tokens":17445,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

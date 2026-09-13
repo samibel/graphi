@@ -1,0 +1,1 @@
+The context passed to the later execution method wins. Both `ExecuteContext` (`command.go:1030–1032`) and `ExecuteContextC` (`command.go:1046–1048`) unconditionally assign `c.ctx = ctx`, overwriting the previously set context before executing. `Context()` returns `c.ctx` (`command.go:264–265`).

@@ -1,0 +1,1 @@
+Before execution, `Command.Context()` returns `nil` when no context was explicitly supplied. After calling `Execute()` or `ExecuteC()`, it returns `context.Background()`: the comment in `command.go:258–263` explicitly says these methods replace a nil context with a background context. `Context()` returns `c.ctx` directly (`command.go:264–266`).

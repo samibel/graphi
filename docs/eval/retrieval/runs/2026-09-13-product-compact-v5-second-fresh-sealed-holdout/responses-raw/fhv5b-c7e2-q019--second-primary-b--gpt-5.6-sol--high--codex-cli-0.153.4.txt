@@ -1,0 +1,5 @@
+`MarkFlagDirname` sets the named flag’s `BashCompSubdirsInDir` annotation to an empty string slice (`[]string{}`). See `shell_completions.go:94–98`, specifically:
+
+```go
+flags.SetAnnotation(name, BashCompSubdirsInDir, []string{})
+```

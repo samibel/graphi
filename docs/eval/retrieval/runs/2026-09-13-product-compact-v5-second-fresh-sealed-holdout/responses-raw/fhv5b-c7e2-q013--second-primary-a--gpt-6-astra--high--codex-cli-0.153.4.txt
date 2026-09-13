@@ -1,0 +1,3 @@
+`Eq` compares signed integer kinds (`reflect.Int`, `Int8`, `Int16`, `Int32`, `Int64`) using `av.Int() == bv.Int()`, and `reflect.String` using `av.String() == bv.String()` (`cobra.go:151–154`).
+
+It panics with `"Eq called on unsupported type"` when the first argument’s kind is `reflect.Array`, `reflect.Chan`, `reflect.Map`, or `reflect.Slice` (`cobra.go:148–150`). Other kinds return `false` (`cobra.go:156`).

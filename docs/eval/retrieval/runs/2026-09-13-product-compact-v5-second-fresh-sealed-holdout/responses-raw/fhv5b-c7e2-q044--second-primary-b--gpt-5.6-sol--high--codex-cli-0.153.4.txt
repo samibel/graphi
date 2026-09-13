@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only unrelated command fields, completion generators, Markdown/ReST option printers, and child-command sorting; it lacks the man-page generation symbols and snippets showing command relationships, history, and final byte-buffer construction.

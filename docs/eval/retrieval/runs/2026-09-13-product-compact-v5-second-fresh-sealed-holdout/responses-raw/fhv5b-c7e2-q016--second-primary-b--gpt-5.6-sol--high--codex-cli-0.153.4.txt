@@ -1,0 +1,9 @@
+In `command.go:477–495`, `UsageString`:
+
+1. Saves `c.outWriter` and `c.errWriter` into `tmpOutput` and `tmpErr`.
+2. Temporarily points both writers to a new `bytes.Buffer`.
+3. Calls `CheckErr(c.Usage())`, so usage output is captured in that buffer. `Usage()` delegates to `c.UsageFunc()(c)` (`command.go:443–448`).
+4. Restores the original writers.
+5. Returns `bb.String()`.
+
+Thus, it captures usage by temporarily swapping both configured writers to a buffer, then restoring their saved values.

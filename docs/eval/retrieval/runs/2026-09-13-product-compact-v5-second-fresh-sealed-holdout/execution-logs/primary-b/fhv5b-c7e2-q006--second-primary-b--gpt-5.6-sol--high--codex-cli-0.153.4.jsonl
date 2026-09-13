@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-5157-7650-98f4-33275e4161de"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ExactArgs(n)` accepts the argument list only when `len(args) == n`. Otherwise, it returns `fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))`; on an exact match, it returns `nil` (`args.go`, lines 92–101, symbol `ExactArgs`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16522,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":0}}

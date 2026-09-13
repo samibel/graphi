@@ -1,0 +1,1 @@
+Alias recognition does not always require exact case. `Command.HasAlias` calls `commandNameMatches(a, s)` for each alias (`command.go:1505–1513`). That matcher uses `strings.EqualFold` when the global `EnableCaseInsensitive` setting is enabled, otherwise `s == t` (`command.go:1876–1885`). The setting is case-sensitive by default (`cobra.go:61–62`).

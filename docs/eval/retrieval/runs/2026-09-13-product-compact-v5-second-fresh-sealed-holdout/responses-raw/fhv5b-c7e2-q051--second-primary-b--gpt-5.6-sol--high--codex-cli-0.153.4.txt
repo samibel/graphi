@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains only the user-guide title and unrelated command/help snippets, not guidance on wiring commands from nested Go packages or avoiding import cycles.

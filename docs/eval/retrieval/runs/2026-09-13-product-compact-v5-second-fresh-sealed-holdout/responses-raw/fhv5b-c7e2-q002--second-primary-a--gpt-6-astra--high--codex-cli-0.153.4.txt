@@ -1,0 +1,1 @@
+`OnlyValidArgs` ignores descriptions following a tab in each `ValidArgs` entry. It builds a separate list using `strings.Split(v, "\t")[0]` (`args.go:53–58`), then validates arguments against that list (`args.go:59–60`). Thus, `"name\tdescription"` permits `"name"`; the original `cmd.ValidArgs` entries remain unchanged.

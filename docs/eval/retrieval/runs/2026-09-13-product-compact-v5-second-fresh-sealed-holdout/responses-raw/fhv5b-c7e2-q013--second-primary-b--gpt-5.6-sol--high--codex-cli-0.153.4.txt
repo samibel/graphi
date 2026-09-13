@@ -1,0 +1,3 @@
+In [cobra.go](cobra.go), `Eq` compares all signed integer kinds—`Int`, `Int8`, `Int16`, `Int32`, and `Int64`—using `av.Int() == bv.Int()`, and `String` using `av.String() == bv.String()` (lines 149–154).
+
+It panics for the collection kinds `Array`, `Chan`, `Map`, and `Slice` with `"Eq called on unsupported type"` (lines 147–148).

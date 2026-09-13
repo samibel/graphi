@@ -1,0 +1,1 @@
+`AddTemplateFuncs` iterates over the supplied map and assigns each entry into the package-level `templateFuncs` map: `for k, v := range tmplFuncs { templateFuncs[k] = v }` (`cobra.go`, lines 91–95). This adds new names, overwrites existing names with supplied values, and preserves entries whose names weren’t supplied.

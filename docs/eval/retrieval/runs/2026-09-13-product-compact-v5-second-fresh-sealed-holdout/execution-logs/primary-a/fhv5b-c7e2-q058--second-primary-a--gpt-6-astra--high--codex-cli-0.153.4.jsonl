@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-8c4f-7a22-919d-3157c4bd085e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The default output is `<Name> version <Version>\\n`. If `.Name` is empty, it is `version <Version>\\n`.\n\nIn `command.go:599–608`, `VersionTemplate()` checks the command’s custom template, then its parents, and finally returns:\n```gotemplate\n{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n```\nThe template includes a trailing newline."}}
+{"type":"turn.completed","usage":{"input_tokens":17424,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":0}}

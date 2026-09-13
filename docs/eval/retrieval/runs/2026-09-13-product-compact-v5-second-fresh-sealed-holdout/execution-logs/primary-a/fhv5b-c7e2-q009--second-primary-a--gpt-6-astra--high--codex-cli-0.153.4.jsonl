@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-34c8-79d2-85dd-0cb330e07688"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AddTemplateFuncs` iterates over the supplied map and assigns each entry into the package-level `templateFuncs` map: `for k, v := range tmplFuncs { templateFuncs[k] = v }` (`cobra.go`, lines 91–95). This adds new names, overwrites existing names with supplied values, and preserves entries whose names weren’t supplied."}}
+{"type":"turn.completed","usage":{"input_tokens":17499,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":79,"reasoning_output_tokens":0}}

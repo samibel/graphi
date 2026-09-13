@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows only the opening checks of `InitDefaultHelpCmd` (`command.go:1229–1234`), omitting the help command’s construction, its completion and execution handlers, and the code that reattaches it to the root.

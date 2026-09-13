@@ -1,0 +1,3 @@
+`Usage()` calls `c.UsageFunc()(c)` (`command.go:446–448`). `UsageFunc()` first checks the command’s own `c.usageFunc`, set by `SetUsageFunc`, then recursively checks its parents (`command.go:306–309, 424–432`).
+
+If none is found, the built-in fallback calls `c.mergePersistentFlags()`, then renders `c.UsageTemplate()` to `c.OutOrStderr()` with the command `c` as template data. It prints any rendering error using `c.PrintErrln(err)` and returns that error (`command.go:433–441`).

@@ -1,0 +1,9 @@
+The public APIs encode the choice as a boolean `includeDesc`:
+
+- `GenZshCompletionFile` passes `true` to `genZshCompletionFile` (`zsh_completions.go:24-27`), while `GenZshCompletionFileNoDesc` passes `false` (`:35-38`).
+- Writer APIs do the same: `GenZshCompletion` calls `genZshCompletion(w, true)` (`:29-33`), and `GenZshCompletionNoDesc` calls it with `false` (`:40-44`).
+- The file helper creates the file and forwards `includeDesc` to the writer helper (`:70-78`).
+- `genZshCompletion` creates a buffer and passes that flag into the script generator: `genZshComp(buf, c.Name(), includeDesc)` (`:80-85`).
+- The generator receives it in `genZshComp(buf io.StringWriter, name string, includeDesc bool)` (`:87`).
+
+Thus both file and writer paths converge on `genZshComp`, carrying the description decision unchanged as `includeDesc`.

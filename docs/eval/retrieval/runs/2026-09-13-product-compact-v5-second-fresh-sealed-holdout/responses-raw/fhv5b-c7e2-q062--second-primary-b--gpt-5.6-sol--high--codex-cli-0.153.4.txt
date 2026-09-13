@@ -1,0 +1,7 @@
+No. `command.go:1550-1553` defines `Runnable()` as:
+
+```go
+return c.Run != nil || c.RunE != nil
+```
+
+The `||` means either `Run` or `RunE` is sufficient; both are not required. This matches the field comments at `command.go:133-136`, where `RunE` is described as the error-returning variant of `Run`.

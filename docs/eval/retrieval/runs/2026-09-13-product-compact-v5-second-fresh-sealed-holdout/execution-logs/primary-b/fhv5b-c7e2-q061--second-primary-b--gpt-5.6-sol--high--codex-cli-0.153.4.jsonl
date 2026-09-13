@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-0d34-7fa1-9bb3-87b8a3d912c2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes. `Command.HasExample` checks only `len(c.Example) > 0` ([command.go, lines 1545–1548]), so any non-empty string—including whitespace-only text—is considered an example."}}
+{"type":"turn.completed","usage":{"input_tokens":16544,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+`AddTemplateFunc` registers the function in the package-level `templateFuncs` map, keyed by the supplied `name`: `templateFuncs[name] = tmplFunc` ([`cobra.go`, lines 83–87]).

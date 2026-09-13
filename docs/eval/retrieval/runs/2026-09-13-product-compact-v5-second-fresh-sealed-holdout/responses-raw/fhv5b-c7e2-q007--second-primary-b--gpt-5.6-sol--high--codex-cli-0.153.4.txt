@@ -1,0 +1,1 @@
+Yes. `RangeArgs` accepts both endpoints inclusively: it rejects only when `len(args) < min` or `len(args) > max` ([args.go:103–111]). Rejection is caused solely by the argument count falling outside that range, producing: `accepts between %d and %d arg(s), received %d`.

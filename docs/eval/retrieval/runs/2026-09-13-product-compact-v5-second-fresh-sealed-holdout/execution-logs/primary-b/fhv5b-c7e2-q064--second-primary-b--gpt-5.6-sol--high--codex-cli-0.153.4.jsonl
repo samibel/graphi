@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-540e-76e2-a38b-b0947d91a400"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"On the first call to `Command.Flags()`, if `c.flags` is nil, it initializes:\n\n- `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`\n- `c.flagErrorBuf` with `new(bytes.Buffer)` if it is nil\n- the flag set’s output to that buffer via `c.flags.SetOutput(c.flagErrorBuf)`\n\nEvidence: `command.go:1641–1653`, `Flags()`."}}
+{"type":"turn.completed","usage":{"input_tokens":16651,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}

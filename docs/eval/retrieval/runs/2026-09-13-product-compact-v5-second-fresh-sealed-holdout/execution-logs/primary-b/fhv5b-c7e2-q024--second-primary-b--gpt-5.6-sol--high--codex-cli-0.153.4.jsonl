@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-5167-7fb2-8ac7-957f99450a19"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The context passed to the later context-taking method wins. Both `ExecuteContext(ctx)` and `ExecuteContextC(ctx)` unconditionally assign `c.ctx = ctx` before executing (`command.go:1027-1033` and `command.go:1042-1048`), overwriting any context previously set via `SetContext`."}}
+{"type":"turn.completed","usage":{"input_tokens":16327,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":0}}

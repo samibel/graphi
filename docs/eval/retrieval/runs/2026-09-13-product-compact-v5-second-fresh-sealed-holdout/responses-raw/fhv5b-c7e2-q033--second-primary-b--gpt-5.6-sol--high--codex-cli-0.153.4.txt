@@ -1,0 +1,1 @@
+`ErrPrefix()` walks up the command’s parent chain. If the current command’s `errPrefix` is empty, it calls `c.parent.ErrPrefix()` recursively, so the nearest ancestor with a non-empty customized prefix wins. If no command defines one, it returns `"Error:"` (`command.go:611–621`). Customization stores the value through `SetErrPrefix` (`command.go:357–360`).

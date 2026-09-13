@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains neither a Viper binding example nor the backing-variable caveat; `site/content/user_guide.md` lines 270–273 only describe persistent flags’ availability to descendant commands.

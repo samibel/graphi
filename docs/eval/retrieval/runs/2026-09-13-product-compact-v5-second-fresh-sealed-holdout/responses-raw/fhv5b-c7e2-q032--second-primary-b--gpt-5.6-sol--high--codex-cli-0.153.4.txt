@@ -1,0 +1,6 @@
+`Command.CommandPath()` builds paths recursively (`command.go:1425-1434`):
+
+- For a root command, it returns the value of `c.Annotations[CommandDisplayNameAnnotation]` when present; otherwise it returns `c.Name()`.
+- For a descendant, it returns `c.Parent().CommandPath() + " " + c.Name()`.
+
+Thus, a custom root display name becomes the first path component, while descendants always append their ordinary `Name()` separated by spaces. The annotation key is `cobra_annotation_command_display_name` (`command.go:33-36`).

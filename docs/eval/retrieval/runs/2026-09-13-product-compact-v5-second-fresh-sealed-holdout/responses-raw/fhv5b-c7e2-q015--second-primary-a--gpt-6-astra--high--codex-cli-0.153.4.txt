@@ -1,0 +1,1 @@
+`SetOutput` changes both the usage-message and error-message destinations to the supplied `io.Writer`. In `command.go`, `(*Command).SetOutput` assigns `c.outWriter = output` and `c.errWriter = output` (lines 283–285), matching the comment on line 280.

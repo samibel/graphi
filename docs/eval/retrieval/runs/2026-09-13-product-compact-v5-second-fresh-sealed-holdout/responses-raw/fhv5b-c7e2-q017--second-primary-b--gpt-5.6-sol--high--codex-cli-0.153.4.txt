@@ -1,0 +1,5 @@
+`FlagErrorFunc()` resolves it recursively from the parent command. In `command.go:497–510`, it:
+
+1. Returns `c.flagErrorFunc` if set.
+2. If `c.HasParent()`, returns `c.parent.FlagErrorFunc()`.
+3. At the root, returns a default handler that simply returns the original `err`.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows routing for three APIs in `powershell_completions.go`, but only names `GenPowerShellCompletionFileWithDesc()` in `site/content/completions/_index.md:519` without showing its implementation or helper call.
