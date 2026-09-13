@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b73-3731-7453-a017-443244246ef1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that whitespace-only text counts as an example because HasExample checks only len(c.Example) > 0, without trimming, as supported by command.go:1545–1548 in the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18107,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

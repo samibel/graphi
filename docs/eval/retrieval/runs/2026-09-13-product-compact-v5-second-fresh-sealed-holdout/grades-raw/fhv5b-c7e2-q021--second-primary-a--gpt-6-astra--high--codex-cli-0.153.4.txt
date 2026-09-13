@@ -1,0 +1,1 @@
+PASS: The response accurately states the section and separator defaults and nonempty overrides, nil-header handling, and filename construction from the command path under opts.Path. All cited line ranges exist in the bundle and support the attached claims.

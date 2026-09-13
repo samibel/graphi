@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b72-975f-7120-bd59-9b3b10573635"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes the parent fallback and default version text with a trailing newline, supported by command.go:598-609. Its quoted template also preserves the optional command-name prefix."}}
+{"type":"turn.completed","usage":{"input_tokens":18184,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":31}}

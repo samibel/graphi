@@ -1,0 +1,1 @@
+FAIL: The response correctly identifies the bundle’s gap but does not answer how traversal or per-command assembly works. The bundle includes only the entry-point wrapper at bash_completions.go:685–697, omitting the recursive generator, function-name normalization, and command/flag/required/noun/alias emission needed to answer the question.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b67-1b78-7040-bb11-3d7eb87c3b13"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies that OnFinalize appends callbacks to finalizers, retaining existing entries and preserving argument order, as supported by cobra.go lines 105–106."}}
+{"type":"turn.completed","usage":{"input_tokens":18226,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":39,"reasoning_output_tokens":0}}

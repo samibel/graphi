@@ -1,0 +1,1 @@
+PASS: The response correctly describes recursive validation panicking when a subcommand’s nonempty GroupID is undefined by its parent, with the missing ID and offending command path in the message. All cited locations exist in the bundle and support the attached claims.

@@ -1,0 +1,1 @@
+PASS: The bundle confirms that OnInitialize appends all supplied callbacks in order, retaining earlier registrations, and Command.preRun invokes them sequentially. The cited paths and line ranges support these claims and the documented Execute behavior.

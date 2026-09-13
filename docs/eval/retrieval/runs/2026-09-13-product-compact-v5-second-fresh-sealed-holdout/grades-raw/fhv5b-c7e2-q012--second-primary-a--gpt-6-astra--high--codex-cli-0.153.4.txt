@@ -1,0 +1,1 @@
+PASS: The response accurately identifies collection lengths, signed integer values, and base-10 strings parsed as 64-bit integers as the operands compared by `left > right`. Its citations and statement that parse errors are ignored are supported by cobra.go:115–138 in the preserved bundle.

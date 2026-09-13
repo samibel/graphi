@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that OnFinalize appends all supplied callbacks to the finalizers slice in their supplied order, supported by the cited cobra.go:105-107.

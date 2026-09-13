@@ -1,0 +1,1 @@
+PASS: The bundle shows OnInitialize appending all supplied callbacks to the package initializer slice, preserving registration order and prior callbacks, and preRun iterating over the slice to invoke each callback in order.

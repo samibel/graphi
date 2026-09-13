@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the optional name prefix, `version <Version>`, and trailing newline. Its cited `command.go:599–608` exists in the bundle and supports the custom-template lookup through parents and default fallback.

@@ -1,0 +1,1 @@
+PASS: The response accurately describes saving both configured writers, redirecting them to a bytes.Buffer, calling CheckErr(c.Usage()), restoring the originals, and returning bb.String(). All cited locations exist in the bundle and support the claims.

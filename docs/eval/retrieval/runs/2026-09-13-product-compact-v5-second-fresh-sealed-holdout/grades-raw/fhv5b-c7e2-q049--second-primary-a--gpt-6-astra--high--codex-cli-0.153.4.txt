@@ -1,0 +1,1 @@
+PASS: The response correctly distinguishes cobra-cli’s generated application scaffolding and commands from manual setup requiring a bare main.go, a rootCmd file, and optional additional commands. Both explanations and their citations are supported by the preserved bundle.

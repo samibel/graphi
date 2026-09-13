@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the sections are separated. The preserved bundle omits the template behavior for group titles, Additional Commands, Flags, Global Flags, and Additional help topics, so those essential facts cannot be verified.

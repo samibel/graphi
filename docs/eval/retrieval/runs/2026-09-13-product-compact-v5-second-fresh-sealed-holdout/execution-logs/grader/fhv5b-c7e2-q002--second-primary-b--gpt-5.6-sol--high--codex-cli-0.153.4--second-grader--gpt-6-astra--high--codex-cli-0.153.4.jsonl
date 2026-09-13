@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b65-2a95-75b3-81d5-403f6240555e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that OnlyValidArgs removes tab-separated descriptions using strings.Split(v, \"\\t\")[0] and validates positional arguments against the resulting values. The cited args.go ranges exist in the bundle and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18188,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":115,"reasoning_output_tokens":62}}

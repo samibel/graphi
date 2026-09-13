@@ -1,0 +1,1 @@
+PASS: The response correctly describes recursive parent lookup to find the nearest ancestor’s handler and the fallback that returns the original error unchanged. Both behaviors and cited line ranges are supported by command.go:497–510 in the preserved bundle.

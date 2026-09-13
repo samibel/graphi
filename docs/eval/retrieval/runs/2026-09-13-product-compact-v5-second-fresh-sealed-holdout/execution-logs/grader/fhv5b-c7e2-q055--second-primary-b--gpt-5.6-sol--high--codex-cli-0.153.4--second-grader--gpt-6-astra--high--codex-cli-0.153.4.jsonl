@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b71-cbe7-76a2-b4de-b1c24f34ad86"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that the choice is preserved in `c.helpCommandGroupID` and that an existing help command is updated immediately, both supported by `command.go:332-339`."}}
+{"type":"turn.completed","usage":{"input_tokens":18149,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

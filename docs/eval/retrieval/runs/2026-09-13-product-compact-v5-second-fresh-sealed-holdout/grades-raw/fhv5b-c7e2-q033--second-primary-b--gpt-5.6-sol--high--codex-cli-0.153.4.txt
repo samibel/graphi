@@ -1,0 +1,1 @@
+PASS: The response correctly explains recursive parent lookup, selection of the nearest nonempty ancestor prefix, and the default "Error:" fallback. Its citations to command.go:611–621 and command.go:357–360 exist in the bundle and support the claims.

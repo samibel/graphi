@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b69-618d-7cd3-83c5-20af00274de8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states the section and separator defaults and nonempty overrides, nil-header handling, and filename construction from the command path under opts.Path. All cited line ranges exist in the bundle and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18355,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":82}}

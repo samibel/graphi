@@ -1,0 +1,1 @@
+FAIL: The response does not answer what is returned before invocation. The bundle contains the `commandCalledAs` fields but omits the `CalledAs` method and its empty-string return, so the required behavior cannot be verified.

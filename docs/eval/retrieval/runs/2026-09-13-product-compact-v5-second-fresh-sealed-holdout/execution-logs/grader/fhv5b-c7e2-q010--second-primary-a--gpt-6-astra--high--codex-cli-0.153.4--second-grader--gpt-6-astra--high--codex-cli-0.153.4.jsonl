@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-d4cf-74e2-9519-b98e3f5de172"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle confirms that OnInitialize appends all supplied callbacks in order, retaining earlier registrations, and Command.preRun invokes them sequentially. The cited paths and line ranges support these claims and the documented Execute behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":18096,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

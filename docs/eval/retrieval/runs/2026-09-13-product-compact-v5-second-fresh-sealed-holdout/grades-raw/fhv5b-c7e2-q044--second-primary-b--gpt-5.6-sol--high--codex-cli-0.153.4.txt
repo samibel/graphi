@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer how a command becomes a man-page byte buffer. It correctly identifies that the preserved bundle lacks the man-page generation code needed to verify relationships, optional history, and returned buffer bytes.

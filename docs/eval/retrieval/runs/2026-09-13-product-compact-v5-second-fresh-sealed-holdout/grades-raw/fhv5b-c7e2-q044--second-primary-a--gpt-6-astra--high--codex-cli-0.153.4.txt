@@ -1,0 +1,1 @@
+FAIL: The response does not answer how man-page bytes, relationships, and history are generated. It correctly identifies that the preserved bundle lacks the necessary man-page generation code, but this leaves the essential behavior unsupported and unanswered.

@@ -1,0 +1,1 @@
+FAIL: The response does not answer how to bind a persistent flag to Viper or state the backing-variable caveat. Neither required fact appears in the preserved bundle; the supplied guide lines 270–273 only describe persistent flag availability.

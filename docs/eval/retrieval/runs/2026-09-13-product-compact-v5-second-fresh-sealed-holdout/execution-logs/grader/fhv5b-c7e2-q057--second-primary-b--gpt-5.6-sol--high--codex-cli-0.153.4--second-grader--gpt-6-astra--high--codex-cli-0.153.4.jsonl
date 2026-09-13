@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b72-610e-7260-a5ef-fe1f58ec07cd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies that the child inherits the root’s help template through recursive parent lookup, supported by command.go:584–596. Its description of SetHelpTemplate is supported by command.go:347–350."}}
+{"type":"turn.completed","usage":{"input_tokens":18138,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b68-ca09-7e23-a8e0-66d0380d8321"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that MarkFlagFilename delegates to the flag-set helper, which attaches extensions using SetAnnotation(name, BashCompFilenameExt, extensions). The annotation key, command delegation, and persistent-flag variant are all supported by the cited bundle spans."}}
+{"type":"turn.completed","usage":{"input_tokens":18282,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

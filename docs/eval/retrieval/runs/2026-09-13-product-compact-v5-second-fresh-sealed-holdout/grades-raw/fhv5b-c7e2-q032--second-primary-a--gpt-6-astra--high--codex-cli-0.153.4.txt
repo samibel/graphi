@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved CommandPath implementation: roots use the display-name annotation when present, otherwise Name(); descendants recursively append a space and their Name(), inheriting the custom root display name while bypassing their own annotations. Both cited ranges exist and support the claims.

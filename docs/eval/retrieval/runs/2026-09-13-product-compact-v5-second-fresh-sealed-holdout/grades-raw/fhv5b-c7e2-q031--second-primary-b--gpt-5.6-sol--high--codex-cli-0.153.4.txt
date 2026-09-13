@@ -1,0 +1,1 @@
+PASS: The response correctly identifies all four fields reset to nil—parent, child commands, help command, and cached parent persistent flags—and cites command.go:1277–1283, which contains those exact assignments.

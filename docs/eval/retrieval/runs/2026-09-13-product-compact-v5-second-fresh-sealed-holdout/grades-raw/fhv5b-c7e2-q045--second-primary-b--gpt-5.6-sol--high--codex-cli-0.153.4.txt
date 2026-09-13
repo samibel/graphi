@@ -1,0 +1,1 @@
+FAIL: The response identifies missing evidence but does not answer the requested capability categories. The preserved bundle omits README.md:14–32 and does not establish the essential advertised behaviors in the reviewed spans.

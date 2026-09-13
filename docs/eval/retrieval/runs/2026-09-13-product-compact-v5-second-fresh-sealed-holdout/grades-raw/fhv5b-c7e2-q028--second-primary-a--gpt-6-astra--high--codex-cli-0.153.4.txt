@@ -1,0 +1,1 @@
+PASS: The response accurately describes recursive validation of nonempty GroupIDs against each parent’s defined groups and the panic identifying the missing ID and offending command path. All cited locations exist in the bundle and support the claims, including validation timing and treatment as a coding error.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6d-eb99-7100-bb9c-e4d79bd2b2a6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies the read lock with deferred unlock, initialization of nil annotation maps, and assignment of each registered flag’s root-derived BashCompCustom handler. All claims, including preservation of other annotation keys and preparation timing, are supported by bash_completions.go:535–549."}}
+{"type":"turn.completed","usage":{"input_tokens":18205,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":63,"reasoning_output_tokens":0}}

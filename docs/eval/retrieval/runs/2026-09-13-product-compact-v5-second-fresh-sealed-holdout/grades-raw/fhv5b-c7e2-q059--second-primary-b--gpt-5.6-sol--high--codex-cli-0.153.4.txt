@@ -1,0 +1,1 @@
+PASS: The response correctly explains that HasAlias delegates each alias comparison to commandNameMatches, which uses strings.EqualFold when EnableCaseInsensitive is enabled and exact equality otherwise. All cited spans exist in the bundle and support the claims, including case sensitivity by default.

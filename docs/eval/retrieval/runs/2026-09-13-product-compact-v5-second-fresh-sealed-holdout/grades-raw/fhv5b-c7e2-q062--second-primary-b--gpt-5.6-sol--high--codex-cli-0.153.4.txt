@@ -1,0 +1,1 @@
+PASS: The response correctly states that either non-nil Run or non-nil RunE is sufficient, supported by the exact OR condition in command.go:1550-1553. Its field-comment citation also exists and supports the description of RunE.

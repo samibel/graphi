@@ -1,0 +1,1 @@
+PASS: The response correctly states that whitespace-only text counts as an example because HasExample checks only len(c.Example) > 0, without trimming, as supported by command.go:1545–1548 in the preserved bundle.

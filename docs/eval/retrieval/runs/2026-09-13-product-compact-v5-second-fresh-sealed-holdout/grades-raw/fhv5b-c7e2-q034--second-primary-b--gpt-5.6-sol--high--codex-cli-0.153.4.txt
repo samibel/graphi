@@ -1,0 +1,1 @@
+FAIL: The response does not trace command lookup. It correctly identifies that the bundle omits the descent implementation, but recursive command-token removal, preservation of flags and remaining arguments, deepest-match stopping, and legacy validation cannot be verified from the supplied spans.

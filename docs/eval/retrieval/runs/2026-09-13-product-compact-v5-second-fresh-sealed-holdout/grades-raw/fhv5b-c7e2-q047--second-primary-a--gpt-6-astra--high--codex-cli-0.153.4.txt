@@ -1,0 +1,1 @@
+FAIL: The response identifies persistent and command-local flag scopes but does not answer which underlying library the README describes. The preserved bundle omits the README’s pflag fork and Go flag interface details, leaving a required part unsupported.

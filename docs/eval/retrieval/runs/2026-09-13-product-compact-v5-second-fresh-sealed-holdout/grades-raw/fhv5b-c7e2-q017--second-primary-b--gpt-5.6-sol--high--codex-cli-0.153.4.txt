@@ -1,0 +1,1 @@
+PASS: The response accurately describes parent-recursive handler resolution and the root fallback that returns the original error unchanged, all supported by the supplied command.go:497–510 span.

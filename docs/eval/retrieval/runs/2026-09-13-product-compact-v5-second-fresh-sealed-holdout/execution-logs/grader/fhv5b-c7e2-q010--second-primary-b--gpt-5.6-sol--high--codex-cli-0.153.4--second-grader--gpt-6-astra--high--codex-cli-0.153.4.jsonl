@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-efb0-7323-a529-c9563530b307"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle shows OnInitialize appending all supplied callbacks to the package initializer slice, preserving registration order and prior callbacks, and preRun iterating over the slice to invoke each callback in order."}}
+{"type":"turn.completed","usage":{"input_tokens":18064,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":171,"reasoning_output_tokens":125}}

@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the root command as retaining the group ID, supported by the assignment `c.Root().completionCommandGroupID = groupID` in the cited bundle lines `command.go:342–344`.
