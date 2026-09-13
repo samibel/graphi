@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-ab26-7382-9373-ad06f2cc040c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.CalledAs()` on the selected `*Command`. It returns the command name or alias used to invoke it, or `\"\"` if it has not been called (`command.go:1515–1522`).\n\nThe chosen value is stored in `commandCalledAs.name` (`command.go:207–209`), including the matched alias (`command.go:1527–1538`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16459,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":0}}

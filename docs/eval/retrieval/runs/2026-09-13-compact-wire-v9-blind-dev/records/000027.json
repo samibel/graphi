@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 27,
+  "previous_sha256": "eb09c916a5eb011323133f718dc3b518d91acc0f306bab0fa61ed3f6cfc04ff5",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "cf993d26c3900a6e3ec76f95321251008b7def74d00f8bdf63a50906e35b7ae7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Inside the executing command’s `Run`, `RunE`, or pre-run hook, use the provided `cmd` and call:\n\n```go\nf := cmd.Flag(\"flag-name\")\nif f != nil {\n    // use f.Value, f.Changed, etc.\n}\n```\n\n`Command.Flag(name)` first checks the command’s local flags with `c.Flags().Lookup(name)`, then searches inherited persistent flags via `c.persistentFlag(name)` ([command.go, lines 1794–1803]). The currently executing command is passed as `cmd *Command` to hooks such as `Run`, `RunE`, `PreRun`, and `PreRunE` ([command.go, lines 124–134]).",
+  "sha256": "6fdc3300fd018dcc4405a6b09822e068b1570ce4022ce8e50bad3cf69ce2992c"
+}

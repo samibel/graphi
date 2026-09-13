@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 139,
+  "previous_sha256": "5c210f80f74df40342bb9af38999cad7e0fe9d5cc0f3abef9583be6c16e41dd8",
+  "kind": "grade",
+  "query_id": "ci-1358",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "644a978dcd263aa2196537df2f28f670fb2573ba88c2323f8ac0076095d9c216",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the required API call and supports it with the preserved bundle. `flag_groups.go:62-77` contains `func (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string)` and explicitly says Cobra errors if more than one flag from the set is used. The claim that flags must already exist is supported by `c.Flags().Lookup(v)` followed by a panic on `nil` at lines 67-71. The inclusion of persistent and inherited flags is supported by `c.mergePersistentFlags()` at line 65 and its implementation in `command.go:1847-1853`. The example is a valid concrete use of the variadic method.\n",
+  "sha256": "d882c43ff4edfadb622d806fd893fde283272a98c727d8dbb3b9dbba38de8757"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 42,
+  "previous_sha256": "1abb6661553468c49010bcd7b1cf57d05780af33c5473a3fdb198066552ac875",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "8a457b6872f8880906cc42757c63c2e5c4d64e708aa4a76ae4d57ed9d6f47785",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a set of flags that cannot be used together.\n\nIn [`flag_groups.go:63-77`](flag_groups.go:63), it:\n\n- Merges persistent flags via `c.mergePersistentFlags()`.\n- Looks up every named flag in `c.Flags()`.\n- Panics if any flag does not exist.\n- Adds the space-joined group to each flag’s `cobra_annotation_mutually_exclusive` annotation.\n- Appends rather than replaces annotations, allowing a flag to belong to multiple mutually exclusive groups.\n\nThe method’s comment states that Cobra errors when a command uses more than one flag from the set (`flag_groups.go`, lines 63–64). Group enforcement is associated with `(*Command).ValidateFlagGroups` (`flag_groups.go`, lines 79–88), though its complete validation logic is not included in the response.",
+  "sha256": "ef02fd21f938f7b977e2eb72f4de8d1606027f00d73db9a17045e2b810ae6029"
+}

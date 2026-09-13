@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 94,
+  "previous_sha256": "3edf741a2871a5735cc13a416e8a23e787684df9b1269cf5ec21f581d657ba61",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "efa3235b4917e490adbaddb6ab11362c5ab93a8c43d3a9106904e019dabbca77",
+  "outcome": "fail",
+  "rationale": "The response is explicitly marked `\"truncated\":true` and provides only 10 selected spans rather than the complete file, so it cannot support a complete description of the file’s structure and declarations. The candidate should therefore have answered INSUFFICIENT. Its declaration list also jumps from `(*Command).MarkFlagFilename` at lines 42–44 to `(*Command).MarkFlagCustom` at line 54, leaving the intervening file contents—and any declarations there—unaccounted for, while claiming an overall description.\n",
+  "sha256": "bd66e285b5315517a3ff700acdecec6a1d5bac14690cab6178ab76d6e08ca44b"
+}

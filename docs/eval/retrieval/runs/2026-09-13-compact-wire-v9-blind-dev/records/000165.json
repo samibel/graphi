@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 165,
+  "previous_sha256": "1e93b33482c71a27b0b980f88a190f86b41ba6132e2b52fc0e7394a703aee122",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f992ed2fe738f09bd7a1fa8ecb589cfc1a678747e12314a311e4a479dff11b35",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes, but not with the default help flag. `InitDefaultHelpFlag` binds both forms to one boolean via `c.Flags().BoolP(\"help\", \"h\", false, usage)` (`command.go:1183–1198`), and execution only checks `GetBool(\"help\")` (`command.go:894–905`).\n\nTo distinguish them, override/predefine the help flag before initialization; `InitDefaultHelpFlag` does nothing when `\"help\"` already exists, and initialization is deliberately delayed to permit user overrides (`command.go:883–886`, `1183–1198`).",
+  "sha256": "2fd4673ad64bd899c953376b9e3233fb2c3cec9c04a2243c238144c5e851e8e6"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 18,
+  "previous_sha256": "aa3582276fa2d69a8ebcf16c383b2ca21849d70449bb472f2a23fd01bcbe34c0",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e5173b52656a391081aea6c4c19bcc9e10400e186cae6f9d02bfc7488f310d77",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "During completion, `completions.go:379-381` calls `finalCmd.enforceFlagGroupsForCompletion()` before generating flag completions.\n\nThat method:\n\n- Returns immediately if `c.DisableFlagParsing` is true (`flag_groups.go:226-228`).\n- Marks the other flags in a group required when one member is present.\n- Marks every flag in a one-required group required when none is present.\n- Hides the other members of a mutually exclusive group when one is set, preventing shell completion from suggesting them (`flag_groups.go:220-225`, `flag_groups.go:273-277`).\n\nThus, flag groups are enforced by translating their constraints into the standard completion metadata—required or hidden—before completion candidates are calculated.",
+  "sha256": "3c63a2d6276a5a997641c29db7f9f2c9141e75b27cda2b2d11d4dcdba0e979f5"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 120,
+  "previous_sha256": "2d3f96dcbd73bdbd76fc093a0d1f439f32a79d02b6bf9a6796d54ffdd7513bc7",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "41a96544c74dac650f8a7fb50dc023264c2757559b4e1461063402d0b8b67d4c",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies the controlling per-program variable as `\u003cPROGRAM\u003e_ACTIVE_HELP` and accurately explains its derivation. This is directly supported by `active_help.go:45-57` and `active_help.go:59-67`, while `active_help.go:26-31` confirms the `_ACTIVE_HELP` suffix and `COBRA_ACTIVE_HELP` global variable. The additional statement that `COBRA_ACTIVE_HELP=0` globally disables Active Help is also supported by `active_help.go:45-57` and the constants at `active_help.go:24-31`.\n",
+  "sha256": "18ed1e52df631b616bfb0b662b9691474c960ae0c4cf0362b5e11ecc4465a61e"
+}

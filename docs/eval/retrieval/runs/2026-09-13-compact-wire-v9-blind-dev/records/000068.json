@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 68,
+  "previous_sha256": "e173da9a344fa45ceb823393ab7fed269875c5a9bb34867d4a5fde077f4bc83a",
+  "kind": "response",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "c4df74db8790a9745e3ce2e9412d8b22c63aab3198037851cf5343238d72aab7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Define a callback with this signature:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```\n\nFor positional arguments:\n\n```go\ncmd.ValidArgsFunction = func(\n    cmd *Command,\n    args []string,\n    toComplete string,\n) ([]string, ShellCompDirective) {\n    return candidates, directive\n}\n```\n\nFor a flag:\n\n```go\nerr := cmd.RegisterFlagCompletionFunc(\"flag-name\", func(\n    cmd *Command,\n    args []string,\n    toComplete string,\n) ([]string, ShellCompDirective) {\n    return candidates, directive\n})\n```\n\nAlternatively, use `FixedCompletions(choices, directive)` when the candidates never change.\n\nEvidence: `command.go:87` defines `ValidArgsFunction`; `completions.go:124-127` defines `FixedCompletions`; `completions.go:132-146` defines flag completion registration and shows it returns an error if the flag is missing or already registered. The response does not include the available `ShellCompDirective` constants or their meanings.",
+  "sha256": "f199f48ca38d77e26073db94a751da68c6fd178abaa5ba479cdd71c2b1a90825"
+}

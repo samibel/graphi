@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 39,
+  "previous_sha256": "515bb3dd72e2190de17934cec51d67406902c737cfa5b10b6db7780a66eaf81d",
+  "kind": "response",
+  "query_id": "ci-771",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "50186b379eae0427a9b8996c47e39d8d6f7fe55feb8fb5a7e7a036ec1953d65c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Create a completion adapter for the target shell that:\n\n1. Invokes your program as `program __complete [command-line]`. The hidden command is defined as `ShellCompRequestCmd = \"__complete\"` in `completions.go:26-33`, and its usage is built as `__complete [command-line]` with at least one argument in `completions.go:194-205`.\n2. Reads stdout line-by-line as completion candidates (`completions.go:240-243`).\n3. Treats the final stdout line as `:\u003cdirective\u003e` and parses that integer (`completions.go:244-247`).\n4. Ignores stderr, which is diagnostic-only (`completions.go:249-251`).\n5. Optionally invoke `__completeNoDesc` when descriptions are unwanted (`completions.go:30-33`).\n\nThe response does not include the directive definitions or shell-specific registration syntax, so those parts cannot be implemented from this evidence alone.",
+  "sha256": "990c8578c9c72ea3b3a19d82fc94b1eb0e5871071701d70437061d61155d426b"
+}

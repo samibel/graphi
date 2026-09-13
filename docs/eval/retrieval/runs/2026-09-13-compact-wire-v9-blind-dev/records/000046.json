@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 46,
+  "previous_sha256": "5370438782eb484635cf328472dcfd63299ac66ff49ea1a914c72286be380ced",
+  "kind": "response",
+  "query_id": "cb-08",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "6170e950b19acadae8cba0000e118b3f7252ab12fae0b648a1798263c7671847",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`doc/man_docs.go` is in package `doc` ([line 15]).\n\nIts declarations include:\n\n- `GenManTreeOptions` with `Header`, `Path`, and `CommandSeparator` fields ([lines 82–88]).\n- `GenManHeader` with title, section, date, internal formatted date, source, and manual fields ([lines 90–101]).\n- Exported generators:\n  - `GenManTree` recursively generates man pages into a directory ([lines 33–38]).\n  - `GenManTreeFromOpts` accepts `GenManTreeOptions` ([line 48]).\n  - `GenMan` writes one command’s man page to an `io.Writer` ([lines 103–105]).\n- Internal helpers:\n  - `fillHeader` ([line 118]).\n  - `manPreamble` ([line 143]).\n  - `manPrintFlags` ([line 159]).\n  - `genMan`, which initializes Cobra’s default help command and flag ([lines 202–204]).",
+  "sha256": "c705a806527119f2c0d9dc7734b94f17c47a2dd8bae41d342340cf25f44aee5a"
+}

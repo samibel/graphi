@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 146,
+  "previous_sha256": "c68530d0dad035023f6908e894af5b85ec72b6ddb9bdba4ef76b6ec874cedc4f",
+  "kind": "grade",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "0f382954bb9617ad3535dcb5ab2db65b51432106b3c408b1eb91b5b034877129",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly identifies `cmd.Flag(name)` as the retrieval mechanism and safely handles a nil result before reading `f.Value`. This is supported by `command.go:1794-1803`, whose comment says `Flag` climbs the command tree and whose implementation returns the matching `*flag.Flag`, and by `command.go:1641-1653`, which says `Flags()` includes persistent flags declared by all parents.\n",
+  "sha256": "0f905996dab7658de2a84d6e28aa3b4ed6bec94e0b8e04ba0ab6ea882a3322da"
+}

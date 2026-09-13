@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 160,
+  "previous_sha256": "b5376eb18784ec2ab96dc859898da228e259b5a16925fdbd293d8f599665d01a",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "cd86d16dd108ebeb781395941f091cfcb97e2242c1ed314c59f369c425056f49",
+  "outcome": "fail",
+  "rationale": "The bundle supports only the conditional rule: `site/content/user_guide.md:590-592` says Cobra adds `--version` if the root command’s `Version` field is set, and `command.go:1202-1204` says initialization does nothing when `c.Version` is empty. It contains no root-command construction or assignment proving that this application’s `Version` field is actually empty, so the candidate’s asserted diagnosis is unsupported by the preserved bytes.\n",
+  "sha256": "99c6cbb431c632f1190547a172e9fe0d4e3a66082ce6740c35ce647352ce5eca"
+}

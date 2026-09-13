@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-3b46-71f2-8a69-2d373a1df1bd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No—not through the default help flag. `command.go:1195` registers `--help` and `-h` as the same boolean via `BoolP(\"help\", \"h\", ...)`, and `command.go:894-905` only reads the shared `\"help\"` value with `GetBool(\"help\")`. Thus the default handling cannot distinguish which spelling was used."}}
+{"type":"turn.completed","usage":{"input_tokens":16475,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":227,"reasoning_output_tokens":144}}

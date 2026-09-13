@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098e1-e307-7332-882a-9013fccc7c35"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"outcome\":\"pass\",\"rationale\":\"The answer is correct and supported by the sealed bundle. It cites `command.go:1183–1198`, where `BoolP(\\\"help\\\", \\\"h\\\", ...)` makes the default `--help` and `-h` one boolean flag, and where `InitDefaultHelpFlag` does nothing if a `help` flag already exists. It also cites `command.go:883–886`, which explicitly says initialization is delayed to allow user overriding. Together, those bytes support the concrete conclusion that declaring a custom `--help` and a separate `-h` before execution can preserve distinct handling.\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":17265,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":274,"reasoning_output_tokens":130}}

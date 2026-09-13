@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 105,
+  "previous_sha256": "edf8d40d676e63fad5337e677927cc67d98ba0c152700a569df0cbe95419477b",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "415c2d02fe108e0b6160487b768657f08a1fbd624ff3b15cd036e7897d5ece0c",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies `cobra.go` lines 188–221 and the `ld(s, t string, ignoreCase bool)` function as the implementation. This is directly supported by the bundle’s `cobra.go` lines 187–221, which describe `ld` as returning Levenshtein distance, construct and fill matrix `d`, and return `d[len(s)][len(t)]`. It also correctly cites the invocation at `command.go` line 836: `levenshteinDistance := ld(typedName, cmd.Name(), true)`.\n",
+  "sha256": "d6e9140409c7631e33112c82701088d832190c7764d7a12f27049c24904c965e"
+}

@@ -1,0 +1,8 @@
+```go
+f := cmd.Flag("flag-name")
+if f != nil {
+    value := f.Value // flag.Value
+}
+```
+
+No explicit `Parent()` traversal is needed: `Command.Flag` “climbs up the command tree” and falls back to `persistentFlag` when necessary ([command.go:1794–1803]). `Flags()` also includes flags declared by all parents ([command.go:1641–1653]).

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 75,
+  "previous_sha256": "8c15fd3917dba495526170dca794ecd95242d679b1d76720b69cf11186a1f09d",
+  "kind": "response",
+  "query_id": "ci-2314",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "f992ed2fe738f09bd7a1fa8ecb589cfc1a678747e12314a311e4a479dff11b35",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes—but not with the default flag. `InitDefaultHelpFlag` registers `--help` and `-h` as the same boolean via `c.Flags().BoolP(\"help\", \"h\", ...)` (`command.go:1183–1198`), so they are indistinguishable by default. You can override this before execution: initialization is deliberately delayed “to allow for user overriding” (`command.go:883–886`), and it does nothing when a `help` flag already exists (`command.go:1185–1188`), allowing `--help` and `-h` to be defined separately.",
+  "sha256": "b86082d50cac5e282134da526a53f94565120ef4bdb99f98fdd591a5f635be63"
+}

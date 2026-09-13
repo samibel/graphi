@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 106,
+  "previous_sha256": "d6e9140409c7631e33112c82701088d832190c7764d7a12f27049c24904c965e",
+  "kind": "grade",
+  "query_id": "cb-16",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "dacfa370a86e249294419f71c482318250f0bfaec2220082389e25f22a44e853",
+  "outcome": "pass",
+  "rationale": "The answer correctly identifies `ld(s, t string, ignoreCase bool)` in `cobra.go` as the implementation, supported by `cobra.go:187-221`, which shows matrix initialization, edit-cost recurrence, and `return d[len(s)][len(t)]`. It also correctly identifies the call site at `command.go:836` (`ld(typedName, cmd.Name(), true)`) and the threshold comparison at `command.go:837`. All substantive claims are supported by the preserved bundle bytes.\n",
+  "sha256": "15ee1eaa82ab2f8ae7e77442f5fa7a5100b11d4181cee5945b7e321e7f06351b"
+}

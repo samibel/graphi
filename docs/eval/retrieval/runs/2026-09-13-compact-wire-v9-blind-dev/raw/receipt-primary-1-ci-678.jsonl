@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-89dc-7a33-8bd9-2662be1f3a54"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In a test, pass flags as command-line arguments with `SetArgs`:\n\n```go\ncmd.SetArgs([]string{\"--flag-name\", \"value\"})\nerr := cmd.Execute()\n```\n\nEvidence: `command.go:275-279` says `SetArgs` is “particularly useful when testing” and stores the slice in `c.args`. Execution reads `args := c.args` at `command.go:1075-1084`, and flags are parsed via `c.ParseFlags(a)` at `command.go:888-890`."}}
+{"type":"turn.completed","usage":{"input_tokens":16560,"cached_input_tokens":16384,"cache_write_input_tokens":0,"output_tokens":113,"reasoning_output_tokens":0}}

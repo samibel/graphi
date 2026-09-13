@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 109,
+  "previous_sha256": "4457ed8346a306ed0d80f76dda24f9802313a802aa3277eeff1678252d5c63d4",
+  "kind": "grade",
+  "query_id": "cb-20",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "7631cc28266e3de12326709c3fd92ae5efde567f4a02e89120fda646e7ac64be",
+  "outcome": "pass",
+  "rationale": "The answer concretely and correctly explains the propagation mechanism using preserved evidence: `mergePersistentFlags()` refreshes parent persistent flags with `updateParentsPflags()` and adds both the current command’s `PersistentFlags()` and `parentsPflags` to `c.Flags()` (`command.go:1847-1853`). Its description of lookup order is directly supported by `persistentFlag()` (`command.go:1805-1816`), and the distinction from non-persistent local flags is supported by `LocalNonPersistentFlags()` (`command.go:1654-1666`). Although the bundle omits the body of `updateParentsPflags()`, the included comment explicitly says `mergePersistentFlags` “adds missing persistent flags of all parents,” so the candidate does not rely on unsupported implementation details.\n",
+  "sha256": "41faa18f58f1904c27baf4176d7cb6cb38dbe5bd4264ff151baf0dc6519b953e"
+}

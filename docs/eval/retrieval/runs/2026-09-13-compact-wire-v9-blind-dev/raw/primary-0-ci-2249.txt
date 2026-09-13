@@ -1,0 +1,7 @@
+Create a parent command with persistent flags and a child command, then assert on the child:
+
+- `child.InheritedFlags().Lookup(name)` finds the parent flag.
+- `child.HasInheritedFlags()` is `true`.
+- A child-local flag with the same name is excluded from inherited flags.
+
+This follows from `command.go:1695-1718`: `InheritedFlags()` merges parent persistent flags, adding each only when neither the inherited nor local set already contains that name. `command.go:1766-1769` defines `HasInheritedFlags()` as `c.InheritedFlags().HasFlags()`. For hidden/deprecated filtering, test `HasAvailableInheritedFlags()`, which delegates to `InheritedFlags().HasAvailableFlags()` (`command.go:1788-1792`).

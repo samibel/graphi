@@ -1,0 +1,7 @@
+Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:
+
+```go
+f := subCmd.Flag("flag-name")
+```
+
+`Command.Flag` checks the command’s applicable flags and, if necessary, searches persistent flags up the command tree (`command.go:1794-1803`, `Command.Flag`; `command.go:1805-1816`, `persistentFlag`). `Command.Flags` is documented as including local flags plus persistent flags declared by the command and all parents (`command.go:1641-1653`).

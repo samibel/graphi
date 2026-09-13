@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 48,
+  "previous_sha256": "efa3235b4917e490adbaddb6ab11362c5ab93a8c43d3a9106904e019dabbca77",
+  "kind": "response",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "d666750b3478acad7001e49d74518a251e5684bb22f32e811ba04f171c3913cc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Required flags are validated in `command.go` by `(*Command).ValidateRequiredFlags()` (lines 1146–1168). It scans `c.Flags()`, checks each flag’s `BashCompOneRequiredFlag` annotation, and reports annotated flags whose `Changed` field is false.\n\nThe validation is invoked before execution at `command.go:975–977`:\n\n```go\nif err := c.ValidateRequiredFlags(); err != nil {\n    return err\n}\n```\n\n`MarkFlagRequired` in `shell_completions.go:21–26` is what marks a flag as required.",
+  "sha256": "77e1eda68da1b6c1f9e62e5b6b4569dc0e6b1cd694f4d14c252352c38293c895"
+}

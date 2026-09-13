@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 29,
+  "previous_sha256": "be2f9ecab4c2773422d020f3c97fa863a2c6c6c0089bf84aa0b14c3ab9b3fa52",
+  "kind": "response",
+  "query_id": "ci-1236",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "73345b75a037b8095140d8846b1ef6de9bad68db41251ee116fd86ad1e07b777",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.CalledAs()`. It returns the command name or alias used to invoke that command, or `\"\"` if it has not been called (`command.go`, lines 1515–1522, symbol `(*Command).CalledAs`).",
+  "sha256": "aa67fc34a516199d09fd289f6e0594b01b8df627be1a4b4cb10b5a7f78c8a88d"
+}

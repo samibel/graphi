@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 155,
+  "previous_sha256": "7cbe3a18a914e81f6305d9e342f531a50b7642fa8a49aacbd8069bbbb173d83e",
+  "kind": "grade",
+  "query_id": "ci-678",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "515bb3dd72e2190de17934cec51d67406902c737cfa5b10b6db7780a66eaf81d",
+  "outcome": "pass",
+  "rationale": "The candidate gives the correct concrete procedure: call `cmd.SetArgs` with CLI-style flag arguments before `cmd.Execute()`. This is fully supported by the preserved bundle: `command.go:275-279` shows `SetArgs` storing the slice in `c.args` and identifies testing as its intended use; `command.go:1075-1081` shows execution preferring `c.args` and falling back to `os.Args[1:]` only when it is nil; and `command.go:888-890` shows the supplied arguments being passed to `ParseFlags`. The example `[]string{\"--flag-name\", \"value\"}` is consistent with that evidence.\n",
+  "sha256": "064211a679c8ab676d1b3917d940c5a5d3c8a4b17cdf4b64342554abcc04bf03"
+}

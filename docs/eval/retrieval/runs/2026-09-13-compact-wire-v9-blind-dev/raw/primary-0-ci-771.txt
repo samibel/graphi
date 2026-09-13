@@ -1,0 +1,9 @@
+Create a completion adapter for the target shell that:
+
+1. Invokes your program as `program __complete [command-line]`. The hidden command is defined as `ShellCompRequestCmd = "__complete"` in `completions.go:26-33`, and its usage is built as `__complete [command-line]` with at least one argument in `completions.go:194-205`.
+2. Reads stdout line-by-line as completion candidates (`completions.go:240-243`).
+3. Treats the final stdout line as `:<directive>` and parses that integer (`completions.go:244-247`).
+4. Ignores stderr, which is diagnostic-only (`completions.go:249-251`).
+5. Optionally invoke `__completeNoDesc` when descriptions are unwanted (`completions.go:30-33`).
+
+The response does not include the directive definitions or shell-specific registration syntax, so those parts cannot be implemented from this evidence alone.

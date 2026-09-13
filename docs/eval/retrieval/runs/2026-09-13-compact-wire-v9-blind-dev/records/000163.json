@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 163,
+  "previous_sha256": "23f36c8e750cbca440b377a53aabe601701df72accf6e3a91876249d754a466c",
+  "kind": "response",
+  "query_id": "cb-19",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v9-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "2e3323c0a814a6b7feb385f678ede3672af1eb9a263798deacac4c79e91eb3d5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The lifecycle is:\n\n1. `Execute()` starts execution (`command.go:1038`) and always runs through the root command, regardless of which command received the call (`command.go:1057`).\n2. It proceeds through `ExecuteC`, resolves the command/flags—accounting for `TraverseChildren` (`command.go:1087`)—then invokes `cmd.execute(flags)` (`command.go:1115`).\n3. `execute` parses flags with `c.ParseFlags(a)` (`command.go:888`).\n4. Persistent pre-run hooks execute:\n   - Normally, the first `PersistentPreRunE` or `PersistentPreRun` found while walking from the selected command toward the root.\n   - With `EnableTraverseRunHooks`, all persistent pre-runs execute root-to-selected-command (`command.go:940-966`; option documented in `cobra.go:64`).\n   - An error from `PersistentPreRunE` stops execution.\n5. The selected command’s local `PreRunE`, or otherwise `PreRun`, executes (`command.go:968-974`). A `PreRunE` error stops execution.\n6. Required flags and flag groups are validated (`ValidateRequiredFlags` and `ValidateFlagGroups`, `command.go:976-982`).\n7. Finally, `RunE` executes if defined; otherwise `Run` executes. A `RunE` error is returned (`command.go:984-989`).\n\nAll these hooks receive the selected command `c` and `argWoFlags`, the arguments remaining after flag processing.",
+  "sha256": "dcad59fb53393c3172eb55bbe4a61a5eda151f7a9b4f47e22593ed4e3ffb8fd7"
+}

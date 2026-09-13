@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-026f-70b2-9c49-e28879a6d9f1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:\n\n```go\nf := subCmd.Flag(\"flag-name\")\n```\n\n`Command.Flag` checks the command’s applicable flags and, if necessary, searches persistent flags up the command tree (`command.go:1794-1803`, `Command.Flag`; `command.go:1805-1816`, `persistentFlag`). `Command.Flags` is documented as including local flags plus persistent flags declared by the command and all parents (`command.go:1641-1653`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16535,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":121,"reasoning_output_tokens":0}}

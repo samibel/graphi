@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-aabf-7c31-9cd7-cd9b770ba2d0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.CalledAs()`. It returns the command name or alias used to invoke that command, or `\"\"` if it has not been called (`command.go`, lines 1515–1522, symbol `(*Command).CalledAs`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16459,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

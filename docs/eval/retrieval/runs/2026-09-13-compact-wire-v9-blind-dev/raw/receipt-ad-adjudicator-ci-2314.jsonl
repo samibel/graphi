@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098e3-9b3d-7223-88eb-82795690a815"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes, but not with the default help flag. `InitDefaultHelpFlag` binds both forms to one boolean via `c.Flags().BoolP(\"help\", \"h\", false, usage)` (`command.go:1183–1198`), and execution only checks `GetBool(\"help\")` (`command.go:894–905`).\n\nTo distinguish them, override/predefine the help flag before initialization; `InitDefaultHelpFlag` does nothing when `\"help\"` already exists, and initialization is deliberately delayed to permit user overrides (`command.go:883–886`, `1183–1198`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16475,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":620,"reasoning_output_tokens":492}}

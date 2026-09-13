@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 97,
+  "previous_sha256": "116a410522c4d7ced5a9d4759cc1f4680ea6c351dc51e948c8b03c3ff8db4f0b",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "714286b7e3f9fa445e0dfeebd4edf742916ab488b3b7074744fa388c5b3c59eb",
+  "outcome": "pass",
+  "rationale": "The candidate accurately and concretely describes the behavior supported by the preserved bytes. `command.go:724-748` shows `Find` recursively stripping flags, selecting the first remaining argument, calling `findNext`, removing the matched token with `argsMinusFirstX`, descending on success, and returning the current command and remaining arguments when no match is found. `command.go:767-786` supports exact name and alias matching, optional prefix matching, acceptance only for a unique prefix match, and recording the exact/alias spelling in `cmd.commandCalledAs.name`. No required claim depends on evidence outside the bundle.\n",
+  "sha256": "ad0464b7e7b2163b17f1dc0e3fde2f88e7aabc907796e5d07daa475143d445cb"
+}

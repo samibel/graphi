@@ -1,0 +1,33 @@
+Define a callback with this signature:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+For positional arguments:
+
+```go
+cmd.ValidArgsFunction = func(
+    cmd *Command,
+    args []string,
+    toComplete string,
+) ([]string, ShellCompDirective) {
+    return candidates, directive
+}
+```
+
+For a flag:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("flag-name", func(
+    cmd *Command,
+    args []string,
+    toComplete string,
+) ([]string, ShellCompDirective) {
+    return candidates, directive
+})
+```
+
+Alternatively, use `FixedCompletions(choices, directive)` when the candidates never change.
+
+Evidence: `command.go:87` defines `ValidArgsFunction`; `completions.go:124-127` defines `FixedCompletions`; `completions.go:132-146` defines flag completion registration and shows it returns an error if the flag is missing or already registered. The response does not include the available `ShellCompDirective` constants or their meanings.

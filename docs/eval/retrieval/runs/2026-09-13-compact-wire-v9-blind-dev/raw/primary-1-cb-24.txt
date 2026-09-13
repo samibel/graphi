@@ -1,0 +1,10 @@
+During flag completion, `completions.go:379-381` calls `finalCmd.enforceFlagGroupsForCompletion()` before generating completions.
+
+That method:
+
+- Returns immediately when `DisableFlagParsing` is true (`flag_groups.go:225-228`).
+- If one group member is present, marks the other members required.
+- If no member of a one-required group is present, marks every member required.
+- If a mutually exclusive member is present, hides the other members so completion will not suggest them (`flag_groups.go:220-224`, `273-277`).
+
+This lets the existing completion logic enforce groups through flags’ required/hidden state rather than separate suggestion logic.

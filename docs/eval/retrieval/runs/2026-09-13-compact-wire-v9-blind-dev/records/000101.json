@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 101,
+  "previous_sha256": "6e67ca71b43ca964ea096feb3e62c2e95bfda094cba3f357c59e23d0c225b5ae",
+  "kind": "grade",
+  "query_id": "cb-14",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "14a94ada01ebe28d33a74ef6a968461df8d0a227a1076e8112891072ecca7c07",
+  "outcome": "pass",
+  "rationale": "The answer correctly traces the supported dispatch path: `ShellCompRequestCmd`/`ShellCompNoDescRequestCmd` are the hidden shell-request command names (`completions.go:26-33`); the shell generators assign `ShellCompRequestCmd` to `compCmd` (`bash_completionsV2.go:32`, `zsh_completions.go:88`, `fish_completions.go:31`, `powershell_completions.go:34-35`); and the command's `Run` handler dispatches `args` to `cmd.getCompletions(args)` and checks `cmd.CalledAs()` for the no-description variant (`completions.go:205-215`). This is concrete and sufficient for the question without relying on facts outside the bundle.\n",
+  "sha256": "7ef6c6503286f08be3a4afb9ca8defd86b7f4591166682b086f90ddb70e2c792"
+}

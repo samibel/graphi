@@ -1,0 +1,13 @@
+`shell_completions.go` belongs to package `cobra` (`shell_completions.go:15`) and declares shell-completion flag helpers:
+
+- `(*Command).MarkFlagRequired(name string) error` — line 24
+- `(*Command).MarkPersistentFlagRequired(name string) error` — line 31
+- `MarkFlagRequired(flags *pflag.FlagSet, name string) error` — line 38
+- `(*Command).MarkFlagFilename(name string, extensions ...string) error` — line 44
+- `(*Command).MarkFlagCustom(name string, f string) error` — line 54
+- `(*Command).MarkPersistentFlagFilename(name string, extensions ...string) error` — line 61
+- `MarkFlagCustom(flags *pflag.FlagSet, name string, f string) error` — line 77
+- `(*Command).MarkFlagDirname(name string) error` — line 83
+- `MarkFlagDirname(flags *pflag.FlagSet, name string) error` — line 96
+
+The comments say these helpers mark flags as required, restrict completion to filenames/extensions or directories, or attach a Bash-only custom completion function. `MarkFlagCustom` recommends `RegisterFlagCompletionFunc` for cross-shell support (`shell_completions.go:71–77`).

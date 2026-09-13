@@ -1,0 +1,10 @@
+Register a closure with `OnInitialize` and capture the command:
+
+```go
+OnInitialize(func() {
+    f := cmd.Flag("name")
+    // use f.Value here
+})
+```
+
+This works because flags are parsed before initialization (`command.go:888` calls `c.ParseFlags(a)`), while initializers run later through `c.preRun()` (`command.go:926`, `command.go:1015-1019`). `Command.Flag` checks ordinary flags and then searches persistent flags up the command tree (`command.go:1794-1803`).

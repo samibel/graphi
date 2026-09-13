@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-5230-7b33-be43-133b74f28ae0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `GenManTree` to generate a man page for the root command and every descendant in the specified directory; its header may be `nil` (`doc/man_docs.go:33-34`). Alternatively, `GenManTreeFromOpts` generates the same command tree using options and writes pages to `opts.Path` (`doc/man_docs.go:46-47`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16284,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":131,"reasoning_output_tokens":51}}

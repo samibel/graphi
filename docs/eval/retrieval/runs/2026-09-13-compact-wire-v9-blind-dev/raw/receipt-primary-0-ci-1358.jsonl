@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098d9-bc18-7401-8b56-34a8f0499ac1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Define the flags first, then pass their names to the command:\n\n```go\ncmd.MarkFlagsMutuallyExclusive(\"flag-a\", \"flag-b\")\n```\n\n`flag_groups.go:62-77` defines `(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` and states that Cobra errors when more than one flag in the set is used. Each name must already exist: the method calls `c.Flags().Lookup(v)` and panics if it returns `nil` (`flag_groups.go:67-71`). Persistent and inherited flags are included through `c.mergePersistentFlags()` (`flag_groups.go:65`; `command.go:1847-1853`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16430,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":140,"reasoning_output_tokens":0}}

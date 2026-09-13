@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 2,
+  "previous_sha256": "41b157979e3d183a724ad9bb175bc00d4776c24e7ae1952d6d767e44730a4edc",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "8a457b6872f8880906cc42757c63c2e5c4d64e708aa4a76ae4d57ed9d6f47785",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a set of flags for which at most one may be supplied.\n\nIn [`flag_groups.go` lines 63–77], it:\n\n- Merges persistent flags via `c.mergePersistentFlags()`.\n- Looks up every named flag in `c.Flags()`.\n- Panics with `Failed to find flag %q...` if any flag does not exist.\n- Adds the space-joined flag-name set to each flag’s `cobra_annotation_mutually_exclusive` annotation.\n- Appends rather than replaces annotations, allowing a flag to belong to multiple mutually exclusive groups.\n\nThe annotations are subsequently checked by `(*Command).ValidateFlagGroups` ([`flag_groups.go` lines 79–88]); validation is skipped when `DisableFlagParsing` is true.",
+  "sha256": "9435ae99fc54d8e9e6da2ba589ec3661c2505c22d8e6ffa4f99f7e76f3f0267a"
+}

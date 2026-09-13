@@ -1,0 +1,17 @@
+`flag_groups.go` is in package `cobra` (`flag_groups.go:15`) and defines flag-group annotations and validation/completion behavior.
+
+Declarations shown:
+
+- Constants (`flag_groups.go:25-29`):
+  - `requiredAsGroup`
+  - `oneRequired`
+  - `mutuallyExclusive`
+- `(*Command).MarkFlagsRequiredTogether(flagNames ...string)` marks grouped flags so partial usage errors (`flag_groups.go:31-34`).
+- `hasAllFlags(fs *flag.FlagSet, flagnames ...string) bool` checks flag presence (`flag_groups.go:111-112`).
+- `processFlagForGroupAnnotation(...)` reads a flag’s group annotation into group-status data (`flag_groups.go:121-123`).
+- Validation helpers:
+  - `validateRequiredFlagGroups` (`flag_groups.go:144-145`)
+  - `validateOneRequiredFlagGroups` (`flag_groups.go:167-168`)
+  - `validateExclusiveFlagGroups` (`flag_groups.go:188-189`)
+- `(*Command).ValidateFlagGroups() error` validates required-together, one-required, and mutually-exclusive rules, returning the first error; it skips validation when `DisableFlagParsing` is set (`flag_groups.go:79-89`).
+- `(*Command).enforceFlagGroupsForCompletion()` adjusts completion metadata: related flags become required, one-required groups become required when none are set, and mutually exclusive alternatives become hidden (`flag_groups.go:220-227`).

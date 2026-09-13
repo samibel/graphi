@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 148,
+  "previous_sha256": "be0826acf5d1ffa40dbdaabd95717cce1d6654339849a52424ac93a6edd15404",
+  "kind": "grade",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "8c15fd3917dba495526170dca794ecd95242d679b1d76720b69cf11186a1f09d",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, supported testing approach. The bundle states that `InheritedFlags` returns flags inherited from parents, calls `mergePersistentFlags()`, and excludes any parent flag whose name exists in `LocalFlags()` (`command.go:1695-1718`). It also directly supports the assertions that `HasInheritedFlags()` delegates to `InheritedFlags().HasFlags()` (`command.go:1766-1769`), `NonInheritedFlags()` is `LocalFlags()` (`command.go:1721-1723`), and `HasAvailableInheritedFlags()` checks inherited flags that are not hidden or deprecated via `HasAvailableFlags()` (`command.go:1788-1792`). Thus the proposed parent/child fixture, shadowing case, and availability case are all grounded in the preserved response bytes.\n",
+  "sha256": "4b09834c4526fcd4e05d680922bbf32b654a266a93d23e987499ccc39fecaf4c"
+}

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 47,
+  "previous_sha256": "c705a806527119f2c0d9dc7734b94f17c47a2dd8bae41d342340cf25f44aee5a",
+  "kind": "response",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "46e89f2eb347b1fb5197779dcb1af9c64754017acf02f9b9517697885aa627c1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`shell_completions.go` belongs to package `cobra` (`shell_completions.go:15`) and declares shell-completion flag helpers:\n\n- `(*Command).MarkFlagRequired(name string) error` (`:24`)\n- `(*Command).MarkPersistentFlagRequired(name string) error` (`:29–31`)\n- `MarkFlagRequired(flags *pflag.FlagSet, name string) error` (`:35–38`)\n- `(*Command).MarkFlagFilename(name string, extensions ...string) error` (`:42–44`)\n- `(*Command).MarkFlagCustom(name, f string) error` (`:54`)\n- `(*Command).MarkPersistentFlagFilename(name string, extensions ...string) error` (`:58–61`)\n- `MarkFlagCustom(flags *pflag.FlagSet, name, f string) error` (`:71–77`), a Bash-only annotation helper; its comment recommends `RegisterFlagCompletionFunc` for cross-shell support.\n- `(*Command).MarkFlagDirname(name string) error` (`:83`)\n- `MarkFlagDirname(flags *pflag.FlagSet, name string) error` (`:94–96`)\n\nOverall, the file provides both `Command` methods and lower-level `pflag.FlagSet` helpers for required flags and filename, directory, or custom shell completions.",
+  "sha256": "efa3235b4917e490adbaddb6ab11362c5ab93a8c43d3a9106904e019dabbca77"
+}

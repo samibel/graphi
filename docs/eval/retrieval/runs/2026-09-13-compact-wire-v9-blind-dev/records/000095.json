@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 95,
+  "previous_sha256": "bd66e285b5315517a3ff700acdecec6a1d5bac14690cab6178ab76d6e08ca44b",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "db449036aeb1506b9b7a7f01d37a2cc91266e399a07573ece8a5c728134902d6",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and fully supported by the preserved bundle. `command.go:1146–1168` shows `(*Command).ValidateRequiredFlags()` iterating over `c.Flags()`, reading `BashCompOneRequiredFlag`, checking `pflag.Changed`, and returning an error naming missing flags. `command.go:975–977` shows the pre-execution call to `c.ValidateRequiredFlags()` and immediate error return. These citations directly answer where and how required flags are validated before the command runs.\n",
+  "sha256": "869ffec3b4035051c6731aed7771b1ea0f78750c9575e51b19fde17bd1cbd7a8"
+}

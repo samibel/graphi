@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-0285-7620-ac2c-dbdd4867f3fa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `cmd.Flags()` to get the `*flag.FlagSet` associated with the command:\n\n```go\nflags := cmd.Flags()\n```\n\n`command.go:1641-1653` states that `Command.Flags()` returns the complete flag set, including local and persistent flags declared by the command and its parents. For only inherited flags, use `cmd.InheritedFlags()` (`command.go:1695-1698`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16411,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":237,"reasoning_output_tokens":145}}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 126,
+  "previous_sha256": "49c3e4cb4b87e415a34fd5eb841af3ec64d16519da44a6eeb5db6ccf2789b670",
+  "kind": "grade",
+  "query_id": "cb-30",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "66e82bd4730be8e1bc34cedfccb6efc4dba1e6b3d03dfd9a86b8cd2696b202cd",
+  "outcome": "pass",
+  "rationale": "The candidate directly identifies `GenManTree` as generating man pages for a command and all descendants in a given directory and correctly notes that its header may be nil, all supported by `doc/man_docs.go:33-34`. It also correctly identifies `GenManTreeFromOpts` and states that pages are written to `opts.Path`, supported by `doc/man_docs.go:46-47`. The answer is concrete and does not rely on facts outside the preserved bundle.\n",
+  "sha256": "70fbb1f72107d4cdce0246db4a4a59bfa64c7c515aa5e87c775e37beea726c3f"
+}

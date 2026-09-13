@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 58,
+  "previous_sha256": "971cfd65fd640cfef4a93d368b88dcbe422ccabaa116eb22a9a28a9109fc7f6a",
+  "kind": "response",
+  "query_id": "cb-24",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "e5173b52656a391081aea6c4c19bcc9e10400e186cae6f9d02bfc7488f310d77",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "During flag completion, `completions.go:379-381` calls `finalCmd.enforceFlagGroupsForCompletion()` before generating completions.\n\nThat method:\n\n- Returns immediately when `DisableFlagParsing` is true (`flag_groups.go:225-228`).\n- If one group member is present, marks the other members required.\n- If no member of a one-required group is present, marks every member required.\n- If a mutually exclusive member is present, hides the other members so completion will not suggest them (`flag_groups.go:220-224`, `273-277`).\n\nThis lets the existing completion logic enforce groups through flags’ required/hidden state rather than separate suggestion logic.",
+  "sha256": "18709fc6f690ebec7fb3d9a5df49779efd0fdd062b2e5cf3c335505a46a6c857"
+}

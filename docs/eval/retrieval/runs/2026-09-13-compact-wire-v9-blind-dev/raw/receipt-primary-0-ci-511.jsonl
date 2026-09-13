@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-62d7-79e1-b39f-ef4d449fd189"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Register a closure with `OnInitialize` and capture the command:\n\n```go\nOnInitialize(func() {\n    f := cmd.Flag(\"name\")\n    // use f.Value here\n})\n```\n\nThis works because flags are parsed before initialization (`command.go:888` calls `c.ParseFlags(a)`), while initializers run later through `c.preRun()` (`command.go:926`, `command.go:1015-1019`). `Command.Flag` checks ordinary flags and then searches persistent flags up the command tree (`command.go:1794-1803`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16355,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":288,"reasoning_output_tokens":168}}

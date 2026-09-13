@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 17,
+  "previous_sha256": "ab0aec47f94274dd3069bb3127f6ec895ff8113bb7ac2e9bf2ce896b4a4a1cdf",
+  "kind": "response",
+  "query_id": "cb-22",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "eb42990cdb3ba1efa8f649b44f2d0c877b3f38cc080cbcf4bd52235e16464f26",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The shown man-page generator performs a depth-first, post-order traversal.\n\nIn `doc/man_docs.go:52-59`, `GenManTreeFromOpts` iterates over `cmd.Commands()`, skips children that are unavailable or additional help topics, and recursively calls itself for every remaining child. After processing all descendants, it generates the current command’s page via `GenMan(cmd, \u0026headerCopy, f)` (`doc/man_docs.go:61-80`).\n\nThus, eligible child commands are documented before their parent. The response only shows declarations—not traversal logic—for the Markdown generators (`doc/md_docs.go:125,133`).",
+  "sha256": "aa3582276fa2d69a8ebcf16c383b2ca21849d70449bb472f2a23fd01bcbe34c0"
+}

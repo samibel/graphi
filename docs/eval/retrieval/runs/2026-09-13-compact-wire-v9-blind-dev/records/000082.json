@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 82,
+  "previous_sha256": "c7d1ee0da1afda0b9e8eef3602632980a4ecc7f6d0a0501279b43a98002a981f",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "1abb6661553468c49010bcd7b1cf57d05780af33c5473a3fdb198066552ac875",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, accurate summary fully supported by the preserved `command.go:1051–1116` span: context initialization, root redirection, setup hooks, argument selection, completion initialization, `Traverse`/`Find`, lookup-error handling, call-name recording, context propagation, and `cmd.execute(flags)`. It also correctly identifies that the bundle is truncated at `if err != nil {` on line 1116 and therefore does not claim unsupported final error-handling or return behavior.\n",
+  "sha256": "0f611e3bdfe9cc598c7f0163f33153d58d1f8b3e1e4b8f8c30fc3399fc8fd1c5"
+}

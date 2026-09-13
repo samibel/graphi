@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 151,
+  "previous_sha256": "3efe820b3d3cc8debbd118d0fb0607411228c42ac51fa6a44217f14183ffc398",
+  "kind": "grade",
+  "query_id": "ci-467",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "669cbc1941920af9e89060345731697d63675e99c92809389404924ebfcacaf9",
+  "outcome": "pass",
+  "rationale": "The candidate correctly distinguishes flags from positional args and supports both claims with the preserved bundle. `command.go:793-828` shows `Traverse` collecting flags (including space-separated values), calling `c.ParseFlags(flags)` when a subcommand is found, and then descending; `command.go:1087-1088` shows this path is conditional on `c.TraverseChildren`. For the non-Traverse resolution behavior, `command.go:730-736` shows `stripFlags(innerArgs, c)` followed by taking `argsWOflags[0]` as `nextSubCmd`, supporting the statement that the first ordinary positional token is treated as the prospective subcommand rather than as an intervening positional argument.\n",
+  "sha256": "4b2dba0715ed4860c385b031496de3f56c8f7376a5e8f9664af66cbf82a87d50"
+}

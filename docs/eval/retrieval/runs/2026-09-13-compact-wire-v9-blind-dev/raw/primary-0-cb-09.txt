@@ -1,0 +1,22 @@
+`shell_completions.go` belongs to package `cobra` (`shell_completions.go:15`). It declares shell-completion annotation helpers in two forms: `Command` methods and lower-level functions operating on `*pflag.FlagSet`.
+
+- Required flags:
+  - `(*Command).MarkFlagRequired` (line 24)
+  - `(*Command).MarkPersistentFlagRequired` (line 31)
+  - `MarkFlagRequired(*pflag.FlagSet, string)` (lines 35–38)
+
+- Filename completion:
+  - `(*Command).MarkFlagFilename` (lines 42–44)
+  - `(*Command).MarkPersistentFlagFilename` (lines 58–61)
+  - Both accept optional file extensions.
+
+- Custom Bash completion:
+  - `(*Command).MarkFlagCustom` (line 54)
+  - `MarkFlagCustom(*pflag.FlagSet, string, string)` (lines 71–77)
+  - The comments say this is Bash-only and recommend `RegisterFlagCompletionFunc` for cross-shell support.
+
+- Directory completion:
+  - `(*Command).MarkFlagDirname` (line 83)
+  - `MarkFlagDirname(*pflag.FlagSet, string)` (lines 94–96)
+
+All shown declarations return `error`. The response is truncated and does not include imports, implementations, or any additional declarations.

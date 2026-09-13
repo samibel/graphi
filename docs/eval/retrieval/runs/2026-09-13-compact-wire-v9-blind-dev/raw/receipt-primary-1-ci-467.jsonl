@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a098da-5a76-71b0-8616-b13e8bc8e965"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Flags: **yes**. `Traverse` collects flags and their values before locating the subcommand, parses them on the parent with `c.ParseFlags(flags)`, then descends (`command.go:793-828`).\n\nPositional args: **no**. The first non-flag is treated as the prospective subcommand (`stripFlags` and `argsWOflags[0]` in `command.go:643-659, 730-736`); in `Traverse`, a non-flag that is not a child command stops traversal (`command.go:817-821`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16475,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":230,"reasoning_output_tokens":107}}

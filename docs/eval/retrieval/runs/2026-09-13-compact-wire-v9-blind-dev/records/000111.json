@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1195c0f9e70c51a87c53270325f61adec6789c503841af5136e36b1db287e529",
+  "sequence": 111,
+  "previous_sha256": "675fadfff6c22e8d0aa307f16d77fac34b226c4c7c8afac87789503748a20727",
+  "kind": "grade",
+  "query_id": "cb-21",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v9-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ab0aec47f94274dd3069bb3127f6ec895ff8113bb7ac2e9bf2ce896b4a4a1cdf",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the flow supported by the sealed bundle: `(*Command).AddCommand` iterates over children, rejects self-parenting, sets `cmds[i].parent = c`, updates cached maximum lengths, propagates `globNormFunc` when present, appends each child to `c.commands`, and sets `commandsAreSorted = false` (`command.go:1302-1329`). It also correctly cites `Parent()` returning `c.parent` (`command.go:1842-1845`). All material claims are supported by the preserved response bytes.\n",
+  "sha256": "350cfc655a99fd4d517d9f44f2c6f1eb50e91167b80bf9e23479258bffe7f8c6"
+}
