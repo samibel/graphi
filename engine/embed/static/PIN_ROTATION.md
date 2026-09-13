@@ -145,6 +145,9 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev/` — the final-audit
   candidate-bound development recapture after source discovery and reference
   hydration were placed under one shared bounded snapshot.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev/` — the sealed-source
+  snapshot candidate recapture after empty-snapshot, Markdown, cancellation and
+  partial-read accounting boundaries were closed.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and
