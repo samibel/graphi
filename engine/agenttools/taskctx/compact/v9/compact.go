@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/7"
+const CompactTaskContextVersion = "task_context/2-compact/8"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -1678,7 +1678,8 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 				score += 180_000
 			}
 		}
-		if strings.HasPrefix(item.RefID, "hydrated-") && strings.HasSuffix(strings.ToLower(item.Path), ".md") && compactTaskContextNeedsReferenceContext(patterns) {
+		if strings.HasPrefix(item.RefID, "hydrated-") && strings.HasSuffix(strings.ToLower(item.Path), ".md") &&
+			(compactTaskContextNeedsReferenceContext(patterns) || compactTaskContextPathStemMatchesPatterns(item.Path, patterns)) {
 			// A ranked documentation heading is otherwise represented by only one
 			// or two evidence lines. Prefer its verified section so lifecycle lists
 			// and surrounding constraints can survive compact allocation.
@@ -2015,6 +2016,7 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 	}
 	primaryRemaining := remaining - secondaryReserve
 	if mode == GrepReadV2NaturalLanguage {
+		compactTaskContextCompleteNamedMarkdown(patterns, candidates, admitted, &primaryRemaining)
 		compactTaskContextCompleteCodeDocumentationPair(query, candidates, admitted, &primaryRemaining)
 		compactTaskContextCompleteCallerCalleePair(query, candidates, admitted, &primaryRemaining)
 	}
@@ -2789,6 +2791,26 @@ func compactTaskContextCompleteUnit(candidate *compactTaskContextCandidate, rema
 	candidate.complete = true
 	*remaining -= additional
 	return true
+}
+
+func compactTaskContextCompleteNamedMarkdown(patterns []string, candidates []compactTaskContextCandidate, admitted []bool, remaining *int) bool {
+	for i := range candidates {
+		candidate := &candidates[i]
+		if !admitted[i] || !strings.HasSuffix(strings.ToLower(candidate.item.Path), ".md") ||
+			!compactTaskContextPathStemMatchesPatterns(candidate.item.Path, patterns) {
+			continue
+		}
+		fullCost := len(strings.Fields(strings.Join(candidate.lines, "\n")))
+		additional := fullCost - candidate.cost
+		if fullCost < 1 || fullCost > 160 || additional < 0 || additional > *remaining {
+			return false
+		}
+		candidate.from, candidate.to = 0, len(candidate.lines)-1
+		candidate.cost, candidate.complete = fullCost, true
+		*remaining -= additional
+		return true
+	}
+	return false
 }
 
 func compactTaskContextCompleteCodeDocumentationPair(query string, candidates []compactTaskContextCandidate, admitted []bool, remaining *int) bool {

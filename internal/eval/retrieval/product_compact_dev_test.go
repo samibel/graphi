@@ -324,7 +324,15 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if query.Stratum != StratumNoHit {
 			continue
 		}
-		bundle, err := taskContextBundleFromCandidateBytes(inputs[query.ID].Bytes)
+		input := inputs[query.ID]
+		var captured candidateResponseEnvelope
+		if err := json.Unmarshal(input.Bytes, &captured); err == nil && captured.Result != nil && len(captured.Result.StructuredContent) > 0 {
+			if _, err := ValidateCompactCandidateBundleBytes(query.ID, input.Bytes); err != nil {
+				t.Fatalf("no-hit query %s compact validation: %v", query.ID, err)
+			}
+			continue
+		}
+		bundle, err := taskContextBundleFromCandidateBytes(input.Bytes)
 		if err != nil {
 			t.Fatal(err)
 		}

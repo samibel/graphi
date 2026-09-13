@@ -259,6 +259,43 @@ func TestHydrationExpandsExactQueryBasenameMarkdownSection(t *testing.T) {
 	}
 }
 
+func TestSelectionKeepsCompleteExactQueryBasenameMarkdown(t *testing.T) {
+	query := "how to generate man pages for a command tree"
+	var evidence []contract.Evidence
+	var items []contract.Item
+	for i := 0; i < 8; i++ {
+		ref := fmt.Sprintf("decoy-%d", i)
+		text := "generate man page command tree"
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: fmt.Sprintf("topic-%d.md", i), Line: 1, Span: "1-1",
+			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{
+			RefID: ref, Rank: i + 1, Reason: fmt.Sprintf("candidate: type guide.Topic (topic-%d.md:1) score 1", i), EvidenceRefIDs: []string{ref},
+		})
+	}
+	manual := "# Manual\nopaque first step\nopaque second step\nopaque final step"
+	evidence = append(evidence, contract.Evidence{
+		RefID: "hydrated-man", Path: "site/docgen/man.md", Line: 1, Span: "1-4",
+		Role: "snippet", Snippet: manual, TextHash: shape.TextHash(manual),
+	})
+	items = append(items, contract.Item{
+		RefID: "manual", Rank: 9,
+		Reason: "candidate: type guide.Manual (site/docgen/man.md:1) score 1", EvidenceRefIDs: []string{"hydrated-man"},
+	})
+
+	sources, _, err := compactTaskContextSelect(query, evidence, items, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source.Path == "site/docgen/man.md" && source.Start == 1 && source.End == 4 && source.Text == manual {
+			return
+		}
+	}
+	t.Fatalf("complete exact-basename Markdown lost to generic fragments: %+v", sources)
+}
+
 func TestFlowSelectionLimitsBreadthToPreserveDepth(t *testing.T) {
 	var evidence []contract.Evidence
 	var items []contract.Item
