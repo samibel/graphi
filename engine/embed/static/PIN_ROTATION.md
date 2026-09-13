@@ -154,9 +154,13 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
   presealed-rubric successor recapture after the release harness became
   fail-closed on rubric-byte drift.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev/` — the exact
+  fresh-holdout capture-candidate recapture and clean development ranking
+  report. Both use this pinned production embedder.
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
-  — the reserved independent fresh-holdout run; any future captured bundles are
-  invalidated by rotating this production embedder.
+  — the completed independent fresh-holdout run. Its 64 captured bundles and
+  resulting blind decision are invalidated by rotating this production
+  embedder.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

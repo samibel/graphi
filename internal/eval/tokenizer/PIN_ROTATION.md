@@ -119,8 +119,11 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
   presealed-rubric successor recapture; its byte identity and exact serialized
   wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev/` — the exact
+  fresh-holdout capture-candidate development recapture; its byte identity and
+  exact serialized wire ceiling use this tokenizer.
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
-  — the preregistered fresh sealed-holdout scaffold and any future response
+  — the completed fresh sealed-holdout capture and its 64 exact response-byte
   counts are bound to this tokenizer.
 
 The governance test scans every directory immediately below
