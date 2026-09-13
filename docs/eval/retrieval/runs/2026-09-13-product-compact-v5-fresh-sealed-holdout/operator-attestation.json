@@ -1,52 +1,108 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/1",
-  "status": "template_not_attested",
+  "status": "pre_freeze_attested",
   "operator": {
-    "id": "",
-    "provider": "",
-    "model": "",
-    "model_build": "",
-    "task_path": "",
-    "session_id": "",
-    "host_id": "",
-    "workspace_id": ""
+    "id": "codex-independent-holdout-operator",
+    "provider": "OpenAI Codex",
+    "model": "GPT-5 session-declared model family",
+    "model_build": "not exposed by provider",
+    "task_path": "/root/holdout_operator",
+    "session_id": "not exposed to operator task",
+    "host_id": "MB-VQYG0FKHQL",
+    "workspace_id": "/tmp/graphi-fresh-holdout-v5.UlKtwy"
   },
   "independence": {
-    "implemented_candidate": null,
-    "annotated_dataset": null,
-    "accessed_prior_holdout_content": null,
-    "accessed_prior_holdout_responses_or_answer_keys": null,
-    "root_agent_excluded_from_holdout_content": null,
-    "basis": ""
+    "implemented_candidate": false,
+    "annotated_dataset": false,
+    "accessed_prior_holdout_content": false,
+    "accessed_prior_holdout_responses_or_answer_keys": false,
+    "root_agent_excluded_from_holdout_content": true,
+    "basis": "Independent holdout-operator task separate from candidate implementation and curation. The operator inspected only public code, methodology, scaffold, attestations and development evidence metadata before freeze; it did not manually open the sealed dataset or any prior holdout content and reports only content-free hashes, counts and commit identities to the root agent."
+  },
+  "participant_preregistration_evidence": {
+    "recorded_before_dataset_completion": true,
+    "execution_uses_these_sessions": false,
+    "acknowledgements": [
+      {
+        "logical_participant_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+        "session_uuid": "01a09aab-402b-7322-988a-924d6b9351e9",
+        "provider": "OpenAI Codex",
+        "model": "gpt-6-astra",
+        "codex_cli_version": "0.153.4",
+        "reasoning_effort": "high",
+        "acknowledged_participated_in_track": false
+      },
+      {
+        "logical_participant_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+        "session_uuid": "01a09aab-96c4-78b1-b55b-89d0b1863f6f",
+        "provider": "OpenAI Codex",
+        "model": "gpt-5.6-sol",
+        "codex_cli_version": "0.153.4",
+        "reasoning_effort": "high",
+        "acknowledged_participated_in_track": false
+      },
+      {
+        "logical_participant_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+        "session_uuid": "01a09aab-c545-76d1-a9f1-a7b0103cae5f",
+        "provider": "OpenAI Codex",
+        "model": "gpt-6-astra",
+        "codex_cli_version": "0.153.4",
+        "reasoning_effort": "high",
+        "acknowledged_participated_in_track": false
+      },
+      {
+        "logical_participant_id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+        "session_uuid": "01a09aac-00bb-7df2-9fcf-dbdae2997c7b",
+        "provider": "OpenAI Codex",
+        "model": "gpt-5.6-sol",
+        "codex_cli_version": "0.153.4",
+        "reasoning_effort": "high",
+        "acknowledged_participated_in_track": false
+      }
+    ],
+    "backend_identity_limitation": "OpenAI exposes the concrete non-alias model ID but no immutable backend snapshot/build digest. Evaluation processes are attributable to the frozen logical role/configuration but model behavior is not byte-reproducible at the backend-model layer."
   },
   "curator": {
-    "status": "unassigned_blocker",
-    "id": "",
-    "independence_attestation_sha256": "",
-    "sealed_dataset_path": "",
-    "sealed_dataset_sha256": ""
+    "status": "independent_curator_handoff_complete",
+    "id": "Codex independent curator agent /root/fresh_holdout_curator",
+    "independence_attestation_sha256": "7925c77e11e4ddb2c825209ed0795c36b7aa4ce9df8ba4ff36ab0150c731fe66",
+    "sealed_dataset_path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/sealed-dataset.json",
+    "sealed_dataset_sha256": "9f2289c71bbc8515bd58b0210ddcf528eb5be427896918b3e5a3d390ad10d5aa"
   },
   "frozen_identities": {
-    "product_candidate_sha": "",
+    "product_candidate_sha": "d8d6a2c1d8da2de0bd90d94350a98e32a138e26c",
     "freeze_base_sha": "",
-    "development_evidence_commit": "",
-    "development_capture_sha256": "",
+    "development_evidence_commit": "37bdb43efee6c73a5739f58a609f6605aa1fc8ef",
+    "development_capture_sha256": "5abdcabdca489cd3431f8b9db4b126ea6c937671de87f3a17e3b40c63f803acb",
     "indexed_repository": "cobra",
-    "indexed_repository_sha": "",
-    "embedder_id": "",
+    "indexed_repository_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
     "tokenizer_id": "tiktoken:cl100k_base:ordinary",
     "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
     "run_directory": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "",
-    "candidate_worktree_clean": null,
-    "indexed_worktree_clean": null,
-    "precondition_record_sha256": "",
-    "pre_registration_sha256": "",
-    "commands_sha256": "",
-    "isolation_controls": [],
-    "limitations": []
+    "attested_at_utc": "2026-09-13T12:24:02Z",
+    "candidate_worktree_clean": true,
+    "indexed_worktree_clean": true,
+    "precondition_record_sha256": "pending: created by freeze after this attestation is committed",
+    "pre_registration_sha256": "pending: created by capture after freeze is committed",
+    "commands_sha256": "385de57ae2abe6a97b2ad6c5f9068e91296eed1dfe26ffc083a7e4c00679fe26",
+    "isolation_controls": [
+      "Per item: a new codex exec --ephemeral process; no resume or fork",
+      "Per item: --ignore-user-config --ignore-rules -s read-only",
+      "Per item: one allowed input path and direct -o write to the harness raw path",
+      "Per item: --json writes a confidential item-local execution log below the RUN",
+      "Per item: mechanically require exactly thread.started, turn.started, item.completed(agent_message), turn.completed; any other event or item type is FAIL/REFUSED without retry",
+      "Concrete model selected with -m and reasoning effort high selected explicitly",
+      "Execution logs are hashed and committed but their content is not sent to the root orchestration agent",
+      "Candidate team and root orchestration agent receive no holdout content"
+    ],
+    "limitations": [
+      "OpenAI exposes no immutable backend model snapshot/build digest, so model-level behavior is not byte-reproducible.",
+      "The provider does not expose an operator task session identifier.",
+      "Repository-writer malice remains outside the isolation guarantee as disclosed by the public threat model."
+    ]
   },
-  "declaration": "Template only. Before freeze, the independent operator must replace every empty or null field and attest: no candidate implementation, no dataset annotation, no prior holdout access, no disclosure of holdout content to the root agent, and execution only against the named clean commits and content-addressed inputs."
+  "declaration": "Before freeze, the independent operator attests: no candidate implementation, no dataset annotation, no prior holdout access, no manual opening of the fresh sealed dataset, no disclosure of holdout content to the root agent, and execution only against the named clean commits and content-addressed inputs. Post-freeze hashes remain explicitly pending until the phases that create them."
 }

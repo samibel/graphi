@@ -1,36 +1,36 @@
 {
   "primary_raters": [
     {
-      "id": "",
+      "id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
       "role": "primary",
-      "provider": "",
-      "model": "",
-      "independence_basis": "",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Stable logical primary-A configuration: concrete non-alias model ID gpt-6-astra, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
       "participated_in_track": false
     },
     {
-      "id": "",
+      "id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
       "role": "primary",
-      "provider": "",
-      "model": "",
-      "independence_basis": "",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Stable logical primary-B configuration: concrete non-alias model ID gpt-5.6-sol, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
       "participated_in_track": false
     }
   ],
   "grader": {
-    "id": "",
+    "id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
     "role": "grader",
-    "provider": "",
-    "model": "",
-    "independence_basis": "",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-6-astra",
+    "independence_basis": "Stable logical grader configuration: concrete non-alias model ID gpt-6-astra, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. It receives only one generated grader packet. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
     "participated_in_track": false
   },
   "adjudicator": {
-    "id": "",
+    "id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
     "role": "adjudicator",
-    "provider": "",
-    "model": "",
-    "independence_basis": "",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "independence_basis": "Stable logical adjudicator configuration: concrete non-alias model ID gpt-5.6-sol, codex-cli 0.153.4, reasoning effort high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. Preregistered acknowledgement before dataset completion states no candidate implementation, dataset annotation or prior holdout participation. It receives only the original allowed prompt and no primary response or grade before its answer is sealed. OpenAI exposes no immutable backend snapshot/build digest, so model behavior is not byte-reproducible at that layer.",
     "participated_in_track": false
   }
 }

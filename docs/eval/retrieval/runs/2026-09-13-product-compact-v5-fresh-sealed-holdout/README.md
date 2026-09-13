@@ -1,27 +1,56 @@
-# Product compact V5 fresh sealed holdout
+# Product compact V6 fresh sealed holdout
 
-Status: **SCAFFOLD ONLY — HOLDOUT NOT CURATED, FROZEN, OPENED OR RUN**.
+Status: **CURATED AND SEALED — NOT FROZEN, OPENED OR RUN**.
 
 This directory reserves one future, independently operated qrel-blind release
-evaluation. It contains public procedure files only. It contains no dataset,
-question, judgement, prompt, captured bundle, response, grade or adjudication.
+evaluation. It now contains the curator-delivered opaque sealed dataset and
+public attestation, but the candidate team and root orchestration agent have not
+opened its content. No prompt, captured bundle, response, grade or adjudication
+exists yet.
 
-No candidate SHA is asserted here. The final product candidate, its bound V5
-development evidence and the final freeze-base commit must be supplied and
-verified before this scaffold can be frozen.
+The frozen product candidate is
+`d8d6a2c1d8da2de0bd90d94350a98e32a138e26c`. Its externally committed,
+candidate-bound V6 development evidence is
+`37bdb43efee6c73a5739f58a609f6605aa1fc8ef`, with capture SHA-256
+`5abdcabdca489cd3431f8b9db4b126ea6c937671de87f3a17e3b40c63f803acb`.
+That evidence commit is referenced, not imported into this branch. The final
+freeze-base commit remains to be recorded after the public pre-freeze inputs
+are committed. The reserved directory name retains `v5` for path stability; it
+does not identify the product candidate or development evidence.
+
+## 2026-09-13 PRE-FREEZE AMENDMENT — participant execution identity
+
+This amendment was made before `freeze`, `capture` or any participant response.
+The execution service exposes a concrete OpenAI model ID (`gpt-6-astra` or
+`gpt-5.6-sol`) but no immutable backend snapshot or build digest. These IDs are
+not aliases such as `latest`. Each participant identity is therefore the stable
+logical role/configuration ID in `participants.json`, bound to its concrete
+model ID, `codex-cli 0.153.4`, reasoning effort `high`, and the stateless
+per-item execution controls in [METHOD.md](METHOD.md).
+
+Model behavior is not byte-reproducible at the model layer because the provider
+does not expose a backend snapshot/build digest. This limitation is recorded
+rather than replaced with an invented identity. Four earlier session UUIDs are
+evidence that the participants acknowledged their roles before dataset
+completion; they are retained only in `operator-attestation.json` and will not
+be resumed for evaluation.
+
+This identity amendment changes no population size `N`, threshold `k`, dataset,
+bundle, grading rubric or scoring rule.
 
 The production embedder is preregistered as
 `static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b`.
 Changing that identity creates a different run.
 
-## Current blocker
+## Curator handoff
 
-The run is not eligible to start because an independent curator has not yet
-delivered a newly curated, stratified and sealed dataset. The curator must be
-identified before curation, must not have implemented the candidate, and must
-not use development captures, prior holdout questions, prior holdout answers or
-prior holdout results. The curator may use only the pinned corpus, the public
-methodology and the preregistered stratification rules.
+The independent curator delivered one newly curated, stratified and sealed
+dataset at the reserved run-relative path. Its SHA-256 is
+`9f2289c71bbc8515bd58b0210ddcf528eb5be427896918b3e5a3d390ad10d5aa`;
+the public curator-attestation SHA-256 is
+`7925c77e11e4ddb2c825209ed0795c36b7aa4ce9df8ba4ff36ab0150c731fe66`.
+The operator treats the dataset as opaque until the fail-closed harness opens
+it during `freeze`.
 
 The candidate team and root orchestration agent must not read the dataset,
 questions, judgements or answer keys. The independent operator may pass the
@@ -32,7 +61,7 @@ of its contents.
 ## Preconditions for `freeze`
 
 - A final product candidate is committed, clean and unchanged by this run.
-- Candidate-bound V5 development evidence is committed and independently
+- Candidate-bound V6 development evidence is committed and independently
   verifies the real MCP `task_context/2` path, actor-visible compact version,
   exact 1,200-cl100k ceiling and byte reproducibility.
 - The independent curator and operator attestations are complete.
@@ -53,8 +82,11 @@ of its contents.
 4. The independent operator runs `-blind-eval capture` and commits
    `pre-registration.json`, `capture-provenance.json`, `prompts/` and `bundles/`
    before any rater receives a prompt.
-5. Each primary receives only one prompt at a time. Raw responses are written
-   once and sealed before grading.
+5. Each primary receives only one prompt in a fresh stateless Codex process.
+   Raw responses and confidential JSONL execution logs are written once. Any
+   non-`agent_message` item event is a refusal without retry. Responses are
+   sealed before grading; execution logs are hashed and committed but never
+   disclosed to the root orchestration agent.
 6. The grader receives only the run-local frozen rubric and the generated
    per-response grader packet. Grades are written once and sealed.
 7. If primaries disagree, the adjudicator answers from the original question
