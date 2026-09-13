@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	GrepReadV2Version     = "2-source-discovery/2"
+	GrepReadV2Version     = "2-source-discovery/3"
 	GrepReadV2SearchLimit = 48
 	GrepReadV2MaxReads    = 8
 	GrepReadV2MaxFiles    = 20000
@@ -121,6 +121,14 @@ func (t GrepReadV2Transcript) Validate() error {
 // result. Search ranks all matches globally, then the read planner spends its
 // first four slots on distinct files before filling remaining slots by rank.
 func GrepReadV2(ctx context.Context, repository fs.FS, query string) (GrepReadV2Transcript, error) {
+	transcript, _, err := grepReadV2WithFiles(ctx, repository, query)
+	return transcript, err
+}
+
+// grepReadV2WithFiles retains the one bounded source snapshot used to build
+// the transcript. Production selection reuses it for reference hydration so
+// one request never performs a second repository-wide walk or read pass.
+func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (GrepReadV2Transcript, []grepReadFile, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -132,16 +140,16 @@ func GrepReadV2(ctx context.Context, repository fs.FS, query string) (GrepReadV2
 		Patterns: patterns,
 	}
 
-	files, matches, response, scanLimited, err := grepReadV2Search(ctx, repository, mode, patterns)
+	included, matches, response, scanLimited, files, err := grepReadV2Search(ctx, repository, mode, patterns)
 	if err != nil {
-		return GrepReadV2Transcript{}, err
+		return GrepReadV2Transcript{}, nil, err
 	}
-	transcript.IncludedFiles = files
+	transcript.IncludedFiles = included
 	transcript.Ledger.capture(PayloadBoundaryGrepRead, PayloadOperationGrep, response)
 
 	planned := grepReadV2PlanReads(matches, mode)
 	for _, window := range planned {
-		readResponse, endLine := grepReadRead(repository, window)
+		readResponse, endLine := grepReadRead(repository, files, window)
 		sequence := transcript.Ledger.capture(PayloadBoundaryGrepRead, PayloadOperationRead, readResponse)
 		transcript.Reads = append(transcript.Reads, GrepReadOperation{
 			Path: window.Path, StartLine: window.StartLine, EndLine: endLine, ResponseSequence: sequence,
@@ -154,7 +162,7 @@ func GrepReadV2(ctx context.Context, repository fs.FS, query string) (GrepReadV2
 	} else {
 		transcript.StopReason = SavingsStopExhausted
 	}
-	return transcript, nil
+	return transcript, files, nil
 }
 
 type grepReadV2Match struct {
@@ -270,13 +278,13 @@ var grepReadV2StopWords = map[string]bool{
 	"would": true,
 }
 
-func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode, patterns []string) ([]string, []grepReadV2Match, []byte, bool, error) {
+func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode, patterns []string) ([]string, []grepReadV2Match, []byte, bool, []grepReadFile, error) {
 	if len(patterns) == 0 {
-		return []string{}, nil, []byte("grep:error:query:no_searchable_pattern\n"), false, nil
+		return []string{}, nil, []byte("grep:error:query:no_searchable_pattern\n"), false, nil, nil
 	}
 	files, scanLimited, err := grepReadV2Files(ctx, repository)
 	if err != nil {
-		return nil, nil, nil, false, err
+		return nil, nil, nil, false, nil, err
 	}
 	included := make([]string, 0, len(files))
 	var errors []grepReadFile
@@ -318,12 +326,24 @@ func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode
 		response.Write(match.Text)
 		response.WriteByte('\n')
 	}
-	return included, matches, response.Bytes(), scanLimited, nil
+	return included, matches, response.Bytes(), scanLimited, files, nil
 }
 
 var errGrepReadV2ScanLimit = errors.New("source discovery scan limit reached")
 
 func grepReadV2Files(ctx context.Context, repository fs.FS) ([]grepReadFile, bool, error) {
+	return grepReadV2FilesWithLimits(ctx, repository, grepReadV2Limits{
+		maxFiles: GrepReadV2MaxFiles, maxFileSize: GrepReadV2MaxFileSize, maxBytes: GrepReadV2MaxBytes,
+	})
+}
+
+type grepReadV2Limits struct {
+	maxFiles    int
+	maxFileSize int64
+	maxBytes    int64
+}
+
+func grepReadV2FilesWithLimits(ctx context.Context, repository fs.FS, limits grepReadV2Limits) ([]grepReadFile, bool, error) {
 	if repository == nil {
 		return []grepReadFile{{Path: ".", ErrorKind: "walk_failed"}}, false, nil
 	}
@@ -347,7 +367,7 @@ func grepReadV2Files(ctx context.Context, repository fs.FS) ([]grepReadFile, boo
 		if !grepReadIncludes(name) || !entry.Type().IsRegular() {
 			return nil
 		}
-		if len(files) >= GrepReadV2MaxFiles {
+		if len(files) >= limits.maxFiles {
 			scanLimited = true
 			files = append(files, grepReadFile{Path: ".", ErrorKind: "scan_limit"})
 			return errGrepReadV2ScanLimit
@@ -359,21 +379,22 @@ func grepReadV2Files(ctx context.Context, repository fs.FS) ([]grepReadFile, boo
 			files = append(files, file)
 			return nil
 		}
-		if info.Size() < 0 || info.Size() > GrepReadV2MaxFileSize {
+		if info.Size() < 0 || info.Size() > limits.maxFileSize {
 			file.ErrorKind = "file_too_large"
 			files = append(files, file)
 			return nil
 		}
-		if totalBytes+info.Size() > GrepReadV2MaxBytes {
+		if totalBytes+info.Size() > limits.maxBytes {
 			scanLimited = true
 			files = append(files, grepReadFile{Path: ".", ErrorKind: "scan_limit"})
 			return errGrepReadV2ScanLimit
 		}
-		remaining := int64(GrepReadV2MaxBytes) - totalBytes
-		readLimit := min(int64(GrepReadV2MaxFileSize), remaining)
+		remaining := limits.maxBytes - totalBytes
+		readLimit := min(limits.maxFileSize, remaining)
 		file.Bytes, err = readSourceFileLimit(repository, name, readLimit)
+		readBytes := len(file.Bytes)
 		if err != nil {
-			if errors.Is(err, errSourceFileLimit) && readLimit < GrepReadV2MaxFileSize {
+			if errors.Is(err, errSourceFileLimit) && readLimit < limits.maxFileSize {
 				scanLimited = true
 				files = append(files, grepReadFile{Path: ".", ErrorKind: "scan_limit"})
 				return errGrepReadV2ScanLimit
@@ -388,7 +409,10 @@ func grepReadV2Files(ctx context.Context, repository fs.FS) ([]grepReadFile, boo
 			file.ErrorKind = "invalid_utf8"
 			file.Bytes = nil
 		}
-		totalBytes += int64(len(file.Bytes))
+		// Charge bytes at the I/O boundary, before invalid UTF-8 content is
+		// discarded from the searchable corpus. Otherwise malformed files
+		// could bypass the aggregate read ceiling.
+		totalBytes += int64(readBytes)
 		files = append(files, file)
 		return nil
 	})

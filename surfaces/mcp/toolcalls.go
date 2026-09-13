@@ -858,6 +858,12 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		return nil, &rpcError{Code: -32603, Message: err.Error()}
 	}
 	if derefInt(p.Arguments.Version) == 2 {
+		if derefInt(p.Arguments.TokenBudget) < 0 {
+			// The canonical engine result already implements the documented
+			// negative-budget "no snippets" mode. Do not reactivate source
+			// reads while projecting the MCP-specific compact representation.
+			return textResult(b), nil
+		}
 		root := s.repository().Root
 		if root == "" {
 			root = "."

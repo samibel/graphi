@@ -78,6 +78,24 @@ func TestTaskContextV2_PublicMCPPreservesNonReadyFallback(t *testing.T) {
 	}
 }
 
+func TestTaskContextV2_PublicMCPNegativeBudgetDoesNotReactivateSourceReads(t *testing.T) {
+	root := t.TempDir()
+	const sourceOnly = "SHOULD_NOT_BE_DISCOVERED"
+	if err := os.WriteFile(filepath.Join(root, "answer.go"), []byte("package fixture\n// "+sourceOnly+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	server := NewServerWithClient(compactTaskContextClient{}, WithLabs(), WithRepository(client.Repository{Root: root}))
+	defer server.Close()
+	request := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"task_context","arguments":{"task":"SHOULD_NOT_BE_DISCOVERED","version":2,"token_budget":-1}}}` + "\n")
+	var output bytes.Buffer
+	if err := server.Serve(t.Context(), bytes.NewReader(request), &output); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(output.Bytes(), []byte(sourceOnly)) || bytes.Contains(output.Bytes(), []byte(`"structuredContent"`)) {
+		t.Fatalf("negative token budget reactivated compact source discovery: %s", output.String())
+	}
+}
+
 func TestTaskContextV2_PublicMCPDoesNotFollowSourceSymlinkOutsideRepository(t *testing.T) {
 	root := t.TempDir()
 	outside := filepath.Join(t.TempDir(), "outside.go")

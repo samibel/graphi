@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -35,6 +36,17 @@ func readSourceFileLimit(repository fs.FS, name string, limit int64) ([]byte, er
 		return nil, errSourceFileLimit
 	}
 	return raw, nil
+}
+
+func readScannedSource(repository fs.FS, scanned []grepReadFile, name string) ([]byte, error) {
+	if scanned == nil {
+		return readSourceFile(repository, name)
+	}
+	index := sort.Search(len(scanned), func(i int) bool { return scanned[i].Path >= name })
+	if index >= len(scanned) || scanned[index].Path != name || scanned[index].ErrorKind != "" {
+		return nil, fs.ErrNotExist
+	}
+	return scanned[index].Bytes, nil
 }
 
 // GrepReadOperation records one bounded source read and binds it to the exact
@@ -128,8 +140,8 @@ func splitGrepReadLines(raw []byte) []grepReadLine {
 	return lines
 }
 
-func grepReadRead(repository fs.FS, window grepReadWindow) ([]byte, int) {
-	raw, err := readSourceFile(repository, window.Path)
+func grepReadRead(repository fs.FS, scanned []grepReadFile, window grepReadWindow) ([]byte, int) {
+	raw, err := readScannedSource(repository, scanned, window.Path)
 	if err != nil {
 		return []byte(fmt.Sprintf("read:error:%s:read_failed\n", window.Path)), window.StartLine - 1
 	}
