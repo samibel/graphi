@@ -295,9 +295,12 @@ func TestCompactTaskContextDev_ExactPathHydratesDeclarationOutline(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	summary, structured, err := ParseCompactTaskContextDev(payload.Bytes)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if !strings.Contains(summary, "request: describe this file's structure and declarations") {
+		t.Fatalf("exact-path summary does not state the requested operation: %q", summary)
 	}
 	joined := ""
 	for _, source := range structured.Sources {
@@ -363,6 +366,138 @@ func TestCompactTaskContextDev_ReferenceSelectorConnectsSetterToConsumer(t *test
 	}
 	if !strings.Contains(joined, "args := c.args") || !strings.Contains(joined, "c.ParseFlags(args)") {
 		t.Fatalf("setter-to-consumer chain was not retained: %+v", structured.Sources)
+	}
+}
+
+func TestCompactTaskContextDev_TraversalClosesFindAndStripFlagsCalls(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	executeC := strings.Join([]string{
+		"func (c *Command) ExecuteC(args []string) error {",
+		"\tif c.TraverseChildren {",
+		"\t\t_, _, _ = c.Traverse(args)",
+		"\t} else {",
+		"\t\t_, _, _ = c.Find(args)",
+		"\t}",
+		"\treturn nil",
+		"}",
+	}, "\n")
+	bundle := contract.Result{
+		Outcome: contract.OutcomePartial,
+		Summary: `task_context/2: 1 seed(s) for "Can I have args/flags between rootcmd and subcommand" — 1 files (task_context/2; retrieval/7; weights abc123; model fixture-model; 20/1200 snippet tokens; context-definitions/3; strategy semantic_first; degradation: ready)`,
+		Items: []contract.Item{{
+			RefID: "execute-item", Rank: 1,
+			Reason:         "candidate: method fixture.Command.ExecuteC (command.go:5) score 1 [seed]",
+			EvidenceRefIDs: []string{"execute"},
+		}},
+		Evidence: []contract.Evidence{{
+			RefID: "execute", Path: "command.go", Line: 5, Span: "5-12", Role: "snippet",
+			Snippet: executeC, TextHash: shape.TextHash(executeC),
+		}},
+		Confidence: contract.Confidence{Distribution: map[string]float64{"confirmed": 1}, Top: "confirmed", Method: "edge_tiers"},
+	}
+	input := equalRecallFixturePayload(t, bundle, counter)
+	repository := fstest.MapFS{"command.go": {Data: []byte(strings.Join([]string{
+		"package fixture", "", "type Command struct { TraverseChildren bool }", "", executeC, "",
+		"func stripFlags(args []string, c *Command) []string {",
+		"\tcommands := []string{}",
+		"\tfor _, arg := range args {",
+		"\t\tif arg != \"\" && arg[0] != '-' { commands = append(commands, arg) }",
+		"\t}",
+		"\treturn commands",
+		"}", "",
+		"func (c *Command) Find(args []string) (*Command, []string, error) {",
+		"\targsWOflags := stripFlags(args, c)",
+		"\tif len(argsWOflags) == 0 { return c, args, nil }",
+		"\t_ = argsWOflags[0]",
+		"\treturn c, args, nil",
+		"}", "",
+		"func (c *Command) Traverse(args []string) (*Command, []string, error) {",
+		"\tif err := c.ParseFlags(args); err != nil { return nil, args, err }",
+		"\treturn c, args, nil",
+		"}", "",
+		"func (c *Command) ParseFlags(args []string) error { return nil }",
+	}, "\n") + "\n")}}
+
+	payload, err := BuildCompactTaskContextDevWithRepository("Can I have args/flags between rootcmd and subcommand", input, nil, repository, 180, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	for _, want := range []string{"func stripFlags", "argsWOflags[0]", "func (c *Command) Traverse", "ParseFlags(args)"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("traversal call chain lacks %q: %+v", want, structured.Sources)
+		}
+	}
+	if !strings.Contains(summary, "first non-flag") {
+		t.Fatalf("traversal summary lacks source-derived distinction: %q", summary)
+	}
+}
+
+func TestCompactTaskContextDev_CompletionCallbackIncludesPositionalAndFlagRoles(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	register := strings.Join([]string{
+		"func (c *Command) RegisterFlagCompletionFunc(name string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {",
+		"\tcompletionFunctions[name] = f",
+		"\treturn nil",
+		"}",
+	}, "\n")
+	bundle := contract.Result{
+		Outcome: contract.OutcomePartial,
+		Summary: `task_context/2: 1 seed(s) for "How to write shell completion function in Go" — 1 files (task_context/2; retrieval/7; weights abc123; model fixture-model; 20/1200 snippet tokens; context-definitions/3; strategy semantic_first; degradation: ready)`,
+		Items: []contract.Item{{
+			RefID: "register-item", Rank: 1,
+			Reason:         "candidate: method fixture.Command.RegisterFlagCompletionFunc (completion.go:20) score 1 [seed]",
+			EvidenceRefIDs: []string{"register"},
+		}},
+		Evidence: []contract.Evidence{{
+			RefID: "register", Path: "completion.go", Line: 20, Span: "20-23", Role: "snippet",
+			Snippet: register, TextHash: shape.TextHash(register),
+		}},
+		Confidence: contract.Confidence{Distribution: map[string]float64{"confirmed": 1}, Top: "confirmed", Method: "edge_tiers"},
+	}
+	input := equalRecallFixturePayload(t, bundle, counter)
+	repository := fstest.MapFS{"completion.go": {Data: []byte(strings.Join([]string{
+		"package fixture", "", "type ShellCompDirective int", "", "const (",
+		"\t// ShellCompDirectiveError ignores completions after an error.",
+		"\tShellCompDirectiveError ShellCompDirective = 1 << iota",
+		"\t// ShellCompDirectiveNoSpace suppresses a trailing space.",
+		"\tShellCompDirectiveNoSpace",
+		"\t// ShellCompDirectiveNoFileComp disables file completion.",
+		"\tShellCompDirectiveNoFileComp",
+		")", "",
+		"type Command struct {",
+		"\t// ValidArgsFunction completes positional arguments and is exclusive with ValidArgs.",
+		"\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)",
+		"}", "", register, "",
+		"var completionFunctions = map[string]func(*Command, []string, string) ([]string, ShellCompDirective){}",
+	}, "\n") + "\n")}}
+
+	payload, err := BuildCompactTaskContextDevWithRepository("How to write shell completion function in Go", input, nil, repository, 180, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	for _, want := range []string{"ValidArgsFunction func(", "RegisterFlagCompletionFunc", "ShellCompDirectiveNoFileComp"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("completion callback roles lack %q: %+v", want, structured.Sources)
+		}
+	}
+	if !strings.Contains(summary, "positional args") || !strings.Contains(summary, "for a flag") {
+		t.Fatalf("completion summary lacks role distinction: %q", summary)
 	}
 }
 

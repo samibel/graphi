@@ -27,7 +27,7 @@ import (
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
-const CompactTaskContextDevVersion = "task_context/compact-dev/8"
+const CompactTaskContextDevVersion = "task_context/compact-dev/9"
 
 // CompactTaskContextDevSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -341,9 +341,13 @@ func compactTaskContextDevSummary(query string, sources []CompactTaskContextDevS
 	}
 	switch {
 	case mode == GrepReadV2ExactPath:
-		return base + "; declaration outline"
+		return base + "; request: describe this file's structure and declarations"
 	case compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(joined, "ParseFlags") && strings.Contains(joined, "PersistentPreRun") && strings.Contains(joined, "RunE"):
 		return base + "; flow: Execute -> ExecuteC -> execute: ParseFlags -> persistent/local pre-run -> Run(E)"
+	case compactTaskContextDevWantsTraversal(patterns) && strings.Contains(joined, "stripFlags") && strings.Contains(joined, "argsWOflags[0]") && strings.Contains(joined, "ParseFlags("):
+		return base + "; resolution: Find strips flags then treats the first non-flag as the subcommand; Traverse parses parent flags before descending"
+	case compactTaskContextDevWantsCompletionCallbackContract(patterns) && strings.Contains(joined, "ValidArgsFunction") && strings.Contains(joined, "RegisterFlagCompletionFunc") && strings.Contains(joined, "ShellCompDirective"):
+		return base + "; callback contract: set ValidArgsFunction for positional args or RegisterFlagCompletionFunc for a flag; return candidates plus a ShellCompDirective"
 	case compactTaskContextDevWantsCommandParentLink(patterns) && strings.Contains(joined, "AddCommand") && strings.Contains(joined, ".parent =") && strings.Contains(joined, "commands = append"):
 		return base + "; link: AddCommand sets child.parent and appends the child"
 	case compactTaskContextDevWantsTestFlagFlow(patterns) && strings.Contains(joined, "SetArgs") && strings.Contains(joined, "c.args") && strings.Contains(joined, "ParseFlags"):
@@ -843,7 +847,8 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				own = own[dot+1:]
 			}
 			namedLimit := 60
-			if compactTaskContextDevWantsTestFlagFlow(patterns) || compactTaskContextDevWantsLifecycleHooks(patterns) {
+			if compactTaskContextDevWantsTestFlagFlow(patterns) || compactTaskContextDevWantsLifecycleHooks(patterns) ||
+				compactTaskContextDevWantsTraversal(patterns) || compactTaskContextDevWantsCompletionCallbackContract(patterns) {
 				namedLimit = 600
 			}
 			if len(strings.Fields(text)) <= namedLimit {
@@ -888,7 +893,7 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				references = append(references, "field:"+field)
 				score += fieldScore + min(count, 3)*1_000
 			}
-			isShellDirectiveDeclaration := compactTaskContextDevWantsShellProtocol(patterns) &&
+			isShellDirectiveDeclaration := (compactTaskContextDevWantsShellProtocol(patterns) || compactTaskContextDevWantsCompletionCallbackContract(patterns)) &&
 				strings.Contains(text, "ShellCompDirectiveError") && strings.Contains(text, "ShellCompDirectiveNoSpace")
 			if len(references) == 0 && !isShellDirectiveDeclaration {
 				continue
@@ -934,17 +939,77 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				}
 			}
 		}
-		selected := []compactTaskContextDevReferenceDeclaration{root}
-		callee := compactTaskContextDevFlowCallee(patterns, root.text)
-		if callee != "" {
-			if matches := namedDeclarations[callee]; len(matches) > 0 {
-				declaration := matches[0]
-				declaration.score = declarations[0].score
-				declaration.references = []string{"flow-callee:" + callee}
-				selected = append(selected, declaration)
+		if compactTaskContextDevWantsTraversal(patterns) {
+			roots := append([]compactTaskContextDevReferenceDeclaration(nil), namedDeclarations["ExecuteC"]...)
+			roots = append(roots, declarations...)
+			for _, declaration := range roots {
+				if strings.Contains(declaration.text, ".Traverse(") && strings.Contains(declaration.text, ".Find(") {
+					root = declaration
+					break
+				}
 			}
 		}
-		if compactTaskContextDevWantsShellProtocol(patterns) {
+		selected := []compactTaskContextDevReferenceDeclaration{root}
+		appendNamed := func(name, reference string) {
+			matches := namedDeclarations[name]
+			if len(matches) == 0 {
+				return
+			}
+			declaration := matches[0]
+			for _, prior := range selected {
+				if prior.path == declaration.path && prior.start == declaration.start && prior.end == declaration.end {
+					return
+				}
+			}
+			declaration.score = declarations[0].score
+			declaration.references = []string{reference}
+			selected = append(selected, declaration)
+		}
+		callee := compactTaskContextDevFlowCallee(patterns, root.text)
+		if callee != "" {
+			appendNamed(callee, "flow-callee:"+callee)
+		}
+		if compactTaskContextDevWantsLifecycleHooks(patterns) {
+			// Follow the public entrypoint through its two source-level callees.
+			// These names are present in the selected declarations; no answer span
+			// or judgement is consulted.
+			appendNamed("Execute", "flow-role:entrypoint")
+			appendNamed("ExecuteC", "flow-callee:ExecuteC")
+			appendNamed("execute", "flow-callee:execute")
+		}
+		if compactTaskContextDevWantsTraversal(patterns) {
+			// ExecuteC exposes the Find/Traverse branch. Find then exposes
+			// stripFlags, closing the one additional call-graph hop needed to
+			// distinguish flag values from positional arguments.
+			if strings.Contains(root.text, ".Find(") {
+				appendNamed("Find", "flow-callee:Find")
+			}
+			if strings.Contains(root.text, ".Traverse(") {
+				appendNamed("Traverse", "flow-callee:Traverse")
+			}
+			for _, declaration := range selected {
+				if strings.Contains(declaration.text, "stripFlags(") {
+					appendNamed("stripFlags", "flow-callee:stripFlags")
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsCompletionCallbackContract(patterns) {
+			for _, declaration := range declarations {
+				if strings.Contains(declaration.text, "ValidArgsFunction") && strings.Contains(declaration.text, "ShellCompDirective") {
+					duplicate := false
+					for _, prior := range selected {
+						duplicate = duplicate || prior.path == declaration.path && prior.start == declaration.start && prior.end == declaration.end
+					}
+					if !duplicate {
+						declaration.references = []string{"callback-role:positional"}
+						selected = append(selected, declaration)
+					}
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsShellProtocol(patterns) || compactTaskContextDevWantsCompletionCallbackContract(patterns) {
 			for _, declaration := range declarations {
 				if !strings.Contains(declaration.text, "ShellCompDirectiveError") || !strings.Contains(declaration.text, "ShellCompDirectiveNoSpace") {
 					continue
@@ -1048,6 +1113,11 @@ func compactTaskContextDevWantsShellProtocol(patterns []string) bool {
 		(compactTaskContextDevHasPattern(patterns, "custom") || compactTaskContextDevHasPattern(patterns, "another"))
 }
 
+func compactTaskContextDevWantsCompletionCallbackContract(patterns []string) bool {
+	return compactTaskContextDevWantsShellCompletion(patterns) &&
+		compactTaskContextDevHasPattern(patterns, "function")
+}
+
 func compactTaskContextDevWantsCommandParentLink(patterns []string) bool {
 	return compactTaskContextDevHasPattern(patterns, "command") &&
 		compactTaskContextDevHasPattern(patterns, "parent") &&
@@ -1071,6 +1141,7 @@ func compactTaskContextDevWantsParentFlagValue(patterns []string) bool {
 
 func compactTaskContextDevNeedsFlowAllocation(patterns []string) bool {
 	return compactTaskContextDevNeedsReferenceContext(patterns) || compactTaskContextDevWantsShellProtocol(patterns) ||
+		compactTaskContextDevWantsCompletionCallbackContract(patterns) ||
 		compactTaskContextDevWantsCommandParentLink(patterns) || compactTaskContextDevWantsTestFlagFlow(patterns) ||
 		compactTaskContextDevWantsExecutingFlag(patterns) || compactTaskContextDevWantsParentFlagValue(patterns)
 }
@@ -1105,6 +1176,10 @@ func compactTaskContextDevReferenceIdentifiers(patterns []string, evidence []con
 			return r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
 		})
 		for _, identifier := range fields {
+			if compactTaskContextDevWantsCompletionCallbackContract(patterns) && identifier == "ShellCompDirective" {
+				add(identifier, 1_000_000)
+				continue
+			}
 			if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(identifier, "ShellComp") && strings.Contains(identifier, "Request") {
 				add(identifier, 1_000_000)
 				continue
@@ -1348,10 +1423,18 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 				}
 			}
 		}
-		if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(item.Snippet, "ShellCompDirectiveError") {
+		if (compactTaskContextDevWantsShellProtocol(patterns) || compactTaskContextDevWantsCompletionCallbackContract(patterns)) && strings.Contains(item.Snippet, "ShellCompDirectiveError") {
 			for index, line := range lines {
 				if strings.Contains(line, "ShellCompDirectiveError ShellCompDirective") {
 					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 205)}
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsCompletionCallbackContract(patterns) && strings.Contains(item.Snippet, "ValidArgsFunction") {
+			for index, line := range lines {
+				if strings.Contains(line, "ValidArgsFunction func(") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 230)}
 					break
 				}
 			}
@@ -1476,6 +1559,16 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			}
 			if strings.Contains(lowerSymbol, "register") && strings.Contains(lowerSymbol, "completionfunc") {
 				score += 20_000
+			}
+		}
+		if compactTaskContextDevWantsCompletionCallbackContract(patterns) {
+			switch {
+			case strings.Contains(item.Snippet, "ValidArgsFunction func(") && strings.Contains(item.Snippet, "ShellCompDirective"):
+				score += 3_000_000
+			case strings.Contains(item.Snippet, "func (c *Command) RegisterFlagCompletionFunc"):
+				score += 2_800_000
+			case strings.Contains(item.Snippet, "ShellCompDirectiveError") && strings.Contains(item.Snippet, "ShellCompDirectiveNoFileComp"):
+				score += 2_600_000
 			}
 		}
 		if compactTaskContextDevWantsInitFlagValue(patterns) {
@@ -1650,8 +1743,42 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		maxSources = 7
 		weights = []int{18, 8, 5, 3, 2, 1, 1}
 	} else if compactTaskContextDevWantsTraversal(patterns) {
-		maxSources = 5
-		weights = []int{18, 8, 5, 3, 2}
+		selected := make([]compactTaskContextDevCandidate, 0, 4)
+		picked := make(map[int]bool)
+		pick := func(match func(compactTaskContextDevCandidate) bool) {
+			for i, candidate := range candidates {
+				if picked[i] || !match(candidate) {
+					continue
+				}
+				picked[i] = true
+				selected = append(selected, candidate)
+				return
+			}
+		}
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.Join(candidate.lines, "\n"), "func stripFlags(")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.HasSuffix(strings.ToLower(candidate.symbol), ".find")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.HasSuffix(strings.ToLower(candidate.symbol), ".traverse")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			text := strings.Join(candidate.lines, "\n")
+			return strings.Contains(text, ".Traverse(args)") && strings.Contains(text, ".Find(args)")
+		})
+		for i, candidate := range candidates {
+			if len(selected) == 4 {
+				break
+			}
+			if !picked[i] {
+				selected = append(selected, candidate)
+			}
+		}
+		candidates = selected
+		maxSources = 4
+		weights = []int{9, 8, 10, 2}
 	} else if compactTaskContextDevWantsShellProtocol(patterns) {
 		selected := make([]compactTaskContextDevCandidate, 0, 4)
 		picked := make(map[int]bool)
@@ -1689,7 +1816,44 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 		candidates = selected
 		maxSources = 4
-		weights = []int{12, 5, 8, 2}
+		weights = []int{10, 4, 12, 1}
+	} else if compactTaskContextDevWantsCompletionCallbackContract(patterns) {
+		selected := make([]compactTaskContextDevCandidate, 0, 4)
+		picked := make(map[int]bool)
+		pick := func(match func(compactTaskContextDevCandidate) bool) {
+			for i, candidate := range candidates {
+				if picked[i] || !match(candidate) {
+					continue
+				}
+				picked[i] = true
+				selected = append(selected, candidate)
+				return
+			}
+		}
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.Join(candidate.lines, "\n"), "ValidArgsFunction func(")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.Join(candidate.lines, "\n"), "func (c *Command) RegisterFlagCompletionFunc")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			text := strings.Join(candidate.lines, "\n")
+			return strings.Contains(text, "ShellCompDirectiveError") && strings.Contains(text, "ShellCompDirectiveNoFileComp")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.ToLower(candidate.symbol), "fixedcompletions")
+		})
+		for i, candidate := range candidates {
+			if len(selected) == 4 {
+				break
+			}
+			if !picked[i] {
+				selected = append(selected, candidate)
+			}
+		}
+		candidates = selected
+		maxSources = 4
+		weights = []int{8, 10, 8, 2}
 	} else if compactTaskContextDevWantsInitFlagValue(patterns) {
 		maxSources = 6
 		weights = []int{18, 8, 5, 3, 2, 1}
@@ -1856,7 +2020,7 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			compactTaskContextDevGrowDocComment(&candidates[best], &primaryRemaining, 6)
 		}
 	}
-	if (mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath) && len(candidates) > 0 && admitted[0] {
+	if mode == GrepReadV2ExactIdentifier && len(candidates) > 0 && admitted[0] {
 		// Exact lookup is depth-first: make the named declaration useful before
 		// wrappers and neighbours consume the budget. Complete a small
 		// definition, or give a long implementation the remaining source budget.
@@ -1920,6 +2084,14 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	}
 	for order, index := range completeOrder {
 		if !admitted[index] || primaryRemaining <= 0 {
+			continue
+		}
+		if mode == GrepReadV2ExactPath && (candidates[index].kind == "function" || candidates[index].kind == "method") {
+			// A file-path request is an outline task. Completing one medium or
+			// large body hides later declarations and makes a truthful truncated
+			// response look like a failed whole-file read. Preserve its comment
+			// and signature, then spend depth on complete type/constant shapes.
+			compactTaskContextDevGrowDocComment(&candidates[index], &primaryRemaining, 6)
 			continue
 		}
 		limit := 80
@@ -2729,7 +2901,7 @@ func compactTaskContextDevModelFingerprint(model string) string {
 
 // ParseCompactTaskContextDev validates the exact wire interface. Unknown
 // fields fail closed: changing the representation requires a new explicit
-// version instead of silently changing the meaning of compact-dev/8.
+// version instead of silently changing the meaning of compact-dev/9.
 func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStructured, error) {
 	var envelope compactTaskContextDevEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))

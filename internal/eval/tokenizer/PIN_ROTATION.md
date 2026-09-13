@@ -97,6 +97,9 @@ SW-280 commits the first tokenizer-dependent run directory:
   frontier and registered blind diagnostic with declaration outlines,
   field-flow closure and evidence-derived summary roadmaps under the same
   pinned-tokenizer ceiling.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v9-dev/` — v9 compact
+  frontier with exact-path breadth and source-call-chain role closure under the
+  same pinned-tokenizer ceiling.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains
