@@ -14,34 +14,52 @@ import (
 )
 
 var errSourceFileLimit = errors.New("source file exceeds read limit")
+var errSourceFileChanged = errors.New("source file changed while being read")
 
 func readSourceFile(repository fs.FS, name string) ([]byte, error) {
-	return readSourceFileLimit(repository, name, GrepReadV2MaxFileSize)
+	raw, _, err := readSourceFileLimit(repository, name, GrepReadV2MaxFileSize)
+	return raw, err
 }
 
-func readSourceFileLimit(repository fs.FS, name string, limit int64) ([]byte, error) {
+// readSourceFileLimit returns the bytes observed at the I/O boundary even when
+// the read fails. Callers that enforce an aggregate ceiling must charge the
+// returned byte count before classifying or discarding the content.
+func readSourceFileLimit(repository fs.FS, name string, limit int64) ([]byte, int, error) {
 	if limit < 0 {
-		return nil, errSourceFileLimit
+		return nil, 0, errSourceFileLimit
 	}
 	file, err := repository.Open(name)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer file.Close()
-	raw, err := io.ReadAll(io.LimitReader(file, limit+1))
+	info, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	if int64(len(raw)) > limit {
-		return nil, errSourceFileLimit
+	if info.Size() < 0 || info.Size() > limit {
+		return nil, 0, errSourceFileLimit
 	}
-	return raw, nil
+	raw, err := io.ReadAll(io.LimitReader(file, limit))
+	readBytes := len(raw)
+	if err != nil {
+		return raw, readBytes, err
+	}
+	if int64(readBytes) != info.Size() {
+		return raw, readBytes, errSourceFileChanged
+	}
+	return raw, readBytes, nil
 }
 
-func readScannedSource(repository fs.FS, scanned []grepReadFile, name string) ([]byte, error) {
-	if scanned == nil {
+type grepReadSnapshot struct {
+	files []grepReadFile
+}
+
+func readScannedSource(repository fs.FS, snapshot *grepReadSnapshot, name string) ([]byte, error) {
+	if snapshot == nil {
 		return readSourceFile(repository, name)
 	}
+	scanned := snapshot.files
 	index := sort.Search(len(scanned), func(i int) bool { return scanned[i].Path >= name })
 	if index >= len(scanned) || scanned[index].Path != name || scanned[index].ErrorKind != "" {
 		return nil, fs.ErrNotExist
@@ -140,8 +158,8 @@ func splitGrepReadLines(raw []byte) []grepReadLine {
 	return lines
 }
 
-func grepReadRead(repository fs.FS, scanned []grepReadFile, window grepReadWindow) ([]byte, int) {
-	raw, err := readScannedSource(repository, scanned, window.Path)
+func grepReadRead(repository fs.FS, snapshot *grepReadSnapshot, window grepReadWindow) ([]byte, int) {
+	raw, err := readScannedSource(repository, snapshot, window.Path)
 	if err != nil {
 		return []byte(fmt.Sprintf("read:error:%s:read_failed\n", window.Path)), window.StartLine - 1
 	}
@@ -173,6 +191,19 @@ func grepReadCovered(name string, line int, windows []grepReadWindow) bool {
 func grepReadIncludes(name string) bool {
 	clean := cleanGrepReadPath(name)
 	if clean == "." || path.Ext(clean) != ".go" {
+		return false
+	}
+	for _, part := range strings.Split(clean, "/") {
+		if grepReadExcludedDirectory(part) {
+			return false
+		}
+	}
+	return true
+}
+
+func sourceSnapshotIncludes(name string) bool {
+	clean := cleanGrepReadPath(name)
+	if clean == "." || (path.Ext(clean) != ".go" && path.Ext(clean) != ".md") {
 		return false
 	}
 	for _, part := range strings.Split(clean, "/") {

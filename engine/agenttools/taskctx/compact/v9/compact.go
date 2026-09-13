@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/3"
+const CompactTaskContextVersion = "task_context/2-compact/4"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -115,7 +115,7 @@ func buildCompactTaskContext(query string, input PreservedPayload, grepRead *Gre
 	return buildCompactTaskContextBound(context.Background(), query, input, grepRead, repository, nil, budget, real)
 }
 
-func buildCompactTaskContextBound(ctx context.Context, query string, input PreservedPayload, grepRead *GrepReadV2Transcript, repository fs.FS, referenceFiles []grepReadFile, budget int, real PayloadCounter) (PreservedPayload, error) {
+func buildCompactTaskContextBound(ctx context.Context, query string, input PreservedPayload, grepRead *GrepReadV2Transcript, repository fs.FS, snapshot *grepReadSnapshot, budget int, real PayloadCounter) (PreservedPayload, error) {
 	if strings.TrimSpace(query) == "" {
 		return PreservedPayload{}, fmt.Errorf("compact task_context: empty query")
 	}
@@ -162,7 +162,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 		all = append(all, evidence)
 	}
 	if repository != nil {
-		hydrated, hydratedItems, err := compactTaskContextHydrateDefinitions(ctx, repository, referenceFiles, query, bundle.Items)
+		hydrated, hydratedItems, err := compactTaskContextHydrateDefinitions(ctx, repository, snapshot, query, bundle.Items)
 		if err != nil {
 			return PreservedPayload{}, err
 		}
@@ -185,7 +185,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 			all = append(all, evidence)
 			selectionItems = append(selectionItems, item)
 		}
-		outline, outlineItems, err := compactTaskContextHydrateExactPath(ctx, repository, referenceFiles, query)
+		outline, outlineItems, err := compactTaskContextHydrateExactPath(ctx, repository, snapshot, query)
 		if err != nil {
 			return PreservedPayload{}, err
 		}
@@ -227,7 +227,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 			selectionItems = append(selectionItems, item)
 		}
 		if repository != nil {
-			hydrated, hydratedItems, err := compactTaskContextHydrateGrepReadDeclarations(ctx, repository, referenceFiles, query, additional)
+			hydrated, hydratedItems, err := compactTaskContextHydrateGrepReadDeclarations(ctx, repository, snapshot, query, additional)
 			if err != nil {
 				return PreservedPayload{}, err
 			}
@@ -253,7 +253,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 		}
 	}
 	if repository != nil {
-		references, referenceItems, err := compactTaskContextHydrateReferences(ctx, repository, referenceFiles, query, all, selectionItems)
+		references, referenceItems, err := compactTaskContextHydrateReferences(ctx, repository, snapshot, query, all, selectionItems)
 		if err != nil {
 			return PreservedPayload{}, err
 		}
@@ -413,7 +413,7 @@ func compactTaskContextGrepReadEvidence(transcript GrepReadV2Transcript) ([]cont
 	return out, nil
 }
 
-func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS, scanned []grepReadFile, query string, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
+func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS, snapshot *grepReadSnapshot, query string, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
 	type parsedFile struct {
 		set   *token.FileSet
 		file  *ast.File
@@ -444,7 +444,7 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 			}
 			lines, ok := markdownFiles[path]
 			if !ok {
-				raw, err := readScannedSource(repository, scanned, path)
+				raw, err := readScannedSource(repository, snapshot, path)
 				if err != nil {
 					return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 				}
@@ -474,7 +474,7 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 		}
 		parsed, ok := files[path]
 		if !ok {
-			raw, err := readScannedSource(repository, scanned, path)
+			raw, err := readScannedSource(repository, snapshot, path)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 			}
@@ -482,6 +482,9 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 			file, err := parser.ParseFile(set, path, raw, parser.ParseComments)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: parse hydrated %s: %w", path, err)
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
 			}
 			parsed = parsedFile{set: set, file: file, lines: strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")}
 			files[path] = parsed
@@ -512,7 +515,7 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 // impossible to characterize even when retrieval found the exact path. Each
 // candidate remains an exact contiguous source declaration; selection still
 // decides which declarations fit the unchanged wire budget.
-func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, scanned []grepReadFile, query string) ([]contract.Evidence, []contract.Item, error) {
+func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, snapshot *grepReadSnapshot, query string) ([]contract.Evidence, []contract.Item, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, nil, err
 	}
@@ -521,7 +524,7 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 		return nil, nil, nil
 	}
 	path := patterns[0]
-	raw, err := readScannedSource(repository, scanned, path)
+	raw, err := readScannedSource(repository, snapshot, path)
 	if err != nil {
 		// Exact-path discovery is supplemental. A missing, unreadable, or
 		// root-escaping symlink must not expose bytes and must not turn the
@@ -532,6 +535,9 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 	file, err := parser.ParseFile(set, path, raw, parser.ParseComments)
 	if err != nil {
 		return nil, nil, fmt.Errorf("compact task_context: parse exact path %s: %w", path, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
 	}
 	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
 	evidence := make([]contract.Evidence, 0, min(len(file.Decls)+1, 64))
@@ -551,6 +557,9 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 		})
 	}
 	for _, declaration := range file.Decls {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
 		if len(evidence) == 64 {
 			break
 		}
@@ -619,7 +628,7 @@ func compactTaskContextMarkdownSection(lines []string, line int) (int, int, bool
 // function; the compact selector then has no way to spend its budget on the
 // declaration header or a distant branch. This bridge changes neither search
 // nor ranking and is bounded by the already recorded grep hits.
-func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, repository fs.FS, scanned []grepReadFile, query string, hits []contract.Evidence) ([]contract.Evidence, []contract.Item, error) {
+func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, repository fs.FS, snapshot *grepReadSnapshot, query string, hits []contract.Evidence) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
 	wantsShellCompletion := compactTaskContextWantsShellCompletion(patterns)
 	if mode != GrepReadV2NaturalLanguage || (!compactTaskContextNeedsFlowAllocation(patterns) && !wantsShellCompletion) {
@@ -650,7 +659,7 @@ func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, reposito
 		}
 		parsed, ok := files[path]
 		if !ok {
-			raw, err := readScannedSource(repository, scanned, path)
+			raw, err := readScannedSource(repository, snapshot, path)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: hydrate GrepRead declaration %s: %w", path, err)
 			}
@@ -658,6 +667,9 @@ func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, reposito
 			file, err := parser.ParseFile(set, path, raw, parser.ParseComments)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: parse hydrated GrepRead declaration %s: %w", path, err)
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
 			}
 			parsed = parsedFile{set: set, file: file, lines: strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")}
 			files[path] = parsed
@@ -692,6 +704,9 @@ func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, reposito
 			}
 		}
 		for _, declaration := range declarations {
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
+			}
 			start := parsed.set.Position(declaration.Pos()).Line
 			if doc := compactTaskContextDeclarationDoc(declaration); doc != nil {
 				start = parsed.set.Position(doc.Pos()).Line
@@ -796,7 +811,7 @@ func compactTaskContextReferenceSelectorScores(patterns []string, evidence []con
 // bridge cannot contain (for example, the execute method which calls
 // ParseFlags). The search is query-filtered, bounded and excludes test files;
 // it never consults answer spans or judgements.
-func compactTaskContextHydrateReferences(ctx context.Context, repository fs.FS, scanned []grepReadFile, query string, evidence []contract.Evidence, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
+func compactTaskContextHydrateReferences(ctx context.Context, repository fs.FS, snapshot *grepReadSnapshot, query string, evidence []contract.Evidence, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
 	if mode != GrepReadV2NaturalLanguage || !compactTaskContextNeedsFlowAllocation(patterns) {
 		return nil, nil, nil
@@ -817,14 +832,16 @@ func compactTaskContextHydrateReferences(ctx context.Context, repository fs.FS, 
 
 	var declarations []compactTaskContextReferenceDeclaration
 	namedDeclarations := make(map[string][]compactTaskContextReferenceDeclaration)
-	if scanned == nil {
+	if snapshot == nil {
 		var err error
-		scanned, _, err = grepReadV2Files(ctx, repository)
+		var files []grepReadFile
+		files, _, err = grepReadV2Files(ctx, repository)
 		if err != nil {
 			return nil, nil, fmt.Errorf("compact task_context: hydrate references: %w", err)
 		}
+		snapshot = &grepReadSnapshot{files: files}
 	}
-	for _, scannedFile := range scanned {
+	for _, scannedFile := range snapshot.files {
 		if err := ctx.Err(); err != nil {
 			return nil, nil, err
 		}
@@ -839,8 +856,14 @@ func compactTaskContextHydrateReferences(ctx context.Context, repository fs.FS, 
 		if err != nil {
 			return nil, nil, fmt.Errorf("parse %s: %w", path, err)
 		}
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
 		lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
 		for _, declaration := range file.Decls {
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
+			}
 			start := set.Position(declaration.Pos()).Line
 			if doc := compactTaskContextDeclarationDoc(declaration); doc != nil {
 				start = set.Position(doc.Pos()).Line

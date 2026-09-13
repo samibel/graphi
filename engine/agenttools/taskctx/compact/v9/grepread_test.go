@@ -5,11 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 )
@@ -17,6 +19,53 @@ import (
 type openCountingFS struct {
 	fs.FS
 	opens map[string]int
+}
+
+type cancelAfterContext struct {
+	context.Context
+	calls int
+	after int
+}
+
+func (c *cancelAfterContext) Deadline() (time.Time, bool) { return time.Time{}, false }
+func (c *cancelAfterContext) Done() <-chan struct{}       { return nil }
+func (c *cancelAfterContext) Value(key any) any           { return c.Context.Value(key) }
+func (c *cancelAfterContext) Err() error {
+	c.calls++
+	if c.calls >= c.after {
+		return context.Canceled
+	}
+	return nil
+}
+
+type partialErrorFS struct {
+	fs.FS
+	target string
+}
+
+func (f partialErrorFS) Open(name string) (fs.File, error) {
+	file, err := f.FS.Open(name)
+	if err != nil || name != f.target {
+		return file, err
+	}
+	return &partialErrorFile{File: file}, nil
+}
+
+type partialErrorFile struct {
+	fs.File
+	failed bool
+}
+
+func (f *partialErrorFile) Read(p []byte) (int, error) {
+	if f.failed {
+		return 0, io.ErrUnexpectedEOF
+	}
+	f.failed = true
+	if len(p) > 2 {
+		p = p[:2]
+	}
+	n, _ := f.File.Read(p)
+	return n, io.ErrUnexpectedEOF
 }
 
 func (f *openCountingFS) Open(name string) (fs.File, error) {
@@ -49,6 +98,60 @@ func TestGrepReadV2HonorsCancellation(t *testing.T) {
 	_, err := GrepReadV2(ctx, fstest.MapFS{"answer.go": {Data: []byte("package p\n")}}, "answer")
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled discovery error = %v, want context.Canceled", err)
+	}
+}
+
+func TestGrepReadV2HonorsCancellationDuringSearch(t *testing.T) {
+	var source strings.Builder
+	source.WriteString("package p\n")
+	for i := 0; i < 1024; i++ {
+		source.WriteString("var needle = 1\n")
+	}
+	ctx := &cancelAfterContext{Context: context.Background(), after: 7}
+	_, err := GrepReadV2(ctx, fstest.MapFS{"answer.go": {Data: []byte(source.String())}}, "needle flow")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("mid-search cancellation error = %v, want context.Canceled (checks=%d)", err, ctx.calls)
+	}
+}
+
+func TestEmptyDiscoverySnapshotCannotFallBackToRepositoryRead(t *testing.T) {
+	repository := &openCountingFS{
+		FS:    fstest.MapFS{"answer.go": {Data: []byte("package p\n")}},
+		opens: make(map[string]int),
+	}
+	_, snapshot, err := grepReadV2WithFiles(context.Background(), repository, " \t ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot == nil || len(snapshot.files) != 0 {
+		t.Fatalf("empty query snapshot = %#v, want explicit empty snapshot", snapshot)
+	}
+	if _, err := readScannedSource(repository, snapshot, "answer.go"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("read outside empty snapshot error = %v, want fs.ErrNotExist", err)
+	}
+	if repository.opens["answer.go"] != 0 {
+		t.Fatalf("empty snapshot reopened answer.go %d times", repository.opens["answer.go"])
+	}
+}
+
+func TestDiscoverySnapshotIncludesMarkdownWithoutSearchingIt(t *testing.T) {
+	repository := fstest.MapFS{
+		"answer.go": {Data: []byte("package p\n")},
+		"FLOW.md":   {Data: []byte("# needle flow\nimportant architecture\n")},
+	}
+	transcript, snapshot, err := grepReadV2WithFiles(context.Background(), repository, "needle flow")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(transcript.IncludedFiles) != 1 || transcript.IncludedFiles[0] != "answer.go" {
+		t.Fatalf("searchable files = %v, want Go files only", transcript.IncludedFiles)
+	}
+	if got := string(transcript.Ledger.Responses[0].Bytes); strings.Contains(got, "FLOW.md") {
+		t.Fatalf("Markdown leaked into grep response: %q", got)
+	}
+	raw, err := readScannedSource(repository, snapshot, "FLOW.md")
+	if err != nil || !strings.Contains(string(raw), "important architecture") {
+		t.Fatalf("Markdown snapshot hydration = %q, %v", raw, err)
 	}
 }
 
@@ -104,13 +207,39 @@ func TestGrepReadV2ChargesInvalidUTF8AgainstAggregateReadLimit(t *testing.T) {
 	}
 }
 
+func TestGrepReadV2ChargesPartialBytesReturnedWithReadError(t *testing.T) {
+	repository := partialErrorFS{
+		FS: fstest.MapFS{
+			"a.go": {Data: []byte("four")},
+			"b.go": {Data: []byte("four")},
+		},
+		target: "a.go",
+	}
+	files, limited, err := grepReadV2FilesWithLimits(context.Background(), repository, grepReadV2Limits{
+		maxFiles: 10, maxFileSize: 4, maxBytes: 5,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !limited {
+		t.Fatal("partial bytes returned with an error bypassed the aggregate read limit")
+	}
+	kinds := make(map[string]string)
+	for _, file := range files {
+		kinds[file.Path] = file.ErrorKind
+	}
+	if kinds["a.go"] != "read_failed" || kinds["."] != "scan_limit" {
+		t.Fatalf("bounded files = %#v", files)
+	}
+}
+
 func TestReferenceHydrationReusesBoundedDiscoverySnapshot(t *testing.T) {
 	query := "where is ParseFlags called before execute"
 	evidence := []contract.Evidence{{RefID: "seed", Path: "seed.go", Span: "1-1", Snippet: "func ParseFlags()"}}
 	items := []contract.Item{{RefID: "item", Reason: "primary: func ParseFlags (seed.go:1)", EvidenceRefIDs: []string{"seed"}}}
-	scanned := []grepReadFile{{Path: "flow.go", Bytes: []byte("package p\nfunc execute() { ParseFlags() }\nfunc ParseFlags() {}\n")}}
+	snapshot := &grepReadSnapshot{files: []grepReadFile{{Path: "flow.go", Bytes: []byte("package p\nfunc execute() { ParseFlags() }\nfunc ParseFlags() {}\n")}}}
 
-	hydrated, _, err := compactTaskContextHydrateReferences(context.Background(), nil, scanned, query, evidence, items)
+	hydrated, _, err := compactTaskContextHydrateReferences(context.Background(), nil, snapshot, query, evidence, items)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +249,7 @@ func TestReferenceHydrationReusesBoundedDiscoverySnapshot(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, _, err := compactTaskContextHydrateReferences(ctx, nil, scanned, query, evidence, items); !errors.Is(err, context.Canceled) {
+	if _, _, err := compactTaskContextHydrateReferences(ctx, nil, snapshot, query, evidence, items); !errors.Is(err, context.Canceled) {
 		t.Fatalf("reference hydration cancellation error = %v, want context.Canceled", err)
 	}
 }
@@ -130,12 +259,12 @@ func TestGrepReadFollowupReadsReuseSingleFileSnapshot(t *testing.T) {
 		FS:    fstest.MapFS{"answer.go": {Data: []byte("package p\nfunc ParseFlags() {}\nfunc execute() { ParseFlags() }\n")}},
 		opens: make(map[string]int),
 	}
-	transcript, scanned, err := grepReadV2WithFiles(context.Background(), repository, "ParseFlags")
+	transcript, snapshot, err := grepReadV2WithFiles(context.Background(), repository, "ParseFlags")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(transcript.Reads) == 0 || len(scanned) != 1 {
-		t.Fatalf("discovery did not exercise a follow-up read: reads=%d files=%d", len(transcript.Reads), len(scanned))
+	if len(transcript.Reads) == 0 || len(snapshot.files) != 1 {
+		t.Fatalf("discovery did not exercise a follow-up read: reads=%d files=%d", len(transcript.Reads), len(snapshot.files))
 	}
 	if repository.opens["answer.go"] != 1 {
 		t.Fatalf("answer.go opened %d times, want one bounded snapshot read", repository.opens["answer.go"])

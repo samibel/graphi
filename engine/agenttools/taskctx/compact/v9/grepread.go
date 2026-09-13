@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	GrepReadV2Version     = "2-source-discovery/3"
+	GrepReadV2Version     = "2-source-discovery/4"
 	GrepReadV2SearchLimit = 48
 	GrepReadV2MaxReads    = 8
 	GrepReadV2MaxFiles    = 20000
@@ -128,7 +128,7 @@ func GrepReadV2(ctx context.Context, repository fs.FS, query string) (GrepReadV2
 // grepReadV2WithFiles retains the one bounded source snapshot used to build
 // the transcript. Production selection reuses it for reference hydration so
 // one request never performs a second repository-wide walk or read pass.
-func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (GrepReadV2Transcript, []grepReadFile, error) {
+func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (GrepReadV2Transcript, *grepReadSnapshot, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -140,7 +140,7 @@ func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (G
 		Patterns: patterns,
 	}
 
-	included, matches, response, scanLimited, files, err := grepReadV2Search(ctx, repository, mode, patterns)
+	included, matches, response, scanLimited, snapshot, err := grepReadV2Search(ctx, repository, mode, patterns)
 	if err != nil {
 		return GrepReadV2Transcript{}, nil, err
 	}
@@ -149,7 +149,7 @@ func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (G
 
 	planned := grepReadV2PlanReads(matches, mode)
 	for _, window := range planned {
-		readResponse, endLine := grepReadRead(repository, files, window)
+		readResponse, endLine := grepReadRead(repository, snapshot, window)
 		sequence := transcript.Ledger.capture(PayloadBoundaryGrepRead, PayloadOperationRead, readResponse)
 		transcript.Reads = append(transcript.Reads, GrepReadOperation{
 			Path: window.Path, StartLine: window.StartLine, EndLine: endLine, ResponseSequence: sequence,
@@ -162,7 +162,7 @@ func grepReadV2WithFiles(ctx context.Context, repository fs.FS, query string) (G
 	} else {
 		transcript.StopReason = SavingsStopExhausted
 	}
-	return transcript, files, nil
+	return transcript, snapshot, nil
 }
 
 type grepReadV2Match struct {
@@ -278,21 +278,26 @@ var grepReadV2StopWords = map[string]bool{
 	"would": true,
 }
 
-func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode, patterns []string) ([]string, []grepReadV2Match, []byte, bool, []grepReadFile, error) {
+func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode, patterns []string) ([]string, []grepReadV2Match, []byte, bool, *grepReadSnapshot, error) {
 	if len(patterns) == 0 {
-		return []string{}, nil, []byte("grep:error:query:no_searchable_pattern\n"), false, nil, nil
+		return []string{}, nil, []byte("grep:error:query:no_searchable_pattern\n"), false, &grepReadSnapshot{}, nil
 	}
 	files, scanLimited, err := grepReadV2Files(ctx, repository)
 	if err != nil {
 		return nil, nil, nil, false, nil, err
 	}
+	snapshot := &grepReadSnapshot{files: files}
 	included := make([]string, 0, len(files))
+	searchFiles := make([]grepReadFile, 0, len(files))
 	var errors []grepReadFile
 	for _, file := range files {
 		if grepReadIncludes(file.Path) {
 			included = append(included, file.Path)
-		}
-		if file.ErrorKind != "" {
+			searchFiles = append(searchFiles, file)
+			if file.ErrorKind != "" {
+				errors = append(errors, file)
+			}
+		} else if file.Path == "." && file.ErrorKind != "" {
 			errors = append(errors, file)
 		}
 	}
@@ -300,18 +305,21 @@ func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode
 	var matches []grepReadV2Match
 	switch mode {
 	case GrepReadV2ExactPath:
-		matches = grepReadV2PathMatches(files, patterns[0])
+		matches, err = grepReadV2PathMatches(ctx, searchFiles, patterns[0])
 	case GrepReadV2ExactIdentifier:
-		matches = grepReadV2IdentifierMatches(files, patterns[0])
+		matches, err = grepReadV2IdentifierMatches(ctx, searchFiles, patterns[0])
 		hasDeclaration := false
 		for _, match := range matches {
 			hasDeclaration = hasDeclaration || match.Declaration
 		}
 		if !hasDeclaration {
-			matches = grepReadV2NLMatches(files, []string{strings.ToLower(patterns[0])})
+			matches, err = grepReadV2NLMatches(ctx, searchFiles, []string{strings.ToLower(patterns[0])})
 		}
 	default:
-		matches = grepReadV2NLMatches(files, patterns)
+		matches, err = grepReadV2NLMatches(ctx, searchFiles, patterns)
+	}
+	if err != nil {
+		return nil, nil, nil, false, nil, err
 	}
 	if len(matches) > GrepReadV2SearchLimit {
 		matches = matches[:GrepReadV2SearchLimit]
@@ -326,7 +334,7 @@ func grepReadV2Search(ctx context.Context, repository fs.FS, mode GrepReadV2Mode
 		response.Write(match.Text)
 		response.WriteByte('\n')
 	}
-	return included, matches, response.Bytes(), scanLimited, files, nil
+	return included, matches, response.Bytes(), scanLimited, snapshot, nil
 }
 
 var errGrepReadV2ScanLimit = errors.New("source discovery scan limit reached")
@@ -364,7 +372,7 @@ func grepReadV2FilesWithLimits(ctx context.Context, repository fs.FS, limits gre
 			}
 			return nil
 		}
-		if !grepReadIncludes(name) || !entry.Type().IsRegular() {
+		if !sourceSnapshotIncludes(name) || !entry.Type().IsRegular() {
 			return nil
 		}
 		if len(files) >= limits.maxFiles {
@@ -391,8 +399,11 @@ func grepReadV2FilesWithLimits(ctx context.Context, repository fs.FS, limits gre
 		}
 		remaining := limits.maxBytes - totalBytes
 		readLimit := min(limits.maxFileSize, remaining)
-		file.Bytes, err = readSourceFileLimit(repository, name, readLimit)
-		readBytes := len(file.Bytes)
+		raw, readBytes, err := readSourceFileLimit(repository, name, readLimit)
+		file.Bytes = raw
+		// Account at the I/O boundary, including partial bytes returned with
+		// errors, before content is classified or discarded.
+		totalBytes += int64(readBytes)
 		if err != nil {
 			if errors.Is(err, errSourceFileLimit) && readLimit < limits.maxFileSize {
 				scanLimited = true
@@ -409,10 +420,6 @@ func grepReadV2FilesWithLimits(ctx context.Context, repository fs.FS, limits gre
 			file.ErrorKind = "invalid_utf8"
 			file.Bytes = nil
 		}
-		// Charge bytes at the I/O boundary, before invalid UTF-8 content is
-		// discarded from the searchable corpus. Otherwise malformed files
-		// could bypass the aggregate read ceiling.
-		totalBytes += int64(readBytes)
 		files = append(files, file)
 		return nil
 	})
@@ -426,10 +433,13 @@ func grepReadV2FilesWithLimits(ctx context.Context, repository fs.FS, limits gre
 	return files, scanLimited, nil
 }
 
-func grepReadV2PathMatches(files []grepReadFile, queryPath string) []grepReadV2Match {
+func grepReadV2PathMatches(ctx context.Context, files []grepReadFile, queryPath string) ([]grepReadV2Match, error) {
 	queryPath = cleanGrepReadPath(queryPath)
 	var matches []grepReadV2Match
 	for _, file := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if file.ErrorKind != "" || !(file.Path == queryPath || path.Base(file.Path) == path.Base(queryPath)) {
 			continue
 		}
@@ -451,17 +461,28 @@ func grepReadV2PathMatches(files []grepReadFile, queryPath string) []grepReadV2M
 		})
 	}
 	grepReadV2Sort(matches)
-	return matches
+	return matches, nil
 }
 
-func grepReadV2IdentifierMatches(files []grepReadFile, identifier string) []grepReadV2Match {
+func grepReadV2IdentifierMatches(ctx context.Context, files []grepReadFile, identifier string) ([]grepReadV2Match, error) {
 	var matches []grepReadV2Match
 	for _, file := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if file.ErrorKind != "" {
 			continue
 		}
 		declarations := grepReadV2Declarations(file.Path, file.Bytes)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		for i, line := range splitGrepReadLines(file.Bytes) {
+			if i&255 == 0 {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
 			column := grepReadV2WholeIdentifierColumn(line.Text, identifier)
 			if column == 0 {
 				continue
@@ -489,10 +510,10 @@ func grepReadV2IdentifierMatches(files []grepReadFile, identifier string) []grep
 		}
 	}
 	grepReadV2Sort(matches)
-	return matches
+	return matches, nil
 }
 
-func grepReadV2NLMatches(files []grepReadFile, patterns []string) []grepReadV2Match {
+func grepReadV2NLMatches(ctx context.Context, files []grepReadFile, patterns []string) ([]grepReadV2Match, error) {
 	type pending struct {
 		match     grepReadMatch
 		terms     []int
@@ -505,12 +526,23 @@ func grepReadV2NLMatches(files []grepReadFile, patterns []string) []grepReadV2Ma
 	var all []pending
 	frequency := make([]int, len(patterns))
 	for _, file := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if file.ErrorKind != "" {
 			continue
 		}
 		lowerPath := strings.ToLower(file.Path)
 		declarations := grepReadV2Declarations(file.Path, file.Bytes)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		for lineIndex, line := range splitGrepReadLines(file.Bytes) {
+			if lineIndex&255 == 0 {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+			}
 			lower := bytes.ToLower(line.Text)
 			firstColumn := 0
 			var terms []int
@@ -557,7 +589,12 @@ func grepReadV2NLMatches(files []grepReadFile, patterns []string) []grepReadV2Ma
 		}
 	}
 	declarationTerms := map[string]map[int]bool{}
-	for _, item := range all {
+	for index, item := range all {
+		if index&255 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
 		if item.declStart == 0 || !item.rankDecl {
 			continue
 		}
@@ -570,7 +607,12 @@ func grepReadV2NLMatches(files []grepReadFile, patterns []string) []grepReadV2Ma
 		}
 	}
 	matches := make([]grepReadV2Match, 0, len(all))
-	for _, item := range all {
+	for index, item := range all {
+		if index&255 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
 		effectiveTerms := item.terms
 		if item.declStart > 0 && item.rankDecl {
 			key := fmt.Sprintf("%s:%d:%d", item.match.Path, item.declStart, item.declEnd)
@@ -605,7 +647,7 @@ func grepReadV2NLMatches(files []grepReadFile, patterns []string) []grepReadV2Ma
 		})
 	}
 	grepReadV2Sort(matches)
-	return matches
+	return matches, nil
 }
 
 func grepReadV2Sort(matches []grepReadV2Match) {

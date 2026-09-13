@@ -215,11 +215,11 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 		Sequence: 1, Boundary: PayloadBoundaryCandidate, Operation: PayloadOperationTaskContext,
 		Bytes: raw, SHA256: SHA256Hex(raw), ByteCount: len(raw),
 	}
-	transcript, referenceFiles, err := grepReadV2WithFiles(ctx, repository, query)
+	transcript, snapshot, err := grepReadV2WithFiles(ctx, repository, query)
 	if err != nil {
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: source discovery: %w", err)
 	}
-	payload, err := buildCompactTaskContextBound(ctx, query, input, &transcript, repository, referenceFiles, sourceBudget, counter)
+	payload, err := buildCompactTaskContextBound(ctx, query, input, &transcript, repository, snapshot, sourceBudget, counter)
 	if err != nil {
 		return "", CompactTaskContextStructured{}, err
 	}
