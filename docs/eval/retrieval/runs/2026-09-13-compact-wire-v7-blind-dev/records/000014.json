@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 14,
+  "previous_sha256": "ef6d9272169b3cbafaf70c222f1b7b6a1c5ddaec7ef2c735ff1a7c52ace77ab6",
+  "kind": "response",
+  "query_id": "cb-19",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "305495bd7e26c7dcfdd049c47ac47f66f6a2e109ff0a7c832e8dd17a2235ffdd",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT\n\nThe response omits `command.go` lines 893–966 and most of `ExecuteC`, so it cannot establish the lifecycle between `ParseFlags` (`command.go:889`) and `PreRunE`/`PreRun` (`command.go:967–973`), including persistent Run-hook behavior.",
+  "sha256": "1baafea311643a47890ad3393261d0907cd78315374b30c06ab7ed99b051a516"
+}

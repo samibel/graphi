@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 112,
+  "previous_sha256": "b9714c18de8cbf3db5dd7bbd82b8673170dd748f1cd5a61eb9f35dce87cbec35",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f7dc20611dd88f902532666b44f16d7bb45e35791ae4f1a6dff9646a7a810bd0",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies the program-specific variable as `\u003cPROGRAM\u003e_ACTIVE_HELP`, supported by `active_help.go:45-47` and `active_help.go:59-67`, which explicitly describe and derive that format. It also correctly notes the global override `COBRA_ACTIVE_HELP=0`, supported by `active_help.go:49-55` and the constants at `active_help.go:29-30`. The answer is concrete and fully supported by the preserved bundle.\n",
+  "sha256": "1df9135bf03de1e5779398a05f5e33e8577523ef865aea65673686952104498e"
+}

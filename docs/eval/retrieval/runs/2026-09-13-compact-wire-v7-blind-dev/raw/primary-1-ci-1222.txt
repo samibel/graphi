@@ -1,0 +1,26 @@
+Write a Go completion callback with this signature:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+    return []string{"choice1", "choice2"}, directive
+}
+```
+
+Register it for a flag:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("flag-name", completionFunc)
+```
+
+Evidence: [`completions.go:133`](completions.go:133) defines `RegisterFlagCompletionFunc` with that callback signature; lines 134–142 verify the flag exists and reject duplicate registration.
+
+For static choices, use:
+
+```go
+completionFunc := FixedCompletions(
+    []string{"choice1", "choice2"},
+    directive,
+)
+```
+
+[`completions.go:124`](completions.go:124) shows `FixedCompletions` returning a callback that always returns the supplied choices and directive. The response does not identify the available `ShellCompDirective` constants.

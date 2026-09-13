@@ -1,0 +1,9 @@
+Required flags are validated in `(*Command).ValidateRequiredFlags` at `command.go:1147`. It scans `c.Flags()`, checks each flag’s `BashCompOneRequiredFlag` annotation and `pflag.Changed`, then returns an error listing missing flags (`command.go:1152-1167`).
+
+This validation is invoked before execution at `command.go:975-977`:
+
+```go
+if err := c.ValidateRequiredFlags(); err != nil {
+    return err
+}
+```

@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 73,
+  "previous_sha256": "112ae4908ce47c9b5f2ea7486c6389d1aee1001d49aabe866aa2eec5d4388456",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "05db4109e070e15091b8e00bb3b9a42c13a5a027320132f24d75a19246fac869",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT — `command.go:1794-1803` shows `Command.Flag(name)` finding a parent flag, but no snippet shows how to extract its value.",
+  "sha256": "8a100f90658d8ed1419098dcf777ad5154ab8aa6a4d1c76bb1b25a3e5b8edeca"
+}

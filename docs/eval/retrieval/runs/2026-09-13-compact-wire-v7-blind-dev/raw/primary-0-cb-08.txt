@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows only partial snippets from `doc/man_docs.go`, but the question does not specify what should be determined about the file.

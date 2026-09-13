@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 139,
+  "previous_sha256": "c866ab21612a985acc3ff9b13411394da0b2cb1e701cdc0abcf5d40d8d1ec53b",
+  "kind": "grade",
+  "query_id": "ci-2314",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "e01af9888328b8a612fb9a72ddaa863db42f9073d5c5fa622535a40e67f634c1",
+  "outcome": "fail",
+  "rationale": "The candidate correctly explains the default behavior: `command.go:1183-1198` creates `--help` and `-h` as one `BoolP(\"help\", \"h\", ...)` flag, and `command.go:894-905` checks only the boolean named `help`. However, its overall answer “No” is incorrect and insufficient. The preserved bundle explicitly says `InitDefaultHelpFlag` does nothing when a `help` flag already exists (`command.go:1183-1188`). Therefore an application can predeclare its own `--help` without shorthand and define a separate `-h` flag, allowing them to be handled differently. The candidate fails to mention this supported customization path.\n",
+  "sha256": "56e1990900ca21f5c12e3de0206891b4d8a692d4de26147564dbd278a58ccaa1"
+}

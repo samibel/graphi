@@ -8,7 +8,7 @@ The compiled-in inputs are the two-build `bundles-after.json` from
 `GrepRead/2` transcripts from `2026-09-07-grepread-v2-dev`. The command combines
 both retrieval channels and builds compact responses for all 44 development
 questions before consulting qrels to register the 40 answerable questions.
-For compact-dev/7, `prepare -repository` additionally hydrates exact Go
+For compact-dev/8, `prepare -repository` additionally hydrates exact Go
 declarations and one bounded query-relevant reference from a clean Cobra
 checkout whose HEAD must equal the dataset's pinned repository SHA.
 Source budget is 250; `MinimumPassCount(40)` derives k=36. There are no dataset,

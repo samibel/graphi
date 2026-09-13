@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 38,
+  "previous_sha256": "157600c681faddf5b2fac4b2130b4fb7385b1e3c5a68e17f2ca8e9a5f90d8bca",
+  "kind": "response",
+  "query_id": "ci-678",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4bccc9c77652f493906982b6a3261061452e19ac0c98c05c73d21dabd43f5e5e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use the command’s `SetArgs` method to supply flags as CLI arguments:\n\n```go\ncmd.SetArgs([]string{\"--flag-name\", \"value\"})\n```\n\n`command.go:275-278` explicitly says `SetArgs` is “particularly useful when testing” and stores the arguments in `c.args`. Applicable local and persistent flags are exposed through `Command.Flags()` (`command.go:1641-1653`), with persistent and parent flags merged by `mergePersistentFlags()` (`command.go:1847-1853`).",
+  "sha256": "18b0850a3210b0499efeb21fe791d899c70e0b336ff2ef0fe91aa27863d43a4d"
+}

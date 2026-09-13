@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 33,
+  "previous_sha256": "2fb5f24e8c7cd0f5f894f1054cbfb9016c2842f6c15e0949863e445c038a9a65",
+  "kind": "response",
+  "query_id": "ci-1991",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "05db4109e070e15091b8e00bb3b9a42c13a5a027320132f24d75a19246fac869",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response shows `Command.Flag(name)` searches parent persistent flags (`command.go:1794-1803`, `1805-1816`) but does not show how to extract the matched `flag.Flag`’s value.",
+  "sha256": "6af006a477979d0e3aa60dbdf8ed1ffed1ac49ce20926349bfb5245bb4b7d9d6"
+}

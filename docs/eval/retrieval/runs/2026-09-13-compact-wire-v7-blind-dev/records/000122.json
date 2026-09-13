@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 122,
+  "previous_sha256": "e3d46963850969913a13994d85eaa2ab73e49bd4b368b699b06ad02b3e3f619b",
+  "kind": "grade",
+  "query_id": "cb-33",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "5bdda8aa856e842fea7f757748cd7a3d5ec80e47359f30452017caff12406060",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, accurate summary supported entirely by the bundle: README.md:68-73 defines flags and distinguishes persistent from command-only flags; command.go:1641-1653 documents Flags() as the complete applicable FlagSet; command.go:1668-1693 supports the LocalFlags() description, including handling parent persistent flags and shadowing; and command.go:1655-1666 defines LocalNonPersistentFlags() by excluding persistent flags. It also correctly limits its mergePersistentFlags() statement to the visible call/name at command.go:1668 and declaration at command.go:1849, explicitly noting that the implementation is absent.\n",
+  "sha256": "9550242f7cd42c4a8364966df65f17ad7b8bf279f3266689fa899bb592aff030"
+}

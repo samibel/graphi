@@ -1,0 +1,7 @@
+Test a child command after configuring a parent with persistent flags:
+
+- Assert `child.InheritedFlags().Lookup("flag-name") != nil`.
+- Assert `child.HasInheritedFlags()` is `true`.
+- For hidden/deprecated flags, assert `child.HasAvailableInheritedFlags()` appropriately.
+
+Evidence: [`command.go:1695`](command.go:1695) says `InheritedFlags()` merges persistent parent flags and excludes names shadowed by local flags (`c.parentsPflags.VisitAll`, lines 1711–1715). [`command.go:1766`](command.go:1766) defines `HasInheritedFlags()` via `InheritedFlags().HasFlags()`, while [`command.go:1788`](command.go:1788) defines the availability check via `HasAvailableFlags()`. Also test shadowing: a same-named local flag should not appear in `InheritedFlags()`.

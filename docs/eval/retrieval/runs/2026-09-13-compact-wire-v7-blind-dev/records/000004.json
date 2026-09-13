@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 4,
+  "previous_sha256": "051b123cff265c014fdadc23d34dc42ddf9c681d543429d947ffbdc6b8f770ad",
+  "kind": "response",
+  "query_id": "cb-04",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "40646ee8863b2fea258bc102a340238b62c3bf8ba391fe23b3bbaf7bd61c8b5c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).RegisterFlagCompletionFunc` registers a shell-completion callback for a named flag:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```\n\nIt resolves the flag using `c.Flag(flagName)`, returning an error if the flag does not exist. It then locks the global completion-function map, rejects duplicate registration, and stores the callback keyed by `*pflag.Flag` (`completions.go:132–146`). The map is `flagCompletionFunctions` (`completions.go:35–36`) and access is protected by `flagCompletionMutex`, a `sync.RWMutex` (`completions.go:38–39`). Registered callbacks can be retrieved through `(*Command).GetFlagCompletionFunc` (`completions.go:148–160`).",
+  "sha256": "7ca3153f27d88b0add7db2b6a41cc141191ab3e19eb049caa1c90f3d2af56840"
+}

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 120,
+  "previous_sha256": "749e67661f87cefb4a84e55aef6af02b7f42e69ed2913724ab5229678869aab6",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "31338a3e951a904d617602cc5be0e9d1cf91fef3330ae6149de79275a341181a",
+  "outcome": "pass",
+  "rationale": "The candidate directly identifies the exact `Execute` symbol and accurately states that it uses `os.Args[1:]` by default, calls `c.ExecuteC()`, discards the returned command, and returns the error, all supported by `command.go:1035-1041`. Its additional claims are also supported: `ExecuteC` supplies `context.Background()` when `c.ctx` is nil and redirects child-command invocation to `c.Root().ExecuteC()` (`command.go:1051-1062`), while the stated lifecycle order appears in `command.go:114-123`. No required claim relies on evidence outside the preserved bundle.\n",
+  "sha256": "5c0b3ef2ce7c8be532bed87650c614d8d4ce97e17648856df0011af07397601d"
+}

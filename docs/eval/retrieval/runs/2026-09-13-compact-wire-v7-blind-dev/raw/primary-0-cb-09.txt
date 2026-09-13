@@ -1,0 +1,1 @@
+INSUFFICIENT The response only contains partial excerpts from `shell_completions.go`, and the question does not specify what information about the file is wanted.

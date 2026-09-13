@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 46,
+  "previous_sha256": "1f562dd867f7f11b12e6f8ad72d4b93f5555a207bc681cac0690fd55a9c8b080",
+  "kind": "response",
+  "query_id": "cb-08",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "937e99bb7f89aca25374b50ab7abd82e025c4b682ca59986b9724c8eb2b2926a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "insufficient",
+  "text": "INSUFFICIENT The response contains only partial snippets from `doc/man_docs.go`, but no specific question about the file.",
+  "sha256": "de3f7ddd776e8fa6b3404bb99be381d8f3132fe429b1b493bd2aef25e829b25c"
+}

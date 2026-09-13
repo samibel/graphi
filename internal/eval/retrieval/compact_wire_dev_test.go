@@ -279,6 +279,93 @@ func TestCompactTaskContextDev_RepositoryHydratesSmallShellCompletionDeclaration
 	}
 }
 
+func TestCompactTaskContextDev_ExactPathHydratesDeclarationOutline(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	input := compactTaskContextDevFixtureInput(t, counter)
+	repository := fstest.MapFS{"overview.go": {Data: []byte(strings.Join([]string{
+		"package fixture",
+		"",
+		"type Options struct { Enabled bool }",
+		"",
+		"func Build(opts Options) error { return nil }",
+		"",
+		"func Render(opts Options) string { return \"ok\" }",
+	}, "\n") + "\n")}}
+	payload, err := BuildCompactTaskContextDevWithRepository("overview.go", input, nil, repository, 100, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	for _, want := range []string{"package fixture", "type Options struct", "func Build", "func Render"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("exact-path declaration outline lacks %q: %+v", want, structured.Sources)
+		}
+	}
+}
+
+func TestCompactTaskContextDev_ReferenceSelectorConnectsSetterToConsumer(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	setter := "// SetArgs sets arguments and is useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}"
+	bundle := contract.Result{
+		Outcome: contract.OutcomePartial,
+		Summary: `task_context/2: 1 seed(s) for "How to set flags in test?" — 1 files (task_context/2; retrieval/7; weights abc123; model fixture-model; 20/1200 snippet tokens; context-definitions/3; strategy semantic_first; degradation: ready)`,
+		Items: []contract.Item{{
+			RefID: "setter-item", Rank: 1,
+			Reason:         "candidate: method fixture.Command.SetArgs (command.go:5) score 1 [seed]",
+			EvidenceRefIDs: []string{"setter"},
+		}},
+		Evidence: []contract.Evidence{{
+			RefID: "setter", Path: "command.go", Line: 5, Span: "5-8", Role: "snippet",
+			Snippet: setter, TextHash: shape.TextHash(setter),
+		}},
+		Confidence: contract.Confidence{Distribution: map[string]float64{"confirmed": 1}, Top: "confirmed", Method: "edge_tiers"},
+	}
+	input := equalRecallFixturePayload(t, bundle, counter)
+	repository := fstest.MapFS{"command.go": {Data: []byte(strings.Join([]string{
+		"package fixture",
+		"",
+		"type Command struct { args []string }",
+		"",
+		"// SetArgs sets arguments and is useful when testing.",
+		"func (c *Command) SetArgs(a []string) {",
+		"\tc.args = a",
+		"}",
+		"",
+		"func (c *Command) ExecuteC() error {",
+		"\targs := c.args",
+		"\treturn c.execute(args)",
+		"}",
+		"",
+		"func (c *Command) execute(args []string) error {",
+		"\treturn c.ParseFlags(args)",
+		"}",
+		"",
+		"func (c *Command) ParseFlags(args []string) error { return nil }",
+	}, "\n") + "\n")}}
+	payload, err := BuildCompactTaskContextDevWithRepository("How to set flags in test?", input, nil, repository, 140, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	if !strings.Contains(joined, "args := c.args") || !strings.Contains(joined, "c.ParseFlags(args)") {
+		t.Fatalf("setter-to-consumer chain was not retained: %+v", structured.Sources)
+	}
+}
+
 func TestCompactTaskContextDev_RealTokenizerIdentityEnforcesWireCeiling(t *testing.T) {
 	counter := PayloadCounter{
 		TokenizerID:      evaltokenizer.TokenizerID,

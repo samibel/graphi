@@ -1,0 +1,51 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a0987b-1455-7022-b499-0f9cccb17c33
+--------
+user
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to set flags in test?
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s) for \"How to set flags in test?\"; read in order (245/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"command.go","start_line":1668,"end_line":1693,"text":"// LocalFlags returns the local FlagSet specifically set in the current command.\nfunc (c *Command) LocalFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.lflags == nil {\n\t\tc.lflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.lflags.SetOutput(c.flagErrorBuf)\n\t}\n\tc.lflags.SortFlags = c.Flags().SortFlags\n\tif c.globNormFunc != nil {\n\t\tc.lflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\taddToLocal := func(f *flag.Flag) {\n\t\t// Add the flag if it is not a parent PFlag, or it shadows a parent PFlag\n\t\tif c.lflags.Lookup(f.Name) == nil \u0026\u0026 f != c.parentsPflags.Lookup(f.Name) {\n\t\t\tc.lflags.AddFlag(f)\n\t\t}\n\t}\n\tc.Flags().VisitAll(addToLocal)\n\tc.PersistentFlags().VisitAll(addToLocal)\n\treturn c.lflags\n}"},{"path":"command.go","start_line":275,"end_line":278,"text":"// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}"},{"path":"command.go","start_line":282,"end_line":282,"text":"// Deprecated: Use SetOut and/or SetErr instead"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"doc/man_docs.go","start_line":159,"end_line":160,"text":"func manPrintFlags(buf io.StringWriter, flags *pflag.FlagSet) {\n\tflags.VisitAll(func(flag *pflag.Flag) {"},{"path":"command.go","start_line":1847,"end_line":1853,"text":"// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":"flag_groups.go","start_line":111,"end_line":112,"text":"func hasAllFlags(fs *flag.FlagSet, flagnames ...string) bool {\n\tfor _, fname := range flagnames {"},{"path":"flag_groups.go","start_line":121,"end_line":121,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {"},{"path":"command.go","start_line":152,"end_line":153,"text":"\t// flags is full set of flags.\n\tflags *flag.FlagSet"},{"path":"command.go","start_line":158,"end_line":158,"text":"\t// iflags contains inherited flags."},{"path":"command_test.go","start_line":70,"end_line":72,"text":"func resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}"},{"path":"completions.go","start_line":50,"end_line":50,"text":"func (e *flagCompError) Error() string {"}],"provenance":{"input_sha256":"e8d1e8c1ecc1c229ef7a979ffa86bb8c59816c23bbcdcae0e60f6e6dd5a0a43b","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----
+
+codex
+Use `Command.SetArgs` to provide flags as command-line arguments in tests:
+
+```go
+cmd.SetArgs([]string{"--flag", "value"})
+```
+
+Evidence: `command.go:275-278` says `SetArgs` is “particularly useful when testing” and assigns the slice to `c.args`. Flags are then resolved through `Command.Flags()` (`command.go:1641-1653`), including persistent and inherited flags via `mergePersistentFlags()` (`command.go:1847-1853`).
+tokens used
+3.627
+Use `Command.SetArgs` to provide flags as command-line arguments in tests:
+
+```go
+cmd.SetArgs([]string{"--flag", "value"})
+```
+
+Evidence: `command.go:275-278` says `SetArgs` is “particularly useful when testing” and assigns the slice to `c.args`. Flags are then resolved through `Command.Flags()` (`command.go:1641-1653`), including persistent and inherited flags via `mergePersistentFlags()` (`command.go:1847-1853`).

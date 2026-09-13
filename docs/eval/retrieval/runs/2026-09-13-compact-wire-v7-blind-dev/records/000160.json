@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 160,
+  "previous_sha256": "9a76340c3fc40e72233783c33b8ede84b7e291bc457126588cb9bad47985b829",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "60cd79680aa245eca85f161487a7a770c76f85ca7db051d583bfd775cc3f2efc",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and supported by the preserved bundle. `completions.go:132-146` provides the exact callback signature, registration method, and both stated error conditions. `completions.go:124-130` supports the `FixedCompletions` example and its behavior. `powershell_completions.go:310-314` supports writing PowerShell completion output to an `io.Writer`. The example’s `directive` is an assumed in-scope value rather than an unsupported factual claim.\n",
+  "sha256": "27967f970f8cf6a7c207144633047db03fe928d2b2deb1a74374648f0bf32f69"
+}

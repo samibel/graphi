@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 164,
+  "previous_sha256": "906460a1d078e9759c970244dbad5a84ffb007cc764e7ac9cfca2869366cdc58",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "ea47f310f86a7ed59f30aa64876b0f67f03b7a79228089ee772a1905a42abe4a",
+  "outcome": "fail",
+  "rationale": "The bundle supports only a conditional explanation: Cobra adds the top-level `--version` flag when the root command’s `Version` is set (`site/content/user_guide.md:590-592`), and initialization does nothing if `c.Version` is empty or a version flag already exists (`command.go:1202-1204`). It does not show the application’s root command configuration, so the candidate’s definitive claim that its `Version` field “was not set” is unsupported. The statement that `--version` “only exists” when `Version` is non-empty is also too broad because the preserved evidence explicitly allows an already-defined version flag.\n",
+  "sha256": "8101a79f883f01a4d604d296f6e58227f97fb9452ed7e689dff26078b024dcb3"
+}

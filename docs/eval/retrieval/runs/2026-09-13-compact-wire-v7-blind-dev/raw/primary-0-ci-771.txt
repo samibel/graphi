@@ -1,0 +1,1 @@
+INSUFFICIENT — The response shows only the hidden `__complete` protocol and output format in `completions.go`; it lacks the Zsh customization mechanism or instructions for adapting it to another shell.

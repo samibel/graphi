@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 40,
+  "previous_sha256": "de6fb44cba0607cfe4fed18a969f5e72a0d6c171d1fff8b9b9d1fd80f5f3ce56",
+  "kind": "response",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "5d64afd8ce4bb5bb27d4f31ba49a4a05e93b7b8203239ab6e257918857150818",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`--version` does not work because the root command’s `Version` field is empty. Cobra only adds the flag when that field is non-empty: `site/content/user_guide.md:590` says it “adds a top-level '--version' flag if the Version field is set,” and `command.go:1202-1203` confirms `InitDefaultVersionFlag` does nothing when `c.Version` is empty.",
+  "sha256": "e3855587bb4ec96cf42be1885fc82abb564a685bcdb49fd8dc268ed1f511a1fb"
+}

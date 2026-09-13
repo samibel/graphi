@@ -1,0 +1,3 @@
+Use `cmd.Flags()` to obtain the complete `*flag.FlagSet` applicable to that command, including local and persistent flags declared by it and its parents (`command.go:1641-1653`, `Command.Flags`).
+
+For subsets, use `cmd.LocalFlags()` (`command.go:1669-1672`) or `cmd.InheritedFlags()` (`command.go:1695-1698`). The response does not show the `FlagSet` iteration API.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 128,
+  "previous_sha256": "45fdb29a6e1ee8ea18fae92cf0c4c0e95b7375cb3ce1e4ce55d62f9710afad6a",
+  "kind": "grade",
+  "query_id": "ci-1222",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "69d804fa2e8fed5ca64b99ebd8e7759227792e8ce9ab0b5827db87ce5b73e385",
+  "outcome": "pass",
+  "rationale": "The answer correctly uses the preserved evidence. `completions.go:132-146` supplies the exact callback signature and `RegisterFlagCompletionFunc` mechanism, including errors for a nonexistent flag and duplicate registration. `completions.go:124-130` supports the `FixedCompletions` example. It also correctly notes that the bundle does not include the available `ShellCompDirective` constants. Although the illustrative anonymous function omits an explicit assignment such as `completionFunc :=`, its intended callback shape and subsequent registration are clear and substantively correct.\n",
+  "sha256": "48ef22e9288de59349a24f49805a4416055cfa9847c2a4d5f4f1b53be6ebac6b"
+}

@@ -88,8 +88,13 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-dev/` and
   `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-blind-dev/` — v6 frontier
   and registered blind diagnostic.
-- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-dev/` — v7 compact
-  frontier, including a pinned-tokenizer ceiling over every serialized bundle.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-blind-dev/` — v7 compact
+  frontier and its registered blind diagnostic, including a pinned-tokenizer
+  ceiling over every serialized bundle.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v8-dev/` — v8 compact
+  frontier with declaration outlines, field-flow closure and evidence-derived
+  summary roadmaps under the same pinned-tokenizer ceiling.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

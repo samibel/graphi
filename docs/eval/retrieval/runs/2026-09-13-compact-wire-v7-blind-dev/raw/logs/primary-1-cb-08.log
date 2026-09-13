@@ -1,0 +1,39 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a0987a-2a23-76a0-b133-3f3e9a7b7f60
+--------
+user
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+doc/man_docs.go
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s) for \"doc/man_docs.go\"; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"doc/man_docs.go","start_line":1,"end_line":40,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage doc\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"io\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"sort\"\n\t\"strconv\"\n\t\"strings\"\n\t\"time\"\n\n\t\"github.com/cpuguy83/go-md2man/v2/md2man\"\n\t\"github.com/spf13/cobra\"\n\t\"github.com/spf13/pflag\"\n)\n\n// GenManTree will generate a man page for this command and all descendants\n// in the directory given. The header may be nil. This function may not work\n// correctly if your command names have `-` in them. If you have `cmd` with two\n// subcmds, `sub` and `sub-third`, and `sub` has a subcommand called `third`\n// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{\n\t\tHeader:           header,"},{"path":"doc/man_docs.go","start_line":118,"end_line":121,"text":"func fillHeader(header *GenManHeader, name string, disableAutoGen bool) error {\n\tif header.Title == \"\" {\n\t\theader.Title = strings.ToUpper(strings.ReplaceAll(name, \" \", \"\\\\-\"))\n\t}"},{"path":"doc/man_docs.go","start_line":202,"end_line":205,"text":"func genMan(cmd *cobra.Command, header *GenManHeader) []byte {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n"},{"path":"doc/man_docs.go","start_line":159,"end_line":160,"text":"func manPrintFlags(buf io.StringWriter, flags *pflag.FlagSet) {\n\tflags.VisitAll(func(flag *pflag.Flag) {"},{"path":"doc/man_docs.go","start_line":143,"end_line":144,"text":"func manPreamble(buf io.StringWriter, header *GenManHeader, cmd *cobra.Command, dashedName string) {\n\tdescription := cmd.Long"}],"provenance":{"input_sha256":"d13de57e50510a3f62f9cc08c61bc40d178346e29cac654836d83ad20e1f531c","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----
+
+codex
+INSUFFICIENT The response contains only partial snippets from `doc/man_docs.go`, but no specific question about the file.
+tokens used
+3.222
+INSUFFICIENT The response contains only partial snippets from `doc/man_docs.go`, but no specific question about the file.

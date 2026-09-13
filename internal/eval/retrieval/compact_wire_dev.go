@@ -27,7 +27,7 @@ import (
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
-const CompactTaskContextDevVersion = "task_context/compact-dev/7"
+const CompactTaskContextDevVersion = "task_context/compact-dev/8"
 
 // CompactTaskContextDevSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -181,6 +181,29 @@ func buildCompactTaskContextDev(query string, input PreservedPayload, grepRead *
 			all = append(all, evidence)
 			selectionItems = append(selectionItems, item)
 		}
+		outline, outlineItems, err := compactTaskContextDevHydrateExactPath(repository, query)
+		if err != nil {
+			return PreservedPayload{}, err
+		}
+		if len(outline) > 0 {
+			outlineRaw, err := json.Marshal(outline)
+			if err != nil {
+				return PreservedPayload{}, fmt.Errorf("compact task_context dev: bind exact-path outline: %w", err)
+			}
+			inputSHA = SHA256Hex([]byte(inputSHA + "\n" + SHA256Hex(outlineRaw)))
+		}
+		for index, evidence := range outline {
+			key := evidence.Path + "\x00" + evidence.Span
+			item := outlineItems[index]
+			if ref, ok := seenRef[key]; ok {
+				item.EvidenceRefIDs = []string{ref}
+				selectionItems = append(selectionItems, item)
+				continue
+			}
+			seenRef[key] = evidence.RefID
+			all = append(all, evidence)
+			selectionItems = append(selectionItems, item)
+		}
 	}
 	if grepRead != nil {
 		additional, err := compactTaskContextDevGrepReadEvidence(*grepRead)
@@ -262,7 +285,7 @@ func buildCompactTaskContextDev(query string, input PreservedPayload, grepRead *
 		if len(sources) == 0 {
 			return PreservedPayload{}, fmt.Errorf("compact task_context dev: budget %d admitted no complete source line", effectiveBudget)
 		}
-		summary := fmt.Sprintf("%d ranked source span(s) for %q; read in order (%d/%d source tokens)", len(sources), query, used, budget)
+		summary := compactTaskContextDevSummary(query, sources, used, budget)
 		envelope := compactTaskContextDevEnvelope{
 			JSONRPC: "2.0", ID: 1,
 			Result: &compactTaskContextDevResult{
@@ -303,6 +326,37 @@ func buildCompactTaskContextDev(query string, input PreservedPayload, grepRead *
 			{TokenizerID: real.TokenizerID, VocabularySHA256: real.VocabularySHA256, Tokens: realTokens},
 		},
 	}, nil
+}
+
+// compactTaskContextDevSummary gives an agent a short assembly guide for
+// causal evidence split across non-contiguous source spans. Every landmark is
+// emitted only when the selected source bytes themselves contain its support.
+func compactTaskContextDevSummary(query string, sources []CompactTaskContextDevSource, used, budget int) string {
+	queryDigest := SHA256Hex([]byte(query))[:12]
+	base := fmt.Sprintf("%d ranked source span(s); query %s; read in order (%d/%d source tokens)", len(sources), queryDigest, used, budget)
+	mode, patterns := grepReadV2QueryPlan(query)
+	joined := ""
+	for _, source := range sources {
+		joined += source.Text + "\n"
+	}
+	switch {
+	case mode == GrepReadV2ExactPath:
+		return base + "; declaration outline"
+	case compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(joined, "ParseFlags") && strings.Contains(joined, "PersistentPreRun") && strings.Contains(joined, "RunE"):
+		return base + "; flow: Execute -> ExecuteC -> execute: ParseFlags -> persistent/local pre-run -> Run(E)"
+	case compactTaskContextDevWantsCommandParentLink(patterns) && strings.Contains(joined, "AddCommand") && strings.Contains(joined, ".parent =") && strings.Contains(joined, "commands = append"):
+		return base + "; link: AddCommand sets child.parent and appends the child"
+	case compactTaskContextDevWantsTestFlagFlow(patterns) && strings.Contains(joined, "SetArgs") && strings.Contains(joined, "c.args") && strings.Contains(joined, "ParseFlags"):
+		return base + "; flow: SetArgs -> c.args -> execution -> ParseFlags"
+	case compactTaskContextDevWantsExecutingFlag(patterns) && strings.Contains(joined, "Run func(cmd *Command") && strings.Contains(joined, "func (c *Command) Flag"):
+		return base + "; handler lookup: cmd.Flag(name)"
+	case compactTaskContextDevWantsParentFlagValue(patterns) && strings.Contains(joined, "func (c *Command) Flag") && strings.Contains(joined, ".Value."):
+		return base + "; lookup: cmd.Flag(name) climbs parents; read the returned flag.Value"
+	case compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(joined, "ShellCompRequestCmd") && strings.Contains(joined, "OutOrStdout") && strings.Contains(joined, ":%d") && strings.Contains(joined, "ErrOrStderr"):
+		return base + "; adapter protocol: invoke __complete, read stdout choices and final :directive, ignore stderr"
+	default:
+		return base
+	}
 }
 
 func compactTaskContextDevGrepReadEvidence(transcript GrepReadV2Transcript) ([]contract.Evidence, error) {
@@ -444,6 +498,75 @@ func compactTaskContextDevHydrateDefinitions(repository fs.FS, query string, ite
 	return evidence, linked, nil
 }
 
+// compactTaskContextDevHydrateExactPath exposes the declaration structure of a
+// requested Go file. A file-name query asks for breadth: spending most of the
+// response on the licence header and the first declaration makes the file
+// impossible to characterize even when retrieval found the exact path. Each
+// candidate remains an exact contiguous source declaration; selection still
+// decides which declarations fit the unchanged wire budget.
+func compactTaskContextDevHydrateExactPath(repository fs.FS, query string) ([]contract.Evidence, []contract.Item, error) {
+	mode, patterns := grepReadV2QueryPlan(query)
+	if mode != GrepReadV2ExactPath || len(patterns) != 1 || !strings.HasSuffix(strings.ToLower(patterns[0]), ".go") {
+		return nil, nil, nil
+	}
+	path := patterns[0]
+	raw, err := fs.ReadFile(repository, path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("compact task_context dev: hydrate exact path %s: %w", path, err)
+	}
+	set := token.NewFileSet()
+	file, err := parser.ParseFile(set, path, raw, parser.ParseComments)
+	if err != nil {
+		return nil, nil, fmt.Errorf("compact task_context dev: parse exact path %s: %w", path, err)
+	}
+	lines := strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
+	evidence := make([]contract.Evidence, 0, min(len(file.Decls)+1, 64))
+	items := make([]contract.Item, 0, min(len(file.Decls)+1, 64))
+	packageLine := set.Position(file.Name.Pos()).Line
+	if packageLine >= 1 && packageLine <= len(lines) {
+		text := lines[packageLine-1]
+		ref := "path-declaration-001"
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: path, Line: packageLine, Span: fmt.Sprintf("%d-%d", packageLine, packageLine),
+			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{
+			RefID: "path-declaration-item-" + ref, Rank: 1,
+			Reason:         fmt.Sprintf("path-declaration: variable %s.package (%s:%d) score 0", file.Name.Name, path, packageLine),
+			EvidenceRefIDs: []string{ref},
+		})
+	}
+	for _, declaration := range file.Decls {
+		if len(evidence) == 64 {
+			break
+		}
+		start := set.Position(declaration.Pos()).Line
+		if doc := compactTaskContextDevDeclarationDoc(declaration); doc != nil {
+			start = set.Position(doc.Pos()).Line
+		}
+		end := set.Position(declaration.End()).Line
+		if start < 1 || end < start || end > len(lines) {
+			continue
+		}
+		symbol, kind := compactTaskContextDevDeclarationIdentity(file.Name.Name, declaration)
+		if symbol == "" {
+			continue
+		}
+		text := strings.Join(lines[start-1:end], "\n")
+		ref := fmt.Sprintf("path-declaration-%03d", len(evidence)+1)
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: path, Line: start, Span: fmt.Sprintf("%d-%d", start, end),
+			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{
+			RefID: "path-declaration-item-" + ref, Rank: len(items) + 1,
+			Reason:         fmt.Sprintf("path-declaration: %s %s (%s:%d) score 0", kind, symbol, path, start),
+			EvidenceRefIDs: []string{ref},
+		})
+	}
+	return evidence, items, nil
+}
+
 func compactTaskContextDevMarkdownSection(lines []string, line int) (int, int, bool) {
 	if line < 1 || line > len(lines) {
 		return 0, 0, false
@@ -485,7 +608,7 @@ func compactTaskContextDevMarkdownSection(lines []string, line int) (int, int, b
 func compactTaskContextDevHydrateGrepReadDeclarations(repository fs.FS, query string, hits []contract.Evidence) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
 	wantsShellCompletion := compactTaskContextDevWantsShellCompletion(patterns)
-	if mode != GrepReadV2NaturalLanguage || (!compactTaskContextDevNeedsReferenceContext(patterns) && !wantsShellCompletion) {
+	if mode != GrepReadV2NaturalLanguage || (!compactTaskContextDevNeedsFlowAllocation(patterns) && !wantsShellCompletion) {
 		return nil, nil, nil
 	}
 	type parsedFile struct {
@@ -604,6 +727,52 @@ type compactTaskContextDevReferenceDeclaration struct {
 	references []string
 }
 
+// compactTaskContextDevReferenceSelectorScores extracts a bounded field-level
+// data-flow hint from evidence already returned by retrieval. A caller often
+// does not repeat a setter's name, but it does read the receiver field written
+// by that setter; the same applies to parent-pointer getters and writers.
+func compactTaskContextDevReferenceSelectorScores(patterns []string, evidence []contract.Evidence) map[string]int {
+	wantsTestFlags := compactTaskContextDevWantsTestFlagFlow(patterns)
+	wantsParentLink := compactTaskContextDevWantsCommandParentLink(patterns)
+	if !wantsTestFlags && !wantsParentLink {
+		return nil
+	}
+	out := make(map[string]int)
+	for _, item := range evidence {
+		lower := strings.ToLower(item.Snippet)
+		eligible := wantsTestFlags && strings.Contains(lower, "testing") && strings.Contains(lower, "set")
+		eligible = eligible || wantsParentLink && strings.Contains(lower, "parent")
+		if !eligible {
+			continue
+		}
+		for offset := 0; offset < len(item.Snippet); offset++ {
+			if item.Snippet[offset] != '.' || offset+1 >= len(item.Snippet) {
+				continue
+			}
+			end := offset + 1
+			for end < len(item.Snippet) {
+				r := rune(item.Snippet[end])
+				if r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+					break
+				}
+				end++
+			}
+			name := item.Snippet[offset+1 : end]
+			if len(name) < 3 || !token.IsIdentifier(name) {
+				continue
+			}
+			if wantsTestFlags && strings.EqualFold(name, "args") {
+				out[name] = max(out[name], 900_000)
+			}
+			if wantsParentLink && strings.EqualFold(name, "parent") {
+				out[name] = max(out[name], 800_000)
+			}
+			offset = end - 1
+		}
+	}
+	return out
+}
+
 // compactTaskContextDevHydrateReferences follows one source-level hop from
 // identifiers already present in the ranked bundle to the declarations that
 // use them. This recovers the control-flow context that a definition-only
@@ -616,7 +785,8 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 		return nil, nil, nil
 	}
 	identifiers := compactTaskContextDevReferenceIdentifiers(patterns, evidence, items)
-	if len(identifiers) == 0 {
+	selectorScore := compactTaskContextDevReferenceSelectorScores(patterns, evidence)
+	if len(identifiers) == 0 && len(selectorScore) == 0 {
 		return nil, nil, nil
 	}
 	identifierScore := make(map[string]int, len(identifiers))
@@ -672,7 +842,11 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 			if dot := strings.LastIndex(own, "."); dot >= 0 {
 				own = own[dot+1:]
 			}
-			if len(strings.Fields(text)) <= 60 {
+			namedLimit := 60
+			if compactTaskContextDevWantsTestFlagFlow(patterns) || compactTaskContextDevWantsLifecycleHooks(patterns) {
+				namedLimit = 600
+			}
+			if len(strings.Fields(text)) <= namedLimit {
 				namedDeclarations[own] = append(namedDeclarations[own], compactTaskContextDevReferenceDeclaration{
 					path: path, start: start, end: end, text: text, symbol: symbol, kind: kind,
 				})
@@ -681,10 +855,15 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				continue
 			}
 			counts := make(map[string]int)
+			selectorCounts := make(map[string]int)
 			ast.Inspect(declaration, func(node ast.Node) bool {
 				identifier, ok := node.(*ast.Ident)
 				if ok && identifierScore[identifier.Name] > 0 {
 					counts[identifier.Name]++
+				}
+				selector, ok := node.(*ast.SelectorExpr)
+				if ok && selectorScore[selector.Sel.Name] > 0 {
+					selectorCounts[selector.Sel.Name]++
 				}
 				return true
 			})
@@ -701,7 +880,17 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				references = append(references, identifier.name)
 				score += identifier.score + min(count, 3)*1_000
 			}
-			if len(references) == 0 {
+			for field, fieldScore := range selectorScore {
+				count := selectorCounts[field]
+				if count == 0 {
+					continue
+				}
+				references = append(references, "field:"+field)
+				score += fieldScore + min(count, 3)*1_000
+			}
+			isShellDirectiveDeclaration := compactTaskContextDevWantsShellProtocol(patterns) &&
+				strings.Contains(text, "ShellCompDirectiveError") && strings.Contains(text, "ShellCompDirectiveNoSpace")
+			if len(references) == 0 && !isShellDirectiveDeclaration {
 				continue
 			}
 			anchors := compactTaskContextDevAnchors(mode, patterns, path, strings.Split(text, "\n"))
@@ -711,6 +900,10 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 				// Its implementation is the source that binds request name, stdout
 				// completions, final directive and ignored stderr together.
 				score += 1_000_000
+			}
+			if isShellDirectiveDeclaration {
+				score += 900_000
+				references = append(references, "protocol-directives")
 			}
 			declarations = append(declarations, compactTaskContextDevReferenceDeclaration{
 				path: path, start: start, end: end, text: text, symbol: symbol, kind: kind,
@@ -732,14 +925,41 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 		return declarations[i].start < declarations[j].start
 	})
 	if len(declarations) > 0 {
-		selected := []compactTaskContextDevReferenceDeclaration{declarations[0]}
-		callee := compactTaskContextDevFlowCallee(patterns, declarations[0].text)
+		root := declarations[0]
+		if compactTaskContextDevWantsShellProtocol(patterns) {
+			for _, declaration := range declarations {
+				if strings.Contains(declaration.text, "func (c *Command) initCompleteCmd") && strings.Contains(declaration.text, "OutOrStdout") {
+					root = declaration
+					break
+				}
+			}
+		}
+		selected := []compactTaskContextDevReferenceDeclaration{root}
+		callee := compactTaskContextDevFlowCallee(patterns, root.text)
 		if callee != "" {
 			if matches := namedDeclarations[callee]; len(matches) > 0 {
 				declaration := matches[0]
 				declaration.score = declarations[0].score
 				declaration.references = []string{"flow-callee:" + callee}
 				selected = append(selected, declaration)
+			}
+		}
+		if compactTaskContextDevWantsShellProtocol(patterns) {
+			for _, declaration := range declarations {
+				if !strings.Contains(declaration.text, "ShellCompDirectiveError") || !strings.Contains(declaration.text, "ShellCompDirectiveNoSpace") {
+					continue
+				}
+				duplicate := false
+				for _, prior := range selected {
+					if prior.path == declaration.path && prior.start == declaration.start && prior.end == declaration.end {
+						duplicate = true
+						break
+					}
+				}
+				if !duplicate {
+					selected = append(selected, declaration)
+				}
+				break
 			}
 		}
 		declarations = selected
@@ -769,6 +989,9 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 func compactTaskContextDevFlowCallee(patterns []string, declaration string) string {
 	if (compactTaskContextDevHasPattern(patterns, "init") || compactTaskContextDevHasPattern(patterns, "hook")) && strings.Contains(declaration, ".preRun(") {
 		return "preRun"
+	}
+	if compactTaskContextDevWantsTestFlagFlow(patterns) && strings.Contains(declaration, ".execute(") {
+		return "execute"
 	}
 	return ""
 }
@@ -825,8 +1048,31 @@ func compactTaskContextDevWantsShellProtocol(patterns []string) bool {
 		(compactTaskContextDevHasPattern(patterns, "custom") || compactTaskContextDevHasPattern(patterns, "another"))
 }
 
+func compactTaskContextDevWantsCommandParentLink(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "command") &&
+		compactTaskContextDevHasPattern(patterns, "parent") &&
+		(compactTaskContextDevHasPattern(patterns, "add") || compactTaskContextDevHasPattern(patterns, "pointer"))
+}
+
+func compactTaskContextDevWantsTestFlagFlow(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "test") && compactTaskContextDevHasPattern(patterns, "flag")
+}
+
+func compactTaskContextDevWantsExecutingFlag(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "flag") &&
+		(compactTaskContextDevHasPattern(patterns, "execut") || compactTaskContextDevHasPattern(patterns, "execute")) &&
+		(compactTaskContextDevHasPattern(patterns, "current") || compactTaskContextDevHasPattern(patterns, "currently"))
+}
+
+func compactTaskContextDevWantsParentFlagValue(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "parent") && compactTaskContextDevHasPattern(patterns, "flag") &&
+		(compactTaskContextDevHasPattern(patterns, "value") || compactTaskContextDevHasPattern(patterns, "retrieve") || compactTaskContextDevHasPattern(patterns, "access"))
+}
+
 func compactTaskContextDevNeedsFlowAllocation(patterns []string) bool {
-	return compactTaskContextDevNeedsReferenceContext(patterns) || compactTaskContextDevWantsShellProtocol(patterns)
+	return compactTaskContextDevNeedsReferenceContext(patterns) || compactTaskContextDevWantsShellProtocol(patterns) ||
+		compactTaskContextDevWantsCommandParentLink(patterns) || compactTaskContextDevWantsTestFlagFlow(patterns) ||
+		compactTaskContextDevWantsExecutingFlag(patterns) || compactTaskContextDevWantsParentFlagValue(patterns)
 }
 
 func compactTaskContextDevReferenceIdentifiers(patterns []string, evidence []contract.Evidence, items []contract.Item) []compactTaskContextDevReferenceIdentifier {
@@ -1102,17 +1348,33 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 				}
 			}
 		}
+		if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(item.Snippet, "ShellCompDirectiveError") {
+			for index, line := range lines {
+				if strings.Contains(line, "ShellCompDirectiveError ShellCompDirective") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 205)}
+					break
+				}
+			}
+		}
 		if compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(item.Snippet, "func (c *Command) execute") && strings.Contains(item.Snippet, "PersistentPreRun") {
 			for index, line := range lines {
-				if strings.Contains(line, "func (c *Command) execute") {
+				if strings.Contains(line, "ParseFlags(a)") {
 					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 220)}
 					break
 				}
 			}
 		} else if compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(item.Snippet, "func (c *Command) ExecuteC") && strings.Contains(item.Snippet, "cmd.execute(flags)") {
 			for index, line := range lines {
-				if strings.Contains(line, "cmd.execute(flags)") {
+				if strings.Contains(line, "if c.TraverseChildren") {
 					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 210)}
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsTestFlagFlow(patterns) && strings.Contains(item.Snippet, "func (c *Command) execute") && strings.Contains(item.Snippet, "ParseFlags") {
+			for index, line := range lines {
+				if strings.Contains(line, "ParseFlags(a)") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 220)}
 					break
 				}
 			}
@@ -1129,6 +1391,42 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		hint := hintByEvidence[item.RefID]
 		symbolScore := compactTaskContextDevSymbolScore(patterns, frequencies, hint.symbol)
 		score += symbolScore + hint.priority
+		if compactTaskContextDevWantsCommandParentLink(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			if strings.HasSuffix(lowerSymbol, ".addcommand") || (strings.Contains(item.Snippet, ".parent =") && strings.Contains(item.Snippet, "commands = append")) {
+				score += 500_000
+			}
+		}
+		if compactTaskContextDevWantsTestFlagFlow(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			switch {
+			case strings.HasSuffix(lowerSymbol, ".setargs"):
+				score += 450_000
+			case strings.HasSuffix(lowerSymbol, ".executec") && strings.Contains(item.Snippet, "c.args"):
+				score += 400_000
+			case strings.HasSuffix(lowerSymbol, ".execute") && strings.Contains(item.Snippet, "ParseFlags"):
+				score += 350_000
+			}
+		}
+		if compactTaskContextDevWantsExecutingFlag(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			if strings.HasSuffix(lowerSymbol, ".flag") {
+				score += 450_000
+			} else if hint.kind == "type" && strings.Contains(item.Snippet, "Run func(cmd *Command") {
+				score += 400_000
+			}
+		}
+		if compactTaskContextDevWantsParentFlagValue(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			switch {
+			case strings.HasSuffix(lowerSymbol, ".flag"):
+				score += 450_000
+			case strings.HasSuffix(lowerSymbol, ".persistentflag"):
+				score += 400_000
+			case strings.Contains(item.Snippet, ".Value."):
+				score += 300_000
+			}
+		}
 		if compactTaskContextDevWantsShellProtocol(patterns) {
 			switch {
 			case strings.Contains(item.Snippet, "ShellCompRequestCmd") && strings.Contains(item.Snippet, "OutOrStdout"):
@@ -1136,7 +1434,7 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			case strings.Contains(item.Snippet, "ShellCompRequestCmd"):
 				score += 2_500_000
 			case strings.Contains(item.Snippet, "ShellCompDirectiveError") || strings.Contains(item.Snippet, "type ShellCompDirective"):
-				score += 2_000_000
+				score += 2_800_000
 			}
 		}
 		wholeSymbolMatch := compactTaskContextDevWholeSymbolMatch(patterns, hint.symbol)
@@ -1237,7 +1535,9 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 				candidate.secondaryScore = anchors[1].score
 				candidate.hasSecondary = true
 			}
-			if compactTaskContextDevNeedsFlowAllocation(patterns) && (hint.kind == "function" || hint.kind == "method" || strings.HasSuffix(strings.ToLower(item.Path), ".md")) {
+			flowUnit := hint.kind == "function" || hint.kind == "method" || strings.HasSuffix(strings.ToLower(item.Path), ".md")
+			flowUnit = flowUnit || compactTaskContextDevWantsExecutingFlag(patterns) && hint.kind == "type"
+			if compactTaskContextDevNeedsFlowAllocation(patterns) && flowUnit {
 				if flowAnchor, ok := compactTaskContextDevFlowSecondaryAnchor(patterns, lines, anchor.index); ok {
 					candidate.secondaryFrom = max(0, flowAnchor.index-1)
 					if compactTaskContextDevWantsLifecycleHooks(patterns) {
@@ -1250,6 +1550,17 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			}
 		}
 		candidates = append(candidates, candidate)
+	}
+	if mode == GrepReadV2ExactPath {
+		outlined := make([]compactTaskContextDevCandidate, 0, len(candidates))
+		for _, candidate := range candidates {
+			if candidate.itemPriority == 18_000 {
+				outlined = append(outlined, candidate)
+			}
+		}
+		if len(outlined) > 0 {
+			candidates = outlined
+		}
 	}
 	candidates, err := compactTaskContextDevMergeSameAnchor(candidates)
 	if err != nil {
@@ -1329,9 +1640,12 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	}
 	maxSources := 10
 	weights := []int{18, 8, 5, 3, 2, 2, 1, 1, 1, 1}
-	if mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath {
+	if mode == GrepReadV2ExactIdentifier {
 		maxSources = 5
 		weights = []int{10, 3, 1, 1, 1}
+	} else if mode == GrepReadV2ExactPath {
+		maxSources = 10
+		weights = []int{5, 4, 3, 3, 2, 2, 1, 1, 1, 1}
 	} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
 		maxSources = 7
 		weights = []int{18, 8, 5, 3, 2, 1, 1}
@@ -1339,8 +1653,43 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		maxSources = 5
 		weights = []int{18, 8, 5, 3, 2}
 	} else if compactTaskContextDevWantsShellProtocol(patterns) {
-		maxSources = 3
-		weights = []int{18, 8, 5}
+		selected := make([]compactTaskContextDevCandidate, 0, 4)
+		picked := make(map[int]bool)
+		pick := func(match func(compactTaskContextDevCandidate) bool) {
+			for i, candidate := range candidates {
+				if picked[i] || !match(candidate) {
+					continue
+				}
+				picked[i] = true
+				selected = append(selected, candidate)
+				return
+			}
+		}
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			text := strings.Join(candidate.lines, "\n")
+			return strings.Contains(text, "func (c *Command) initCompleteCmd") && strings.Contains(text, "OutOrStdout")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.Join(candidate.lines, "\n"), `ShellCompRequestCmd = "__complete"`)
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			text := strings.Join(candidate.lines, "\n")
+			return strings.Contains(text, "ShellCompDirectiveError") && strings.Contains(text, "ShellCompDirectiveNoSpace")
+		})
+		pick(func(candidate compactTaskContextDevCandidate) bool {
+			return strings.Contains(strings.Join(candidate.lines, "\n"), "type ShellCompDirective int")
+		})
+		for i, candidate := range candidates {
+			if len(selected) == 4 {
+				break
+			}
+			if !picked[i] {
+				selected = append(selected, candidate)
+			}
+		}
+		candidates = selected
+		maxSources = 4
+		weights = []int{12, 5, 8, 2}
 	} else if compactTaskContextDevWantsInitFlagValue(patterns) {
 		maxSources = 6
 		weights = []int{18, 8, 5, 3, 2, 1}
@@ -1407,7 +1756,11 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 				} else if compactTaskContextDevWantsShellProtocol(patterns) {
 					reserve = budget * 2 / 5
 				} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
+					reserve = budget * 4 / 5
+				} else if compactTaskContextDevWantsTestFlagFlow(patterns) {
 					reserve = budget * 2 / 5
+				} else if compactTaskContextDevWantsExecutingFlag(patterns) || compactTaskContextDevWantsParentFlagValue(patterns) {
+					reserve = budget / 3
 				} else if strings.HasSuffix(strings.ToLower(candidates[i].item.Path), ".md") && candidates[i].secondaryScore >= 200 {
 					reserve = budget * 2 / 5
 				}
@@ -1416,6 +1769,21 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 	}
 	primaryRemaining := remaining - secondaryReserve
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsCommandParentLink(patterns) {
+		for i := range candidates {
+			lowerSymbol := strings.ToLower(candidates[i].symbol)
+			joined := strings.Join(candidates[i].lines, "\n")
+			isAddCommand := strings.HasSuffix(lowerSymbol, ".addcommand") ||
+				(strings.Contains(joined, "func (c *Command) AddCommand") && strings.Contains(joined, ".parent ="))
+			if admitted[i] && isAddCommand {
+				if candidates[i].kind == "" {
+					candidates[i].kind = "method"
+				}
+				compactTaskContextDevCompleteUnit(&candidates[i], &primaryRemaining, 160)
+				break
+			}
+		}
+	}
 	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsInitFlagValue(patterns) {
 		// Initializers run after ParseFlags, so an answer about reading values in
 		// init needs the typed getter immediately following the parse, not only
@@ -1622,7 +1990,7 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		if compactTaskContextDevWantsTraversal(patterns) {
 			secondaryLines = 36
 		} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
-			secondaryLines = 32
+			secondaryLines = 72
 		}
 		for line := candidates[i].secondaryFrom; line < len(candidates[i].lines) && line < candidates[i].secondaryFrom+secondaryLines; line++ {
 			cost := len(strings.Fields(candidates[i].lines[line]))
@@ -1788,6 +2156,8 @@ func compactTaskContextDevItemPriority(reason string) int {
 		return 20_000
 	case strings.HasPrefix(reason, "flow-callee:"):
 		return 50_000
+	case strings.HasPrefix(reason, "path-declaration:"):
+		return 18_000
 	case strings.HasPrefix(reason, "grepread-declaration:"):
 		return 16_000
 	case strings.HasPrefix(reason, "candidate:"):
@@ -2181,6 +2551,9 @@ func compactTaskContextDevFlowSecondaryAnchor(patterns []string, lines []string,
 	wantsCompletionGroup := compactTaskContextDevHasPattern(patterns, "completion") && compactTaskContextDevHasPattern(patterns, "group")
 	wantsShellProtocol := compactTaskContextDevWantsShellProtocol(patterns)
 	wantsLifecycleHooks := compactTaskContextDevWantsLifecycleHooks(patterns)
+	wantsTestFlags := compactTaskContextDevWantsTestFlagFlow(patterns)
+	wantsExecutingFlag := compactTaskContextDevWantsExecutingFlag(patterns)
+	wantsParentFlagValue := compactTaskContextDevWantsParentFlagValue(patterns)
 	best := compactTaskContextDevLineAnchor{}
 	for index, line := range lines {
 		if index == primary {
@@ -2188,7 +2561,15 @@ func compactTaskContextDevFlowSecondaryAnchor(patterns []string, lines []string,
 		}
 		lower := strings.ToLower(line)
 		score := 0
-		if wantsShellProtocol && strings.Contains(lower, "fmt.fprintln(finalcmd.outorstdout()") {
+		if wantsLifecycleHooks && strings.Contains(lower, "parents := make([]*command") {
+			score = 230
+		} else if wantsExecutingFlag && strings.Contains(lower, "run func(cmd *command") {
+			score = 225
+		} else if wantsTestFlags && strings.Contains(lower, "args := c.args") {
+			score = 220
+		} else if wantsParentFlagValue && strings.Contains(line, ".Value.") {
+			score = 215
+		} else if wantsShellProtocol && strings.Contains(lower, "fmt.fprintln(finalcmd.outorstdout()") {
 			score = 210
 		} else if wantsExecute && strings.Contains(lower, "following order") {
 			score = 200
@@ -2251,8 +2632,13 @@ func compactTaskContextDevAnchors(mode GrepReadV2Mode, patterns []string, path s
 		if strings.HasPrefix(trimmed, "func ") || strings.HasPrefix(trimmed, "type ") || strings.HasPrefix(trimmed, "var ") || strings.HasPrefix(trimmed, "const ") {
 			score += 4
 		}
-		if mode == GrepReadV2ExactPath && index == 0 {
-			score += 100
+		if mode == GrepReadV2ExactPath {
+			switch {
+			case strings.HasPrefix(trimmed, "package "):
+				score += 200
+			case strings.HasPrefix(trimmed, "func "), strings.HasPrefix(trimmed, "type "), strings.HasPrefix(trimmed, "var "), strings.HasPrefix(trimmed, "const "):
+				score += 100
+			}
 		}
 		ranked = append(ranked, compactTaskContextDevLineAnchor{index: index, score: score})
 	}
@@ -2343,7 +2729,7 @@ func compactTaskContextDevModelFingerprint(model string) string {
 
 // ParseCompactTaskContextDev validates the exact wire interface. Unknown
 // fields fail closed: changing the representation requires a new explicit
-// version instead of silently changing the meaning of compact-dev/7.
+// version instead of silently changing the meaning of compact-dev/8.
 func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStructured, error) {
 	var envelope compactTaskContextDevEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))

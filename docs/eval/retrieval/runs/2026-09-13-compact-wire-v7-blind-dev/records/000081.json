@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 81,
+  "previous_sha256": "a5df28fb4db3eb47e199c7c8aeccec4816f72b79578a60766186d11d8eaf47ea",
+  "kind": "grade",
+  "query_id": "cb-01",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2e1e0a896306a937f22697744a83d567846836a0e677fef0e7297f5e14ba41c2",
+  "outcome": "fail",
+  "rationale": "The candidate accurately summarizes the preserved portion of `command.go:1051–1116`, but the bundle is explicitly marked `\"truncated\":true` and ends at `err = cmd.execute(flags)` followed by the incomplete line `if err != nil {`. The answer key identifies the full `ExecuteC` declaration as extending through `command.go:1137`, so lines 1117–1137—including final error handling and return behavior—are missing. Because the prompt required the exact `INSUFFICIENT` response when evidence was inadequate, a partial summary plus a truncation caveat is not sufficient.\n",
+  "sha256": "2c6c2297bc30d3ecc0e23e2bedf29e0a1a72de925c34c108f5b9d236c936a3a7"
+}

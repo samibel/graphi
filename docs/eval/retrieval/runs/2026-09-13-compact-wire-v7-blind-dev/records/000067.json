@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 67,
+  "previous_sha256": "f7b27119cf872e7666e7a61feb0f2ad1516d26adf8dafaca81f7cfd4b1f4d65e",
+  "kind": "response",
+  "query_id": "ci-1133",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "dd0c378046e16d01f24ea4a0fe624e3296112437da191c59af3315947fb663ff",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use the currently executing `*Command` passed to your handler:\n\n```go\nf := cmd.Flag(\"flag-name\")\nif f == nil {\n    // flag not found\n}\n```\n\n`Command.Flag(name)` first calls `c.Flags().Lookup(name)` and, if absent, searches persistent flags via `c.persistentFlag(name)` ([command.go, lines 1794–1803]).",
+  "sha256": "fb7d64c814549b927a97576800fd2560f6c6c56746413c2f865b183ca95002eb"
+}

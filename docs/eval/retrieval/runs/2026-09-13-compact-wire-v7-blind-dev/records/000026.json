@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 26,
+  "previous_sha256": "ccfbab1cc147ee3bdc28b34af64fa9d9a10884f4f18db5f2816f1eddb7d96188",
+  "kind": "response",
+  "query_id": "cb-35",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "425e75ac2e350647c84f9d260b561b103d22dc583c6ad0811d3fd3f32daca66c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s generated completion scripts automatically complete commands and flags; noun and flag-value completion can be customized, with static noun choices supplied through `ValidArgs` (`site/content/completions/_index.md:115–127`).\n\nThe default `completion` command is added by `(*Command).InitDefaultCompletionCmd`, unless it is disabled, the command has no subcommands, or the program already defines one (`completions.go:678–685`). Completion descriptions can be disabled with:\n\n```go\nrootCmd.CompletionOptions.DisableDescriptions = true\n```\n\n(`site/content/completions/_index.md:112–120`). The built-in flag is named `no-descriptions` and defaults to `false` (`completions.go:95–102`).",
+  "sha256": "ce2589726eb84feffd64662853a5e70f44b880b5ac2a54718ff56cbf42b222fd"
+}

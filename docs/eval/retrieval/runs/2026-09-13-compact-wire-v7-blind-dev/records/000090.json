@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 90,
+  "previous_sha256": "1af14e53481705c481253bbd0abb68b2f1f4916869e96505311b0049369b50e5",
+  "kind": "grade",
+  "query_id": "cb-09",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "74078e39bbdf7702453bce9f6bd1802494c4e7e9cd014d99bdc5694ea2028859",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and fully supported by the preserved bundle: `shell_completions.go` shows `package cobra`, imports `github.com/spf13/pflag`, and defines `(*Command).MarkFlagRequired` and `(*Command).MarkPersistentFlagRequired`, delegating through `c.Flags()` and `c.PersistentFlags()` respectively (lines 15–33). The additional named completion helpers are explicitly identified by the preserved comments at lines 42, 58–59, and 94.\n",
+  "sha256": "d92bce0461193d2e35c6765b5da874516df9d0bc5d70a11c599305949fa1b73a"
+}

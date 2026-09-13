@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 93,
+  "previous_sha256": "241d7c1c7e07063fd0dcf64a4f97b81fb3f61abb77b3e53c2e4e4b99ef41c32c",
+  "kind": "grade",
+  "query_id": "cb-12",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "65656204adc614dae19e8a0ac71507408683b85eef424185e24cd8bce1dad1e3",
+  "outcome": "pass",
+  "rationale": "The candidate directly and correctly explains the lookup algorithm using only preserved bundle evidence. `command.go:724-748` shows `Find` recursively stripping flags, taking the first non-flag argument, calling `findNext`, removing the matched argument with `argsMinusFirstX`, and returning the current command when no candidate or match remains. `command.go:767-786` supports exact name/alias matching and the unique-prefix behavior when `EnablePrefixMatching` is enabled. The answer is concrete, sufficient, and accurately cited.\n",
+  "sha256": "23aac8b87a5940e13252b9f99a0d47c4d094eac73e6b261694bdaa7c00e2c774"
+}

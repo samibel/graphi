@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 135,
+  "previous_sha256": "d0b4a34484b40570e5ef2186e8078857373e7b095b7a84466bd9f9618f848e85",
+  "kind": "grade",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "2fb5f24e8c7cd0f5f894f1054cbfb9016c2842f6c15e0949863e445c038a9a65",
+  "outcome": "pass",
+  "rationale": "The candidate directly identifies `cmd.Flags()` as the accessor returning the command’s complete `*flag.FlagSet`, accurately supported by `command.go:1641-1653`, whose comment says it includes local and persistent flags declared by the command and all parents. Its additional subset guidance is also supported by the preserved snippets: `Command.LocalFlags()` at `command.go:1669-1672` and `Command.InheritedFlags()` at `command.go:1695-1698`, the latter explicitly documented as returning flags inherited from parent commands.\n",
+  "sha256": "6f8886d50a508c8f7523784653e7da38a30d5586a60cda4f32de3c75b2b1a2a4"
+}

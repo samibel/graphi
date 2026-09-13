@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows the hidden `__complete`/`__completeNoDesc` protocol and output framing (`completions.go:25-33, 240-251`), but omits the shell-specific script implementation and directive semantics needed to support another shell.

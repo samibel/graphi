@@ -1,0 +1,14 @@
+`ExecuteC` is a method on `*Command` that executes the command tree and returns the selected command plus any error (`command.go:1051–1052`).
+
+It:
+
+- Initializes a background context when none exists (`command.go:1053–1055`).
+- Redirects execution to the root command when called on a child (`command.go:1058–1060`).
+- Runs the Windows pre-execution hook and initializes default help, completion, and command groups (`command.go:1063–1073`).
+- Uses configured arguments or `os.Args[1:]`, except for the `cobra.test` workaround (`command.go:1075–1082`).
+- Initializes the hidden completion command (`command.go:1084–1085`).
+- Resolves the target via `Traverse(args)` when `TraverseChildren` is enabled; otherwise via `Find(args)` (`command.go:1087–1093`).
+- On resolution failure, optionally prints the error and usage hint, then returns the relevant command and error (`command.go:1094–1105`).
+- Records how the resolved command was called, propagates the root context to it, and invokes `cmd.execute(flags)` (`command.go:1108–1116`).
+
+The response is truncated immediately after `if err != nil {`, so `ExecuteC`’s final error-handling and return logic is not shown.

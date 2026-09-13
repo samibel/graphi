@@ -1,0 +1,10 @@
+Call `Flag` on the executing `*Command`:
+
+```go
+f := cmd.Flag("flag-name")
+if f == nil {
+    // flag not found
+}
+```
+
+`(*Command).Flag(name)` first checks `c.Flags().Lookup(name)`, then searches persistent flags up the command tree (`command.go:1794–1803`). `ExecuteC` also returns the command that executed as `cmd *Command` (`command.go:1052`).

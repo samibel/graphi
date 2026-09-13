@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 111,
+  "previous_sha256": "ded13402ac28037e102597c17fbd1048b77a18e5618d1350f42aa3de9e9fc4d8",
+  "kind": "grade",
+  "query_id": "cb-26",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3858b1fd562c7581d1ff761c7bcd13f6d59fc6a31e520070c87bce06205c10f2",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies the controlling program-specific variable as `\u003cPROGRAM\u003e_ACTIVE_HELP`, supported by `active_help.go:45-57` and its construction in `active_help.go:59-67`. It also correctly states that `COBRA_ACTIVE_HELP=0` globally disables Active Help, supported by `active_help.go:49-50` and the constants at `active_help.go:24-31`. The description of `\u003cPROGRAM\u003e` is substantively supported, though the bundle more precisely says the uppercase root-command name with non-ASCII-alphanumeric characters replaced by `_`.\n",
+  "sha256": "b9714c18de8cbf3db5dd7bbd82b8673170dd748f1cd5a61eb9f35dce87cbec35"
+}

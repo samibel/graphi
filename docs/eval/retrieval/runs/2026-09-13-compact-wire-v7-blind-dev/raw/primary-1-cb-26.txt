@@ -1,0 +1,1 @@
+Active Help is controlled per program by `<PROGRAM>_ACTIVE_HELP` (`active_help.go:45-47, 59-66`). The global `COBRA_ACTIVE_HELP=0` disables it regardless of the program-specific value (`active_help.go:49-55`, constants at lines 29-30).

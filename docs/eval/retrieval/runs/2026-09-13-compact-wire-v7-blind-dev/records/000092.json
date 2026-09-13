@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 92,
+  "previous_sha256": "679e468c5295ac02048cdf9f8295d7ec08210ff5fd8e2dfadb97019196000a13",
+  "kind": "grade",
+  "query_id": "cb-11",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "9e4e3b60fd8aeff6bf45ee7a47ffd2e8adbc19ac196ccbca36964424f1917885",
+  "outcome": "pass",
+  "rationale": "The candidate correctly identifies `command.go:1146-1168` and `(*Command).ValidateRequiredFlags`. The bundle shows that it iterates over `c.Flags()`, reads `BashCompOneRequiredFlag`, checks `pflag.Changed`, and returns an error naming missing flags. It also correctly cites the call at `command.go:975-977`, where an error from `c.ValidateRequiredFlags()` is returned before proceeding. These claims are concrete and supported by the preserved response bytes.\n",
+  "sha256": "241d7c1c7e07063fd0dcf64a4f97b81fb3f61abb77b3e53c2e4e4b99ef41c32c"
+}

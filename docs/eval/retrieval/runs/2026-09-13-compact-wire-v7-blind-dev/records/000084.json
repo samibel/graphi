@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 84,
+  "previous_sha256": "91295d87094391c3d9f2eb1e12f5b475b5017e839e3399f3d84baced04699b98",
+  "kind": "grade",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "191aa7d5478eda623ccec7c5a449f739c9eaff2b598f27abf022e6affd923bda",
+  "outcome": "pass",
+  "rationale": "The answer accurately and concretely describes the method using only preserved evidence. `flag_groups.go:63-77` supports merging persistent flags, looking up each flag, panicking when absent, appending a space-joined group annotation, and allowing membership in multiple groups; `flag_groups.go:25-29` supplies the exact annotation value. The stated invocation contract is explicitly documented at `flag_groups.go:63-64`. The enforcement qualification is also supported: `ValidateFlagGroups` is documented as validating mutually-exclusive logic and returns early when `DisableFlagParsing` is true (`flag_groups.go:79-84`). The reference to the complete flag set is supported by `command.go:1641-1653`.\n",
+  "sha256": "aa4bba7f7825c65197e017a7d4d86cd28f1a02b886feebf8e885944934b7dbbe"
+}

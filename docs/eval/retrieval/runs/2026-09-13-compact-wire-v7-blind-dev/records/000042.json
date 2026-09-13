@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "557cec1a10596047de2289ae984742901bca14f3872ad0a6752d866b50863cde",
+  "sequence": 42,
+  "previous_sha256": "526b3e54e507c6a8406fc3db07ee2ac51d58a2d4c7c2861652cde2574b7ba8d5",
+  "kind": "response",
+  "query_id": "cb-02",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v7-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "4d00d177520beeed40fa45bf6a5aba3809179be70406e894287d3e1f5cb30518",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a mutually exclusive flag group:\n\n- It merges persistent flags first (`flag_groups.go:66`).\n- It looks up every named flag in the command’s complete flag set (`flag_groups.go:68–69`).\n- It panics if any flag does not exist (`flag_groups.go:70–72`).\n- It adds the space-joined group to each flag’s `cobra_annotation_mutually_exclusive` annotation (`flag_groups.go:74–76`, constant at `flag_groups.go:28`).\n- Repeated calls create separate groups, so a flag may belong to multiple groups (`flag_groups.go:73`).\n\nThe method’s contract says Cobra errors when invocation includes more than one flag from the given set (`flag_groups.go:63–64`). Group enforcement is handled through `ValidateFlagGroups`, unless `DisableFlagParsing` is enabled (`flag_groups.go:79–84`).",
+  "sha256": "191aa7d5478eda623ccec7c5a449f739c9eaff2b598f27abf022e6affd923bda"
+}

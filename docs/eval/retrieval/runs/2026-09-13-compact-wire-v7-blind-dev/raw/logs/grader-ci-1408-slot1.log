@@ -1,0 +1,50 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a0987f-5099-72f3-b29a-f2708cfa8f04
+--------
+user
+You are the independent grader for one preregistered development-only blind sufficiency record. Grade only the candidate answer correctness and sufficiency for the question using the development answer key below. Every factual claim required for a correct answer must be supported by the exact preserved bundle bytes in the registered blind prompt; external repository knowledge cannot repair missing evidence. Pass only a concrete, correct, supported answer; otherwise fail. Cite the supporting or missing bundle evidence in the rationale. Return only the requested JSON object.
+----- REGISTERED BLIND PROMPT AND BUNDLE -----
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how to access Global Flag in subCommand?
+
+----- BEGIN task_context/compact-dev/7 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s) for \"how to access Global Flag in subCommand?\"; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/7","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"completions.go","start_line":841,"end_line":842,"text":"func findFlag(cmd *Command, name string) *pflag.Flag {\n\tflagSet := cmd.Flags()"},{"path":"command.go","start_line":364,"end_line":366,"text":"func (c *Command) SetGlobalNormalizationFunc(n func(f *flag.FlagSet, name string) flag.NormalizedName) {\n\tc.Flags().SetNormalizeFunc(n)\n\tc.PersistentFlags().SetNormalizeFunc(n)"},{"path":"command.go","start_line":369,"end_line":369,"text":"\tfor _, command := range c.commands {"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"bash_completions.go","start_line":574,"end_line":574,"text":"\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set"},{"path":"bash_completions.go","start_line":551,"end_line":551,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1655,"end_line":1666,"text":"// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {\n\tpersistentFlags := c.PersistentFlags()\n\n\tout := flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.LocalFlags().VisitAll(func(f *flag.Flag) {\n\t\tif persistentFlags.Lookup(f.Name) == nil {\n\t\t\tout.AddFlag(f)\n\t\t}\n\t})\n\treturn out\n}"},{"path":"command.go","start_line":1637,"end_line":1639,"text":"func (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}"},{"path":"completions.go","start_line":50,"end_line":50,"text":"func (e *flagCompError) Error() string {"}],"provenance":{"input_sha256":"1ed1fd3e0d86d068e1ddcc9bc478f7075ef64409d48a1a430f14d18e36c9ff99","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/7 RESPONSE BYTES -----
+----- SEALED CANDIDATE ANSWER -----
+Define the global flag as a persistent flag on the parent/root command, then access it from the subcommand with:
+
+```go
+f := cmd.Flag("flag-name")
+```
+
+`Command.Flag` “climbs up the command tree” and, if the flag is not local, calls `persistentFlag` ([command.go:1794–1803]), which searches the command’s persistent flags and then `parentsPflags` ([command.go:1805–1816]). `Command.Flags()` likewise includes local flags plus persistent flags declared by the command and all parents ([command.go:1641–1653]).----- DEVELOPMENT ANSWER KEY -----
+{"query":"how to access Global Flag in subCommand?","stratum":"config_docs","judgements":[{"path":"command.go","start_line":1641,"end_line":1653,"anchor":"to this command (local and persistent declared here and by all parents).","grade":3,"reason":"States the answer directly: a subcommand's Flags() is the complete set including persistent flags declared by all parents, so a global flag is read from the subcommand through its own Flags() (e.g. cmd.Flags().GetString(name)).","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":1847,"end_line":1853,"anchor":"func (c *Command) mergePersistentFlags() {","grade":3,"reason":"The mechanism that makes it so: the command's own persistent flags and the accumulated parent persistent flags are added into its Flags() set, which is done before parsing and before every flag lookup path.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":1794,"end_line":1803,"anchor":"Flag climbs up the command tree looking for matching flag.","grade":3,"reason":"The single-flag route: Flag(name) checks the command's own set and then climbs to parents' persistent flags, so a global flag resolves from a subcommand by name.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":1695,"end_line":1718,"anchor":"InheritedFlags returns all flags which were inherited from parent commands.","grade":3,"reason":"The explicit accessor for exactly the inherited (global) flags, excluding the subcommand's own local ones.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":1725,"end_line":1735,"anchor":"func (c *Command) PersistentFlags() *flag.FlagSet {","grade":2,"reason":"The declaring side: a global flag is one registered on a parent's PersistentFlags, which is what the merge above then carries down.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"}]}
+
+codex
+{"outcome":"pass","rationale":"The answer is concrete and supported by the preserved bundle. `command.go:1794–1803` explicitly states that `Command.Flag(name)` climbs the command tree and falls back to `persistentFlag`; `command.go:1805–1816` shows lookup in the command’s persistent flags and `parentsPflags`; and `command.go:1641–1653` states that `Flags()` includes persistent flags declared by all parents. Thus `cmd.Flag(\"flag-name\")` from a subcommand is a correct supported access route for a parent/root persistent (“global”) flag."}
+tokens used
+4.466
+{"outcome":"pass","rationale":"The answer is concrete and supported by the preserved bundle. `command.go:1794–1803` explicitly states that `Command.Flag(name)` climbs the command tree and falls back to `persistentFlag`; `command.go:1805–1816` shows lookup in the command’s persistent flags and `parentsPflags`; and `command.go:1641–1653` states that `Flags()` includes persistent flags declared by all parents. Thus `cmd.Flag(\"flag-name\")` from a subcommand is a correct supported access route for a parent/root persistent (“global”) flag."}
