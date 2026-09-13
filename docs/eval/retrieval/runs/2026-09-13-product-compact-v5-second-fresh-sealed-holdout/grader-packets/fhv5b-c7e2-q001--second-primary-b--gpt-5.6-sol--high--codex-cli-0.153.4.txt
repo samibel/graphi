@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 554ec36e041dc144d0b0cb83cf894c91fce1aa63e3a670eb91682f79c1ce76ea
+QUERY ID: fhv5b-c7e2-q001
+
+QUESTION:
+What condition makes NoArgs return an error, and which argument is reported?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:41-47 anchor="return fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())" reason=Any nonempty positional-argument slice fails and the first supplied argument is reported with the command path.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query a65fef8b9afe; read in order (321/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":719,"end_line":722,"text":"func isFlagArg(arg string) bool {\n\treturn ((len(arg) >= 3 && arg[0:2] == \"--\") ||\n\t\t(len(arg) >= 2 && arg[0] == '-' && arg[1] != '-'))\n}"},{"path":"args.go","start_line":40,"end_line":47,"text":"\n// NoArgs returns an error if any args are included.\nfunc NoArgs(cmd *Command, args []string) error {\n\tif len(args) > 0 {\n\t\treturn fmt.Errorf(\"unknown command %q for %q\", args[0], cmd.CommandPath())\n\t}\n\treturn nil\n}"},{"path":"args.go","start_line":68,"end_line":71,"text":"// ArbitraryArgs never returns an error.\nfunc ArbitraryArgs(cmd *Command, args []string) error {\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":368,"end_line":373,"text":"\nValidation of positional arguments can be specified using the `Args` field of `Command`.\nThe following validators are built in:\n\n- Number of arguments:\n  - `NoArgs` - report an error if there are any positional args."},{"path":"args.go","start_line":42,"end_line":42,"text":"func NoArgs(cmd *Command, args []string) error {"},{"path":"args.go","start_line":93,"end_line":101,"text":"// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":73,"end_line":81,"text":"// MinimumNArgs returns an error if there is not at least N args.\nfunc MinimumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < n {\n\t\t\treturn fmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":103,"end_line":111,"text":"// RangeArgs returns an error if the number of args is not within the expected range.\nfunc RangeArgs(min int, max int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < min || len(args) > max {\n\t\t\treturn fmt.Errorf(\"accepts between %d and %d arg(s), received %d\", min, max, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":125,"end_line":128,"text":"// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead"}],"provenance":{"input_sha256":"a39ebbb2a407f903603875e0891428fc2571375992f0310dfd9aa5c8073dc5b7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`NoArgs` returns an error when `len(args) > 0`. It reports the first argument, `args[0]`, as the unknown command: `fmt.Errorf("unknown command %q for %q", args[0], cmd.CommandPath())` ([`args.go`, lines 40–47]).
+----- END THE RATER'S RESPONSE -----

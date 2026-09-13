@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q015",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "f6c2a10a98ccf6fe751a8b79ad789df31eed9ef361c0c23e78f8a03e0b794954",
+  "bundle_sha256": "8c30b25af5cae1e30897b8bc4e9981067175f4b88e02b0ad00a3164c9bdbc771",
+  "prompt_sha256": "d897be8920ce8ab39b058e637cc2fc4acc3e173936a3f610aacf1cde1bd1d4a8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetOutput` changes both `c.outWriter` and `c.errWriter`, so it sets the destinations for usage and error messages. Evidence: `command.go:279-286`, especially `c.outWriter = output` and `c.errWriter = output`.",
+  "responded_at": "2026-09-13T15:21:54Z",
+  "sha256": "05cd333bf6ea34c91fa5b19488a25f20c60c51394d80d03b49b70833fa1ffa7b"
+}

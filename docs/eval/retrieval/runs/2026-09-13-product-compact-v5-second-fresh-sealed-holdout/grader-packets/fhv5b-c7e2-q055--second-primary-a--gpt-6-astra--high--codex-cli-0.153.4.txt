@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: bf2094e0e87dee3df6e7bce074d49f8761394463042b1f0fa91a18e7c628c329
+QUERY ID: fhv5b-c7e2-q055
+
+QUESTION:
+If a help-command group is selected before the default help command exists, is that choice lost?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:332-339 anchor="c.helpCommandGroupID = groupID" reason=No; an existing help command is updated immediately and the ID is also stored for a later generated help command.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"14 ranked source span(s); query 637b1037f428; read in order (322/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"command.go","start_line":73,"end_line":75,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n"},{"path":"command.go","start_line":177,"end_line":177,"text":"\t// helpCommand is command with usage 'help'. If it's not defined by user,"},{"path":"site/content/user_guide.md","start_line":492,"end_line":493,"text":"## Help Command\n"},{"path":"command.go","start_line":332,"end_line":339,"text":"// SetHelpCommandGroupID sets the group id of the help command.\nfunc (c *Command) SetHelpCommandGroupID(groupID string) {\n\tif c.helpCommand != nil {\n\t\tc.helpCommand.GroupID = groupID\n\t}\n\t// helpCommandGroupID is used if no helpCommand is defined by the user\n\tc.helpCommandGroupID = groupID\n}"},{"path":"command.go","start_line":341,"end_line":341,"text":"// SetCompletionCommandGroupID sets the group id of the completion command."},{"path":"command.go","start_line":1229,"end_line":1232,"text":"func (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}"},{"path":"command.go","start_line":1269,"end_line":1269,"text":"\t\t\t},"},{"path":"command.go","start_line":1600,"end_line":1613,"text":"// HasHelpSubCommands determines if a command has any available 'help' sub commands\n// that need to be shown in the usage/help default template under 'additional help\n// topics'.\nfunc (c *Command) HasHelpSubCommands() bool {\n\t// return true on the first found available 'help' sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available 'help' sub commands\n\treturn false\n}"},{"path":"command.go","start_line":1615,"end_line":1615,"text":"// HasAvailableSubCommands determines if a command has available sub commands that"},{"path":"command.go","start_line":1170,"end_line":1171,"text":"// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected."},{"path":"command.go","start_line":1185,"end_line":1185,"text":"// If c already has help flag, it will do nothing."},{"path":"command.go","start_line":1186,"end_line":1187,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()"},{"path":"command.go","start_line":450,"end_line":460,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()"}],"provenance":{"input_sha256":"57bfd2c74ead00722daff722e6cf97d30ac0eaa7eb36cd6463fe85e386db763b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+No. `SetHelpCommandGroupID` always saves the choice in `c.helpCommandGroupID`, even when `c.helpCommand` is nil (`command.go:332–339`). The comment explicitly says this stored value “is used if no helpCommand is defined by the user” (`command.go:337–338`).
+----- END THE RATER'S RESPONSE -----

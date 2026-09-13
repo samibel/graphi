@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 09020a3adc8c2f5bf3ae5024865a14b55ced2d1252f237984dd4583fd8e1dd99
+QUERY ID: fhv5b-c7e2-q050
+
+QUESTION:
+What root-command file placement and top-level error handling does the user guide recommend?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/user_guide.md:42-68 anchor="Ideally you place this in app/cmd/root.go" reason=The root is ideally defined in app/cmd/root.go without a special constructor, and its Execute wrapper prints a returned error to stderr and exits with status 1.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 471a50882154; read in order (321/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":127,"end_line":162,"text":"\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit.\n\tPreRun func(cmd *Command, args []string)\n\t// PreRunE: PreRun but returns an error.\n\tPreRunE func(cmd *Command, args []string) error\n\t// Run: Typically the actual work function. Most commands will only implement this.\n\tRun func(cmd *Command, args []string)\n\t// RunE: Run but returns an error.\n\tRunE func(cmd *Command, args []string) error\n\t// PostRun: run after the Run command.\n\tPostRun func(cmd *Command, args []string)\n\t// PostRunE: PostRun but returns an error.\n\tPostRunE func(cmd *Command, args []string) error\n\t// PersistentPostRun: children of this command will inherit and execute after PostRun.\n\tPersistentPostRun func(cmd *Command, args []string)\n\t// PersistentPostRunE: PersistentPostRun but returns an error.\n\tPersistentPostRunE func(cmd *Command, args []string) error\n\n\t// groups for subcommands\n\tcommandgroups []*Group\n\n\t// args is actual args parsed from flags.\n\targs []string\n\t// flagErrorBuf contains all error messages from pflag.\n\tflagErrorBuf *bytes.Buffer\n\t// flags is full set of flags.\n\tflags *flag.FlagSet\n\t// pflags contains persistent flags.\n\tpflags *flag.FlagSet\n\t// lflags contains local flags.\n\tlflags *flag.FlagSet\n\t// iflags contains inherited flags.\n\tiflags *flag.FlagSet\n\t// parentsPflags is all persistent flags of cmd's parents.\n\tparentsPflags *flag.FlagSet\n\t// globNormFunc is the global normalization function"},{"path":"command.go","start_line":860,"end_line":866,"text":"// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"command.go","start_line":61,"end_line":62,"text":"\tUse string\n"},{"path":"doc/md_docs.go","start_line":56,"end_line":79,"text":"// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)\n\tname := cmd.CommandPath()\n\n\tbuf.WriteString(\"## \" + name + \"\\n\\n\")\n\tbuf.WriteString(cmd.Short + \"\\n\\n\")\n\tif len(cmd.Long) > 0 {\n\t\tbuf.WriteString(\"### Synopsis\\n\\n\")\n\t\tbuf.WriteString(cmd.Long + \"\\n\\n\")\n\t}\n\n\tif cmd.Runnable() {\n\t\tbuf.WriteString(fmt.Sprintf(\"```\\n%s\\n```\\n\\n\", cmd.UseLine()))\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tbuf.WriteString(\"### Examples\\n\\n\")\n\t\tbuf.WriteString(fmt.Sprintf(\"```\\n%s\\n```\\n\\n\", cmd.Example))\n\t}\n"},{"path":"doc/md_docs.go","start_line":101,"end_line":112,"text":"\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcname := name + \" \" + child.Name()\n\t\t\tlink := cname + markdownExtension\n\t\t\tlink = strings.ReplaceAll(link, \" \", \"_\")\n\t\t\tbuf.WriteString(fmt.Sprintf(\"* [%s](%s)\\t - %s\\n\", cname, linkHandler(link), child.Short))\n\t\t}\n\t\tbuf.WriteString(\"\\n\")\n\t}\n\tif !cmd.DisableAutoGenTag {"}],"provenance":{"input_sha256":"882fad37d3e890ab4ed9a1d9aeef136a5fbfbbc1bfa44c52376054b08b96a4cf","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains only `command.go` and `doc/md_docs.go` implementation snippets, with no user-guide recommendations about root-command file placement or top-level error handling.
+----- END THE RATER'S RESPONSE -----

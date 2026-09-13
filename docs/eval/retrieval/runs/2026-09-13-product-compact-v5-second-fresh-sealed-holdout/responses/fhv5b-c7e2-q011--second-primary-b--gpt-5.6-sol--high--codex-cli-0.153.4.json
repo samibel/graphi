@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q011",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "7289c0a3b6f8989579cf72c3aad648cf21a3ec6451368951776325d7171a4b95",
+  "bundle_sha256": "f3dc02652afff536aefd7f87b6be13983e88f39c4348c1cf13563c6c59e637af",
+  "prompt_sha256": "665d1a64aba28636762986669c793571a24f1dbfb73f636a6008f2dde409db1c",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Callbacks passed to `OnFinalize` are retained by appending them to the package-level `finalizers` slice. Specifically, `cobra.go:105-107` defines `OnFinalize(y ...func())` and executes:\n\n```go\nfinalizers = append(finalizers, y...)\n```\n\nThus, all variadic callback functions are preserved in their supplied order.",
+  "responded_at": "2026-09-13T15:21:25Z",
+  "sha256": "b9966c84589eb0087ae833c96c0d644cc77b5317eed2d8b41ed41915716f7b94"
+}

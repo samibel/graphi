@@ -1,0 +1,16 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "sidecars": [
+    {
+      "file": "capture-provenance.json",
+      "present": true,
+      "sha256": "9d93bd37f0210644ae9f29965f09787a9aaa0a44fd46a6c8845fff3db462ec21"
+    },
+    {
+      "file": "disclosed-grading-concerns.json",
+      "present": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q059",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "34a7cf291bfffd0ceb06855d4c3b5878a6ce70281192c21371b7a19ca7dd0a28",
+  "bundle_sha256": "cd003089cc4ea9bbdcccc3db9a3e0e95ec98a427cceb6bd77352917fe24c23d6",
+  "prompt_sha256": "f7b0f31f983b233a7ff050792428c9e4f87143f2ba4ce9d102c3fe75416319f7",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Alias recognition does **not always require exact case**. `HasAlias` calls `commandNameMatches(a, s)` (`command.go:1505–1513`), which uses `strings.EqualFold` when global `EnableCaseInsensitive` is true and exact `s == t` otherwise (`command.go:1876–1885`). The setting is documented as case-sensitive by default (`cobra.go:61–62`).\n\nThe separate alias-prefix check uses `strings.HasPrefix` directly, so it remains case-sensitive (`command.go:1524–1538`).",
+  "responded_at": "2026-09-13T15:29:01Z",
+  "sha256": "126acd95bec1401c81e05594bc44bf595ca7ff42c81b03f992a5a76039b9e8ff"
+}

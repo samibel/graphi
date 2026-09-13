@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q061",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "cbd790697c14f5045d0a3daa494d15a4ff6d863c7caefd07b01bb399c26c5615",
+  "bundle_sha256": "7c10f9777ed047b37c4a4566e27c8258e5818064243e1b980a112ce6ed4c4e85",
+  "prompt_sha256": "336f7904fd0c93143c0e48ffea13099a52214557e8acdabd6cd0dedc40bb21cf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Yes. `Command.HasExample` checks only `len(c.Example) \u003e 0` ([command.go, lines 1545–1548]), so any non-empty string—including whitespace-only text—is considered an example.",
+  "responded_at": "2026-09-13T15:28:14Z",
+  "sha256": "a9fbd4bd6ee6d60deacabfbc7dfb51cc275c0cc1510c5b8ad407fcff3b343741"
+}

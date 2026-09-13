@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q028",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "82905ec4ec937cee93a1762a4cf4945937bdcdef9117dd04a170b8cedfac55a7",
+  "bundle_sha256": "637000eb06947ff46f87aae52209740b91c3a222c380d3ba3652c9acf30bb7be",
+  "prompt_sha256": "9cdd5feb57c8bfb2a02c39d656649e3f452ef3298dce60e18f8d5b535c9f309d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The program panics during recursive group validation. `checkCommandGroups` walks every subcommand, and when `sub.GroupID` is nonempty but absent from the parent’s groups (`!c.ContainsGroup(sub.GroupID)`), it panics with:\n\n`group id '\u003cID\u003e' is not defined for subcommand '\u003ccommand path\u003e'`\n\nEvidence: `command.go:1170-1181`. The validation runs after command creation (`command.go:1072-1075`), and `ContainsGroup` checks only the parent’s `commandgroups` (`command.go:1346-1354`).",
+  "responded_at": "2026-09-13T15:23:35Z",
+  "sha256": "cf7b62914dad4959582f1d854fa38b855354fef706f5850606fbccada586a192"
+}

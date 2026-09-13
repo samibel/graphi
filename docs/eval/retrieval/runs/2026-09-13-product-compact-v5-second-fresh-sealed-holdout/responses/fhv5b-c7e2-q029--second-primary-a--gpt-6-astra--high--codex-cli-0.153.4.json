@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q029",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "0750825844c0f4f2d5c1b2136b0eec2645b269ed8764249609169776c795448c",
+  "bundle_sha256": "cfc1e147b2195f95c04058cecd229e38633c46c9092c49d91848217304f27c79",
+  "prompt_sha256": "14a60bf43c875ccc7070b100b0be649262cfe406737a4d8d40cb7e7fb14d0e7f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1183–1198`, `InitDefaultHelpFlag` calls `c.mergePersistentFlags()` and only creates the default flag if `c.Flags().Lookup(\"help\") == nil`. An existing application-defined `help` flag therefore skips creation. The comment explicitly confirms: “If c already has help flag, it will do nothing.”",
+  "responded_at": "2026-09-13T15:24:44Z",
+  "sha256": "210d0fc5ce453b0ece42f5c608035905c0de0609aa03d3880dfbeb22c02355df"
+}

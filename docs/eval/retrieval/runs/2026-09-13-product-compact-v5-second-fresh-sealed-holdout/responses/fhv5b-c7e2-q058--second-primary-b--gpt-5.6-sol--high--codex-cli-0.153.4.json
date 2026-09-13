@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q058",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "06833f86ef4bc934e96b5bf07f9958047960b459c74f9ec564c16ab39f3e87ed",
+  "bundle_sha256": "39122afc3ce49bb1f11e4b3f159a678dcd33574e659a9280b5f9569ac3eb3235",
+  "prompt_sha256": "16fa3d727dc27d1933d38ce92c50b72717e4fbac631db395fd0a1e00047c230f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default output is:\n\n```text\n\u003ccommand name\u003e version \u003cVersion\u003e\n```\n\nfollowed by a newline. Specifically, `command.go:598-609`, `Command.VersionTemplate()`, falls back through parent commands and ultimately returns:\n\n```go\n{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n```\n\nThus a command named `myapp` with `Version == \"1.2.3\"` produces `myapp version 1.2.3\\n`.",
+  "responded_at": "2026-09-13T15:27:52Z",
+  "sha256": "8696b59e09d41e8eb8b8b5b7665806b9cbdca3968206e3700d5b842c7a940091"
+}

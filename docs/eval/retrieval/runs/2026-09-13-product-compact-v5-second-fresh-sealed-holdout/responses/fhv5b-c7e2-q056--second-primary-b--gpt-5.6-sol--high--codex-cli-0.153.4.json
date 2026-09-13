@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q056",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "196568b1fb18265da1d526caecd67328526f71c9b2302f30d7fee407c0a49cfa",
+  "bundle_sha256": "9c34caabecb9272226ce7abd2988762434ad68eb888437cc96a5510b60fa1c94",
+  "prompt_sha256": "c57b9b429f1da3a8f05bc472f707fb9990c5ecb37ecd53b3743ec1f564903457",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The root command retains the group ID. In `command.go:341-345`, `SetCompletionCommandGroupID` assigns it to `c.Root().completionCommandGroupID`, even when called through a child command.",
+  "responded_at": "2026-09-13T15:27:37Z",
+  "sha256": "b3fb385bfc2bb9a3847d8113d53b92e0191db678940dad6caed9d990b501b9a2"
+}

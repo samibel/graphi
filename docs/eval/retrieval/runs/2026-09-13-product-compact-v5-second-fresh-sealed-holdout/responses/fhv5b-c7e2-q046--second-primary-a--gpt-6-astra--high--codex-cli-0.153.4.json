@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q046",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "e1e762abd886add1f464bb29eee7dfad9dfb34bfac9beb6c913d7c4a7b09276f",
+  "bundle_sha256": "177942405a64169119e51cc95b0d33b4a48592760c30b67af326a16c4af6077c",
+  "prompt_sha256": "c38531728ab209326d2d404bd52bdeee057b8b875851afcac204e2edf65c8757",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains only `command.go` snippets and no README text describing its recommended CLI sentence patterns or distinctions among commands, arguments, and flags.",
+  "responded_at": "2026-09-13T15:27:10Z",
+  "sha256": "8ee7878a84a53802e66c1a1030602f795c668689b80eceb4dd822796e79adabb"
+}

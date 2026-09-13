@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q004",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "ed729dda5140bd2942b3e139e4fb41a2ac9f8ad5b7c0bf0d0ba1771ae0b92813",
+  "bundle_sha256": "1465a65a82b0fec2a35cc2ad40a43980d99fb513330906b76f55a3d61e6affa8",
+  "prompt_sha256": "cc9b6faabd09940c38526c72670341bda4f428d478e3749a8833e515671a8817",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MinimumNArgs(n)` checks whether `len(args) \u003c n`. If true, it returns `fmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args))`; otherwise, it returns `nil` (`args.go`, lines 74–80).\n\nThe test helper confirms the exact error for minimum 2 with 1 argument: `\"requires at least 2 arg(s), only received 1\"` (`args_test.go`, lines 66–74).",
+  "responded_at": "2026-09-13T15:20:58Z",
+  "sha256": "0ed34a94201b222e07d692fa12b985c94f8a13d4dc3e0666b12e62bd6c986dea"
+}

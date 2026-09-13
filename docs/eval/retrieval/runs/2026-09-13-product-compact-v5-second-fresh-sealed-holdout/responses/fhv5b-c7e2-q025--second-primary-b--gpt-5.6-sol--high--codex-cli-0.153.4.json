@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q025",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "76523b0d6c71887a29c484ff62fc4aceb8024a7a1381aff971ca6c1bb4fd6224",
+  "bundle_sha256": "d1d645e9474b9eee264c0867ca1f9edeeb189f3c87780a3e38833d9090505b70",
+  "prompt_sha256": "0167f172ca5709f6a0a70c980565c91d2a783f5ea5c3b9fc08c630d01467501d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetArgs` on the command with the replacement argument slice:\n\n```go\ncmd.SetArgs([]string{\"arg1\", \"arg2\"})\n```\n\nEvidence: [`command.go`, lines 276–278] defines `func (c *Command) SetArgs(a []string)` and assigns the supplied slice to the command’s internal `c.args` field.",
+  "responded_at": "2026-09-13T15:23:11Z",
+  "sha256": "136389f9c2490024798c17434313da78c392824d36c78e93e490360fd77c4983"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q010",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "1c5e3077e831b2d5d802f14b0dd03b3cad07098c4a4fb5594415716e022e4ab0",
+  "bundle_sha256": "29decdfd215afd740af31bbd038527a886b7feeced597fbb72ac9119123fa00f",
+  "prompt_sha256": "47c2c2e66423e253d02d3a3f4cfd7cf862add251c3bf68c8559e8f9869ae9b2b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnInitialize` appends all supplied callbacks to the `initializers` slice, preserving their order and retaining callbacks registered by earlier calls (`cobra.go:99–100`, `initializers = append(initializers, y...)`).\n\n`Command.preRun` then invokes each callback sequentially in that order (`command.go:1015–1019`, `for _, x := range initializers { x() }`). The comment documents that they run when each command’s `Execute` method is called (`cobra.go:97–98`).",
+  "responded_at": "2026-09-13T15:22:02Z",
+  "sha256": "681391acaf33593ad9430334990429042fc4b9a8974a987b933d9732ad9f455c"
+}

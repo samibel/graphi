@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 78111ee42a2fb38e2d75270c2632baf73fcce7705f82581a99d763e62949166f
+QUERY ID: fhv5b-c7e2-q006
+
+QUESTION:
+How does ExactArgs decide whether to accept an argument list?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:93-101 anchor="if len(args) != n" reason=It accepts only when the argument count equals n and otherwise reports expected and received counts.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query fbf2e6cdff22; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"args.go","start_line":125,"end_line":131,"text":"// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"completions.go","start_line":268,"end_line":280,"text":"\t// should not be part of the list of arguments\n\ttoComplete := args[len(args)-1]\n\ttrimmedArgs := args[:len(args)-1]\n\n\tvar finalCmd *Command\n\tvar finalArgs []string\n\tvar err error\n\t// Find the real command for which completion must be performed\n\t// check if we need to traverse here to parse local flags on parent commands\n\tif c.Root().TraverseChildren {\n\t\tfinalCmd, finalArgs, err = c.Root().Traverse(trimmedArgs)\n\t} else {\n\t\t// For Root commands that don't specify any value for their Args fields, when we call"},{"path":"args.go","start_line":92,"end_line":101,"text":"\n// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":106,"end_line":106,"text":"\t\tif len(args) < min || len(args) > max {"},{"path":"command.go","start_line":82,"end_line":84,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion."},{"path":"command.go","start_line":719,"end_line":722,"text":"func isFlagArg(arg string) bool {\n\treturn ((len(arg) >= 3 && arg[0:2] == \"--\") ||\n\t\t(len(arg) >= 2 && arg[0] == '-' && arg[1] != '-'))\n}"},{"path":"args.go","start_line":113,"end_line":123,"text":"// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"command.go","start_line":790,"end_line":791,"text":"func (c *Command) Traverse(args []string) (*Command, []string, error) {\n\tflags := []string{}"},{"path":"command.go","start_line":796,"end_line":796,"text":"\t\t// A long flag with a space separated value"},{"path":"args.go","start_line":27,"end_line":28,"text":"// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {"},{"path":"args.go","start_line":41,"end_line":41,"text":"// NoArgs returns an error if any args are included."}],"provenance":{"input_sha256":"c1245fe38c835da0fa860bba3c1237614d00c0e05eb3aa63512e2a801162ba57","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`ExactArgs(n)` accepts the argument list only when `len(args) == n`. Otherwise, it returns `fmt.Errorf("accepts %d arg(s), received %d", n, len(args))`; on an exact match, it returns `nil` (`args.go`, lines 92–101, symbol `ExactArgs`).
+----- END THE RATER'S RESPONSE -----

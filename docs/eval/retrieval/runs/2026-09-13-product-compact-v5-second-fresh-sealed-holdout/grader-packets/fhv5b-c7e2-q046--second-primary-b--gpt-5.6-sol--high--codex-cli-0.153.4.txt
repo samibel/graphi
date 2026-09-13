@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ab7086b5950749d5a53ab80bfcb313a33271c00a935c723007e547dad2773eb8
+QUERY ID: fhv5b-c7e2-q046
+
+QUESTION:
+How does the README distinguish commands, arguments, and flags in its recommended CLI sentence patterns?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- README.md:34-56 anchor="Commands** represent actions, **Args** are things and **Flags** are modifiers" reason=Commands are actions, arguments are things, and flags modify actions, expressed as APPNAME VERB NOUN --ADJECTIVE or APPNAME COMMAND ARG --FLAG with examples.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query e1e762abd886; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":237,"end_line":239,"text":"\t// If this is true all flags will be passed to the command as arguments.\n\tDisableFlagParsing bool\n"},{"path":"command.go","start_line":56,"end_line":56,"text":"\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"command.go","start_line":58,"end_line":59,"text":"\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are\n\t//       optional, they are enclosed in brackets ([ ])."},{"path":"command.go","start_line":1183,"end_line":1198,"text":"// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"command.go","start_line":1766,"end_line":1769,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command.\nfunc (c *Command) HasInheritedFlags() bool {\n\treturn c.InheritedFlags().HasFlags()\n}"},{"path":"command.go","start_line":1819,"end_line":1820,"text":"func (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {"},{"path":"command.go","start_line":1794,"end_line":1794,"text":"// Flag climbs up the command tree looking for matching flag."},{"path":"command.go","start_line":643,"end_line":643,"text":"func stripFlags(args []string, c *Command) []string {"},{"path":"command.go","start_line":1695,"end_line":1718,"text":"// InheritedFlags returns all flags which were inherited from parent commands.\nfunc (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.iflags == nil {\n\t\tc.iflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.iflags.SetOutput(c.flagErrorBuf)\n\t}\n\n\tlocal := c.LocalFlags()\n\tif c.globNormFunc != nil {\n\t\tc.iflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.parentsPflags.VisitAll(func(f *flag.Flag) {\n\t\tif c.iflags.Lookup(f.Name) == nil && local.Lookup(f.Name) == nil {\n\t\t\tc.iflags.AddFlag(f)\n\t\t}\n\t})\n\treturn c.iflags\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1847,"end_line":1848,"text":"// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents."}],"provenance":{"input_sha256":"fc6b18cac1f5d09e730448fbe88841d8d0b5672bb9fb2d161bd7019b5e8e1ad4","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains only `command.go` snippets and no README sentence patterns distinguishing commands, arguments, and flags.
+----- END THE RATER'S RESPONSE -----

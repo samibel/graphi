@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7d62c0f591fe53a4c4990cc3ea1e5436c836e31159f13d39330ee6bb79c62a90
+QUERY ID: fhv5b-c7e2-q037
+
+QUESTION:
+How are local, persistent, inherited, hidden, shorthand, and traversal-sensitive flags classified into legacy Bash completion arrays?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- bash_completions.go:551-591 anchor="localNonPersistentFlags.Lookup(flag.Name) != nil && !cmd.Root().TraverseChildren" reason=It prepares annotations and arrays, records disabled parsing, skips noncompletable flags, emits long/shorthand forms for local and inherited sets, and marks local nonpersistent flags only when traversal is off.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query bf6297d09a50; read in order (308/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"site/content/user_guide.md","start_line":264,"end_line":276,"text":"var Verbose bool\nvar Source string\n```\n\nThere are two different approaches to assign a flag.\n\n### Persistent Flags\n\nA flag can be 'persistent', meaning that this flag will be available to the\ncommand it's assigned to as well as every command under that command. For\nglobal flags, assign a flag as a persistent flag on the root.\n\n```go"},{"path":"site/content/user_guide.md","start_line":274,"end_line":286,"text":"global flags, assign a flag as a persistent flag on the root.\n\n```go\nrootCmd.PersistentFlags().BoolVarP(&Verbose, \"verbose\", \"v\", false, \"verbose output\")\n```\n\n### Local Flags\n\nA flag can also be assigned locally, which will only apply to that specific command.\n\n```go\nlocalCmd.Flags().StringVarP(&Source, \"source\", \"s\", \"\", \"Source directory to read from\")\n```"},{"path":"site/content/user_guide.md","start_line":282,"end_line":290,"text":"A flag can also be assigned locally, which will only apply to that specific command.\n\n```go\nlocalCmd.Flags().StringVarP(&Source, \"source\", \"s\", \"\", \"Source directory to read from\")\n```\n\n### Local Flag on Parent Commands\n\nBy default, Cobra only parses local flags on the target command, and any local flags on"},{"path":"bash_completions.go","start_line":523,"end_line":533,"text":"func writeLocalNonPersistentFlag(buf io.StringWriter, flag *pflag.Flag) {\n\tname := flag.Name\n\tformat := \"    local_nonpersistent_flags+=(\\\"--%[1]s\" + cbn\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat += \"    local_nonpersistent_flags+=(\\\"--%[1]s=\" + cbn\n\t}\n\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.Shorthand) > 0 {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    local_nonpersistent_flags+=(\\\"-%s\\\")\\n\", flag.Shorthand))\n\t}\n}"},{"path":"command.go","start_line":1654,"end_line":1666,"text":"\n// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {\n\tpersistentFlags := c.PersistentFlags()\n\n\tout := flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.LocalFlags().VisitAll(func(f *flag.Flag) {\n\t\tif persistentFlags.Lookup(f.Name) == nil {\n\t\t\tout.AddFlag(f)\n\t\t}\n\t})\n\treturn out\n}"},{"path":"command.go","start_line":1668,"end_line":1668,"text":"// LocalFlags returns the local FlagSet specifically set in the current command."},{"path":"bash_completions.go","start_line":555,"end_line":566,"text":"    local_nonpersistent_flags=()\n    flags_with_completion=()\n    flags_completion=()\n\n`)\n\n\tif cmd.DisableFlagParsing {\n\t\tWriteStringAndCheck(buf, \"    flag_parsing_disabled=1\\n\")\n\t}\n\n\tlocalNonPersistentFlags := cmd.LocalNonPersistentFlags()\n\tcmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {"},{"path":"bash_completions.go","start_line":421,"end_line":424,"text":"    local local_nonpersistent_flags=()\n    local flags_with_completion=()\n    local flags_completion=()\n    local commands=(\"%[1]s\")"},{"path":"bash_completions.go","start_line":407,"end_line":407,"text":"\tWriteStringAndCheck(buf, fmt.Sprintf(`{"},{"path":"command.go","start_line":110,"end_line":111,"text":"\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one."},{"path":"command.go","start_line":123,"end_line":123,"text":"\t//"},{"path":"bash_completions.go","start_line":523,"end_line":523,"text":"func writeLocalNonPersistentFlag(buf io.StringWriter, flag *pflag.Flag) {"}],"provenance":{"input_sha256":"74261167837f898bf6e4cde67857f9f1fda01e23b0f8729e92f3b8b390514697","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response defines local nonpersistent flags and their shorthand entries, but omits the code classifying persistent, inherited, hidden, and traversal-sensitive flags into the legacy Bash arrays.
+----- END THE RATER'S RESPONSE -----

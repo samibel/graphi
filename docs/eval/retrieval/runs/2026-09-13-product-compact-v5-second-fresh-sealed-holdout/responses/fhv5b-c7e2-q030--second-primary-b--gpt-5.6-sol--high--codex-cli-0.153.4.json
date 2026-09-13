@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q030",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "c9589057b50aa983b6e0c1a9ae28286a21e35d0ad8e217afc2b7fc645b6d0f87",
+  "bundle_sha256": "561cd1e0fe17df87629cfe852e2856c9370634dc8c990db8d4e1ac5afe6e939a",
+  "prompt_sha256": "a708964d2e0ad5de11c7d92214bef825f49982655755752544e68510fa7cc419",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the built-in usage template lines that format command groups, ungrouped commands, local/global flags, and additional help topics.",
+  "responded_at": "2026-09-13T15:23:48Z",
+  "sha256": "6023198accd13d41e75238065f7c833a9da81230ce40813fe7203dd1b8c2c0d6"
+}

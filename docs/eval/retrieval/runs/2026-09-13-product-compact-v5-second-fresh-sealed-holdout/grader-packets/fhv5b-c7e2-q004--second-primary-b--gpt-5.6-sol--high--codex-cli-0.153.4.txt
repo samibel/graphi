@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 6688c44b7c2beacc7ea31b12b85214077ec596738e18f9df56f9adf9c924602a
+QUERY ID: fhv5b-c7e2-q004
+
+QUESTION:
+What comparison and error details are used by MinimumNArgs?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:73-81 anchor="if len(args) < n" reason=It fails when the received count is below n and reports both the required minimum and actual count.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query ed729dda5140; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"completions.go","start_line":165,"end_line":187,"text":"\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoSpace\")\n\t}\n\tif d&ShellCompDirectiveNoFileComp != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoFileComp\")\n\t}\n\tif d&ShellCompDirectiveFilterFileExt != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterFileExt\")\n\t}\n\tif d&ShellCompDirectiveFilterDirs != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterDirs\")\n\t}\n\tif d&ShellCompDirectiveKeepOrder != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveKeepOrder\")\n\t}\n\tif len(directives) == 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveDefault\")\n\t}\n\n\tif d >= shellCompDirectiveMaxValue {"},{"path":"args.go","start_line":73,"end_line":81,"text":"// MinimumNArgs returns an error if there is not at least N args.\nfunc MinimumNArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) < n {\n\t\t\treturn fmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"command.go","start_line":63,"end_line":70,"text":"\t// Aliases is an array of aliases that can be used instead of the first word in Use.\n\tAliases []string\n\n\t// SuggestFor is an array of command names for which this command will be suggested -\n\t// similar to aliases but only suggests.\n\tSuggestFor []string\n\n\t// Short is the short description shown in the 'help' output."},{"path":"command.go","start_line":85,"end_line":85,"text":"\t// It is a dynamic version of using ValidArgs."},{"path":"command.go","start_line":357,"end_line":361,"text":"// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix.\nfunc (c *Command) SetErrPrefix(s string) {\n\tc.errPrefix = s\n}\n"},{"path":"command.go","start_line":384,"end_line":384,"text":"// ErrOrStderr returns output to stderr"},{"path":"args.go","start_line":74,"end_line":74,"text":"func MinimumNArgs(n int) PositionalArgs {"},{"path":"args_test.go","start_line":66,"end_line":75,"text":"func minimumNArgsWithLessArgs(err error, t *testing.T) {\n\tif err == nil {\n\t\tt.Fatal(\"Expected an error\")\n\t}\n\tgot := err.Error()\n\texpected := \"requires at least 2 arg(s), only received 1\"\n\tif got != expected {\n\t\tt.Fatalf(\"Expected %q, got %q\", expected, got)\n\t}\n}"},{"path":"args_test.go","start_line":208,"end_line":212,"text":"func TestMinimumNArgs_WithLessArgs(t *testing.T) {\n\tc := getCommand(MinimumNArgs(2), false)\n\t_, err := executeCommand(c, \"a\")\n\tminimumNArgsWithLessArgs(err, t)\n}"},{"path":"args_test.go","start_line":214,"end_line":218,"text":"func TestMinimumNArgs_WithLessArgs_WithValid(t *testing.T) {\n\tc := getCommand(MinimumNArgs(2), true)\n\t_, err := executeCommand(c, \"one\")\n\tminimumNArgsWithLessArgs(err, t)\n}"}],"provenance":{"input_sha256":"340a14827e5816491993638c8e4495c03781d9d8452267e261248fc86f757391","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`MinimumNArgs` compares `len(args) < n`. If true, it returns:
+
+```go
+fmt.Errorf("requires at least %d arg(s), only received %d", n, len(args))
+```
+
+Otherwise, it returns `nil` ([args.go, lines 73–81](args.go)). The test confirms that `MinimumNArgs(2)` with one argument produces `"requires at least 2 arg(s), only received 1"` ([args_test.go, lines 66–75](args_test.go)).
+----- END THE RATER'S RESPONSE -----

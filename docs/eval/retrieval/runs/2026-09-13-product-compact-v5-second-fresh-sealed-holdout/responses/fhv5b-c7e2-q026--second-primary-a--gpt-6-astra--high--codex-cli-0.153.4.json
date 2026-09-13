@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q026",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "0bda4c851374530a59a1a7fccc8f3841da29b6e61a5de3c85df0c1261979f261",
+  "bundle_sha256": "c57a3bd6f6c3265653ac210eead092342e6428c158a0e3347263e4e63cee2357",
+  "prompt_sha256": "f83049d40717cccea2b704fbe57578bc69e4d9d5cd3bd1adbc2944bc1e66672f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Usage()` calls `c.UsageFunc()(c)` (`command.go:446–448`). `UsageFunc()` first checks the command’s own `c.usageFunc`, set by `SetUsageFunc`, then recursively checks its parents (`command.go:306–309, 424–432`).\n\nIf none is found, the built-in fallback calls `c.mergePersistentFlags()`, then renders `c.UsageTemplate()` to `c.OutOrStderr()` with the command `c` as template data. It prints any rendering error using `c.PrintErrln(err)` and returns that error (`command.go:433–441`).",
+  "responded_at": "2026-09-13T15:24:20Z",
+  "sha256": "9c7ccf17c5645b1fdd44d3b5e45385fcd6b3a6af13bd746242eeaf8a3dc23b05"
+}

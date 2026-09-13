@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q027",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "8034d8bb5fbd375a3d2b7e539dbd5156d0938d3721a429a41019a3706742dd6e",
+  "bundle_sha256": "e883df877499dd5d6674bfb6c8cc4dafa9ee2318c30d40fe0712753084852ca2",
+  "prompt_sha256": "74eec10c9158b62bcefe2ea083197220ccc0a6aa689acb054fe257e167de3184",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response provides `UsagePadding()` in `command.go:515–521`, but omits the implementations that choose command-path and name padding widths.",
+  "responded_at": "2026-09-13T15:24:29Z",
+  "sha256": "ac4730f1e11e894150d4f55063e99141cd22b303f8d7e51be63a0cecc7db7b72"
+}

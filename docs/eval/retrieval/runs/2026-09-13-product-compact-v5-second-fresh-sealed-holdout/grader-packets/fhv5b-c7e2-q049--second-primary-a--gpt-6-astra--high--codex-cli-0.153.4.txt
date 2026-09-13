@@ -1,0 +1,83 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 90426ad710a5c3f6b6f01561240c19b86096a51ccf3f22cf970a5ac3860acdd2
+QUERY ID: fhv5b-c7e2-q049
+
+QUESTION:
+When should a developer use cobra-cli versus manually using the Cobra library?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/user_guide.md:30-40 anchor="create a bare main.go file and a rootCmd file" reason=cobra-cli scaffolds applications and commands, while manual library use requires a bare main.go, a root command file, and optional additional commands.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 8bcce992d013; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"site/content/user_guide.md","start_line":24,"end_line":43,"text":"\nfunc main() {\n  cmd.Execute()\n}\n```\n\n## Using the Cobra Generator\n\nCobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n\nFor complete details on using the Cobra generator, please refer to [The Cobra-CLI Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n\n## Using the Cobra Library\n\nTo manually implement Cobra you need to create a bare main.go file and a rootCmd file.\nYou will optionally provide additional commands as you see fit.\n\n### Create rootCmd\n"},{"path":"CONDUCT.md","start_line":4,"end_line":5,"text":"Cobra will follow a steady release cadence. Non breaking changes will be released as minor versions quarterly. Patch bug releases are at the discretion of the maintainers. Users can expect security patch fixes to be released within relatively short order of a CVE becoming known. For more information on security patch fixes see the CVE section below. Releases will follow [Semantic Versioning](https://semver.org/). Users tracking the Master branch should expect unpredictable breaking changes as the project continues to move forward. For stability, it is highly recommended to use a release.\n"},{"path":"command.go","start_line":1171,"end_line":1173,"text":"// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {"},{"path":"command.go","start_line":1195,"end_line":1195,"text":"\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)"},{"path":"active_help.go","start_line":62,"end_line":63,"text":"func activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly."},{"path":"active_help.go","start_line":25,"end_line":25,"text":"\tactiveHelpMarker = \"_activeHelp_ \""},{"path":"cobra.go","start_line":50,"end_line":53,"text":")\n\n// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing\n// to automatically enable in CLI tools."},{"path":"README.md","start_line":82,"end_line":85,"text":"Using Cobra is easy. First, use `go get` to install the latest version\nof the library.\n\n```"},{"path":"README.md","start_line":96,"end_line":97,"text":"`cobra-cli` is a command line program to generate cobra applications and command files.\nIt will bootstrap your application scaffolding to rapidly"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"cobra.go","start_line":223,"end_line":230,"text":"func stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"cobra.go","start_line":45,"end_line":46,"text":"const (\n\tdefaultPrefixMatching   = false"}],"provenance":{"input_sha256":"dc6d84d4d0e9704b5db03544ff21981dbe2336ea10e378aacb93752fd2eb6b04","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+- Use **cobra-cli** when you want generated application scaffolding and command files. The guide calls it “the easiest way to incorporate Cobra into your application” and says it creates your application and adds commands (`site/content/user_guide.md`, lines 30–35; `README.md`, lines 96–97).
+- Use **the Cobra library manually** when you want to write that setup yourself: create a bare `main.go` and a `rootCmd` file, then optionally add commands (`site/content/user_guide.md`, lines 37–40).
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2205b7c914fe3596142251f8f8f27521392d658dd44b0dac25dc0462ae069b6c
+QUERY ID: fhv5b-c7e2-q056
+
+QUESTION:
+When completion-command grouping is configured through a child command, which command retains the group ID?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:341-345 anchor="c.Root().completionCommandGroupID = groupID" reason=The root command stores it so the generated completion command uses a tree-wide setting.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 196568b1fb18; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":183,"end_line":204,"text":"\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin\n\tinReader io.Reader\n\t// outWriter is a writer defined by the user that replaces stdout\n\toutWriter io.Writer\n\t// errWriter is a writer defined by the user that replaces stderr\n\terrWriter io.Writer\n\n\t// FParseErrWhitelist flag parse errors to be ignored\n\tFParseErrWhitelist FParseErrWhitelist\n\n\t// CompletionOptions is a set of options to control the handling of shell completion\n\tCompletionOptions CompletionOptions\n"},{"path":"command.go","start_line":72,"end_line":83,"text":"\n\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help <this-command>' output.\n\tLong string\n\n\t// Example is examples of how to use the command.\n\tExample string\n\n\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string"},{"path":"command.go","start_line":41,"end_line":45,"text":"// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"flag_groups.go","start_line":220,"end_line":228,"text":"// enforceFlagGroupsForCompletion will do the following:\n// - when a flag in a group is present, other flags in the group will be marked required\n// - when none of the flags in a one-required group are present, all flags in the group will be marked required\n// - when a flag in a mutually exclusive group is present, other flags in the group will be marked as hidden\n// This allows the standard completion logic to behave appropriately for flag groups\nfunc (c *Command) enforceFlagGroupsForCompletion() {\n\tif c.DisableFlagParsing {\n\t\treturn\n\t}"},{"path":"flag_groups.go","start_line":240,"end_line":240,"text":"\t// If a flag that is part of a group is present, we make all the other flags"},{"path":"command.go","start_line":341,"end_line":345,"text":"// SetCompletionCommandGroupID sets the group id of the completion command.\nfunc (c *Command) SetCompletionCommandGroupID(groupID string) {\n\t// completionCommandGroupID is used if no completion command is defined by the user\n\tc.Root().completionCommandGroupID = groupID\n}"}],"provenance":{"input_sha256":"92e907b1503a7f9e10efabbf401f194982ac8a29580027211954cabeb9c10022","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The root command retains the group ID. In `command.go:342–344`, `SetCompletionCommandGroupID` assigns `c.Root().completionCommandGroupID = groupID`, so calling it through a child stores the ID on the root command.
+----- END THE RATER'S RESPONSE -----

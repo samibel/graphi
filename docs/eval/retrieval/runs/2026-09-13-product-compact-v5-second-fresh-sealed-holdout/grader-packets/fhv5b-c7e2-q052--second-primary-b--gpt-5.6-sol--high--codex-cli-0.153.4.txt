@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9ff4ec0dad765fa36e564c72b6f89250b4d4ba17caa611e25efe4b2ff9d83e8d
+QUERY ID: fhv5b-c7e2-q052
+
+QUESTION:
+Which command callback should return application errors, and where are those errors caught?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/user_guide.md:222-251 anchor="`RunE` can be used" reason=RunE returns the application error, which is then caught by the caller of command execution.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 62ca26585701; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":101,"end_line":110,"text":"\t// Deprecated defines, if this command is deprecated and should print this string when used.\n\tDeprecated string\n\n\t// Annotations are key/value pairs that can be used by applications to identify or\n\t// group commands or set special options.\n\tAnnotations map[string]string\n\n\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,\n\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the"},{"path":"command.go","start_line":125,"end_line":125,"text":"\tPersistentPreRun func(cmd *Command, args []string)"},{"path":"command.go","start_line":47,"end_line":48,"text":"// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"site/content/user_guide.md","start_line":594,"end_line":595,"text":"Cobra adds a top-level '--version' flag if the Version field is set on the root command.\nRunning an application with the '--version' flag will print the version to stdout using"},{"path":"command.go","start_line":497,"end_line":511,"text":"// FlagErrorFunc returns either the function set by SetFlagErrorFunc for this\n// command or a parent, or it returns a function which returns the original\n// error.\nfunc (c *Command) FlagErrorFunc() (f func(*Command, error) error) {\n\tif c.flagErrorFunc != nil {\n\t\treturn c.flagErrorFunc\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.FlagErrorFunc()\n\t}\n\treturn func(c *Command, err error) error {\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":383,"end_line":387,"text":"\n// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":357,"end_line":357,"text":"// SetErrPrefix sets error message prefix to be used. Application can use it to set custom prefix."},{"path":"command.go","start_line":611,"end_line":621,"text":"// ErrPrefix return error message prefix for the command\nfunc (c *Command) ErrPrefix() string {\n\tif c.errPrefix != \"\" {\n\t\treturn c.errPrefix\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.ErrPrefix()\n\t}\n\treturn \"Error:\"\n}"},{"path":"command.go","start_line":316,"end_line":320,"text":"// SetFlagErrorFunc sets a function to generate an error when flag parsing\n// fails.\nfunc (c *Command) SetFlagErrorFunc(f func(*Command, error) error) {\n\tc.flagErrorFunc = f\n}"}],"provenance":{"input_sha256":"4bafd47f0ef2088431bbeab6d6e943819925debdae5cf862f18c42055038a880","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows `PersistentPreRun` and flag-error handling, but omits the application-error-returning callback and the execution code where its errors are caught.
+----- END THE RATER'S RESPONSE -----

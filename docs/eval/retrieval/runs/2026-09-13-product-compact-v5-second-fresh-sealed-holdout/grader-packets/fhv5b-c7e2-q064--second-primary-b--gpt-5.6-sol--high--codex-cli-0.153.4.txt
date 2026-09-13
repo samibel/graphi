@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e738071df5f48f7972c02140b22bf2d11683dec7fc80fffb405b9122a24a99b1
+QUERY ID: fhv5b-c7e2-q064
+
+QUESTION:
+What gets initialized the first time a command's complete flag set is requested?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1641-1653 anchor="c.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)" reason=A ContinueOnError flag set named for the command is created; an error buffer is also created if absent and installed as the flag set's output.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 2f0c652d3592; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":163,"end_line":167,"text":"\t// that we can use on every pflag set and children commands\n\tglobNormFunc func(f *flag.FlagSet, name string) flag.NormalizedName\n\n\t// usageFunc is usage func defined by user.\n\tusageFunc func(*Command) error"},{"path":"command.go","start_line":86,"end_line":86,"text":"\t// Only one of ValidArgs and ValidArgsFunction can be used for a command."},{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"completions.go","start_line":567,"end_line":590,"text":"func completeRequireFlags(finalCmd *Command, toComplete string) []string {\n\tvar completions []string\n\n\tdoCompleteRequiredFlags := func(flag *pflag.Flag) {\n\t\tif _, present := flag.Annotations[BashCompOneRequiredFlag]; present {\n\t\t\tif !flag.Changed {\n\t\t\t\t// If the flag is not already present, we suggest it as a completion\n\t\t\t\tcompletions = append(completions, getFlagNameCompletions(flag, toComplete)...)\n\t\t\t}\n\t\t}\n\t}\n\n\t// We cannot use finalCmd.Flags() because we may not have called ParsedFlags() for commands\n\t// that have set DisableFlagParsing; it is ParseFlags() that merges the inherited and\n\t// non-inherited flags.\n\tfinalCmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {\n\t\tdoCompleteRequiredFlags(flag)\n\t})\n\tfinalCmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {\n\t\tdoCompleteRequiredFlags(flag)\n\t})\n\n\treturn completions\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1655,"end_line":1655,"text":"// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands."},{"path":"flag_groups.go","start_line":48,"end_line":50,"text":"// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":63,"end_line":63,"text":"// MarkFlagsMutuallyExclusive marks the given flags with annotations so that Cobra errors"},{"path":"completions.go","start_line":284,"end_line":285,"text":"\t\t// To avoid this, we first remove the __complete command to get back to having no sub-commands.\n\t\trootCmd := c.Root()"},{"path":"completions.go","start_line":502,"end_line":502,"text":"\t// Find the completion function for the flag or command"},{"path":"flag_groups.go","start_line":81,"end_line":82,"text":"func (c *Command) ValidateFlagGroups() error {\n\tif c.DisableFlagParsing {"},{"path":"flag_groups.go","start_line":88,"end_line":88,"text":"\t// groupStatus format is the list of flags as a unique ID,"},{"path":"shell_completions.go","start_line":35,"end_line":35,"text":"// MarkFlagRequired instructs the various shell completion implementations to"}],"provenance":{"input_sha256":"017d98a249afc9817b7ab69dc7aaa3a18c33a7ffa67dc0ff4c3d33ba539849fd","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+On the first call to `Command.Flags()`, if `c.flags` is nil, it initializes:
+
+- `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`
+- `c.flagErrorBuf` with `new(bytes.Buffer)` if it is nil
+- the flag set’s output to that buffer via `c.flags.SetOutput(c.flagErrorBuf)`
+
+Evidence: `command.go:1641–1653`, `Flags()`.
+----- END THE RATER'S RESPONSE -----

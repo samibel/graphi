@@ -1,0 +1,92 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: b11b721f20cb10ffb3df961e925761209dae2c1394d024b2243ea82344bebf68
+QUERY ID: fhv5b-c7e2-q042
+
+QUESTION:
+How do Fish completion generation methods move from a command to bytes in either a writer or a file?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- fish_completions.go:275-292 anchor="return c.GenFishCompletion(outFile, includeDesc)" reason=The writer method renders into a buffer and transfers it; the file method creates and closes the destination then delegates to that writer method with the same description setting.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 50598c60e9a8; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":183,"end_line":216,"text":"\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin\n\tinReader io.Reader\n\t// outWriter is a writer defined by the user that replaces stdout\n\toutWriter io.Writer\n\t// errWriter is a writer defined by the user that replaces stderr\n\terrWriter io.Writer\n\n\t// FParseErrWhitelist flag parse errors to be ignored\n\tFParseErrWhitelist FParseErrWhitelist\n\n\t// CompletionOptions is a set of options to control the handling of shell completion\n\tCompletionOptions CompletionOptions\n\n\t// commandsAreSorted defines, if command slice are sorted or not.\n\tcommandsAreSorted bool\n\t// commandCalledAs is the name or alias value used to call this command.\n\tcommandCalledAs struct {\n\t\tname   string\n\t\tcalled bool\n\t}\n\n\tctx context.Context\n\n\t// commands is the list of commands supported by this program.\n\tcommands []*Command"},{"path":"command.go","start_line":50,"end_line":50,"text":"// definition to ensure usability."},{"path":"command.go","start_line":99,"end_line":100,"text":"\tBashCompletionFunction string\n"},{"path":"fish_completions.go","start_line":275,"end_line":281,"text":"// GenFishCompletion generates fish completion file and writes to the passed writer.\nfunc (c *Command) GenFishCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)\n\tgenFishComp(buf, c.Name(), includeDesc)\n\t_, err := buf.WriteTo(w)\n\treturn err\n}"},{"path":"fish_completions.go","start_line":283,"end_line":292,"text":"// GenFishCompletionFile generates fish completion file.\nfunc (c *Command) GenFishCompletionFile(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer outFile.Close()\n\n\treturn c.GenFishCompletion(outFile, includeDesc)\n}"},{"path":"fish_completions.go","start_line":35,"end_line":41,"text":"\tWriteStringAndCheck(buf, fmt.Sprintf(\"# fish completion for %-36s -*- shell-script -*-\\n\", name))\n\tWriteStringAndCheck(buf, fmt.Sprintf(`\nfunction __%[1]s_debug\n    set -l file \"$BASH_COMP_DEBUG_FILE\"\n    if test -n \"$file\"\n        echo \"$argv\" >> $file\n    end"},{"path":"completions.go","start_line":830,"end_line":839,"text":"\t\t\treturn cmd.Root().GenPowerShellCompletionWithDesc(out)\n\n\t\t},\n\t}\n\tif haveNoDescFlag {\n\t\tpowershell.Flags().BoolVar(&noDesc, compCmdNoDescFlagName, compCmdNoDescFlagDefault, compCmdNoDescFlagDesc)\n\t}\n\n\tcompletionCmd.AddCommand(bash, zsh, fish, powershell)\n}"},{"path":"completions.go","start_line":682,"end_line":682,"text":"// 3- c already has a 'completion' command provided by the program."},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"completions.go","start_line":782,"end_line":788,"text":"\t}\n\tif haveNoDescFlag {\n\t\tzsh.Flags().BoolVar(&noDesc, compCmdNoDescFlagName, compCmdNoDescFlagDefault, compCmdNoDescFlagDesc)\n\t}\n\n\tfish := &Command{\n\t\tUse:   \"fish\","},{"path":"completions.go","start_line":741,"end_line":741,"text":"\t\t\treturn cmd.Root().GenBashCompletionV2(out, !noDesc)"}],"provenance":{"input_sha256":"3f3d1a63ec4f1b80fd828ba41ebada2328642b2a0e960568f137b9f2c0c9dc6d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`(*Command).GenFishCompletion`:
+
+1. Creates a `bytes.Buffer`.
+2. Calls `genFishComp(buf, c.Name(), includeDesc)` to render the command’s Fish completion text into it.
+3. Copies the buffered bytes to the supplied `io.Writer` with `buf.WriteTo(w)`, returning that error.
+
+Evidence: `fish_completions.go:275–281`; generation writes formatted strings via `WriteStringAndCheck` at `fish_completions.go:35–41`.
+
+`(*Command).GenFishCompletionFile` creates the destination using `os.Create(filename)`, defers `outFile.Close()`, then delegates to `c.GenFishCompletion(outFile, includeDesc)`.
+
+Evidence: `fish_completions.go:283–292`.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q031",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "625e78ec6de74375edc46631538c2e23f1f4b7411827082f3e4c15863fcae94a",
+  "bundle_sha256": "13f533bfe2b241fed5a5590d350d6552c7a83bfc572f43e1a3b323624d13cf6a",
+  "prompt_sha256": "5a67f7670eb92a07bedd7eed0de5824f08ac3b30e1c2d8e7c4e83e542e813ef2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.ResetCommands` clears four fields: the parent relationship (`c.parent`), child commands (`c.commands`), the cached/help command (`c.helpCommand`), and cached parent persistent flags (`c.parentsPflags`) by setting each to `nil` ([`command.go`, lines 1277–1283]).",
+  "responded_at": "2026-09-13T15:23:56Z",
+  "sha256": "a024749fecb6c2e86628ea63a0c21283362694cb58f6e5ff8ec64119628bc74e"
+}

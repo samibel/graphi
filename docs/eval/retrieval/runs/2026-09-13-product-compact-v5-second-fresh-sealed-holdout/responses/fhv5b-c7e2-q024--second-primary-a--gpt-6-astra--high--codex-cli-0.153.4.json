@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q024",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "52f7a7aeec47aad9037c3f6895020e543a3e3a1344b445a0cdc7283d19a8318f",
+  "bundle_sha256": "0b67dc46f19cb3e29769b62f4ae4229be9c87c23c4e7458aad3803e974608438",
+  "prompt_sha256": "5d25f0d7f04cf52644f032cb4f8caaa0d4a6bbdbe9070f811956910877d80b20",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The context passed to the later execution method wins. Both `ExecuteContext` (`command.go:1030–1032`) and `ExecuteContextC` (`command.go:1046–1048`) unconditionally assign `c.ctx = ctx`, overwriting the previously set context before executing. `Context()` returns `c.ctx` (`command.go:264–265`).",
+  "responded_at": "2026-09-13T15:24:04Z",
+  "sha256": "1e790b1d4f123ffaac9286ea4d8d5c6385fa18215869cbf0a1ea6659eeb5c726"
+}

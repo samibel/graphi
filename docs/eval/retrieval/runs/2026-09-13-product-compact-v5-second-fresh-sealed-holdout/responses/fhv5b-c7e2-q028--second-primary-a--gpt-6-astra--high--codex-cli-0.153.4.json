@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q028",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "82905ec4ec937cee93a1762a4cf4945937bdcdef9117dd04a170b8cedfac55a7",
+  "bundle_sha256": "637000eb06947ff46f87aae52209740b91c3a222c380d3ba3652c9acf30bb7be",
+  "prompt_sha256": "9cdd5feb57c8bfb2a02c39d656649e3f452ef3298dce60e18f8d5b535c9f309d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It panics with `group id '\u003cID\u003e' is not defined for subcommand '\u003ccommand path\u003e'`.\n\nIn `command.go:1170–1181`, `checkCommandGroups()` checks each child’s nonempty `GroupID` against its parent’s `ContainsGroup()` and recursively checks descendants, so this applies at any nesting depth. `ContainsGroup()` searches only that parent’s defined groups (`command.go:1346–1354`). The validation is called after all commands have been created (`command.go:1072–1075`), and its comment identifies an undefined group as a coding error.",
+  "responded_at": "2026-09-13T15:24:37Z",
+  "sha256": "1336a636b0e5d306940542afe19f7c95dab1c5e9f76e1b8067418a2d6264018c"
+}
