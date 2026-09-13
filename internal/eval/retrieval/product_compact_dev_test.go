@@ -37,12 +37,20 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	captureRaw, err := os.ReadFile(filepath.Join(moduleRoot, "docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/bundles-after.json"))
+	capturePath := filepath.Join(moduleRoot, "docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/bundles-after.json")
+	if override := os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_BUNDLES"); override != "" {
+		capturePath = override
+		if !filepath.IsAbs(capturePath) {
+			capturePath = filepath.Join(moduleRoot, capturePath)
+		}
+	}
+	captureRaw, err := os.ReadFile(capturePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var captures struct {
 		DatasetSHA string `json:"dataset_sha256"`
+		Identical  int    `json:"identical_payloads"`
 		Runs       [][]struct {
 			QueryID string `json:"query_id"`
 			Capture struct {
@@ -53,7 +61,7 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	if err := json.Unmarshal(captureRaw, &captures); err != nil {
 		t.Fatal(err)
 	}
-	if captures.DatasetSHA != loaded.SHA256 || len(captures.Runs) != 2 {
+	if captures.DatasetSHA != loaded.SHA256 || len(captures.Runs) != 2 || captures.Identical != len(loaded.Dataset.Queries) {
 		t.Fatal("development captures have unexpected identity")
 	}
 	comparatorRaw, err := os.ReadFile(filepath.Join(moduleRoot, "docs/eval/retrieval/runs/2026-09-07-grepread-v2-dev/grepread-v2.json"))
@@ -115,50 +123,65 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			byStratum[stratum] = &stratumMeasurement{}
 		}
 		byStratum[stratum].total++
-		bundle, err := taskContextBundleFromCandidateBytes(inputs[member.QueryID].Bytes)
-		if err != nil {
-			t.Fatalf("%s input: %v", member.QueryID, err)
-		}
-		legacy, err := contract.Serialize(&bundle)
-		if err != nil {
-			t.Fatal(err)
-		}
-		first, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
-		if err != nil {
-			t.Fatalf("%s build: %v", member.QueryID, err)
-		}
-		second, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
-		if err != nil || !reflect.DeepEqual(first, second) {
-			t.Fatalf("%s is not byte-reproducible: %v", member.QueryID, err)
-		}
-		wire, err := json.Marshal(struct {
-			JSONRPC string `json:"jsonrpc"`
-			ID      int    `json:"id"`
-			Result  struct {
+		input := inputs[member.QueryID]
+		var first taskcompact.Result
+		var wire []byte
+		var captured candidateResponseEnvelope
+		if err := json.Unmarshal(input.Bytes, &captured); err == nil && captured.Result != nil && len(captured.Result.StructuredContent) > 0 {
+			if _, err := ValidateCompactCandidateBundleBytes(member.QueryID, input.Bytes); err != nil {
+				t.Fatalf("%s compact input: %v", member.QueryID, err)
+			}
+			if err := json.Unmarshal(captured.Result.StructuredContent, &first.Structured); err != nil {
+				t.Fatal(err)
+			}
+			first.Summary = captured.Result.Content[0].Text
+			wire = input.Bytes
+		} else {
+			bundle, err := taskContextBundleFromCandidateBytes(input.Bytes)
+			if err != nil {
+				t.Fatalf("%s input: %v", member.QueryID, err)
+			}
+			legacy, err := contract.Serialize(&bundle)
+			if err != nil {
+				t.Fatal(err)
+			}
+			first, err = taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
+			if err != nil {
+				t.Fatalf("%s build: %v", member.QueryID, err)
+			}
+			second, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
+			if err != nil || !reflect.DeepEqual(first, second) {
+				t.Fatalf("%s is not byte-reproducible: %v", member.QueryID, err)
+			}
+			wire, err = json.Marshal(struct {
+				JSONRPC string `json:"jsonrpc"`
+				ID      int    `json:"id"`
+				Result  struct {
+					Content []struct {
+						Type string `json:"type"`
+						Text string `json:"text"`
+					} `json:"content"`
+					StructuredContent taskcompact.Structured `json:"structuredContent"`
+					IsError           bool                   `json:"isError"`
+				} `json:"result"`
+			}{JSONRPC: "2.0", ID: 1, Result: struct {
 				Content []struct {
 					Type string `json:"type"`
 					Text string `json:"text"`
 				} `json:"content"`
 				StructuredContent taskcompact.Structured `json:"structuredContent"`
 				IsError           bool                   `json:"isError"`
-			} `json:"result"`
-		}{JSONRPC: "2.0", ID: 1, Result: struct {
-			Content []struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			} `json:"content"`
-			StructuredContent taskcompact.Structured `json:"structuredContent"`
-			IsError           bool                   `json:"isError"`
-		}{
-			Content: []struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			}{{Type: "text", Text: first.Summary}}, StructuredContent: first.Structured,
-		}})
-		if err != nil {
-			t.Fatal(err)
+			}{
+				Content: []struct {
+					Type string `json:"type"`
+					Text string `json:"text"`
+				}{{Type: "text", Text: first.Summary}}, StructuredContent: first.Structured,
+			}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			wire = append(wire, '\n')
 		}
-		wire = append(wire, '\n')
 		if sourceBudget == taskcompact.DefaultSourceBudget {
 			if _, err := ValidateCompactCandidateBundleBytes(member.QueryID, wire); err != nil {
 				t.Fatalf("%s compact wire validation: %v", member.QueryID, err)

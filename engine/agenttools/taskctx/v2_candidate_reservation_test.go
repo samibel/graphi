@@ -32,8 +32,8 @@ func TestSelectRetrievalRowsReservesExactQueryBasenameBeyondPool(t *testing.T) {
 			t.Fatalf("primary row %d changed from %q to %q", i, rows[i].NodeID, got[i].NodeID)
 		}
 	}
-	if got[len(got)-1].NodeID != "manual" {
-		t.Fatalf("deep exact-basename row was not reserved: last=%+v", got[len(got)-1])
+	if got[retrievalSeedLimit].NodeID != "manual" {
+		t.Fatalf("deep exact-basename row was not promoted to the first extra slot: %+v", got)
 	}
 }
 

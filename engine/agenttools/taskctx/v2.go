@@ -734,9 +734,10 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 
 // selectRetrievalRowsForTask keeps the ordinary top-N list unless a query
 // term exactly names the stem of a deeper candidate's file. In that case it
-// reserves the final internal slot for the first such row. The primary five
-// therefore remain stable, output width remains bounded, and generic queries
-// without this high-precision signal are byte-for-byte unchanged.
+// reserves the first extra-candidate slot for the first such row. The primary
+// five therefore remain stable, output width remains bounded, and the precise
+// path signal survives the later source-budget competition. Generic queries
+// without this signal are byte-for-byte unchanged.
 func selectRetrievalRowsForTask(task string, rows []resolve.RetrieverRow, limit int) []resolve.RetrieverRow {
 	if limit <= 0 || len(rows) <= limit {
 		return rows
@@ -765,8 +766,9 @@ func selectRetrievalRowsForTask(task string, rows []resolve.RetrieverRow, limit 
 			continue
 		}
 		selected := make([]resolve.RetrieverRow, 0, limit)
-		selected = append(selected, rows[:limit-1]...)
+		selected = append(selected, rows[:retrievalSeedLimit]...)
 		selected = append(selected, row)
+		selected = append(selected, rows[retrievalSeedLimit:limit-1]...)
 		return selected
 	}
 	return rows[:limit]
