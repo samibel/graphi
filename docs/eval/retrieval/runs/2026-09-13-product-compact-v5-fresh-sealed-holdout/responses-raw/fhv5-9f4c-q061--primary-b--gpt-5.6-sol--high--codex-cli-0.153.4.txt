@@ -1,0 +1,1 @@
+A descendant will use the ancestor’s custom help function. In `command.go:450-468`, `HelpFunc()` checks `c.helpFunc`, then recursively calls `c.Parent().HelpFunc()` when a parent exists; Cobra’s default help function is returned only after reaching a command with no parent and no custom function.

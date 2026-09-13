@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q033",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "0863431988d2bdf4e625c65f351a6f99bd0a4a328f011fbdde74f98dfbb0b120",
+  "bundle_sha256": "c07c43ecc2bfeb409e10a90b4762499d43199df35a01c387910d8b6a1e2587bd",
+  "prompt_sha256": "dfeec9b027ba5f0fa6bcc414ec72e79d01247e72babc03bfe5cae458c1139843",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The warning is printed when parsing succeeds (`err == nil`) and new warning text has been added to the buffer (`c.flagErrorBuf.Len()-beforeErrorBufLen \u003e 0`). This condition appears in `command.go:1834–1835`, immediately after the comment “Print warnings if they occurred (e.g. deprecated flag messages).”",
+  "responded_at": "2026-09-13T12:35:03Z",
+  "sha256": "1d1f53396c0b7bd47d12323375006078c8d119d32b3a24dcb2b57bb826bc3ae6"
+}

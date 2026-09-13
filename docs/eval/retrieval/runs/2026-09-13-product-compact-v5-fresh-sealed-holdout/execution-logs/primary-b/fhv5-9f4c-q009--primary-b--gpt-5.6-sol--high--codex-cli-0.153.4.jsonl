@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-63ed-7f92-b827-fa3e4e63cf8f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `command.go:831–850`, `SuggestionsFor` suggests an available child command through three mechanisms:\n\n1. Levenshtein distance: `ld(typedName, cmd.Name(), true)` is at most `c.SuggestionsMinimumDistance`.\n2. Case-insensitive prefix match: the command name starts with `typedName` after both are lowercased.\n3. Explicit suggestion match: `typedName` case-insensitively equals an entry in `cmd.SuggestFor` via `strings.EqualFold`.\n\nThese checks run only when `cmd.IsAvailableCommand()` is true."}}
+{"type":"turn.completed","usage":{"input_tokens":16479,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":0}}

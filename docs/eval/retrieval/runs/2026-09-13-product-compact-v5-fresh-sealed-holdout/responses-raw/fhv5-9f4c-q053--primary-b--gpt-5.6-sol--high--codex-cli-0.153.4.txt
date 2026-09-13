@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the contribution guide’s title and Slack guidance, not the bug-report or feature-request requirements.

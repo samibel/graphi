@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad7-c6e2-7741-bcb7-528eee1e5f91"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle’s comment at command.go:1292-1294 explicitly says sorting is skipped when commands are already sorted or sorting is disabled, supporting that their current order can remain unchanged. The cited global switch exists at cobra.go:59."}}
+{"type":"turn.completed","usage":{"input_tokens":18024,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":98,"reasoning_output_tokens":42}}

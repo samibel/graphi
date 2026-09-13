@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acc-59a1-73d0-b5ea-362c666817e1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that commandNameMatches uses strings.EqualFold when enabled and exact equality otherwise, supported by command.go:1876–1885. Its alias-matching claim is supported by HasAlias calling commandNameMatches at command.go:1505–1513."}}
+{"type":"turn.completed","usage":{"input_tokens":17988,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":60,"reasoning_output_tokens":0}}

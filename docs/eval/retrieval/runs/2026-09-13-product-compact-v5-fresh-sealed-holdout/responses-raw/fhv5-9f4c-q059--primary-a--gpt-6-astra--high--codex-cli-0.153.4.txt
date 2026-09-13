@@ -1,0 +1,5 @@
+Related parent and layout state is updated too. In `command.go`, `(*Command).RemoveCommand`:
+
+- Clears each removed child’s parent with `command.parent = nil` (line 1368).
+- Rebuilds the slice without removed children and assigns `c.commands = commands` (lines 1369–1374).
+- Resets `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen` to zero, then recomputes them from the remaining children’s `Use`, `CommandPath()`, and `Name()` (lines 1375–1392).

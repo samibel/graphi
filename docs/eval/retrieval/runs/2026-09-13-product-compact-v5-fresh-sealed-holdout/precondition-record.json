@@ -1,0 +1,39 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "freeze_commit": "6ad3f7411137a61c3f014fbe1b05a6784498868f",
+  "freeze_timestamp": "2026-09-13T12:25:16Z",
+  "dataset_path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/sealed-dataset.json",
+  "dataset_sha256": "9f2289c71bbc8515bd58b0210ddcf528eb5be427896918b3e5a3d390ad10d5aa",
+  "candidate_sha": "6ad3f7411137a61c3f014fbe1b05a6784498868f",
+  "candidate_method": "task_context/2",
+  "candidate_token_budget": 1200,
+  "comparator_version": "GrepRead/1",
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "measurement_contract_version": "sw266-measurement-contract/1",
+  "claim_wording_sha256": "99b704c59ed8f51619b570d63d1d1306fc3b43e92798ca2ce467ef54baf115ec",
+  "inputs": [
+    {
+      "role": "budgets",
+      "path": "docs/eval/retrieval-budgets.json",
+      "sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb"
+    },
+    {
+      "role": "targets",
+      "path": "docs/eval/retrieval-targets.json",
+      "sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d"
+    },
+    {
+      "role": "grading_rubric",
+      "path": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md",
+      "sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c"
+    },
+    {
+      "role": "methodology",
+      "path": "docs/eval/retrieval/methodology.md",
+      "sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d"
+    }
+  ],
+  "sha256": "33db6a8f09ac65965f60b2a74c3cb744c64a67cac264a2d671ab42bdbaa13243"
+}

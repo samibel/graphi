@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q041",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "bdccb835f1cc79a78707bba8c0c9e7a466bf874c77840d228662312d5cef64b6",
+  "bundle_sha256": "27d2c39baedf55f0d03b1f6a6bcc5a5bb64974a78e796614fc217b146e29c406",
+  "prompt_sha256": "a30957f6eb7d5cb0efab93fee146246d9fceac0a48bb3453d5756fbe73b91e90",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ValidateFlagGroups` in `flag_groups.go:81–109`:\n\n1. Returns `nil` immediately if `c.DisableFlagParsing` is true.\n2. Gets `c.Flags()` and creates three `map[string]map[string]bool` maps: `groupStatus`, `oneRequiredGroupStatus`, and `mutuallyExclusiveGroupStatus`. The comment describes each outer key as a flag-list group ID and each inner map as flag names mapped to whether they are set.\n3. Visits every flag with `flags.VisitAll`, calling `processFlagForGroupAnnotation` for each of `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive`, passing the corresponding state map. The helper reads `pflag.Annotations[annotation]` (`flag_groups.go:121–122`); its remaining population logic is not shown.\n4. Runs validators in this exact order:\n   - `validateRequiredFlagGroups(groupStatus)`\n   - `validateOneRequiredFlagGroups(oneRequiredGroupStatus)`\n   - `validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus)`\n\nEach validator’s error is returned immediately, so later validators run only if earlier ones succeed. If all succeed, validation returns `nil` (`flag_groups.go:99–108`).",
+  "responded_at": "2026-09-13T12:36:16Z",
+  "sha256": "91d84f7dd3215f9fa7aee022e3496362fe1e93f93aabcc958a1745746ba955ce"
+}

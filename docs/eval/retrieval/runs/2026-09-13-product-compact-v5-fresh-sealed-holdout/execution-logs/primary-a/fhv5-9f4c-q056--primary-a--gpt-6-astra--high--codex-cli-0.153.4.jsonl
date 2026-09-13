@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-571e-7771-8bdf-7b701fd3e0e2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `UseLine()` using `c.Use` in `command.go:1436–1451`, but contains no code or documentation explaining which portion of `Use` becomes the command name."}}
+{"type":"turn.completed","usage":{"input_tokens":17261,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response documents `<PROGRAM>_ACTIVE_HELP` naming (`site/content/active_help.md:143`) but contains no application completion code showing how it calls `GetActiveHelpConfig` or uses the returned value.

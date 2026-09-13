@@ -1,0 +1,1 @@
+PASS: The response correctly states that a nil Args callback accepts arbitrary positional arguments, supported by command.go:1139–1144 and args.go:68. Its additional explanation that NoArgs rejects positional arguments is supported by args.go:41–47.

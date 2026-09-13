@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q004",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b142f4d633956619c39b0f94e9efc689a118e1ebe979f3ae2b8ab275a579954c",
+  "bundle_sha256": "0a6f9a26ff4bc644db19cde75a69d0bc2f781f95816aae6aa7f8e7c12815dc73",
+  "prompt_sha256": "50ff7b7b7f2d2b88db39ed9298163296ce38de7e80bfb1550236f7cfffacc30a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`FixedCompletions` returns a closure with signature:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n```\n\nThe closure ignores all three arguments and always returns the captured `choices` slice and `directive` value passed to `FixedCompletions` (`completions.go`, lines 123–130):\n\n```go\nreturn choices, directive\n```",
+  "responded_at": "2026-09-13T12:31:08Z",
+  "sha256": "ff9d4166676afa8cab9a42f97cf656f91397c8fda90f9605579457a24196f6b0"
+}

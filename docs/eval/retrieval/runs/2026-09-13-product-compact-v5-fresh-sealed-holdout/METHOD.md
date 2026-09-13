@@ -1,7 +1,57 @@
 # Preregistered fresh-holdout method
 
-Status: **candidate-neutral public scaffold**. This file contains no holdout
+Status: **public pre-freeze scaffold for frozen V6 product candidate
+`d8d6a2c1d8da2de0bd90d94350a98e32a138e26c`**. This file contains no holdout
 content and authorizes no evaluation run.
+
+## 2026-09-13 PRE-FREEZE AMENDMENT — model identity and stateless execution
+
+This amendment precedes `freeze`, `capture` and all responses. OpenAI Codex
+exposes the concrete model IDs `gpt-6-astra` and `gpt-5.6-sol`; neither is an
+alias such as `latest`. The execution surface does not expose an immutable
+backend snapshot, resolved build digest or model-weights digest. No such value
+may be inferred or invented. Consequently, participant identity is frozen as a
+stable logical role/configuration ID plus the concrete model ID, provider,
+`codex-cli 0.153.4`, reasoning effort `high`, and the process controls below.
+This makes executions operationally attributable but not byte-reproducible at
+the model-behavior layer.
+
+Every item is evaluated in a new process with no resumed conversation:
+
+```sh
+test ! -e "$OUTPUT"
+test ! -e "$EXECUTION_LOG"
+codex exec --ephemeral --ignore-user-config --ignore-rules \
+  -s read-only -m "$MODEL" -c 'model_reasoning_effort="high"' \
+  -C "$ISOLATED_CWD" --json -o "$OUTPUT" - < "$ONLY_ALLOWED_INPUT" \
+  > "$EXECUTION_LOG"
+
+jq -e -s '
+  (map(.type) ==
+    ["thread.started", "turn.started", "item.completed", "turn.completed"]) and
+  ([.[] | select(.type == "item.completed") | .item.type] ==
+    ["agent_message"])
+' "$EXECUTION_LOG" >/dev/null
+```
+
+`MODEL`, `ISOLATED_CWD`, `ONLY_ALLOWED_INPUT` and the harness-prescribed raw
+`OUTPUT` are resolved separately for each item. `EXECUTION_LOG` is a distinct,
+item-local write-once path below the run's confidential `execution-logs/`
+directory. The process receives exactly one allowed prompt or grader packet.
+It is not a `resume` or `fork` of the preregistration acknowledgement session,
+and no prior item conversation is available. Raw output and the JSONL execution
+log are written directly to their prescribed paths and are then hashed, made
+read-only and committed before the next stage. Neither file's content is sent
+to the root orchestration agent.
+
+The only accepted JSONL sequence is `thread.started`, `turn.started`, one
+`item.completed` whose `.item.type` is `agent_message`, and `turn.completed`.
+Any other event or item type—including `command_execution`, `web_search` or an
+MCP event—makes that item mechanically `FAIL`/`REFUSED`. It is evidence of
+unpermitted tool or repository access and is never retried on this holdout.
+
+This amendment changes no `N`, `k`, dataset, bundle, grading rubric or scoring
+rule. Changing any of those remains a different run.
 
 ## Frozen method
 
@@ -27,7 +77,9 @@ counts those bytes.
 
 ## Curator preregistration and separation
 
-No curator is presently assigned; therefore curation is a hard blocker.
+An independent curator completed the public attestation and handed off one
+content-addressed sealed dataset before freeze. The operator does not manually
+open it and verifies its bytes only through the fail-closed harness.
 
 Before creating the dataset, the curator must record a stable identity,
 provider or employing organization where applicable, curation environment,
@@ -52,25 +104,30 @@ content digest is a refusal to freeze.
 ## Participant preregistration
 
 Exactly two `primary` participants, one `grader` and one `adjudicator` are
-declared in `participants.json` before capture. IDs are distinct. Every entry
-records its provider, resolved immutable model/version identity, independence
-basis and whether it participated in candidate implementation or dataset
-annotation. At least one primary has `participated_in_track: false`. The grader
-and adjudicator are independent of implementation and annotation and do not
-serve as primaries.
+declared in `participants.json` before capture. IDs are distinct, stable logical
+role/configuration IDs rather than conversation IDs. Every entry records its
+provider, concrete non-alias model ID, CLI version, reasoning effort,
+independence basis and whether it participated in candidate implementation or
+dataset annotation. At least one primary has `participated_in_track: false`.
+The grader and adjudicator are independent of implementation and annotation and
+do not serve as primaries.
 
-Aliases such as “latest” are not identities. If the execution service cannot
-prove the resolved model/build behind an alias, the run does not start.
+Aliases such as `latest` are not identities. Under the pre-freeze amendment,
+the absence of a provider-exposed backend snapshot/build digest is a declared
+reproducibility limitation, not an unnamed or falsely resolved identity.
 
 ## Visibility boundaries
 
-- Primary: only the generated answer instructions, one query and its exact
+- Primary: in a fresh ephemeral process, only the generated answer instructions,
+  one query and its exact
   preserved bundle. No repository, dataset, qrels, answer key, other response,
   grade or prior-run material.
-- Grader: only the frozen run-local rubric and one generated grader packet.
+- Grader: in a fresh ephemeral process, only the frozen run-local rubric and
+  one generated grader packet.
   The packet contains the response, exact bundle and reviewed grade-3 spans.
   The grader must not re-answer using external repository knowledge.
-- Adjudicator: only the original query, answer instructions and exact bundle.
+- Adjudicator: in a fresh ephemeral process, only the original query, answer
+  instructions and exact bundle.
   No primary response or grade until its own answer is write-once sealed.
 - Operator: may execute the harness and route minimum necessary artifacts, but
   does not implement, annotate, rate or grade. It does not manually inspect the
@@ -108,8 +165,10 @@ git commit -m 'eval: preregister fresh compact holdout'
 
 No prompt is delivered before the second commit. Subsequent raw responses,
 grades and adjudicator answers are created once at the harness-prescribed
-paths. Each stage is sealed with `-blind-eval seal` before the next role sees
-its permitted input. After all artifacts are committed, `-blind-eval decide`
+paths. Their item-local confidential execution logs are validated, hashed and
+committed at the same stage without being disclosed to the root agent. Each
+stage is sealed with `-blind-eval seal` before the next role sees its permitted
+input. After all artifacts are committed, `-blind-eval decide`
 revalidates frozen hashes and candidate binding and emits the only release
 decision. Any missing, malformed, drifted, unbound or over-budget artifact is a
 failure or refusal, never an invitation to repair and rerun the same holdout.

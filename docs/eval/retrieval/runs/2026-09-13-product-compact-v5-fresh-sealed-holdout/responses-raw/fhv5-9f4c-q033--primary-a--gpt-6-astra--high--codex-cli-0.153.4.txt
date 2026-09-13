@@ -1,0 +1,1 @@
+The warning is printed when parsing succeeds (`err == nil`) and new warning text has been added to the buffer (`c.flagErrorBuf.Len()-beforeErrorBufLen > 0`). This condition appears in `command.go:1834–1835`, immediately after the comment “Print warnings if they occurred (e.g. deprecated flag messages).”

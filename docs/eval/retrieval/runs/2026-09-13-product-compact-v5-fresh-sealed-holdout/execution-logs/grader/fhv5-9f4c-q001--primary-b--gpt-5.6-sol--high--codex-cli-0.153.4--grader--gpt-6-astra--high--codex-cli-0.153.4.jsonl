@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09aca-8bdd-7f82-b1d7-ead254d7d0c0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies the appended element as activeHelpMarker concatenated with activeHelpStr and explains that existing completion entries are preserved. The implementation at active_help.go:42-44 and comments at lines 39-41 support these claims and the ordering of repeated help lines."}}
+{"type":"turn.completed","usage":{"input_tokens":18260,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

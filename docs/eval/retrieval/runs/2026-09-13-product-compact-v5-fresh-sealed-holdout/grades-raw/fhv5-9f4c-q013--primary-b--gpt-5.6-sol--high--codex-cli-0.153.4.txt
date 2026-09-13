@@ -1,0 +1,1 @@
+PASS: The response accurately identifies application to local and persistent flag sets, storage in c.globNormFunc, and recursive propagation through existing c.commands children. Both cited ranges exist in the preserved bundle and support these claims.

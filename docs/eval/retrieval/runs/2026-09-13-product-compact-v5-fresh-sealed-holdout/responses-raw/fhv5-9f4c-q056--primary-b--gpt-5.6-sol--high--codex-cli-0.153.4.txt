@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.UseLine()` in `command.go:1436–1451`, but not the code that extracts the command name from `Use`.

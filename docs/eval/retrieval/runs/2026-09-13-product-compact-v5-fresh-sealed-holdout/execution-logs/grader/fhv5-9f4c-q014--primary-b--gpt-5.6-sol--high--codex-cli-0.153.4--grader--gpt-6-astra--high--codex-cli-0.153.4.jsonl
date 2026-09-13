@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acd-5538-7633-9499-e7c203e94b2b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the parent-recursive writer lookup and fallback to the supplied default `def`, both supported by the cited command.go lines 393–402."}}
+{"type":"turn.completed","usage":{"input_tokens":18152,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":38,"reasoning_output_tokens":0}}

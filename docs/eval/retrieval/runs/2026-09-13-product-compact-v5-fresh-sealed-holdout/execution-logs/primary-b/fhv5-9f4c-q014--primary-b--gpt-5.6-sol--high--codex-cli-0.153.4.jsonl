@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-dd93-7b33-8cd2-b2a2c0b1b5db"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"If the current command’s `outWriter` is `nil`, `getOut` checks `HasParent()` and recursively calls `c.parent.getOut(def)`. This searches ancestors for a non-nil output writer. If no parent provides one, it returns the supplied default writer (`def`) ([command.go, lines 393–402])."}}
+{"type":"turn.completed","usage":{"input_tokens":16386,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":73,"reasoning_output_tokens":0}}

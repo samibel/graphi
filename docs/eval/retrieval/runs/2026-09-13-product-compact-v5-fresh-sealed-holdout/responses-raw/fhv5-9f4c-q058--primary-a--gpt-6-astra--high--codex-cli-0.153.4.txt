@@ -1,0 +1,1 @@
+Requesting children does **not always sort them**. In `command.go:1292–1294`, `(*Command).Commands()` explicitly comments: “do not sort commands if it already sorted or sorting was disabled.” Thus their current order can be returned unchanged when sorting is disabled or they are already sorted.

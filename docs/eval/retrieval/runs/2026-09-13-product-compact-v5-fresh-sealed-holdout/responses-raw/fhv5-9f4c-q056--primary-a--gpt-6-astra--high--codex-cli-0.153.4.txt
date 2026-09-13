@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `UseLine()` using `c.Use` in `command.go:1436–1451`, but contains no code or documentation explaining which portion of `Use` becomes the command name.

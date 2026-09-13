@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer the question. The preserved bundle omits the subcommand loop body, so it cannot establish the essential requirement that every descendant must also qualify as an additional help topic.

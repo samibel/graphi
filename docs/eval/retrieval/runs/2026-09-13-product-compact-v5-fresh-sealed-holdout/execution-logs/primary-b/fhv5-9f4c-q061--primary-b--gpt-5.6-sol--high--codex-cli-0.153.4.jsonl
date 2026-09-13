@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-d9d2-7a72-b7e2-a22aeedc254a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A descendant will use the ancestor’s custom help function. In `command.go:450-468`, `HelpFunc()` checks `c.helpFunc`, then recursively calls `c.Parent().HelpFunc()` when a parent exists; Cobra’s default help function is returned only after reaching a command with no parent and no custom function."}}
+{"type":"turn.completed","usage":{"input_tokens":16402,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":69,"reasoning_output_tokens":0}}

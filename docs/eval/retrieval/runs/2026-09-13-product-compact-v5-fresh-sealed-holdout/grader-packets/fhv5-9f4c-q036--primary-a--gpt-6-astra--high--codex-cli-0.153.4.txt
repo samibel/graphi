@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7b1e7150bacad2ff1d7010a03acb29931b292b75b445b546adf7a7316d01a9b0
+QUERY ID: fhv5-9f4c-q036
+
+QUESTION:
+How does a Help call resolve an inherited or default help function, prepare flags, choose its stream, and handle template errors?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:450-476 anchor="err := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)" reason=A local function wins, otherwise resolution climbs parents; the default merges persistent flags, renders to stdout, reports render errors, and Help invokes it.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 86af27992ca7; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":497,"end_line":498,"text":"'create' without any additional configuration; Cobra will work when 'app help\ncreate' is called.  Every command will automatically have the '--help' flag added."},{"path":"command.go","start_line":450,"end_line":468,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":470,"end_line":470,"text":"// Help puts out the help for the command."},{"path":"command.go","start_line":1265,"end_line":1267,"text":"\t\t\t\t\tcmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown\n\t\t\t\t\tcmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown\n\t\t\t\t\tCheckErr(cmd.Help())"},{"path":"command.go","start_line":1228,"end_line":1238,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tif c.helpCommand == nil {\n\t\tc.helpCommand = &Command{\n\t\t\tUse:   \"help [command]\",\n\t\t\tShort: \"Help about any command\",\n\t\t\tLong: `Help provides help for any command in the application."},{"path":"command.go","start_line":1186,"end_line":1188,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {"},{"path":"command.go","start_line":1203,"end_line":1203,"text":"// If c.Version is empty, it will do nothing."},{"path":"doc/rest_docs.go","start_line":64,"end_line":68,"text":"\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)\n\tname := cmd.CommandPath()\n"},{"path":"completions.go","start_line":304,"end_line":307,"text":"\t\tfinalCmd.InitDefaultHelpFlag()\n\t\tfinalCmd.InitDefaultVersionFlag()\n\t}\n"},{"path":"command.go","start_line":885,"end_line":887,"text":"\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()\n"}],"provenance":{"input_sha256":"ebacd6c1528a147c889087c6e0e25653379d49b6560b86f69d1d40a2f714cb07","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+- `Help()` calls `c.HelpFunc()(c, []string{})`, passing the current command and empty arguments, then returns `nil` (`command.go:473–476`).
+- `HelpFunc()` uses `c.helpFunc` if set; otherwise it recursively calls `c.Parent().HelpFunc()` when a parent exists, falling back to the default function. An inherited function still receives the original command from `Help()` (`command.go:450–468`).
+- The default function first calls `c.mergePersistentFlags()`, then renders `c.HelpTemplate()` with `c` through `tmpl(c.OutOrStdout(), ...)`. The accompanying comment explicitly says help goes to stdout (`command.go:459–463`).
+- If template rendering returns an error, the default function prints it with `c.PrintErrln(err)`; `Help()` does not propagate it and returns `nil` (`command.go:464–476`).
+- Flag initialization also occurs before `Help()` in the shown help-command caller: `InitDefaultHelpFlag()` and `InitDefaultVersionFlag()` precede `CheckErr(cmd.Help())` (`command.go:1265–1267`). `InitDefaultHelpFlag()` itself merges persistent flags and checks whether `"help"` already exists (`command.go:1186–1188`).
+----- END THE RATER'S RESPONSE -----

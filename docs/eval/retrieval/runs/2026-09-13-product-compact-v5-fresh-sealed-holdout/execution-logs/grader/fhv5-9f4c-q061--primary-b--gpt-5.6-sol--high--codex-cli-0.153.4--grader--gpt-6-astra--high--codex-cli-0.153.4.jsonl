@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad8-8d4c-7f22-ba06-f212ed24df4a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes recursive ancestor help-function inheritance and default fallback only when no command in the chain defines a custom function, as supported by command.go:450-468."}}
+{"type":"turn.completed","usage":{"input_tokens":17984,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

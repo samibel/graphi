@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q018",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "08e84bd3874e1a4d9827c425360f96d2b243f252d05ddc81a316259c8fc6654a",
+  "bundle_sha256": "f9c071dc40438df7f852fa9b786ee8a6746888473d7f6a446e88d620bfce1edd",
+  "prompt_sha256": "9f4f971d503f3baf056c2ed61ae969314fa420dc07aa67938cf96ec3cbe45a7e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/md_docs.go`, each filename is formed from `cmd.CommandPath()` by replacing spaces with underscores, then appending `.md`:\n\n```go\nbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + markdownExtension\nfilename := filepath.Join(dir, basename)\n```\n\nEvidence: `doc/md_docs.go:143–145`; `markdownExtension` is defined as `\".md\"` at `doc/md_docs.go:30`. Thus `root subcommand` becomes `root_subcommand.md` in the specified directory.",
+  "responded_at": "2026-09-13T12:32:39Z",
+  "sha256": "1ed8781b6cfb759613c257f4e727b19393876b46a3458af7d45100919b23a5dc"
+}

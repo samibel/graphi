@@ -1,0 +1,9 @@
+`AppendActiveHelp` appends one string formed by concatenating `activeHelpMarker` and `activeHelpStr`:
+
+```go
+append(compArray, fmt.Sprintf("%s%s", activeHelpMarker, activeHelpStr))
+```
+
+Evidence: `active_help.go:42-44`.
+
+Yes, it preserves earlier completion entries because Go’s `append` adds the new element after the existing slice contents. The comments explicitly say it may be called before or after completions are added, and repeated Active Help lines appear below previous ones (`active_help.go:39-41`).

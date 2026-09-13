@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d2431bdc62403616066391345b02461642af992f38bc855f4938653ba9406585
+QUERY ID: fhv5-9f4c-q050
+
+QUESTION:
+Which file and directory filtering annotations, helper functions, and directives are unsupported by Fish completion?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/_index.md:501-515 anchor="ShellCompDirectiveFilterDirs" reason=The docs list both Bash filtering annotations, their filename/dirname helpers, and the FilterFileExt and FilterDirs directives as ignored by Fish, along with legacy custom mechanisms.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query c00c96473eb3; read in order (242/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"fish_completions.go","start_line":283,"end_line":292,"text":"// GenFishCompletionFile generates fish completion file.\nfunc (c *Command) GenFishCompletionFile(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer outFile.Close()\n\n\treturn c.GenFishCompletion(outFile, includeDesc)\n}"},{"path":"completions.go","start_line":73,"end_line":76,"text":"\t// ShellCompDirectiveFilterDirs indicates that only directory names should\n\t// be provided in file completion.  To request directory names within another\n\t// directory, the returned completions should specify the directory within\n\t// which to search.  The BashCompSubdirsInDir annotation can be used to"},{"path":"completions.go","start_line":66,"end_line":67,"text":"\t// ShellCompDirectiveFilterFileExt indicates that the provided completions\n\t// should be used as file extension filters."},{"path":"completions.go","start_line":162,"end_line":191,"text":"// Returns a string listing the different directive enabled in the specified parameter\nfunc (d ShellCompDirective) string() string {\n\tvar directives []string\n\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoSpace\")\n\t}\n\tif d&ShellCompDirectiveNoFileComp != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoFileComp\")\n\t}\n\tif d&ShellCompDirectiveFilterFileExt != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterFileExt\")\n\t}\n\tif d&ShellCompDirectiveFilterDirs != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterDirs\")\n\t}\n\tif d&ShellCompDirectiveKeepOrder != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveKeepOrder\")\n\t}\n\tif len(directives) == 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveDefault\")\n\t}\n\n\tif d >= shellCompDirectiveMaxValue {\n\t\treturn fmt.Sprintf(\"ERROR: unexpected ShellCompDirective value: %d\", d)\n\t}\n\treturn strings.Join(directives, \", \")\n}"},{"path":"fish_completions.go","start_line":174,"end_line":175,"text":"    set -l shellCompDirectiveFilterFileExt %[7]d\n    set -l shellCompDirectiveFilterDirs %[8]d"},{"path":"completions.go","start_line":357,"end_line":358,"text":"\t\t\t\treturn finalCmd, validExts, ShellCompDirectiveFilterFileExt, nil\n\t\t\t}"},{"path":"completions.go","start_line":342,"end_line":342,"text":"\tif helpOrVersionFlagPresent(finalCmd) {"},{"path":"bash_completionsV2.go","start_line":102,"end_line":103,"text":"    local shellCompDirectiveFilterFileExt=%[6]d\n    local shellCompDirectiveFilterDirs=%[7]d"},{"path":"zsh_completions.go","start_line":110,"end_line":111,"text":"    local shellCompDirectiveFilterFileExt=%[6]d\n    local shellCompDirectiveFilterDirs=%[7]d"},{"path":"zsh_completions.go","start_line":50,"end_line":51,"text":"// basis by using ValidArgsFunction and ShellCompDirectiveNoFileComp.\n// To achieve file extension filtering, one can use ValidArgsFunction and"}],"provenance":{"input_sha256":"26408d5e8cae3e0b64595b8634b02d2ce23abfdd43e543e332ef58e9544c4e90","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response names `BashCompSubdirsInDir`, `ValidArgsFunction`, `ShellCompDirectiveFilterFileExt`, and `ShellCompDirectiveFilterDirs`, but contains no lines identifying which annotations, helpers, or directives Fish completion does not support.
+----- END THE RATER'S RESPONSE -----

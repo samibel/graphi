@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acf-9c5f-7213-9551-8cffd61c0f5d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response directly answers that a partial required-together group causes an error, supported by the preserved documentation at flag_groups.go:31–32. Its citation exists and it makes no unsupported claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18082,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":29}}

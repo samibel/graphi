@@ -1,0 +1,3 @@
+It uppercases the program name, replaces characters outside `A–Z`, `0–9`, and `_` with `_`, then appends `_ACTIVE_HELP` (documented in `active_help.go:46–48`; replacement regex at line 33; suffix at lines 24–31).
+
+The caller supplies `cmd.Root().Name()` (`active_help.go:54`), and `Command.Name()` takes the part of `Use` before the first space (`command.go:1495–1503`).

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+When a child command is removed, is only the slice entry deleted or is related parent and layout state updated too?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 315c4972e1db; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":86,"end_line":86,"text":"\t// Only one of ValidArgs and ValidArgsFunction can be used for a command."},{"path":"command.go","start_line":123,"end_line":123,"text":"\t//"},{"path":"command.go","start_line":1361,"end_line":1393,"text":"// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {\n\t\tfor _, cmd := range cmds {\n\t\t\tif command == cmd {\n\t\t\t\tcommand.parent = nil\n\t\t\t\tcontinue main\n\t\t\t}\n\t\t}\n\t\tcommands = append(commands, command)\n\t}\n\tc.commands = commands\n\t// recompute all lengths\n\tc.commandsMaxUseLen = 0\n\tc.commandsMaxCommandPathLen = 0\n\tc.commandsMaxNameLen = 0\n\tfor _, command := range c.commands {\n\t\tusageLen := len(command.Use)\n\t\tif usageLen > c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(command.CommandPath())\n\t\tif commandPathLen > c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(command.Name())\n\t\tif nameLen > c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":1292,"end_line":1293,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {"},{"path":"command.go","start_line":1277,"end_line":1283,"text":"// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1331,"end_line":1331,"text":"// Groups returns a slice of child command groups."},{"path":"command.go","start_line":1336,"end_line":1336,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group"},{"path":"command.go","start_line":1306,"end_line":1307,"text":"\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}"},{"path":"command.go","start_line":1336,"end_line":1344,"text":"// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1643,"end_line":1643,"text":"func (c *Command) Flags() *flag.FlagSet {"}],"provenance":{"input_sha256":"85665ab5b2d10ad2bf605972aed3eda84a4d7405628e76474bd25990581a41a6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

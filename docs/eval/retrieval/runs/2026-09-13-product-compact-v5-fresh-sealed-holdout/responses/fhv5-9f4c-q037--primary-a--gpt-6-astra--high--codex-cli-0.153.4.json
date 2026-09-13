@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q037",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "a9b09e4633e7feb2805f4e6c8d8803427cb9bbf29d1a374b6fc46a8a26144936",
+  "bundle_sha256": "1f99daf9db7004e7b38d827a0753ab709c51af1b5007b56df2de4da3e5c75fef",
+  "prompt_sha256": "b439bff8bd10e601917faacedab66fda2c3d1d7b6da72e4338f9f41357dc39d9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response identifies `ShellCompRequestCmd = \"__complete\"` in `completions.go:27–29` and `initCompleteCmd` at lines 193–194, but omits the implementation that transforms and emits results and removes the command when unused.",
+  "responded_at": "2026-09-13T12:35:38Z",
+  "sha256": "bc10ba387988705393542aa53a503e64e27723f6764ddcd5de51eedea9afae6e"
+}

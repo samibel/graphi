@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-3db2-7bf3-a0a4-9ec7ece85c33"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`IsAvailableCommand()` in `command.go:1560–1576` excludes:\n\n- **Deprecated commands**: `len(c.Deprecated) != 0`.\n- **Hidden commands**: `c.Hidden`.\n- **The parent’s designated help command**: `c.HasParent() && c.Parent().helpCommand == c`.\n- **Commands that are neither runnable nor have available subcommands**: only `c.Runnable() || c.HasAvailableSubCommands()` returns `true`; otherwise it returns `false`."}}
+{"type":"turn.completed","usage":{"input_tokens":17217,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

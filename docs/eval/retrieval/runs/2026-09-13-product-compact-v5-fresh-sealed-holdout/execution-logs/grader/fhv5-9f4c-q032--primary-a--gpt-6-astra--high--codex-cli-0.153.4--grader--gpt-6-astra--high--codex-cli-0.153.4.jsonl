@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad1-bd14-7142-a48b-db34097e4b42"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not substantively answer the full question. The bundle supports DisableDefaultCmd, but omits the implementation establishing the no-subcommands and existing completion name or alias conditions."}}
+{"type":"turn.completed","usage":{"input_tokens":17964,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":42,"reasoning_output_tokens":0}}

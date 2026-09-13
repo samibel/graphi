@@ -1,0 +1,1 @@
+INSUFFICIENT — the response only includes the heading stating that supported shells follow (`site/content/active_help.md:20`), but omits the shell list and any Bash version constraint.

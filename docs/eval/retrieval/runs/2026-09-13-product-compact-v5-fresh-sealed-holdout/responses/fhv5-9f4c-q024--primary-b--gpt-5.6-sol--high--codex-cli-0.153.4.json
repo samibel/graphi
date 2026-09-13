@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q024",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "5057cb1ae3dce34b2e3c440dc82e5596af888a2c48b8d8f5bcb447412dad9731",
+  "bundle_sha256": "c9a7daf0a399d5edfaa7ec1eff6362d67468b42f43ba5964dd69b5d5316cb790",
+  "prompt_sha256": "ae37bc9806ebfa2891908c14839f444989527fd8698efc54cb67a238034500a2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The invocation fails with an error. `flag_groups.go:31-34` says `MarkFlagsRequiredTogether` makes Cobra error when a command supplies a subset—but not all—of the grouped flags. `site/content/user_guide.md:336-338` gives the example that supplying `--username` requires supplying `--password` as well.",
+  "responded_at": "2026-09-13T12:33:27Z",
+  "sha256": "9b7c6f4cc72d947e9ee75f15bb47849141ff81ee00d2fb6ca72bb2b3da85320e"
+}

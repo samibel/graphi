@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q042",
+  "response_sha256": "be69eb5ec89b6cb754bfc5bcac7852fb6bf228df3df4595d137d96e38d8f5c19",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not substantively answer the question. It identifies missing bundle evidence, but leaves the essential one-required and mutually-exclusive completion behavior unspecified; the preserved bundle omits those rules and hidden-flag assignments.",
+  "graded_at": "2026-09-13T12:53:05Z",
+  "sha256": "967efc52e69646f64d899a922e4f322cbd3b2f812454954bf399ddff4c22eda3"
+}

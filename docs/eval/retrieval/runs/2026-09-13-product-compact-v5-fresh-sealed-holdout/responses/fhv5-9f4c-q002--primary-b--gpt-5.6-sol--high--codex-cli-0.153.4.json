@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q002",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "7f27a03f14c9ffffeb50db74832d0b5e3d44c03c1cf9f94b9c73a807c0733f9f",
+  "bundle_sha256": "0a8492d4f72841f916203f14b3958bbdce69c776d03ca72aba2dfa3ddc079b42",
+  "prompt_sha256": "0933b2f33c5099572a0770c2ac341b98451e40cde1c08f2a384ff9bbcb3dcd6d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GetActiveHelpConfig` first reads the global `COBRA_ACTIVE_HELP` setting. If its value is exactly `\"0\"`, it returns `\"0\"` and ignores the program-specific setting. Otherwise, it reads and returns `\u003cPROGRAM\u003e_ACTIVE_HELP`, derived from the root command’s name via `activeHelpEnvVar(cmd.Root().Name())`.\n\nEvidence: `active_help.go:51-57`; constants `activeHelpGlobalEnvVar = \"COBRA_ACTIVE_HELP\"` and `activeHelpGlobalDisable = \"0\"` at `active_help.go:24-31`.",
+  "responded_at": "2026-09-13T12:30:46Z",
+  "sha256": "25b1bebf3ef043699f2d9e8796759d986a4050088f22c999160725eaaafad8d2"
+}

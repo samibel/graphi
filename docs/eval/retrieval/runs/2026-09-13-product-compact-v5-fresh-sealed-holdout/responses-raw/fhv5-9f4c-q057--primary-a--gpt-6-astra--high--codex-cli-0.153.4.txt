@@ -1,0 +1,6 @@
+The distinction is **which configured writer receives the text**:
+
+- `Print`, `Println`, and `Printf` use the general output writer: `Print` calls `fmt.Fprint(c.OutOrStderr(), i...)` (`command.go:1395–1398`), and the other two delegate to `Print` (`1400–1408`).
+- `PrintErr`, `PrintErrln`, and `PrintErrf` use the error output writer: `PrintErr` calls `fmt.Fprint(c.ErrOrStderr(), i...)` (`command.go:1409–1413`), and its variants delegate to it (`1415–1423`).
+
+Thus, separate custom output and error writers receive their respective method families. Both families document **stderr as the fallback** when their writer is unset.

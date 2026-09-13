@@ -1,0 +1,1 @@
+FAIL: The response does not explain the requested transformation, emission, or removal behavior. The preserved bundle contains only the command name and initializer declaration, omitting the implementation needed to support those essential facts.

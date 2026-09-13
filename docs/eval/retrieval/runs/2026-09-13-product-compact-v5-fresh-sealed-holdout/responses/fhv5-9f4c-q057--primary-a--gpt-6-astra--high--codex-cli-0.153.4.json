@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q057",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "79535fea1fb0012261fcdfbebdd17e50a0bfa8cc3ea2345fecaa5f9ae6dae9db",
+  "bundle_sha256": "6bab71e8182ab95263b8c54d1286d11692eb7ea812b36dd3991381794fc1a16f",
+  "prompt_sha256": "2b1910d663cf85ba6e97548c5bb691127b96e0dab5177ab064868d8d217de317",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The distinction is **which configured writer receives the text**:\n\n- `Print`, `Println`, and `Printf` use the general output writer: `Print` calls `fmt.Fprint(c.OutOrStderr(), i...)` (`command.go:1395–1398`), and the other two delegate to `Print` (`1400–1408`).\n- `PrintErr`, `PrintErrln`, and `PrintErrf` use the error output writer: `PrintErr` calls `fmt.Fprint(c.ErrOrStderr(), i...)` (`command.go:1409–1413`), and its variants delegate to it (`1415–1423`).\n\nThus, separate custom output and error writers receive their respective method families. Both families document **stderr as the fallback** when their writer is unset.",
+  "responded_at": "2026-09-13T12:38:20Z",
+  "sha256": "4b43c93df946556454a5bbfc434bbb7709acc924e092308a7d624387fd555333"
+}

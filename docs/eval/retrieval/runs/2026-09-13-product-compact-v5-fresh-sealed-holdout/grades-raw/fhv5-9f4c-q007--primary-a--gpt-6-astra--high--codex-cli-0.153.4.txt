@@ -1,0 +1,1 @@
+PASS: args.go:113–123 confirms that MatchAll evaluates validators in order and immediately returns the first non-nil error unchanged, without running subsequent validators. The cited lines 116–119 support the response.

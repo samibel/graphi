@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q029",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "433743eea3c65715ee00595d13b88e172dfecbd326361d211e2d3a553fd6106d",
+  "bundle_sha256": "b1470131b94f43b02870f16776657ba145e3010a7b85393d17284f7b326ee92d",
+  "prompt_sha256": "a74c9ea50fb7f399e51c27185772bd68606480491c7c7a9cac79df1ed72c430f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A typed prefix is accepted when it matches the name or an alias of **exactly one subcommand**. `hasNameOrAliasPrefix` uses `strings.HasPrefix` (`command.go:1524–1538`), and `findNext` accepts the collected match only when `len(matches) == 1` (`command.go:767–786`). An exact name or alias match takes precedence and returns immediately.",
+  "responded_at": "2026-09-13T12:34:29Z",
+  "sha256": "c999960c4ef741c978134bc5851624de89baf909aa4804a26a0595918a798e83"
+}

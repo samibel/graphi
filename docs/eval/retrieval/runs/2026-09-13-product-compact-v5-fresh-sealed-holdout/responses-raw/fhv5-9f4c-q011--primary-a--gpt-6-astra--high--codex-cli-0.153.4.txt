@@ -1,0 +1,1 @@
+`forceMultiLine` appends `"\n"` when `len(s) > 60` **and** the string contains no newline (`!strings.Contains(s, "\n")`). The condition is in `doc/util.go:42`, and the append is on line 43.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response establishes `<PROGRAM>_ACTIVE_HELP` naming (`site/content/active_help.md:143-144`) but omits the completion code showing how `GetActiveHelpConfig` consumes it.

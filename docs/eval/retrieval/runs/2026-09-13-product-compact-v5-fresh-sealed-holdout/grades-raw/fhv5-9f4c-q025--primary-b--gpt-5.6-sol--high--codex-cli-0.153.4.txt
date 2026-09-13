@@ -1,0 +1,1 @@
+FAIL: The bundle omits the condition linking zero set members to the error, so the essential validation behavior cannot be verified. The response also claims the reported flag list is sorted, but line 182 sorts `set`, while line 183 reports `flagList`.

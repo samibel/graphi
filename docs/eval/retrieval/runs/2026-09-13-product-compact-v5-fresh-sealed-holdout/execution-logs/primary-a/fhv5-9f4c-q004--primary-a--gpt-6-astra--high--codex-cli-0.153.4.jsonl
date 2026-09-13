@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-d3c2-7d41-98e3-8480caf450a1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`FixedCompletions` returns this closure, capturing `choices` and `directive`:\n\n```go\nfunc(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n    return choices, directive\n}\n```\n\nIt ignores its arguments and always returns the supplied `choices` slice and `directive` value. Evidence: `completions.go`, lines 126–129, especially `return choices, directive` on line 128."}}
+{"type":"turn.completed","usage":{"input_tokens":17274,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":0}}

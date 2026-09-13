@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: bddc26814db43144534dd0e54333d3297f452e08a2f53fec2a829adf21bd9d1c
+QUERY ID: fhv5-9f4c-q039
+
+QUESTION:
+How are a command's persistent flags and all ancestor persistent flags assembled into the effective flag set?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1847-1874 anchor="c.VisitParents(func(parent *Command)" reason=The parent cache is initialized and normalized, root imports the process command-line set, every ancestor persistent set is visited into the cache, and local plus cached sets merge into Flags.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 81dd63a62db3; read in order (236/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":160,"end_line":165,"text":"\t// parentsPflags is all persistent flags of cmd's parents.\n\tparentsPflags *flag.FlagSet\n\t// globNormFunc is the global normalization function\n\t// that we can use on every pflag set and children commands\n\tglobNormFunc func(f *flag.FlagSet, name string) flag.NormalizedName\n"},{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":105,"end_line":107,"text":"\t// group commands or set special options.\n\tAnnotations map[string]string\n"},{"path":"command.go","start_line":119,"end_line":119,"text":"\t//   * PersistentPostRun()"},{"path":"site/content/user_guide.md","start_line":270,"end_line":271,"text":"### Persistent Flags\n"},{"path":"command.go","start_line":1805,"end_line":1816,"text":"// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"command.go","start_line":1724,"end_line":1735,"text":"\n// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"bash_completions.go","start_line":574,"end_line":575,"text":"\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set\n\t\t// if TraverseChildren is true we should allow to complete subcommands"},{"path":"bash_completions.go","start_line":551,"end_line":551,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {"},{"path":"command.go","start_line":1654,"end_line":1666,"text":"\n// LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.\nfunc (c *Command) LocalNonPersistentFlags() *flag.FlagSet {\n\tpersistentFlags := c.PersistentFlags()\n\n\tout := flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.LocalFlags().VisitAll(func(f *flag.Flag) {\n\t\tif persistentFlags.Lookup(f.Name) == nil {\n\t\t\tout.AddFlag(f)\n\t\t}\n\t})\n\treturn out\n}"},{"path":"command.go","start_line":1726,"end_line":1726,"text":"func (c *Command) PersistentFlags() *flag.FlagSet {"}],"provenance":{"input_sha256":"0d0cb62c1588836f272376088a15b84a7c55386df860dcb18c6970b159bf8ea3","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows `c.updateParentsPflags()` and `c.parentsPflags.Lookup(name)` in `command.go:1811-1812`, but omits the implementation that assembles the ancestor persistent flags.
+----- END THE RATER'S RESPONSE -----

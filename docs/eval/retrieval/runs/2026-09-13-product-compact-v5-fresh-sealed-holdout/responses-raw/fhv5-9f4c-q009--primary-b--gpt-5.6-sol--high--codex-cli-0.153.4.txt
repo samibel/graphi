@@ -1,0 +1,7 @@
+In `command.go:831–850`, `SuggestionsFor` suggests an available child command through three mechanisms:
+
+1. Levenshtein distance: `ld(typedName, cmd.Name(), true)` is at most `c.SuggestionsMinimumDistance`.
+2. Case-insensitive prefix match: the command name starts with `typedName` after both are lowercased.
+3. Explicit suggestion match: `typedName` case-insensitively equals an entry in `cmd.SuggestFor` via `strings.EqualFold`.
+
+These checks run only when `cmd.IsAvailableCommand()` is true.

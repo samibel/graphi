@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows persistent-flag lookup in `command.go:1805–1816`, but omits the implementation of `updateParentsPflags()` and the code that merges the command’s and ancestors’ persistent flags into the effective flag set.

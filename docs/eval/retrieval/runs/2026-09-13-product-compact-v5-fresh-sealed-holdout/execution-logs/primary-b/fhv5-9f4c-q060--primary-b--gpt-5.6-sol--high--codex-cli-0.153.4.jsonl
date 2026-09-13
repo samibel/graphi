@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-bc10-72c0-95e5-822708869a55"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.ResetFlags` clears and recreates:\n\n- The flag error buffer: `c.flagErrorBuf` becomes a new `bytes.Buffer` and is reset.\n- The local flag set: `c.flags` becomes a new `flag.FlagSet`.\n- The persistent flag set: `c.pflags` becomes a new `flag.FlagSet`.\n- Both new flag sets send output to `c.flagErrorBuf`.\n- Cached/inherited flag state is cleared by setting `c.lflags`, `c.iflags`, and `c.parentsPflags` to `nil`.\n\nEvidence: `command.go:1737–1749`, in `func (c *Command) ResetFlags()`."}}
+{"type":"turn.completed","usage":{"input_tokens":16499,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":143,"reasoning_output_tokens":0}}

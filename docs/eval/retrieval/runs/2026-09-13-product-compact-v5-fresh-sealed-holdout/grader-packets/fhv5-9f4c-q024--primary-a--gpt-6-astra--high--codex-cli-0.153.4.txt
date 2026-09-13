@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 8fcc6a286e3d911d2932005e28748ab4fe5c2ab99b57b744a8cc2bf328808b79
+QUERY ID: fhv5-9f4c-q024
+
+QUESTION:
+If a user supplies only some flags from a required-together group, how is the invocation handled?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- flag_groups.go:144-165 anchor="they must all be set; missing %v" reason=A partial group fails and reports missing members; setting none or every member succeeds.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 5057cb1ae3dc; read in order (244/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/user_guide.md","start_line":336,"end_line":338,"text":"If you have different flags that must be provided together (e.g. if they provide the `--username` flag they MUST provide the `--password` flag as well) then\nCobra can enforce that requirement:\n```go"},{"path":"flag_groups.go","start_line":31,"end_line":34,"text":"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors\n// if the command is invoked with a subset (but not all) of the given flags.\nfunc (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"flag_groups.go","start_line":39,"end_line":39,"text":"\t\t}"},{"path":"flag_groups.go","start_line":221,"end_line":221,"text":"// - when a flag in a group is present, other flags in the group will be marked required"},{"path":"flag_groups.go","start_line":234,"end_line":234,"text":"\tc.Flags().VisitAll(func(pflag *flag.Flag) {"},{"path":"completions.go","start_line":392,"end_line":394,"text":"\t\t// If we have not found any required flags, only then can we show regular flags\n\t\tif len(completions) == 0 {\n\t\t\tdoCompleteFlags := func(flag *pflag.Flag) {"},{"path":"completions.go","start_line":299,"end_line":299,"text":"\t// however, when doing completion, we don't call `finalCmd.execute()`."},{"path":"flag_groups.go","start_line":121,"end_line":142,"text":"func processFlagForGroupAnnotation(flags *flag.FlagSet, pflag *flag.Flag, annotation string, groupStatus map[string]map[string]bool) {\n\tgroupInfo, found := pflag.Annotations[annotation]\n\tif found {\n\t\tfor _, group := range groupInfo {\n\t\t\tif groupStatus[group] == nil {\n\t\t\t\tflagnames := strings.Split(group, \" \")\n\n\t\t\t\t// Only consider this flag group at all if all the flags are defined.\n\t\t\t\tif !hasAllFlags(flags, flagnames...) {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\n\t\t\t\tgroupStatus[group] = map[string]bool{}\n\t\t\t\tfor _, name := range flagnames {\n\t\t\t\t\tgroupStatus[group][name] = false\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tgroupStatus[group][pflag.Name] = pflag.Changed\n\t\t}\n\t}\n}"},{"path":"flag_groups.go","start_line":79,"end_line":80,"text":"// ValidateFlagGroups validates the mutuallyExclusive/oneRequired/requiredAsGroup logic and returns the\n// first error encountered."},{"path":"flag_groups.go","start_line":93,"end_line":93,"text":"\tflags.VisitAll(func(pflag *flag.Flag) {"},{"path":"flag_groups.go","start_line":144,"end_line":145,"text":"func validateRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"flag_groups.go","start_line":167,"end_line":168,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {\n\tkeys := sortedKeys(data)"},{"path":"flag_groups.go","start_line":31,"end_line":31,"text":"// MarkFlagsRequiredTogether marks the given flags with annotations so that Cobra errors"}],"provenance":{"input_sha256":"6102c8cedfe77b60359758b48fb71cbe96959d2afed158cb680380f328d14b17","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The invocation produces an error if only some flags in a required-together group are supplied. `MarkFlagsRequiredTogether` explicitly documents this behavior in `flag_groups.go:31–32`: “Cobra errors … if the command is invoked with a subset (but not all) of the given flags.”
+----- END THE RATER'S RESPONSE -----

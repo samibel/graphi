@@ -1,0 +1,1 @@
+The warning is printed after flag parsing only if the warning buffer gained content and parsing succeeded (`err == nil`). Evidence: `command.go:1834–1835`, comment “Print warnings if they occurred” and condition `c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil`.

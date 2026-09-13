@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q017",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "87ba2b24f59ec403e839f31428b290207874391ca35ca2c299d75efd5e8ea88b",
+  "bundle_sha256": "9d6f7d4bb8483ef7ba8efa368d45a11d49fa7a6a75d2b4814b73bb57548115d9",
+  "prompt_sha256": "455c615ca6f04d7f895fb500f312da5bd4bcb604b150eba7313b312b760f5ae8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MarkFlagCustom` installs the `BashCompCustom` annotation with the Bash function name as `[]string{f}`:\n\n```go\nflags.SetAnnotation(name, BashCompCustom, []string{f})\n```\n\nThe warning says it works only for Bash completion. For portability across shells, use `c.RegisterFlagCompletionFunc(...)` to register a Go completion function instead (`shell_completions.go:71–79`).",
+  "responded_at": "2026-09-13T12:32:33Z",
+  "sha256": "a679ceb4e7a175c83416b08abc827d099b4dbdef6926bf3d0d69b2e135e1effd"
+}

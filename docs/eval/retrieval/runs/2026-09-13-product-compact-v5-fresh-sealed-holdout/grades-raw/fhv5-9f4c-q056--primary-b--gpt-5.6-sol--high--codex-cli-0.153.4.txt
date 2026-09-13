@@ -1,0 +1,1 @@
+FAIL: The response does not answer which portion becomes the command name. The preserved bundle shows UseLine() but omits the Name() extraction behavior needed to support an answer.

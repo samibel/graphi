@@ -1,0 +1,1 @@
+PASS: The bundle supports both effects: the program-specific value `"0"` causes completion to remove Active Help entries for that program, while `COBRA_ACTIVE_HELP=0` overrides program-specific settings and forces `GetActiveHelpConfig` to return `"0"` across Cobra programs. The cited spans exist and support these claims.

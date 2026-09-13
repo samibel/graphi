@@ -1,0 +1,1 @@
+PASS: The response correctly identifies both required conditions: len(s) > 60 and no existing newline. Its citation to doc/util.go lines 42–44 exists in the bundle and supports the conditional newline append.

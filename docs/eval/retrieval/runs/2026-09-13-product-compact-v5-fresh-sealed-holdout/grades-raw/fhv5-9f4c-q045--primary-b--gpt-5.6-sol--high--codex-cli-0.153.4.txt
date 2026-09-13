@@ -1,0 +1,1 @@
+FAIL: The response does not identify the supported shells or Bash version constraint. The preserved bundle includes only the introductory heading at site/content/active_help.md:20, omitting the essential shell list and version requirement.

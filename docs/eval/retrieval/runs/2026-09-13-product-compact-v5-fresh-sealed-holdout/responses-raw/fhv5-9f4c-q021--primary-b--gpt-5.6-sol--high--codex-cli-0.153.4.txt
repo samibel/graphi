@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits `genFlagResult`’s implementation after `doc/yaml_docs.go:150`, so the condition that sets `cmdOption.Shorthand` is missing.

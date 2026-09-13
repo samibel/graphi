@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-f381-7ae1-a92a-09863ac55352"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits most of `IsAdditionalHelpTopicCommand` (`command.go:1583–1590`) and the definition of `IsAvailableCommand`, so the distinguishing criteria cannot be determined."}}
+{"type":"turn.completed","usage":{"input_tokens":16368,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":153,"reasoning_output_tokens":103}}

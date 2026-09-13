@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q057",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "79535fea1fb0012261fcdfbebdd17e50a0bfa8cc3ea2345fecaa5f9ae6dae9db",
+  "bundle_sha256": "6bab71e8182ab95263b8c54d1286d11692eb7ea812b36dd3991381794fc1a16f",
+  "prompt_sha256": "2b1910d663cf85ba6e97548c5bb691127b96e0dab5177ab064868d8d217de317",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Generic `Print`, `Println`, and `Printf` write to the configured normal output via `c.OutOrStderr()` (`command.go:1395–1408`). `PrintErr`, `PrintErrln`, and `PrintErrf` write to the separately configured error output via `c.ErrOrStderr()` (`command.go:1409–1423`).\n\nThus, with custom writers configured, normal and error messages can be routed to different destinations. If the relevant writer is unset, both families fall back to `os.Stderr`; `ErrOrStderr` explicitly calls `c.getErr(os.Stderr)` (`command.go:384–387`).",
+  "responded_at": "2026-09-13T12:38:16Z",
+  "sha256": "24281c341708f30b3502137a0619a307ab0df8694196f19bee0235e4f8b7e4bd"
+}

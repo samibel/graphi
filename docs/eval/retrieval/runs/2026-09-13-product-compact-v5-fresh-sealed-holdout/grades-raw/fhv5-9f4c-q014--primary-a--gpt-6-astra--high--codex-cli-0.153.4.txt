@@ -1,0 +1,1 @@
+PASS: The response correctly describes recursive parent lookup for the nearest non-nil output writer and fallback to `def`, supported by command.go:394–402. Its description of `HasParent()` is supported by command.go:1631–1634.

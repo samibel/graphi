@@ -1,0 +1,3 @@
+It accepts **arbitrary positional arguments**. In `command.go:1139–1144`, `Command.ValidateArgs` calls `ArbitraryArgs(c, args)` when `c.Args == nil`; `args.go:68` states that `ArbitraryArgs` “never returns an error.”
+
+To reject all positional arguments, use `NoArgs`, which errors when `len(args) > 0` (`args.go:41–47`).

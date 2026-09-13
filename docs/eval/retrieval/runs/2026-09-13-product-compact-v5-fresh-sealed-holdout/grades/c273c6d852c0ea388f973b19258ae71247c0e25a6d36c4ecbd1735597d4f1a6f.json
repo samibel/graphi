@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q031",
+  "response_sha256": "c273c6d852c0ea388f973b19258ae71247c0e25a6d36c4ecbd1735597d4f1a6f",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies all exclusions in command.go:1560–1576: deprecated commands, hidden commands, the parent’s designated help command, and commands that are neither runnable nor have available subcommands. The cited span is preserved in the bundle and supports every claim.",
+  "graded_at": "2026-09-13T12:50:19Z",
+  "sha256": "2a00c15e52131c8aac6adbe3b335e93afbf3bbd371a38c2add35ef1f972ad956"
+}

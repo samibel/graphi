@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q025",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "652e9cf4d1f03cf9e8cdd81db3a11a7148a907e5817356d2569540ff5f7b80ac",
+  "bundle_sha256": "9a27bdbaadc6cc76eebe60d58e989197bd3188e790bd2842c3a95622365fa9e9",
+  "prompt_sha256": "4c905126736633cdcb50210e55d84081602a98c44570d60a6d97f11b6c30f7da",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.ValidateFlagGroups()` collects each flag’s set/unset status for `oneRequired` annotations, then calls `validateOneRequiredFlagGroups` (`flag_groups.go:78–103`). If no member is set, validation returns:\n\n`at least one of the flags in the group [\u003csorted flag list\u003e] is required`\n\nThe member names are sorted first (`flag_groups.go:182–183`). Validation is skipped when `DisableFlagParsing` is true (`flag_groups.go:81–83`).",
+  "responded_at": "2026-09-13T12:33:35Z",
+  "sha256": "7f61211c376281ea14e83e98efaed34989545b2baa62ef300ad5571e397de340"
+}

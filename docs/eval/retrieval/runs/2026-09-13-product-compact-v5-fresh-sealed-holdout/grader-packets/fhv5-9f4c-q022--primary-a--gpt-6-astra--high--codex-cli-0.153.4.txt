@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 91b134e91be3ce49105524c307e79f6c79b255f1ad7d3eee610569e2877130f4
+QUERY ID: fhv5-9f4c-q022
+
+QUESTION:
+In command_win.go, what happens when a CLI is launched from Explorer with mousetrap help enabled?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_win.go:28-41 anchor="if MousetrapHelpText != \"\" && mousetrap.StartedByExplorer()" reason=It prints help, sleeps for the configured positive duration or waits for Return, then exits with status 1.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 528084fa84dc; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":492,"end_line":493,"text":"## Help Command\n"},{"path":"cobra.go","start_line":67,"end_line":87,"text":"\n// MousetrapHelpText enables an information splash screen on Windows\n// if the CLI is started from explorer.exe.\n// To disable the mousetrap, just set this variable to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapHelpText = `This is a command line tool.\n\nYou need to open cmd.exe and run it from there.\n`\n\n// MousetrapDisplayDuration controls how long the MousetrapHelpText message is displayed on Windows\n// if the CLI is started from explorer.exe. Set to 0 to wait for the return key to be pressed.\n// To disable the mousetrap, just set MousetrapHelpText to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapDisplayDuration = 5 * time.Second\n\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}"},{"path":"command_win.go","start_line":31,"end_line":32,"text":"\tif MousetrapHelpText != \"\" && mousetrap.StartedByExplorer() {\n\t\tc.Print(MousetrapHelpText)"},{"path":"cobra.go","start_line":77,"end_line":77,"text":"// MousetrapDisplayDuration controls how long the MousetrapHelpText message is displayed on Windows"},{"path":"command.go","start_line":1229,"end_line":1233,"text":"func (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n"},{"path":"command.go","start_line":1234,"end_line":1234,"text":"\tif c.helpCommand == nil {"},{"path":"command.go","start_line":883,"end_line":886,"text":"\t// initialize help and version flag at the last point possible to allow for user\n\t// overriding\n\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()"},{"path":"command.go","start_line":452,"end_line":452,"text":"func (c *Command) HelpFunc() func(*Command, []string) {"},{"path":"command.go","start_line":472,"end_line":472,"text":"// Can be defined by user by overriding HelpFunc."}],"provenance":{"input_sha256":"f5b0ac39cc9ed02b576631532be57dc749349ac875ccc6c18f2453d0a4466fb3","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+It prints `MousetrapHelpText` when the text is nonempty and `mousetrap.StartedByExplorer()` is true (`command_win.go:31–32`). The default message tells users to open `cmd.exe` and run the tool there. Its documented display duration is 5 seconds, or until Return is pressed if `MousetrapDisplayDuration` is set to 0 (`cobra.go:68–81`).
+----- END THE RATER'S RESPONSE -----

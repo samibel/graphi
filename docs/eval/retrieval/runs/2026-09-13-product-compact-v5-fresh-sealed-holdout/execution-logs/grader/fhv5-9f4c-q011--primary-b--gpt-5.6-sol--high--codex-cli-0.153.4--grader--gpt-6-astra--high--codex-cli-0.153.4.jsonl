@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acc-a820-7401-8d5e-f7a3581156bc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies both required conditions: len(s) > 60 and no existing newline. Its citation to doc/util.go lines 42–44 exists in the bundle and supports the conditional newline append."}}
+{"type":"turn.completed","usage":{"input_tokens":17988,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

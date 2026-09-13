@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac5-c4e6-77c0-8ea1-595c1228d2b4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response names only TabCompleteNext (`site/content/completions/_index.md:523`) and provides description-generation APIs, but omits the other two modes, when descriptions are displayed, and the minimum PowerShell version."}}
+{"type":"turn.completed","usage":{"input_tokens":17324,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

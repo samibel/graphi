@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad8-7039-71c3-a12c-55e1e8963d4e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains recursive inheritance through `c.Parent().HelpFunc()` and fallback to default help only when no command in the ancestor chain defines a custom function. Its cited lines are present and supporting in the preserved `command.go:450–468` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17991,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":41}}

@@ -1,0 +1,19 @@
+In `doc/yaml_docs.go:92-147`, `GenYamlCustom` builds a `cmdDoc` as follows:
+
+- Initializes Cobra’s default help command and flag with `InitDefaultHelpCmd()` and `InitDefaultHelpFlag()`.
+- Sets metadata:
+  - `Name` from `cmd.CommandPath()`
+  - `Synopsis` and `Description` from `cmd.Short` and `cmd.Long`, passed through `forceMultiLine`
+  - `Usage` from `cmd.UseLine()` only when `cmd.Runnable()`
+  - `Example` only when `cmd.Example` is non-empty
+- Collects flags into separate sections:
+  - `cmd.NonInheritedFlags()` → `Options`
+  - `cmd.InheritedFlags()` → `InheritedOptions`
+  - Each is included only if `HasFlags()` and converted with `genFlagResult`.
+- Builds `SeeAlso` only when `hasSeeAlso(cmd)` is true:
+  - Adds the parent first as `"command path - short description"`, if present.
+  - Sorts `cmd.Commands()` using `sort.Sort(byName(children))`.
+  - Adds available children in the same format, excluding unavailable commands and additional help topics.
+- Finally serializes `yamlDoc` using `yaml.Marshal(&yamlDoc)` and writes the bytes to `w`.
+
+`GenYaml` is only a wrapper calling `GenYamlCustom` with an identity link handler (`doc/yaml_docs.go:87-90`); the shown implementation does not otherwise use `linkHandler`.

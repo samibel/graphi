@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that warnings print only when the buffer gained content and parsing succeeded (`err == nil`), supported by the cited `command.go:1834–1835` in the preserved bundle.

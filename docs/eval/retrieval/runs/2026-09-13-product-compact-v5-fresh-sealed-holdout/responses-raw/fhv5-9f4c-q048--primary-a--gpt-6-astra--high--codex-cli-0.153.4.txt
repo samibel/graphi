@@ -1,0 +1,2 @@
+INSUFFICIENT
+The response states that Cobra’s default completion command uses V2 (`site/content/completions/bash.md:9`), but does not explain the behavioral differences between Bash completion V1 and V2.

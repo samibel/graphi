@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q056",
+  "response_sha256": "08d57df581f1361cb566edd4d832f685307c2e394e88cc883ba735c7377f23c0",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer which portion becomes the command name. The preserved bundle shows UseLine() but omits the Name() behavior needed to establish that the name is the first space-delimited word of Use.",
+  "graded_at": "2026-09-13T12:56:35Z",
+  "sha256": "f29fdb9082d04b8feaa33fc593ecf0f97e8327fe66c10108e81d59493fbaa91e"
+}

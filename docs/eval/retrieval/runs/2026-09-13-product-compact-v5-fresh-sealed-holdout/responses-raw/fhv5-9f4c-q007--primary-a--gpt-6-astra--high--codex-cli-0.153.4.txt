@@ -1,0 +1,1 @@
+`MatchAll` stops at the first validator that fails and returns its error unchanged; subsequent validators are not run. In `args.go`, lines 116–119 loop over the validators and execute `if err := parg(cmd, args); err != nil { return err }`.

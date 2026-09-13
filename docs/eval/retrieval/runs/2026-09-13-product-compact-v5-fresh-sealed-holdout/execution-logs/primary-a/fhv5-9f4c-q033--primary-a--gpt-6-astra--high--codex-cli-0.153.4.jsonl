@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-78a0-7a50-af4d-96e748f9e176"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The warning is printed when parsing succeeds (`err == nil`) and new warning text has been added to the buffer (`c.flagErrorBuf.Len()-beforeErrorBufLen > 0`). This condition appears in `command.go:1834–1835`, immediately after the comment “Print warnings if they occurred (e.g. deprecated flag messages).”"}}
+{"type":"turn.completed","usage":{"input_tokens":17373,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":0}}

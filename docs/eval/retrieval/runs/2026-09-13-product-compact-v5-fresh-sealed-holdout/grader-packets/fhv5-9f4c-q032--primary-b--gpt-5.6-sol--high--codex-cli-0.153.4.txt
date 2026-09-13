@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 09ad7d5024564f7bbd369aeacece0c96856c5906adff2e27caa977e258898029
+QUERY ID: fhv5-9f4c-q032
+
+QUESTION:
+Under which conditions does Cobra refrain from adding its default completion command?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:678-708 anchor="if c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands()" reason=It refrains when disabled, when there are no subcommands, or when a child name or alias already supplies completion.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 95644c89afc4; read in order (247/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1302,"end_line":1305,"text":"// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {"},{"path":"completions.go","start_line":678,"end_line":679,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c.\n// This function will do nothing if any of the following is true:"},{"path":"completions.go","start_line":683,"end_line":683,"text":"func (c *Command) InitDefaultCompletionCmd() {"},{"path":"command.go","start_line":73,"end_line":74,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string"},{"path":"command.go","start_line":177,"end_line":177,"text":"\t// helpCommand is command with usage 'help'. If it's not defined by user,"},{"path":"completions.go","start_line":302,"end_line":303,"text":"\t// finalCmd itself to handle the completion of *all* flags.\n\tif !finalCmd.DisableFlagParsing {"},{"path":"completions.go","start_line":410,"end_line":410,"text":"\t\t\t// Try to complete non-inherited flags even if DisableFlagParsing==true."},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"command.go","start_line":1601,"end_line":1602,"text":"// that need to be shown in the usage/help default template under 'additional help\n// topics'."},{"path":"command.go","start_line":1615,"end_line":1615,"text":"// HasAvailableSubCommands determines if a command has available sub commands that"},{"path":"command.go","start_line":1226,"end_line":1227,"text":"// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage."},{"path":"command.go","start_line":1240,"end_line":1240,"text":"\t\t\tValidArgsFunction: func(c *Command, args []string, toComplete string) ([]string, ShellCompDirective) {"},{"path":"zsh_completions.go","start_line":29,"end_line":29,"text":"// GenZshCompletion generates zsh completion file including descriptions"}],"provenance":{"input_sha256":"0c6a4ece8523ada788d596f9ff1b96e5fafa582075d39698ad04bcf8035ac533","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response identifies only `CompletionOptions.DisableDefaultCmd` (`completions.go:103–116`); the full conditions promised by `InitDefaultCompletionCmd`’s comment (`completions.go:678–679`) are missing.
+----- END THE RATER'S RESPONSE -----

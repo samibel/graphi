@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What happens at execution time when one or more flags marked as required were not supplied?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 101260eb622f; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/completions/_index.md","start_line":276,"end_line":277,"text":"Most of the time completions will only show sub-commands. But if a flag is required to make a sub-command work, you probably want it to show up when the user types [tab][tab].  You can mark a flag as 'Required' like so:\n"},{"path":"flag_groups.go","start_line":47,"end_line":61,"text":"// MarkFlagsOneRequired marks the given flags with annotations so that Cobra errors\n// if the command is invoked without at least one flag from the given set of flags.\nfunc (c *Command) MarkFlagsOneRequired(flagNames ...string) {\n\tc.mergePersistentFlags()\n\tfor _, v := range flagNames {\n\t\tf := c.Flags().Lookup(v)\n\t\tif f == nil {\n\t\t\tpanic(fmt.Sprintf(\"Failed to find flag %q and mark it as being in a one-required flag group\", v))\n\t\t}\n\t\tif err := c.Flags().SetAnnotation(v, oneRequired, append(f.Annotations[oneRequired], strings.Join(flagNames, \" \"))); err != nil {\n\t\t\t// Only errs if the flag isn't found.\n\t\t\tpanic(err)\n\t\t}\n\t}\n}"},{"path":"flag_groups.go","start_line":64,"end_line":65,"text":"// if the command is invoked with more than one flag from the given set of flags.\nfunc (c *Command) MarkFlagsMutuallyExclusive(flagNames ...string) {"},{"path":"flag_groups.go","start_line":222,"end_line":223,"text":"// - when none of the flags in a one-required group are present, all flags in the group will be marked required\n// - when a flag in a mutually exclusive group is present, other flags in the group will be marked as hidden"},{"path":"flag_groups.go","start_line":244,"end_line":244,"text":"\t\t\tif isSet {"},{"path":"flag_groups.go","start_line":33,"end_line":34,"text":"func (c *Command) MarkFlagsRequiredTogether(flagNames ...string) {\n\tc.mergePersistentFlags()"},{"path":"shell_completions.go","start_line":38,"end_line":39,"text":"func MarkFlagRequired(flags *pflag.FlagSet, name string) error {\n\treturn flags.SetAnnotation(name, BashCompOneRequiredFlag, []string{\"true\"})"},{"path":"shell_completions.go","start_line":24,"end_line":24,"text":"func (c *Command) MarkFlagRequired(name string) error {"},{"path":"shell_completions.go","start_line":30,"end_line":30,"text":"// and causes your command to report an error if invoked without the flag."},{"path":"flag_groups.go","start_line":167,"end_line":167,"text":"func validateOneRequiredFlagGroups(data map[string]map[string]bool) error {"}],"provenance":{"input_sha256":"bad40b24fac10459a49dd00dde3156fa50a05c627de6434070be18334e863faf","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

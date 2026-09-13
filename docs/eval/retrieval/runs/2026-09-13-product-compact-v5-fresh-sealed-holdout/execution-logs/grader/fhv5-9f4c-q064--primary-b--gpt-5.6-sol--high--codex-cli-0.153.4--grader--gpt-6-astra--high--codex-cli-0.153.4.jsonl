@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad9-4796-76c2-bef9-98033f1cfca7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer which flag the inherited-only view exposes. The bundle omits the decisive `InheritedFlags` filtering condition, `local.Lookup(f.Name) == nil`, so the required behavior cannot be verified."}}
+{"type":"turn.completed","usage":{"input_tokens":18111,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

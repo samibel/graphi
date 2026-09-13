@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows a call to `legacyArgs` in `command.go:745`, but omits its implementation in `args.go`, which is needed to compare validation for a root with subcommands versus a subcommand.

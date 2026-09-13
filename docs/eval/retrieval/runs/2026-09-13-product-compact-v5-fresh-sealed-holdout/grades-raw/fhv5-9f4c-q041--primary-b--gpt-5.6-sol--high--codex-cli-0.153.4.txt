@@ -1,0 +1,1 @@
+PASS: The bundle supports the three separate group-state maps, visiting every flag for each annotation, and running required-together, one-required, then exclusive validation with immediate error returns. It also supports skipping validation when flag parsing is disabled; the cited ranges support these behaviors.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q021",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "a1eb764960cf5b36df27652736484a969b5c0558153e9d8a43fda045aca360f1",
+  "bundle_sha256": "30515256d856cec091c0420f4f1051e6575ecc449dadd10c9d633afbeb26bbdc",
+  "prompt_sha256": "27d0bb2aed0afd19e2b4d40561d27fbcd6ac7d5f6118e030d8819b3094a381d4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only the declaration and initial variable of `genFlagResult` (`doc/yaml_docs.go:149–150`), omitting the logic that determines when `cmdOption.Shorthand` is populated.",
+  "responded_at": "2026-09-13T12:33:20Z",
+  "sha256": "19e3af0f027471b153c6c94e9cb17ed648727b35a366f8df91caa327f7bc5cb1"
+}

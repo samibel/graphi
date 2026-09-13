@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad0-c877-7fa1-bf68-cbe780b0b4bd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not explain how flag values are skipped or that `--` terminates flag stripping. The preserved bundle lacks the essential implementation for single short flags and double-dash handling, so these required behaviors cannot be verified."}}
+{"type":"turn.completed","usage":{"input_tokens":18049,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":39}}

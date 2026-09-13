@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 35aebd0662d4eae9dc401dcf3c0106052da6010151c5d511af2fae918eafcf98
+QUERY ID: fhv5-9f4c-q054
+
+QUESTION:
+Which operating systems and Go minor versions does the Unix CI matrix cover, and what command runs its tests?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- .github/workflows/test.yml:58-87 anchor="RICHGO_FORCE_COLOR=1 PATH=$HOME/go/bin/:$PATH make richtest" reason=The matrix covers Ubuntu and macOS with Go 1.17 through 1.21, then executes make richtest through richgo-enabled environment settings.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query f54d65c6a3a6; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":108,"end_line":109,"text":"\t// Version defines the version for this command. If this value is non-empty and the command does not\n\t// define a \"version\" flag, a \"version\" boolean flag will be added to the command and, if specified,"},{"path":"command.go","start_line":50,"end_line":50,"text":"// definition to ensure usability."},{"path":"command.go","start_line":352,"end_line":355,"text":"// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":363,"end_line":363,"text":"// The user should not have a cyclic dependency on commands."},{"path":"command.go","start_line":598,"end_line":600,"text":"// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {"},{"path":"command.go","start_line":611,"end_line":611,"text":"// ErrPrefix return error message prefix for the command"},{"path":"command.go","start_line":1203,"end_line":1204,"text":"// If c.Version is empty, it will do nothing.\nfunc (c *Command) InitDefaultVersionFlag() {"},{"path":"command.go","start_line":1228,"end_line":1228,"text":"// If c already has help command or c has no subcommands, it will do nothing."},{"path":"command.go","start_line":1303,"end_line":1303,"text":"func (c *Command) AddCommand(cmds ...*Command) {"},{"path":"CONDUCT.md","start_line":27,"end_line":27,"text":"- Updating the version of critical libraries such as `spf13/pflag`, `spf13/viper` etc..."},{"path":"command_test.go","start_line":1177,"end_line":1187,"text":"func TestShorthandVersionFlagExecutedOnSubcommand(t *testing.T) {\n\trootCmd := &Command{Use: \"root\", Version: \"1.0.0\"}\n\trootCmd.AddCommand(&Command{Use: \"sub\", Run: emptyRun})\n\n\toutput, err := executeCommand(rootCmd, \"-v\", \"sub\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tcheckStringContains(t, output, \"root version 1.0.0\")\n}"},{"path":"command_test.go","start_line":1097,"end_line":1106,"text":"func TestShorthandVersionFlagExecuted(t *testing.T) {\n\trootCmd := &Command{Use: \"root\", Version: \"1.0.0\", Run: emptyRun}\n\n\toutput, err := executeCommand(rootCmd, \"-v\", \"arg1\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tcheckStringContains(t, output, \"root version 1.0.0\")\n}"},{"path":"command_test.go","start_line":1073,"end_line":1078,"text":"func TestShortAndLongVersionFlagInHelp(t *testing.T) {\n\trootCmd := &Command{Use: \"root\", Version: \"1.0.0\", Run: emptyRun}\n\n\toutput, err := executeCommand(rootCmd, \"--help\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)"}],"provenance":{"input_sha256":"3c6ae637ee03b377cd42dc8b37d72a12fd8c5acae0fe6b86afeeb8d29ecb4740","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains no Unix CI configuration showing its operating-system/Go-version matrix or test command.
+----- END THE RATER'S RESPONSE -----

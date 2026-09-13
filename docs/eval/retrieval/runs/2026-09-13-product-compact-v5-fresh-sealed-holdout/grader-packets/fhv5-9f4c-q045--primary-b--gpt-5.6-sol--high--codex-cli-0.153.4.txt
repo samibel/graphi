@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 3945d32edd5fa38aafbe516ffac6a540abf3bacc1278f1618140973dab35b2a2
+QUERY ID: fhv5-9f4c-q045
+
+QUESTION:
+Which shells support Active Help, and what Bash version constraint applies?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/active_help.md:18-22 anchor="bash 4.4 or higher is required" reason=The documentation names Bash V2 and Zsh, with Bash 4.4+ needed for the prompt when Active Help prints.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 044e524efd04; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/active_help.md","start_line":74,"end_line":74,"text":"\t\t\treturn cobra.AppendActiveHelp(nil, \"You must first specify the chart to install before the --version flag can be completed\"), cobra.ShellCompDirectiveNoFileComp"},{"path":"site/content/active_help.md","start_line":3,"end_line":4,"text":"Active Help is a framework provided by Cobra which allows a program to define messages (hints, warnings, etc) that will be printed during program usage.  It aims to make it easier for your users to learn how to use your program.  If configured by the program, Active Help is printed when the user triggers shell completion.\n"},{"path":"site/content/completions/_index.md","start_line":427,"end_line":427,"text":"`GenBashCompletionFileV2()`.  The V2 version does **not** support the legacy dynamic completion"},{"path":"active_help.go","start_line":46,"end_line":57,"text":"// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}"},{"path":"site/content/active_help.md","start_line":20,"end_line":20,"text":"Active Help is currently only supported for the following shells:"},{"path":"active_help.go","start_line":59,"end_line":67,"text":"// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"completions.go","start_line":109,"end_line":109,"text":"\t// for shells that support completion descriptions"},{"path":"completions.go","start_line":119,"end_line":119,"text":"// not trigger file completions."},{"path":"active_help.go","start_line":28,"end_line":28,"text":"\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\""},{"path":"active_help.go","start_line":25,"end_line":25,"text":"\tactiveHelpMarker = \"_activeHelp_ \""}],"provenance":{"input_sha256":"c97ebf80b5c6c9cca9d646e7364a7fb446cf640ffb6aac1323cc4a192383a323","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT — the response only includes the heading stating that supported shells follow (`site/content/active_help.md:20`), but omits the shell list and any Bash version constraint.
+----- END THE RATER'S RESPONSE -----

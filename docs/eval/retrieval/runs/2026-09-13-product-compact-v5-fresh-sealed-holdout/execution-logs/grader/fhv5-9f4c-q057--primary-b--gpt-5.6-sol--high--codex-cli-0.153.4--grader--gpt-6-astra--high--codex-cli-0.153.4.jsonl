@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad7-837b-7553-9485-e785791f10fd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly distinguishes ordinary output via OutOrStderr from separately configured error output via ErrOrStderr, including stderr fallback and the line/format variants. All cited ranges exist in the bundle and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18118,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

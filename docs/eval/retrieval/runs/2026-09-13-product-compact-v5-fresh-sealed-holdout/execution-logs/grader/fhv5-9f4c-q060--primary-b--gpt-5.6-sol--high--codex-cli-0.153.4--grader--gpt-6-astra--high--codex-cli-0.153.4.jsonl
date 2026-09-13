@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad8-5580-79f3-88b6-8b7f251efbf6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies the recreated error buffer and flag sets, their output configuration, and the clearing of c.lflags, c.iflags, and c.parentsPflags, all supported by command.go:1737–1749 in the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18153,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

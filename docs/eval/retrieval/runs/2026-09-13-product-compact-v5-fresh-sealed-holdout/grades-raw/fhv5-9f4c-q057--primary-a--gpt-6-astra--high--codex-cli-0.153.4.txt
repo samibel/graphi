@@ -1,0 +1,1 @@
+PASS: The response correctly distinguishes the general output writer used by Print methods from the error output writer used by PrintErr methods, with stderr fallback for both. The cited bundle spans support the writer selection and delegation of line and format variants.

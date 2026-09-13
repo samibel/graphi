@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q011",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "e5dc375104456b1767376b6f34e292037ede2f4f708591d2805a246890391044",
+  "bundle_sha256": "8edcbc85e2e3388dec6e43da9300139e1b136f06c12f3607d4984003a8d0b06b",
+  "prompt_sha256": "64830b42527836afc62ec6b273afdb69306c868ac5e1d0a85da75d38b841067e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`forceMultiLine` appends `\"\\n\"` when `len(s) \u003e 60` **and** the string contains no newline (`!strings.Contains(s, \"\\n\")`). The condition is in `doc/util.go:42`, and the append is on line 43.",
+  "responded_at": "2026-09-13T12:32:03Z",
+  "sha256": "80a620f8f98c99833e7cd7c585f0d73f7774687cac9b58e01e795416146f4f2b"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q062",
+  "response_sha256": "b8031e9afe6105b5e2babdfc10c0f9891d1f387e21ea8e2a9c9454af9903e125",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not substantively answer the question. The bundle omits the recursive check requiring every descendant to qualify as an additional help topic, so the essential distinguishing behavior cannot be verified.",
+  "graded_at": "2026-09-13T12:58:21Z",
+  "sha256": "90b417195544ec4ff80435e34d7ce5dd87d46cba68701916a7f751dff4ac4801"
+}

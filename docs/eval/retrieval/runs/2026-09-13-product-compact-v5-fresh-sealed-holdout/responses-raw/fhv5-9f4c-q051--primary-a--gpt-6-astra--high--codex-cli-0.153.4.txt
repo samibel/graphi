@@ -1,0 +1,1 @@
+INSUFFICIENT The response names only TabCompleteNext (`site/content/completions/_index.md:523`) and provides description-generation APIs, but omits the other two modes, when descriptions are displayed, and the minimum PowerShell version.

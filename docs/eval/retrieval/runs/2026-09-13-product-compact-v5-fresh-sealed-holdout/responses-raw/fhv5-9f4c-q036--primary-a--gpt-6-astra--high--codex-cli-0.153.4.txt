@@ -1,0 +1,5 @@
+- `Help()` calls `c.HelpFunc()(c, []string{})`, passing the current command and empty arguments, then returns `nil` (`command.go:473–476`).
+- `HelpFunc()` uses `c.helpFunc` if set; otherwise it recursively calls `c.Parent().HelpFunc()` when a parent exists, falling back to the default function. An inherited function still receives the original command from `Help()` (`command.go:450–468`).
+- The default function first calls `c.mergePersistentFlags()`, then renders `c.HelpTemplate()` with `c` through `tmpl(c.OutOrStdout(), ...)`. The accompanying comment explicitly says help goes to stdout (`command.go:459–463`).
+- If template rendering returns an error, the default function prints it with `c.PrintErrln(err)`; `Help()` does not propagate it and returns `nil` (`command.go:464–476`).
+- Flag initialization also occurs before `Help()` in the shown help-command caller: `InitDefaultHelpFlag()` and `InitDefaultVersionFlag()` precede `CheckErr(cmd.Help())` (`command.go:1265–1267`). `InitDefaultHelpFlag()` itself merges persistent flags and checks whether `"help"` already exists (`command.go:1186–1188`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-d95f-7c82-b402-98cd2ad17f9a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).ResetFlags()` in `command.go:1737–1749`:\n\n- Recreates and resets `c.flagErrorBuf` as a new `bytes.Buffer`.\n- Recreates `c.flags` and `c.pflags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, directing both outputs to `c.flagErrorBuf`.\n- Clears `c.lflags`, `c.iflags`, and `c.parentsPflags` by setting them to `nil`."}}
+{"type":"turn.completed","usage":{"input_tokens":17390,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":106,"reasoning_output_tokens":0}}

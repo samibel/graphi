@@ -1,0 +1,11 @@
+`ValidateFlagGroups` in `flag_groups.go:81–109`:
+
+1. Returns `nil` immediately if `c.DisableFlagParsing` is true.
+2. Gets `c.Flags()` and creates three `map[string]map[string]bool` maps: `groupStatus`, `oneRequiredGroupStatus`, and `mutuallyExclusiveGroupStatus`. The comment describes each outer key as a flag-list group ID and each inner map as flag names mapped to whether they are set.
+3. Visits every flag with `flags.VisitAll`, calling `processFlagForGroupAnnotation` for each of `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive`, passing the corresponding state map. The helper reads `pflag.Annotations[annotation]` (`flag_groups.go:121–122`); its remaining population logic is not shown.
+4. Runs validators in this exact order:
+   - `validateRequiredFlagGroups(groupStatus)`
+   - `validateOneRequiredFlagGroups(oneRequiredGroupStatus)`
+   - `validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus)`
+
+Each validator’s error is returned immediately, so later validators run only if earlier ones succeed. If all succeed, validation returns `nil` (`flag_groups.go:99–108`).

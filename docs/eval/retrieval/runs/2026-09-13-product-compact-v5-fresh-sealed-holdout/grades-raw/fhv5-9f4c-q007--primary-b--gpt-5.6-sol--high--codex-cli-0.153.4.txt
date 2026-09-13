@@ -1,0 +1,1 @@
+PASS: The response correctly states that MatchAll stops at the first failing validator, returns its error unchanged, and skips later validators. The cited args.go:116–119 exists in the bundle and directly supports this behavior.

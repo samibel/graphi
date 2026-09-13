@@ -1,0 +1,1 @@
+FAIL: The response does not answer what state changes occur. The bundle preserves only the AddCommand declaration at command.go:1302-1303, omitting the implementation needed to verify parent linkage, layout metadata updates, normalization propagation, appending children, and sorting invalidation.

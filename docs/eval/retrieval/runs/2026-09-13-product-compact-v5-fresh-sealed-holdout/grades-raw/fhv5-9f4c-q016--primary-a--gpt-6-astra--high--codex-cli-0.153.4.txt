@@ -1,0 +1,1 @@
+PASS: The response correctly states that validation succeeds when all or none of the group’s flags are set. It also correctly identifies that partial selection produces an error naming the group and its alphabetically sorted missing flags, supported by the cited lines in flag_groups.go.

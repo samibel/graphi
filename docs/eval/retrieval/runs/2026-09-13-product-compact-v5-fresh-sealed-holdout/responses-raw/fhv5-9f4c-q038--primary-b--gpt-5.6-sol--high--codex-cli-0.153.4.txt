@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows flag lookup and completion-function registration in `command.go:1794-1803` and `completions.go:131-160`, but omits the code that resolves the target command, prepares parsing, and interprets file/directory annotations.

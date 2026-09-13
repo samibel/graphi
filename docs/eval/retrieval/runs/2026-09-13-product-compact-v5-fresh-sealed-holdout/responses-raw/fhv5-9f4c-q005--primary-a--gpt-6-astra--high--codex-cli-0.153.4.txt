@@ -1,0 +1,6 @@
+`RegisterFlagCompletionFunc` can return two errors:
+
+- `"RegisterFlagCompletionFunc: flag '%s' does not exist"` if `c.Flag(flagName)` returns `nil` (`completions.go:134–136`).
+- `"RegisterFlagCompletionFunc: flag '%s' already registered"` if `flagCompletionFunctions[flag]` already exists (`completions.go:141–142`).
+
+Registration acquires `flagCompletionMutex.Lock()` and defers `Unlock()`, protecting both the duplicate check and the assignment `flagCompletionFunctions[flag] = f`. Successful registration returns `nil`, with the deferred unlock releasing the mutex (`completions.go:138–145`).

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d7b0be7e801f0b3d73c58d06d6dc17d37bdc0b6674206149394c9a30e1b9fa3f
+QUERY ID: fhv5-9f4c-q056
+
+QUESTION:
+For a Use string containing a command token followed by argument syntax, which portion becomes the command name?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1495-1503 anchor="i := strings.Index(name, \" \")" reason=Name returns only the first space-delimited word of Use, or the entire Use string when it has no space.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query db24dbddd6ef; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":57,"end_line":58,"text":"\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.\n\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are"},{"path":"command.go","start_line":85,"end_line":85,"text":"\t// It is a dynamic version of using ValidArgs."},{"path":"command.go","start_line":681,"end_line":685,"text":"// argsMinusFirstX removes only the first x from args.  Otherwise, commands that look like\n// openshift admin policy add-role-to-user admin my-user, lose the admin argument (arg[4]).\n// Special care needs to be taken not to remove a flag value.\nfunc (c *Command) argsMinusFirstX(args []string, x string) []string {\n\tif len(args) == 0 {"},{"path":"command.go","start_line":724,"end_line":728,"text":"// Find the target command given the args and command tree\n// Meant to be run on the highest node. Only searches down.\nfunc (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n"},{"path":"args.go","start_line":27,"end_line":28,"text":"// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {"},{"path":"args.go","start_line":41,"end_line":41,"text":"// NoArgs returns an error if any args are included."},{"path":"command.go","start_line":1436,"end_line":1451,"text":"// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"command.go","start_line":643,"end_line":643,"text":"func stripFlags(args []string, c *Command) []string {"},{"path":"command.go","start_line":790,"end_line":790,"text":"func (c *Command) Traverse(args []string) (*Command, []string, error) {"},{"path":"completions.go","start_line":194,"end_line":194,"text":"func (c *Command) initCompleteCmd(args []string) {"},{"path":"command.go","start_line":1258,"end_line":1258,"text":"\t\t\t},"}],"provenance":{"input_sha256":"6a7c49d5169db7bf1628e7189f510b936fdcfddc26be43318f241a35494e453e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows `Command.UseLine()` in `command.go:1436–1451`, but not the code that extracts the command name from `Use`.
+----- END THE RATER'S RESPONSE -----

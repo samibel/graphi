@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-a76d-7fa1-b7ad-0aaf3d17ba1c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It uppercases the root command’s name, replaces every non-ASCII-alphanumeric character with `_`, then appends `_ACTIVE_HELP`.\n\nEvidence:\n\n- `active_help.go:46-49` states this transformation.\n- `active_help.go:33` defines the replacement pattern as `[^A-Z0-9_]`.\n- `active_help.go:28` defines the suffix as `_ACTIVE_HELP`.\n- `command.go:1495-1503` shows the command name is the first word of its `Use` string."}}
+{"type":"turn.completed","usage":{"input_tokens":16413,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":231,"reasoning_output_tokens":118}}

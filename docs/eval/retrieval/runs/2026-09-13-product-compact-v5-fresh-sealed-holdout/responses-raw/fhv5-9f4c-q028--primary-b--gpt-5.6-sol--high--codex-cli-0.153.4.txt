@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the implementation around `command.go:683` and `command.go:796–801` that shows how pending flag values and `--` are handled.

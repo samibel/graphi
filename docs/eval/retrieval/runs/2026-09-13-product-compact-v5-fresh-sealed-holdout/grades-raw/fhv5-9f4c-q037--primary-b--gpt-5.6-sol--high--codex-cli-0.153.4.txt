@@ -1,0 +1,1 @@
+FAIL: The response does not explain the requested behavior, and the preserved bundle omits the command body needed to verify result filtering, description/newline stripping, whitespace trimming, result and directive output, stderr logging, and removal when unused.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q013",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "086040d39b18fcfdf975756749d1aabfb019fbe9bb37e5fd0203bb3428cb10e1",
+  "bundle_sha256": "c455a0590306f1281e10ca462407de34c99a3b0a811b568d1460ecbdfa45f795",
+  "prompt_sha256": "afe31bc179168714b7cfccdd8ee98b652cc718b585466107bb57aa37b53b6e67",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go`, `(*Command).SetGlobalNormalizationFunc` applies `n` to both `c.Flags()` and `c.PersistentFlags()` through `SetNormalizeFunc(n)`, then stores it in `c.globNormFunc` (lines 364–367).\n\nIt reaches existing children by iterating over `c.commands` and calling `command.SetGlobalNormalizationFunc(n)` on each child, recursively propagating the function through their descendants (lines 369–371).",
+  "responded_at": "2026-09-13T12:32:19Z",
+  "sha256": "d741bfcd8bdd7102cff44bb46a419317ac740b8be87ccdf6457b69bab904493e"
+}

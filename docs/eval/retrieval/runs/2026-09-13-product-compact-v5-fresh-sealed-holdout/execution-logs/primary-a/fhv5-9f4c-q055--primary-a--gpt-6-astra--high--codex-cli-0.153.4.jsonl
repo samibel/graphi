@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-376d-75e0-87e1-9fe0f5bb0807"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It accepts **arbitrary positional arguments**. In `command.go:1139–1144`, `Command.ValidateArgs` calls `ArbitraryArgs(c, args)` when `c.Args == nil`; `args.go:68` states that `ArbitraryArgs` “never returns an error.”\n\nTo reject all positional arguments, use `NoArgs`, which errors when `len(args) > 0` (`args.go:41–47`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17291,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":94,"reasoning_output_tokens":0}}

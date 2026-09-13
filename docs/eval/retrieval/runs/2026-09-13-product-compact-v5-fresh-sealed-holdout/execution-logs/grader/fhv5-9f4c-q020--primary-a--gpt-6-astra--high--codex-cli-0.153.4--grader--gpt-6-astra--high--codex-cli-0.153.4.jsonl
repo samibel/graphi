@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ace-bcb3-7522-9df6-d3b4f6fd751b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the bundled code at doc/rest_docs.go:179–183: empty lines remain unprefixed, non-empty lines receive the prefix at line start, and newlines reset bol. Its statement that space-containing lines receive the prefix is also supported."}}
+{"type":"turn.completed","usage":{"input_tokens":18231,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":104,"reasoning_output_tokens":43}}

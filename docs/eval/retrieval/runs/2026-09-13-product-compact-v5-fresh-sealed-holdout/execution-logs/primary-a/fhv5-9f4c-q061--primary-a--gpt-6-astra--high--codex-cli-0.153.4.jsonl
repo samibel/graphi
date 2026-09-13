@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-f8d7-74d1-b66d-6570e1e15b2c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The descendant will use the ancestor’s custom help function. In `command.go:452–458`, `HelpFunc()` returns `c.helpFunc` if set; otherwise, when a parent exists, it recursively returns `c.Parent().HelpFunc()`. The default help function at lines 459–467 is reached only if no command in that ancestor chain defines one."}}
+{"type":"turn.completed","usage":{"input_tokens":17295,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":78,"reasoning_output_tokens":0}}

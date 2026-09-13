@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 0f39259d5bacdd0d5d90b597bf6166e705dd7423ee05cd67d71ad7900df2b7eb
+QUERY ID: fhv5-9f4c-q035
+
+QUESTION:
+What is the command execution lifecycle order after argument validation, including persistent and local hooks and flag-group checks?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:927-1012 anchor="if err := c.ValidateFlagGroups(); err != nil" reason=Initializers run, arguments validate, persistent pre-hooks and local pre-hook run, required/group flags validate, RunE or Run executes, then local and persistent post-hooks and finalizers run with early error returns.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query bfb77b286ab8; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":120,"end_line":120,"text":"\t// All functions get the same args, the arguments after the command name."},{"path":"command.go","start_line":789,"end_line":790,"text":"// each parent.\nfunc (c *Command) Traverse(args []string) (*Command, []string, error) {"},{"path":"site/content/user_guide.md","start_line":290,"end_line":290,"text":"By default, Cobra only parses local flags on the target command, and any local flags on"},{"path":"completions.go","start_line":266,"end_line":266,"text":"func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {"},{"path":"completions.go","start_line":298,"end_line":299,"text":"\t// These flags are normally added when `execute()` is called on `finalCmd`,\n\t// however, when doing completion, we don't call `finalCmd.execute()`."},{"path":"completions.go","start_line":194,"end_line":194,"text":"func (c *Command) initCompleteCmd(args []string) {"},{"path":"completions.go","start_line":204,"end_line":204,"text":"\t\t\t\"to request completion choices for the specified command-line.\", ShellCompRequestCmd),"},{"path":"command.go","start_line":1818,"end_line":1840,"text":"// ParseFlags parses persistent flag tree and local flags.\nfunc (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tif c.flagErrorBuf == nil {\n\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t}\n\tbeforeErrorBufLen := c.flagErrorBuf.Len()\n\tc.mergePersistentFlags()\n\n\t// do it here after merging all flags and just before parse\n\tc.Flags().ParseErrorsWhitelist = flag.ParseErrorsWhitelist(c.FParseErrWhitelist)\n\n\terr := c.Flags().Parse(args)\n\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {\n\t\tc.Print(c.flagErrorBuf.String())\n\t}\n\n\treturn err\n}"},{"path":"command.go","start_line":874,"end_line":874,"text":"func (c *Command) execute(a []string) (err error) {"},{"path":"command.go","start_line":981,"end_line":992,"text":"\n\tif c.RunE != nil {\n\t\tif err := c.RunE(c, argWoFlags); err != nil {\n\t\t\treturn err\n\t\t}\n\t} else {\n\t\tc.Run(c, argWoFlags)\n\t}\n\tif c.PostRunE != nil {\n\t\tif err := c.PostRunE(c, argWoFlags); err != nil {\n\t\t\treturn err\n\t\t}"},{"path":"command.go","start_line":374,"end_line":377,"text":"// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"command.go","start_line":1496,"end_line":1496,"text":"func (c *Command) Name() string {"},{"path":"command.go","start_line":1550,"end_line":1551,"text":"// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {"}],"provenance":{"input_sha256":"88c1d2458db97c95e65dad24ed5658d0411775122c6ac1062748a6257134f48c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows `RunE`/`Run` followed by `PostRunE` in `command.go:981–992`, but omits the execution code establishing the order of argument validation, persistent and local hooks, and flag-group checks.
+----- END THE RATER'S RESPONSE -----

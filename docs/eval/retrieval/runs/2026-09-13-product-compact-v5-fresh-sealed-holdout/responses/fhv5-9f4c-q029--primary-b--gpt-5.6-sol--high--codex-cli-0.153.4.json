@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q029",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "433743eea3c65715ee00595d13b88e172dfecbd326361d211e2d3a553fd6106d",
+  "bundle_sha256": "b1470131b94f43b02870f16776657ba145e3010a7b85393d17284f7b326ee92d",
+  "prompt_sha256": "a74c9ea50fb7f399e51c27185772bd68606480491c7c7a9cac79df1ed72c430f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "A typed prefix is accepted only when it uniquely matches exactly one subcommand by the start of its name or an alias. In `command.go:767–786`, prefix matches are collected and returned only when `len(matches) == 1`; `hasNameOrAliasPrefix` checks `strings.HasPrefix` against the command name and each alias (`command.go:1524–1538`). Exact name or alias matches are accepted immediately.",
+  "responded_at": "2026-09-13T12:34:30Z",
+  "sha256": "1bddcca5869bfe4fc952786ca2052109b9ae8c2cbdbff964245ab8dfb4ecd846"
+}

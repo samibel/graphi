@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d4d8560845b87076a561776ecd11cc52962d00fea894ce84a08b661b529b4528
+QUERY ID: fhv5-9f4c-q021
+
+QUESTION:
+In doc/yaml_docs.go, when does genFlagResult include a shorthand in the serialized option?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/yaml_docs.go:149-175 anchor="if !(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0" reason=A nonempty shorthand is included unless it has a nonempty deprecation marker; otherwise the option is emitted without shorthand.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query a1eb764960cf; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"doc/yaml_docs.go","start_line":149,"end_line":150,"text":"func genFlagResult(flags *pflag.FlagSet) []cmdOption {\n\tvar result []cmdOption"},{"path":"doc/yaml_docs.go","start_line":92,"end_line":147,"text":"// GenYamlCustom creates custom yaml output.\nfunc GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()\n\n\tyamlDoc := cmdDoc{}\n\tyamlDoc.Name = cmd.CommandPath()\n\n\tyamlDoc.Synopsis = forceMultiLine(cmd.Short)\n\tyamlDoc.Description = forceMultiLine(cmd.Long)\n\n\tif cmd.Runnable() {\n\t\tyamlDoc.Usage = cmd.UseLine()\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tyamlDoc.Example = cmd.Example\n\t}\n\n\tflags := cmd.NonInheritedFlags()\n\tif flags.HasFlags() {\n\t\tyamlDoc.Options = genFlagResult(flags)\n\t}\n\tflags = cmd.InheritedFlags()\n\tif flags.HasFlags() {\n\t\tyamlDoc.InheritedOptions = genFlagResult(flags)\n\t}\n\n\tif hasSeeAlso(cmd) {\n\t\tresult := []string{}\n\t\tif cmd.HasParent() {\n\t\t\tparent := cmd.Parent()\n\t\t\tresult = append(result, parent.CommandPath()+\" - \"+parent.Short)\n\t\t}\n\t\tchildren := cmd.Commands()\n\t\tsort.Sort(byName(children))\n\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tresult = append(result, child.CommandPath()+\" - \"+child.Short)\n\t\t}\n\t\tyamlDoc.SeeAlso = result\n\t}\n\n\tfinal, err := yaml.Marshal(&yamlDoc)\n\tif err != nil {\n\t\tfmt.Println(err)\n\t\tos.Exit(1)\n\t}\n\n\tif _, err := w.Write(final); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}"},{"path":"doc/yaml_docs.go","start_line":30,"end_line":35,"text":"type cmdOption struct {\n\tName         string\n\tShorthand    string `yaml:\",omitempty\"`\n\tDefaultValue string `yaml:\"default_value,omitempty\"`\n\tUsage        string `yaml:\",omitempty\"`\n}"},{"path":"doc/yaml_docs.go","start_line":117,"end_line":117,"text":"\t\tyamlDoc.InheritedOptions = genFlagResult(flags)"},{"path":"doc/yaml_docs.go","start_line":37,"end_line":46,"text":"type cmdDoc struct {\n\tName             string\n\tSynopsis         string      `yaml:\",omitempty\"`\n\tDescription      string      `yaml:\",omitempty\"`\n\tUsage            string      `yaml:\",omitempty\"`\n\tOptions          []cmdOption `yaml:\",omitempty\"`\n\tInheritedOptions []cmdOption `yaml:\"inherited_options,omitempty\"`\n\tExample          string      `yaml:\",omitempty\"`\n\tSeeAlso          []string    `yaml:\"see_also,omitempty\"`\n}"},{"path":"command.go","start_line":1561,"end_line":1561,"text":"// (this includes all non deprecated/hidden commands)."},{"path":"doc/util.go","start_line":23,"end_line":23,"text":"// Test to see if we have a reason to print See Also information in docs"},{"path":"command.go","start_line":54,"end_line":54,"text":"\t//   [ ] identifies an optional argument. Arguments that are not enclosed in brackets are required."},{"path":"command.go","start_line":83,"end_line":83,"text":"\tValidArgs []string"},{"path":"doc/man_docs.go","start_line":48,"end_line":48,"text":"func GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {"},{"path":"command.go","start_line":1752,"end_line":1752,"text":"func (c *Command) HasFlags() bool {"}],"provenance":{"input_sha256":"6e1c687f5250251d59f5a0906aea7d25ce7d0a6c068d096395562daea99500d8","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response omits `genFlagResult`’s implementation after `doc/yaml_docs.go:150`, so the condition that sets `cmdOption.Shorthand` is missing.
+----- END THE RATER'S RESPONSE -----

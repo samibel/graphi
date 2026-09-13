@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q023",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "101260eb622f876e913834a907a80474a8b9d8e6303c6b033e13f7613985c8f6",
+  "bundle_sha256": "9c5962d28a299221e00ad95e85a29e54a21e4c9115fafdea1b7a3995a4686fdb",
+  "prompt_sha256": "92fc3d50036eac3457aa4b4f57c2fb534e95dd9ca616c4587e406948fc2b7c65",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The command reports an error when invoked without a required flag, as stated in `shell_completions.go:30` for `Command.MarkFlagRequired`. For a group marked with `Command.MarkFlagsOneRequired`, Cobra errors unless at least one flag from that group was supplied (`flag_groups.go:47-49`).",
+  "responded_at": "2026-09-13T12:33:20Z",
+  "sha256": "d59a6e835ebf1cbd453a886414332f4181ebc34d6a495bfe33e871d74cfca1a9"
+}

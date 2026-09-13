@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad5-06c9-7bb2-b705-f57857693bae"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not substantively explain consumption by completion callbacks. The bundle names `<PROGRAM>_ACTIVE_HELP` and character replacement, but lacks the required uppercase rule and guidance to use `GetActiveHelpConfig` rather than reading the variable directly."}}
+{"type":"turn.completed","usage":{"input_tokens":17834,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":126,"reasoning_output_tokens":69}}

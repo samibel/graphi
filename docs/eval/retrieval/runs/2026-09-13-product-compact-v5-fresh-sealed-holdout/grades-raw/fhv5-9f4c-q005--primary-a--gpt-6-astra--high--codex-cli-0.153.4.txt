@@ -1,0 +1,1 @@
+PASS: The bundle supports both errors—missing flag and duplicate registration—and confirms that the mutex protects the duplicate check and callback assignment, with deferred unlocking and a nil return on success. All cited line ranges exist and support the claims.

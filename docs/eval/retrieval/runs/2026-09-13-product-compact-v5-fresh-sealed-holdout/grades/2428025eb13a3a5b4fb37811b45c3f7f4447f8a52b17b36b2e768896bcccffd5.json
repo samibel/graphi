@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q062",
+  "response_sha256": "2428025eb13a3a5b4fb37811b45c3f7f4447f8a52b17b36b2e768896bcccffd5",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not substantively answer the question. The preserved bundle omits the subcommand loop body, so it cannot establish the essential requirement that every descendant must also qualify as an additional help topic.",
+  "graded_at": "2026-09-13T12:58:14Z",
+  "sha256": "99a380378ad228c2683db927a8bd6b97da183282b8fdb4b2d0aa49f58dc61e26"
+}

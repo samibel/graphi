@@ -1,0 +1,1 @@
+FAIL: The response does not answer when shorthand is included. The bundle contains only genFlagResult’s declaration and initial variable, omitting the required condition that shorthand be nonempty and its deprecation marker empty.

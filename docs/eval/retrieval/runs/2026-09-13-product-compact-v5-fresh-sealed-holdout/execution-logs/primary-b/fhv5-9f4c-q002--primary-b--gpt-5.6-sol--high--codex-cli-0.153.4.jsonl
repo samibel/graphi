@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-8dd4-7ae3-b1e3-d42b3dab81f3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`GetActiveHelpConfig` first reads the global `COBRA_ACTIVE_HELP` setting. If its value is exactly `\"0\"`, it returns `\"0\"` and ignores the program-specific setting. Otherwise, it reads and returns `<PROGRAM>_ACTIVE_HELP`, derived from the root command’s name via `activeHelpEnvVar(cmd.Root().Name())`.\n\nEvidence: `active_help.go:51-57`; constants `activeHelpGlobalEnvVar = \"COBRA_ACTIVE_HELP\"` and `activeHelpGlobalDisable = \"0\"` at `active_help.go:24-31`."}}
+{"type":"turn.completed","usage":{"input_tokens":16574,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":120,"reasoning_output_tokens":0}}

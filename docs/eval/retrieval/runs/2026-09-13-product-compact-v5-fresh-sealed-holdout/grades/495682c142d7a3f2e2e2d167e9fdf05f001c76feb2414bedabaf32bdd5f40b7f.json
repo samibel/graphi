@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q005",
+  "response_sha256": "495682c142d7a3f2e2e2d167e9fdf05f001c76feb2414bedabaf32bdd5f40b7f",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The bundle supports both errors—missing flag and duplicate registration—and confirms that registration stores the callback while holding flagCompletionMutex, with deferred unlocking. The cited ranges exist and also support GetFlagCompletionFunc’s RLock/RUnlock synchronization.",
+  "graded_at": "2026-09-13T12:43:44Z",
+  "sha256": "330d2114c17f7679e23a0fff15f9f266e117aac6f4c85f3ebc11c7f1ffb51c55"
+}

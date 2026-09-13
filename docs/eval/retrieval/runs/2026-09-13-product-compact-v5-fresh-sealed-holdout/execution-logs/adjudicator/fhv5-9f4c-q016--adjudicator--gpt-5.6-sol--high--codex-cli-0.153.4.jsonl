@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09adc-c530-7181-9b01-e7a388503719"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Validation succeeds when either none of the group’s flags are set or all are set (`flag_groups.go:154-156`). If only a subset is set, the error identifies the group and the sorted list of missing flags: `\"if any flags in the group [%v] are set they must all be set; missing %v\"` (`flag_groups.go:158-160`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16511,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":0}}

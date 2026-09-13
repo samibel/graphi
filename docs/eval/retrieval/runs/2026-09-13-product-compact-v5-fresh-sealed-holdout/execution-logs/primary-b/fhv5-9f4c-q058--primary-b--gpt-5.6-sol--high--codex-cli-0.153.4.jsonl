@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-8970-70b1-a3c7-6c9385a141fb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"They can be returned unchanged. In `command.go:1292-1294`, `(*Command).Commands()` says it “returns a sorted slice,” but immediately notes: “do not sort commands if it already sorted or sorting was disabled.” The global sorting switch is `EnableCommandSorting` in `cobra.go:59`."}}
+{"type":"turn.completed","usage":{"input_tokens":16430,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":70,"reasoning_output_tokens":0}}

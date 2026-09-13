@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q049",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "1a092759ec1bc9e3147b9d245d6011f574a2075a4d64bd388cb12e06b0a4ce01",
+  "bundle_sha256": "fe38f76976ae018dce1d12fc1a003bbba3501703c54061aff3e3ca3d4add324a",
+  "prompt_sha256": "e9309d1026c79c1823cd989b3b8ade252e3941d233353db4fff9f4b7bd519a5e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- **Legacy custom completions written in Bash**, including the `BashCompCustom` flag annotation, are unsupported and ignored by Zsh. Replace them with `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, which support multiple shells. Evidence: `site/content/completions/_index.md`, lines 477–478.\n- **`MarkFlagCustom()`** is also unsupported and ignored by Zsh. Replace it with `RegisterFlagCompletionFunc()`. Evidence: `site/content/completions/_index.md`, lines 479–480.",
+  "responded_at": "2026-09-13T12:37:20Z",
+  "sha256": "7295f114a924f121badd91853ec59c83fbb79b4bbe3174f030ce57a97f820fc1"
+}

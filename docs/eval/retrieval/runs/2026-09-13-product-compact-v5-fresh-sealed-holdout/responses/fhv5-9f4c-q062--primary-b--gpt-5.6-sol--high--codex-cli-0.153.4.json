@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q062",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b5130606913e3aea30b52fd14738a6c3b9527227880586ad5fadf17ccd57d9b0",
+  "bundle_sha256": "49d13abb84aba19f2d8ce7f680acea0ff0831f3ea5e72e4a938c7de283f50cc1",
+  "prompt_sha256": "4c0ac98f7901598c822b094d086a092e5b922bdbf4d14ddf6aa24f17ba1bb164",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits most of `IsAdditionalHelpTopicCommand` (`command.go:1583–1590`) and the definition of `IsAvailableCommand`, so the distinguishing criteria cannot be determined.",
+  "responded_at": "2026-09-13T12:38:54Z",
+  "sha256": "b8031e9afe6105b5e2babdfc10c0f9891d1f387e21ea8e2a9c9454af9903e125"
+}

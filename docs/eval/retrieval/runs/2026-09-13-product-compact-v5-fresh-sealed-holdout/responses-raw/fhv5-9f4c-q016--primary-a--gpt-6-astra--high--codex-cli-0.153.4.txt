@@ -1,0 +1,3 @@
+Validation succeeds when **all flags in the group are set or none are set**: `validateRequiredFlagGroups` checks `len(unset) == len(flagnameAndStatus) || len(unset) == 0` (`flag_groups.go:155–156`).
+
+If only some are set, the error identifies **the group and its missing flags**, sorted by name: `if any flags in the group [%v] are set they must all be set; missing %v` (`flag_groups.go:159–161`).

@@ -1,0 +1,1 @@
+PASS: The response correctly explains that blank lines remain unprefixed because the prefix is added only when `bol && c != '\n'`. Its cited lines exist in the bundle and support both newline preservation and line-start tracking.
