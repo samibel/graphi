@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q012",
+  "response_sha256": "a95a2bc9bdc410c7b2e9ea09068337a59b5fce4d1e530162a448747cf4f443d5",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies collection lengths, direct signed integer values, and base-10 parsed string integers as int64 operands compared with `left \u003e right`. Its citation to cobra.go:111–139 supports all claims, including ignored parse errors.",
+  "graded_at": "2026-09-13T15:34:10Z",
+  "sha256": "6d34deedd15ba5a6baa7c1513fdea8886a5081b49ad052a58d7fb814eebbe2be"
+}

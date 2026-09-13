@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q035",
+  "response_sha256": "5f457ae355a0e23f83af3d0a3f971050fbbe4ddb7f3e86de334d2413b4f4551a",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not trace flag accumulation or child recursion. The preserved bundle shows `c.ParseFlags(flags)` and its implementation but omits the traversal logic needed to substantively answer the question.",
+  "graded_at": "2026-09-13T15:40:14Z",
+  "sha256": "2a1d95bb6bd4ff00adf6e4bf58e8fd6a118f9c46245ee71d3a4a58f5b6ade5f9"
+}

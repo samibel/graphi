@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q004",
+  "response_sha256": "0ed34a94201b222e07d692fa12b985c94f8a13d4dc3e0666b12e62bd6c986dea",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states the `len(args) \u003c n` comparison, the exact error reporting the required minimum and actual count, and the `nil` return otherwise. Both cited ranges exist in the bundle and support the implementation and test example.",
+  "graded_at": "2026-09-13T15:32:01Z",
+  "sha256": "bf0cbc6133bcb8e8b0b32e8da975611856e1619b206186d9fe3d722acd6a226a"
+}

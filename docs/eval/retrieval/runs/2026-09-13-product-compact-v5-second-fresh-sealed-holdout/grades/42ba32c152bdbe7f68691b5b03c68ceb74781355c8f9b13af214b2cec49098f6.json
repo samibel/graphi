@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q047",
+  "response_sha256": "42ba32c152bdbe7f68691b5b03c68ceb74781355c8f9b13af214b2cec49098f6",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response identifies persistent and command-local flag scopes but does not answer which underlying library the README describes. The preserved bundle omits the README’s pflag fork and Go flag interface details, leaving a required part unsupported.",
+  "graded_at": "2026-09-13T15:43:19Z",
+  "sha256": "dc6f671551cd18cfaed2dc01d7bfa19ff66bb4801dab1efb07dd2a2069ba2e0a"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q032",
+  "response_sha256": "5e7f1cbd3d7c7f777b51d84778f2097f4c65b68b821cf725e84ceecc14505362",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the preserved CommandPath implementation: roots use the display-name annotation when present, otherwise Name(); descendants recursively append a space and their Name(), inheriting the custom root display name while bypassing their own annotations. Both cited ranges exist and support the claims.",
+  "graded_at": "2026-09-13T15:39:34Z",
+  "sha256": "5d3df6cdf9d48da75dbe04014bdbd19a496fb0e04eab1449cfa0bbb362dd64a4"
+}
