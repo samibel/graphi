@@ -102,6 +102,9 @@ SW-280 commits the first tokenizer-dependent run directory:
   frontier and its registered blind development diagnostic with exact-path
   breadth and source-call-chain role closure under the same pinned-tokenizer
   ceiling.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-dev/` — two independent
+  production MCP captures of the promoted compact task-context candidate; all
+  payload counts and the byte-reproducibility result depend on the current pin.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains
