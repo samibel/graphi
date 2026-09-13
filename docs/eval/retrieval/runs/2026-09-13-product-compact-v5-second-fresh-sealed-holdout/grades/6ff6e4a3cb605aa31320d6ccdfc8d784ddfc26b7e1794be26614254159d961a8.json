@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q054",
+  "response_sha256": "6ff6e4a3cb605aa31320d6ccdfc8d784ddfc26b7e1794be26614254159d961a8",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not explain how to bind a persistent flag to Viper or state the backing-variable caveat. The preserved bundle contains neither required fact, only persistent-flag definitions and lookup behavior.",
+  "graded_at": "2026-09-13T15:45:15Z",
+  "sha256": "9b0273235a03669bf25fa593ae74cb13be21a433cc9ecefd66b5e1faab01ea3b"
+}

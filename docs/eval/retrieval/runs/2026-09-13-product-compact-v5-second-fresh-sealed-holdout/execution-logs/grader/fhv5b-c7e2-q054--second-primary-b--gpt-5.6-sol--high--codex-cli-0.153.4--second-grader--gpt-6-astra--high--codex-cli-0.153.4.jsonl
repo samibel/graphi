@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b71-9e12-7163-a1c9-d4a4aadd285a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not explain how to bind a persistent flag to Viper or state the backing-variable caveat. The preserved bundle contains neither required fact, only persistent-flag definitions and lookup behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":18218,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

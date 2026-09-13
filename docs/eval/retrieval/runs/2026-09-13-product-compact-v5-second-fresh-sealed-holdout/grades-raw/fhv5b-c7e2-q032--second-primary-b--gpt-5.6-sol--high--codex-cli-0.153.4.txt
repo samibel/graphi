@@ -1,0 +1,1 @@
+PASS: The response correctly describes recursive parent-path construction with space-separated descendant names and the root’s annotation-based display name fallback to Name(). Both cited ranges exist in the bundle and support the claims, including the annotation key.

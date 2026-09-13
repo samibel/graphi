@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-5373-7560-a4aa-742321923b97"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The root command retains the group ID. In `command.go:342–344`, `SetCompletionCommandGroupID` assigns `c.Root().completionCommandGroupID = groupID`, so calling it through a child stores the ID on the root command."}}
+{"type":"turn.completed","usage":{"input_tokens":17229,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

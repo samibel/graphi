@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q013",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "b7d863bf73924a308cf65ceab7bbee9abd0022a03ad7cbbc9fa6110706e366a8",
+  "bundle_sha256": "4f565f5ced132387887bb7996ea1115b670612e3c0d928fea8b6e3fb56be91cf",
+  "prompt_sha256": "750fe93a472faee189a42c6e4ddff6252f5e96a5e2420fedfe3dfd42c5c43d61",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Eq` compares signed integer kinds (`reflect.Int`, `Int8`, `Int16`, `Int32`, `Int64`) using `av.Int() == bv.Int()`, and `reflect.String` using `av.String() == bv.String()` (`cobra.go:151–154`).\n\nIt panics with `\"Eq called on unsupported type\"` when the first argument’s kind is `reflect.Array`, `reflect.Chan`, `reflect.Map`, or `reflect.Slice` (`cobra.go:148–150`). Other kinds return `false` (`cobra.go:156`).",
+  "responded_at": "2026-09-13T15:22:27Z",
+  "sha256": "0533cdc27e39f6f0222f30096bdaebc7ffc1c6f7b4db98e9fe27eb905bbd8260"
+}

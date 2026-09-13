@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q041",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "850ce17d0004870f61ac5d012c8d2f29e5dfef31957ad12a70d9ede6dff02535",
+  "bundle_sha256": "6e4c94b143e6dd46715a322951af4a84c3ab57e7827d9a4ce4f23e7f0d5b3c47",
+  "prompt_sha256": "067d578017bb81eb662417278a8044e6984bf1f1f9011292be29b79352425f50",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The APIs propagate the description choice as an `includeDesc` boolean:\n\n- **File APIs:** `GenZshCompletionFile` passes `true` (descriptions), while `GenZshCompletionFileNoDesc` passes `false` to `genZshCompletionFile` (`zsh_completions.go:24–27, 35–38`). That helper creates the file, defers its close, and forwards the boolean unchanged to `c.genZshCompletion(outFile, includeDesc)` (lines 70–78).\n- **Writer APIs:** `GenZshCompletion` directly calls `c.genZshCompletion(w, true)`, and `GenZshCompletionNoDesc` calls it with `false` (lines 29–33, 40–44).\n- **Script generation:** The shared `genZshCompletion` creates a buffer, calls `genZshComp(buf, c.Name(), includeDesc)`, then writes the buffer to the destination writer and returns the write error (lines 80–85).\n\nThe response shows `genZshComp` accepting the boolean (line 87), but does not show how it uses it inside the generated script.",
+  "responded_at": "2026-09-13T15:26:29Z",
+  "sha256": "3af4f820bb23a30302ee56e195c9a35980bf61c6b15c00bf5b3c03eeda7f8bc2"
+}

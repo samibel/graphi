@@ -1,0 +1,1 @@
+PASS: The response correctly identifies inclusive endpoints and rejection only for argument counts below min or above max. The cited args.go:103–111 supports both the condition and the quoted error format.

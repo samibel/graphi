@@ -1,0 +1,3 @@
+The command inherits the nearest ancestor’s non-empty custom prefix. In `command.go:611–621`, `ErrPrefix()` returns its own `c.errPrefix` if non-empty; otherwise, it recursively calls `c.parent.ErrPrefix()`. If no command in that chain has a non-empty prefix, it returns `"Error:"`.
+
+`SetErrPrefix(s)` stores the custom value in `c.errPrefix` (`command.go:357–360`); an empty value therefore does not override inheritance.

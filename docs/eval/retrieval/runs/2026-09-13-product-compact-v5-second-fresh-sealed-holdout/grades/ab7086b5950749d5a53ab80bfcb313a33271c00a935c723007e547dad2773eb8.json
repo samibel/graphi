@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q046",
+  "response_sha256": "ab7086b5950749d5a53ab80bfcb313a33271c00a935c723007e547dad2773eb8",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer the question, and the preserved bundle contains only command.go snippets, with no README support for commands as actions, arguments as things, flags as modifiers, or the recommended CLI sentence patterns.",
+  "graded_at": "2026-09-13T15:43:11Z",
+  "sha256": "db6e1a4b8988bf300a297f169abb7ecd2edea3865bcc09000b1e1b516caf9421"
+}

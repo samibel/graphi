@@ -1,0 +1,8 @@
+`(*Command).ResetCommands()` sets four fields to `nil` in `command.go:1277–1283`:
+
+- `c.parent`: the parent relationship.
+- `c.commands`: the child/subcommand list.
+- `c.helpCommand`: the help-command reference.
+- `c.parentsPflags`: the parent persistent-flags cache.
+
+It does not reset `c.commandsAreSorted`, the sorting-state flag used by `Commands()` (`command.go:1292–1300`).

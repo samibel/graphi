@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b68-9568-7720-892f-6aff63ca7bb7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes parent-recursive handler resolution and the root fallback that returns the original error unchanged, all supported by the supplied command.go:497–510 span."}}
+{"type":"turn.completed","usage":{"input_tokens":18268,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":39,"reasoning_output_tokens":0}}

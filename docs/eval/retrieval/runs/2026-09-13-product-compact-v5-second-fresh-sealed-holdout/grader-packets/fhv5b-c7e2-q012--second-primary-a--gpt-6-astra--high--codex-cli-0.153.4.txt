@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 41c42f134388a44a7366437a0be131859b5e9367790a83ff82228a3ef81a06fb
+QUERY ID: fhv5b-c7e2-q012
+
+QUESTION:
+In cobra.go, which operand representations does Gt compare for collections, integers, and strings?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:111-139 anchor="return left > right" reason=It compares collection lengths, integer values, or base-10 parsed string integers after converting each side to int64.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query e11f22711606; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"cobra.go","start_line":223,"end_line":230,"text":"func stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"cobra.go","start_line":111,"end_line":139,"text":"// Gt takes two types and checks whether the first type is greater than the second. In case of types Arrays, Chans,\n// Maps and Slices, Gt will compare their lengths. Ints are compared directly while strings are first parsed as\n// ints and then compared.\nfunc Gt(a interface{}, b interface{}) bool {\n\tvar left, right int64\n\tav := reflect.ValueOf(a)\n\n\tswitch av.Kind() {\n\tcase reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:\n\t\tleft = int64(av.Len())\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\tleft = av.Int()\n\tcase reflect.String:\n\t\tleft, _ = strconv.ParseInt(av.String(), 10, 64)\n\t}\n\n\tbv := reflect.ValueOf(b)\n\n\tswitch bv.Kind() {\n\tcase reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:\n\t\tright = int64(bv.Len())\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\tright = bv.Int()\n\tcase reflect.String:\n\t\tright, _ = strconv.ParseInt(bv.String(), 10, 64)\n\t}\n\n\treturn left > right\n}"},{"path":"doc/man_docs.go","start_line":35,"end_line":40,"text":"// correctly if your command names have `-` in them. If you have `cmd` with two\n// subcmds, `sub` and `sub-third`, and `sub` has a subcommand called `third`\n// it is undefined which help output will be in the file `cmd-sub-third.1`.\nfunc GenManTree(cmd *cobra.Command, header *GenManHeader, dir string) error {\n\treturn GenManTreeFromOpts(cmd, GenManTreeOptions{\n\t\tHeader:           header,"},{"path":"doc/man_docs.go","start_line":47,"end_line":47,"text":"// The pages are written to the opts.Path directory."},{"path":"doc/man_docs.go","start_line":143,"end_line":144,"text":"func manPreamble(buf io.StringWriter, header *GenManHeader, cmd *cobra.Command, dashedName string) {\n\tdescription := cmd.Long"},{"path":"command.go","start_line":1876,"end_line":1885,"text":"// commandNameMatches checks if two command names are equal\n// taking into account case sensitivity according to\n// EnableCaseInsensitive global configuration.\nfunc commandNameMatches(s string, t string) bool {\n\tif EnableCaseInsensitive {\n\t\treturn strings.EqualFold(s, t)\n\t}\n\n\treturn s == t\n}"},{"path":"bash_completions.go","start_line":447,"end_line":457,"text":"func writeCommands(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    commands=()\\n\")\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() && c != cmd.helpCommand {\n\t\t\tcontinue\n\t\t}\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    commands+=(%q)\\n\", c.Name()))\n\t\twriteCmdAliases(buf, c)\n\t}\n\tWriteStringAndCheck(buf, \"\\n\")\n}"},{"path":"doc/util.go","start_line":26,"end_line":26,"text":"func hasSeeAlso(cmd *cobra.Command) bool {"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"cobra.go","start_line":45,"end_line":48,"text":"const (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false"}],"provenance":{"input_sha256":"7418f8430c5887df937839b10475cd0813b3faff4dba0f591372d4f8b96520e0","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`Gt` converts both operands to `int64` representations, then compares `left > right` (`cobra.go:115–138`):
+
+- **Collections** (arrays, channels, maps, slices): their lengths, via `int64(av.Len())` and `int64(bv.Len())` (lines 119–120, 130–131).
+- **Signed integers** (`Int`, `Int8`, `Int16`, `Int32`, `Int64`): their numeric values via `.Int()` (lines 121–122, 132–133).
+- **Strings**: integers parsed in base 10 with 64-bit width via `strconv.ParseInt(..., 10, 64)`; parse errors are ignored (lines 123–124, 134–135).
+----- END THE RATER'S RESPONSE -----

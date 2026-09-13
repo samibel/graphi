@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-8ba3-7ef0-8be9-9eb5c978d8d2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the body of `InitDefaultHelpCmd` and the completion/execution paths needed to show how `helpCommand` is created, used, and reattached to the root."}}
+{"type":"turn.completed","usage":{"input_tokens":16556,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":118,"reasoning_output_tokens":69}}

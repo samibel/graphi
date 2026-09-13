@@ -1,0 +1,1 @@
+`AddTemplateFunc` registers the supplied function in `templateFuncs` under the supplied `name`, using `templateFuncs[name] = tmplFunc` (`cobra.go`, line 86). The comment at lines 83–84 says it is available for Usage and Help template generation.

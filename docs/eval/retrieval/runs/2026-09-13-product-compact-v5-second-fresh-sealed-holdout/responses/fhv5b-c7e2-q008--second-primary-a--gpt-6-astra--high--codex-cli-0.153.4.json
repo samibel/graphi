@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q008",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "20e834bcdbcf889cfb17a034458af2f53138a5d9ebc300db755def0c9ee2befb",
+  "bundle_sha256": "981a7e07dc211f6a0f1f0240dec7d29c8e8bc2e48663853d5a6653d10c19dc7f",
+  "prompt_sha256": "db0a13644ea3369a669375e711e8a021d9c2f54c67c3c00a681accd12e183172",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`AddTemplateFunc` registers the supplied function in `templateFuncs` under the supplied `name`, using `templateFuncs[name] = tmplFunc` (`cobra.go`, line 86). The comment at lines 83–84 says it is available for Usage and Help template generation.",
+  "responded_at": "2026-09-13T15:21:46Z",
+  "sha256": "1530753dc4e9d8d29c91a812e80f59ede2573a79cf936756966903d85317b1e5"
+}

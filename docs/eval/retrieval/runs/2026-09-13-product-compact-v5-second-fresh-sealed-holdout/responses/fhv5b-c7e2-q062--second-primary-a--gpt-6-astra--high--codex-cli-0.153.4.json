@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q062",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "11088ed9589163c7ca22c6d4eb04042a95688cb0398b6b8cd03cc247b83687d1",
+  "bundle_sha256": "ccba8180304ccc5b05ba7a93c6bbffe5262b5eb614b172f3ade11dcee7ecf716",
+  "prompt_sha256": "6fabf6dab20d9ba33ce4477fd703b130745c72f3eba1c48741324cfe7e3e4700",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1550–1553`, `(*Command).Runnable()` returns `c.Run != nil || c.RunE != nil`. Either `Run` or `RunE` being non-nil is sufficient; both are not required.",
+  "responded_at": "2026-09-13T15:29:20Z",
+  "sha256": "d618dac5c1dccf90bfe99507dc1cf09c8b4e1c036a392fb7a88287da19a2767b"
+}

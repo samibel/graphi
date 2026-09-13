@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b63-2526-77b1-a40f-91e5cde7f4f8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `HasSubCommands()` simply returns `len(c.commands) > 0` (`command.go:1555–1558`), so hidden or deprecated children still count.\n\nThey are excluded from *available* subcommands: `IsAvailableCommand()` returns false when `len(c.Deprecated) != 0 || c.Hidden` (`command.go:1560–1565`), and `HasAvailableSubCommands()` checks children using that method (`command.go:1615–1629`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17418,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-fe0a-7d03-8a75-513613d389e3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `doc/man_docs.go`:\n\n- Section defaults to `\"1\"` and is overridden by `opts.Header.Section` when non-empty. A nil header is first replaced with `&GenManHeader{}` (lines 49–52, 62–65).\n- Separator defaults to `\"_\"` and is overridden by `opts.CommandSeparator` when non-empty (lines 67–70).\n- The basename is `cmd.CommandPath()` with spaces replaced by the separator. The output filename is `filepath.Join(opts.Path, basename+\".\"+section)` (lines 71–72).\n\nThus, for command path `foo bar`, defaults produce `opts.Path/foo_bar.1`."}}
+{"type":"turn.completed","usage":{"input_tokens":16673,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":141,"reasoning_output_tokens":0}}

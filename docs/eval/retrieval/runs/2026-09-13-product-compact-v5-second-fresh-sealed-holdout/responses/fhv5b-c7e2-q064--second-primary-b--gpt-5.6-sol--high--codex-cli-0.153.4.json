@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q064",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "2f0c652d35925dbee7fd773e737383c10c24f42ed7141ea9d7a16f906ab9ff76",
+  "bundle_sha256": "5efe919f2c89b2381cf5fae71cda3120dcac9edd680c187f5952ce16e9367eea",
+  "prompt_sha256": "9fcc46b6616be4de033611ed5eebe129effe6e381dc22172534252b299c74cbb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "On the first call to `Command.Flags()`, if `c.flags` is nil, it initializes:\n\n- `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`\n- `c.flagErrorBuf` with `new(bytes.Buffer)` if it is nil\n- the flag set’s output to that buffer via `c.flags.SetOutput(c.flagErrorBuf)`\n\nEvidence: `command.go:1641–1653`, `Flags()`.",
+  "responded_at": "2026-09-13T15:28:34Z",
+  "sha256": "e738071df5f48f7972c02140b22bf2d11683dec7fc80fffb405b9122a24a99b1"
+}

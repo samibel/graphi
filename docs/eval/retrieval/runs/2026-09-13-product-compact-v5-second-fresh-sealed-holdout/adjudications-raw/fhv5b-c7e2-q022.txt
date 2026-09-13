@@ -1,0 +1,8 @@
+`GenReSTTreeCustom` uses post-order traversal:
+
+1. It recursively processes each available, non-help child command first via `GenReSTTreeCustom(c, ...)` (`doc/rest_docs.go:146–153`).
+2. It then creates the current command’s `.rst` file, whose basename comes from `cmd.CommandPath()` with spaces replaced by underscores (`doc/rest_docs.go:156–162`).
+3. It writes `filePrepender(filename)` to the new file (`doc/rest_docs.go:165–167`).
+4. Finally, it generates the current command’s page content with `GenReSTCustom(cmd, f, linkHandler)` (`doc/rest_docs.go:168–170`).
+
+Thus, children are fully generated before their parent; within each file, prepended content is written before the generated ReST page.

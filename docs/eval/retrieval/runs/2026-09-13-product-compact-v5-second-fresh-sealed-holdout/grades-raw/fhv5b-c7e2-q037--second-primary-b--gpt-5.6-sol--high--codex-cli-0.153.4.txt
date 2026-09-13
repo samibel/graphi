@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer how flags are classified. The preserved bundle shows local nonpersistent flag entries and shorthand handling but lacks the hidden-flag filtering, inherited-flag processing, and TraverseChildren condition needed to explain the essential behavior.

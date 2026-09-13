@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q018",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "fa783f6f3f4e09982ff4bc59a6feb0ae583c946d8ca4d2fbbc508ea2280d6d44",
+  "bundle_sha256": "fac6f824bfa1981702c7ca674da37c1ba7b3c3d6bcde71b2775d14d8cedb0052",
+  "prompt_sha256": "eb7f56a7590ec0bc7fd3849155ad90d333f171ac08c88043cdf2b5e4630b961b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Filename extensions are attached as a pflag annotation:\n\n```go\nflags.SetAnnotation(name, BashCompFilenameExt, extensions)\n```\n\nHere, `extensions` is the variadic `[]string`, and `BashCompFilenameExt` is `\"cobra_annotation_bash_completion_filename_extensions\"` ([shell_completions.go, lines 65–69]; [bash_completions.go, lines 28–34]). The command method applies this to `c.Flags()` ([shell_completions.go, lines 42–46]); persistent flags use `c.PersistentFlags()` ([shell_completions.go, lines 58–63]).",
+  "responded_at": "2026-09-13T15:22:24Z",
+  "sha256": "7136a88b5b2b9fff8ed571853f56d1e3ca68978a25f0672a8828d5d9901c407b"
+}

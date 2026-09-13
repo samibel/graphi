@@ -1,0 +1,13 @@
+The default output is:
+
+```text
+<command name> version <Version>
+```
+
+followed by a newline. Specifically, `command.go:598-609`, `Command.VersionTemplate()`, falls back through parent commands and ultimately returns:
+
+```go
+{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
+```
+
+Thus a command named `myapp` with `Version == "1.2.3"` produces `myapp version 1.2.3\n`.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q058",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "06833f86ef4bc934e96b5bf07f9958047960b459c74f9ec564c16ab39f3e87ed",
+  "bundle_sha256": "39122afc3ce49bb1f11e4b3f159a678dcd33574e659a9280b5f9569ac3eb3235",
+  "prompt_sha256": "16fa3d727dc27d1933d38ce92c50b72717e4fbac631db395fd0a1e00047c230f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The default output is `\u003cName\u003e version \u003cVersion\u003e\\n`. If `.Name` is empty, it is `version \u003cVersion\u003e\\n`.\n\nIn `command.go:599–608`, `VersionTemplate()` checks the command’s custom template, then its parents, and finally returns:\n```gotemplate\n{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n```\nThe template includes a trailing newline.",
+  "responded_at": "2026-09-13T15:28:52Z",
+  "sha256": "e49ffbf61cffedc5c20075147311d4df73bb7f970dcaf00c7c3974a4f416f5fd"
+}

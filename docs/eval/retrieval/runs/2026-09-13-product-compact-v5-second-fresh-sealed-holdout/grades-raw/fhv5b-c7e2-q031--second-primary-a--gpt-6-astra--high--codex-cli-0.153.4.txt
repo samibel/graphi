@@ -1,0 +1,1 @@
+PASS: The response correctly identifies all four fields cleared by ResetCommands: parent, child commands, help command, and parent persistent-flags cache. The cited bundle also supports that commandsAreSorted is not reset and is used by Commands().

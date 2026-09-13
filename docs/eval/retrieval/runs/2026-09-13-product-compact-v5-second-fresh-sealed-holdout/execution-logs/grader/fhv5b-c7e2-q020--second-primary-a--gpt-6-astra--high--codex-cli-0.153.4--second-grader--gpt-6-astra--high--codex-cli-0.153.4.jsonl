@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b69-2929-77c3-9249-6317fbe3d9e4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies the deprecated method as a no-op returning nil and names ValidArgs for the first argument and ValidArgsFunction for any argument as the documented alternatives. All cited locations exist in the supplied bundle and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18205,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

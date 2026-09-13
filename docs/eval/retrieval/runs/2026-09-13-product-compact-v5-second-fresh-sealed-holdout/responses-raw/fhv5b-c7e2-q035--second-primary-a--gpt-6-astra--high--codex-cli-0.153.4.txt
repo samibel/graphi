@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `c.ParseFlags(flags)` in `command.go:823–825` and `ParseFlags` in `command.go:1818–1840`, but omits the traversal logic that accumulates parent flag arguments and enters the child command.

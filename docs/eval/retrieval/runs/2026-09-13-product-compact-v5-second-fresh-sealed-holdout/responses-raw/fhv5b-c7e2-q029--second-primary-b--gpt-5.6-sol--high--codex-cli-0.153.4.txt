@@ -1,0 +1,1 @@
+No. `InitDefaultHelpFlag` checks `c.Flags().Lookup("help") == nil` before adding the default flag, and its comment explicitly says, “If c already has help flag, it will do nothing” ([command.go, lines 1183–1198](command.go)). It also calls `c.mergePersistentFlags()` first, so inherited persistent help flags are included in that check.

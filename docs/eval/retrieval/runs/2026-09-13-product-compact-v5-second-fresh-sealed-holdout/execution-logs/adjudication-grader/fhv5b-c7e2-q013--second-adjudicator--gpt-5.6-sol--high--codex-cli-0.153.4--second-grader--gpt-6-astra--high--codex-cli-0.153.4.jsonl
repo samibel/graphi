@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b76-32b6-7a31-87a5-5d3a07991758"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies signed integer kinds compared via Int(), strings compared via String(), and arrays, channels, maps, and slices triggering the unsupported-type panic, all supported by the cited cobra.go:143–157 bundle span."}}
+{"type":"turn.completed","usage":{"input_tokens":18264,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

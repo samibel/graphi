@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-98ca-7501-ac84-c60788eb4d39"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ExactArgs(n)` accepts an argument list only when `len(args) == n`, returning `nil`. Otherwise, it returns an error formatted as `\"accepts %d arg(s), received %d\"` with the expected and actual counts. It checks only the count, not argument values (`args.go`, lines 93–100, `ExactArgs`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17415,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":0}}

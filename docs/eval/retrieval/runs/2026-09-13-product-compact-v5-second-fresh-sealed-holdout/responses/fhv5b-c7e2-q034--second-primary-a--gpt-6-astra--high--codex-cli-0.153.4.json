@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q034",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "bfb4ca1570874b20a65acc6616a23e4f8c0e2f71fe8d070d8c800c56ccf66385",
+  "bundle_sha256": "938303a454f56fb4c336eca40b799105218f3023d451dfd4784a69f4e6c2c914",
+  "prompt_sha256": "84c7262fadf4f28802fe78ee8a1c0f7d36a735c807dc4f57fc215d7f179d1d56",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes `stripFlags` (`command.go:643–679`) and part of `ParseFlags` (`command.go:1818–1838`), but omits the command lookup implementation needed to trace child selection, tree descent, and preservation of flags and remaining arguments.",
+  "responded_at": "2026-09-13T15:25:29Z",
+  "sha256": "0d9d48c8021c70ac9520810c5f426b02529cf553a1c43dea405dbf7f23e785bc"
+}

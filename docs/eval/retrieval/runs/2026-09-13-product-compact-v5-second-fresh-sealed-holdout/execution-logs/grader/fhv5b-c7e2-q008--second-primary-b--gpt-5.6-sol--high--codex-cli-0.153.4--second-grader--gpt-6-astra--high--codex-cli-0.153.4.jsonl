@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-8423-7fb0-b122-d2bbca44bb54"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies registration in `templateFuncs` under the supplied `name`, matching `templateFuncs[name] = tmplFunc` in the preserved `cobra.go:83–87` span."}}
+{"type":"turn.completed","usage":{"input_tokens":18145,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":44,"reasoning_output_tokens":0}}

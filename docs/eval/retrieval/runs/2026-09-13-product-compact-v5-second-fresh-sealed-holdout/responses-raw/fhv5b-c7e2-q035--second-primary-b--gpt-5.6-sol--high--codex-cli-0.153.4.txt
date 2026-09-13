@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `ParseFlags(flags)` at `command.go:823` and parsing internals at `command.go:1818-1840`, but omits the traversal body that accumulates parent flags and enters the child command.

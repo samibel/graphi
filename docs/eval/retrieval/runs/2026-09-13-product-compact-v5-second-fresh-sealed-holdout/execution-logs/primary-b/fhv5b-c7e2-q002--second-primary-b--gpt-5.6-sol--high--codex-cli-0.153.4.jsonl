@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5a-ebf6-7a13-92d7-67b4bc878ed7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnlyValidArgs` strips any embedded description before validation. In [`args.go`, lines 54–58], it splits each `ValidArgs` entry at the first tab (`strings.Split(v, \"\\t\")[0]`) and keeps only the argument portion. It then compares positional arguments against those stripped values (`args.go`, lines 59–63). Thus, an entry like `\"foo\\tdescription\"` validates `\"foo\"`, not the full string."}}
+{"type":"turn.completed","usage":{"input_tokens":16572,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":97,"reasoning_output_tokens":0}}

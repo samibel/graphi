@@ -1,0 +1,1 @@
+PASS: The response correctly identifies enabling `Command.TraverseChildren` to parse parent-local flags before executing the descendant, and explains that those flags are ignored by default. Both cited locations exist in the bundle and support these claims.

@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e93cd35f33dde9bbf39270544eb6169505caaa101afa1d8d7635cbd3a3698a32
+QUERY ID: fhv5b-c7e2-q023
+
+QUESTION:
+What context is observed before and after ordinary execution when no context was explicitly supplied?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:257-266 anchor="a context.Background" reason=Context is initially nil, but Execute or ExecuteC replaces a nil value with context.Background, which later Context calls return.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 1c5a02ce144f; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":258,"end_line":266,"text":"// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned.\n//\n// Notice that a call to Execute and ExecuteC will replace a nil context of\n// a command with a context.Background, so a background context will be\n// returned by Context after one of these functions has been called.\nfunc (c *Command) Context() context.Context {\n\treturn c.ctx\n}"},{"path":"command.go","start_line":269,"end_line":280,"text":"// Command.ExecuteContext or Command.ExecuteContextC.\nfunc (c *Command) SetContext(ctx context.Context) {\n\tc.ctx = ctx\n}\n\n// SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden\n// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}\n\n// SetOutput sets the destination for usage and error messages."},{"path":"completions.go","start_line":680,"end_line":700,"text":"// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tfor _, cmd := range c.commands {\n\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {\n\t\t\t// A completion command is already available\n\t\t\treturn\n\t\t}\n\t}\n\n\thaveNoDescFlag := !c.CompletionOptions.DisableNoDescFlag && !c.CompletionOptions.DisableDescriptions\n\n\tcompletionCmd := &Command{\n\t\tUse:   compCmdName,\n\t\tShort: \"Generate the autocompletion script for the specified shell\",\n\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell."},{"path":"command.go","start_line":120,"end_line":122,"text":"\t// All functions get the same args, the arguments after the command name.\n\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared."},{"path":"command.go","start_line":1027,"end_line":1033,"text":"// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}"},{"path":"command.go","start_line":1045,"end_line":1051,"text":"// functions.\nfunc (c *Command) ExecuteContextC(ctx context.Context) (*Command, error) {\n\tc.ctx = ctx\n\treturn c.ExecuteC()\n}\n\n// ExecuteC executes the command."}],"provenance":{"input_sha256":"25596732ee580e4e4e9a8411a15dd4e8956344d3cab93071b6e9c5eded398ad6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Before ordinary execution, `Command.Context()` returns `nil`. After `Execute()` or `ExecuteC()`, it returns `context.Background()`, because those methods replace a nil context with a background context (`command.go:258–266`, `Command.Context`).
+----- END THE RATER'S RESPONSE -----

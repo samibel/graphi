@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6b-b843-78d1-a262-923a34f01f76"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that InitDefaultHelpFlag merges persistent flags and creates the default help flag only when Lookup(\"help\") is nil, preserving an application-defined help flag. The cited command.go:1183–1198 exists in the bundle and directly supports the answer."}}
+{"type":"turn.completed","usage":{"input_tokens":18189,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":60,"reasoning_output_tokens":0}}

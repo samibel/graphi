@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-858c-7c63-9ac3-5e73123de422"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Usage rendering looks first at the command’s `usageFunc`; if absent, it recursively checks the parent via `c.Parent().UsageFunc()` ([command.go:424–433](command.go)). The built-in fallback calls `c.mergePersistentFlags()`, then renders `c.UsageTemplate()` with the command as template data to `c.OutOrStderr()` using `tmpl`; rendering errors are printed with `c.PrintErrln(err)` and returned ([command.go:434–440](command.go)). `Usage()` invokes the selected function as `c.UsageFunc()(c)` ([command.go:443–448](command.go))."}}
+{"type":"turn.completed","usage":{"input_tokens":16602,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":0}}

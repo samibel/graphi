@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b70-5566-7ce0-abe4-85fd428065ca"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly distinguishes cobra-cli’s generated application scaffolding and commands from manual setup requiring a bare main.go, a rootCmd file, and optional additional commands. Both explanations and their citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18090,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":30}}

@@ -1,0 +1,1 @@
+PASS: The response correctly states that HasSubCommands() checks only whether c.commands is nonempty, so hidden or deprecated children still count. Its distinction from available subcommands and all cited line ranges are supported by the preserved bundle.

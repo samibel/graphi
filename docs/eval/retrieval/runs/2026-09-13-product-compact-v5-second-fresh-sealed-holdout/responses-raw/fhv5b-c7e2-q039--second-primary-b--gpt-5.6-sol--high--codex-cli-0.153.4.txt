@@ -1,0 +1,7 @@
+In `bash_completions.go:535-549`, `prepareCustomAnnotationsForFlags` safely:
+
+- Acquires `flagCompletionMutex.RLock()` and defers `RUnlock()` while iterating `flagCompletionFunctions`.
+- Initializes `flag.Annotations` when nil.
+- Sets `flag.Annotations[BashCompCustom]` to `__<root-command-name>_handle_go_custom_completion`, using `cmd.Root().Name()`.
+
+This is done during script preparation—not callback registration—because only then is the root command name available for the Bash function prefix.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-53f8-7e81-8f60-3949dbcd932b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MinimumNArgs(n)` checks whether `len(args) < n`. If true, it returns `fmt.Errorf(\"requires at least %d arg(s), only received %d\", n, len(args))`; otherwise, it returns `nil` (`args.go`, lines 74–80).\n\nThe test helper confirms the exact error for minimum 2 with 1 argument: `\"requires at least 2 arg(s), only received 1\"` (`args_test.go`, lines 66–74)."}}
+{"type":"turn.completed","usage":{"input_tokens":17580,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":0}}

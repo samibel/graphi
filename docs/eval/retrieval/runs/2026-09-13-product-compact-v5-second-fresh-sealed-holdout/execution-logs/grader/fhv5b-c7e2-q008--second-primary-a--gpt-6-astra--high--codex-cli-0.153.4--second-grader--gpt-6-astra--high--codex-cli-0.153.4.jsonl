@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b66-67fd-7a20-ac02-5aaf44704320"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies registration in `templateFuncs` under the supplied `name` via `templateFuncs[name] = tmplFunc`. Its citations to cobra.go:83–86 support both the assignment and availability for Usage and Help template generation."}}
+{"type":"turn.completed","usage":{"input_tokens":18160,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":54,"reasoning_output_tokens":0}}

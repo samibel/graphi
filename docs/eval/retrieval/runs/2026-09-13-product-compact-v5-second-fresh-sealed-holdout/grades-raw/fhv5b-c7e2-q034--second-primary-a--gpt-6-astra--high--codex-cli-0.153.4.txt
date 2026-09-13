@@ -1,0 +1,1 @@
+FAIL: The response identifies missing evidence but does not trace command lookup. The bundle omits Find’s recursive child selection, removal of only the matched command token, deepest-match stopping behavior, and legacy validation when Args is nil.

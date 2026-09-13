@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q053",
+  "response_sha256": "24596572e50c22837c49acf061985d6ad5fb6b1823068decb95cc6db49a2b37e",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies enabling `Command.TraverseChildren` to parse parent-local flags before executing the descendant, and explains that those flags are ignored by default. Both cited locations exist in the bundle and support these claims.",
+  "graded_at": "2026-09-13T15:44:55Z",
+  "sha256": "0549c14bb4831f82a033236e74f4be03775144478ec626575d38fa8aa4fd4cea"
+}

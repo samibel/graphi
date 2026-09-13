@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the heading from `site/content/user_guide.md` (lines 1–2), with no guidance on wiring commands in nested Go packages or avoiding import cycles.

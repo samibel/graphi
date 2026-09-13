@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q013",
+  "response_sha256": "0533cdc27e39f6f0222f30096bdaebc7ffc1c6f7b4db98e9fe27eb905bbd8260",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies signed integer comparisons via Int(), string comparisons via String(), and panics for array, channel, map, and slice kinds of the first argument. Its citations and the fallback return of false are supported by cobra.go:143–157 in the preserved bundle.",
+  "graded_at": "2026-09-13T15:34:17Z",
+  "sha256": "a29e8e967703b29dc3474ea057f4c176c55748418a6491031b47b63f612aad47"
+}

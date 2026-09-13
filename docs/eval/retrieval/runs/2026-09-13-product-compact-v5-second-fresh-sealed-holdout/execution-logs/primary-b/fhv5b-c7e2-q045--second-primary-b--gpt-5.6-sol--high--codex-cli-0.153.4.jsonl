@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-4c72-78c0-986b-817a10835f65"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response lacks the README or documentation section listing Cobra’s advertised built-in CLI capability categories."}}
+{"type":"turn.completed","usage":{"input_tokens":16419,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":105,"reasoning_output_tokens":77}}

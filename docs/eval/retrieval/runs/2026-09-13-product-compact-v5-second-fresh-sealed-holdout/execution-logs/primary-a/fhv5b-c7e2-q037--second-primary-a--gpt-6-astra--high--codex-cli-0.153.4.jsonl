@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5f-e357-70d1-9028-9a1105642b7b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows local nonpersistent flag emission in `bash_completions.go:523–533`, but omits the classification logic for persistent, inherited, hidden, and traversal-sensitive flags and the remaining legacy Bash completion arrays."}}
+{"type":"turn.completed","usage":{"input_tokens":17603,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

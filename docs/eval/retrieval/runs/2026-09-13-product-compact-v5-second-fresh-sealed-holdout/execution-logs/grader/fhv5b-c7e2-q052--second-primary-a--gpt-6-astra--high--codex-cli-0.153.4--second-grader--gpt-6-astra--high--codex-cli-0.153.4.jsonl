@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b71-0da9-7ad3-b217-8d9ac73969bb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer which callback returns application errors or where they are caught. The preserved bundle only documents flag-error handling and lacks the required `RunE` behavior and error handling by the caller of command execution."}}
+{"type":"turn.completed","usage":{"input_tokens":18027,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":49,"reasoning_output_tokens":0}}

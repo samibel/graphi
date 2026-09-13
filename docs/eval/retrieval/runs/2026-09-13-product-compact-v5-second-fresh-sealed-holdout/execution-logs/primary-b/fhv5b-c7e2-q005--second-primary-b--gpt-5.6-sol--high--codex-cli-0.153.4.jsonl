@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5b-3bfe-70f2-bee4-797e9bc43413"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MaximumNArgs(n)` rejects the list when `len(args) > n`—that is, when it contains more than `n` positional arguments. It returns `accepts at most %d arg(s), received %d` (`args.go`, lines 82–91)."}}
+{"type":"turn.completed","usage":{"input_tokens":16545,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

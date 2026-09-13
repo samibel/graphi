@@ -1,0 +1,7 @@
+In `bash_completions.go:535–549`, `prepareCustomAnnotationsForFlags(cmd)`:
+
+- Holds `flagCompletionMutex.RLock()` while iterating `flagCompletionFunctions`, with a deferred `RUnlock()`.
+- Initializes `flag.Annotations` if nil, preventing assignment to a nil map.
+- Sets `BashCompCustom` to `[]string{fmt.Sprintf("__%[1]s_handle_go_custom_completion", cmd.Root().Name())}`, preserving other annotation keys.
+
+The comment explains why this happens during preparation rather than registration: the root command name must be known to construct the Bash completion function’s prefix.

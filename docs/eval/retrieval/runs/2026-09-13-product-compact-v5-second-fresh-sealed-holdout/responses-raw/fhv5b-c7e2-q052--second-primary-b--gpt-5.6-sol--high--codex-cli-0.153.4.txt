@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `PersistentPreRun` and flag-error handling, but omits the application-error-returning callback and the execution code where its errors are caught.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q016",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "b3cba92530605b651291fb7ac99e61edbea7a29da0bb7ebd409648ec4c5f3b7e",
+  "bundle_sha256": "8239d676c6a83bacf9d4a2263d3c60a5cdfeeb5b8a86e851f6d6cbe94fe6ebae",
+  "prompt_sha256": "d0ae8eafd3f84a666abd608795fddeb0e8f2a8ddf1450be573bb35f11860d284",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`UsageString` saves `c.outWriter` and `c.errWriter` in `tmpOutput` and `tmpErr`, then temporarily sets both to the same new `bytes.Buffer` (`command.go`, lines 480–486). It calls `CheckErr(c.Usage())` to generate usage text into that buffer (line 488), restores both original writers (lines 490–492), and returns `bb.String()` (line 494).\n\nRestoration is explicit, not deferred, so it occurs only if execution reaches those restoration lines.",
+  "responded_at": "2026-09-13T15:22:55Z",
+  "sha256": "1261a63e99b530a74250f0ca68f644b60632abcbc7944b497806afa108d7f695"
+}

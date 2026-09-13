@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: a2aed1d69bf63df2cdd8313e3120a68041c3b499f52a779ff3d5ec820bef1540
+QUERY ID: fhv5b-c7e2-q057
+
+QUESTION:
+If only a root command defines a help template, what template does a child return?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:584-596 anchor="return c.parent.HelpTemplate()" reason=The child inherits the ancestor template; only a hierarchy with no custom value returns the built-in long-or-short plus usage template.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 1196777dda37; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":173,"end_line":177,"text":"\t// helpTemplate is help template defined by user.\n\thelpTemplate string\n\t// helpFunc is help func defined by user.\n\thelpFunc func(*Command, []string)\n\t// helpCommand is command with usage 'help'. If it's not defined by user,"},{"path":"command.go","start_line":48,"end_line":48,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires"},{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"command.go","start_line":497,"end_line":497,"text":"// FlagErrorFunc returns either the function set by SetFlagErrorFunc for this"},{"path":"command.go","start_line":860,"end_line":866,"text":"// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"command.go","start_line":124,"end_line":125,"text":"\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)"},{"path":"site/content/user_guide.md","start_line":492,"end_line":493,"text":"## Help Command\n"},{"path":"command.go","start_line":1578,"end_line":1598,"text":"// IsAdditionalHelpTopicCommand determines if a command is an additional\n// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {\n\t// if a command is runnable, deprecated, or hidden it is not a 'help' command\n\tif c.Runnable() || len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\t// if any non-help sub commands are found, the command is not a 'help' command\n\tfor _, sub := range c.commands {\n\t\tif !sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no non-help sub commands\n\treturn true\n}"},{"path":"command.go","start_line":584,"end_line":596,"text":"// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}\n\n{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`\n}"},{"path":"command.go","start_line":347,"end_line":350,"text":"// SetHelpTemplate sets help template to be used. Application can use it to set custom template.\nfunc (c *Command) SetHelpTemplate(s string) {\n\tc.helpTemplate = s\n}"},{"path":"command.go","start_line":585,"end_line":585,"text":"func (c *Command) HelpTemplate() string {"}],"provenance":{"input_sha256":"7168059172eb61cc5945417c8cac976d74a3d0283bab2aba480bd6c66f427799","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The child returns the root’s help template. In `command.go:584–596`, `HelpTemplate()` returns its own `c.helpTemplate` when set; otherwise, if it has a parent, it recursively calls `c.parent.HelpTemplate()`. The root’s template is set by `SetHelpTemplate` in `command.go:347–350`.
+----- END THE RATER'S RESPONSE -----

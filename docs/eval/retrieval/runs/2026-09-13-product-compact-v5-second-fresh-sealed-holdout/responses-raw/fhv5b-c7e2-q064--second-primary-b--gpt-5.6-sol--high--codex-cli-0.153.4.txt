@@ -1,0 +1,7 @@
+On the first call to `Command.Flags()`, if `c.flags` is nil, it initializes:
+
+- `c.flags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`
+- `c.flagErrorBuf` with `new(bytes.Buffer)` if it is nil
+- the flag set’s output to that buffer via `c.flags.SetOutput(c.flagErrorBuf)`
+
+Evidence: `command.go:1641–1653`, `Flags()`.

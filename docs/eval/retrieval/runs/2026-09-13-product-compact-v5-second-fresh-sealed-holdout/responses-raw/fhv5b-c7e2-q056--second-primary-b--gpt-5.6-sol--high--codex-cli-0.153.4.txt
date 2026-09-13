@@ -1,0 +1,1 @@
+The root command retains the group ID. In `command.go:341-345`, `SetCompletionCommandGroupID` assigns it to `c.Root().completionCommandGroupID`, even when called through a child command.

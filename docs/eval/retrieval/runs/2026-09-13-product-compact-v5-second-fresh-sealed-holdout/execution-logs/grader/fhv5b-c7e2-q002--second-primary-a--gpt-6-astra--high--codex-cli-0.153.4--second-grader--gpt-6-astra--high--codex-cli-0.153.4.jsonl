@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b65-0929-7bb0-8082-a107e0294663"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: args.go:49–66 supports stripping tab-separated descriptions into a separate validation list using strings.Split(v, \"\\t\")[0], accepting the name portion, and leaving cmd.ValidArgs unchanged. The cited ranges exist and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18175,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":102,"reasoning_output_tokens":47}}

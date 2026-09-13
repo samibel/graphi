@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q055",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "637b1037f4289a88cfb0c6dd245b387abeebb95372760b1507b1bed8ed5e5ed0",
+  "bundle_sha256": "3a56861688ca283380fdea2e24a5613b67654f593246abcd19028306b38cc0a6",
+  "prompt_sha256": "83ffeb7a7d3da8c05df2db3f4aa8c31b77e5a21f3ca25ed79389542cbdbc4a6a",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. `SetHelpCommandGroupID` always saves the choice in `c.helpCommandGroupID`, even when `c.helpCommand` is nil (`command.go:332–339`). The comment explicitly says this stored value “is used if no helpCommand is defined by the user” (`command.go:337–338`).",
+  "responded_at": "2026-09-13T15:28:27Z",
+  "sha256": "bf2094e0e87dee3df6e7bce074d49f8761394463042b1f0fa91a18e7c628c329"
+}

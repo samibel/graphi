@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q006",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "fbf2e6cdff22461e48abfa843a97f44ad80b3c2fc583c425629a956870dd541d",
+  "bundle_sha256": "8a2c682f5b9896f4433ffa5fc00231bd6fe6032e1232c48141e19079b3c75236",
+  "prompt_sha256": "5b6ea8a0d3d61eabb3b7adb6f23493592d4ef232dc98f2f5e85c8fd165e240d4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ExactArgs(n)` accepts the argument list only when `len(args) == n`. Otherwise, it returns `fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))`; on an exact match, it returns `nil` (`args.go`, lines 92–101, symbol `ExactArgs`).",
+  "responded_at": "2026-09-13T15:20:54Z",
+  "sha256": "78111ee42a2fb38e2d75270c2632baf73fcce7705f82581a99d763e62949166f"
+}

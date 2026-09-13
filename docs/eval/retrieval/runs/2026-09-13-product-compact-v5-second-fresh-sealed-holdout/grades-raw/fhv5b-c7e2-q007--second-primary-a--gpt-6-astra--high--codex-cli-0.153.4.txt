@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the inclusive endpoints and rejection only for counts below min or above max. The cited args.go lines 104–109 support the condition, error message, and nil return.

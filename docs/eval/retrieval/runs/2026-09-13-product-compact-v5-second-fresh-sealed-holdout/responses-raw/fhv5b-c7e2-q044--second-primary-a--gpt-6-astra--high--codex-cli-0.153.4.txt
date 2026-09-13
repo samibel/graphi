@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no man-page generation code showing how a command is rendered into a byte buffer or how relationships and history are included.

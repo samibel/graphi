@@ -1,0 +1,1 @@
+PASS: The response correctly describes nearest-ancestor inheritance, precedence of a nonempty local prefix, and the default `"Error:"`, supported by command.go:611–621. Its explanation that an empty setter value preserves inheritance is supported by command.go:357–360 and the lookup logic.

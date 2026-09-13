@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-3323-72a0-aee2-279cb94cf1de"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains only unrelated command fields, completion generators, Markdown/ReST option printers, and child-command sorting; it lacks the man-page generation symbols and snippets showing command relationships, history, and final byte-buffer construction."}}
+{"type":"turn.completed","usage":{"input_tokens":16635,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b72-31ab-7100-9f65-a4642b39b375"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that the child inherits the root’s help template. The cited command.go:585–591 supports returning a local nonempty template or recursively calling the parent’s HelpTemplate()."}}
+{"type":"turn.completed","usage":{"input_tokens":18116,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":37}}

@@ -1,0 +1,1 @@
+PASS: The response accurately identifies signed integer comparisons via Int(), string comparisons via String(), and panics for array, channel, map, and slice kinds of the first argument. Its citations and the fallback return of false are supported by cobra.go:143–157 in the preserved bundle.

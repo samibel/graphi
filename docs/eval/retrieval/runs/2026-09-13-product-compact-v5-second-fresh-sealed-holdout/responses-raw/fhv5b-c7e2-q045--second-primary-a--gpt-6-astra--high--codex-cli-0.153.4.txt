@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains isolated settings and functions, but no feature list or description identifying the categories of CLI behavior Cobra advertises as built-in capabilities.

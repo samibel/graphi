@@ -1,0 +1,11 @@
+`(*Command).GenFishCompletion`:
+
+1. Creates a `bytes.Buffer`.
+2. Calls `genFishComp(buf, c.Name(), includeDesc)` to render the command’s Fish completion text into it.
+3. Copies the buffered bytes to the supplied `io.Writer` with `buf.WriteTo(w)`, returning that error.
+
+Evidence: `fish_completions.go:275–281`; generation writes formatted strings via `WriteStringAndCheck` at `fish_completions.go:35–41`.
+
+`(*Command).GenFishCompletionFile` creates the destination using `os.Create(filename)`, defers `outFile.Close()`, then delegates to `c.GenFishCompletion(outFile, includeDesc)`.
+
+Evidence: `fish_completions.go:283–292`.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-b368-7bd0-b3d4-c3245038d9ec"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Eq` compares signed integer kinds (`reflect.Int`, `Int8`, `Int16`, `Int32`, `Int64`) using `av.Int() == bv.Int()`, and `reflect.String` using `av.String() == bv.String()` (`cobra.go:151–154`).\n\nIt panics with `\"Eq called on unsupported type\"` when the first argument’s kind is `reflect.Array`, `reflect.Chan`, `reflect.Map`, or `reflect.Slice` (`cobra.go:148–150`). Other kinds return `false` (`cobra.go:156`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17528,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":121,"reasoning_output_tokens":0}}

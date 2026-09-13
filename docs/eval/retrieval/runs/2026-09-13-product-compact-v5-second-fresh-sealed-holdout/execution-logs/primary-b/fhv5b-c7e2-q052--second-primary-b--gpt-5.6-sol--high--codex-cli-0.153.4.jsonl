@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-21c9-72a2-bc88-8caa3e5d021e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `PersistentPreRun` and flag-error handling, but omits the application-error-returning callback and the execution code where its errors are caught."}}
+{"type":"turn.completed","usage":{"input_tokens":16464,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

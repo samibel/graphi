@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q052",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "62ca26585701c7a63219376d6dda9b02b7611404d217b27c58390bb6227d488b",
+  "bundle_sha256": "734fcb1f6319b1bee83e464124f6e7d782f2122abac35aa6196d5aee1a438b94",
+  "prompt_sha256": "36ffb8a7c239fed632000720234170ada250d500d5aa36696f752ca100afa57d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `PersistentPreRun` and flag-error handling, but omits the application-error-returning callback and the execution code where its errors are caught.",
+  "responded_at": "2026-09-13T15:27:15Z",
+  "sha256": "9ff4ec0dad765fa36e564c72b6f89250b4d4ba17caa611e25efe4b2ff9d83e8d"
+}

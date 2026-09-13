@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows local nonpersistent flag emission in `bash_completions.go:523–533`, but omits the classification logic for persistent, inherited, hidden, and traversal-sensitive flags and the remaining legacy Bash completion arrays.

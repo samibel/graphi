@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-d711-78d1-8f7b-8556675401a6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response does not identify a command callback that returns application errors or where those errors are caught; `SetFlagErrorFunc` (`command.go:316–320`) only addresses flag parsing failures."}}
+{"type":"turn.completed","usage":{"input_tokens":17355,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

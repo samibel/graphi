@@ -1,0 +1,43 @@
+{
+  "contract_version": "fresh-holdout-two-build-capture-reproducibility/1",
+  "status": "PASS",
+  "verified_at_utc": "2026-09-13T15:16:25Z",
+  "frozen_static_input_commit": "595ea58ff030449a68272c285c61d08c29a32856",
+  "product_candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
+  "dataset_sha256": "331bd256c3097c61b34b3ccbc7716a161a315c76f2a41e22c4a4f88085eb85ae",
+  "corpus_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "actor_visible_version": "task_context/2-compact/5",
+  "pair_count": 64,
+  "exact_mcp_bytes_identical": 64,
+  "response_digests_identical": 64,
+  "token_counts_identical": 64,
+  "prompts_identical": 64,
+  "maximum_cl100k_tokens": 1193,
+  "token_ceiling": 1200,
+  "bundle_aggregate_sha256": "4c38181265a04b4ee01df8bf450fe306be8f03d7340a0810f24b2b387df155a2",
+  "prompt_aggregate_sha256": "df04d93c0740be23d350568b9483ac68ee282cbb26829d6ddb956c29ccdf00f9",
+  "query_ledger_sha256": "09efdbd5851c231d3d1cb91a7e64903d766ed8678fb63ead6068594e63034c82",
+  "official_build": {
+    "precondition_record_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
+    "precondition_commit": "94de3233d38deb5bff2e372341d9c853e8533b0c",
+    "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "pre_registration_file_sha256": "6a78e1c70d095bee7ff5b34874185dacb7b9b331d1d09c1f8fafbab03c21e854",
+    "capture_provenance_file_sha256": "9d93bd37f0210644ae9f29965f09787a9aaa0a44fd46a6c8845fff3db462ec21",
+    "generation_id_sha256": "a99acf504a4729fb5769c76ff55ab1e51198b9bd83e61e94e33a2a5fa9fb6915"
+  },
+  "independent_build": {
+    "precondition_record_sha256": "b98f81887b05a6c78832e8d3d7929d1d5f4762500d4e4f9d106c2ca7ab032407",
+    "precondition_commit": "c8e7cbf7a4144a249abb29c41cc1e15a3c8e31cd",
+    "pre_registration_sha256": "374d5acb8119851cf25ffd19dcac2a7fa280ea70403a46562163b9da5866d58f",
+    "pre_registration_file_sha256": "35e73670f67f946d7aba8495ebb3afb9c2e13fe5503716f9717812bef361af96",
+    "capture_provenance_file_sha256": "44f5559856f7cfa4d06d1619eb825271b8060f16c01a5acad23bea57e9915357",
+    "generation_id_sha256": "a6e3de7d6de2c4f2792b286d9c48f777f1d2e15d76c3254f94d479c6f913bd76"
+  },
+  "generation_ids_distinct": true,
+  "candidate_trees_match_frozen_outside_run": true,
+  "corpus_worktrees_clean": true,
+  "failure_policy": "Any mismatch, over-budget response, non-ready generation, non-compact/5 response, overwrite, or incomplete build refuses this run without retry."
+}

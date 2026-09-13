@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5c-5417-7223-a031-04f076d2f658"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `command.go:477–495`, `UsageString`:\n\n1. Saves `c.outWriter` and `c.errWriter` into `tmpOutput` and `tmpErr`.\n2. Temporarily points both writers to a new `bytes.Buffer`.\n3. Calls `CheckErr(c.Usage())`, so usage output is captured in that buffer. `Usage()` delegates to `c.UsageFunc()(c)` (`command.go:443–448`).\n4. Restores the original writers.\n5. Returns `bb.String()`.\n\nThus, it captures usage by temporarily swapping both configured writers to a buffer, then restoring their saved values."}}
+{"type":"turn.completed","usage":{"input_tokens":16554,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":135,"reasoning_output_tokens":0}}

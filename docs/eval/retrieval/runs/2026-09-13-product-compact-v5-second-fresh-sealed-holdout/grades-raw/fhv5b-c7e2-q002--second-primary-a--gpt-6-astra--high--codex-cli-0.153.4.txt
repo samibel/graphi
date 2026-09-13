@@ -1,0 +1,1 @@
+PASS: args.go:49–66 supports stripping tab-separated descriptions into a separate validation list using strings.Split(v, "\t")[0], accepting the name portion, and leaving cmd.ValidArgs unchanged. The cited ranges exist and support the claims.

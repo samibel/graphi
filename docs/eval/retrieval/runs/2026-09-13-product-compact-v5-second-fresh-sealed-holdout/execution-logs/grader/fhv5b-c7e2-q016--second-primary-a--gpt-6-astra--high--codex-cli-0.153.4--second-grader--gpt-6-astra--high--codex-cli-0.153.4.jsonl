@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b68-332b-7ec0-a630-0573ff0beec0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes saving both writers, redirecting them to one buffer, calling CheckErr(c.Usage()), restoring the originals, and returning bb.String(). Its citations and observation that restoration is explicit rather than deferred are supported by command.go:477–495."}}
+{"type":"turn.completed","usage":{"input_tokens":18180,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":64}}

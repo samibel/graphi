@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-a6e6-7072-b511-275891ead155"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response only shows `command.go:515-521` defining `UsagePadding()` as the greater of `minUsagePadding` and the parent’s `commandsMaxUseLen`; it omits how `CommandPathPadding` and name padding are chosen."}}
+{"type":"turn.completed","usage":{"input_tokens":16545,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":69}}

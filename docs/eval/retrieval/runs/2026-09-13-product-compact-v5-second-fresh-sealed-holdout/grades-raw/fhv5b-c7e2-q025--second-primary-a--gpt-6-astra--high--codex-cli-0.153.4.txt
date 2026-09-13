@@ -1,0 +1,1 @@
+FAIL: The bundle confirms that SetArgs stores the supplied slice in c.args, but does not establish that command execution uses it instead of os.Args[1:]. The essential process-argument override behavior cannot be verified from the preserved bundle.

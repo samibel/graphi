@@ -1,0 +1,1 @@
+`OnFinalize` retains callbacks by appending the supplied `func()` values to `finalizers`: `finalizers = append(finalizers, y...)` (`cobra.go`, lines 105–106). This preserves existing entries and adds callbacks in the order passed.

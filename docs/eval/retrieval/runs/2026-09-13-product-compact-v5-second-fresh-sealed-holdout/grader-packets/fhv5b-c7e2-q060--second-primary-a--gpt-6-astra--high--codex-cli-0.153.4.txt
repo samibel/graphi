@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 2bbb0748d5519c5939c0c550ff3ec4bef3d36386e27d1263a3f2a30fcea90536
+QUERY ID: fhv5b-c7e2-q060
+
+QUESTION:
+Before a command has been invoked, what does asking which name or alias called it return?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1515-1522 anchor="return \"\"" reason=CalledAs returns an empty string until the internal called flag is set; afterward it returns the recorded invocation name.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 0d7a74518ea9; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":207,"end_line":239,"text":"\t// commandCalledAs is the name or alias value used to call this command.\n\tcommandCalledAs struct {\n\t\tname   string\n\t\tcalled bool\n\t}\n\n\tctx context.Context\n\n\t// commands is the list of commands supported by this program.\n\tcommands []*Command\n\t// parent is a parent command for this command.\n\tparent *Command\n\t// Max lengths of commands' string lengths for use in padding.\n\tcommandsMaxUseLen         int\n\tcommandsMaxCommandPathLen int\n\tcommandsMaxNameLen        int\n\n\t// TraverseChildren parses flags on all parents before executing child command.\n\tTraverseChildren bool\n\n\t// Hidden defines, if this command is hidden and should NOT show up in the list of available commands.\n\tHidden bool\n\n\t// SilenceErrors is an option to quiet errors down stream.\n\tSilenceErrors bool\n\n\t// SilenceUsage is an option to silence usage when an error occurs.\n\tSilenceUsage bool\n\n\t// DisableFlagParsing disables the flag parsing.\n\t// If this is true all flags will be passed to the command as arguments.\n\tDisableFlagParsing bool\n"},{"path":"command.go","start_line":121,"end_line":131,"text":"\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit.\n\tPreRun func(cmd *Command, args []string)\n\t// PreRunE: PreRun but returns an error.\n\tPreRunE func(cmd *Command, args []string) error"},{"path":"command.go","start_line":122,"end_line":127,"text":"\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1228,"end_line":1233,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n"}],"provenance":{"input_sha256":"72d35daa5012b2e5761c914bf377c196a282eef9e97b8343ba52c0316d825d84","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response shows the `commandCalledAs` fields in `command.go:207–211`, but omits the accessor implementation that determines what is returned before invocation.
+----- END THE RATER'S RESPONSE -----

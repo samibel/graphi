@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q030",
+  "response_sha256": "3481032b6e5115e4404d418879c4e72e0857953cfa9235342eb9c477cb99a1c1",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not substantively answer how usage sections are separated. It correctly identifies that the bundle includes only the opening of UsageTemplate() and omits the essential section headings and conditions needed to answer the question.",
+  "graded_at": "2026-09-13T15:39:06Z",
+  "sha256": "5525d26b3adbaa962216d85f0ad4508df92dc0a631f8bb30e5b41ac040e633e6"
+}

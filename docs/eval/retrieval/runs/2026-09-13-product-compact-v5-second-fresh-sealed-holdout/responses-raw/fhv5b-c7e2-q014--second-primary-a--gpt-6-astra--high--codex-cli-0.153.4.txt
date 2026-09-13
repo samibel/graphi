@@ -1,0 +1,1 @@
+INSUFFICIENT The `ld` snippet in `cobra.go:187–202` shows matrix allocation and first-row/first-column initialization, but omits the code that updates the remaining cells.

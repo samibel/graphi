@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q013",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "b7d863bf73924a308cf65ceab7bbee9abd0022a03ad7cbbc9fa6110706e366a8",
+  "bundle_sha256": "4f565f5ced132387887bb7996ea1115b670612e3c0d928fea8b6e3fb56be91cf",
+  "prompt_sha256": "750fe93a472faee189a42c6e4ddff6252f5e96a5e2420fedfe3dfd42c5c43d61",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In [cobra.go](cobra.go), `Eq` compares all signed integer kinds—`Int`, `Int8`, `Int16`, `Int32`, and `Int64`—using `av.Int() == bv.Int()`, and `String` using `av.String() == bv.String()` (lines 149–154).\n\nIt panics for the collection kinds `Array`, `Chan`, `Map`, and `Slice` with `\"Eq called on unsupported type\"` (lines 147–148).",
+  "responded_at": "2026-09-13T15:21:42Z",
+  "sha256": "2b94607f23fb949811ba728f0b764a05d24e32010b2f13f9efa313eacf43016c"
+}

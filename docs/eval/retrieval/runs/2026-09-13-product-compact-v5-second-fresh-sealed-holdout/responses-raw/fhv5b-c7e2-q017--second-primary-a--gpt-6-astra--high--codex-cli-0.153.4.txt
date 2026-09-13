@@ -1,0 +1,1 @@
+When `c.flagErrorFunc` is nil, `FlagErrorFunc()` recursively asks the parent via `c.parent.FlagErrorFunc()` if `c.HasParent()` (`command.go:505–506`). This finds the nearest ancestor with a handler. If none exists, it returns a default handler that returns the original error unchanged (`command.go:508–509`).

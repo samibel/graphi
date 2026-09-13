@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 0f38f29c0ade0e9e0ce00ff3b8a6e835d25e10cfad028efb7bc782d900219b8d
+QUERY ID: fhv5b-c7e2-q018
+
+QUESTION:
+In shell_completions.go, how are filename extensions attached to a flag for completion?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- shell_completions.go:42-69 anchor="return MarkFlagFilename(c.Flags(), name, extensions...)" reason=The command method delegates to the flag-set helper, which records the extension list under the filename-completion annotation.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query fa783f6f3f4e; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"shell_completions.go","start_line":65,"end_line":69,"text":"// MarkFlagFilename instructs the various shell completion implementations to\n// limit completions for the named flag to the specified file extensions.\nfunc MarkFlagFilename(flags *pflag.FlagSet, name string, extensions ...string) error {\n\treturn flags.SetAnnotation(name, BashCompFilenameExt, extensions)\n}"},{"path":"shell_completions.go","start_line":42,"end_line":46,"text":"// MarkFlagFilename instructs the various shell completion implementations to\n// limit completions for the named flag to the specified file extensions.\nfunc (c *Command) MarkFlagFilename(name string, extensions ...string) error {\n\treturn MarkFlagFilename(c.Flags(), name, extensions...)\n}"},{"path":"shell_completions.go","start_line":60,"end_line":60,"text":"// specified file extensions."},{"path":"shell_completions.go","start_line":58,"end_line":63,"text":"// MarkPersistentFlagFilename instructs the various shell completion\n// implementations to limit completions for the named persistent flag to the\n// specified file extensions.\nfunc (c *Command) MarkPersistentFlagFilename(name string, extensions ...string) error {\n\treturn MarkFlagFilename(c.PersistentFlags(), name, extensions...)\n}"},{"path":"bash_completions.go","start_line":28,"end_line":34,"text":"// Annotations for Bash completion.\nconst (\n\tBashCompFilenameExt     = \"cobra_annotation_bash_completion_filename_extensions\"\n\tBashCompCustom          = \"cobra_annotation_bash_completion_custom\"\n\tBashCompOneRequiredFlag = \"cobra_annotation_bash_completion_one_required_flag\"\n\tBashCompSubdirsInDir    = \"cobra_annotation_bash_completion_subdirs_in_dir\"\n)"},{"path":"bash_completions.go","start_line":36,"end_line":36,"text":"func writePreamble(buf io.StringWriter, name string) {"},{"path":"completions.go","start_line":534,"end_line":542,"text":"func getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string {\n\tif nonCompletableFlag(flag) {\n\t\treturn []string{}\n\t}\n\n\tvar completions []string\n\tflagName := \"--\" + flag.Name\n\tif strings.HasPrefix(flagName, toComplete) {\n\t\t// Flag without the ="},{"path":"site/content/completions/_index.md","start_line":321,"end_line":326,"text":"\nTo limit completions of flag values to file names with certain extensions you can either use the different `MarkFlagFilename()` functions or a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterFileExt`, like so:\n```go\nflagName := \"output\"\ncmd.MarkFlagFilename(flagName, \"yaml\", \"json\")\n```"},{"path":"shell_completions.go","start_line":43,"end_line":43,"text":"// limit completions for the named flag to the specified file extensions."},{"path":"shell_completions.go","start_line":66,"end_line":66,"text":"// limit completions for the named flag to the specified file extensions."},{"path":"command.go","start_line":82,"end_line":86,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command."},{"path":"command.go","start_line":92,"end_line":92,"text":"\t// ArgAliases is List of aliases for ValidArgs."},{"path":"command.go","start_line":1641,"end_line":1645,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)"}],"provenance":{"input_sha256":"04f4cde09be104bb945096267102625215c7f25a49d80bdcc3cb146842d7773b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Filename extensions are attached as a flag annotation. In `shell_completions.go:65–69`, `MarkFlagFilename` accepts `extensions ...string` and calls:
+
+```go
+return flags.SetAnnotation(name, BashCompFilenameExt, extensions)
+```
+
+`Command.MarkFlagFilename` passes `c.Flags()` to this helper (`42–46`); `MarkPersistentFlagFilename` passes `c.PersistentFlags()` (`58–63`). The annotation key, `BashCompFilenameExt`, is `"cobra_annotation_bash_completion_filename_extensions"` (`bash_completions.go:30`).
+----- END THE RATER'S RESPONSE -----

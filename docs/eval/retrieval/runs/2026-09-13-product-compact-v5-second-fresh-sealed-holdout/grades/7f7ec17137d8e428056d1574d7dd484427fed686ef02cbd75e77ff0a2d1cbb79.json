@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q029",
+  "response_sha256": "7f7ec17137d8e428056d1574d7dd484427fed686ef02cbd75e77ff0a2d1cbb79",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly explains that initialization merges persistent flags and adds the default help flag only when `Lookup(\"help\")` is nil, preserving application-defined help flags. The cited command.go:1183–1198 span supports these claims.",
+  "graded_at": "2026-09-13T15:38:56Z",
+  "sha256": "79446ba031cb76484c738cc99ad538db7257b4fd5ca5ee8efe0cad8670414ea9"
+}

@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer the question. The bundle supports `import "github.com/spf13/cobra"` and mentions `go get`, but omits the required installation command `go get -u github.com/spf13/cobra@latest`.

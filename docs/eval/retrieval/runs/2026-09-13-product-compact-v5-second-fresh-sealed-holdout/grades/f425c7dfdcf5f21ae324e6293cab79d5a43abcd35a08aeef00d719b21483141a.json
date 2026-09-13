@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5b-c7e2-q048",
+  "response_sha256": "f425c7dfdcf5f21ae324e6293cab79d5a43abcd35a08aeef00d719b21483141a",
+  "grader_id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not provide the documented installation command. The bundle supports `go get` and `import \"github.com/spf13/cobra\"`, but omits the essential full command `go get -u github.com/spf13/cobra@latest`.",
+  "graded_at": "2026-09-13T15:43:38Z",
+  "sha256": "5b6395d33128290b40c7fcfa58dd6b53c39f5ca3a6489f257f6c35091490ba42"
+}

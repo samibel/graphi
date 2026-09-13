@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b60-f3b4-7a32-993d-f93d1466dc28"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains isolated settings and functions, but no feature list or description identifying the categories of CLI behavior Cobra advertises as built-in capabilities."}}
+{"type":"turn.completed","usage":{"input_tokens":17312,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":121,"reasoning_output_tokens":83}}

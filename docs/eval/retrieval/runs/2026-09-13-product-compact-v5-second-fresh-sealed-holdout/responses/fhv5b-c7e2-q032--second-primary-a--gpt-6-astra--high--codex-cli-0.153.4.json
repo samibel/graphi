@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q032",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "8d5bcc54937dd878dea2f8f642d6eb0872dda9e4f3b0b816dc9f7520743c2272",
+  "bundle_sha256": "58f1c91271f3a6f0d2f220a85454664fef7494c71230d87b4a56b52ccbbd43ee",
+  "prompt_sha256": "a46b3a77604f5e3a10833ae68164825a012eb246a14a4849569e18b91038c3c1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.CommandPath()` constructs the displayed path recursively (`command.go:1425–1434`):\n\n- **Root:** returns `c.Annotations[CommandDisplayNameAnnotation]` if that key exists; otherwise returns `c.Name()`.\n- **Descendant:** returns `c.Parent().CommandPath() + \" \" + c.Name()`, adding each descendant’s name separated by a single space.\n\nThe custom root annotation key is `\"cobra_annotation_command_display_name\"` (`command.go:33–36`). Thus a custom root display name propagates into all descendant paths; descendants’ own display-name annotations are bypassed by the parent branch.",
+  "responded_at": "2026-09-13T15:25:14Z",
+  "sha256": "5e7f1cbd3d7c7f777b51d84778f2097f4c65b68b821cf725e84ceecc14505362"
+}

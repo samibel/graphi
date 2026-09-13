@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b6a-1c43-7392-aa20-c1cd681368f8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that Context() returns nil before execution and context.Background() after Execute() or ExecuteC() replaces the nil context. Both cited line ranges exist in the bundle and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18020,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

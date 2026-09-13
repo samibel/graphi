@@ -1,0 +1,1 @@
+FAIL: The response does not trace flag accumulation or child recursion. The preserved bundle shows `c.ParseFlags(flags)` and its implementation but omits the traversal logic needed to substantively answer the question.

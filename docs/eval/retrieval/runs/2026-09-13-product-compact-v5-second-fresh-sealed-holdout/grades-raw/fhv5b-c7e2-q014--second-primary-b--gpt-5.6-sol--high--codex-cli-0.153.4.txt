@@ -1,0 +1,1 @@
+FAIL: The response does not explain how ld initializes or updates the matrix. The bundle supports allocation and first-row/column initialization at cobra.go:193-202, but omits the cell-update logic needed to answer the question.

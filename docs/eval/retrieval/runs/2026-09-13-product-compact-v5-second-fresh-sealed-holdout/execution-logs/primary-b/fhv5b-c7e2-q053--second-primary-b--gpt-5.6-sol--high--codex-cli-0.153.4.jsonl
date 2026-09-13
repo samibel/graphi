@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-3b67-7131-9ee0-d8eaf7a239b1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Enable `Command.TraverseChildren` on the parent/root command:\n\n```go\nparent.TraverseChildren = true\n```\n\nBy default, only the target command’s local flags are parsed; with `TraverseChildren` enabled, Cobra parses local flags on every parent before executing the descendant target (`site/content/user_guide.md:286-294`, `command.go:224-226`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16609,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":81,"reasoning_output_tokens":0}}

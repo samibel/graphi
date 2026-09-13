@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q021",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "3b3fd521db0be7c44d002a8612ede793dddbd279311d955748f312736b9a5b69",
+  "bundle_sha256": "fec9854389b1ebe99c66464bd84aab1d9d7f670af3afcd184de0a4608aa39c9b",
+  "prompt_sha256": "19ea1916a87ae5b3b9b7c95b5a1bfc0a91a3a6b63bdaf07caadda169f250e228",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/man_docs.go`, `GenManTreeFromOpts` chooses:\n\n- **Section:** defaults to `\"1\"`, overridden by a nonempty `header.Section` (lines 61–64). It uses `opts.Header`, substituting an empty `GenManHeader` if nil (lines 49–52).\n- **Separator:** defaults to `\"_\"`, overridden by a nonempty `opts.CommandSeparator` (lines 66–69).\n- **Output filename:** replaces every space in `cmd.CommandPath()` with the separator, then builds `filepath.Join(opts.Path, basename+\".\"+section)` and opens it with `os.Create(filename)` (lines 70–72).",
+  "responded_at": "2026-09-13T15:23:40Z",
+  "sha256": "2f845562717a73a1f4c2108c052a1c79d9d9e0948530debda724e9f8caebba04"
+}

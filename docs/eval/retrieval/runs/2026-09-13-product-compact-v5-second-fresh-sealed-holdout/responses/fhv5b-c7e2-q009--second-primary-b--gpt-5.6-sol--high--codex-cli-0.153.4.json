@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q009",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "95da10dfae32e69e59ea15c49daeed3bb0c19438c4bad531ecf6bcd3a153432f",
+  "bundle_sha256": "3d445fe38a2c82583d8669aaa1334722b4b9753688840fe0114de9036d4040ea",
+  "prompt_sha256": "9427a1cf4f3ceba34421fc1b4f6bdf62048fcd4c80ae1a5fb5f26afcd260568f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`AddTemplateFuncs` iterates over the supplied `template.FuncMap` and assigns every key/value pair into the package-level `templateFuncs` map:\n\n```go\nfor k, v := range tmplFuncs {\n    templateFuncs[k] = v\n}\n```\n\nThus, new names are added and existing names are overwritten by the supplied functions (`cobra.go:88–95`). The destination map is the built-in `templateFuncs` map declared at `cobra.go:32–40`.",
+  "responded_at": "2026-09-13T15:21:14Z",
+  "sha256": "e8cd1644dcfbc2fbc49ea04ebd50d84b49e71db8c798dbf94f004a27bd918540"
+}

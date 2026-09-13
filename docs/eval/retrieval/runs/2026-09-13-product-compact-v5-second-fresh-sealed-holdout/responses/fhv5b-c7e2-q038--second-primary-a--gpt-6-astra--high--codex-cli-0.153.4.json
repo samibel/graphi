@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q038",
+  "rater_id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "2af1991a22aaff7001712f0b8585b2621f1bab3550765c0f65a6e3012106bd3d",
+  "bundle_sha256": "1fe165b1dd8ee9d6a7b89863c2d80750cec4778eac463568c3d3b3dd9bad05d2",
+  "prompt_sha256": "e8ee453c79f6df5c81debc0bdd0ea8d89ace83bf40f55c274d20d28250c0a95f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the annotation-handling branches of `writeFlagHandler` in `bash_completions.go`, showing only its loop (lines 459–460) and an isolated append (line 471), so the filename, custom-handler, and subdirectory conversion logic is missing.",
+  "responded_at": "2026-09-13T15:26:02Z",
+  "sha256": "e9ab6d11b52264a391be3fefe0930e827a127f4aa98bc949f1ccd69bbc9a9898"
+}

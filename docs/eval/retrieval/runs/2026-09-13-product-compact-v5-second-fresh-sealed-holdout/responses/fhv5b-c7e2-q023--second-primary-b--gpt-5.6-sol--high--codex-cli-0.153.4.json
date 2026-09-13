@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q023",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "1c5a02ce144fe36c168cdac5ad153583eefe378a68bd9626fef852144ca2ee97",
+  "bundle_sha256": "8dda51b0ec3a68bd90259b3a2691eaac3ae7ace3ac19c8a2dca3b34f479f2a52",
+  "prompt_sha256": "fc00e49f335ad718485678a44c8babfbd06a813047dd4e6d9fd064dcc1b168ab",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Before ordinary execution, `Command.Context()` returns `nil`. After `Execute()` or `ExecuteC()`, it returns `context.Background()`, because those methods replace a nil context with a background context (`command.go:258–266`, `Command.Context`).",
+  "responded_at": "2026-09-13T15:22:58Z",
+  "sha256": "e93cd35f33dde9bbf39270544eb6169505caaa101afa1d8d7635cbd3a3698a32"
+}

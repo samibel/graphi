@@ -1,0 +1,1 @@
+Yes. `Command.HasExample` checks only `len(c.Example) > 0` ([command.go, lines 1545–1548]), so any non-empty string—including whitespace-only text—is considered an example.

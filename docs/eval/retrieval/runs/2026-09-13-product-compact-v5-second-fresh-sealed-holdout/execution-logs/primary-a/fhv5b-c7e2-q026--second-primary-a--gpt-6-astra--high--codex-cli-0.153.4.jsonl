@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5e-7145-7cd0-a67d-fe674467287d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Usage()` calls `c.UsageFunc()(c)` (`command.go:446–448`). `UsageFunc()` first checks the command’s own `c.usageFunc`, set by `SetUsageFunc`, then recursively checks its parents (`command.go:306–309, 424–432`).\n\nIf none is found, the built-in fallback calls `c.mergePersistentFlags()`, then renders `c.UsageTemplate()` to `c.OutOrStderr()` with the command `c` as template data. It prints any rendering error using `c.PrintErrln(err)` and returns that error (`command.go:433–441`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17495,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":134,"reasoning_output_tokens":0}}

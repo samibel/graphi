@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-ea7d-7bf3-8b3d-a3aef9addc89"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `commandCalledAs` fields in `command.go:207-212`, but not the method that returns the name or alias before invocation."}}
+{"type":"turn.completed","usage":{"input_tokens":16416,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":106,"reasoning_output_tokens":65}}

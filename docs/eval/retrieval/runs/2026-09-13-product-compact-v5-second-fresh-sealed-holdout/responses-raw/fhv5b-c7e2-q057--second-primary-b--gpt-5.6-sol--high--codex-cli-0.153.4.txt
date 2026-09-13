@@ -1,0 +1,1 @@
+The child returns the root’s help template. In `command.go:584–596`, `HelpTemplate()` returns its own `c.helpTemplate` when set; otherwise, if it has a parent, it recursively calls `c.parent.HelpTemplate()`. The root’s template is set by `SetHelpTemplate` in `command.go:347–350`.

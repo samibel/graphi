@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5b-c7e2-q012",
+  "rater_id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+  "query_text_sha256": "e11f2271160624c24f4f8bc34f346182705edb816f586a6b7c9669de0d76f981",
+  "bundle_sha256": "5516fb55c84766b4a1b84c570d89fa6a58cd7bf3c750f99b4c171d26806c7083",
+  "prompt_sha256": "d5b00dcb1b5805c25c29529bb1c1ac1968ce7ddcd3ff9639c571dde9a76dd5d9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `cobra.go`, `Gt` converts both operands to `int64` representations, then compares `left \u003e right`:\n\n- Collections (`Array`, `Chan`, `Map`, `Slice`): their lengths via `int64(Value.Len())`.\n- Signed integers (`Int`, `Int8`, `Int16`, `Int32`, `Int64`): their direct values via `Value.Int()`.\n- Strings: base-10 signed 64-bit integers via `strconv.ParseInt(Value.String(), 10, 64)`; parse errors are ignored.\n\nEvidence: `cobra.go`, `Gt`, lines 111–139, especially the two kind switches and `return left \u003e right`.",
+  "responded_at": "2026-09-13T15:21:34Z",
+  "sha256": "a95a2bc9bdc410c7b2e9ea09068337a59b5fce4d1e530162a448747cf4f443d5"
+}

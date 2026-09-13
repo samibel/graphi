@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the BashCompSubdirsInDir annotation with an empty string slice ([]string{}) and its directory-only completion purpose, both supported by shell_completions.go:94–98, including the SetAnnotation call on line 97.

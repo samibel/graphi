@@ -1,0 +1,1 @@
+`Command.ResetCommands` clears four fields: the parent relationship (`c.parent`), child commands (`c.commands`), the cached/help command (`c.helpCommand`), and cached parent persistent flags (`c.parentsPflags`) by setting each to `nil` ([`command.go`, lines 1277–1283]).

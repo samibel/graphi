@@ -1,0 +1,7 @@
+Callbacks passed to `OnFinalize` are retained by appending them to the package-level `finalizers` slice. Specifically, `cobra.go:105-107` defines `OnFinalize(y ...func())` and executes:
+
+```go
+finalizers = append(finalizers, y...)
+```
+
+Thus, all variadic callback functions are preserved in their supplied order.

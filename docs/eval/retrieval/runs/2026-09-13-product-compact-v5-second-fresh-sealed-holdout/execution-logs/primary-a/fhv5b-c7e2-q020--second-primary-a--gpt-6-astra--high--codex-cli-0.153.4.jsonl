@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b5d-aac1-7a52-ba80-cbf3fa663aac"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MarkZshCompPositionalArgumentWords` is now a deprecated no-op: it ignores its arguments and returns `nil` (`zsh_completions.go:65–68`). Its comment says it was disabled because it only worked for zsh (`zsh_completions.go:59–60`).\n\nThe documented cross-shell alternatives are `ValidArgs` for the first argument only, or `ValidArgsFunction` for any argument, including the first (`zsh_completions.go:61–63`). The documentation also says the method is “deprecated and silently ignored” and recommends `ValidArgsFunction` (`site/content/completions/zsh.md:16–17`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17431,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":143,"reasoning_output_tokens":0}}

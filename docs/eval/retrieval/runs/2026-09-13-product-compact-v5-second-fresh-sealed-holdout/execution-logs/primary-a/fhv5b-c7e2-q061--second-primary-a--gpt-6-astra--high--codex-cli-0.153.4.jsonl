@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b62-f1a5-7a33-8201-d661e3916f17"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Yes. `(*Command).HasExample()` in `command.go:1545–1548` returns `len(c.Example) > 0` without trimming whitespace, so nonempty whitespace-only text counts as an example."}}
+{"type":"turn.completed","usage":{"input_tokens":17435,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

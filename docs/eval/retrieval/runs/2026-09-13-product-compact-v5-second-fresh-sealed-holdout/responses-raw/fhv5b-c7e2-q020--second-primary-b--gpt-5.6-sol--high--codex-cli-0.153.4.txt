@@ -1,0 +1,8 @@
+`MarkZshCompPositionalArgumentWords` now does nothing: it immediately returns `nil` and is deprecated because it only worked for zsh and has been disabled (`zsh_completions.go:59–68`).
+
+The documented alternatives are:
+
+- `ValidArgs` for the first argument only.
+- `ValidArgsFunction` for any argument, including the first (`zsh_completions.go:61–64`).
+
+The zsh documentation specifically recommends `ValidArgsFunction` (`site/content/completions/zsh.md:16–18`).

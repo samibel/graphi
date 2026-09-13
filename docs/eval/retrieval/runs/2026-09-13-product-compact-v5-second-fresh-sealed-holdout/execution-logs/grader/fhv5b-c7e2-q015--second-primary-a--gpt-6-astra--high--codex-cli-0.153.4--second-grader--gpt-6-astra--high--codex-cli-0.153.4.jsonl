@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b67-ffd1-7611-85d9-d43196b0d2db"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies both usage and error destinations, supported by command.go lines 283–285 assigning the supplied writer to c.outWriter and c.errWriter and the comment on line 280."}}
+{"type":"turn.completed","usage":{"input_tokens":18013,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

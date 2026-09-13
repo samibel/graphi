@@ -1,0 +1,3 @@
+`UsageString` saves `c.outWriter` and `c.errWriter` in `tmpOutput` and `tmpErr`, then temporarily sets both to the same new `bytes.Buffer` (`command.go`, lines 480–486). It calls `CheckErr(c.Usage())` to generate usage text into that buffer (line 488), restores both original writers (lines 490–492), and returns `bb.String()` (line 494).
+
+Restoration is explicit, not deferred, so it occurs only if execution reaches those restoration lines.

@@ -1,0 +1,1 @@
+PASS: The response correctly identifies `Command.TraverseChildren` as enabling parent-local flag parsing before the descendant executes, contrasts this with the default target-only parsing, and cites supplied spans that support both behaviors.

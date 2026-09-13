@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09b61-cd9b-7bc0-88ca-ca3a2479dc40"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Alias recognition does not always require exact case. `Command.HasAlias` calls `commandNameMatches(a, s)` for each alias (`command.go:1505–1513`). That matcher uses `strings.EqualFold` when the global `EnableCaseInsensitive` setting is enabled, otherwise `s == t` (`command.go:1876–1885`). The setting is case-sensitive by default (`cobra.go:61–62`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16526,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":91,"reasoning_output_tokens":0}}

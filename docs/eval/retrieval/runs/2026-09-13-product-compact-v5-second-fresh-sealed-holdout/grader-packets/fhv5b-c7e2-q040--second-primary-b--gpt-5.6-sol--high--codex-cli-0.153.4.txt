@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 85ed66cc0eee5262e0aff4a1f0f454e3f0fc32c0912fbd0842c7fb518397679a
+QUERY ID: fhv5b-c7e2-q040
+
+QUESTION:
+How is Cobra's default help command created, used for completion and execution, and reattached to the root?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1226-1275 anchor="c.RemoveCommand(c.helpCommand)" reason=Only a command with children gets help; the lazily built command completes eligible topics, finds and renders selected help or reports unknown topics, then is removed and re-added to refresh its tree position and metadata.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query a4f7ac36f817; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/5","sources":[{"path":"command.go","start_line":178,"end_line":201,"text":"\t// cobra uses default help command.\n\thelpCommand *Command\n\t// helpCommandGroupID is the group id for the helpCommand\n\thelpCommandGroupID string\n\n\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin\n\tinReader io.Reader\n\t// outWriter is a writer defined by the user that replaces stdout\n\toutWriter io.Writer\n\t// errWriter is a writer defined by the user that replaces stderr\n\terrWriter io.Writer\n\n\t// FParseErrWhitelist flag parse errors to be ignored\n\tFParseErrWhitelist FParseErrWhitelist\n"},{"path":"command.go","start_line":47,"end_line":47,"text":"// Command is just that, a command for your application."},{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":494,"end_line":495,"text":"Cobra automatically adds a help command to your application when you have subcommands.\nThis will be called when a user runs 'app help'. Additionally, help will also"},{"path":"command.go","start_line":1183,"end_line":1198,"text":"// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"completions.go","start_line":683,"end_line":685,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn"},{"path":"completions.go","start_line":689,"end_line":689,"text":"\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {"},{"path":"command.go","start_line":1229,"end_line":1230,"text":"func (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {"},{"path":"command.go","start_line":1234,"end_line":1234,"text":"\tif c.helpCommand == nil {"},{"path":"completions.go","start_line":266,"end_line":267,"text":"func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {\n\t// The last argument, which is not completely typed by the user,"},{"path":"completions.go","start_line":502,"end_line":502,"text":"\t// Find the completion function for the flag or command"}],"provenance":{"input_sha256":"58cedbd391d62669fd0ee10dbb641365a38280657ef64af6e6806ff6a1f7bc35","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response omits the body of `InitDefaultHelpCmd` and the completion/execution paths needed to show how `helpCommand` is created, used, and reattached to the root.
+----- END THE RATER'S RESPONSE -----

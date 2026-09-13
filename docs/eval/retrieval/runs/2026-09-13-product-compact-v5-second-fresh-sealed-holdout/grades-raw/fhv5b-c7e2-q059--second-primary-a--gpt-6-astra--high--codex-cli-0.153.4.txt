@@ -1,0 +1,1 @@
+PASS: The response correctly explains that HasAlias delegates to commandNameMatches, which uses EqualFold when EnableCaseInsensitive is enabled and exact equality otherwise. The default and separate prefix-check behavior are also supported by the cited bundle spans.

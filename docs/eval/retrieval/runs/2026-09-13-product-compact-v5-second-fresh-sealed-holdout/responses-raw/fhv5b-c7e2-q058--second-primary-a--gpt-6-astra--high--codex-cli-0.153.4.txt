@@ -1,0 +1,7 @@
+The default output is `<Name> version <Version>\n`. If `.Name` is empty, it is `version <Version>\n`.
+
+In `command.go:599–608`, `VersionTemplate()` checks the command’s custom template, then its parents, and finally returns:
+```gotemplate
+{{with .Name}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
+```
+The template includes a trailing newline.

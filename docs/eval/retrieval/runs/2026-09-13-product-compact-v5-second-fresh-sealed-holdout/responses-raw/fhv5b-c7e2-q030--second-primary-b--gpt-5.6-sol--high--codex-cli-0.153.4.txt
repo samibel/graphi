@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the built-in usage template lines that format command groups, ungrouped commands, local/global flags, and additional help topics.

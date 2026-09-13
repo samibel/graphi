@@ -1,0 +1,1 @@
+PASS: The bundle shows ExecuteContext and ExecuteContextC unconditionally assigning c.ctx = ctx before execution, supporting that the later execution context overwrites the previously set context. All cited line ranges exist and support the attached claims.
