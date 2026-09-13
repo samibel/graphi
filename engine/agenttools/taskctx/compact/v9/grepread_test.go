@@ -240,6 +240,25 @@ func TestOptionalHydrationSkipsSourceMissingFromSnapshotWithoutReopening(t *test
 	}
 }
 
+func TestHydrationExpandsExactQueryBasenameMarkdownSection(t *testing.T) {
+	repository := fstest.MapFS{
+		"site/content/docgen/man.md": {Data: []byte("# Generating man pages\n\nintro\n\n## Usage\n\nfirst\nsecond\nthird\n")},
+	}
+	items := []contract.Item{{
+		RefID: "manual", Rank: 1,
+		Reason: "candidate: type guide.Generating_man_pages (site/content/docgen/man.md:1) score 1",
+	}}
+	evidence, _, err := compactTaskContextHydrateDefinitions(
+		context.Background(), repository, nil, "how to generate man pages for a command tree", items,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evidence) != 1 || evidence[0].Path != "site/content/docgen/man.md" || evidence[0].Span != "1-9" {
+		t.Fatalf("exact-basename Markdown section was not hydrated: %+v", evidence)
+	}
+}
+
 func TestFlowSelectionLimitsBreadthToPreserveDepth(t *testing.T) {
 	var evidence []contract.Evidence
 	var items []contract.Item
@@ -304,6 +323,98 @@ func TestTreeWalkSelectionPreservesRecursiveImplementation(t *testing.T) {
 		}
 	}
 	t.Fatalf("recursive tree walk was fragmented or omitted: %#v", sources)
+}
+
+func TestSelectionKeepsAffordableCodeDocumentationPair(t *testing.T) {
+	code := "func EnableFeature(cfg *Config) {\n\tcfg.Enabled = true\n\tcfg.Mode = Stable\n}"
+	documentation := "# EnableFeature configuration\n\nCall EnableFeature with your Config value.\nThe feature is enabled in stable mode."
+	evidence := []contract.Evidence{
+		{RefID: "code", Path: "feature.go", Line: 1, Span: "1-4", Role: "snippet", Snippet: code, TextHash: shape.TextHash(code)},
+		{RefID: "docs", Path: "GUIDE.md", Line: 1, Span: "1-4", Role: "snippet", Snippet: documentation, TextHash: shape.TextHash(documentation)},
+	}
+	items := []contract.Item{
+		{RefID: "code", Rank: 1, Reason: "primary: function p.EnableFeature (feature.go:1) score 1", EvidenceRefIDs: []string{"code"}},
+		{RefID: "docs", Rank: 2, Reason: "candidate: type guide.EnableFeature (GUIDE.md:1) score 1", EvidenceRefIDs: []string{"docs"}},
+	}
+	for i := 0; i < 4; i++ {
+		ref := fmt.Sprintf("distractor-%d", i)
+		body := fmt.Sprintf("func ConfigureFeature%d(cfg *Config) {\n\tinspect(cfg)\n\tvalidate(cfg)\n\tprepare(cfg)\n}", i)
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: fmt.Sprintf("config%d.go", i), Line: 1, Span: "1-5", Role: "snippet", Snippet: body, TextHash: shape.TextHash(body),
+		})
+		items = append(items, contract.Item{
+			RefID: ref, Rank: i + 3,
+			Reason: fmt.Sprintf("primary: function p.ConfigureFeature%d (config%d.go:1) score 1", i, i), EvidenceRefIDs: []string{ref},
+		})
+	}
+
+	sources, _, err := compactTaskContextSelect("how to configure EnableFeature", evidence, items, 55)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"feature.go": "1-4", "GUIDE.md": "1-4"}
+	for _, source := range sources {
+		span := fmt.Sprintf("%d-%d", source.Start, source.End)
+		if want[source.Path] == span {
+			delete(want, source.Path)
+		}
+	}
+	if len(want) != 0 {
+		t.Fatalf("affordable code/documentation pair was fragmented: missing=%v sources=%#v", want, sources)
+	}
+}
+
+func TestSelectionDoesNotEmitFallbackContainedBySemanticSource(t *testing.T) {
+	function := "func Configure() {\n\tprepare()\n\tapply()\n\tfinish()\n}"
+	evidence := []contract.Evidence{
+		{RefID: "semantic", Path: "config.go", Line: 1, Span: "1-5", Role: "snippet", Snippet: function, TextHash: shape.TextHash(function)},
+		{RefID: "grepread-grep-1", Path: "config.go", Line: 3, Span: "3-3", Role: "snippet", Snippet: "\tapply()", TextHash: shape.TextHash("\tapply()")},
+	}
+	items := []contract.Item{
+		{RefID: "semantic", Rank: 1, Reason: "primary: function p.Configure (config.go:1) score 1", EvidenceRefIDs: []string{"semantic"}},
+		{RefID: "fallback-item", Rank: 2, EvidenceRefIDs: []string{"grepread-grep-1"}},
+	}
+	sources, _, err := compactTaskContextSelect("how does Configure flow", evidence, items, 30)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, source := range sources {
+		for j, other := range sources {
+			if i != j && source.Path == other.Path && source.Start >= other.Start && source.End <= other.End {
+				t.Fatalf("contained fallback source survived selection: %#v inside %#v", source, other)
+			}
+		}
+	}
+}
+
+func TestSelectionKeepsAffordableCallerCalleePair(t *testing.T) {
+	distractor := "func ConfigureDispatchHandlers(opts Options) error {\n\tload all dispatch handler settings\n\tvalidate every dispatch handler setting\n\tprepare all dispatch handler settings\n\twrite all dispatch handler settings\n\tclose all dispatch handler settings\n\treturn nil\n}"
+	caller := "func Execute() error {\n\treturn dispatchHandlers()\n}"
+	callee := "func dispatchHandlers() error {\n\tfor _, handler := range handlers {\n\t\thandler.Run()\n\t}\n\treturn nil\n}"
+	evidence := []contract.Evidence{
+		{RefID: "distractor", Path: "options.go", Line: 1, Span: "1-8", Role: "snippet", Snippet: distractor, TextHash: shape.TextHash(distractor)},
+		{RefID: "caller", Path: "execute.go", Line: 1, Span: "1-3", Role: "snippet", Snippet: caller, TextHash: shape.TextHash(caller)},
+		{RefID: "callee", Path: "handlers.go", Line: 1, Span: "1-6", Role: "snippet", Snippet: callee, TextHash: shape.TextHash(callee)},
+	}
+	items := []contract.Item{
+		{RefID: "distractor", Rank: 1, Reason: "primary: function p.ConfigureDispatchHandlers (options.go:1) score 1", EvidenceRefIDs: []string{"distractor"}},
+		{RefID: "caller", Rank: 2, Reason: "candidate: function p.Execute (execute.go:1) score 1", EvidenceRefIDs: []string{"caller"}},
+		{RefID: "callee", Rank: 3, Reason: "related: function p.dispatchHandlers (handlers.go:1) score 1", EvidenceRefIDs: []string{"callee"}},
+	}
+	sources, _, err := compactTaskContextSelect("how does Execute dispatch the handlers", evidence, items, 55)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"execute.go": "1-3", "handlers.go": "1-6"}
+	for _, source := range sources {
+		span := fmt.Sprintf("%d-%d", source.Start, source.End)
+		if want[source.Path] == span {
+			delete(want, source.Path)
+		}
+	}
+	if len(want) != 0 {
+		t.Fatalf("affordable caller/callee pair was fragmented: missing=%v sources=%#v", want, sources)
+	}
 }
 
 func TestGrepReadV2CapsRepositoryFileScan(t *testing.T) {

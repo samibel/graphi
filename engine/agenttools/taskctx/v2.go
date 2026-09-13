@@ -24,6 +24,7 @@ package taskctx
 import (
 	"context"
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -67,6 +68,14 @@ const retrievalSeedLimit = 5
 // graph read and stays well under the existing candidateK=50 the retrieval
 // module itself already computes internally.
 const candidatePoolLimit = 15
+
+// retrievalWindowLimit is how many already-ranked rows task_context/2 may
+// inspect before choosing its bounded candidatePoolLimit. The retrieval
+// engine computes candidateK rows regardless of the requested result limit,
+// so this widens neither retrieval work nor actor-visible output. It only
+// prevents a strong path-name clue immediately outside the pool from being
+// irreversibly discarded before source selection can compare it.
+const retrievalWindowLimit = 50
 
 // Retrieve is the narrow interface the v2 path reads from Deps.Retrieval.
 // The retrieval module's own Retriever (resolve.Retriever) already exposes
@@ -660,10 +669,12 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 	if needsLifecycleCandidate(task) {
 		poolLimit++
 	}
+	retrievalLimit := retrievalWindowLimit
 	if len(strings.Fields(task)) < 2 {
 		poolLimit = retrievalSeedLimit
+		retrievalLimit = retrievalSeedLimit
 	}
-	res, err := deps.Retrieval.Retrieve(ctx, resolve.RetrieverRequest{Query: task, Limit: poolLimit})
+	res, err := deps.Retrieval.Retrieve(ctx, resolve.RetrieverRequest{Query: task, Limit: retrievalLimit})
 	if err != nil {
 		// An infrastructure error on the retrieval path is the same fail-soft
 		// posture as AC-7 in SW-263: fall back to lexical seeding, no error
@@ -682,8 +693,9 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 		nodes, method, lerr := resolveSeeds(ctx, deps, task)
 		return nodes, method, "lexical_only", res.Summary, res.Rows, lerr
 	}
-	ids := make([]model.NodeId, 0, len(res.Rows))
-	for _, r := range res.Rows {
+	selectedRows := selectRetrievalRowsForTask(task, res.Rows, poolLimit)
+	ids := make([]model.NodeId, 0, len(selectedRows))
+	for _, r := range selectedRows {
 		ids = append(ids, model.NodeId(r.NodeID))
 	}
 	hydrated, err := lookup.NodesByID(ctx, ids)
@@ -702,7 +714,7 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 	seen := map[model.NodeId]bool{}
 	nodes := make([]model.Node, 0, len(hydrated))
 	rowOrder := make([]resolve.RetrieverRow, 0, len(hydrated))
-	for _, r := range res.Rows {
+	for _, r := range selectedRows {
 		n, ok := nodeByID[model.NodeId(r.NodeID)]
 		if !ok || n.SourcePath() == "" {
 			continue
@@ -718,6 +730,63 @@ func resolveSeedsV2(ctx context.Context, deps resolve.Deps, task string) ([]mode
 		}
 	}
 	return nodes, resolve.MethodSearch, "ready", res.Summary, rowOrder, nil
+}
+
+// selectRetrievalRowsForTask keeps the ordinary top-N list unless a query
+// term exactly names the stem of a deeper candidate's file. In that case it
+// reserves the final internal slot for the first such row. The primary five
+// therefore remain stable, output width remains bounded, and generic queries
+// without this high-precision signal are byte-for-byte unchanged.
+func selectRetrievalRowsForTask(task string, rows []resolve.RetrieverRow, limit int) []resolve.RetrieverRow {
+	if limit <= 0 || len(rows) <= limit {
+		return rows
+	}
+	terms := meaningfulPathTerms(task)
+	if len(terms) == 0 {
+		return rows[:limit]
+	}
+	matchingStem := func(row resolve.RetrieverRow) string {
+		base := strings.ToLower(path.Base(strings.TrimSpace(row.Path)))
+		stem := strings.TrimSuffix(base, path.Ext(base))
+		if terms[stem] {
+			return stem
+		}
+		return ""
+	}
+	represented := map[string]bool{}
+	for _, row := range rows[:limit] {
+		if stem := matchingStem(row); stem != "" {
+			represented[stem] = true
+		}
+	}
+	for _, row := range rows[limit:] {
+		stem := matchingStem(row)
+		if stem == "" || represented[stem] {
+			continue
+		}
+		selected := make([]resolve.RetrieverRow, 0, limit)
+		selected = append(selected, rows[:limit-1]...)
+		selected = append(selected, row)
+		return selected
+	}
+	return rows[:limit]
+}
+
+func meaningfulPathTerms(task string) map[string]bool {
+	stop := map[string]bool{
+		"and": true, "are": true, "can": true, "does": true, "for": true,
+		"from": true, "get": true, "how": true, "into": true, "not": true,
+		"set": true, "the": true, "use": true, "using": true, "was": true,
+		"were": true, "what": true, "when": true, "where": true, "which": true,
+		"who": true, "why": true, "with": true,
+	}
+	terms := map[string]bool{}
+	for _, term := range identifierTerms(task) {
+		if len(term) >= 3 && !stop[term] {
+			terms[term] = true
+		}
+	}
+	return terms
 }
 
 func needsLifecycleCandidate(task string) bool {

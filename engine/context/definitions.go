@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"math"
+	"path"
 	"sort"
 	"strings"
 	"unicode"
@@ -143,6 +144,14 @@ func AssembleDefinitions(ctx context.Context, query string, candidates []Candida
 		for _, word := range words {
 			if strings.Contains(lower, word) {
 				matches++
+			}
+		}
+		base := strings.ToLower(path.Base(s.Citation.Path))
+		stem := strings.TrimSuffix(base, path.Ext(base))
+		for _, word := range words {
+			if stem == word {
+				matches++
+				break
 			}
 		}
 		// Rank is a prior, not an admission cutoff. A square-root cost

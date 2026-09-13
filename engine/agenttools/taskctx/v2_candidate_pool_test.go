@@ -134,14 +134,14 @@ func TestTaskContextV2_LifecycleFocusWidensOnlyItsInternalPool(t *testing.T) {
 	if _, err := taskctx.AssembleV2(t.Context(), taskctx.Params{Task: "where are token values validated", TokenBudget: -1, Deps: deps}); err != nil {
 		t.Fatal(err)
 	}
-	if ret.lastLimit != 15 {
-		t.Fatalf("ordinary natural-language pool = %d, want 15", ret.lastLimit)
+	if ret.lastLimit != 50 {
+		t.Fatalf("ordinary natural-language retrieval window = %d, want 50", ret.lastLimit)
 	}
 	if _, err := taskctx.AssembleV2(t.Context(), taskctx.Params{Task: "when does the initialization function run", TokenBudget: -1, Deps: deps}); err != nil {
 		t.Fatal(err)
 	}
-	if ret.lastLimit != 16 {
-		t.Fatalf("lifecycle-focused pool = %d, want 16", ret.lastLimit)
+	if ret.lastLimit != 50 {
+		t.Fatalf("lifecycle-focused retrieval window = %d, want 50", ret.lastLimit)
 	}
 }
 

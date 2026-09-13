@@ -97,7 +97,7 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			t.Fatalf("invalid GRAPHI_PRODUCT_COMPACT_DEV_SOURCE_BUDGET %q", raw)
 		}
 	}
-	reached, allOverlapped, anyComplete, requiredComplete, allComplete, withinBudget, maxTokens := 0, 0, 0, 0, 0, 0, 0
+	reached, allOverlapped, anyComplete, requiredComplete, allComplete, withinBudget, maxTokens, containedSourceBundles := 0, 0, 0, 0, 0, 0, 0, 0
 	var tokenCounts []int
 	var pairedSavings []int
 	var pairedSavingsPercent []float64
@@ -213,6 +213,24 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 				}
 			}
 		}
+		hasContainedSource := false
+		for i, source := range first.Structured.Sources {
+			for j, other := range first.Structured.Sources {
+				if i != j && source.Path == other.Path && source.StartLine >= other.StartLine && source.EndLine <= other.EndLine && (source.StartLine != other.StartLine || source.EndLine != other.EndLine) {
+					hasContainedSource = true
+				}
+			}
+		}
+		if hasContainedSource {
+			containedSourceBundles++
+			if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_TRACE") == "1" {
+				var citations []string
+				for _, source := range first.Structured.Sources {
+					citations = append(citations, source.Path+":"+strconv.Itoa(source.StartLine)+"-"+strconv.Itoa(source.EndLine))
+				}
+				t.Logf("contained source trace: id=%s sources=%s", member.QueryID, strings.Join(citations, ","))
+			}
+		}
 		if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_TRACE") == "1" && query.Stratum == StratumConfigDocs {
 			var targets, citations []string
 			for _, judgement := range query.Judgements {
@@ -309,7 +327,10 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	for _, detail := range incomplete {
 		t.Logf("incomplete %s", detail)
 	}
-	t.Logf("production compact dev: source_budget=%d reached=%d/%d all_overlapped=%d/%d any_complete=%d/%d required_complete=%d/%d all_complete=%d/%d within_1200=%d/%d median_tokens=%.1f max_tokens=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f median_saving_percent=%.4f misses=%v", sourceBudget, reached, len(members), allOverlapped, len(members), anyComplete, len(members), requiredComplete, len(members), allComplete, len(members), withinBudget, len(members), medianTokens, maxTokens, cheaperThanComparator, len(members), medianSavingTokens, medianSavingPercent, misses)
+	t.Logf("production compact dev: source_budget=%d reached=%d/%d all_overlapped=%d/%d any_complete=%d/%d required_complete=%d/%d all_complete=%d/%d within_1200=%d/%d contained_source_bundles=%d/%d median_tokens=%.1f max_tokens=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f median_saving_percent=%.4f misses=%v", sourceBudget, reached, len(members), allOverlapped, len(members), anyComplete, len(members), requiredComplete, len(members), allComplete, len(members), withinBudget, len(members), containedSourceBundles, len(members), medianTokens, maxTokens, cheaperThanComparator, len(members), medianSavingTokens, medianSavingPercent, misses)
+	if containedSourceBundles != 0 {
+		t.Errorf("production compact development emitted redundant contained sources in %d/%d bundles", containedSourceBundles, len(members))
+	}
 	if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_REQUIRE") == "1" && (reached != len(members) || withinBudget != len(members)) {
 		t.Fatalf("production compact development target missed")
 	}

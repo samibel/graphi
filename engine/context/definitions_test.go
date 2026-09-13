@@ -95,6 +95,32 @@ func TestAssembleDefinitionsContentCanOutweighInitialRank(t *testing.T) {
 	t.Fatalf("relevant complete declaration lost to unrelated early candidates: %+v", b)
 }
 
+func TestAssembleDefinitionsReservesExactQueryBasename(t *testing.T) {
+	reader := memReader{}
+	var candidates []Candidate
+	for i := 0; i < 15; i++ {
+		candidatePath := fmt.Sprintf("topic-%02d.md", i)
+		if i == 0 {
+			candidatePath = "command.go"
+		}
+		reader[candidatePath] = "irrelevant\n"
+		candidates = append(candidates, Candidate{Path: candidatePath, StartLine: 1, EndLine: 1, Rank: float64(i)})
+	}
+	reader["site/docgen/man.md"] = "opaque\n"
+	candidates = append(candidates, Candidate{Path: "site/docgen/man.md", StartLine: 1, EndLine: 1, Rank: 15})
+
+	bundle, err := AssembleDefinitions(t.Context(), "how to generate man pages for a command tree", candidates, Options{Budget: 2}, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, snippet := range bundle.Snippets {
+		if snippet.Citation.Path == "site/docgen/man.md" {
+			return
+		}
+	}
+	t.Fatalf("exact query basename lost after candidate admission: %+v", bundle.Snippets)
+}
+
 func TestAssembleDefinitionsReservesSpaceForLaterSmallDeclarations(t *testing.T) {
 	reader := memReader{"a.go": "package a\nfunc Large() {\n" + strings.Repeat("println(\"large body\")\n", 100) + "}\nfunc Small() { println(\"answer\") }"}
 	candidates := []Candidate{

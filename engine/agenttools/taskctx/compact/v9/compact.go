@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/6"
+const CompactTaskContextVersion = "task_context/2-compact/7"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -439,7 +439,8 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 		}
 		lowerPath := strings.ToLower(path)
 		if strings.HasSuffix(lowerPath, ".md") {
-			if !hydrateMarkdown || compactTaskContextItemPriority(item.Reason) < 4_000 {
+			pathNamed := mode == GrepReadV2NaturalLanguage && compactTaskContextPathStemMatchesPatterns(path, patterns)
+			if (!hydrateMarkdown && !pathNamed) || compactTaskContextItemPriority(item.Reason) < 4_000 {
 				continue
 			}
 			lines, ok := markdownFiles[path]
@@ -1125,6 +1126,22 @@ func compactTaskContextWantsMarkdownFlow(patterns []string) bool {
 		compactTaskContextHasPattern(patterns, "hook") ||
 		compactTaskContextHasPattern(patterns, "order") ||
 		compactTaskContextHasPattern(patterns, "sequence")
+}
+
+func compactTaskContextPathStemMatchesPatterns(sourcePath string, patterns []string) bool {
+	base := strings.ToLower(sourcePath)
+	if slash := strings.LastIndexByte(base, '/'); slash >= 0 {
+		base = base[slash+1:]
+	}
+	if dot := strings.LastIndexByte(base, '.'); dot > 0 {
+		base = base[:dot]
+	}
+	for _, pattern := range patterns {
+		if strings.EqualFold(base, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 func compactTaskContextWantsRecursiveWalk(patterns []string) bool {
@@ -1997,6 +2014,10 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		}
 	}
 	primaryRemaining := remaining - secondaryReserve
+	if mode == GrepReadV2NaturalLanguage {
+		compactTaskContextCompleteCodeDocumentationPair(query, candidates, admitted, &primaryRemaining)
+		compactTaskContextCompleteCallerCalleePair(query, candidates, admitted, &primaryRemaining)
+	}
 	if mode == GrepReadV2NaturalLanguage && compactTaskContextWantsRecursiveWalk(patterns) {
 		// Recursive traversals are the implementation of a tree-walk answer, not
 		// merely another related declaration. Reserve up to two complete small
@@ -2271,6 +2292,27 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 			break
 		}
 	}
+	// Fallback grep anchors can be swallowed by a semantic region only after
+	// that region grows. Drop those now-redundant candidates, return their
+	// charged words, and spend the recovered budget on non-redundant regions.
+	for {
+		reclaimed := compactTaskContextDropContainedFallbacks(candidates, admitted)
+		if reclaimed == 0 {
+			break
+		}
+		remaining += reclaimed
+		for remaining > 0 {
+			changed := false
+			for i := range candidates {
+				if admitted[i] && compactTaskContextGrow(&candidates[i], &remaining) {
+					changed = true
+				}
+			}
+			if !changed {
+				break
+			}
+		}
+	}
 
 	out := make([]CompactTaskContextSource, 0, len(candidates))
 	seenOutput := make(map[string]bool, len(candidates))
@@ -2312,6 +2354,7 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 			}
 		}
 	}
+	out = compactTaskContextRemoveContainedSources(out)
 	out, used := compactTaskContextTrimSources(out, budget)
 	return out, used, nil
 }
@@ -2542,6 +2585,26 @@ func compactTaskContextTrimSources(sources []CompactTaskContextSource, budget in
 	return out, used
 }
 
+func compactTaskContextRemoveContainedSources(sources []CompactTaskContextSource) []CompactTaskContextSource {
+	out := make([]CompactTaskContextSource, 0, len(sources))
+	for i, source := range sources {
+		contained := false
+		for j, other := range sources {
+			if i == j || source.Path != other.Path {
+				continue
+			}
+			if source.Start >= other.Start && source.End <= other.End && (source.Start != other.Start || source.End != other.End) {
+				contained = true
+				break
+			}
+		}
+		if !contained {
+			out = append(out, source)
+		}
+	}
+	return out
+}
+
 // Semantic retrieval and GrepRead/2 often land on the same declaration with
 // different context windows. Treat that as corroboration of one region, not
 // two sources competing for budget. The merge is allowed only at the exact
@@ -2683,6 +2746,30 @@ func compactTaskContextGrow(candidate *compactTaskContextCandidate, remaining *i
 	return true
 }
 
+func compactTaskContextDropContainedFallbacks(candidates []compactTaskContextCandidate, admitted []bool) int {
+	reclaimed := 0
+	for i := range candidates {
+		candidate := candidates[i]
+		if !admitted[i] || !candidate.fallback || candidate.hasSecondary {
+			continue
+		}
+		from, to := candidate.start+candidate.from, candidate.start+candidate.to
+		for j := range candidates {
+			container := candidates[j]
+			if i == j || !admitted[j] || container.fallback || candidate.item.Path != container.item.Path {
+				continue
+			}
+			containerFrom, containerTo := container.start+container.from, container.start+container.to
+			if from >= containerFrom && to <= containerTo {
+				admitted[i] = false
+				reclaimed += candidate.cost
+				break
+			}
+		}
+	}
+	return reclaimed
+}
+
 func compactTaskContextCompleteUnit(candidate *compactTaskContextCandidate, remaining *int, maxCost int) bool {
 	if (candidate.fallback && !candidate.completeFallback) || (candidate.kind != "function" && candidate.kind != "method" && candidate.kind != "type" && candidate.kind != "constant" && candidate.kind != "variable") {
 		return false
@@ -2702,6 +2789,117 @@ func compactTaskContextCompleteUnit(candidate *compactTaskContextCandidate, rema
 	candidate.complete = true
 	*remaining -= additional
 	return true
+}
+
+func compactTaskContextCompleteCodeDocumentationPair(query string, candidates []compactTaskContextCandidate, admitted []bool, remaining *int) bool {
+	normalizedQuery := compactTaskContextAlnum(query)
+	for codeIndex := range candidates {
+		code := &candidates[codeIndex]
+		if !admitted[codeIndex] || code.symbolScore <= 0 || (!strings.HasSuffix(strings.ToLower(code.item.Path), ".go")) || (code.kind != "function" && code.kind != "method" && code.kind != "type") {
+			continue
+		}
+		name := code.symbol
+		if dot := strings.LastIndex(name, "."); dot >= 0 {
+			name = name[dot+1:]
+		}
+		normalizedName := compactTaskContextAlnum(name)
+		if len(normalizedName) < 6 || !strings.Contains(normalizedQuery, normalizedName) {
+			continue
+		}
+		codeFrom, codeTo, ok := compactTaskContextUnitRange(*code)
+		if !ok {
+			continue
+		}
+		codeCost := len(strings.Fields(strings.Join(code.lines[codeFrom:codeTo+1], "\n")))
+		if codeCost < 1 || codeCost > 160 {
+			continue
+		}
+		for docsIndex := range candidates {
+			docs := &candidates[docsIndex]
+			if !admitted[docsIndex] || !strings.HasSuffix(strings.ToLower(docs.item.Path), ".md") || !strings.Contains(compactTaskContextAlnum(strings.Join(docs.lines, "\n")), normalizedName) {
+				continue
+			}
+			docsCost := len(strings.Fields(strings.Join(docs.lines, "\n")))
+			if docsCost < 1 || docsCost > 120 {
+				continue
+			}
+			additional := codeCost - code.cost + docsCost - docs.cost
+			if additional < 0 || additional > *remaining {
+				continue
+			}
+			code.from, code.to, code.cost, code.complete = codeFrom, codeTo, codeCost, true
+			docs.from, docs.to, docs.cost, docs.complete = 0, len(docs.lines)-1, docsCost, true
+			*remaining -= additional
+			return true
+		}
+	}
+	return false
+}
+
+func compactTaskContextCompleteCallerCalleePair(query string, candidates []compactTaskContextCandidate, admitted []bool, remaining *int) bool {
+	normalizedQuery := compactTaskContextAlnum(query)
+	for callerIndex := range candidates {
+		caller := &candidates[callerIndex]
+		if !admitted[callerIndex] || (caller.kind != "function" && caller.kind != "method") {
+			continue
+		}
+		callerName := caller.symbol
+		if dot := strings.LastIndex(callerName, "."); dot >= 0 {
+			callerName = callerName[dot+1:]
+		}
+		if normalizedCaller := compactTaskContextAlnum(callerName); len(normalizedCaller) < 4 || !strings.Contains(normalizedQuery, normalizedCaller) {
+			continue
+		}
+		callerFrom, callerTo, ok := compactTaskContextUnitRange(*caller)
+		if !ok {
+			continue
+		}
+		callerCost := len(strings.Fields(strings.Join(caller.lines[callerFrom:callerTo+1], "\n")))
+		if callerCost < 1 || callerCost > 120 {
+			continue
+		}
+		callerSource := strings.Join(caller.lines[callerFrom:callerTo+1], "\n")
+		for calleeIndex := range candidates {
+			callee := &candidates[calleeIndex]
+			if callerIndex == calleeIndex || !admitted[calleeIndex] || (callee.kind != "function" && callee.kind != "method") {
+				continue
+			}
+			calleeName := callee.symbol
+			if dot := strings.LastIndex(calleeName, "."); dot >= 0 {
+				calleeName = calleeName[dot+1:]
+			}
+			if calleeName == "" || !strings.Contains(callerSource, calleeName+"(") {
+				continue
+			}
+			calleeFrom, calleeTo, ok := compactTaskContextUnitRange(*callee)
+			if !ok {
+				continue
+			}
+			calleeCost := len(strings.Fields(strings.Join(callee.lines[calleeFrom:calleeTo+1], "\n")))
+			if calleeCost < 1 || calleeCost > 160 {
+				continue
+			}
+			additional := callerCost - caller.cost + calleeCost - callee.cost
+			if additional < 0 || additional > *remaining {
+				continue
+			}
+			caller.from, caller.to, caller.cost, caller.complete = callerFrom, callerTo, callerCost, true
+			callee.from, callee.to, callee.cost, callee.complete = calleeFrom, calleeTo, calleeCost, true
+			*remaining -= additional
+			return true
+		}
+	}
+	return false
+}
+
+func compactTaskContextAlnum(value string) string {
+	var normalized strings.Builder
+	for _, r := range strings.ToLower(value) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			normalized.WriteRune(r)
+		}
+	}
+	return normalized.String()
 }
 
 func compactTaskContextUnitRange(candidate compactTaskContextCandidate) (int, int, bool) {
