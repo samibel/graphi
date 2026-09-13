@@ -80,11 +80,11 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		first, err := taskcompact.Build(query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
+		first, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
 		if err != nil {
 			t.Fatalf("%s build: %v", member.QueryID, err)
 		}
-		second, err := taskcompact.Build(query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
+		second, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
 		if err != nil || !reflect.DeepEqual(first, second) {
 			t.Fatalf("%s is not byte-reproducible: %v", member.QueryID, err)
 		}
@@ -164,7 +164,7 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := taskcompact.Build(query.Text, legacy, repository, taskcompact.DefaultSourceBudget); err != nil {
+		if _, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, taskcompact.DefaultSourceBudget); err != nil {
 			t.Fatalf("no-hit query %s must return a successful empty compact result: %v", query.ID, err)
 		}
 	}

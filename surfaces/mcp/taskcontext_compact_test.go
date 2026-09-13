@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	"github.com/samibel/graphi/surfaces/client"
 )
 
@@ -31,6 +32,78 @@ func (compactTaskContextClient) TaskContext(context.Context, client.TaskContextP
 		Confidence: contract.Confidence{Distribution: map[string]float64{"heuristic": 1}, Top: "heuristic", Method: "fixture"},
 		Limits:     contract.Limits{CapApplied: 40, TotalAvailable: 1},
 	})
+}
+
+type compactFallbackClient struct{ allToolsClient }
+
+func (compactFallbackClient) TaskContext(context.Context, client.TaskContextParams) ([]byte, error) {
+	raw, err := (compactTaskContextClient{}).TaskContext(context.Background(), client.TaskContextParams{})
+	if err != nil {
+		return nil, err
+	}
+	var result contract.Result
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return nil, err
+	}
+	result.Summary = strings.Replace(result.Summary, "degradation: ready", "degradation: lexical_only", 1)
+	return contract.Serialize(&result)
+}
+
+func TestTaskContextV2_PublicMCPPreservesNonReadyFallback(t *testing.T) {
+	server := NewServerWithClient(compactFallbackClient{}, WithLabs(), WithRepository(client.Repository{Root: t.TempDir()}))
+	defer server.Close()
+	request := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"task_context","arguments":{"task":"missing","version":2,"token_budget":1200}}}` + "\n")
+	var output bytes.Buffer
+	if err := server.Serve(t.Context(), bytes.NewReader(request), &output); err != nil {
+		t.Fatal(err)
+	}
+	var response struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+			StructuredContent json.RawMessage `json:"structuredContent"`
+			IsError           bool            `json:"isError"`
+		} `json:"result"`
+		Error json.RawMessage `json:"error"`
+	}
+	if err := json.Unmarshal(output.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response.Error) != 0 || response.Result.IsError || len(response.Result.Content) != 1 {
+		t.Fatalf("fallback became an RPC/tool error: %s", output.String())
+	}
+	if !strings.Contains(response.Result.Content[0].Text, "degradation: lexical_only") || len(response.Result.StructuredContent) != 0 {
+		t.Fatalf("canonical fallback was not preserved: %s", output.String())
+	}
+}
+
+func TestTaskContextV2_PublicMCPDoesNotFollowSourceSymlinkOutsideRepository(t *testing.T) {
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.go")
+	const secret = "OUTSIDE_REPOSITORY_SECRET"
+	if err := os.WriteFile(outside, []byte("package stolen\n// "+secret+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "decoy.go"), []byte("package fixture\n\nfunc decoy() {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "command.go")); err != nil {
+		t.Fatal(err)
+	}
+	server := NewServerWithClient(compactTaskContextClient{}, WithLabs(), WithRepository(client.Repository{Root: root}))
+	defer server.Close()
+	request := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"task_context","arguments":{"task":"command.go","version":2,"token_budget":1200}}}` + "\n")
+	var output bytes.Buffer
+	if err := server.Serve(t.Context(), bytes.NewReader(request), &output); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(output.Bytes(), []byte(secret)) {
+		t.Fatalf("task_context exposed bytes through a root-escaping source symlink: %s", output.String())
+	}
+	if bytes.Contains(output.Bytes(), []byte(`"error"`)) {
+		t.Fatalf("supplemental source rejection should remain a successful task_context result: %s", output.String())
+	}
 }
 
 func TestTaskContextV2_PublicMCPEnforcesFrozenRealTokenizerCeiling(t *testing.T) {
@@ -103,7 +176,7 @@ func TestTaskContextV2_PublicMCPRecoversMissingAnswerIntoCompactStructuredConten
 	if response.Result.IsError || len(response.Result.Content) != 1 || response.Result.Content[0].Type != "text" {
 		t.Fatalf("invalid MCP tool result: %#v\n%s", response.Result, output.String())
 	}
-	if response.Result.StructuredContent.Version != "task_context/2-compact/1" {
+	if response.Result.StructuredContent.Version != taskcompact.Version {
 		t.Fatalf("structured version = %q", response.Result.StructuredContent.Version)
 	}
 	joined := ""

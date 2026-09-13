@@ -136,6 +136,12 @@ and become stale when `PinnedRevision` changes:
   `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — the first
   two registered compact development sufficiency runs. Their frozen inputs and
   blind answers are bound to bundles produced by this pinned model.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-dev/` — the first
+  development-only double capture through the production compact MCP path.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev/` — the reserved
+  candidate-bound development recapture after the fail-closed audit fixes.
+  Both product runs use the pinned production model and become stale if its
+  revision changes.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

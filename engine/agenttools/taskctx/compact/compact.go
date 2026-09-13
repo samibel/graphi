@@ -7,6 +7,8 @@
 package compact
 
 import (
+	"context"
+	"errors"
 	"io/fs"
 
 	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
@@ -15,12 +17,17 @@ import (
 const (
 	// Version changes whenever source discovery, ordering, or wire semantics
 	// change. It is deliberately separate from the retrieval method version.
-	Version = "task_context/2-compact/1"
+	Version = "task_context/2-compact/2"
 	// DefaultSourceBudget leaves room inside the frozen 1,200-token response
 	// budget for JSON, citations, summary and provenance. The development
 	// frontier selected 250 source whitespace-fields before productization.
 	DefaultSourceBudget = 250
 )
+
+// ErrRetrievalNotReady tells a surface to preserve task_context/2's canonical
+// lexical fallback instead of turning an expected degraded state into an RPC
+// failure. Only ready retrieval results are eligible for compact projection.
+var ErrRetrievalNotReady = errors.New("compact task_context: retrieval is not ready")
 
 // Source is both source text and its exact repository-relative citation.
 type Source struct {
@@ -63,9 +70,12 @@ type Result struct {
 // compact source evidence using the preregistered V9 selector. Discovery is
 // query-only: it has no answer-key or callback seam and completes before
 // selection.
-func Build(query string, legacy []byte, repository fs.FS, sourceBudget int) (Result, error) {
-	summary, structured, err := compactv9.Build(query, legacy, repository, sourceBudget)
+func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (Result, error) {
+	summary, structured, err := compactv9.Build(ctx, query, legacy, repository, sourceBudget)
 	if err != nil {
+		if errors.Is(err, compactv9.ErrRetrievalNotReady) {
+			return Result{}, ErrRetrievalNotReady
+		}
 		return Result{}, err
 	}
 	sources := make([]Source, 0, len(structured.Sources))

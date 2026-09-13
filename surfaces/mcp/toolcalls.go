@@ -866,8 +866,16 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		if requested := derefInt(p.Arguments.TokenBudget); requested > 0 && requested < sourceBudget {
 			sourceBudget = requested
 		}
-		compact, err := taskcompact.Build(p.Arguments.Task, b, os.DirFS(root), sourceBudget)
+		secureRoot, err := os.OpenRoot(root)
 		if err != nil {
+			return nil, &rpcError{Code: -32603, Message: err.Error()}
+		}
+		defer secureRoot.Close()
+		compact, err := taskcompact.Build(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
+		if err != nil {
+			if errors.Is(err, taskcompact.ErrRetrievalNotReady) {
+				return textResult(b), nil
+			}
 			return nil, &rpcError{Code: -32603, Message: err.Error()}
 		}
 		return compactTaskContextToolResult{

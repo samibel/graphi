@@ -2,17 +2,19 @@ package v9
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/agenttools/contract"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 const (
@@ -22,11 +24,14 @@ const (
 
 	SavingsStopExhausted = "exhausted"
 	SavingsStopMaxReads  = "max_reads"
+	SavingsStopScanLimit = "scan_limit"
 
 	PayloadOperationTaskContext = "task_context/2"
 	PayloadOperationGrep        = "grep"
 	PayloadOperationRead        = "read"
 )
+
+var ErrRetrievalNotReady = errors.New("compact task_context: retrieval is not ready")
 
 type PayloadBoundary string
 
@@ -150,8 +155,11 @@ func validatePayloadCostInput(_ string, payload PreservedPayload, counter Payloa
 	if err := contract.ValidateResult(&bundle); err != nil {
 		return err
 	}
-	if !strings.HasPrefix(bundle.Summary, "task_context/2:") || !strings.Contains(bundle.Summary, "degradation: ready") {
-		return fmt.Errorf("input does not attest a ready task_context/2 retrieval")
+	if !strings.HasPrefix(bundle.Summary, "task_context/2:") {
+		return fmt.Errorf("input does not attest task_context/2 retrieval")
+	}
+	if !strings.Contains(bundle.Summary, "degradation: ready") {
+		return ErrRetrievalNotReady
 	}
 	if counter.Count == nil || counter.TokenizerID == "" {
 		return fmt.Errorf("missing executable payload counter")
@@ -176,7 +184,7 @@ func exactEvidenceSpan(span string) (int, int, error) {
 // selector over one canonical legacy task_context/2 result. The response
 // envelope used internally is deterministic and exists only to preserve the
 // V9 input-digest semantics; callers receive the transport-neutral fields.
-func Build(query string, legacy []byte, repository fs.FS, sourceBudget int) (string, CompactTaskContextStructured, error) {
+func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, sourceBudget int) (string, CompactTaskContextStructured, error) {
 	if sourceBudget <= 0 {
 		sourceBudget = 250
 	}
@@ -207,7 +215,10 @@ func Build(query string, legacy []byte, repository fs.FS, sourceBudget int) (str
 		Sequence: 1, Boundary: PayloadBoundaryCandidate, Operation: PayloadOperationTaskContext,
 		Bytes: raw, SHA256: SHA256Hex(raw), ByteCount: len(raw),
 	}
-	transcript := GrepReadV2(repository, query)
+	transcript, err := GrepReadV2(ctx, repository, query)
+	if err != nil {
+		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: source discovery: %w", err)
+	}
 	payload, err := BuildCompactTaskContextWithRepository(query, input, &transcript, repository, sourceBudget, counter)
 	if err != nil {
 		return "", CompactTaskContextStructured{}, err

@@ -2,13 +2,40 @@ package v9
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"path"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
+
+var errSourceFileLimit = errors.New("source file exceeds read limit")
+
+func readSourceFile(repository fs.FS, name string) ([]byte, error) {
+	return readSourceFileLimit(repository, name, GrepReadV2MaxFileSize)
+}
+
+func readSourceFileLimit(repository fs.FS, name string, limit int64) ([]byte, error) {
+	if limit < 0 {
+		return nil, errSourceFileLimit
+	}
+	file, err := repository.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	raw, err := io.ReadAll(io.LimitReader(file, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(raw)) > limit {
+		return nil, errSourceFileLimit
+	}
+	return raw, nil
+}
 
 // GrepReadOperation records one bounded source read and binds it to the exact
 // payload captured in the query-only discovery transcript.
@@ -102,7 +129,7 @@ func splitGrepReadLines(raw []byte) []grepReadLine {
 }
 
 func grepReadRead(repository fs.FS, window grepReadWindow) ([]byte, int) {
-	raw, err := fs.ReadFile(repository, window.Path)
+	raw, err := readSourceFile(repository, window.Path)
 	if err != nil {
 		return []byte(fmt.Sprintf("read:error:%s:read_failed\n", window.Path)), window.StartLine - 1
 	}

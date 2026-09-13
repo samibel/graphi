@@ -20,12 +20,12 @@ import (
 	"strings"
 	"unicode"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
-	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/1"
+const CompactTaskContextVersion = "task_context/2-compact/2"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -436,7 +436,7 @@ func compactTaskContextHydrateDefinitions(repository fs.FS, query string, items 
 			}
 			lines, ok := markdownFiles[path]
 			if !ok {
-				raw, err := fs.ReadFile(repository, path)
+				raw, err := readSourceFile(repository, path)
 				if err != nil {
 					return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 				}
@@ -466,7 +466,7 @@ func compactTaskContextHydrateDefinitions(repository fs.FS, query string, items 
 		}
 		parsed, ok := files[path]
 		if !ok {
-			raw, err := fs.ReadFile(repository, path)
+			raw, err := readSourceFile(repository, path)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 			}
@@ -510,9 +510,12 @@ func compactTaskContextHydrateExactPath(repository fs.FS, query string) ([]contr
 		return nil, nil, nil
 	}
 	path := patterns[0]
-	raw, err := fs.ReadFile(repository, path)
+	raw, err := readSourceFile(repository, path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("compact task_context: hydrate exact path %s: %w", path, err)
+		// Exact-path discovery is supplemental. A missing, unreadable, or
+		// root-escaping symlink must not expose bytes and must not turn the
+		// canonical task_context fallback into an RPC failure.
+		return nil, nil, nil
 	}
 	set := token.NewFileSet()
 	file, err := parser.ParseFile(set, path, raw, parser.ParseComments)
@@ -633,7 +636,7 @@ func compactTaskContextHydrateGrepReadDeclarations(repository fs.FS, query strin
 		}
 		parsed, ok := files[path]
 		if !ok {
-			raw, err := fs.ReadFile(repository, path)
+			raw, err := readSourceFile(repository, path)
 			if err != nil {
 				return nil, nil, fmt.Errorf("compact task_context: hydrate GrepRead declaration %s: %w", path, err)
 			}
@@ -814,7 +817,7 @@ func compactTaskContextHydrateReferences(repository fs.FS, query string, evidenc
 		if !strings.HasSuffix(lower, ".go") || strings.HasSuffix(lower, "_test.go") {
 			return nil
 		}
-		raw, err := fs.ReadFile(repository, path)
+		raw, err := readSourceFile(repository, path)
 		if err != nil {
 			return err
 		}

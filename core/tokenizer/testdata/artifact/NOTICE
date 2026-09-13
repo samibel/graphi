@@ -1,0 +1,10 @@
+OpenAI cl100k_base tokenizer vocabulary
+
+source: https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
+sha256: 223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7
+
+This byte-identical test artifact keeps the golden token-vector gate runnable
+offline. Production measurement does not resolve this directory implicitly;
+install the artifact explicitly with `go run ./cmd/retrieval-eval
+-setup-tokenizer -tokenizer-local internal/eval/tokenizer/testdata/artifact` or
+use the HTTPS acquisition path without `-tokenizer-local`.

@@ -8,6 +8,7 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 )
 
 // encodeLikeTheStdioTransport reproduces exactly how surfaces/mcp writes a
@@ -54,6 +55,62 @@ func encodeLikeTheStdioTransport(t *testing.T, summary string, isError bool, wit
 
 func readyV2Summary() string {
 	return taskctx.MethodVersionV2 + ": 4 seeds; degradation: ready; weights h0"
+}
+
+func encodeCompactLikeTheStdioTransport(t *testing.T, fallback, model string) []byte {
+	t.Helper()
+	type result struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+		StructuredContent taskcompact.Structured `json:"structuredContent"`
+		IsError           bool                   `json:"isError"`
+	}
+	type response struct {
+		JSONRPC string `json:"jsonrpc"`
+		ID      int    `json:"id"`
+		Result  result `json:"result"`
+	}
+	r := response{JSONRPC: "2.0", ID: 1}
+	r.Result.Content = append(r.Result.Content, struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}{Type: "text", Text: fallback})
+	r.Result.StructuredContent = taskcompact.Structured{
+		Version: taskcompact.Version,
+		Sources: []taskcompact.Source{},
+		Provenance: taskcompact.Provenance{
+			InputSHA256: strings.Repeat("a", 64), Method: taskctx.MethodVersionV2,
+			Retrieval: "retrieval/3", RetrievalState: "ready", Weights: "abcdef12", Model: model,
+			SourceSelection: "context-definitions/3", SourceOrder: "ranked_coherent_regions",
+			SourceBudget: taskcompact.DefaultSourceBudget, BudgetUnit: TokenizerID,
+		},
+	}
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(r); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestCompactCandidateCaptureFailsClosedOnIdentityAndExactWireBudget(t *testing.T) {
+	good := encodeCompactLikeTheStdioTransport(t, "compact answer sources", "sha256:"+strings.Repeat("b", 16))
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", good); err != nil {
+		t.Fatalf("valid compact response rejected: %v", err)
+	}
+
+	badModel := encodeCompactLikeTheStdioTransport(t, "compact answer sources", "sha256:not-hex")
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", badModel); err == nil || !strings.Contains(err.Error(), "provenance") {
+		t.Fatalf("malformed model identity was not rejected: %v", err)
+	}
+
+	overBudget := encodeCompactLikeTheStdioTransport(t, strings.Repeat("abcdefghijklmno", 4000), "sha256:"+strings.Repeat("b", 16))
+	if _, err := ValidateCompactCandidateBundleBytes("dev-1", overBudget); err == nil || !strings.Contains(err.Error(), "frozen budget") {
+		t.Fatalf("over-budget exact MCP response was not rejected: %v", err)
+	}
 }
 
 // AC-2: every substitute for the transport bytes is refused, and each row below

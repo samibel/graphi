@@ -80,6 +80,29 @@ func TestRecoveryDevCapture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	candidateSHA := os.Getenv("GRAPHI_RECOVERY_CANDIDATE_SHA")
+	if candidateSHA == "" {
+		t.Fatal("GRAPHI_RECOVERY_CANDIDATE_SHA is required; development evidence must bind to a frozen candidate")
+	}
+	outAbs, err := filepath.Abs(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	moduleAbs, err := filepath.Abs(module)
+	if err != nil {
+		t.Fatal(err)
+	}
+	excluded, err := filepath.Rel(moduleAbs, filepath.Dir(outAbs))
+	if err != nil {
+		t.Fatal(err)
+	}
+	binding, err := ObserveCandidateBinding(t.Context(), GitRepoProbe(), CandidateBindingOptions{
+		CandidateRoot: module, FrozenCandidateSHA: candidateSHA, ExcludePath: filepath.ToSlash(excluded),
+		CheckoutRoot: root, CheckoutSHA: head,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	var runs [2][]recoveryObservation
 	var generations [2]string
 	selector := os.Getenv("GRAPHI_RECOVERY_EMBEDDER")
@@ -226,13 +249,14 @@ func TestRecoveryDevCapture(t *testing.T) {
 	report := struct {
 		DatasetSHA string                   `json:"dataset_sha256"`
 		Contract   MeasurementContract      `json:"measurement_contract"`
+		Binding    CandidateBinding         `json:"candidate_binding"`
 		Note       string                   `json:"note"`
 		Identical  int                      `json:"identical_payloads"`
 		Queries    int                      `json:"queries"`
 		Selector   string                   `json:"embedder_selector"`
 		Inputs     [2][]inputIdentity       `json:"input_documents"`
 		Runs       [2][]recoveryObservation `json:"independent_builds"`
-	}{ds.SHA256, FrozenMeasurementContract(), "Development diagnostic from the current worktree; not a bound release capture, savings estimate, or sufficiency rating. Citation/overlap uses SpanMatches at exact grade 3; containment additionally requires every judged line in emitted source. All 44 dev rows are retained; three no_hit rows and cb-31 (no grade-3 judgement) are excluded from the 40-query grade-3 aggregates.", identical, len(runs[0]), selector, inputs, runs}
+	}{ds.SHA256, FrozenMeasurementContract(), binding, "Candidate-bound development diagnostic; not a release capture or sufficiency rating. Citation/overlap uses SpanMatches at exact grade 3; containment additionally requires every judged line in emitted source. All 44 dev rows are retained; three no_hit rows and cb-31 (no grade-3 judgement) are excluded from the 40-query grade-3 aggregates.", identical, len(runs[0]), selector, inputs, runs}
 	raw, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		t.Fatal(err)

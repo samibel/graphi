@@ -35,6 +35,7 @@ import (
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	engineretrieval "github.com/samibel/graphi/engine/retrieval"
+	cltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/mcp"
 )
@@ -42,7 +43,7 @@ import (
 // CandidateCaptureVersion identifies the capture instrument. It travels into
 // the run directory so a later change to how bytes are captured cannot be
 // mistaken for the same measurement.
-const CandidateCaptureVersion = "sw280-candidate-mcp-capture/3"
+const CandidateCaptureVersion = "sw280-candidate-mcp-capture/4"
 
 // candidateJSONRPCPrefix is the exact opening the stdio encoder produces for a
 // response: encoding/json writes struct fields in declaration order, and
@@ -521,7 +522,8 @@ func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, er
 		return "", fmt.Errorf("retrieval %s capture: query %s compact identity is invalid", QrelBlindSmokeEvaluationName, queryID)
 	}
 	p := structured.Provenance
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
+	modelDigest := strings.TrimPrefix(p.Model, "sha256:")
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !isLowerHexDigest(modelDigest, 16) || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
 		return "", fmt.Errorf("retrieval %s capture: query %s compact provenance is incomplete or not ready", QrelBlindSmokeEvaluationName, queryID)
 	}
 	seen := make(map[string]bool)
@@ -536,6 +538,17 @@ func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, er
 	}
 	if used > p.SourceBudget {
 		return "", fmt.Errorf("retrieval %s capture: query %s compact source budget exceeded: %d > %d", QrelBlindSmokeEvaluationName, queryID, used, p.SourceBudget)
+	}
+	tokenizer, err := cltokenizer.LoadEmbedded()
+	if err != nil {
+		return "", fmt.Errorf("retrieval %s capture: query %s load governed tokenizer: %w", QrelBlindSmokeEvaluationName, queryID, err)
+	}
+	tokens, err := tokenizer.Count(raw)
+	if err != nil {
+		return "", fmt.Errorf("retrieval %s capture: query %s count exact response tokens: %w", QrelBlindSmokeEvaluationName, queryID, err)
+	}
+	if tokens > SavingsCandidateBudget {
+		return "", fmt.Errorf("retrieval %s capture: query %s exact compact response costs %d cl100k tokens, frozen budget is %d", QrelBlindSmokeEvaluationName, queryID, tokens, SavingsCandidateBudget)
 	}
 	return envelope.Result.Content[0].Text, nil
 }

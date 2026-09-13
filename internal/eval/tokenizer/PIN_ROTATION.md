@@ -105,6 +105,9 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-dev/` — two independent
   production MCP captures of the promoted compact task-context candidate; all
   payload counts and the byte-reproducibility result depend on the current pin.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev/` — the reserved
+  candidate-bound development recapture after the capture validator began
+  enforcing the exact 1,200-token wire ceiling with this tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains
