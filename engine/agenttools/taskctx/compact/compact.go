@@ -17,7 +17,7 @@ import (
 const (
 	// Version changes whenever source discovery, ordering, or wire semantics
 	// change. It is deliberately separate from the retrieval method version.
-	Version = "task_context/2-compact/3"
+	Version = compactv9.CompactTaskContextVersion
 	// DefaultSourceBudget leaves room inside the frozen 1,200-token response
 	// budget for JSON, citations, summary and provenance. The development
 	// frontier selected 250 source whitespace-fields before productization.

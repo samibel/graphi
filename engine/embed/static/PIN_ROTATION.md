@@ -148,6 +148,12 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev/` — the sealed-source
   snapshot candidate recapture after empty-snapshot, Markdown, cancellation and
   partial-read accounting boundaries were closed.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev/` — the
+  public-version-bound candidate recapture after the facade identity was tied
+  directly to the selector identity.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
+  — the reserved independent fresh-holdout run; any future captured bundles are
+  invalidated by rotating this production embedder.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

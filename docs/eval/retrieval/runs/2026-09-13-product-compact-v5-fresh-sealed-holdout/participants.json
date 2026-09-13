@@ -1,0 +1,36 @@
+{
+  "primary_raters": [
+    {
+      "id": "",
+      "role": "primary",
+      "provider": "",
+      "model": "",
+      "independence_basis": "",
+      "participated_in_track": false
+    },
+    {
+      "id": "",
+      "role": "primary",
+      "provider": "",
+      "model": "",
+      "independence_basis": "",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "",
+    "role": "grader",
+    "provider": "",
+    "model": "",
+    "independence_basis": "",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "",
+    "role": "adjudicator",
+    "provider": "",
+    "model": "",
+    "independence_basis": "",
+    "participated_in_track": false
+  }
+}

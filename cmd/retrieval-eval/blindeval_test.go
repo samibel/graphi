@@ -164,6 +164,22 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 	}
 }
 
+func TestBuildGraderPacketNamesTheRubricFrozenForThisRun(t *testing.T) {
+	const rubric = "docs/eval/retrieval/runs/fresh-run/grading-rubric.md"
+	packet := buildGraderPacket(
+		retrieval.Query{ID: "q-1", Text: "where"},
+		retrieval.CapturedCandidateBundle{},
+		retrieval.RaterResponse{SHA256: strings.Repeat("a", 64), Text: "answer"},
+		rubric,
+	)
+	if !strings.Contains(packet, "rubric at "+rubric+".") {
+		t.Fatalf("grader packet does not name frozen rubric: %q", packet)
+	}
+	if strings.Contains(packet, "2026-09-05-sw280-qrel-blind-smoke") {
+		t.Fatalf("grader packet leaked the historical run rubric: %q", packet)
+	}
+}
+
 // buildBlindEvalRunDir writes a complete, correctly ordered run directory with
 // n queries of which passes pass. It uses real repository files as the frozen
 // inputs so the end-of-run comparison genuinely reads them.

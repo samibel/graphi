@@ -45,7 +45,11 @@ func readSourceFileLimit(repository fs.FS, name string, limit int64) ([]byte, in
 	if err != nil {
 		return raw, readBytes, err
 	}
-	if int64(readBytes) != info.Size() {
+	finalInfo, err := file.Stat()
+	if err != nil {
+		return raw, readBytes, err
+	}
+	if int64(readBytes) != info.Size() || finalInfo.Size() != info.Size() {
 		return raw, readBytes, errSourceFileChanged
 	}
 	return raw, readBytes, nil

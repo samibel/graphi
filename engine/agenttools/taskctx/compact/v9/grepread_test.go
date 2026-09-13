@@ -23,16 +23,23 @@ type openCountingFS struct {
 
 type cancelAfterContext struct {
 	context.Context
-	calls int
-	after int
+	calls    int
+	after    int
+	done     chan struct{}
+	canceled bool
 }
 
 func (c *cancelAfterContext) Deadline() (time.Time, bool) { return time.Time{}, false }
-func (c *cancelAfterContext) Done() <-chan struct{}       { return nil }
+func (c *cancelAfterContext) Done() <-chan struct{}       { return c.done }
 func (c *cancelAfterContext) Value(key any) any           { return c.Context.Value(key) }
 func (c *cancelAfterContext) Err() error {
+	if c.canceled {
+		return context.Canceled
+	}
 	c.calls++
 	if c.calls >= c.after {
+		c.canceled = true
+		close(c.done)
 		return context.Canceled
 	}
 	return nil
@@ -55,6 +62,43 @@ type partialErrorFile struct {
 	fs.File
 	failed bool
 }
+
+type changingStatFS struct {
+	fs.FS
+	target string
+}
+
+func (f changingStatFS) Open(name string) (fs.File, error) {
+	file, err := f.FS.Open(name)
+	if err != nil || name != f.target {
+		return file, err
+	}
+	return &changingStatFile{File: file}, nil
+}
+
+type changingStatFile struct {
+	fs.File
+	stats int
+}
+
+func (f *changingStatFile) Stat() (fs.FileInfo, error) {
+	info, err := f.File.Stat()
+	if err != nil {
+		return nil, err
+	}
+	f.stats++
+	if f.stats == 1 {
+		return info, nil
+	}
+	return changedSizeInfo{FileInfo: info, size: info.Size() + 1}, nil
+}
+
+type changedSizeInfo struct {
+	fs.FileInfo
+	size int64
+}
+
+func (i changedSizeInfo) Size() int64 { return i.size }
 
 func (f *partialErrorFile) Read(p []byte) (int, error) {
 	if f.failed {
@@ -107,10 +151,26 @@ func TestGrepReadV2HonorsCancellationDuringSearch(t *testing.T) {
 	for i := 0; i < 1024; i++ {
 		source.WriteString("var needle = 1\n")
 	}
-	ctx := &cancelAfterContext{Context: context.Background(), after: 7}
+	ctx := &cancelAfterContext{Context: context.Background(), after: 7, done: make(chan struct{})}
 	_, err := GrepReadV2(ctx, fstest.MapFS{"answer.go": {Data: []byte(source.String())}}, "needle flow")
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("mid-search cancellation error = %v, want context.Canceled (checks=%d)", err, ctx.calls)
+	}
+}
+
+func TestGrepReadV2SortHonorsCancellation(t *testing.T) {
+	matches := make([]grepReadV2Match, 4096)
+	for i := range matches {
+		matches[i].Score = len(matches) - i
+	}
+	ctx := &cancelAfterContext{Context: context.Background(), after: 4, done: make(chan struct{})}
+	if err := grepReadV2Sort(ctx, matches); !errors.Is(err, context.Canceled) {
+		t.Fatalf("sort cancellation error = %v, want context.Canceled", err)
+	}
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("canceled test context did not close Done")
 	}
 }
 
@@ -230,6 +290,20 @@ func TestGrepReadV2ChargesPartialBytesReturnedWithReadError(t *testing.T) {
 	}
 	if kinds["a.go"] != "read_failed" || kinds["."] != "scan_limit" {
 		t.Fatalf("bounded files = %#v", files)
+	}
+}
+
+func TestReadSourceFileLimitRejectsGrowthAfterInitialStat(t *testing.T) {
+	repository := changingStatFS{
+		FS:     fstest.MapFS{"answer.go": {Data: []byte("four")}},
+		target: "answer.go",
+	}
+	raw, readBytes, err := readSourceFileLimit(repository, "answer.go", 4)
+	if !errors.Is(err, errSourceFileChanged) {
+		t.Fatalf("growing file error = %v, want errSourceFileChanged", err)
+	}
+	if string(raw) != "four" || readBytes != 4 {
+		t.Fatalf("growing file accounting = %q/%d, want four/4", raw, readBytes)
 	}
 }
 

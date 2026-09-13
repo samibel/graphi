@@ -98,10 +98,16 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	rubricSHA := ""
+	rubricPath := ""
 	for _, input := range precondition.Inputs {
 		if input.Role == retrieval.PreconditionInputGradingRubric {
 			rubricSHA = input.SHA256
+			rubricPath = input.Path
 		}
+	}
+	if rubricSHA == "" || rubricPath == "" {
+		fmt.Fprintln(stderr, "retrieval-eval: precondition record has no frozen grading rubric")
+		return exitError
 	}
 	queries := map[string]retrieval.Query{}
 	for _, q := range dataset.Dataset.Queries {
@@ -167,7 +173,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		packet := buildGraderPacket(q, bundle, response)
+		packet := buildGraderPacket(q, bundle, response, rubricPath)
 		if err := os.MkdirAll(filepath.Join(o.dir, blindEvalGraderPacketsDir), 0o755); err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
@@ -416,10 +422,10 @@ func loadCapturedBundle(dir, queryID string) (retrieval.CapturedCandidateBundle,
 // the raters are what is being measured, the grader is the instrument reading
 // their answers, and grading correctness without the key would measure the
 // grader's own knowledge of the repository instead.
-func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBundle, response retrieval.RaterResponse) string {
+func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBundle, response retrieval.RaterResponse, rubricPath string) string {
 	var b strings.Builder
 	b.WriteString("You are grading ONE response in a qrel-blind smoke evaluation, against the frozen\n")
-	b.WriteString("rubric at docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/grading-rubric.md.\n")
+	b.WriteString("rubric at " + filepath.ToSlash(rubricPath) + ".\n")
 	b.WriteString("Read that rubric, then apply it to the material below. Do not re-answer the question\n")
 	b.WriteString("yourself and do not consult any other file, repository or response.\n\n")
 	b.WriteString("RESPONSE CONTENT ADDRESS: " + response.SHA256 + "\n")

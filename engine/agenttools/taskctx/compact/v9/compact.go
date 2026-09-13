@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -446,6 +447,9 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 			if !ok {
 				raw, err := readScannedSource(repository, snapshot, path)
 				if err != nil {
+					if errors.Is(err, fs.ErrNotExist) {
+						continue
+					}
 					return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 				}
 				lines = strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
@@ -476,6 +480,9 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 		if !ok {
 			raw, err := readScannedSource(repository, snapshot, path)
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
+				}
 				return nil, nil, fmt.Errorf("compact task_context: hydrate %s: %w", path, err)
 			}
 			set := token.NewFileSet()
@@ -661,6 +668,9 @@ func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, reposito
 		if !ok {
 			raw, err := readScannedSource(repository, snapshot, path)
 			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
+				}
 				return nil, nil, fmt.Errorf("compact task_context: hydrate GrepRead declaration %s: %w", path, err)
 			}
 			set := token.NewFileSet()

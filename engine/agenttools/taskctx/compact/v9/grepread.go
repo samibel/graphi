@@ -460,7 +460,9 @@ func grepReadV2PathMatches(ctx context.Context, files []grepReadFile, queryPath 
 			DeclarationEnd:   len(lines),
 		})
 	}
-	grepReadV2Sort(matches)
+	if err := grepReadV2Sort(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -509,7 +511,9 @@ func grepReadV2IdentifierMatches(ctx context.Context, files []grepReadFile, iden
 			})
 		}
 	}
-	grepReadV2Sort(matches)
+	if err := grepReadV2Sort(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
@@ -646,23 +650,77 @@ func grepReadV2NLMatches(ctx context.Context, files []grepReadFile, patterns []s
 			DeclarationStart: item.declStart, DeclarationEnd: item.declEnd,
 		})
 	}
-	grepReadV2Sort(matches)
+	if err := grepReadV2Sort(ctx, matches); err != nil {
+		return nil, err
+	}
 	return matches, nil
 }
 
-func grepReadV2Sort(matches []grepReadV2Match) {
-	sort.SliceStable(matches, func(i, j int) bool {
-		if matches[i].Score != matches[j].Score {
-			return matches[i].Score > matches[j].Score
+func grepReadV2Before(a, b grepReadV2Match) bool {
+	if a.Score != b.Score {
+		return a.Score > b.Score
+	}
+	if a.Path != b.Path {
+		return a.Path < b.Path
+	}
+	if a.Line != b.Line {
+		return a.Line < b.Line
+	}
+	return a.Column < b.Column
+}
+
+// grepReadV2Sort is a stable bottom-up merge sort with bounded cancellation
+// latency. A repository may produce a large pre-sort match set, so checking
+// context only before and after sort would leave cancellation ineffective
+// during one of discovery's most expensive CPU phases.
+func grepReadV2Sort(ctx context.Context, matches []grepReadV2Match) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(matches) < 2 {
+		return nil
+	}
+	scratch := make([]grepReadV2Match, len(matches))
+	source, target := matches, scratch
+	inScratch := false
+	for width := 1; width < len(matches); width *= 2 {
+		for start := 0; start < len(matches); start += 2 * width {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			middle := min(start+width, len(matches))
+			end := min(start+2*width, len(matches))
+			left, right := start, middle
+			for out := start; out < end; out++ {
+				if out&1023 == 0 {
+					if err := ctx.Err(); err != nil {
+						return err
+					}
+				}
+				switch {
+				case left >= middle:
+					target[out] = source[right]
+					right++
+				case right >= end:
+					target[out] = source[left]
+					left++
+				case grepReadV2Before(source[right], source[left]):
+					target[out] = source[right]
+					right++
+				default:
+					// Taking the left value on equality preserves input order.
+					target[out] = source[left]
+					left++
+				}
+			}
 		}
-		if matches[i].Path != matches[j].Path {
-			return matches[i].Path < matches[j].Path
-		}
-		if matches[i].Line != matches[j].Line {
-			return matches[i].Line < matches[j].Line
-		}
-		return matches[i].Column < matches[j].Column
-	})
+		source, target = target, source
+		inScratch = !inScratch
+	}
+	if inScratch {
+		copy(matches, source)
+	}
+	return ctx.Err()
 }
 
 func grepReadV2PlanReads(matches []grepReadV2Match, mode GrepReadV2Mode) []grepReadWindow {
