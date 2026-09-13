@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/1",
-  "status": "frozen_pre_capture_attested",
+  "status": "captured_pre_response_attested",
   "operator": {
     "id": "codex-independent-second-holdout-operator",
     "provider": "OpenAI Codex",
@@ -32,7 +32,7 @@
   "frozen_identities": {
     "product_candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
     "freeze_base_sha": "595ea58ff030449a68272c285c61d08c29a32856",
-    "capture_candidate_sha": "pending: freeze-record commit not yet created",
+    "capture_candidate_sha": "94de3233d38deb5bff2e372341d9c853e8533b0c",
     "indexed_repository": "cobra",
     "indexed_repository_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
     "embedder_id": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
@@ -42,12 +42,12 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-13T15:12:22Z",
+    "attested_at_utc": "2026-09-13T15:16:25Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
     "precondition_record_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
-    "pre_registration_sha256": "pending: created by official capture",
-    "two_build_reproducibility": "pending: required before participant execution",
+    "pre_registration_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "two_build_reproducibility": "PASS: 64/64 exact MCP bytes, response digests, tokenizer counts, and prompts identical across distinct ready index generations; maximum 1193/1200 cl100k",
     "isolation_controls": [
       "Every participant item uses a new codex exec --ephemeral process; no resume or fork",
       "Every participant item uses --ignore-user-config --ignore-rules -s read-only",
