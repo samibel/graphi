@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/1",
-  "status": "captured_pre_response_attested",
+  "status": "completed_release_no_attested",
   "operator": {
     "id": "codex-independent-second-holdout-operator",
     "provider": "OpenAI Codex",
@@ -42,7 +42,7 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-13T15:16:25Z",
+    "attested_at_utc": "2026-09-13T15:51:20Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
     "precondition_record_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
@@ -60,5 +60,33 @@
       "Repository-writer malice remains outside the isolation guarantee described by the public threat model."
     ]
   },
-  "declaration": "Before freeze, the independent second-run operator attests to the stated separation, candidate and corpus identities, fail-closed two-build requirement, stateless participant controls, no prior holdout participation, and no disclosure of holdout content to the root orchestration agent."
+  "phase_commits": {
+    "capture_evidence": "956d89ab",
+    "primary_raw": "c1703470",
+    "primary_sealed": "88665b01",
+    "blind_grades_raw": "a799fadf",
+    "blind_grades_sealed": "ef119cf6",
+    "adjudications_raw": "21001a11",
+    "adjudications_sealed": "3b27bc3d",
+    "adjudication_grades_raw": "50929584",
+    "adjudication_grades_sealed": "78697ef3"
+  },
+  "decision": {
+    "decide_invocations": 1,
+    "decide_exit_code": 1,
+    "release": "NO",
+    "n": 64,
+    "k": 56,
+    "pass_count": 42,
+    "primary_disagreement_count": 2,
+    "adjudication_count": 2,
+    "insufficient_response_count": 0,
+    "outcome_sha256": "4bcfd50c22ba1c4cb5fb75b46994de6c1d236cad386863ebd426efc37df68d47",
+    "end_of_run_hash_comparison_sha256": "3a57ae4c23a763adab3dbbfdbd4378ff0d156fc4b2e4f810dd00535302bdf248",
+    "all_frozen_input_hashes_match": true,
+    "process_failures": 0,
+    "forbidden_tool_events": 0,
+    "retries": 0
+  },
+  "declaration": "The independent second-run operator attests that the frozen inputs and candidate bindings matched; both captures were byte-, digest-, and token-reproducible; every participant process passed the pre-registered event audit; no retry, overwrite, waiver, or disclosure to the root orchestration agent occurred; and the single mechanical decision was RELEASE: NO at 42/64 against k=56."
 }
