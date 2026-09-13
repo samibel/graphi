@@ -1,0 +1,3 @@
+Bash completion V1 is the original implementation, generated with `GenBashCompletion()` or `GenBashCompletionFile()` (`site/content/completions/_index.md:423-424`). V2 uses `GenBashCompletionV2(w, includeDesc)` and supports optionally including descriptions through `includeDesc` (`bash_completionsV2.go:392-396`).
+
+Cobra’s default `completion` command uses V2 (`site/content/completions/bash.md:9-10`).

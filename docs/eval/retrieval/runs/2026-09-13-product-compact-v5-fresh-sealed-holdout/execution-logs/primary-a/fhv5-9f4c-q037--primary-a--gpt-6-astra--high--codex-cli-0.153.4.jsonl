@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac4-04e0-7a33-b61b-8d1f4a7f8601"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response identifies `ShellCompRequestCmd = \"__complete\"` in `completions.go:27–29` and `initCompleteCmd` at lines 193–194, but omits the implementation that transforms and emits results and removes the command when unused."}}
+{"type":"turn.completed","usage":{"input_tokens":17283,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

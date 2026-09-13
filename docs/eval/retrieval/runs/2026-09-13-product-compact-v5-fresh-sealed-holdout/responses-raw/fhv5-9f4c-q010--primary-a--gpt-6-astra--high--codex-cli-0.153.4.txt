@@ -1,0 +1,3 @@
+When `EnableCaseInsensitive` is enabled, `commandNameMatches(s, t)` uses `strings.EqualFold(s, t)` for case-insensitive comparison instead of the case-sensitive `s == t` (`command.go`, lines 1876–1885).
+
+This also makes alias matching case-insensitive because `HasAlias` calls `commandNameMatches(a, s)` (`command.go`, lines 1505–1513).

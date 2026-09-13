@@ -1,0 +1,1 @@
+INSUFFICIENT The response lacks the completion code for resolving the target command, preparing flag parsing, and detecting file or directory annotations; it only shows flag lookup and callback registration/retrieval (`command.go:1794–1803`, `completions.go:131–160`) and the opening of `prepareCustomAnnotationsForFlags` (`bash_completions.go:536–537`).

@@ -1,0 +1,3 @@
+`GetActiveHelpConfig` first reads `COBRA_ACTIVE_HELP`. If it equals `"0"`, it returns `"0"`, overriding the program-specific setting. Otherwise, it returns the program-specific environment value; other global values are not used as a fallback (`active_help.go:51–57`; constants at lines 29–30).
+
+The program-specific variable is `<PROGRAM>_ACTIVE_HELP`, using the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:46–48`, lookup at line 54).

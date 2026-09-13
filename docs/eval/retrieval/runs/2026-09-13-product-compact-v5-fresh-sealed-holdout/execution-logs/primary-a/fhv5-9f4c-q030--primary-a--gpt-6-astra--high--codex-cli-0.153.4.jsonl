@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac3-103f-71a2-a86e-fefb19ce8039"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).\n\nIf short `-v` is unused, `InitDefaultVersionFlag` registers `--version` with shorthand `-v`. If `-v` already exists, it registers only `--version`, leaving the existing `-v` intact (`command.go:1217–1221`, `ShorthandLookup(\"v\")`, `BoolP`, and `Bool`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17433,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":207,"reasoning_output_tokens":93}}

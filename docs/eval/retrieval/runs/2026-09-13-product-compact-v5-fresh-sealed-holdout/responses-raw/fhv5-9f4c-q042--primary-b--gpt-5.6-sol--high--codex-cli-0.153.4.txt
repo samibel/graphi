@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `enforceFlagGroupsForCompletion` processing group annotations and intending to require remaining flags (`flag_groups.go:225,234-243`), but omits the code that actually marks flags required or hidden.

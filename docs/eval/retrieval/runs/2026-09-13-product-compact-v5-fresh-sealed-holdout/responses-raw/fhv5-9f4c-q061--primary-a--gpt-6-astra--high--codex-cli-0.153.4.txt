@@ -1,0 +1,1 @@
+The descendant will use the ancestor’s custom help function. In `command.go:452–458`, `HelpFunc()` returns `c.helpFunc` if set; otherwise, when a parent exists, it recursively returns `c.Parent().HelpFunc()`. The default help function at lines 459–467 is reached only if no command in that ancestor chain defines one.

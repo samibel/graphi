@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `c.updateParentsPflags()` and `c.parentsPflags.Lookup(name)` in `command.go:1811-1812`, but omits the implementation that assembles the ancestor persistent flags.

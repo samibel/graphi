@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows delegation to `c.Root().ExecuteC()` (`command.go:1059–1060`) and context assignment (`command.go:1043–1049`), but omits the command-selection, execution, and error/help-handling portions of `ExecuteC`.

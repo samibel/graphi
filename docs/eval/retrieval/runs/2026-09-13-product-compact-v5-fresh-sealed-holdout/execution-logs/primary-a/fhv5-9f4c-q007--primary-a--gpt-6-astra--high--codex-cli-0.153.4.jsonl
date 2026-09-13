@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-4346-7852-bee6-ffd97ee5569d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MatchAll` stops at the first validator that fails and returns its error unchanged; subsequent validators are not run. In `args.go`, lines 116–119 loop over the validators and execute `if err := parg(cmd, args); err != nil { return err }`."}}
+{"type":"turn.completed","usage":{"input_tokens":17275,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

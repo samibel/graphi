@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-9b4d-7073-a56f-f22d7d8421d3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`forceMultiLine` appends `\"\\n\"` when the string is longer than 60 characters and does not already contain a newline (`doc/util.go`, lines 42–44)."}}
+{"type":"turn.completed","usage":{"input_tokens":16426,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":42,"reasoning_output_tokens":0}}

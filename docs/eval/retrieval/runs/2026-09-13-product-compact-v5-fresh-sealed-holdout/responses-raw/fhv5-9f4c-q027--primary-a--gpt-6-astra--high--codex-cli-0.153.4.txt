@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no normal-output destination resolution code showing whether a child inherits an ancestor’s destination or what the final fallback is.

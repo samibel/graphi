@@ -1,0 +1,1 @@
+A typed prefix is accepted when it matches the name or an alias of **exactly one subcommand**. `hasNameOrAliasPrefix` uses `strings.HasPrefix` (`command.go:1524–1538`), and `findNext` accepts the collected match only when `len(matches) == 1` (`command.go:767–786`). An exact name or alias match takes precedence and returns immediately.

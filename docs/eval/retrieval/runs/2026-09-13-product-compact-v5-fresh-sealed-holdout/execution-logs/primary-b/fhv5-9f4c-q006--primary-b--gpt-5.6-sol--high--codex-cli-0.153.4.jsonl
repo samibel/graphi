@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-1b48-77d1-b9a4-c5f62c1f75f3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `completions.go:162-191`, `ShellCompDirective.string`:\n\n- Combined values render as the enabled symbolic names joined with `\", \"`, in this fixed order: `Error`, `NoSpace`, `NoFileComp`, `FilterFileExt`, `FilterDirs`, `KeepOrder`.\n- A value with no recognized flags renders `\"ShellCompDirectiveDefault\"`.\n- Any value `>= shellCompDirectiveMaxValue` renders `ERROR: unexpected ShellCompDirective value: <decimal value>` via `fmt.Sprintf`.\n\nThe range check occurs after collecting/defaulting names, but its error string overrides that result."}}
+{"type":"turn.completed","usage":{"input_tokens":16562,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":0}}

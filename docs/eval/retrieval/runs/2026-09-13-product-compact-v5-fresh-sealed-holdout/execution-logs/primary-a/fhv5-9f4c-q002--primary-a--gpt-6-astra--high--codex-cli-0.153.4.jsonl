@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09abf-8e5f-71a0-8580-f4c204db42ed"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`GetActiveHelpConfig` first reads `COBRA_ACTIVE_HELP`. If it equals `\"0\"`, it returns `\"0\"`, overriding the program-specific setting. Otherwise, it returns the program-specific environment value; other global values are not used as a fallback (`active_help.go:51–57`; constants at lines 29–30).\n\nThe program-specific variable is `<PROGRAM>_ACTIVE_HELP`, using the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:46–48`, lookup at line 54)."}}
+{"type":"turn.completed","usage":{"input_tokens":17287,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":121,"reasoning_output_tokens":0}}

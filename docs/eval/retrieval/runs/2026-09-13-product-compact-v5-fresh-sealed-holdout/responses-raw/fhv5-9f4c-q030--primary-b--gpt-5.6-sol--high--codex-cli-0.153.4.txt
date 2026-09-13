@@ -1,0 +1,6 @@
+The default top-level `--version` flag is added when the root command’s `Version` field is set (`site/content/user_guide.md:594`).
+
+In `Command.InitDefaultVersionFlag`, Cobra checks `c.Flags().ShorthandLookup("v")` (`command.go:1217`):
+
+- If `-v` is unused, it adds `--version` with shorthand `-v` via `BoolP`.
+- If `-v` already exists, it adds only the long `--version` flag via `Bool`, preserving the preexisting `-v` (`command.go:1217-1221`).

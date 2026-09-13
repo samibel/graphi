@@ -1,0 +1,5 @@
+`Command.ValidateFlagGroups()` collects each flag’s set/unset status for `oneRequired` annotations, then calls `validateOneRequiredFlagGroups` (`flag_groups.go:78–103`). If no member is set, validation returns:
+
+`at least one of the flags in the group [<sorted flag list>] is required`
+
+The member names are sorted first (`flag_groups.go:182–183`). Validation is skipped when `DisableFlagParsing` is true (`flag_groups.go:81–83`).

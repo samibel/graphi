@@ -1,0 +1,7 @@
+In `doc/yaml_docs.go:92–147`, `GenYamlCustom` assembles a `cmdDoc` as follows:
+
+- **Command metadata:** Initializes the default help command and flag. Sets `Name` from `cmd.CommandPath()`, and `Synopsis` and `Description` from `cmd.Short` and `cmd.Long` through `forceMultiLine`. Sets `Usage` to `cmd.UseLine()` only when runnable, and copies `Example` when nonempty.
+- **Flags:** Passes `cmd.NonInheritedFlags()` through `genFlagResult` into `Options`, and `cmd.InheritedFlags()` through the same helper into `InheritedOptions`, each only when `HasFlags()` is true. The response does not show `genFlagResult`’s internal conversion.
+- **See-also:** When `hasSeeAlso(cmd)` is true, adds the parent first if present, then children sorted using `byName`. It skips unavailable children and additional help-topic commands. Each entry is formatted as `CommandPath() + " - " + Short`.
+
+It then serializes the assembled document with `yaml.Marshal(&yamlDoc)` and writes the resulting bytes to `w`. `GenYaml` delegates to this function with an identity `linkHandler` (`doc/yaml_docs.go:87–90`); the shown implementation does not use that handler.

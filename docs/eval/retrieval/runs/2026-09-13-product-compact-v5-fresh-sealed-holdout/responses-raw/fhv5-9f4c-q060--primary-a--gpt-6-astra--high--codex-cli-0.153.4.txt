@@ -1,0 +1,5 @@
+`(*Command).ResetFlags()` in `command.go:1737–1749`:
+
+- Recreates and resets `c.flagErrorBuf` as a new `bytes.Buffer`.
+- Recreates `c.flags` and `c.pflags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, directing both outputs to `c.flagErrorBuf`.
+- Clears `c.lflags`, `c.iflags`, and `c.parentsPflags` by setting them to `nil`.

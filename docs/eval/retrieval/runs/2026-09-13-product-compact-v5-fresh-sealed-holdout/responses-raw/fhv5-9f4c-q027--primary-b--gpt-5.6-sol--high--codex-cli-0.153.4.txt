@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows parent-child linkage in `command.go:1302-1329`, but contains no normal-output destination inheritance logic or final fallback.

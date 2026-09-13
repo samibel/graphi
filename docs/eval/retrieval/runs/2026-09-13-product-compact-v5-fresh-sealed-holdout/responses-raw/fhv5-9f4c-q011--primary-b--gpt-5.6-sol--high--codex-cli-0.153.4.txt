@@ -1,0 +1,1 @@
+`forceMultiLine` appends `"\n"` when the string is longer than 60 characters and does not already contain a newline (`doc/util.go`, lines 42–44).

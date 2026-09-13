@@ -1,0 +1,5 @@
+In `completions.go`, `ShellCompDirective.string()` (lines 162–191):
+
+- **Combined values:** Tests each flag with `d&flag != 0` and joins enabled names with `", "`, in this order: `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, `ShellCompDirectiveNoFileComp`, `ShellCompDirectiveFilterFileExt`, `ShellCompDirectiveFilterDirs`, `ShellCompDirectiveKeepOrder` (lines 165–182, 190).
+- **Default:** If no recognized flags are enabled, renders `"ShellCompDirectiveDefault"` (lines 183–185), unless the range check rejects the value.
+- **Out-of-range:** If `d >= shellCompDirectiveMaxValue`, returns `"ERROR: unexpected ShellCompDirective value: %d"` with `d` formatted as decimal, overriding any collected names (lines 187–189). The snippet does not define the numeric threshold or explicitly reject negative values.

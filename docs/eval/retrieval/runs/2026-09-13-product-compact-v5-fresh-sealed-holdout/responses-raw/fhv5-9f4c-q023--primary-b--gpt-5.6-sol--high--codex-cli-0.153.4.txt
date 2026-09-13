@@ -1,0 +1,1 @@
+The command reports an error when invoked without a required flag, as stated in `shell_completions.go:30` for `Command.MarkFlagRequired`. For a group marked with `Command.MarkFlagsOneRequired`, Cobra errors unless at least one flag from that group was supplied (`flag_groups.go:47-49`).

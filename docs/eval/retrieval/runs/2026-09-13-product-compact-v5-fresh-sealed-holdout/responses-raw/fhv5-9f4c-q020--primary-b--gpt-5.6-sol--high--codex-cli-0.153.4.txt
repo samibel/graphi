@@ -1,0 +1,9 @@
+In `doc/rest_docs.go`, `indentString` leaves blank lines unprefixed. Lines 178–181 add the prefix only when at the beginning of a line and the current byte is not `'\n'`:
+
+```go
+if bol && c != '\n' {
+    res = append(res, prefix...)
+}
+```
+
+It still appends the newline and resets `bol` via `bol = c == '\n'` (lines 182–183), so the prefix is added only when the next line contains a non-newline character.

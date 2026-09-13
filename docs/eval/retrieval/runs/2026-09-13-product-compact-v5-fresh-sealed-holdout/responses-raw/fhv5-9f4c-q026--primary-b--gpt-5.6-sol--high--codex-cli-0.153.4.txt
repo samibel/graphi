@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows that `ValidateFlagGroups` returns the first error encountered (`flag_groups.go:79-80`), but it omits the validation branch and exact result for two changed flags in one mutually exclusive group.

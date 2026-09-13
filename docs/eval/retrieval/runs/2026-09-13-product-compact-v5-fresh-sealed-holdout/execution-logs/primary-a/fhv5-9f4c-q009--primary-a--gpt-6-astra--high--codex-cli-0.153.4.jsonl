@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac0-7cda-7a92-80c3-8a8c52b32a18"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"For children passing `cmd.IsAvailableCommand()` (`command.go:835`), `SuggestionsFor` suggests a command through three mechanisms:\n\n1. **Levenshtein distance:** `ld(typedName, cmd.Name(), true) <= c.SuggestionsMinimumDistance` (lines 836–837).\n2. **Case-insensitive prefix:** the lowercased command name starts with the lowercased `typedName` (line 838).\n3. **Explicit suggestion match:** `typedName` matches an entry in `cmd.SuggestFor` using `strings.EqualFold` (lines 842–845)."}}
+{"type":"turn.completed","usage":{"input_tokens":17374,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":128,"reasoning_output_tokens":0}}

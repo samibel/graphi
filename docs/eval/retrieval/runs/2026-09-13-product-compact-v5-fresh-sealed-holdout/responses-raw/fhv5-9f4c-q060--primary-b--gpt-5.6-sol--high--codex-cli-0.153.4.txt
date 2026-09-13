@@ -1,0 +1,9 @@
+`Command.ResetFlags` clears and recreates:
+
+- The flag error buffer: `c.flagErrorBuf` becomes a new `bytes.Buffer` and is reset.
+- The local flag set: `c.flags` becomes a new `flag.FlagSet`.
+- The persistent flag set: `c.pflags` becomes a new `flag.FlagSet`.
+- Both new flag sets send output to `c.flagErrorBuf`.
+- Cached/inherited flag state is cleared by setting `c.lflags`, `c.iflags`, and `c.parentsPflags` to `nil`.
+
+Evidence: `command.go:1737–1749`, in `func (c *Command) ResetFlags()`.

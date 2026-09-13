@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac6-6f29-7b80-978e-ef085710f2e4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The distinction is **which configured writer receives the text**:\n\n- `Print`, `Println`, and `Printf` use the general output writer: `Print` calls `fmt.Fprint(c.OutOrStderr(), i...)` (`command.go:1395–1398`), and the other two delegate to `Print` (`1400–1408`).\n- `PrintErr`, `PrintErrln`, and `PrintErrf` use the error output writer: `PrintErr` calls `fmt.Fprint(c.ErrOrStderr(), i...)` (`command.go:1409–1413`), and its variants delegate to it (`1415–1423`).\n\nThus, separate custom output and error writers receive their respective method families. Both families document **stderr as the fallback** when their writer is unset."}}
+{"type":"turn.completed","usage":{"input_tokens":17344,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":173,"reasoning_output_tokens":0}}

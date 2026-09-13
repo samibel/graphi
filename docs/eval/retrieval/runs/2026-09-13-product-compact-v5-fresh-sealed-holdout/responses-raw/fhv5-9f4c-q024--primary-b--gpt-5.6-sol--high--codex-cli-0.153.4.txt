@@ -1,0 +1,1 @@
+The invocation fails with an error. `flag_groups.go:31-34` says `MarkFlagsRequiredTogether` makes Cobra error when a command supplies a subset—but not all—of the grouped flags. `site/content/user_guide.md:336-338` gives the example that supplying `--username` requires supplying `--password` as well.

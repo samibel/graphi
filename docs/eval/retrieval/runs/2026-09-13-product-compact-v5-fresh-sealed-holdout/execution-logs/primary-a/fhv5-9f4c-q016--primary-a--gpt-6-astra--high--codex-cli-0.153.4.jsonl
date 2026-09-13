@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac1-47dd-7d40-8c51-b10450e72e8a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Validation succeeds when **all flags in the group are set or none are set**: `validateRequiredFlagGroups` checks `len(unset) == len(flagnameAndStatus) || len(unset) == 0` (`flag_groups.go:155–156`).\n\nIf only some are set, the error identifies **the group and its missing flags**, sorted by name: `if any flags in the group [%v] are set they must all be set; missing %v` (`flag_groups.go:159–161`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17400,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":111,"reasoning_output_tokens":0}}

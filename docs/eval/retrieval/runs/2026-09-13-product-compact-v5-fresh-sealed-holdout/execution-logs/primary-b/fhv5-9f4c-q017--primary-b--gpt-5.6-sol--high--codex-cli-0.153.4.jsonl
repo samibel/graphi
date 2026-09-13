@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ac1-3121-74f2-bce8-c0842f5e343e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MarkFlagCustom` installs the `BashCompCustom` annotation with the Bash function name as `[]string{f}`:\n\n```go\nflags.SetAnnotation(name, BashCompCustom, []string{f})\n```\n\nThe warning says it works only for Bash completion. For portability across shells, use `c.RegisterFlagCompletionFunc(...)` to register a Go completion function instead (`shell_completions.go:71–79`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16354,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":0}}

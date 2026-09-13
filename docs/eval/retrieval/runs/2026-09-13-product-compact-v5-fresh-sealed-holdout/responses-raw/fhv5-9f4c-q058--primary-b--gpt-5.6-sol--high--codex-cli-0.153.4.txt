@@ -1,0 +1,1 @@
+They can be returned unchanged. In `command.go:1292-1294`, `(*Command).Commands()` says it “returns a sorted slice,” but immediately notes: “do not sort commands if it already sorted or sorting was disabled.” The global sorting switch is `EnableCommandSorting` in `cobra.go:59`.
