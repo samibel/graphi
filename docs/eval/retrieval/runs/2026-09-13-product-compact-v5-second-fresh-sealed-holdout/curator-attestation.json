@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "attestation_type": "independent-second-fresh-holdout-curation",
+  "curator": {
+    "identity": "Codex subagent /root/fresh_holdout_curator",
+    "provider": "OpenAI",
+    "resolved_model_identity": "GPT-5 Codex agent",
+    "model_identity_limitation": "The execution surface exposed no immutable backend model-weights or build digest."
+  },
+  "times_utc": {
+    "curation_started": "2026-09-13T13:53:08Z",
+    "dataset_sealed": "2026-09-13T14:04:19Z",
+    "validation_completed": "2026-09-13T14:06:47Z"
+  },
+  "binding": {
+    "base_commit": "067071eef5b19a88856a1f6d53ebd55586a9ae5d",
+    "candidate_commit": "1430daf27e795c8c3a7dcc230d858935044bc33f",
+    "corpus_repo": "cobra",
+    "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "331bd256c3097c61b34b3ccbc7716a161a315c76f2a41e22c4a4f88085eb85ae"
+  },
+  "population": {
+    "n": 64,
+    "k": 56,
+    "unique_query_ids": 64,
+    "unique_family_ids": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10,
+      "no_hit": 0
+    }
+  },
+  "allowed_inputs_used": [
+    "clean pinned Cobra checkout at the attested corpus commit",
+    "public retrieval methodology and threat model",
+    "public retrieval budgets and targets",
+    "public frozen method and grading rubric of the valid first fresh holdout",
+    "Go dataset schema, validation, span-coverage, answerability, and threshold-derivation code",
+    "development and first-fresh query text only through a non-logging automated duplicate comparator"
+  ],
+  "validations": {
+    "json_and_dataset_schema": "PASS",
+    "exact_corpus_commit": "PASS",
+    "clean_corpus_checkout": "PASS",
+    "all_referenced_files_spans_and_anchors_resolve": "PASS",
+    "answerable_holdout_population_n_64": "PASS",
+    "all_judgements_exact_grade_3": "PASS",
+    "balanced_stratification": "PASS",
+    "unique_query_and_family_ids": "PASS",
+    "exact_normalized_cross_population_duplicates": 0,
+    "token_jaccard_cross_population_pairs_at_or_above_0_70": 0,
+    "maximum_cross_population_token_jaccard": 0.333,
+    "threshold_rederived_k_56": "PASS",
+    "frozen_rubric_byte_identity": "PASS",
+    "candidate_object_and_binding": "PASS",
+    "capture_response_and_grade_absence": "PASS"
+  },
+  "independence_declarations": [
+    "I did not implement, tune, run, inspect, or evaluate the bound product candidate.",
+    "I did not use candidate outputs, captures, bundles, responses, grades, or adjudications when selecting or reviewing this population.",
+    "I curated and completed a second-pass source review before any candidate capture or rater execution for this run.",
+    "I disclosed no question, qrel, source span, anchor, answer key, or dataset byte to the root orchestration agent.",
+    "The later capture must be completed, hashed, and committed before any primary, grader, or adjudicator is executed."
+  ],
+  "limitations": [
+    "The curator also authored the first fresh holdout, so mnemonic blindness to that population cannot be claimed. Freshness was enforced by deliberate topic separation and a non-logging automated exact and near-duplicate screen against both the development and first-fresh populations.",
+    "While recovering the frozen public method, the curator opened the first run's public README, which included aggregate and query-ID-level outcome metadata. It contained no question or qrel content and was not used to tune selection.",
+    "The duplicate screen is a lexical safeguard, not a proof of semantic non-equivalence; independent manual review also found no reused or near-duplicate developer question.",
+    "No candidate capture, primary answer, grade, adjudication, or release decision was performed by the curator."
+  ]
+}
