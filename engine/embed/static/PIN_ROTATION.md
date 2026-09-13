@@ -132,6 +132,10 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
   lifecycle-focus and exact referenced-definition recovery measurement. Its
   ranking report and two-index MCP payload capture use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
+  `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — the first
+  two registered compact development sufficiency runs. Their frozen inputs and
+  blind answers are bound to bundles produced by this pinned model.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

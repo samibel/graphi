@@ -14,6 +14,7 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 func TestCompactTaskContextDev_IsSingleEncodedDeterministicAndSourceVerifiable(t *testing.T) {
@@ -242,6 +243,79 @@ func TestCompactTaskContextDev_RepositoryHydratesCallingDeclaration(t *testing.T
 	}
 	if !strings.Contains(joined, "c.ParseFlags(args)") || !strings.Contains(joined, "c.preRun()") || !strings.Contains(joined, "range initializers") {
 		t.Fatalf("calling declaration was not hydrated: %+v", structured.Sources)
+	}
+}
+
+func TestCompactTaskContextDev_RepositoryHydratesSmallShellCompletionDeclarations(t *testing.T) {
+	counter := equalRecallFixtureCounter()
+	input := compactTaskContextDevFixtureInput(t, counter)
+	repository := fstest.MapFS{"completion.go": {Data: []byte(strings.Join([]string{
+		"package fixture",
+		"type Command struct{}",
+		"type ShellCompDirective int",
+		"var completionFunctions = map[string]func(*Command, []string, string) ([]string, ShellCompDirective){}",
+		"// RegisterFlagCompletionFunc registers a portable shell completion function.",
+		"func (c *Command) RegisterFlagCompletionFunc(name string, f func(*Command, []string, string) ([]string, ShellCompDirective)) error {",
+		"\tcompletionFunctions[name] = f",
+		"\treturn nil",
+		"}",
+	}, "\n") + "\n")}}
+	query := "how to write shell completion function in Go"
+	transcript := GrepReadV2(repository, query)
+	payload, err := BuildCompactTaskContextDevWithRepository(query, input, &transcript, repository, 140, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, structured, err := ParseCompactTaskContextDev(payload.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := ""
+	for _, source := range structured.Sources {
+		joined += source.Text + "\n"
+	}
+	if !strings.Contains(joined, "func (c *Command) RegisterFlagCompletionFunc") || !strings.Contains(joined, "completionFunctions[name] = f") || !strings.Contains(joined, "return nil") {
+		t.Fatalf("small completion declaration was not preserved as a unit: %+v", structured.Sources)
+	}
+}
+
+func TestCompactTaskContextDev_RealTokenizerIdentityEnforcesWireCeiling(t *testing.T) {
+	counter := PayloadCounter{
+		TokenizerID:      evaltokenizer.TokenizerID,
+		VocabularySHA256: equalRecallFixtureVocabSHA,
+		Count: func(raw []byte) (int, error) {
+			return len(raw), nil
+		},
+	}
+	lines := make([]string, 220)
+	for i := range lines {
+		lines[i] = "value"
+	}
+	text := strings.Join(lines, "\n")
+	bundle := contract.Result{
+		Outcome: contract.OutcomePartial,
+		Summary: `task_context/2: 1 seed(s) for "value" — 1 files (task_context/2; retrieval/7; weights abc123; model fixture-model; 220/1200 snippet tokens; context-definitions/3; strategy semantic_first; degradation: ready)`,
+		Evidence: []contract.Evidence{{
+			RefID: "e1", Path: "value.go", Line: 1, Span: "1-220", Role: "snippet",
+			Snippet: text, TextHash: shape.TextHash(text),
+		}},
+		Confidence: contract.Confidence{Distribution: map[string]float64{"heuristic": 1}, Top: "heuristic", Method: "fixture"},
+	}
+	input := equalRecallFixturePayload(t, bundle, counter)
+	payload, err := BuildCompactTaskContextDev("value", input, 1200, counter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Bytes) > SavingsCandidateBudget {
+		t.Fatalf("serialized response = %d fake real tokens, want <= %d", len(payload.Bytes), SavingsCandidateBudget)
+	}
+}
+
+func TestCompactTaskContextDevMarkdownSection(t *testing.T) {
+	lines := strings.Split("# Top\nintro\n## Hooks\none\ntwo\n### Detail\nthree\n## Next\nfour", "\n")
+	start, end, ok := compactTaskContextDevMarkdownSection(lines, 4)
+	if !ok || start != 3 || end != 7 {
+		t.Fatalf("section = %d-%d,%v; want 3-7,true", start, end, ok)
 	}
 }
 

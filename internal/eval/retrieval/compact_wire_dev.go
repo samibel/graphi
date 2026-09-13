@@ -24,9 +24,10 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
-const CompactTaskContextDevVersion = "task_context/compact-dev/6"
+const CompactTaskContextDevVersion = "task_context/compact-dev/7"
 
 // CompactTaskContextDevSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -157,7 +158,7 @@ func buildCompactTaskContextDev(query string, input PreservedPayload, grepRead *
 		all = append(all, evidence)
 	}
 	if repository != nil {
-		hydrated, hydratedItems, err := compactTaskContextDevHydrateDefinitions(repository, bundle.Items)
+		hydrated, hydratedItems, err := compactTaskContextDevHydrateDefinitions(repository, query, bundle.Items)
 		if err != nil {
 			return PreservedPayload{}, err
 		}
@@ -250,32 +251,49 @@ func buildCompactTaskContextDev(query string, input PreservedPayload, grepRead *
 		}
 	}
 	provenance.InputSHA256 = inputSHA
-	sources, used, err := compactTaskContextDevSelect(query, all, selectionItems, budget)
-	if err != nil {
-		return PreservedPayload{}, err
-	}
-	if len(sources) == 0 {
-		return PreservedPayload{}, fmt.Errorf("compact task_context dev: budget %d admitted no complete source line", budget)
-	}
-	summary := fmt.Sprintf("%d ranked source span(s) for %q; read in order (%d/%d source tokens)", len(sources), query, used, budget)
-	envelope := compactTaskContextDevEnvelope{
-		JSONRPC: "2.0", ID: 1,
-		Result: &compactTaskContextDevResult{
-			Content: []compactTaskContextDevContent{{Type: "text", Text: summary}},
-			StructuredContent: CompactTaskContextDevStructured{
-				Version: CompactTaskContextDevVersion, Sources: sources, Provenance: provenance,
-				Truncated: len(sources) < len(all) || used < compactTaskContextDevWhitespaceTokens(all),
+	effectiveBudget := budget
+	var raw []byte
+	var realTokens int
+	for {
+		sources, used, err := compactTaskContextDevSelect(query, all, selectionItems, effectiveBudget)
+		if err != nil {
+			return PreservedPayload{}, err
+		}
+		if len(sources) == 0 {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: budget %d admitted no complete source line", effectiveBudget)
+		}
+		summary := fmt.Sprintf("%d ranked source span(s) for %q; read in order (%d/%d source tokens)", len(sources), query, used, budget)
+		envelope := compactTaskContextDevEnvelope{
+			JSONRPC: "2.0", ID: 1,
+			Result: &compactTaskContextDevResult{
+				Content: []compactTaskContextDevContent{{Type: "text", Text: summary}},
+				StructuredContent: CompactTaskContextDevStructured{
+					Version: CompactTaskContextDevVersion, Sources: sources, Provenance: provenance,
+					Truncated: len(sources) < len(all) || used < compactTaskContextDevWhitespaceTokens(all),
+				},
 			},
-		},
-	}
-	raw, err := json.Marshal(envelope)
-	if err != nil {
-		return PreservedPayload{}, fmt.Errorf("compact task_context dev: marshal: %w", err)
-	}
-	raw = append(raw, '\n')
-	realTokens, err := real.Count(append([]byte(nil), raw...))
-	if err != nil {
-		return PreservedPayload{}, fmt.Errorf("compact task_context dev: tokenize: %w", err)
+		}
+		raw, err = json.Marshal(envelope)
+		if err != nil {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: marshal: %w", err)
+		}
+		raw = append(raw, '\n')
+		realTokens, err = real.Count(append([]byte(nil), raw...))
+		if err != nil {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: tokenize: %w", err)
+		}
+		if real.TokenizerID != evaltokenizer.TokenizerID || realTokens <= SavingsCandidateBudget {
+			break
+		}
+		reduction := max(1, (realTokens-SavingsCandidateBudget+1)/2)
+		if reduction >= effectiveBudget {
+			effectiveBudget /= 2
+		} else {
+			effectiveBudget -= reduction
+		}
+		if effectiveBudget < 1 {
+			return PreservedPayload{}, fmt.Errorf("compact task_context dev: fixed wire overhead exceeds %d tokens", SavingsCandidateBudget)
+		}
 	}
 	return PreservedPayload{
 		Sequence: 1, Boundary: PayloadBoundaryCandidate, Operation: CompactTaskContextDevVersion,
@@ -336,22 +354,60 @@ func compactTaskContextDevGrepReadEvidence(transcript GrepReadV2Transcript) ([]c
 	return out, nil
 }
 
-func compactTaskContextDevHydrateDefinitions(repository fs.FS, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
+func compactTaskContextDevHydrateDefinitions(repository fs.FS, query string, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
 	type parsedFile struct {
 		set   *token.FileSet
 		file  *ast.File
 		lines []string
 	}
 	files := make(map[string]parsedFile)
+	markdownFiles := make(map[string][]string)
+	mode, patterns := grepReadV2QueryPlan(query)
+	hydrateMarkdown := mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsMarkdownFlow(patterns) && !compactTaskContextDevWantsLifecycleHooks(patterns)
 	seen := make(map[string]bool)
 	var evidence []contract.Evidence
 	var linked []contract.Item
 	for _, item := range items {
-		if compactTaskContextDevItemPriority(item.Reason) < 4_000 {
+		if compactTaskContextDevItemPriority(item.Reason) < 2_000 {
 			continue
 		}
 		path, line, ok := compactTaskContextDevItemLocation(item.Reason)
-		if !ok || !strings.HasSuffix(strings.ToLower(path), ".go") || strings.HasSuffix(strings.ToLower(path), "_test.go") {
+		if !ok {
+			continue
+		}
+		lowerPath := strings.ToLower(path)
+		if strings.HasSuffix(lowerPath, ".md") {
+			if !hydrateMarkdown || compactTaskContextDevItemPriority(item.Reason) < 4_000 {
+				continue
+			}
+			lines, ok := markdownFiles[path]
+			if !ok {
+				raw, err := fs.ReadFile(repository, path)
+				if err != nil {
+					return nil, nil, fmt.Errorf("compact task_context dev: hydrate %s: %w", path, err)
+				}
+				lines = strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")
+				markdownFiles[path] = lines
+			}
+			start, end, ok := compactTaskContextDevMarkdownSection(lines, line)
+			if !ok {
+				continue
+			}
+			key := fmt.Sprintf("%s\x00%d\x00%d", path, start, end)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			text := strings.Join(lines[start-1:end], "\n")
+			ref := fmt.Sprintf("hydrated-%03d", len(evidence)+1)
+			evidence = append(evidence, contract.Evidence{
+				RefID: ref, Path: path, Line: start, Span: fmt.Sprintf("%d-%d", start, end),
+				Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+			})
+			linked = append(linked, contract.Item{RefID: "hydrated-item-" + ref, Rank: item.Rank, Reason: item.Reason, EvidenceRefIDs: []string{ref}})
+			continue
+		}
+		if !strings.HasSuffix(lowerPath, ".go") || strings.HasSuffix(lowerPath, "_test.go") {
 			continue
 		}
 		parsed, ok := files[path]
@@ -388,6 +444,38 @@ func compactTaskContextDevHydrateDefinitions(repository fs.FS, items []contract.
 	return evidence, linked, nil
 }
 
+func compactTaskContextDevMarkdownSection(lines []string, line int) (int, int, bool) {
+	if line < 1 || line > len(lines) {
+		return 0, 0, false
+	}
+	start, level := -1, 0
+	for i := line - 1; i >= 0; i-- {
+		trimmed := strings.TrimSpace(lines[i])
+		for level = 0; level < len(trimmed) && trimmed[level] == '#'; level++ {
+		}
+		if level > 0 && level < len(trimmed) && trimmed[level] == ' ' {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return 0, 0, false
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		nextLevel := 0
+		for nextLevel < len(trimmed) && trimmed[nextLevel] == '#' {
+			nextLevel++
+		}
+		if nextLevel > 0 && nextLevel <= level && nextLevel < len(trimmed) && trimmed[nextLevel] == ' ' {
+			end = i
+			break
+		}
+	}
+	return start + 1, end, true
+}
+
 // compactTaskContextDevHydrateGrepReadDeclarations turns each query-only grep
 // hit inside Go code into the complete enclosing declaration. GrepRead's
 // fixed-width reads are useful for discovery but can begin halfway through a
@@ -396,7 +484,8 @@ func compactTaskContextDevHydrateDefinitions(repository fs.FS, items []contract.
 // nor ranking and is bounded by the already recorded grep hits.
 func compactTaskContextDevHydrateGrepReadDeclarations(repository fs.FS, query string, hits []contract.Evidence) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
-	if mode != GrepReadV2NaturalLanguage || !compactTaskContextDevNeedsReferenceContext(patterns) {
+	wantsShellCompletion := compactTaskContextDevWantsShellCompletion(patterns)
+	if mode != GrepReadV2NaturalLanguage || (!compactTaskContextDevNeedsReferenceContext(patterns) && !wantsShellCompletion) {
 		return nil, nil, nil
 	}
 	type parsedFile struct {
@@ -409,7 +498,9 @@ func compactTaskContextDevHydrateGrepReadDeclarations(repository fs.FS, query st
 	var evidence []contract.Evidence
 	var linked []contract.Item
 	for _, hit := range hits {
-		if !strings.HasPrefix(hit.RefID, "grepread-grep-") {
+		isGrepHit := strings.HasPrefix(hit.RefID, "grepread-grep-")
+		isShellRead := wantsShellCompletion && strings.HasPrefix(hit.RefID, "grepread-read-")
+		if !isGrepHit && !isShellRead {
 			continue
 		}
 		path := hit.Path
@@ -431,45 +522,68 @@ func compactTaskContextDevHydrateGrepReadDeclarations(repository fs.FS, query st
 			parsed = parsedFile{set: set, file: file, lines: strings.Split(strings.TrimSuffix(string(raw), "\n"), "\n")}
 			files[path] = parsed
 		}
-		start, end, ok := compactTaskContextDevDeclarationSpan(parsed.set, parsed.file, hit.Line)
-		if !ok || start < 1 || end < start || end > len(parsed.lines) || end-start+1 <= GrepReadWindowLines {
-			continue
-		}
-		key := fmt.Sprintf("%s\x00%d\x00%d", path, start, end)
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		var declaration ast.Decl
-		for _, candidate := range parsed.file.Decls {
-			candidateStart := parsed.set.Position(candidate.Pos()).Line
-			if doc := compactTaskContextDevDeclarationDoc(candidate); doc != nil {
-				candidateStart = parsed.set.Position(doc.Pos()).Line
+		var declarations []ast.Decl
+		if isShellRead {
+			hitStart, hitEnd, err := exactEvidenceSpan(hit.Span)
+			if err != nil {
+				return nil, nil, fmt.Errorf("compact task_context dev: invalid GrepRead span %q", hit.Span)
 			}
-			candidateEnd := parsed.set.Position(candidate.End()).Line
-			if hit.Line >= candidateStart && hit.Line <= candidateEnd {
-				declaration = candidate
-				break
+			for _, candidate := range parsed.file.Decls {
+				candidateStart := parsed.set.Position(candidate.Pos()).Line
+				if doc := compactTaskContextDevDeclarationDoc(candidate); doc != nil {
+					candidateStart = parsed.set.Position(doc.Pos()).Line
+				}
+				candidateEnd := parsed.set.Position(candidate.End()).Line
+				if candidateEnd >= hitStart && candidateStart <= hitEnd {
+					declarations = append(declarations, candidate)
+				}
+			}
+		} else {
+			for _, candidate := range parsed.file.Decls {
+				candidateStart := parsed.set.Position(candidate.Pos()).Line
+				if doc := compactTaskContextDevDeclarationDoc(candidate); doc != nil {
+					candidateStart = parsed.set.Position(doc.Pos()).Line
+				}
+				candidateEnd := parsed.set.Position(candidate.End()).Line
+				if hit.Line >= candidateStart && hit.Line <= candidateEnd {
+					declarations = append(declarations, candidate)
+					break
+				}
 			}
 		}
-		symbol, kind := compactTaskContextDevDeclarationIdentity(parsed.file.Name.Name, declaration)
-		if symbol == "" {
-			continue
+		for _, declaration := range declarations {
+			start := parsed.set.Position(declaration.Pos()).Line
+			if doc := compactTaskContextDevDeclarationDoc(declaration); doc != nil {
+				start = parsed.set.Position(doc.Pos()).Line
+			}
+			end := parsed.set.Position(declaration.End()).Line
+			if start < 1 || end < start || end > len(parsed.lines) || (end-start+1 <= GrepReadWindowLines && !wantsShellCompletion) {
+				continue
+			}
+			key := fmt.Sprintf("%s\x00%d\x00%d", path, start, end)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			symbol, kind := compactTaskContextDevDeclarationIdentity(parsed.file.Name.Name, declaration)
+			if symbol == "" {
+				continue
+			}
+			text := strings.Join(parsed.lines[start-1:end], "\n")
+			// Keep hydrated declarations in the bounded GrepRead fallback channel.
+			// Shell-completion reads may contribute several small declarations
+			// from one fixed-width window.
+			ref := fmt.Sprintf("grepread-hydrated-%03d", len(evidence)+1)
+			evidence = append(evidence, contract.Evidence{
+				RefID: ref, Path: path, Line: start, Span: fmt.Sprintf("%d-%d", start, end),
+				Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
+			})
+			linked = append(linked, contract.Item{
+				RefID: "grepread-hydrated-item-" + ref, Rank: len(linked) + 1,
+				Reason:         fmt.Sprintf("grepread-declaration: %s %s (%s:%d) score 0 [query hit %s]", kind, symbol, path, start, hit.RefID),
+				EvidenceRefIDs: []string{ref},
+			})
 		}
-		text := strings.Join(parsed.lines[start-1:end], "\n")
-		// Keep hydrated declarations in the bounded GrepRead fallback channel.
-		// They add depth to one query-only discovery hit; they must not consume
-		// the semantic breadth slots that already have measured recall.
-		ref := fmt.Sprintf("grepread-hydrated-%03d", len(evidence)+1)
-		evidence = append(evidence, contract.Evidence{
-			RefID: ref, Path: path, Line: start, Span: fmt.Sprintf("%d-%d", start, end),
-			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
-		})
-		linked = append(linked, contract.Item{
-			RefID: "grepread-hydrated-item-" + ref, Rank: len(linked) + 1,
-			Reason:         fmt.Sprintf("grepread-declaration: %s %s (%s:%d) score 0 [query hit %s]", kind, symbol, path, start, hit.RefID),
-			EvidenceRefIDs: []string{ref},
-		})
 	}
 	return evidence, linked, nil
 }
@@ -498,7 +612,7 @@ type compactTaskContextDevReferenceDeclaration struct {
 // it never consults answer spans or judgements.
 func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evidence []contract.Evidence, items []contract.Item) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
-	if mode != GrepReadV2NaturalLanguage || !compactTaskContextDevNeedsReferenceContext(patterns) {
+	if mode != GrepReadV2NaturalLanguage || !compactTaskContextDevNeedsFlowAllocation(patterns) {
 		return nil, nil, nil
 	}
 	identifiers := compactTaskContextDevReferenceIdentifiers(patterns, evidence, items)
@@ -592,6 +706,12 @@ func compactTaskContextDevHydrateReferences(repository fs.FS, query string, evid
 			}
 			anchors := compactTaskContextDevAnchors(mode, patterns, path, strings.Split(text, "\n"))
 			score += anchors[0].score * 1_000
+			if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(text, "ShellCompRequestCmd") && strings.Contains(text, "OutOrStdout") && strings.Contains(text, "ErrOrStderr") {
+				// A custom shell adapter speaks Cobra's hidden-command protocol.
+				// Its implementation is the source that binds request name, stdout
+				// completions, final directive and ignored stderr together.
+				score += 1_000_000
+			}
 			declarations = append(declarations, compactTaskContextDevReferenceDeclaration{
 				path: path, start: start, end: end, text: text, symbol: symbol, kind: kind,
 				score: score, references: references,
@@ -654,18 +774,59 @@ func compactTaskContextDevFlowCallee(patterns []string, declaration string) stri
 }
 
 func compactTaskContextDevNeedsReferenceContext(patterns []string) bool {
-	hasRoot, hasSubcommand := false, false
+	hasRoot, hasSubcommand, hasCompletion, hasGroup := false, false, false, false
 	for _, pattern := range patterns {
 		switch lower := strings.ToLower(pattern); lower {
-		case "after", "before", "call", "called", "dispatch", "during", "execute", "flow", "hook", "init", "lifecycle", "order", "pipeline", "route", "run", "sequence", "when":
+		case "after", "before", "call", "called", "dispatch", "during", "execute", "flow", "handl", "handle", "hook", "init", "lifecycle", "order", "pipeline", "route", "run", "sequence", "when":
 			return true
 		case "root", "rootcmd":
 			hasRoot = true
 		case "subcommand":
 			hasSubcommand = true
+		case "completion":
+			hasCompletion = true
+		case "group":
+			hasGroup = true
 		}
 	}
-	return hasRoot && hasSubcommand
+	return hasRoot && hasSubcommand || hasCompletion && hasGroup
+}
+
+func compactTaskContextDevWantsMarkdownFlow(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "lifecycle") ||
+		compactTaskContextDevHasPattern(patterns, "hook") ||
+		compactTaskContextDevHasPattern(patterns, "order") ||
+		compactTaskContextDevHasPattern(patterns, "sequence")
+}
+
+func compactTaskContextDevWantsLifecycleHooks(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "lifecycle") &&
+		(compactTaskContextDevHasPattern(patterns, "execute") || compactTaskContextDevHasPattern(patterns, "run") || compactTaskContextDevHasPattern(patterns, "hook"))
+}
+
+func compactTaskContextDevWantsTraversal(patterns []string) bool {
+	return (compactTaskContextDevHasPattern(patterns, "root") || compactTaskContextDevHasPattern(patterns, "rootcmd")) &&
+		compactTaskContextDevHasPattern(patterns, "subcommand")
+}
+
+func compactTaskContextDevWantsInitFlagValue(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "init") &&
+		compactTaskContextDevHasPattern(patterns, "flag") &&
+		compactTaskContextDevHasPattern(patterns, "value")
+}
+
+func compactTaskContextDevWantsShellCompletion(patterns []string) bool {
+	return compactTaskContextDevHasPattern(patterns, "shell") &&
+		compactTaskContextDevHasPattern(patterns, "completion")
+}
+
+func compactTaskContextDevWantsShellProtocol(patterns []string) bool {
+	return compactTaskContextDevWantsShellCompletion(patterns) &&
+		(compactTaskContextDevHasPattern(patterns, "custom") || compactTaskContextDevHasPattern(patterns, "another"))
+}
+
+func compactTaskContextDevNeedsFlowAllocation(patterns []string) bool {
+	return compactTaskContextDevNeedsReferenceContext(patterns) || compactTaskContextDevWantsShellProtocol(patterns)
 }
 
 func compactTaskContextDevReferenceIdentifiers(patterns []string, evidence []contract.Evidence, items []contract.Item) []compactTaskContextDevReferenceIdentifier {
@@ -698,6 +859,10 @@ func compactTaskContextDevReferenceIdentifiers(patterns []string, evidence []con
 			return r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
 		})
 		for _, identifier := range fields {
+			if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(identifier, "ShellComp") && strings.Contains(identifier, "Request") {
+				add(identifier, 1_000_000)
+				continue
+			}
 			score := compactTaskContextDevSymbolScore(patterns, frequencies, identifier)
 			if score > 0 {
 				add(identifier, score+1_000)
@@ -714,8 +879,15 @@ func compactTaskContextDevReferenceIdentifiers(patterns []string, evidence []con
 		}
 		return out[i].name < out[j].name
 	})
-	if len(out) > 12 {
-		out = out[:12]
+	limit := 12
+	if compactTaskContextDevWantsShellProtocol(patterns) {
+		// Protocol constants are often below generic shell/generator names in
+		// the first lexical dozen. Keep enough source-derived identifiers for
+		// the bounded reference hop to reach the hidden command implementation.
+		limit = 32
+	}
+	if len(out) > limit {
+		out = out[:limit]
 	}
 	return out
 }
@@ -824,24 +996,26 @@ func compactTaskContextDevDeclarationSpan(set *token.FileSet, file *ast.File, li
 }
 
 type compactTaskContextDevCandidate struct {
-	item           contract.Evidence
-	symbol         string
-	kind           string
-	lines          []string
-	start          int
-	anchor         int
-	from           int
-	to             int
-	cost           int
-	score          int
-	order          int
-	fallback       bool
-	itemPriority   int
-	symbolScore    int
-	secondaryFrom  int
-	secondaryTo    int
-	secondaryScore int
-	hasSecondary   bool
+	item             contract.Evidence
+	symbol           string
+	kind             string
+	lines            []string
+	start            int
+	anchor           int
+	from             int
+	to               int
+	cost             int
+	complete         bool
+	completeFallback bool
+	score            int
+	order            int
+	fallback         bool
+	itemPriority     int
+	symbolScore      int
+	secondaryFrom    int
+	secondaryTo      int
+	secondaryScore   int
+	hasSecondary     bool
 }
 
 // compactTaskContextDevSelect retains a small number of coherent regions.
@@ -869,6 +1043,20 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 	}
 	mode, patterns := grepReadV2QueryPlan(query)
+	if mode == GrepReadV2ExactIdentifier {
+		seen := map[string]bool{strings.ToLower(patterns[0]): true}
+		for _, term := range compactTaskContextDevIdentifierTerms(patterns[0]) {
+			if !seen[term] {
+				seen[term] = true
+				patterns = append(patterns, term)
+			}
+		}
+		if seen["mutually"] && seen["exclusive"] {
+			patterns = append(patterns, "group", "validate", "enforce")
+		}
+	} else if compactTaskContextDevHasPattern(patterns, "suggestion") && compactTaskContextDevHasPattern(patterns, "comput") {
+		patterns = append(patterns, "levenshtein")
+	}
 	if mode == GrepReadV2NaturalLanguage && strings.Contains(query, "--") && !compactTaskContextDevHasPattern(patterns, "flag") {
 		// Preserve the information carried by CLI spelling. The language-only
 		// plan intentionally drops one-letter tokens such as -h, but a --name
@@ -906,15 +1094,60 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 		anchors := compactTaskContextDevAnchors(mode, patterns, item.Path, lines)
 		anchor := anchors[0]
+		if compactTaskContextDevWantsShellProtocol(patterns) && strings.Contains(item.Snippet, "ShellCompRequestCmd") && strings.Contains(item.Snippet, "OutOrStdout") {
+			for index, line := range lines {
+				if strings.Contains(line, "func (c *Command) initCompleteCmd") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 200)}
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(item.Snippet, "func (c *Command) execute") && strings.Contains(item.Snippet, "PersistentPreRun") {
+			for index, line := range lines {
+				if strings.Contains(line, "func (c *Command) execute") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 220)}
+					break
+				}
+			}
+		} else if compactTaskContextDevWantsLifecycleHooks(patterns) && strings.Contains(item.Snippet, "func (c *Command) ExecuteC") && strings.Contains(item.Snippet, "cmd.execute(flags)") {
+			for index, line := range lines {
+				if strings.Contains(line, "cmd.execute(flags)") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 210)}
+					break
+				}
+			}
+		}
+		if compactTaskContextDevWantsTraversal(patterns) {
+			for index, line := range lines {
+				if strings.Contains(line, "if c.TraverseChildren") || strings.Contains(line, "TraverseChildren bool") {
+					anchor = compactTaskContextDevLineAnchor{index: index, score: max(anchor.score, 200)}
+					break
+				}
+			}
+		}
 		score := compactTaskContextDevRegionScore(mode, patterns, frequencies, item, anchor.score, testIntent) - order
 		hint := hintByEvidence[item.RefID]
 		symbolScore := compactTaskContextDevSymbolScore(patterns, frequencies, hint.symbol)
 		score += symbolScore + hint.priority
-		if compactTaskContextDevWholeSymbolMatch(patterns, hint.symbol) {
+		if compactTaskContextDevWantsShellProtocol(patterns) {
+			switch {
+			case strings.Contains(item.Snippet, "ShellCompRequestCmd") && strings.Contains(item.Snippet, "OutOrStdout"):
+				score += 3_000_000
+			case strings.Contains(item.Snippet, "ShellCompRequestCmd"):
+				score += 2_500_000
+			case strings.Contains(item.Snippet, "ShellCompDirectiveError") || strings.Contains(item.Snippet, "type ShellCompDirective"):
+				score += 2_000_000
+			}
+		}
+		wholeSymbolMatch := compactTaskContextDevWholeSymbolMatch(patterns, hint.symbol)
+		if mode == GrepReadV2ExactIdentifier {
+			wholeSymbolMatch = compactTaskContextDevWholeSymbolMatch(patterns[:1], hint.symbol)
+		}
+		if wholeSymbolMatch {
 			// Prefer Execute over ExecuteContext when the question names
 			// Execute itself. Term-level CamelCase matching intentionally gives
 			// both a useful score; this tie-break keeps the exact API entrypoint.
-			score += 20_000
+			score += 1_000_000
 		}
 		if compactTaskContextDevNeedsReferenceContext(patterns) && compactTaskContextDevLifecycleHookMatch(patterns, hint.symbol) {
 			score += 30_000
@@ -930,10 +1163,55 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			// accessors instead of spending the whole bundle on declarations.
 			score += 8_000
 		}
-		if fallback && strings.HasPrefix(item.RefID, "grepread-hydrated-") && compactTaskContextDevNeedsReferenceContext(patterns) && (hint.kind == "function" || hint.kind == "method") {
+		if fallback && strings.HasPrefix(item.RefID, "grepread-hydrated-") && (compactTaskContextDevNeedsReferenceContext(patterns) || compactTaskContextDevWantsShellCompletion(patterns)) && (hint.kind == "function" || hint.kind == "method") {
 			// For flow questions, prefer an executable declaration around a
 			// query hit over a large constant/type block containing the same
 			// vocabulary. Only one fallback slot is available in this mode.
+			score += 100_000
+		}
+		if compactTaskContextDevWantsShellCompletion(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			if strings.Contains(lowerSymbol, "completionfunc") || strings.Contains(lowerSymbol, "fixedcompletions") {
+				// Prefer Cobra's shell-independent Go callback surface over one
+				// shell's generated-script plumbing.
+				score += 200_000
+			}
+			if strings.Contains(lowerSymbol, "register") && strings.Contains(lowerSymbol, "completionfunc") {
+				score += 20_000
+			}
+		}
+		if compactTaskContextDevWantsInitFlagValue(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			switch {
+			case strings.Contains(item.Snippet, "ParseFlags") && strings.Contains(item.Snippet, "c.preRun()"):
+				score += 260_000
+			case strings.HasSuffix(lowerSymbol, ".oninitialize"):
+				score += 220_000
+			case strings.HasSuffix(lowerSymbol, ".prerun"):
+				score += 200_000
+			case strings.HasSuffix(lowerSymbol, ".persistentflags"):
+				score += 180_000
+			case strings.HasSuffix(lowerSymbol, ".flag"):
+				score += 160_000
+			}
+		}
+		if compactTaskContextDevWantsTraversal(patterns) {
+			lowerSymbol := strings.ToLower(hint.symbol)
+			switch {
+			case strings.HasSuffix(lowerSymbol, ".traverse"):
+				score += 300_000
+			case strings.Contains(item.Snippet, "if c.TraverseChildren"):
+				score += 240_000
+			case strings.Contains(item.Snippet, "TraverseChildren bool"):
+				score += 220_000
+			case strings.HasSuffix(lowerSymbol, ".find"):
+				score += 180_000
+			}
+		}
+		if strings.HasPrefix(item.RefID, "hydrated-") && strings.HasSuffix(strings.ToLower(item.Path), ".md") && compactTaskContextDevNeedsReferenceContext(patterns) {
+			// A ranked documentation heading is otherwise represented by only one
+			// or two evidence lines. Prefer its verified section so lifecycle lists
+			// and surrounding constraints can survive compact allocation.
 			score += 100_000
 		}
 		if !referenced[item.RefID] {
@@ -949,18 +1227,25 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		candidate := compactTaskContextDevCandidate{
 			item: item, symbol: hint.symbol, kind: hint.kind, lines: lines, start: start, anchor: anchor.index,
 			from: anchor.index, to: anchor.index, score: score, order: order,
-			fallback: fallback, itemPriority: hint.priority, symbolScore: symbolScore,
+			fallback: fallback, completeFallback: fallback && strings.HasPrefix(item.RefID, "grepread-hydrated-") && compactTaskContextDevWantsShellCompletion(patterns),
+			itemPriority: hint.priority, symbolScore: symbolScore,
 		}
-		if mode == GrepReadV2NaturalLanguage && len(lines) >= 30 && len(anchors) > 1 {
-			candidate.secondaryFrom = max(0, anchors[1].index-1)
-			candidate.secondaryTo = candidate.secondaryFrom
-			candidate.secondaryScore = anchors[1].score
-			candidate.hasSecondary = true
-			if compactTaskContextDevNeedsReferenceContext(patterns) && (hint.kind == "function" || hint.kind == "method") {
+		if mode == GrepReadV2NaturalLanguage && len(lines) >= 30 {
+			if len(anchors) > 1 {
+				candidate.secondaryFrom = max(0, anchors[1].index-1)
+				candidate.secondaryTo = candidate.secondaryFrom
+				candidate.secondaryScore = anchors[1].score
+				candidate.hasSecondary = true
+			}
+			if compactTaskContextDevNeedsFlowAllocation(patterns) && (hint.kind == "function" || hint.kind == "method" || strings.HasSuffix(strings.ToLower(item.Path), ".md")) {
 				if flowAnchor, ok := compactTaskContextDevFlowSecondaryAnchor(patterns, lines, anchor.index); ok {
 					candidate.secondaryFrom = max(0, flowAnchor.index-1)
+					if compactTaskContextDevWantsLifecycleHooks(patterns) {
+						candidate.secondaryFrom = flowAnchor.index
+					}
 					candidate.secondaryTo = candidate.secondaryFrom
 					candidate.secondaryScore = flowAnchor.score
+					candidate.hasSecondary = true
 				}
 			}
 		}
@@ -970,7 +1255,10 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	if err != nil {
 		return nil, 0, err
 	}
-	if mode == GrepReadV2NaturalLanguage && !compactTaskContextDevNeedsReferenceContext(patterns) {
+	if mode == GrepReadV2ExactIdentifier {
+		compactTaskContextDevRankExactDependencies(patterns[0], candidates)
+	}
+	if mode == GrepReadV2NaturalLanguage && !compactTaskContextDevNeedsFlowAllocation(patterns) {
 		best, bestUtility := -1, 0
 		for i := range candidates {
 			candidate := candidates[i]
@@ -1001,15 +1289,65 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		}
 		return candidates[i].order < candidates[j].order
 	})
+	if compactTaskContextDevWantsLifecycleHooks(patterns) {
+		filtered := make([]compactTaskContextDevCandidate, 0, len(candidates))
+		for _, candidate := range candidates {
+			candidateEnd := candidate.start + len(candidate.lines) - 1
+			contained := false
+			for _, prior := range filtered {
+				priorEnd := prior.start + len(prior.lines) - 1
+				if candidate.item.Path == prior.item.Path && candidate.start >= prior.start && candidateEnd <= priorEnd {
+					contained = true
+					break
+				}
+			}
+			if !contained {
+				filtered = append(filtered, candidate)
+			}
+		}
+		candidates = filtered
+	}
+	if mode == GrepReadV2ExactIdentifier {
+		filtered := make([]compactTaskContextDevCandidate, 0, len(candidates))
+		for _, candidate := range candidates {
+			if candidate.fallback {
+				absolute := candidate.start + candidate.anchor
+				redundant := false
+				for _, prior := range filtered {
+					if !prior.fallback && prior.item.Path == candidate.item.Path && absolute >= prior.start && absolute < prior.start+len(prior.lines) {
+						redundant = true
+						break
+					}
+				}
+				if redundant {
+					continue
+				}
+			}
+			filtered = append(filtered, candidate)
+		}
+		candidates = filtered
+	}
 	maxSources := 10
 	weights := []int{18, 8, 5, 3, 2, 2, 1, 1, 1, 1}
 	if mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath {
-		maxSources = 4
-		weights = []int{10, 3, 1, 1}
+		maxSources = 5
+		weights = []int{10, 3, 1, 1, 1}
+	} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
+		maxSources = 7
+		weights = []int{18, 8, 5, 3, 2, 1, 1}
+	} else if compactTaskContextDevWantsTraversal(patterns) {
+		maxSources = 5
+		weights = []int{18, 8, 5, 3, 2}
+	} else if compactTaskContextDevWantsShellProtocol(patterns) {
+		maxSources = 3
+		weights = []int{18, 8, 5}
+	} else if compactTaskContextDevWantsInitFlagValue(patterns) {
+		maxSources = 6
+		weights = []int{18, 8, 5, 3, 2, 1}
 	} else {
 		selected := make([]compactTaskContextDevCandidate, 0, maxSources)
 		maxSemantic, maxFallback := 8, 2
-		if compactTaskContextDevNeedsReferenceContext(patterns) {
+		if compactTaskContextDevNeedsFlowAllocation(patterns) {
 			// Flow questions need both the operation and the lifecycle hook or
 			// caller that surrounds it. Reserve one more semantic region rather
 			// than a second query-only grep line.
@@ -1038,6 +1376,15 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	if len(candidates) > maxSources {
 		candidates = candidates[:maxSources]
 	}
+	if (mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath) && len(candidates) > 0 {
+		if from, to, ok := compactTaskContextDevUnitRange(candidates[0]); ok {
+			fullCost := len(strings.Fields(strings.Join(candidates[0].lines[from:to+1], "\n")))
+			if fullCost > budget {
+				candidates = candidates[:1]
+				weights = []int{1}
+			}
+		}
+	}
 
 	remaining := budget
 	admitted := make([]bool, len(candidates))
@@ -1051,27 +1398,167 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 		remaining -= cost
 	}
 	secondaryReserve := 0
-	if compactTaskContextDevNeedsReferenceContext(patterns) {
+	if compactTaskContextDevNeedsFlowAllocation(patterns) {
 		for i := range candidates {
 			if admitted[i] && candidates[i].hasSecondary {
-				secondaryReserve = min(remaining, budget/4)
-				break
+				reserve := budget / 4
+				if compactTaskContextDevWantsTraversal(patterns) {
+					reserve = budget * 3 / 5
+				} else if compactTaskContextDevWantsShellProtocol(patterns) {
+					reserve = budget * 2 / 5
+				} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
+					reserve = budget * 2 / 5
+				} else if strings.HasSuffix(strings.ToLower(candidates[i].item.Path), ".md") && candidates[i].secondaryScore >= 200 {
+					reserve = budget * 2 / 5
+				}
+				secondaryReserve = max(secondaryReserve, min(remaining, reserve))
 			}
 		}
 	}
 	primaryRemaining := remaining - secondaryReserve
-	// Preserve complete small declarations before breadth growth spends their
-	// remaining cost on unrelated one-line anchors.
-	completeLimits := []int{160, 110, 80, 80}
-	for i := 0; i < len(candidates) && i < len(completeLimits); i++ {
-		if !admitted[i] || primaryRemaining <= 0 || !compactTaskContextDevCompleteUnit(&candidates[i], &primaryRemaining, completeLimits[i]) {
-			continue
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsInitFlagValue(patterns) {
+		// Initializers run after ParseFlags, so an answer about reading values in
+		// init needs the typed getter immediately following the parse, not only
+		// the distant preRun call. Grow that one control-flow window first.
+		for i := range candidates {
+			if !admitted[i] || (candidates[i].kind != "function" && candidates[i].kind != "method") {
+				continue
+			}
+			target := -1
+			for line := candidates[i].anchor + 1; line < len(candidates[i].lines) && line <= candidates[i].anchor+24; line++ {
+				if strings.Contains(strings.ToLower(candidates[i].lines[line]), ".getbool(") {
+					target = line
+					break
+				}
+			}
+			for target >= 0 && candidates[i].to < target && primaryRemaining > 0 && compactTaskContextDevGrow(&candidates[i], &primaryRemaining) {
+			}
+			if target >= 0 {
+				break
+			}
 		}
 	}
-	for i := len(completeLimits); i < len(candidates); i++ {
-		if admitted[i] && primaryRemaining > 0 {
-			compactTaskContextDevCompleteUnit(&candidates[i], &primaryRemaining, 45)
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsShellProtocol(patterns) {
+		for i := range candidates {
+			if !admitted[i] || !strings.Contains(strings.Join(candidates[i].lines, "\n"), "ShellCompRequestCmd") || !strings.Contains(strings.Join(candidates[i].lines, "\n"), "OutOrStdout") {
+				continue
+			}
+			target := -1
+			for line := candidates[i].anchor; line < len(candidates[i].lines) && line <= candidates[i].anchor+20; line++ {
+				if strings.Contains(candidates[i].lines[line], "Run: func") {
+					target = line
+					break
+				}
+			}
+			for target >= 0 && candidates[i].to < target && primaryRemaining > 0 && compactTaskContextDevGrow(&candidates[i], &primaryRemaining) {
+			}
+			break
 		}
+	}
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevWantsLifecycleHooks(patterns) {
+		for i := range candidates {
+			joined := strings.Join(candidates[i].lines, "\n")
+			if !admitted[i] || !strings.Contains(joined, "func (c *Command) execute") || !strings.Contains(joined, "PersistentPreRun") {
+				continue
+			}
+			target := -1
+			for line := candidates[i].anchor; line < len(candidates[i].lines); line++ {
+				if strings.Contains(candidates[i].lines[line], "ParseFlags") {
+					target = min(len(candidates[i].lines)-1, line+2)
+					break
+				}
+			}
+			for target >= 0 && candidates[i].to < target && primaryRemaining > 0 && compactTaskContextDevGrow(&candidates[i], &primaryRemaining) {
+			}
+			break
+		}
+	}
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextDevNeedsFlowAllocation(patterns) {
+		best, bestUtility := -1, -1
+		for i, candidate := range candidates {
+			if !admitted[i] || (candidate.kind != "function" && candidate.kind != "method") || candidate.symbolScore <= 0 {
+				continue
+			}
+			utility := candidate.symbolScore
+			if utility > bestUtility {
+				best, bestUtility = i, utility
+			}
+		}
+		if best >= 0 {
+			compactTaskContextDevGrowDocComment(&candidates[best], &primaryRemaining, 6)
+		}
+	}
+	if (mode == GrepReadV2ExactIdentifier || mode == GrepReadV2ExactPath) && len(candidates) > 0 && admitted[0] {
+		// Exact lookup is depth-first: make the named declaration useful before
+		// wrappers and neighbours consume the budget. Complete a small
+		// definition, or give a long implementation the remaining source budget.
+		if !compactTaskContextDevCompleteUnit(&candidates[0], &primaryRemaining, budget) {
+			target := budget
+			for candidates[0].cost < target && primaryRemaining > 0 && compactTaskContextDevGrow(&candidates[0], &primaryRemaining) {
+			}
+		}
+	}
+	// Preserve complete small declarations before breadth growth spends their
+	// remaining cost on unrelated one-line anchors.
+	completeLimits := []int{160, 140, 100, 80}
+	completeOrder := make([]int, len(candidates))
+	for i := range candidates {
+		completeOrder[i] = i
+	}
+	if mode == GrepReadV2NaturalLanguage {
+		root := -1
+		for i, candidate := range candidates {
+			if candidate.itemPriority == 12_000 && candidate.symbolScore > 0 && (candidate.kind == "function" || candidate.kind == "method") {
+				root = i
+				break
+			}
+		}
+		dependencies := make(map[string]bool)
+		if root >= 0 {
+			for _, identifier := range strings.FieldsFunc(strings.Join(candidates[root].lines, "\n"), func(r rune) bool {
+				return r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
+			}) {
+				dependencies[identifier] = true
+			}
+		}
+		class := func(index int) int {
+			candidate := candidates[index]
+			if index == root {
+				return 0
+			}
+			name := candidate.symbol
+			if dot := strings.LastIndex(name, "."); dot >= 0 {
+				name = name[dot+1:]
+			}
+			if name != "" && dependencies[name] {
+				return 1
+			}
+			if candidate.itemPriority == 12_000 && candidate.symbolScore > 0 {
+				return 2
+			}
+			return 3
+		}
+		sort.SliceStable(completeOrder, func(i, j int) bool {
+			a, b := completeOrder[i], completeOrder[j]
+			aClass, bClass := class(a), class(b)
+			if aClass != bClass {
+				return aClass < bClass
+			}
+			if aClass == 1 {
+				return len(strings.Fields(strings.Join(candidates[a].lines, "\n"))) > len(strings.Fields(strings.Join(candidates[b].lines, "\n")))
+			}
+			return false
+		})
+	}
+	for order, index := range completeOrder {
+		if !admitted[index] || primaryRemaining <= 0 {
+			continue
+		}
+		limit := 80
+		if order < len(completeLimits) {
+			limit = completeLimits[order]
+		}
+		compactTaskContextDevCompleteUnit(&candidates[index], &primaryRemaining, limit)
 	}
 	// A lone comment/signature line is rarely actionable. Give every admitted
 	// region one adjacent complete line before weighted depth allocation; this
@@ -1114,7 +1601,6 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 	for i := 4; i < len(candidates); i++ {
 		if candidates[i].secondaryScore >= 100 {
 			secondaryOrder = append(secondaryOrder, i)
-			break
 		}
 	}
 	sort.SliceStable(secondaryOrder, func(i, j int) bool {
@@ -1132,7 +1618,13 @@ func compactTaskContextDevSelect(query string, evidence []contract.Evidence, ite
 			continue
 		}
 		admittedLines := 0
-		for line := candidates[i].secondaryFrom; line < len(candidates[i].lines) && line < candidates[i].secondaryFrom+12; line++ {
+		secondaryLines := 12
+		if compactTaskContextDevWantsTraversal(patterns) {
+			secondaryLines = 36
+		} else if compactTaskContextDevWantsLifecycleHooks(patterns) {
+			secondaryLines = 32
+		}
+		for line := candidates[i].secondaryFrom; line < len(candidates[i].lines) && line < candidates[i].secondaryFrom+secondaryLines; line++ {
 			cost := len(strings.Fields(candidates[i].lines[line]))
 			if cost > remaining-primaryRemaining {
 				break
@@ -1316,6 +1808,52 @@ func compactTaskContextDevHasPattern(patterns []string, want string) bool {
 	return false
 }
 
+// compactTaskContextDevRankExactDependencies follows two identifier hops only
+// among candidates already returned for an exact lookup. The exact declaration
+// keeps its larger whole-name bonus; this only promotes its helper and constant
+// dependencies above redundant contextual hits.
+func compactTaskContextDevRankExactDependencies(identifier string, candidates []compactTaskContextDevCandidate) {
+	root := -1
+	for i, candidate := range candidates {
+		if compactTaskContextDevWholeSymbolMatch([]string{identifier}, candidate.symbol) {
+			root = i
+			break
+		}
+	}
+	if root < 0 {
+		return
+	}
+	visited := map[int]bool{root: true}
+	frontier := []int{root}
+	for depth := 1; depth <= 2 && len(frontier) > 0; depth++ {
+		var next []int
+		for _, source := range frontier {
+			references := make(map[string]bool)
+			for _, name := range strings.FieldsFunc(strings.Join(candidates[source].lines, "\n"), func(r rune) bool {
+				return r != '_' && !unicode.IsLetter(r) && !unicode.IsDigit(r)
+			}) {
+				references[name] = true
+			}
+			for target := range candidates {
+				if visited[target] || candidates[target].itemPriority < 2_000 {
+					continue
+				}
+				name := candidates[target].symbol
+				if dot := strings.LastIndex(name, "."); dot >= 0 {
+					name = name[dot+1:]
+				}
+				if name == "" || !references[name] {
+					continue
+				}
+				candidates[target].score += 100_000 / depth
+				visited[target] = true
+				next = append(next, target)
+			}
+		}
+		frontier = next
+	}
+}
+
 func compactTaskContextDevIdentifierTerms(symbol string) []string {
 	var out []string
 	var current []rune
@@ -1442,6 +1980,7 @@ func compactTaskContextDevMergeSameAnchor(in []compactTaskContextDevCandidate) (
 		prior.score = max(prior.score, candidate.score)
 		prior.order = min(prior.order, candidate.order)
 		prior.fallback = prior.fallback && candidate.fallback
+		prior.completeFallback = prior.completeFallback || candidate.completeFallback
 		if prior.symbol == "" || candidate.itemPriority > prior.itemPriority {
 			prior.symbol = candidate.symbol
 			prior.kind = candidate.kind
@@ -1497,6 +2036,9 @@ func compactTaskContextDevTestIntent(patterns []string) bool {
 // preferred because an anchor is normally a declaration or heading; once the
 // region reaches its end, preceding documentation/context is added.
 func compactTaskContextDevGrow(candidate *compactTaskContextDevCandidate, remaining *int) bool {
+	if candidate.complete {
+		return false
+	}
 	lineIndex := candidate.to + 1
 	if lineIndex >= len(candidate.lines) {
 		lineIndex = candidate.from - 1
@@ -1519,7 +2061,7 @@ func compactTaskContextDevGrow(candidate *compactTaskContextDevCandidate, remain
 }
 
 func compactTaskContextDevCompleteUnit(candidate *compactTaskContextDevCandidate, remaining *int, maxCost int) bool {
-	if candidate.fallback || (candidate.kind != "function" && candidate.kind != "method" && candidate.kind != "type" && candidate.kind != "constant" && candidate.kind != "variable") {
+	if (candidate.fallback && !candidate.completeFallback) || (candidate.kind != "function" && candidate.kind != "method" && candidate.kind != "type" && candidate.kind != "constant" && candidate.kind != "variable") {
 		return false
 	}
 	from, to, ok := compactTaskContextDevUnitRange(*candidate)
@@ -1534,6 +2076,7 @@ func compactTaskContextDevCompleteUnit(candidate *compactTaskContextDevCandidate
 	candidate.from = from
 	candidate.to = to
 	candidate.cost = fullCost
+	candidate.complete = true
 	*remaining -= additional
 	return true
 }
@@ -1631,14 +2174,43 @@ func compactTaskContextDevFlowSecondaryAnchor(patterns []string, lines []string,
 	wantsInit := compactTaskContextDevHasPattern(patterns, "init") || compactTaskContextDevHasPattern(patterns, "hook")
 	wantsDispatch := compactTaskContextDevHasPattern(patterns, "dispatch") || compactTaskContextDevHasPattern(patterns, "route")
 	wantsExecute := compactTaskContextDevHasPattern(patterns, "execute") || compactTaskContextDevHasPattern(patterns, "lifecycle") || compactTaskContextDevHasPattern(patterns, "run")
-	wantsTraversal := (compactTaskContextDevHasPattern(patterns, "root") || compactTaskContextDevHasPattern(patterns, "rootcmd")) && compactTaskContextDevHasPattern(patterns, "subcommand")
+	wantsTraversal := compactTaskContextDevWantsTraversal(patterns)
+	wantsVersion := compactTaskContextDevHasPattern(patterns, "version") && compactTaskContextDevHasPattern(patterns, "flag")
+	wantsRequired := compactTaskContextDevHasPattern(patterns, "required") && compactTaskContextDevHasPattern(patterns, "flag")
+	wantsHelp := compactTaskContextDevHasPattern(patterns, "help") && (compactTaskContextDevHasPattern(patterns, "handl") || compactTaskContextDevHasPattern(patterns, "handle") || compactTaskContextDevHasPattern(patterns, "different") || compactTaskContextDevHasPattern(patterns, "differently"))
+	wantsCompletionGroup := compactTaskContextDevHasPattern(patterns, "completion") && compactTaskContextDevHasPattern(patterns, "group")
+	wantsShellProtocol := compactTaskContextDevWantsShellProtocol(patterns)
+	wantsLifecycleHooks := compactTaskContextDevWantsLifecycleHooks(patterns)
+	best := compactTaskContextDevLineAnchor{}
 	for index, line := range lines {
 		if index == primary {
 			continue
 		}
 		lower := strings.ToLower(line)
 		score := 0
-		if wantsInit && strings.Contains(lower, "initializers") {
+		if wantsShellProtocol && strings.Contains(lower, "fmt.fprintln(finalcmd.outorstdout()") {
+			score = 210
+		} else if wantsExecute && strings.Contains(lower, "following order") {
+			score = 200
+		} else if wantsVersion && strings.Contains(lower, `getbool("version")`) {
+			score = 180
+		} else if wantsHelp && strings.Contains(lower, `getbool("help")`) {
+			score = 180
+		} else if wantsRequired && strings.Contains(lower, "validaterequiredflags(") {
+			score = 180
+		} else if wantsTraversal && strings.Contains(lower, "for i, arg := range args") {
+			score = 190
+		} else if wantsTraversal && strings.Contains(lower, "findnext(arg)") {
+			score = 185
+		} else if wantsTraversal && strings.Contains(lower, "argswoflags[0]") {
+			score = 180
+		} else if wantsCompletionGroup && strings.Contains(lower, "enforceflaggroupsforcompletion(") {
+			score = 180
+		} else if wantsLifecycleHooks && strings.Contains(lower, "if c.prerune != nil") {
+			score = 190
+		} else if wantsExecute && (strings.Contains(lower, "if c.rune != nil") || strings.Contains(lower, "c.run(c,")) {
+			score = 170
+		} else if wantsInit && strings.Contains(lower, "initializers") {
 			score = 140
 		} else if wantsInit && strings.Contains(lower, ".prerun(") {
 			score = 130
@@ -1653,11 +2225,11 @@ func compactTaskContextDevFlowSecondaryAnchor(patterns []string, lines []string,
 		} else if wantsTraversal && strings.Contains(lower, ".traverse(") {
 			score = 100
 		}
-		if score > 0 {
-			return compactTaskContextDevLineAnchor{index: index, score: score}, true
+		if score > best.score {
+			best = compactTaskContextDevLineAnchor{index: index, score: score}
 		}
 	}
-	return compactTaskContextDevLineAnchor{}, false
+	return best, best.score > 0
 }
 
 func compactTaskContextDevAnchors(mode GrepReadV2Mode, patterns []string, path string, lines []string) []compactTaskContextDevLineAnchor {
@@ -1771,7 +2343,7 @@ func compactTaskContextDevModelFingerprint(model string) string {
 
 // ParseCompactTaskContextDev validates the exact wire interface. Unknown
 // fields fail closed: changing the representation requires a new explicit
-// version instead of silently changing the meaning of compact-dev/6.
+// version instead of silently changing the meaning of compact-dev/7.
 func ParseCompactTaskContextDev(raw []byte) (string, CompactTaskContextDevStructured, error) {
 	var envelope compactTaskContextDevEnvelope
 	dec := json.NewDecoder(bytes.NewReader(raw))

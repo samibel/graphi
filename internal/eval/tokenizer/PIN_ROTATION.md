@@ -70,6 +70,26 @@ SW-280 commits the first tokenizer-dependent run directory:
   be recomputed after a tokenizer rotation.
 - `docs/eval/retrieval/runs/2026-09-07-compact-wire-dev/` — development-only
   compact task-context frontier; every paired row uses the pinned tokenizer.
+- `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
+  `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — registered
+  compact development sufficiency runs whose preserved responses carry pinned
+  real-token counts.
+- `docs/eval/retrieval/runs/2026-09-07-compact-wire-v2-dev/` — second compact
+  development frontier with paired real-token measurements.
+- `docs/eval/retrieval/runs/2026-09-12-compact-dev-sufficiency-v3/` and
+  `docs/eval/retrieval/runs/2026-09-12-compact-dev-sufficiency-v4/` — registered
+  blind development runs over tokenizer-counted compact responses.
+- `docs/eval/retrieval/runs/2026-09-12-compact-wire-v3-dev/` and
+  `docs/eval/retrieval/runs/2026-09-12-compact-wire-v4-dev/` — compact frontier
+  measurements under the current tokenizer pin.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v5-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v5-blind-dev/` — v5 frontier
+  and registered blind diagnostic.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-dev/` and
+  `docs/eval/retrieval/runs/2026-09-13-compact-wire-v6-blind-dev/` — v6 frontier
+  and registered blind diagnostic.
+- `docs/eval/retrieval/runs/2026-09-13-compact-wire-v7-dev/` — v7 compact
+  frontier, including a pinned-tokenizer ceiling over every serialized bundle.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains
