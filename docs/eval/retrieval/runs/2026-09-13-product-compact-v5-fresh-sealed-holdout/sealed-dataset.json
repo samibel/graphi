@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "id": "cobra-fresh-sealed-holdout-v5-2026-09-13",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "en",
+  "evidence_class": "independent-curator, two-pass human-review-equivalent",
+  "relevant_min_grade": 3,
+  "notes": "Fresh candidate-neutral sealed holdout; N=64 was fixed before any candidate behavior was inspected. Every row is holdout, answerable, singly-family, and carries an exact reviewed grade-3 source span against the pinned Cobra tree.",
+  "queries": [
+    {
+      "id": "fhv5-9f4c-q001",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What exactly does AppendActiveHelp append, and does it preserve earlier completion entries?",
+      "family_id": "fhv5-9f4c-f001",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"active_help.go","start_line":35,"end_line":44,"anchor":"return append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))","grade":3,"reason":"The implementation appends a marker-prefixed help string to the supplied slice, preserving its existing entries.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q002",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does GetActiveHelpConfig choose between global and program-specific environment settings?",
+      "family_id": "fhv5-9f4c-f002",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"active_help.go","start_line":46,"end_line":57,"anchor":"if activeHelpCfg != activeHelpGlobalDisable","grade":3,"reason":"The global value 0 wins; otherwise the program-specific variable is read and returned.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q003",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does activeHelpEnvVar derive the environment-variable name for a program?",
+      "family_id": "fhv5-9f4c-f003",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"active_help.go","start_line":59,"end_line":67,"anchor":"activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")","grade":3,"reason":"It appends the suffix, uppercases the result, and replaces non-ASCII-alphanumeric name characters with underscores.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q004",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What closure does FixedCompletions return and what values does that closure produce?",
+      "family_id": "fhv5-9f4c-f004",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":124,"end_line":130,"anchor":"return choices, directive","grade":3,"reason":"It returns a completion function that ignores invocation inputs and returns the captured choices and directive.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q005",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which errors can RegisterFlagCompletionFunc return, and how is a successful registration synchronized?",
+      "family_id": "fhv5-9f4c-f005",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":132,"end_line":146,"anchor":"flagCompletionMutex.Lock()","grade":3,"reason":"It rejects missing flags and duplicate registrations, then stores the callback under a mutex.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q006",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does ShellCompDirective.string render combined, default, and out-of-range directive values?",
+      "family_id": "fhv5-9f4c-f006",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":162,"end_line":191,"anchor":"return strings.Join(directives, \", \")","grade":3,"reason":"Known set bits become comma-separated names, zero becomes Default, and values beyond the maximum produce an explicit error string.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q007",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What does MatchAll do when one of its positional-argument validators fails?",
+      "family_id": "fhv5-9f4c-f007",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"args.go","start_line":113,"end_line":123,"anchor":"if err := parg(cmd, args); err != nil","grade":3,"reason":"It evaluates validators in order and returns immediately with the first error, otherwise nil.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q008",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "What validation does ExactValidArgs perform, and which replacement does its deprecation note recommend?",
+      "family_id": "fhv5-9f4c-f008",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"args.go","start_line":125,"end_line":131,"anchor":"return MatchAll(ExactArgs(n), OnlyValidArgs)","grade":3,"reason":"It combines exact count and allowed-value validation; the same MatchAll composition is the recommended replacement.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q009",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which three matching mechanisms can cause SuggestionsFor to suggest an available child command?",
+      "family_id": "fhv5-9f4c-f009",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":831,"end_line":850,"anchor":"suggestByLevenshtein := levenshteinDistance <= c.SuggestionsMinimumDistance","grade":3,"reason":"Available children qualify by Levenshtein distance, case-insensitive name prefix, or case-insensitive explicit SuggestFor match.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q010",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does commandNameMatches change when EnableCaseInsensitive is enabled?",
+      "family_id": "fhv5-9f4c-f010",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1876,"end_line":1885,"anchor":"return strings.EqualFold(s, t)","grade":3,"reason":"It uses EqualFold when enabled and exact string equality otherwise.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q011",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "Under what condition does forceMultiLine append a newline to a string?",
+      "family_id": "fhv5-9f4c-f011",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/util.go","start_line":39,"end_line":46,"anchor":"if len(s) > 60 && !strings.Contains(s, \"\\n\")","grade":3,"reason":"It appends a newline only to strings longer than 60 characters that contain no newline already.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q012",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In args.go, how does legacy argument validation differ for a root with subcommands versus a subcommand?",
+      "family_id": "fhv5-9f4c-f012",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"args.go","start_line":24,"end_line":39,"anchor":"if !cmd.HasParent() && len(args) > 0","grade":3,"reason":"Only a root with subcommands rejects an unmatched positional token; subcommands and roots without subcommands accept arbitrary arguments.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q013",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In command.go, where is a global flag-normalization function applied and how does it reach existing children?",
+      "family_id": "fhv5-9f4c-f013",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":362,"end_line":372,"anchor":"command.SetGlobalNormalizationFunc(n)","grade":3,"reason":"It is installed on local and persistent flag sets, stored on the command, and recursively applied to current children.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q014",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In command.go, how does getOut choose a writer when the current command has no output writer?",
+      "family_id": "fhv5-9f4c-f014",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":394,"end_line":402,"anchor":"return c.parent.getOut(def)","grade":3,"reason":"It uses the current writer when present, otherwise recursively inherits from the parent, finally falling back to the provided default.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q015",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In completions.go, which long and shorthand flag-name candidates are emitted, and why is the equals form omitted?",
+      "family_id": "fhv5-9f4c-f015",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":534,"end_line":565,"anchor":"completions = append(completions, fmt.Sprintf(\"%s\\t%s\", flagName, flag.Usage))","grade":3,"reason":"Matching long and shorthand names are emitted with usage descriptions; equals variants are deliberately not suggested to avoid forcing extra typing and lengthening lists.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q016",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In flag_groups.go, when does validation of a required-together group succeed and what does its error identify?",
+      "family_id": "fhv5-9f4c-f016",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":144,"end_line":165,"anchor":"if len(unset) == len(flagnameAndStatus) || len(unset) == 0","grade":3,"reason":"The group succeeds when none or all are set; a partial selection returns a deterministic error naming the missing flags.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q017",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In shell_completions.go, what annotation does MarkFlagCustom install and what portability warning accompanies it?",
+      "family_id": "fhv5-9f4c-f017",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"shell_completions.go","start_line":48,"end_line":56,"anchor":"return MarkFlagCustom(c.Flags(), name, f)","grade":3,"reason":"It delegates installation of a BashCompCustom handler; the API is Bash-only and Go callback registration is recommended for cross-shell use.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q018",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/md_docs.go, how are output filenames formed while recursively generating a Markdown command tree?",
+      "family_id": "fhv5-9f4c-f018",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/md_docs.go","start_line":131,"end_line":157,"anchor":"basename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + markdownExtension","grade":3,"reason":"Available non-help children are generated recursively, then the command path has spaces replaced by underscores and receives the .md extension under the target directory.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q019",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/man_docs.go, how does fillHeader derive missing title, section, date, and source values?",
+      "family_id": "fhv5-9f4c-f019",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/man_docs.go","start_line":118,"end_line":141,"anchor":"if epoch := os.Getenv(\"SOURCE_DATE_EPOCH\"); epoch != \"\"","grade":3,"reason":"It uppercases and escapes the name for title, defaults section to 1, uses SOURCE_DATE_EPOCH or current time, and supplies the autogenerated source unless disabled.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q020",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/rest_docs.go, how does indentString handle blank lines while adding a prefix?",
+      "family_id": "fhv5-9f4c-f020",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/rest_docs.go","start_line":172,"end_line":185,"anchor":"if bol && c != '\\n'","grade":3,"reason":"It inserts the prefix only at the beginning of non-empty lines, tracks line starts after newlines, and leaves blank lines unprefixed.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q021",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In doc/yaml_docs.go, when does genFlagResult include a shorthand in the serialized option?",
+      "family_id": "fhv5-9f4c-f021",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/yaml_docs.go","start_line":149,"end_line":175,"anchor":"if !(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0","grade":3,"reason":"A nonempty shorthand is included unless it has a nonempty deprecation marker; otherwise the option is emitted without shorthand.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q022",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "In command_win.go, what happens when a CLI is launched from Explorer with mousetrap help enabled?",
+      "family_id": "fhv5-9f4c-f022",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command_win.go","start_line":28,"end_line":41,"anchor":"if MousetrapHelpText != \"\" && mousetrap.StartedByExplorer()","grade":3,"reason":"It prints help, sleeps for the configured positive duration or waits for Return, then exits with status 1.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q023",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What happens at execution time when one or more flags marked as required were not supplied?",
+      "family_id": "fhv5-9f4c-f023",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1146,"end_line":1168,"anchor":"required flag(s) \"%s\" not set","grade":3,"reason":"All unchanged required-annotated flags are collected and returned in one error; validation is bypassed when flag parsing is disabled.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q024",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "If a user supplies only some flags from a required-together group, how is the invocation handled?",
+      "family_id": "fhv5-9f4c-f024",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":144,"end_line":165,"anchor":"they must all be set; missing %v","grade":3,"reason":"A partial group fails and reports missing members; setting none or every member succeeds.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q025",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is an invocation validated when a flag group requires at least one member but none was set?",
+      "family_id": "fhv5-9f4c-f025",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":167,"end_line":186,"anchor":"at least one of the flags in the group [%v] is required","grade":3,"reason":"The group fails with an error naming the group when its set count is zero, and succeeds once any member is set.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q026",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What result is returned if a user sets two flags belonging to the same mutually exclusive group?",
+      "family_id": "fhv5-9f4c-f026",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":188,"end_line":207,"anchor":"none of the others can be; %v were all set","grade":3,"reason":"More than one set member produces an error naming the group and selected members; zero or one member succeeds.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q027",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Can a child command inherit its normal output destination from an ancestor, and what is the final fallback?",
+      "family_id": "fhv5-9f4c-f027",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":394,"end_line":402,"anchor":"if c.HasParent()","grade":3,"reason":"Yes; output lookup walks parents until it finds a writer and otherwise returns the caller-supplied default.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q028",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "While locating a subcommand, how are flag values skipped and what effect does a double dash have?",
+      "family_id": "fhv5-9f4c-f028",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":643,"end_line":679,"anchor":"case s == \"--\"","grade":3,"reason":"Space-separated values of non-boolean long or single short flags are skipped, and double dash terminates flag stripping.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q029",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "When command-prefix matching is enabled, under what condition is a typed prefix accepted?",
+      "family_id": "fhv5-9f4c-f029",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":767,"end_line":786,"anchor":"if len(matches) == 1","grade":3,"reason":"Exact name or alias matches win immediately; a prefix is accepted only when it uniquely matches one child name or alias.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q030",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "When is the default version flag added, and how is a preexisting short -v handled?",
+      "family_id": "fhv5-9f4c-f030",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1200,"end_line":1224,"anchor":"if c.Flags().ShorthandLookup(\"v\") == nil","grade":3,"reason":"No flag is added without a version or when version already exists; otherwise Cobra uses -v only if that shorthand is free and marks the generated flag.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q031",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which commands are excluded from the set of available non-help commands?",
+      "family_id": "fhv5-9f4c-f031",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1560,"end_line":1576,"anchor":"if len(c.Deprecated) != 0 || c.Hidden","grade":3,"reason":"Deprecated, hidden, and the configured help command are unavailable; remaining commands need to be runnable or contain an available descendant.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q032",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Under which conditions does Cobra refrain from adding its default completion command?",
+      "family_id": "fhv5-9f4c-f032",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":678,"end_line":708,"anchor":"if c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands()","grade":3,"reason":"It refrains when disabled, when there are no subcommands, or when a child name or alias already supplies completion.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q033",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "When parsing emits a warning such as a deprecated-flag message, when is that warning printed?",
+      "family_id": "fhv5-9f4c-f033",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1818,"end_line":1840,"anchor":"if c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil","grade":3,"reason":"New warning text is printed only when parsing succeeded; parsing is a no-op when flag parsing is disabled.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q034",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Trace the high-level ExecuteC flow from a possibly non-root receiver through command selection, context propagation, execution, and error/help handling.",
+      "family_id": "fhv5-9f4c-f034",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1051,"end_line":1136,"anchor":"err = cmd.execute(flags)","grade":3,"reason":"Execution is redirected to root, defaults are initialized, Traverse or Find selects a command, call identity/context are propagated, execute runs, and help/errors/usage are handled under silence settings.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q035",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "What is the command execution lifecycle order after argument validation, including persistent and local hooks and flag-group checks?",
+      "family_id": "fhv5-9f4c-f035",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":927,"end_line":1012,"anchor":"if err := c.ValidateFlagGroups(); err != nil","grade":3,"reason":"Initializers run, arguments validate, persistent pre-hooks and local pre-hook run, required/group flags validate, RunE or Run executes, then local and persistent post-hooks and finalizers run with early error returns.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q036",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does a Help call resolve an inherited or default help function, prepare flags, choose its stream, and handle template errors?",
+      "family_id": "fhv5-9f4c-f036",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":450,"end_line":476,"anchor":"err := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)","grade":3,"reason":"A local function wins, otherwise resolution climbs parents; the default merges persistent flags, renders to stdout, reports render errors, and Help invokes it.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q037",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does the hidden completion request command transform and emit completion results before removing itself when unused?",
+      "family_id": "fhv5-9f4c-f037",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":193,"end_line":264,"anchor":"fmt.Fprintf(finalCmd.OutOrStdout(), \":%d\\n\", directive)","grade":3,"reason":"It obtains completions, filters disabled Active Help, strips descriptions/newlines and whitespace, prints results then the directive, logs to stderr, and removes the special command unless invoked.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q038",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does completion resolve the target command, prepare flag parsing, and recognize annotated file or directory value completion?",
+      "family_id": "fhv5-9f4c-f038",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":266,"end_line":374,"anchor":"flag, finalArgs, toComplete, flagErr := checkIfFlagCompletion","grade":3,"reason":"It separates the unfinished token, traverses or finds the target, adds default flags, identifies flag-value completion before parsing, suppresses help/version completion, and returns extension or directory directives from annotations.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q039",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are a command's persistent flags and all ancestor persistent flags assembled into the effective flag set?",
+      "family_id": "fhv5-9f4c-f039",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1847,"end_line":1874,"anchor":"c.VisitParents(func(parent *Command)","grade":3,"reason":"The parent cache is initialized and normalized, root imports the process command-line set, every ancestor persistent set is visited into the cache, and local plus cached sets merge into Flags.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q040",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "What state changes occur when child commands are added, including parent linkage, layout metadata, normalization, and sorting state?",
+      "family_id": "fhv5-9f4c-f040",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1302,"end_line":1329,"anchor":"c.commandsAreSorted = false","grade":3,"reason":"Self-parenting panics; each child gains its parent, maximum display lengths update, any global normalization propagates, the child is appended, and sorting is marked stale.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q041",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does flag-group validation build group state and sequence the three group-rule validators?",
+      "family_id": "fhv5-9f4c-f041",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":79,"end_line":109,"anchor":"processFlagForGroupAnnotation(flags, pflag, mutuallyExclusive, mutuallyExclusiveGroupStatus)","grade":3,"reason":"It skips when parsing is disabled, visits flags into separate required-together, one-required, and exclusive state maps, then validates them in that order and returns the first error.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q042",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How are flag-group rules translated into completion-time required and hidden flags?",
+      "family_id": "fhv5-9f4c-f042",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"flag_groups.go","start_line":220,"end_line":290,"anchor":"flag.Hidden = true","grade":3,"reason":"A selected required-together member marks peers required; an untouched one-required group marks all required; a selected exclusive member hides every other member while keeping itself visible.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q043",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is one command converted into Markdown, from initialization through sections, links, autogenerated tag, and final write?",
+      "family_id": "fhv5-9f4c-f043",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/md_docs.go","start_line":56,"end_line":117,"anchor":"_, err := buf.WriteTo(w)","grade":3,"reason":"Defaults are initialized, descriptive and runnable/example/flag sections are buffered, eligible parent and child links are sorted and emitted, the optional generation tag is added, then the buffer is written.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q044",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does YAML documentation generation assemble command metadata, flags, and see-also entries before serialization?",
+      "family_id": "fhv5-9f4c-f044",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"doc/yaml_docs.go","start_line":92,"end_line":147,"anchor":"final, err := yaml.Marshal(&yamlDoc)","grade":3,"reason":"It initializes defaults, fills identity and text, conditionally adds usage/example/local and inherited options, builds sorted eligible relations, marshals YAML, and writes it.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q045",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which shells support Active Help, and what Bash version constraint applies?",
+      "family_id": "fhv5-9f4c-f045",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/active_help.md","start_line":18,"end_line":22,"anchor":"bash 4.4 or higher is required","grade":3,"reason":"The documentation names Bash V2 and Zsh, with Bash 4.4+ needed for the prompt when Active Help prints.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q046",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is the program-specific Active Help environment variable named and consumed by application completion code?",
+      "family_id": "fhv5-9f4c-f046",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/active_help.md","start_line":93,"end_line":103,"anchor":"<PROGRAM>_ACTIVE_HELP","grade":3,"reason":"The uppercase sanitized program name gets the suffix, and completion callbacks should read it through GetActiveHelpConfig rather than directly.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q047",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What are the documented effects of setting a program's Active Help variable to 0 versus setting COBRA_ACTIVE_HELP to 0?",
+      "family_id": "fhv5-9f4c-f047",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/active_help.md","start_line":127,"end_line":131,"anchor":"COBRA_ACTIVE_HELP` to \"0\"","grade":3,"reason":"The program value disables that program's output automatically; the global value disables all Cobra programs and forces config lookup to return 0.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q048",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How do Bash completion V1 and V2 differ, and which version does Cobra's default completion command use?",
+      "family_id": "fhv5-9f4c-f048",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/completions/_index.md","start_line":421,"end_line":451,"anchor":"Cobra's default `completion` command uses bash completion V2","grade":3,"reason":"V2 omits legacy Bash dynamic completion, uses Go callbacks, supports descriptions and a smaller aligned script, and is the default command's implementation.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q049",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which legacy or custom flag-completion mechanisms are documented as unsupported by Zsh completion, and what should replace them?",
+      "family_id": "fhv5-9f4c-f049",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/completions/_index.md","start_line":475,"end_line":480,"anchor":"MarkFlagCustom()` is not supported","grade":3,"reason":"Legacy Bash-script completion, BashCompCustom, and MarkFlagCustom are ignored; portable Go ValidArgsFunction or RegisterFlagCompletionFunc callbacks are recommended.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q050",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which file and directory filtering annotations, helper functions, and directives are unsupported by Fish completion?",
+      "family_id": "fhv5-9f4c-f050",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/completions/_index.md","start_line":501,"end_line":515,"anchor":"ShellCompDirectiveFilterDirs","grade":3,"reason":"The docs list both Bash filtering annotations, their filename/dirname helpers, and the FilterFileExt and FilterDirs directives as ignored by Fish, along with legacy custom mechanisms.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q051",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which PowerShell completion modes are supported, when are descriptions displayed, and what minimum PowerShell version is required?",
+      "family_id": "fhv5-9f4c-f051",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/completions/_index.md","start_line":517,"end_line":529,"anchor":"PowerShell version 5.0 or above","grade":3,"reason":"TabCompleteNext, Complete, and MenuComplete are supported; descriptions show only in Complete/MenuComplete, and version 5.0+ is required.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q052",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can generated command documentation omit the autogenerated tag, and how can it include the default completion command?",
+      "family_id": "fhv5-9f4c-f052",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"site/content/docgen/_index.md","start_line":8,"end_line":17,"anchor":"cmd.DisableAutoGenTag = true","grade":3,"reason":"Set DisableAutoGenTag true to remove the generated string and call InitDefaultCompletionCmd before documentation to include that command.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q053",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What information does Cobra's contribution guide request in a bug report, and what should a feature request explain?",
+      "family_id": "fhv5-9f4c-f053",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"CONTRIBUTING.md","start_line":16,"end_line":27,"anchor":"current behavior vs. the expected behavior","grade":3,"reason":"Bug reports should include reproduction, version, troubleshooting environment, and current versus expected behavior; feature requests need a clear title, description, and user benefit.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q054",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which operating systems and Go minor versions does the Unix CI matrix cover, and what command runs its tests?",
+      "family_id": "fhv5-9f4c-f054",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":".github/workflows/test.yml","start_line":58,"end_line":87,"anchor":"RICHGO_FORCE_COLOR=1 PATH=$HOME/go/bin/:$PATH make richtest","grade":3,"reason":"The matrix covers Ubuntu and macOS with Go 1.17 through 1.21, then executes make richtest through richgo-enabled environment settings.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q055",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "If a command has no Args callback, does that mean it accepts no positional arguments or arbitrary positional arguments?",
+      "family_id": "fhv5-9f4c-f055",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1139,"end_line":1144,"anchor":"return ArbitraryArgs(c, args)","grade":3,"reason":"A nil Args callback delegates to ArbitraryArgs, so arbitrary positional arguments are accepted.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q056",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "For a Use string containing a command token followed by argument syntax, which portion becomes the command name?",
+      "family_id": "fhv5-9f4c-f056",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1495,"end_line":1503,"anchor":"i := strings.Index(name, \" \")","grade":3,"reason":"Name returns only the first space-delimited word of Use, or the entire Use string when it has no space.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q057",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "What is the practical distinction between the generic Print methods and the PrintErr methods when custom writers are configured?",
+      "family_id": "fhv5-9f4c-f057",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1395,"end_line":1423,"anchor":"fmt.Fprint(c.ErrOrStderr(), i...)","grade":3,"reason":"Print uses the ordinary configured output with stderr fallback, while PrintErr uses the separately configured error output with stderr fallback; line and format variants delegate accordingly.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q058",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "Does requesting a command's children always sort them, or can their current order be returned unchanged?",
+      "family_id": "fhv5-9f4c-f058",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1292,"end_line":1300,"anchor":"if EnableCommandSorting && !c.commandsAreSorted","grade":3,"reason":"Sorting happens only when globally enabled and the cached order is stale; otherwise the current slice is returned unchanged.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q059",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "When a child command is removed, is only the slice entry deleted or is related parent and layout state updated too?",
+      "family_id": "fhv5-9f4c-f059",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1361,"end_line":1393,"anchor":"command.parent = nil","grade":3,"reason":"The child's parent is cleared, the slice is rebuilt, and maximum use, command-path, and name lengths are recomputed from remaining children.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q060",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "What state is cleared and recreated when flags are reset on a command?",
+      "family_id": "fhv5-9f4c-f060",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1737,"end_line":1749,"anchor":"c.parentsPflags = nil","grade":3,"reason":"The error buffer and local/persistent base flag sets are recreated, while local, inherited, and parent-persistent caches are cleared.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q061",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "If only an ancestor defines a custom help function, will a descendant use it or fall back immediately to Cobra's default?",
+      "family_id": "fhv5-9f4c-f061",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":450,"end_line":468,"anchor":"return c.Parent().HelpFunc()","grade":3,"reason":"The descendant recursively inherits the ancestor's custom function; the default is created only when no command in the chain defines one.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q062",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "What makes a non-runnable command an additional help topic rather than an available command category?",
+      "family_id": "fhv5-9f4c-f062",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1578,"end_line":1598,"anchor":"if !sub.IsAdditionalHelpTopicCommand()","grade":3,"reason":"It must be non-runnable, visible, non-deprecated, and every descendant must itself qualify as an additional help topic.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q063",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "When completion sees a two-word-looking flag but the flag has a no-option default, is the following token treated as its value?",
+      "family_id": "fhv5-9f4c-f063",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"completions.go","start_line":659,"end_line":675,"anchor":"if len(flag.NoOptDefVal) != 0","grade":3,"reason":"No; the code resets the trimmed arguments and clears the flag so processing falls back to noun completion.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    },
+    {
+      "id": "fhv5-9f4c-q064",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "When an inherited flag shares a name with a local flag, which one is exposed by the inherited-only view?",
+      "family_id": "fhv5-9f4c-f064",
+      "provenance": "fresh independent curator-authored from pinned Cobra source; 2026-09-13",
+      "judgements": [{"path":"command.go","start_line":1695,"end_line":1718,"anchor":"local.Lookup(f.Name) == nil","grade":3,"reason":"The parent flag is excluded from InheritedFlags when a local flag of the same name exists, so the local shadow wins outside that inherited-only view.","annotator":"openai-gpt5-curator-pass-1","reviewer":"openai-gpt5-curator-pass-2"}]
+    }
+  ]
+}
