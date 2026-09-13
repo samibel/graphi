@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q031",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "fbdeeb7ee7dd065a4c0071d388055be82190f58ba70f5c2de79f63ea6569246b",
+  "bundle_sha256": "ae5f36bcdf319ae2229b5fd37a2a85b7eaa688b43d1075f8501634eac7209e10",
+  "prompt_sha256": "5ec8af1d975432555c20a3767dfd0784d6f7eee15d40898d8c9654989419c973",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Excluded commands are:\n\n- Deprecated commands (`len(c.Deprecated) != 0`)\n- Hidden commands (`c.Hidden`)\n- The parent’s configured help command (`c.Parent().helpCommand == c`)\n- Non-runnable commands with no available subcommands\n\nEvidence: `Command.IsAvailableCommand` in `command.go:1560–1576` returns `false` for the first three categories and returns `true` only when `c.Runnable()` or `c.HasAvailableSubCommands()` is true.",
+  "responded_at": "2026-09-13T12:34:47Z",
+  "sha256": "75d97ad63d5b3578c5789e8578bfee734697b63f4b921500492893c1839b8d7d"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q003",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b16edefccfa64e49a5a4862cdaae389f5e74acffde28e06485e9e2f0c2c29b27",
+  "bundle_sha256": "d8875f07129275f8316b9bb2d91cf9e0c43867db849885f2c4b64a8d5c9faf54",
+  "prompt_sha256": "b7bab737f0ab9cff87568529e34c33aefdac0a8961330af6d630d580850ba1fb",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It uppercases the root command’s name, replaces every non-ASCII-alphanumeric character with `_`, then appends `_ACTIVE_HELP`.\n\nEvidence:\n\n- `active_help.go:46-49` states this transformation.\n- `active_help.go:33` defines the replacement pattern as `[^A-Z0-9_]`.\n- `active_help.go:28` defines the suffix as `_ACTIVE_HELP`.\n- `command.go:1495-1503` shows the command name is the first word of its `Use` string.",
+  "responded_at": "2026-09-13T12:31:02Z",
+  "sha256": "15e0a65cdcbb59ab879e5743ad93f966fb8fbdd11fcb0e4610feca29a9a207bb"
+}

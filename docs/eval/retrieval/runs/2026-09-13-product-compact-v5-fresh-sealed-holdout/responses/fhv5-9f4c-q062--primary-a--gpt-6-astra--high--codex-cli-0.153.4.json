@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q062",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b5130606913e3aea30b52fd14738a6c3b9527227880586ad5fadf17ccd57d9b0",
+  "bundle_sha256": "49d13abb84aba19f2d8ce7f680acea0ff0831f3ea5e72e4a938c7de283f50cc1",
+  "prompt_sha256": "4c0ac98f7901598c822b094d086a092e5b922bdbf4d14ddf6aa24f17ba1bb164",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the subcommand classification logic in `command.go`’s `IsAdditionalHelpTopicCommand()` (after line 1590) and the definition of `IsAvailableCommand()`, which are needed to distinguish additional help topics from available command categories.",
+  "responded_at": "2026-09-13T12:39:02Z",
+  "sha256": "2428025eb13a3a5b4fb37811b45c3f7f4447f8a52b17b36b2e768896bcccffd5"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q001",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "4a935727d5672fe2250e9bf95e30517806aba25ff3c6fb933fd72db0db6a6239",
+  "bundle_sha256": "e812e3eda4a63f6a29ce75f4c03e513afe184618c00ddf893de6bf5baa85c3c2",
+  "prompt_sha256": "25d4986f8830d972df92f10d220c058aa56d51149eda02ec384e7041850520c0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`AppendActiveHelp` appends one string formed by concatenating `activeHelpMarker` and `activeHelpStr`:\n\n```go\nappend(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n```\n\nEvidence: `active_help.go:42-44`.\n\nYes, it preserves earlier completion entries because Go’s `append` adds the new element after the existing slice contents. The comments explicitly say it may be called before or after completions are added, and repeated Active Help lines appear below previous ones (`active_help.go:39-41`).",
+  "responded_at": "2026-09-13T12:30:39Z",
+  "sha256": "c106d38ef7186766876bc10d4655c0a4b3fa69f9c731ea9354d4b5a02eea136b"
+}

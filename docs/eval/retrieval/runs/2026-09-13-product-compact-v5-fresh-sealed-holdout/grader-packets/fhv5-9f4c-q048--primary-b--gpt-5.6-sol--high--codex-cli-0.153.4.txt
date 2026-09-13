@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9586e5b86d2429670bd0f666686e690cc3a2e1a280443d5deb5a6ee35228a309
+QUERY ID: fhv5-9f4c-q048
+
+QUESTION:
+How do Bash completion V1 and V2 differ, and which version does Cobra's default completion command use?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/_index.md:421-451 anchor="Cobra's default `completion` command uses bash completion V2" reason=V2 omits legacy Bash dynamic completion, uses Go callbacks, supports descriptions and a smaller aligned script, and is the default command's implementation.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query bfa52870cd3f; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":178,"end_line":195,"text":"\t// cobra uses default help command.\n\thelpCommand *Command\n\t// helpCommandGroupID is the group id for the helpCommand\n\thelpCommandGroupID string\n\n\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin\n\tinReader io.Reader\n\t// outWriter is a writer defined by the user that replaces stdout\n\toutWriter io.Writer"},{"path":"site/content/completions/bash.md","start_line":9,"end_line":10,"text":"**Note**: Cobra's default `completion` command uses bash completion V2.  If you are currently using Cobra's legacy dynamic completion solution, you should not use the default `completion` command but continue using your own.\n"},{"path":"site/content/completions/_index.md","start_line":423,"end_line":424,"text":"Cobra provides two versions for bash completion.  The original bash completion (which started it all!) can be used by calling\n`GenBashCompletion()` or `GenBashCompletionFile()`."},{"path":"site/content/completions/_index.md","start_line":418,"end_line":419,"text":"For backward compatibility, Cobra still supports its bash legacy dynamic completion solution.\nPlease refer to [Bash Completions](bash.md) for details."},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"completions.go","start_line":683,"end_line":684,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {"},{"path":"completions.go","start_line":106,"end_line":107,"text":"\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool"},{"path":"completions.go","start_line":113,"end_line":113,"text":"\tDisableDescriptions bool"},{"path":"bash_completionsV2.go","start_line":392,"end_line":396,"text":"// GenBashCompletionV2 generates Bash completion file version 2\n// and writes it to the passed writer.\nfunc (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {\n\treturn c.genBashCompletion(w, includeDesc)\n}"},{"path":"bash_completionsV2.go","start_line":382,"end_line":383,"text":"func (c *Command) GenBashCompletionFileV2(filename string, includeDesc bool) error {\n\toutFile, err := os.Create(filename)"}],"provenance":{"input_sha256":"5fc886e0e55ad903125918bf14bb5ffa83c47780aa172e83ebde04e6fbfba2f1","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Bash completion V1 is the original implementation, generated with `GenBashCompletion()` or `GenBashCompletionFile()` (`site/content/completions/_index.md:423-424`). V2 uses `GenBashCompletionV2(w, includeDesc)` and supports optionally including descriptions through `includeDesc` (`bash_completionsV2.go:392-396`).
+
+Cobra’s default `completion` command uses V2 (`site/content/completions/bash.md:9-10`).
+----- END THE RATER'S RESPONSE -----

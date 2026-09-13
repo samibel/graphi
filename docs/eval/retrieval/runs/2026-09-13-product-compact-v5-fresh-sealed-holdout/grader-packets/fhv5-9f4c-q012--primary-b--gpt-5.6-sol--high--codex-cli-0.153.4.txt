@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 4b82cb0ff326ff1b86ede09f56fba0b042856a57f7805088d2e6381bb1856f37
+QUERY ID: fhv5-9f4c-q012
+
+QUESTION:
+In args.go, how does legacy argument validation differ for a root with subcommands versus a subcommand?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:24-39 anchor="if !cmd.HasParent() && len(args) > 0" reason=Only a root with subcommands rejects an unmatched positional token; subcommands and roots without subcommands accept arbitrary arguments.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 2e02e176e3eb; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":643,"end_line":660,"text":"func stripFlags(args []string, c *Command) []string {\n\tif len(args) == 0 {\n\t\treturn args\n\t}\n\tc.mergePersistentFlags()\n\n\tcommands := []string{}\n\tflags := c.Flags()\n\nLoop:\n\tfor len(args) > 0 {\n\t\ts := args[0]\n\t\targs = args[1:]\n\t\tswitch {\n\t\tcase s == \"--\":\n\t\t\t// \"--\" terminates the flags\n\t\t\tbreak Loop\n\t\tcase strings.HasPrefix(s, \"--\") && !strings.Contains(s, \"=\") && !hasNoOptDefVal(s[2:], flags):"},{"path":"command.go","start_line":745,"end_line":747,"text":"\t\treturn commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))\n\t}\n\treturn commandFound, a, nil"},{"path":"command.go","start_line":788,"end_line":791,"text":"// Traverse the command tree to find the command, and parse args for\n// each parent.\nfunc (c *Command) Traverse(args []string) (*Command, []string, error) {\n\tflags := []string{}"},{"path":"command.go","start_line":793,"end_line":828,"text":"\n\tfor i, arg := range args {\n\t\tswitch {\n\t\t// A long flag with a space separated value\n\t\tcase strings.HasPrefix(arg, \"--\") && !strings.Contains(arg, \"=\"):\n\t\t\t// TODO: this isn't quite right, we should really check ahead for 'true' or 'false'\n\t\t\tinFlag = !hasNoOptDefVal(arg[2:], c.Flags())\n\t\t\tflags = append(flags, arg)\n\t\t\tcontinue\n\t\t// A short flag with a space separated value\n\t\tcase strings.HasPrefix(arg, \"-\") && !strings.Contains(arg, \"=\") && len(arg) == 2 && !shortHasNoOptDefVal(arg[1:], c.Flags()):\n\t\t\tinFlag = true\n\t\t\tflags = append(flags, arg)\n\t\t\tcontinue\n\t\t// The value for a flag\n\t\tcase inFlag:\n\t\t\tinFlag = false\n\t\t\tflags = append(flags, arg)\n\t\t\tcontinue\n\t\t// A flag without a value, or with an `=` separated value\n\t\tcase isFlagArg(arg):\n\t\t\tflags = append(flags, arg)\n\t\t\tcontinue\n\t\t}\n\n\t\tcmd := c.findNext(arg)\n\t\tif cmd == nil {\n\t\t\treturn c, args, nil\n\t\t}\n\n\t\tif err := c.ParseFlags(flags); err != nil {\n\t\t\treturn nil, args, err\n\t\t}\n\t\treturn cmd.Traverse(args[i+1:])\n\t}\n\treturn c, args, nil"},{"path":"command.go","start_line":1087,"end_line":1088,"text":"\tif c.TraverseChildren {\n\t\tcmd, flags, err = c.Traverse(args)"}],"provenance":{"input_sha256":"02f384c71f1006516b56060f0e64bfed5406ab519ae247a9a9d8392cd0009783","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains no `args.go` excerpts or legacy argument-validation logic for comparing a root with subcommands against a subcommand.
+----- END THE RATER'S RESPONSE -----

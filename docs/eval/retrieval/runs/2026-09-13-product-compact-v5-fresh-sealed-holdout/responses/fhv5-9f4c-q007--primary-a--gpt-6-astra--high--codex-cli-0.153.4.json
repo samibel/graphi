@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q007",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "c868f1e7d1c2c29aaea87815883bcad83b1db615c56fb9c9e3f0c5de96db3603",
+  "bundle_sha256": "1930a07c49e06b0de372a9444f947c2cd9d870c6979f0839626e0bf93aafb5ae",
+  "prompt_sha256": "48953794c86100b2b8cabefe1b476de4587f8f5f3de06be47f8525500a5eb6b1",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`MatchAll` stops at the first validator that fails and returns its error unchanged; subsequent validators are not run. In `args.go`, lines 116–119 loop over the validators and execute `if err := parg(cmd, args); err != nil { return err }`.",
+  "responded_at": "2026-09-13T12:31:33Z",
+  "sha256": "762b2e44a61158efdf60f7eb992faaabcfa50841a2dcd14cebbb3ee197666bdd"
+}

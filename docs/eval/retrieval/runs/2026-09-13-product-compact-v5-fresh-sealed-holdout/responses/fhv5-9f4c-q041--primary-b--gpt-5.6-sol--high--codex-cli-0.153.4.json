@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q041",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "bdccb835f1cc79a78707bba8c0c9e7a466bf874c77840d228662312d5cef64b6",
+  "bundle_sha256": "27d2c39baedf55f0d03b1f6a6bcc5a5bb64974a78e796614fc217b146e29c406",
+  "prompt_sha256": "a30957f6eb7d5cb0efab93fee146246d9fceac0a48bb3453d5756fbe73b91e90",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.ValidateFlagGroups` builds three separate `map[string]map[string]bool` state tables: one each for `requiredAsGroup`, `oneRequired`, and `mutuallyExclusive`. The outer key is a group’s flag-list ID; the inner map records each flag name and whether it is set (`flag_groups.go:89-94`).\n\nIt visits every flag from `c.Flags()` and calls `processFlagForGroupAnnotation` once per rule annotation, populating the corresponding table (`flag_groups.go:95-99`; helper declaration at `flag_groups.go:121-122`).\n\nValidation is then fail-fast in this order:\n\n1. `validateRequiredFlagGroups(groupStatus)`\n2. `validateOneRequiredFlagGroups(oneRequiredGroupStatus)`\n3. `validateExclusiveFlagGroups(mutuallyExclusiveGroupStatus)`\n\nEach error is returned immediately, so later validators do not run after a failure (`flag_groups.go:101-109`). If flag parsing is disabled, validation returns `nil` before building state (`flag_groups.go:82-84`).",
+  "responded_at": "2026-09-13T12:36:03Z",
+  "sha256": "67ba2a0e2eace032ae306e52145c6bc04048ad32e533669bffb289f6d0bde19c"
+}

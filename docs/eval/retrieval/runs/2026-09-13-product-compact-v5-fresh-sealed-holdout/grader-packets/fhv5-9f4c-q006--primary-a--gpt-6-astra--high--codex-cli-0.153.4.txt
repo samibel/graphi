@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 5b3ee58ced766d17305aabc1f213ec8a59f04d147d58c4b1250201541ef90c74
+QUERY ID: fhv5-9f4c-q006
+
+QUESTION:
+How does ShellCompDirective.string render combined, default, and out-of-range directive values?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:162-191 anchor="return strings.Join(directives, \", \")" reason=Known set bits become comma-separated names, zero becomes Default, and values beyond the maximum produce an explicit error string.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 2df29377b149; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"completions.go","start_line":42,"end_line":43,"text":"// can be instructed to have once completions have been provided.\ntype ShellCompDirective int"},{"path":"completions.go","start_line":162,"end_line":191,"text":"// Returns a string listing the different directive enabled in the specified parameter\nfunc (d ShellCompDirective) string() string {\n\tvar directives []string\n\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoSpace\")\n\t}\n\tif d&ShellCompDirectiveNoFileComp != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoFileComp\")\n\t}\n\tif d&ShellCompDirectiveFilterFileExt != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterFileExt\")\n\t}\n\tif d&ShellCompDirectiveFilterDirs != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterDirs\")\n\t}\n\tif d&ShellCompDirectiveKeepOrder != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveKeepOrder\")\n\t}\n\tif len(directives) == 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveDefault\")\n\t}\n\n\tif d >= shellCompDirectiveMaxValue {\n\t\treturn fmt.Sprintf(\"ERROR: unexpected ShellCompDirective value: %d\", d)\n\t}\n\treturn strings.Join(directives, \", \")\n}"},{"path":"completions.go","start_line":90,"end_line":90,"text":"\t// ShellCompDirectiveDefault indicates to let the shell perform its default"},{"path":"completions.go","start_line":54,"end_line":54,"text":"const ("},{"path":"completions.go","start_line":294,"end_line":295,"text":"\t\treturn c, []string{}, ShellCompDirectiveDefault, fmt.Errorf(\"Unable to find a command for arguments: %v\", trimmedArgs)\n\t}"},{"path":"completions.go","start_line":323,"end_line":323,"text":"\tif err = finalCmd.ParseFlags(finalArgs); err != nil {"},{"path":"completions.go","start_line":124,"end_line":130,"text":"// FixedCompletions can be used to create a completion function which always\n// returns the same results.\nfunc FixedCompletions(choices []string, directive ShellCompDirective) func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\t\treturn choices, directive\n\t}\n}"},{"path":"completions.go","start_line":132,"end_line":132,"text":"// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag."},{"path":"completions.go","start_line":120,"end_line":123,"text":"func NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn nil, ShellCompDirectiveNoFileComp\n}\n"},{"path":"completions.go","start_line":125,"end_line":125,"text":"// returns the same results."},{"path":"completions.go","start_line":36,"end_line":37,"text":"var flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}\n"}],"provenance":{"input_sha256":"7e2b84af4bdfbf03aa6e94138e3bb283804d7c9bcab6ce8249ea89a113f97ff2","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `completions.go`, `ShellCompDirective.string()` (lines 162–191):
+
+- **Combined values:** Tests each flag with `d&flag != 0` and joins enabled names with `", "`, in this order: `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, `ShellCompDirectiveNoFileComp`, `ShellCompDirectiveFilterFileExt`, `ShellCompDirectiveFilterDirs`, `ShellCompDirectiveKeepOrder` (lines 165–182, 190).
+- **Default:** If no recognized flags are enabled, renders `"ShellCompDirectiveDefault"` (lines 183–185), unless the range check rejects the value.
+- **Out-of-range:** If `d >= shellCompDirectiveMaxValue`, returns `"ERROR: unexpected ShellCompDirective value: %d"` with `d` formatted as decimal, overriding any collected names (lines 187–189). The snippet does not define the numeric threshold or explicitly reject negative values.
+----- END THE RATER'S RESPONSE -----

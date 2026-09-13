@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q016",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "06145d73a68260d350abe0891b69750b8fd5e28d126c965f4becb88a09a2ffbf",
+  "bundle_sha256": "d18ac57a59646b5a381005554f6602950d5d3e8c6f8af33e981153d4e337aa71",
+  "prompt_sha256": "45890139d34ba92965ad8fd53907c38dddc43998155115e05a7fe335f65102d8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Validation succeeds when **all flags in the group are set or none are set**: `validateRequiredFlagGroups` checks `len(unset) == len(flagnameAndStatus) || len(unset) == 0` (`flag_groups.go:155–156`).\n\nIf only some are set, the error identifies **the group and its missing flags**, sorted by name: `if any flags in the group [%v] are set they must all be set; missing %v` (`flag_groups.go:159–161`).",
+  "responded_at": "2026-09-13T12:32:40Z",
+  "sha256": "e5f1143d3bd7506f837fc48f66562eccec927a5cf492060bd3131360e3cafb0e"
+}

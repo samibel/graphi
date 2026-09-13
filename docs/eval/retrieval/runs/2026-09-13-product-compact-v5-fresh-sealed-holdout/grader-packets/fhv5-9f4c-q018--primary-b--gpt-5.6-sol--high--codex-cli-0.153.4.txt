@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 1ed8781b6cfb759613c257f4e727b19393876b46a3458af7d45100919b23a5dc
+QUERY ID: fhv5-9f4c-q018
+
+QUESTION:
+In doc/md_docs.go, how are output filenames formed while recursively generating a Markdown command tree?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/md_docs.go:131-157 anchor="basename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + markdownExtension" reason=Available non-help children are generated recursively, then the command path has spaces replaced by underscores and receives the .md extension under the target directory.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 08e84bd3874e; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"doc/man_docs.go","start_line":46,"end_line":73,"text":"// GenManTreeFromOpts generates a man page for the command and all descendants.\n// The pages are written to the opts.Path directory.\nfunc GenManTreeFromOpts(cmd *cobra.Command, opts GenManTreeOptions) error {\n\theader := opts.Header\n\tif header == nil {\n\t\theader = &GenManHeader{}\n\t}\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {\n\t\t\tcontinue\n\t\t}\n\t\tif err := GenManTreeFromOpts(c, opts); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tsection := \"1\"\n\tif header.Section != \"\" {\n\t\tsection = header.Section\n\t}\n\n\tseparator := \"_\"\n\tif opts.CommandSeparator != \"\" {\n\t\tseparator = opts.CommandSeparator\n\t}\n\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", separator)\n\tfilename := filepath.Join(opts.Path, basename+\".\"+section)\n\tf, err := os.Create(filename)\n\tif err != nil {"},{"path":"doc/md_docs.go","start_line":113,"end_line":114,"text":"\t\tbuf.WriteString(\"###### Auto generated by spf13/cobra on \" + time.Now().Format(\"2-Jan-2006\") + \"\\n\")\n\t}"},{"path":"doc/md_docs.go","start_line":56,"end_line":56,"text":"// GenMarkdownCustom creates custom markdown output."},{"path":"doc/md_docs.go","start_line":34,"end_line":35,"text":"\tflags.SetOutput(buf)\n\tif flags.HasAvailableFlags() {"},{"path":"doc/md_docs.go","start_line":144,"end_line":145,"text":"\tfilename := filepath.Join(dir, basename)\n\tf, err := os.Create(filename)"},{"path":"doc/util.go","start_line":23,"end_line":24,"text":"// Test to see if we have a reason to print See Also information in docs\n// Basically this is a test for a parent command or a subcommand which is"},{"path":"doc/md_docs.go","start_line":119,"end_line":120,"text":"// GenMarkdownTree will generate a markdown page for this command and all\n// descendants in the directory given. The header may be nil."},{"path":"doc/md_docs.go","start_line":143,"end_line":143,"text":"\tbasename := strings.ReplaceAll(cmd.CommandPath(), \" \", \"_\") + markdownExtension"},{"path":"doc/md_docs.go","start_line":30,"end_line":30,"text":"const markdownExtension = \".md\""},{"path":"doc/md_docs.go","start_line":51,"end_line":54,"text":"// GenMarkdown creates markdown output.\nfunc GenMarkdown(cmd *cobra.Command, w io.Writer) error {\n\treturn GenMarkdownCustom(cmd, w, func(s string) string { return s })\n}"},{"path":"command.go","start_line":1805,"end_line":1805,"text":"// Recursively find matching persistent flag."},{"path":"doc/man_docs.go","start_line":33,"end_line":33,"text":"// GenManTree will generate a man page for this command and all descendants"}],"provenance":{"input_sha256":"d15d8c417d63ee6c0349e2d59d4436b3c4522a7d09a788406e489adc9c19387e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `doc/md_docs.go`, each filename is formed from `cmd.CommandPath()` by replacing spaces with underscores, then appending `.md`:
+
+```go
+basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + markdownExtension
+filename := filepath.Join(dir, basename)
+```
+
+Evidence: `doc/md_docs.go:143–145`; `markdownExtension` is defined as `".md"` at `doc/md_docs.go:30`. Thus `root subcommand` becomes `root_subcommand.md` in the specified directory.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q022",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "528084fa84dcde6a482457f58f2e1098f49db1f7915d95e0296ea0ac25b90b0a",
+  "bundle_sha256": "c1571b6c773e86504605384222d78d086c7e7ee6fa590b09a66b3da339f0a7e0",
+  "prompt_sha256": "609700a46554dab444402bb8f73c4050216be7100e24672c1dc9693cc2f0a4ca",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It prints `MousetrapHelpText` when the text is nonempty and `mousetrap.StartedByExplorer()` is true (`command_win.go:31–32`). The default message tells users to open `cmd.exe` and run the tool there. Its documented display duration is 5 seconds, or until Return is pressed if `MousetrapDisplayDuration` is set to 0 (`cobra.go:68–81`).",
+  "responded_at": "2026-09-13T12:33:34Z",
+  "sha256": "91b134e91be3ce49105524c307e79f6c79b255f1ad7d3eee610569e2877130f4"
+}

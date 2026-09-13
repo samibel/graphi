@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q060",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "e23e456e449361e3d1e04b7459611e1b20cef0fd1282fdcfcb716749140051a8",
+  "bundle_sha256": "47bcfd7fb78d868586fb48948e078141321ae06c046f7d1975b9e03fcde6f41c",
+  "prompt_sha256": "29ab2b97185cf84bdb5f6c8f11b95086d96b6363cf4ee358361c318f97831d76",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).ResetFlags()` in `command.go:1737–1749`:\n\n- Recreates and resets `c.flagErrorBuf` as a new `bytes.Buffer`.\n- Recreates `c.flags` and `c.pflags` with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)`, directing both outputs to `c.flagErrorBuf`.\n- Clears `c.lflags`, `c.iflags`, and `c.parentsPflags` by setting them to `nil`.",
+  "responded_at": "2026-09-13T12:38:45Z",
+  "sha256": "7f04d6420de077f2b0bb3f9cd0960b8ee012da2e26222dfcea73678efa307406"
+}

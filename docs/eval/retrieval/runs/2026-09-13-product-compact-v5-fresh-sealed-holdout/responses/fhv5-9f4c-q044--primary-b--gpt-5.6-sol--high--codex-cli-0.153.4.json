@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q044",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "b39f17a943b02670c0bde1ae1c0c71070f8a52b76fae21208eabdf598fb303be",
+  "bundle_sha256": "bc3dcbc88f209b8469fe8637ae3e82751ee96c84a5510e75b0fea2ef45202e21",
+  "prompt_sha256": "35bb53431e0fd34c0ca8d07a33e0fd895b4badd5b810a965b44f43805b1652d8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/yaml_docs.go:92-147`, `GenYamlCustom` builds a `cmdDoc` as follows:\n\n- Initializes Cobra’s default help command and flag with `InitDefaultHelpCmd()` and `InitDefaultHelpFlag()`.\n- Sets metadata:\n  - `Name` from `cmd.CommandPath()`\n  - `Synopsis` and `Description` from `cmd.Short` and `cmd.Long`, passed through `forceMultiLine`\n  - `Usage` from `cmd.UseLine()` only when `cmd.Runnable()`\n  - `Example` only when `cmd.Example` is non-empty\n- Collects flags into separate sections:\n  - `cmd.NonInheritedFlags()` → `Options`\n  - `cmd.InheritedFlags()` → `InheritedOptions`\n  - Each is included only if `HasFlags()` and converted with `genFlagResult`.\n- Builds `SeeAlso` only when `hasSeeAlso(cmd)` is true:\n  - Adds the parent first as `\"command path - short description\"`, if present.\n  - Sorts `cmd.Commands()` using `sort.Sort(byName(children))`.\n  - Adds available children in the same format, excluding unavailable commands and additional help topics.\n- Finally serializes `yamlDoc` using `yaml.Marshal(\u0026yamlDoc)` and writes the bytes to `w`.\n\n`GenYaml` is only a wrapper calling `GenYamlCustom` with an identity link handler (`doc/yaml_docs.go:87-90`); the shown implementation does not otherwise use `linkHandler`.",
+  "responded_at": "2026-09-13T12:36:31Z",
+  "sha256": "7b7004ed95c2bd57b6a2b2d77ef1d35a12f6abb10d0995f9fa9296c98e114ba5"
+}

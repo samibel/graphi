@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q016",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "06145d73a68260d350abe0891b69750b8fd5e28d126c965f4becb88a09a2ffbf",
+  "bundle_sha256": "d18ac57a59646b5a381005554f6602950d5d3e8c6f8af33e981153d4e337aa71",
+  "prompt_sha256": "45890139d34ba92965ad8fd53907c38dddc43998155115e05a7fe335f65102d8",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Validation succeeds when either none of the flags are set or all are set (`flag_groups.go:154-156`). If only a subset is set, the error identifies the group and the sorted list of missing flags (`flag_groups.go:158-160`).",
+  "responded_at": "2026-09-13T12:32:27Z",
+  "sha256": "52c58c1c94581f59949b71525cc0dc46700aac18d44597bcc255ea27d5f53e4e"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q045",
+  "rater_id": "primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "044e524efd041088bb26b2ab957ff5bc61cc1ee04b174de37f44fb1978ae8077",
+  "bundle_sha256": "2b6982258d1707f65f121f899088daedab831fdbb69584cb2d71c4a5b9997bcb",
+  "prompt_sha256": "1f5a497642030d7b68e4af6ed617027b6592944db5b94fa37f430c8627daa713",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT — the response only includes the heading stating that supported shells follow (`site/content/active_help.md:20`), but omits the shell list and any Bash version constraint.",
+  "responded_at": "2026-09-13T12:36:36Z",
+  "sha256": "3945d32edd5fa38aafbe516ffac6a540abf3bacc1278f1618140973dab35b2a2"
+}

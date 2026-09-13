@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv5-9f4c-q032",
+  "rater_id": "primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+  "query_text_sha256": "95644c89afc4e5d57cbb7eba27a77ba111cfdfaee56a9349a2f7d325ad666a45",
+  "bundle_sha256": "84f02166675ede7452fa1ff1f73cf0892ce2a7c1838fe07cec114a9faf09d7b2",
+  "prompt_sha256": "accbb7467577fdf42a438a8515923b6edcde7f2daa1e4e278245158c67b7765f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response identifies `CompletionOptions.DisableDefaultCmd` as preventing creation (`completions.go:106–107`), but omits the conditions following `completions.go:679` and the body of `InitDefaultCompletionCmd`, so the complete set of conditions is missing.",
+  "responded_at": "2026-09-13T12:34:56Z",
+  "sha256": "6fde69077193fe30ca651dac76a074dc521622817f88aae678c5a8aebe9729c9"
+}

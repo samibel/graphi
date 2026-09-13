@@ -1,0 +1,87 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 07efd506efd1463adbc4527e7b30e2a0f44867e2886a66fcb4830e2f1d0f6b5d
+QUERY ID: fhv5-9f4c-q049
+
+QUESTION:
+Which legacy or custom flag-completion mechanisms are documented as unsupported by Zsh completion, and what should replace them?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/completions/_index.md:475-480 anchor="MarkFlagCustom()` is not supported" reason=Legacy Bash-script completion, BashCompCustom, and MarkFlagCustom are ignored; portable Go ValidArgsFunction or RegisterFlagCompletionFunc callbacks are recommended.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 1a092759ec1b; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"site/content/completions/_index.md","start_line":475,"end_line":488,"text":"### Limitations\n\n* Custom completions implemented in Bash scripting (legacy) are not supported and will be ignored for `zsh` (including the use of the `BashCompCustom` flag annotation).\n  * You should instead use `ValidArgsFunction` and `RegisterFlagCompletionFunc()` which are portable to the different shells (`bash`, `zsh`, `fish`, `powershell`).\n* The function `MarkFlagCustom()` is not supported and will be ignored for `zsh`.\n  * You should instead use `RegisterFlagCompletionFunc()`.\n\n### Zsh completions standardization\n\nCobra 1.1 standardized its zsh completion support to align it with its other shell completions.  Although the API was kept backward-compatible, some small changes in behavior were introduced.\nPlease refer to [Zsh Completions](zsh.md) for details.\n\n## fish completions\n"},{"path":"site/content/completions/zsh.md","start_line":1,"end_line":6,"text":"## Generating Zsh Completion For Your cobra.Command\n\nPlease refer to [Shell Completions](_index.md) for details.\n\n## Zsh completions standardization\n"},{"path":"site/content/completions/_index.md","start_line":452,"end_line":454,"text":"## Zsh completions\n\nCobra supports native zsh completion generated from the root `cobra.Command`."},{"path":"bash_completions.go","start_line":535,"end_line":538,"text":"// prepareCustomAnnotationsForFlags setup annotations for go completions for registered flags\nfunc prepareCustomAnnotationsForFlags(cmd *Command) {\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()"},{"path":"bash_completions.go","start_line":546,"end_line":546,"text":"\t\t}"},{"path":"zsh_completions.go","start_line":25,"end_line":27,"text":"func (c *Command) GenZshCompletionFile(filename string) error {\n\treturn c.genZshCompletionFile(filename, true)\n}"},{"path":"zsh_completions.go","start_line":30,"end_line":30,"text":"// and writes it to the passed writer."},{"path":"bash_completions.go","start_line":536,"end_line":536,"text":"func prepareCustomAnnotationsForFlags(cmd *Command) {"},{"path":"site/content/completions/bash.md","start_line":7,"end_line":8,"text":"For backward compatibility, Cobra still supports its legacy dynamic completion solution (described below).  Unlike the `ValidArgsFunction` solution, the legacy solution will only work for Bash shell-completion and not for other shells. This legacy solution can be used along-side `ValidArgsFunction` and `RegisterFlagCompletionFunc()`, as long as both solutions are not used for the same command.  This provides a path to gradually migrate from the legacy solution to the new solution.\n"},{"path":"site/content/completions/_index.md","start_line":117,"end_line":118,"text":"# Customizing completions\n"}],"provenance":{"input_sha256":"a1eb06fc818f93b72b518d7eef7fc8d7976dee377aea0f03a35f7ac331b5ba12","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The documented unsupported mechanisms are:
+
+- Legacy custom completions written in Bash, including the `BashCompCustom` flag annotation. Zsh ignores them. Replace them with `ValidArgsFunction` and `RegisterFlagCompletionFunc()`.
+- `MarkFlagCustom()`. Zsh ignores it. Replace it with `RegisterFlagCompletionFunc()`.
+
+Evidence: `site/content/completions/_index.md`, lines 475–481.
+----- END THE RATER'S RESPONSE -----

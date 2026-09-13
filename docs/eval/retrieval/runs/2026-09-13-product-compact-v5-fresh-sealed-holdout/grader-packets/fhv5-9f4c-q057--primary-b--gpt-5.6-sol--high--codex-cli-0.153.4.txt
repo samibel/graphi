@@ -1,0 +1,84 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 24281c341708f30b3502137a0619a307ab0df8694196f19bee0235e4f8b7e4bd
+QUERY ID: fhv5-9f4c-q057
+
+QUESTION:
+What is the practical distinction between the generic Print methods and the PrintErr methods when custom writers are configured?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1395-1423 anchor="fmt.Fprint(c.ErrOrStderr(), i...)" reason=Print uses the ordinary configured output with stderr fallback, while PrintErr uses the separately configured error output with stderr fallback; line and format variants delegate accordingly.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query 79535fea1fb0; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1409,"end_line":1413,"text":"\n// PrintErr is a convenience method to Print to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErr(i ...interface{}) {\n\tfmt.Fprint(c.ErrOrStderr(), i...)\n}"},{"path":"command.go","start_line":1395,"end_line":1398,"text":"// Print is a convenience method to Print to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Print(i ...interface{}) {\n\tfmt.Fprint(c.OutOrStderr(), i...)\n}"},{"path":"command.go","start_line":1420,"end_line":1423,"text":"// PrintErrf is a convenience method to Printf to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErrf(format string, i ...interface{}) {\n\tc.PrintErr(fmt.Sprintf(format, i...))\n}"},{"path":"command.go","start_line":1415,"end_line":1418,"text":"// PrintErrln is a convenience method to Println to the defined Err output, fallback to Stderr if not set.\nfunc (c *Command) PrintErrln(i ...interface{}) {\n\tc.PrintErr(fmt.Sprintln(i...))\n}"},{"path":"command.go","start_line":384,"end_line":387,"text":"// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":1400,"end_line":1403,"text":"// Println is a convenience method to Println to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Println(i ...interface{}) {\n\tc.Print(fmt.Sprintln(i...))\n}"},{"path":"command.go","start_line":1405,"end_line":1408,"text":"// Printf is a convenience method to Printf to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Printf(format string, i ...interface{}) {\n\tc.Print(fmt.Sprintf(format, i...))\n}"},{"path":"command.go","start_line":1411,"end_line":1411,"text":"func (c *Command) PrintErr(i ...interface{}) {"},{"path":"command.go","start_line":1416,"end_line":1416,"text":"func (c *Command) PrintErrln(i ...interface{}) {"},{"path":"command.go","start_line":1098,"end_line":1115,"text":"\t\t\tc.PrintErrln(c.ErrPrefix(), err.Error())\n\t\t\tc.PrintErrf(\"Run '%v --help' for usage.\\n\", c.CommandPath())\n\t\t}\n\t\treturn c, err\n\t}\n\n\tcmd.commandCalledAs.called = true\n\tif cmd.commandCalledAs.name == \"\" {\n\t\tcmd.commandCalledAs.name = cmd.Name()\n\t}\n\n\t// We have to pass global context to children command\n\t// if context is present on the parent command.\n\tif cmd.ctx == nil {\n\t\tcmd.ctx = c.ctx\n\t}\n\n\terr = cmd.execute(flags)"}],"provenance":{"input_sha256":"599a2588da4f28b5dcfcbb640c798016f080b0081a4cf4ad3d60df4cd27cb517","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Generic `Print`, `Println`, and `Printf` write to the configured normal output via `c.OutOrStderr()` (`command.go:1395–1408`). `PrintErr`, `PrintErrln`, and `PrintErrf` write to the separately configured error output via `c.ErrOrStderr()` (`command.go:1409–1423`).
+
+Thus, with custom writers configured, normal and error messages can be routed to different destinations. If the relevant writer is unset, both families fall back to `os.Stderr`; `ErrOrStderr` explicitly calls `c.getErr(os.Stderr)` (`command.go:384–387`).
+----- END THE RATER'S RESPONSE -----

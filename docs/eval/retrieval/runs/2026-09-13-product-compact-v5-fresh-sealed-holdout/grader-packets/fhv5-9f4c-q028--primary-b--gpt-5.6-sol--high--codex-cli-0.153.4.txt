@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 48900e8c8b11b4b44d8afb75925798f9dbfb2135022a0886c1340832a37a76e0
+QUERY ID: fhv5-9f4c-q028
+
+QUESTION:
+While locating a subcommand, how are flag values skipped and what effect does a double dash have?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:643-679 anchor="case s == \"--\"" reason=Space-separated values of non-boolean long or single short flags are skipped, and double dash terminates flag stripping.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 290536dac13e; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":1794,"end_line":1803,"text":"// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":1641,"end_line":1653,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":796,"end_line":799,"text":"\t\t// A long flag with a space separated value\n\t\tcase strings.HasPrefix(arg, \"--\") && !strings.Contains(arg, \"=\"):\n\t\t\t// TODO: this isn't quite right, we should really check ahead for 'true' or 'false'\n\t\t\tinFlag = !hasNoOptDefVal(arg[2:], c.Flags())"},{"path":"command.go","start_line":801,"end_line":801,"text":"\t\t\tcontinue"},{"path":"bash_completions.go","start_line":574,"end_line":576,"text":"\t\t// localNonPersistentFlags are used to stop the completion of subcommands when one is set\n\t\t// if TraverseChildren is true we should allow to complete subcommands\n\t\tif localNonPersistentFlags.Lookup(flag.Name) != nil && !cmd.Root().TraverseChildren {"},{"path":"bash_completions.go","start_line":551,"end_line":551,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {"},{"path":"completions.go","start_line":308,"end_line":309,"text":"\t// Check if we are doing flag value completion before parsing the flags.\n\t// This is important because if we are completing a flag value, we need to also"},{"path":"completions.go","start_line":323,"end_line":323,"text":"\tif err = finalCmd.ParseFlags(finalArgs); err != nil {"},{"path":"command.go","start_line":1086,"end_line":1088,"text":"\tvar flags []string\n\tif c.TraverseChildren {\n\t\tcmd, flags, err = c.Traverse(args)"},{"path":"command.go","start_line":1092,"end_line":1092,"text":"\tif err != nil {"},{"path":"completions.go","start_line":331,"end_line":332,"text":"\t}\n\t// Error while attempting to parse flags"},{"path":"doc/yaml_docs.go","start_line":160,"end_line":163,"text":"\t\t\t\tflag.DefValue,\n\t\t\t\tforceMultiLine(flag.Usage),\n\t\t\t}\n\t\t\tresult = append(result, opt)"},{"path":"command.go","start_line":683,"end_line":684,"text":"// Special care needs to be taken not to remove a flag value.\nfunc (c *Command) argsMinusFirstX(args []string, x string) []string {"}],"provenance":{"input_sha256":"7ab4c4cf9ca1bbb2cb6d93900486f491f6e05e40b8153ad39ac8fce5dcea1dad","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response omits the implementation around `command.go:683` and `command.go:796–801` that shows how pending flag values and `--` are handled.
+----- END THE RATER'S RESPONSE -----

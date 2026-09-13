@@ -1,0 +1,88 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved bundle.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved bundle.
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied bundle and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional bundle-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved bundle;
+- makes a material claim that cannot be verified from the bundle;
+- cites a nonexistent or non-supporting location;
+- contradicts the bundle or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the bundle, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 3c96693191b33511bf1cbc577f348f60ea008db0950dbaf673a51dc6d723a6c7
+QUERY ID: fhv5-9f4c-q001
+
+QUESTION:
+What exactly does AppendActiveHelp append, and does it preserve earlier completion entries?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- active_help.go:35-44 anchor="return append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))" reason=The implementation appends a marker-prefixed help string to the supplied slice, preserving its existing entries.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"13 ranked source span(s); query 4a935727d567; read in order (246/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"active_help.go","start_line":36,"end_line":44,"text":"// Such strings will be processed by the completion script and will be shown as ActiveHelp\n// to the user.\n// The array parameter should be the array that will contain the completions.\n// This function can be called multiple times before and/or after completions are added to\n// the array.  Each time this function is called with the same array, the new\n// ActiveHelp line will be shown below the previous ones when completion is triggered.\nfunc AppendActiveHelp(compArray []string, activeHelpStr string) []string {\n\treturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n}"},{"path":"active_help.go","start_line":35,"end_line":35,"text":"// AppendActiveHelp adds the specified string to the specified array to be used as ActiveHelp."},{"path":"completions.go","start_line":683,"end_line":685,"text":"func (c *Command) InitDefaultCompletionCmd() {\n\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn"},{"path":"completions.go","start_line":689,"end_line":689,"text":"\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {"},{"path":"command.go","start_line":1253,"end_line":1254,"text":"\t\t\t\t\t\t\tcompletions = append(completions, fmt.Sprintf(\"%s\\t%s\", subCmd.Name(), subCmd.Short))\n\t\t\t\t\t\t}"},{"path":"command.go","start_line":1240,"end_line":1240,"text":"\t\t\tValidArgsFunction: func(c *Command, args []string, toComplete string) ([]string, ShellCompDirective) {"},{"path":"command.go","start_line":1326,"end_line":1327,"text":"\t\tc.commands = append(c.commands, x)\n\t\tc.commandsAreSorted = false"},{"path":"site/content/active_help.md","start_line":28,"end_line":29,"text":"Adding Active Help is done through the use of the `cobra.AppendActiveHelp(...)` function, where the program repeatedly adds Active Help messages to the list of completions.  Keep reading for details.\n"},{"path":"completions.go","start_line":133,"end_line":133,"text":"func (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {"},{"path":"completions.go","start_line":80,"end_line":80,"text":"\t// ShellCompDirectiveKeepOrder indicates that the shell should preserve the order"},{"path":"command.go","start_line":82,"end_line":82,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions"},{"path":"command.go","start_line":92,"end_line":92,"text":"\t// ArgAliases is List of aliases for ValidArgs."},{"path":"command.go","start_line":1641,"end_line":1642,"text":"// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents)."}],"provenance":{"input_sha256":"b87f48f014b8ad26838657a26fe380b8db2eac44fcaedc0e919308d09892e7d7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`AppendActiveHelp` appends one string: `activeHelpMarker` immediately followed by `activeHelpStr`, with no added separator, and returns the resulting slice:
+
+```go
+return append(compArray, fmt.Sprintf("%s%s", activeHelpMarker, activeHelpStr))
+```
+
+This preserves earlier completion entries in their existing order (`active_help.go:42–44`). The comments explicitly allow calls before or after adding completions and say successive ActiveHelp lines appear below previous ones (`active_help.go:38–41`). The marker’s literal value is not included in the response.
+----- END THE RATER'S RESPONSE -----
