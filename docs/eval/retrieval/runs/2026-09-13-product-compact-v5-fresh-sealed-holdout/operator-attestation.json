@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/1",
-  "status": "captured_pre_response_attested",
+  "status": "complete_release_no",
   "operator": {
     "id": "codex-independent-holdout-operator",
     "provider": "OpenAI Codex",
@@ -83,12 +83,23 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-13T12:27:29Z",
+    "attested_at_utc": "2026-09-13T13:07:18Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
     "precondition_record_sha256": "33db6a8f09ac65965f60b2a74c3cb744c64a67cac264a2d671ab42bdbaa13243",
     "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
     "capture_artifacts_commit": "29aa1e5419a54ea7e235616732e6897ba1aaf3a1",
+    "primary_raw_and_logs_commit": "44aa38ade628a10d84fbafdf26da365547594199",
+    "primary_response_seal_commit": "4e30ec203d616980b7e132054e40f7b1b9c5492f",
+    "primary_raw_grades_and_logs_commit": "04ab70225649ca779a4db5e4fb59b62eb3b38b9c",
+    "primary_grade_seal_commit": "48321dd944d817ee5ea9cb30604a83fb08ab5aab",
+    "adjudicator_raw_and_logs_commit": "5f50a6dc20536278f9a78358afacf84b0d409b7e",
+    "adjudication_seal_commit": "c65c75b446453c1cc7fce4cf70b4e26417d20f34",
+    "adjudicator_raw_grades_and_logs_commit": "a5899f2766cffd5dd11f8447588bbe259d9fa76c",
+    "final_seal_commit": "730cb6d56ebe281a0dd68ee9fefd4ca52a4e0155",
+    "outcome_file_sha256": "f7d1f62ca03393758248806195937aa38e647181a6ffc95aa0873c293335a7fc",
+    "end_of_run_comparison_file_sha256": "ea232063bc3820145d503ba52d2085657fceaaa1204fe280cd21901d1df75cd3",
+    "rendered_report_file_sha256": "386c806358624802ca57cc687d81e87e5077c469307fbb46a180628f59dc8c4b",
     "commands_sha256": "385de57ae2abe6a97b2ad6c5f9068e91296eed1dfe26ffc083a7e4c00679fe26",
     "isolation_controls": [
       "Per item: a new codex exec --ephemeral process; no resume or fork",
@@ -106,5 +117,18 @@
       "Repository-writer malice remains outside the isolation guarantee as disclosed by the public threat model."
     ]
   },
-  "declaration": "Before freeze, the independent operator attests: no candidate implementation, no dataset annotation, no prior holdout access, no manual opening of the fresh sealed dataset, no disclosure of holdout content to the root agent, and execution only against the named clean commits and content-addressed inputs. Post-freeze hashes remain explicitly pending until the phases that create them."
+  "decision": {
+    "release": "NO",
+    "n": 64,
+    "k": 56,
+    "reviewed_pass_count": 32,
+    "corrected_pass_count": 32,
+    "primary_disagreement_count": 2,
+    "adjudication_count": 2,
+    "non_answered_response_count": 0,
+    "frozen_inputs_all_match": true,
+    "capture_bound": true,
+    "decide_exit_code": 1
+  },
+  "declaration": "The independent operator attests: no candidate implementation, no dataset annotation, no prior holdout access, no manual opening of the fresh sealed dataset, no disclosure of holdout content to the root agent, and execution only against the named clean commits and content-addressed inputs. Every participant item ran once in a fresh ephemeral read-only process; all confidential JSONL logs matched the frozen event allowlist, and no retry occurred. The one-time run completed with the recorded RELEASE:NO decision."
 }
