@@ -5,7 +5,10 @@
 // zero outbound network activity (local-first contract). It exposes structural
 // queries and search as MCP tools and dispatches every call to the SAME shared
 // client, then returns the canonical serialized bytes. The serialized result is
-// therefore byte-identical to the CLI for identical inputs (MCP↔CLI parity).
+// therefore byte-identical to the CLI for identical inputs except
+// task_context/2: that version deliberately projects the shared canonical
+// engine result into MCP structuredContent to avoid charging agents for a
+// second JSON encoding of the same evidence.
 //
 // Layering: mcp is a surface. It imports surfaces/client only and holds no
 // query/traversal/ordering/serialization logic of its own.

@@ -7,6 +7,7 @@ package retrieval
 // repository.
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 )
 
 // SelectEqualRecallDevPopulation freezes the development-only answerable
@@ -105,6 +107,33 @@ func ScoreTaskContextEqualRecallDev(repository fs.FS, q Query, payload Preserved
 	if payload.Operation != PayloadOperationTaskContext {
 		return SavingsArmOutcome{}, fmt.Errorf("retrieval equal-recall dev: query %s payload operation=%q, want %q", q.ID, payload.Operation, PayloadOperationTaskContext)
 	}
+	if sources, compact, err := compactCandidateSources(q.ID, payload.Bytes); compact {
+		if err != nil {
+			return SavingsArmOutcome{}, err
+		}
+		covered := make([]bool, len(grade3))
+		for _, emitted := range sources {
+			source, err := exactSourceSpan(repository, emitted.Path, emitted.StartLine, emitted.EndLine)
+			if err != nil {
+				return SavingsArmOutcome{}, fmt.Errorf("retrieval equal-recall dev: query %s compact source: %w", q.ID, err)
+			}
+			if source != emitted.Text {
+				return SavingsArmOutcome{}, fmt.Errorf("retrieval equal-recall dev: query %s compact source differs from %s:%d-%d", q.ID, emitted.Path, emitted.StartLine, emitted.EndLine)
+			}
+			for i, judgement := range grade3 {
+				if emitted.Path == judgement.Path && emitted.StartLine <= judgement.EndLine && emitted.EndLine >= judgement.StartLine {
+					covered[i] = true
+				}
+			}
+		}
+		complete := 0
+		for _, hit := range covered {
+			if hit {
+				complete++
+			}
+		}
+		return equalRecallCandidateOutcome(payload, target, counts[real.TokenizerID], complete), nil
+	}
 	if _, err := ValidateCandidateBundleBytes(q.ID, payload.Bytes); err != nil {
 		return SavingsArmOutcome{}, err
 	}
@@ -171,7 +200,10 @@ func ScoreTaskContextEqualRecallDev(repository fs.FS, q Query, payload Preserved
 			complete++
 		}
 	}
-	tokens := counts[real.TokenizerID]
+	return equalRecallCandidateOutcome(payload, target, counts[real.TokenizerID], complete), nil
+}
+
+func equalRecallCandidateOutcome(payload PreservedPayload, target RecallTarget, tokens, complete int) SavingsArmOutcome {
 	outcome := SavingsArmOutcome{
 		Target:                target,
 		StopReason:            SavingsStopOneCallComplete,
@@ -186,7 +218,22 @@ func ScoreTaskContextEqualRecallDev(repository fs.FS, q Query, payload Preserved
 		outcome.Status = SavingsOutcomeMissed
 		outcome.CensorLowerBoundTokens = equalRecallIntPointer(tokens)
 	}
-	return outcome, nil
+	return outcome
+}
+
+func compactCandidateSources(queryID string, raw []byte) ([]taskcompact.Source, bool, error) {
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil || envelope.Result == nil || len(envelope.Result.StructuredContent) == 0 || bytes.Equal(envelope.Result.StructuredContent, []byte("null")) {
+		return nil, false, nil
+	}
+	if _, err := ValidateCompactCandidateBundleBytes(queryID, raw); err != nil {
+		return nil, true, err
+	}
+	var structured taskcompact.Structured
+	if err := json.Unmarshal(envelope.Result.StructuredContent, &structured); err != nil {
+		return nil, true, err
+	}
+	return structured.Sources, true, nil
 }
 
 func taskContextBundleFromCandidateBytes(raw []byte) (contract.Result, error) {

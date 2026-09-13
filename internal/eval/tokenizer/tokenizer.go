@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -13,8 +14,22 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 	"unicode/utf8"
+)
+
+// embeddedVocabulary is the same governed artifact used by offline evaluator
+// tests. Embedding makes the production task_context wire ceiling executable
+// without a cache, network access, cgo, or an estimated token count.
+//
+//go:embed testdata/artifact/cl100k_base.tiktoken
+var embeddedVocabulary []byte
+
+var (
+	embeddedOnce      sync.Once
+	embeddedTokenizer *Tokenizer
+	embeddedErr       error
 )
 
 const (
@@ -42,6 +57,27 @@ func (e *PinMismatchError) Error() string {
 // against the verified mergeable-rank vocabulary.
 type Tokenizer struct {
 	ranks map[string]int
+}
+
+// LoadEmbedded verifies and parses the governed vocabulary compiled into the
+// binary. It is the runtime counterpart to LoadPinned; both reject pin drift
+// and share the exact parser and counting implementation.
+func LoadEmbedded() (*Tokenizer, error) {
+	embeddedOnce.Do(func() {
+		digest := sha256.Sum256(embeddedVocabulary)
+		actual := hex.EncodeToString(digest[:])
+		if actual != PinnedVocabularySHA256 {
+			embeddedErr = &PinMismatchError{File: PinnedVocabularyFile, Path: "embedded", Expected: PinnedVocabularySHA256, Actual: actual}
+			return
+		}
+		ranks, err := parseVocabulary(bytes.NewReader(embeddedVocabulary))
+		if err != nil {
+			embeddedErr = fmt.Errorf("eval tokenizer: parse embedded verified %s: %w", PinnedVocabularyFile, err)
+			return
+		}
+		embeddedTokenizer = &Tokenizer{ranks: ranks}
+	})
+	return embeddedTokenizer, embeddedErr
 }
 
 // LoadPinned resolves the immutable local artifact directory and loads it. It

@@ -18,6 +18,7 @@ import (
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	enginecontext "github.com/samibel/graphi/engine/context"
 	"github.com/samibel/graphi/engine/embed"
 	_ "github.com/samibel/graphi/engine/embed/ollama" // opt-in selector; registration performs no I/O
@@ -125,21 +126,42 @@ func TestRecoveryDevCapture(t *testing.T) {
 			if err := json.Unmarshal(captured.Payload.Bytes, &envelope); err != nil {
 				t.Fatal(err)
 			}
-			var bundle contract.Result
-			if err := json.Unmarshal([]byte(envelope.Result.Content[0].Text), &bundle); err != nil {
-				t.Fatal(err)
+			type sourceSpan struct {
+				path       string
+				start, end int
+				text       string
 			}
-			obs := recoveryObservation{QueryID: q.ID, Stratum: q.Stratum, Capture: captured, Items: len(bundle.Items), Dropped: bundle.Limits.Dropped}
-			reader := enginecontext.RootedReader{Root: root}
-			for _, ev := range bundle.Evidence {
-				if ev.Snippet == "" {
-					continue
+			var sources []sourceSpan
+			obs := recoveryObservation{QueryID: q.ID, Stratum: q.Stratum, Capture: captured}
+			if len(envelope.Result.StructuredContent) > 0 {
+				var compact taskcompact.Structured
+				if err := json.Unmarshal(envelope.Result.StructuredContent, &compact); err != nil {
+					t.Fatal(err)
 				}
-				obs.SnippetTokens += len(strings.Fields(ev.Snippet))
-				start, end := recoverySpan(t, ev.Span)
-				source, got, err := reader.ReadSpan(ev.Path, enginecontext.Span{Start: start, End: end})
-				if err != nil || source != ev.Snippet || got.Start != start || got.End != end {
-					t.Fatalf("%s snippet fails source roundtrip: %s %v", q.ID, ev.RefID, err)
+				obs.Items = len(compact.Sources)
+				for _, source := range compact.Sources {
+					sources = append(sources, sourceSpan{path: source.Path, start: source.StartLine, end: source.EndLine, text: source.Text})
+				}
+			} else {
+				var bundle contract.Result
+				if err := json.Unmarshal([]byte(envelope.Result.Content[0].Text), &bundle); err != nil {
+					t.Fatal(err)
+				}
+				obs.Items, obs.Dropped = len(bundle.Items), bundle.Limits.Dropped
+				for _, evidence := range bundle.Evidence {
+					if evidence.Snippet == "" {
+						continue
+					}
+					start, end := recoverySpan(t, evidence.Span)
+					sources = append(sources, sourceSpan{path: evidence.Path, start: start, end: end, text: evidence.Snippet})
+				}
+			}
+			reader := enginecontext.RootedReader{Root: root}
+			for _, emitted := range sources {
+				obs.SnippetTokens += len(strings.Fields(emitted.text))
+				source, got, err := reader.ReadSpan(emitted.path, enginecontext.Span{Start: emitted.start, End: emitted.end})
+				if err != nil || source != emitted.text || got.Start != emitted.start || got.End != emitted.end {
+					t.Fatalf("%s snippet fails source roundtrip: %s:%d-%d %v", q.ID, emitted.path, emitted.start, emitted.end, err)
 				}
 			}
 			if obs.SnippetTokens > SavingsCandidateBudget {
@@ -166,14 +188,10 @@ func TestRecoveryDevCapture(t *testing.T) {
 				obs.CandidateGrade3Ranks = append(obs.CandidateGrade3Ranks, firstRank)
 				cited, overlap := false, false
 				covered := make(map[int]bool)
-				for _, ev := range bundle.Evidence {
-					cited = cited || SpanMatches(ev.Path, ev.Line, j)
-					if ev.Snippet == "" {
-						continue
-					}
-					start, end := recoverySpan(t, ev.Span)
-					for line := start; line <= end; line++ {
-						if SpanMatches(ev.Path, line, j) {
+				for _, emitted := range sources {
+					cited = cited || SpanMatches(emitted.path, emitted.start, j)
+					for line := emitted.start; line <= emitted.end; line++ {
+						if SpanMatches(emitted.path, line, j) {
 							overlap = true
 							covered[line] = true
 						}

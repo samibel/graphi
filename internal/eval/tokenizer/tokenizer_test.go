@@ -61,6 +61,27 @@ func TestGoldenTokenVectors_DifferFromWhitespace(t *testing.T) {
 	}
 }
 
+func TestLoadEmbedded_MatchesGovernedArtifact(t *testing.T) {
+	embedded, err := LoadEmbedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pinned := loadRealArtifact(t)
+	for _, text := range []string{"ExecuteC", `{"structuredContent":{"sources":[]}}`, "Grüße, 世界"} {
+		a, err := embedded.Encode([]byte(text))
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := pinned.Encode([]byte(text))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(a, b) {
+			t.Fatalf("embedded tokenizer differs for %q: %v != %v", text, a, b)
+		}
+	}
+}
+
 func TestLoad_RejectsOneByteCorruptionWithBothHashes(t *testing.T) {
 	dir := realArtifactDir(t)
 	body, err := os.ReadFile(filepath.Join(dir, PinnedVocabularyFile))

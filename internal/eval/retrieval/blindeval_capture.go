@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
 	"github.com/samibel/graphi/engine/agenttools/taskctx"
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	engineretrieval "github.com/samibel/graphi/engine/retrieval"
@@ -40,7 +42,7 @@ import (
 // CandidateCaptureVersion identifies the capture instrument. It travels into
 // the run directory so a later change to how bytes are captured cannot be
 // mistaken for the same measurement.
-const CandidateCaptureVersion = "sw280-candidate-mcp-capture/2"
+const CandidateCaptureVersion = "sw280-candidate-mcp-capture/3"
 
 // candidateJSONRPCPrefix is the exact opening the stdio encoder produces for a
 // response: encoding/json writes struct fields in declaration order, and
@@ -371,7 +373,7 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		PersistedVectors:  idx.persistedVectors,
 		SemanticState:     semanticState.State.String(),
 		TokenBudget:       SavingsCandidateBudget,
-		MethodVersion:     taskctx.MethodVersionV2,
+		MethodVersion:     taskcompact.Version,
 		TokenizerID:       o.RealCounter.TokenizerID,
 		TokenizerVocabSHA: o.RealCounter.VocabularySHA256,
 		QueryCount:        len(o.Queries),
@@ -426,7 +428,7 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s method is %s/%s, want %s/semantic_first", QrelBlindSmokeEvaluationName, q.ID, last.Summary.RetrievalVersion, last.Summary.Strategy, engineretrieval.Version)
 	}
 
-	summary, err := ValidateCandidateBundleBytes(q.ID, responseBytes)
+	summary, err := ValidateCompactCandidateBundleBytes(q.ID, responseBytes)
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
@@ -482,9 +484,60 @@ type candidateResponseEnvelope struct {
 			Type string `json:"type"`
 			Text string `json:"text"`
 		} `json:"content"`
-		IsError bool `json:"isError"`
+		StructuredContent json.RawMessage `json:"structuredContent"`
+		IsError           bool            `json:"isError"`
 	} `json:"result"`
 	Error json.RawMessage `json:"error"`
+}
+
+// ValidateCompactCandidateBundleBytes is the current release-candidate wire
+// validator. The older ValidateCandidateBundleBytes remains available solely
+// to recount preserved historical inputs whose task_context contract was JSON
+// nested in content[0].text; a new capture must use structuredContent.
+func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, error) {
+	if len(raw) == 0 || !bytes.HasPrefix(raw, []byte(candidateJSONRPCPrefix)) || raw[len(raw)-1] != '\n' || bytes.Count(raw, []byte{'\n'}) != 1 {
+		return "", fmt.Errorf("retrieval %s capture: query %s is not one exact line-delimited MCP response", QrelBlindSmokeEvaluationName, queryID)
+	}
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return "", fmt.Errorf("retrieval %s capture: query %s response is not JSON-RPC: %w", QrelBlindSmokeEvaluationName, queryID, err)
+	}
+	if envelope.JSONRPC != "2.0" || string(envelope.ID) != candidateRequestID || envelope.Result == nil || envelope.Result.IsError || len(envelope.Error) > 0 && string(envelope.Error) != "null" {
+		return "", fmt.Errorf("retrieval %s capture: query %s response is not one successful request-id %s result", QrelBlindSmokeEvaluationName, queryID, candidateRequestID)
+	}
+	if len(envelope.Result.Content) != 1 || envelope.Result.Content[0].Type != "text" || strings.TrimSpace(envelope.Result.Content[0].Text) == "" {
+		return "", fmt.Errorf("retrieval %s capture: query %s compact response requires one concise text fallback", QrelBlindSmokeEvaluationName, queryID)
+	}
+	var structured taskcompact.Structured
+	if len(envelope.Result.StructuredContent) == 0 || string(envelope.Result.StructuredContent) == "null" {
+		return "", fmt.Errorf("retrieval %s capture: query %s compact response has no structuredContent", QrelBlindSmokeEvaluationName, queryID)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(envelope.Result.StructuredContent))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&structured); err != nil {
+		return "", fmt.Errorf("retrieval %s capture: query %s invalid compact structuredContent: %w", QrelBlindSmokeEvaluationName, queryID, err)
+	}
+	if structured.Version != taskcompact.Version {
+		return "", fmt.Errorf("retrieval %s capture: query %s compact identity is invalid", QrelBlindSmokeEvaluationName, queryID)
+	}
+	p := structured.Provenance
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
+		return "", fmt.Errorf("retrieval %s capture: query %s compact provenance is incomplete or not ready", QrelBlindSmokeEvaluationName, queryID)
+	}
+	seen := make(map[string]bool)
+	used := 0
+	for _, source := range structured.Sources {
+		key := fmt.Sprintf("%s\x00%d\x00%d", source.Path, source.StartLine, source.EndLine)
+		if !fs.ValidPath(source.Path) || source.StartLine < 1 || source.EndLine < source.StartLine || source.Text == "" || source.EndLine-source.StartLine+1 != len(strings.Split(source.Text, "\n")) || seen[key] {
+			return "", fmt.Errorf("retrieval %s capture: query %s has invalid or duplicate compact source", QrelBlindSmokeEvaluationName, queryID)
+		}
+		seen[key] = true
+		used += len(strings.Fields(source.Text))
+	}
+	if used > p.SourceBudget {
+		return "", fmt.Errorf("retrieval %s capture: query %s compact source budget exceeded: %d > %d", QrelBlindSmokeEvaluationName, queryID, used, p.SourceBudget)
+	}
+	return envelope.Result.Content[0].Text, nil
 }
 
 // ValidateCandidateBundleBytes refuses everything that is not the exact
