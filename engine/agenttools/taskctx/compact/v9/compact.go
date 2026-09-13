@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/5"
+const CompactTaskContextVersion = "task_context/2-compact/6"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -1127,6 +1127,28 @@ func compactTaskContextWantsMarkdownFlow(patterns []string) bool {
 		compactTaskContextHasPattern(patterns, "sequence")
 }
 
+func compactTaskContextWantsRecursiveWalk(patterns []string) bool {
+	return compactTaskContextHasPattern(patterns, "walk") ||
+		compactTaskContextHasPattern(patterns, "traverse") ||
+		compactTaskContextHasPattern(patterns, "traversal")
+}
+
+func compactTaskContextIsRecursiveTraversal(candidate compactTaskContextCandidate) bool {
+	if candidate.kind != "function" && candidate.kind != "method" {
+		return false
+	}
+	name := candidate.symbol
+	if dot := strings.LastIndex(name, "."); dot >= 0 {
+		name = name[dot+1:]
+	}
+	if name == "" {
+		return false
+	}
+	source := strings.Join(candidate.lines, "\n")
+	return strings.Contains(source, "for ") && strings.Contains(source, " range ") &&
+		strings.Count(source, name+"(") >= 2
+}
+
 func compactTaskContextWantsLifecycleHooks(patterns []string) bool {
 	return compactTaskContextHasPattern(patterns, "lifecycle") &&
 		(compactTaskContextHasPattern(patterns, "execute") || compactTaskContextHasPattern(patterns, "run") || compactTaskContextHasPattern(patterns, "hook"))
@@ -1975,6 +1997,23 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		}
 	}
 	primaryRemaining := remaining - secondaryReserve
+	if mode == GrepReadV2NaturalLanguage && compactTaskContextWantsRecursiveWalk(patterns) {
+		// Recursive traversals are the implementation of a tree-walk answer, not
+		// merely another related declaration. Reserve up to two complete small
+		// walkers before wrappers consume the depth budget; repositories commonly
+		// expose parallel generators for different output formats.
+		completed := 0
+		for i := range candidates {
+			if admitted[i] && compactTaskContextIsRecursiveTraversal(candidates[i]) {
+				if compactTaskContextCompleteUnit(&candidates[i], &primaryRemaining, 160) {
+					completed++
+				}
+				if completed == 2 {
+					break
+				}
+			}
+		}
+	}
 	if mode == GrepReadV2NaturalLanguage && compactTaskContextWantsCommandParentLink(patterns) {
 		for i := range candidates {
 			lowerSymbol := strings.ToLower(candidates[i].symbol)

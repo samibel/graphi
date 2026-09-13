@@ -125,6 +125,9 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
   — the completed fresh sealed-holdout capture and its 64 exact response-byte
   counts are bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
+  — the completed second fresh sealed-holdout capture and its exact
+  response-byte counts are bound to this tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

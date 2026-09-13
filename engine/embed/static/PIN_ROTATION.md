@@ -161,6 +161,9 @@ and become stale when `PinnedRevision` changes:
   — the completed independent fresh-holdout run. Its 64 captured bundles and
   resulting blind decision are invalidated by rotating this production
   embedder.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
+  — the completed second independent fresh-holdout run. Its captured bundles
+  and blind decision are likewise bound to this production embedder.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

@@ -150,6 +150,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v4-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout",
+		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev",
 	}

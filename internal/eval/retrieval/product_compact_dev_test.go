@@ -104,8 +104,17 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	cheaperThanComparator := 0
 	var misses []string
 	var incomplete []string
+	type stratumMeasurement struct {
+		total, reached, anyComplete, allComplete int
+	}
+	byStratum := make(map[string]*stratumMeasurement)
 	for _, member := range members {
 		query := queries[member.QueryID]
+		stratum := string(query.Stratum)
+		if byStratum[stratum] == nil {
+			byStratum[stratum] = &stratumMeasurement{}
+		}
+		byStratum[stratum].total++
 		bundle, err := taskContextBundleFromCandidateBytes(inputs[member.QueryID].Bytes)
 		if err != nil {
 			t.Fatalf("%s input: %v", member.QueryID, err)
@@ -165,6 +174,13 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if tokens > maxTokens {
 			maxTokens = tokens
 		}
+		if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_TRACE") == "1" && query.Stratum == StratumArchitectureFlow {
+			usedFields := 0
+			for _, source := range first.Structured.Sources {
+				usedFields += len(strings.Fields(source.Text))
+			}
+			t.Logf("architecture wire: id=%s real_tokens=%d source_fields=%d", member.QueryID, tokens, usedFields)
+		}
 		tokenCounts = append(tokenCounts, tokens)
 		baselineTokens := comparatorTokens[member.QueryID]
 		if baselineTokens < 1 {
@@ -197,8 +213,21 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 				}
 			}
 		}
+		if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_TRACE") == "1" && query.Stratum == StratumConfigDocs {
+			var targets, citations []string
+			for _, judgement := range query.Judgements {
+				if judgement.Grade == SavingsGrade {
+					targets = append(targets, judgement.Path+":"+strconv.Itoa(judgement.StartLine)+"-"+strconv.Itoa(judgement.EndLine))
+				}
+			}
+			for _, source := range first.Structured.Sources {
+				citations = append(citations, source.Path+":"+strconv.Itoa(source.StartLine)+"-"+strconv.Itoa(source.EndLine))
+			}
+			t.Logf("config trace: id=%s query=%q targets=%s sources=%s", member.QueryID, query.Text, strings.Join(targets, ","), strings.Join(citations, ","))
+		}
 		if len(complete) > 0 {
 			anyComplete++
+			byStratum[stratum].anyComplete++
 		}
 		if len(complete) >= member.Target.RequiredSpans {
 			requiredComplete++
@@ -216,12 +245,14 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		}
 		if len(complete) == grade3Spans {
 			allComplete++
+			byStratum[stratum].allComplete++
 		}
 		if len(covered) == grade3Spans {
 			allOverlapped++
 		}
 		if len(covered) >= member.Target.RequiredSpans {
 			reached++
+			byStratum[stratum].reached++
 		} else {
 			misses = append(misses, member.QueryID)
 			var citations []string
@@ -266,6 +297,15 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	}
 	sort.Strings(misses)
 	sort.Strings(incomplete)
+	var strata []string
+	for stratum := range byStratum {
+		strata = append(strata, stratum)
+	}
+	sort.Strings(strata)
+	for _, stratum := range strata {
+		measurement := byStratum[stratum]
+		t.Logf("production compact dev stratum: name=%s reached=%d/%d any_complete=%d/%d all_complete=%d/%d", stratum, measurement.reached, measurement.total, measurement.anyComplete, measurement.total, measurement.allComplete, measurement.total)
+	}
 	for _, detail := range incomplete {
 		t.Logf("incomplete %s", detail)
 	}

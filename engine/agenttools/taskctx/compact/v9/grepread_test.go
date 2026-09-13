@@ -268,6 +268,44 @@ func TestFlowSelectionLimitsBreadthToPreserveDepth(t *testing.T) {
 	}
 }
 
+func TestTreeWalkSelectionPreservesRecursiveImplementation(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	for i := 0; i < 4; i++ {
+		ref := fmt.Sprintf("wrapper-%d", i)
+		text := fmt.Sprintf("func GenerateTree%d(root Node) error {\n\tprepare(root)\n\tconfigure(root)\n\tvalidate(root)\n\treturn write(root)\n}", i)
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: fmt.Sprintf("wrapper%d.go", i), Line: 1, Span: "1-6", Role: "snippet",
+			Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{
+			RefID: ref, Rank: i + 1,
+			Reason:         fmt.Sprintf("primary: function p.GenerateTree%d (wrapper%d.go:1) score 1", i, i),
+			EvidenceRefIDs: []string{ref},
+		})
+	}
+	recursive := "func WalkTree(root Node) error {\n\tfor _, child := range root.Children() {\n\t\tif err := WalkTree(child); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\treturn nil\n}"
+	evidence = append(evidence, contract.Evidence{
+		RefID: "walker", Path: "walk.go", Line: 1, Span: "1-8", Role: "snippet",
+		Snippet: recursive, TextHash: shape.TextHash(recursive),
+	})
+	items = append(items, contract.Item{
+		RefID: "walker", Rank: 5,
+		Reason: "candidate: function p.WalkTree (walk.go:1) score 1", EvidenceRefIDs: []string{"walker"},
+	})
+
+	sources, _, err := compactTaskContextSelect("how does the generator walk the command tree", evidence, items, 47)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source.Path == "walk.go" && source.Start == 1 && source.End == 8 {
+			return
+		}
+	}
+	t.Fatalf("recursive tree walk was fragmented or omitted: %#v", sources)
+}
+
 func TestGrepReadV2CapsRepositoryFileScan(t *testing.T) {
 	repository := make(fstest.MapFS, GrepReadV2MaxFiles+1)
 	for i := 0; i <= GrepReadV2MaxFiles; i++ {
