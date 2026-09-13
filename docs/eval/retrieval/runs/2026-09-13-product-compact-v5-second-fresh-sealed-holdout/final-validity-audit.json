@@ -1,0 +1,104 @@
+{
+  "contract_version": "fresh-holdout-final-validity-audit/1",
+  "audited_at_utc": "2026-09-13T15:57:38Z",
+  "status": "PASS",
+  "release_decision": "NO",
+  "decision_commit": "5fa950847af637b0397005e147b5c45c8f92c835",
+  "bindings": {
+    "product_candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
+    "frozen_static_input_commit": "595ea58ff030449a68272c285c61d08c29a32856",
+    "capture_candidate_sha": "94de3233d38deb5bff2e372341d9c853e8533b0c",
+    "cobra_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "331bd256c3097c61b34b3ccbc7716a161a315c76f2a41e22c4a4f88085eb85ae",
+    "curation_pre_registration_sha256": "db6115382957739b0dbfcdfa6e6054c39aa26935447c2fd76c2a82c2e0a24c8d",
+    "precondition_record_self_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
+    "capture_pre_registration_self_sha256": "8e773143abb0c66a71f1684157d5cde49de947c1a1885bf461d023f7235d44e3",
+    "capture_provenance_file_sha256": "9d93bd37f0210644ae9f29965f09787a9aaa0a44fd46a6c8845fff3db462ec21",
+    "capture_reproducibility_file_sha256": "e91faa214df34b4525acf48d00861f7627c74c0d3d3d18ae3e1af4d97aa69595",
+    "outcome_sha256": "4bcfd50c22ba1c4cb5fb75b46994de6c1d236cad386863ebd426efc37df68d47",
+    "end_of_run_hash_comparison_sha256": "3a57ae4c23a763adab3dbbfdbd4378ff0d156fc4b2e4f810dd00535302bdf248",
+    "all_frozen_input_hashes_match": true,
+    "candidate_tree_outside_run_matches_product_candidate": true,
+    "cobra_worktree_clean": true
+  },
+  "capture": {
+    "actor_visible_version": "task_context/2-compact/5",
+    "independent_index_builds": 2,
+    "paired_bundles": 64,
+    "exact_mcp_bytes_identical": 64,
+    "response_digests_identical": 64,
+    "token_counts_identical": 64,
+    "prompts_identical": 64,
+    "maximum_cl100k_tokens": 1193,
+    "token_ceiling": 1200,
+    "generation_ids_distinct": true
+  },
+  "execution_audit": {
+    "primary_responses": 128,
+    "primary_grades": 128,
+    "adjudications": 2,
+    "adjudication_grades": 2,
+    "jsonl_logs": 260,
+    "distinct_threads": 260,
+    "exact_event_sequences_passed": 260,
+    "nonempty_stderr_logs": 0,
+    "process_failures": 0,
+    "forbidden_tool_events": 0,
+    "retries": 0,
+    "overwrites": 0,
+    "sealed_status_insufficient_count": 0,
+    "insufficient_prefix_count": 39,
+    "insufficient_prefix_by_primary": {
+      "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4": 20,
+      "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4": 19
+    }
+  },
+  "artifact_aggregates": {
+    "algorithm": "sha256 of a lexicographically sorted run-relative sha256sum ledger",
+    "raw_primary_responses_sha256": "adfe287861b02246b117bee7540d80a711edb77001d4dad5faf03f40a9d2bf1a",
+    "all_execution_logs_sha256": "9a49be9dab61b86e2f739ab166c5250fe808509467e8f0bf111a9cad11363b4a",
+    "sealed_responses_grades_adjudications_sha256": "bb45d0c19ac1e6a968032c5a27e57bc80a1a2db25428576529d66f80c87932e3"
+  },
+  "result": {
+    "n": 64,
+    "k": 56,
+    "pass_count": 42,
+    "fail_count": 22,
+    "primary_patterns": {
+      "both_pass": 41,
+      "both_fail": 21,
+      "disagreement": 2
+    },
+    "primary_rater_patterns": {
+      "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4": {
+        "pass": 43,
+        "fail": 21
+      },
+      "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4": {
+        "pass": 41,
+        "fail": 23
+      }
+    },
+    "adjudicated_outcomes": {
+      "pass": 1,
+      "fail": 1
+    },
+    "per_stratum": {
+      "ambiguous": "9/10",
+      "architecture_flow": "3/11",
+      "config_docs": "2/10",
+      "exact_identifier": "11/11",
+      "exact_path": "9/11",
+      "nl_behaviour": "8/11"
+    }
+  },
+  "verification": {
+    "cgo_free_relevant_tests": "PASS",
+    "decide_invocations": 1,
+    "decide_exit_code": 1,
+    "no_waiver_or_override": true,
+    "procedural_error_invalidates_decision": false,
+    "conclusion": "The RELEASE: NO decision is valid under the frozen methodology. No observed procedural defect weakens or invalidates it."
+  },
+  "model_reproducibility_limitation": "OpenAI exposes no immutable backend model snapshot/build digest; process configuration and event isolation are auditable, but model behavior is not byte-reproducible."
+}

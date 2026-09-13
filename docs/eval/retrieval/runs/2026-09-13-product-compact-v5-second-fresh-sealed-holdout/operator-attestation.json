@@ -80,7 +80,12 @@
     "pass_count": 42,
     "primary_disagreement_count": 2,
     "adjudication_count": 2,
-    "insufficient_response_count": 0,
+    "sealed_status_insufficient_count": 0,
+    "insufficient_prefix_count": 39,
+    "insufficient_prefix_by_primary": {
+      "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4": 20,
+      "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4": 19
+    },
     "outcome_sha256": "4bcfd50c22ba1c4cb5fb75b46994de6c1d236cad386863ebd426efc37df68d47",
     "end_of_run_hash_comparison_sha256": "3a57ae4c23a763adab3dbbfdbd4378ff0d156fc4b2e4f810dd00535302bdf248",
     "all_frozen_input_hashes_match": true,
@@ -88,5 +93,5 @@
     "forbidden_tool_events": 0,
     "retries": 0
   },
-  "declaration": "The independent second-run operator attests that the frozen inputs and candidate bindings matched; both captures were byte-, digest-, and token-reproducible; every participant process passed the pre-registered event audit; no retry, overwrite, waiver, or disclosure to the root orchestration agent occurred; and the single mechanical decision was RELEASE: NO at 42/64 against k=56."
+  "declaration": "The independent second-run operator attests that the frozen inputs and candidate bindings matched; both captures were byte-, digest-, and token-reproducible; every participant process passed the pre-registered event audit; no retry, overwrite, waiver, or disclosure to the root orchestration agent occurred; and the single mechanical decision was RELEASE: NO at 42/64 against k=56. The harness sealed all 128 primary responses with status answered; a separate mechanical text-prefix audit found 39 responses beginning with INSUFFICIENT."
 }
