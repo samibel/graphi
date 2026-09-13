@@ -1,0 +1,36 @@
+{
+  "primary_raters": [
+    {
+      "id": "second-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Stable second-run primary-A configuration: concrete non-alias model gpt-6-astra, reasoning high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. It did not implement the candidate, curate the dataset, or participate in the first holdout. OpenAI exposes no immutable backend snapshot/build digest.",
+      "participated_in_track": false
+    },
+    {
+      "id": "second-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Stable second-run primary-B configuration: concrete non-alias model gpt-5.6-sol, reasoning high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item. It did not implement the candidate, curate the dataset, or participate in the first holdout. OpenAI exposes no immutable backend snapshot/build digest.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "second-grader--gpt-6-astra--high--codex-cli-0.153.4",
+    "role": "grader",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-6-astra",
+    "independence_basis": "Stable second-run grader configuration: concrete non-alias model gpt-6-astra, reasoning high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per packet. It did not implement the candidate, curate the dataset, serve as a primary, or participate in the first holdout. OpenAI exposes no immutable backend snapshot/build digest.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "second-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "role": "adjudicator",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "independence_basis": "Stable second-run adjudicator configuration: concrete non-alias model gpt-5.6-sol, reasoning high, and one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per disagreement. It did not implement the candidate, curate the dataset, serve as a primary, or participate in the first holdout. It receives no primary response or grade before its own answer is sealed. OpenAI exposes no immutable backend snapshot/build digest.",
+    "participated_in_track": false
+  }
+}
