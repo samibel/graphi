@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acd-31c7-7082-b38b-ec74ad312e20"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes recursive parent lookup for the nearest non-nil output writer and fallback to `def`, supported by command.go:394–402. Its description of `HasParent()` is supported by command.go:1631–1634."}}
+{"type":"turn.completed","usage":{"input_tokens":17990,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

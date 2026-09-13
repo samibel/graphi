@@ -1,0 +1,1 @@
+FAIL: The response states that missing required flags cause an error, but omits the essential behavior of collecting all unchanged required flags into one error and bypassing validation when flag parsing is disabled. Neither behavior is supported by the preserved bundle.

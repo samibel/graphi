@@ -1,0 +1,1 @@
+PASS: The response accurately describes the parent-recursive writer lookup and fallback to the supplied default `def`, both supported by the cited command.go lines 393–402.

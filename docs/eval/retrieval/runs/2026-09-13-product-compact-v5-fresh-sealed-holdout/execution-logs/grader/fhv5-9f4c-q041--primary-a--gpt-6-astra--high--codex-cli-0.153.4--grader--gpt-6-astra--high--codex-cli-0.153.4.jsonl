@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad3-b766-7280-b333-e083ea153d2f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the parsing-disabled early return, three separate group-state maps populated through per-flag annotation processing, and required-together → one-required → exclusive validator order with immediate return on the first error. Its citations and claims are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18409,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":35}}

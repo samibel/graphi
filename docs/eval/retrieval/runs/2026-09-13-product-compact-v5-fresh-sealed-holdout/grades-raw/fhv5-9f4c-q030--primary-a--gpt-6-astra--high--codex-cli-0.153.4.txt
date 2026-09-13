@@ -1,0 +1,1 @@
+FAIL: The response omits the essential condition that no default flag is added when a version flag already exists. That guard is absent from the preserved bundle, so the addition conditions cannot be fully verified, although the handling of an occupied short -v is supported.

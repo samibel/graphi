@@ -1,0 +1,1 @@
+PASS: The bundle’s comment at command.go:1292-1294 explicitly says sorting is skipped when commands are already sorted or sorting is disabled, supporting that their current order can remain unchanged. The cited global switch exists at cobra.go:59.

@@ -1,0 +1,1 @@
+PASS: The response correctly states that a prefix must match exactly one subcommand’s name or alias, while exact matches are accepted immediately. Both behaviors and the cited locations are supported by the preserved bundle.

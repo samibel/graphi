@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09aca-c37b-7f01-9c69-c5523f8a5545"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states that global COBRA_ACTIVE_HELP=\"0\" overrides the program-specific setting; otherwise, GetActiveHelpConfig returns the program-specific value derived from the root command’s name. The cited active_help.go:51-57 and 24-31 exist in the bundle and support these claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18020,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

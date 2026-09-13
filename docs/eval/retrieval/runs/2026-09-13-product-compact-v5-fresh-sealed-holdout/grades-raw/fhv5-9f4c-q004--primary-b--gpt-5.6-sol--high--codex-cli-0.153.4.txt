@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the closure’s signature and that it ignores invocation arguments and returns the captured choices and directive, all supported by completions.go lines 123–130 in the preserved bundle.

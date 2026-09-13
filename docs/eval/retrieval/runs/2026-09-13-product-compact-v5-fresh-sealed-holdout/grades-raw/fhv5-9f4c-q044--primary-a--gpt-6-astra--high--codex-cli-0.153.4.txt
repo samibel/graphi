@@ -1,0 +1,1 @@
+PASS: The response accurately describes default help initialization, command metadata and conditional usage/examples, separate local and inherited flag conversion, and parent-first see-also entries with sorted, filtered children before YAML marshaling and writing. All claims and cited locations are supported by the preserved bundle.

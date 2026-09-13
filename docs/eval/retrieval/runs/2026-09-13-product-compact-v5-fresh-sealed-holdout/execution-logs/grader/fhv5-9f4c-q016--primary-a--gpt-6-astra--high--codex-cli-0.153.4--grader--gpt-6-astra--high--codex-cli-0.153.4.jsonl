@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acd-a0d9-7a43-a3fa-96b4b8807531"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that validation succeeds when all or none of the group’s flags are set. It also correctly identifies that partial selection produces an error naming the group and its alphabetically sorted missing flags, supported by the cited lines in flag_groups.go."}}
+{"type":"turn.completed","usage":{"input_tokens":18145,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":41}}

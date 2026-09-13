@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad0-7734-7f20-aca4-497a9643a1a0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer whether output destinations are inherited or identify the final fallback. The preserved bundle lacks the output-resolution code needed to support those essential facts."}}
+{"type":"turn.completed","usage":{"input_tokens":17983,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":37,"reasoning_output_tokens":0}}

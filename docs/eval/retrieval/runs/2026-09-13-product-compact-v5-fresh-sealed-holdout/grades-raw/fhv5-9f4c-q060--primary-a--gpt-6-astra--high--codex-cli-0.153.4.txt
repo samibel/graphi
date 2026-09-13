@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the recreated error buffer and flag sets, their output configuration, and the clearing of `c.lflags`, `c.iflags`, and `c.parentsPflags`, all supported by the supplied `command.go:1737–1749` span.

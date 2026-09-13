@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad8-0928-7c00-9afd-ab69905c4bd6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The behavioral summary is supported, but the pinpoint citations are not: command.go:1369 contains `continue main`, not the parent reset at line 1368; line 1375 is a comment, not the slice replacement at line 1374."}}
+{"type":"turn.completed","usage":{"input_tokens":18081,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":196,"reasoning_output_tokens":137}}

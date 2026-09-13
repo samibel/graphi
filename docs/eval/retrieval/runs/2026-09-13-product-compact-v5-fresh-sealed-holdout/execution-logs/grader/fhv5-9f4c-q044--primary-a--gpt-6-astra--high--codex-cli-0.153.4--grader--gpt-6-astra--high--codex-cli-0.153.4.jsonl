@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad4-662c-7191-a5f9-d850fadaeb72"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes default help initialization, command metadata and conditional usage/examples, separate local and inherited flag conversion, and parent-first see-also entries with sorted, filtered children before YAML marshaling and writing. All claims and cited locations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18407,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":26}}

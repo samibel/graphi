@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ace-dc84-7d72-9dd8-6acd3eac198d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains that blank lines remain unprefixed because the prefix is added only when `bol && c != '\\n'`. Its cited lines exist in the bundle and support both newline preservation and line-start tracking."}}
+{"type":"turn.completed","usage":{"input_tokens":18279,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

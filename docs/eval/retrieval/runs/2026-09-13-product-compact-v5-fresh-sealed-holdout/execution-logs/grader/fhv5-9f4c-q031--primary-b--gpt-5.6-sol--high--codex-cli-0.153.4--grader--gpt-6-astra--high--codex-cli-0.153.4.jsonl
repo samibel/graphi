@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad1-8d93-7e73-bb12-c9324f4bf536"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies deprecated commands, hidden commands, the parent’s configured help command, and non-runnable commands without available subcommands as excluded. All four categories and the cited control flow are supported by command.go:1560–1576 in the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17956,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

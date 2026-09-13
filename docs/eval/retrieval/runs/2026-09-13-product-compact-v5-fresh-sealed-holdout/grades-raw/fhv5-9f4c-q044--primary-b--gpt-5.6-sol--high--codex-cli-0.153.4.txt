@@ -1,0 +1,1 @@
+PASS: The response accurately describes default help initialization, metadata and conditional usage/example fields, separate flag sections converted by genFlagResult, parent-first and sorted eligible child see-also entries, and YAML serialization and writing. Both cited ranges exist in the bundle and support the claims, including the wrapper and unused linkHandler parameter.

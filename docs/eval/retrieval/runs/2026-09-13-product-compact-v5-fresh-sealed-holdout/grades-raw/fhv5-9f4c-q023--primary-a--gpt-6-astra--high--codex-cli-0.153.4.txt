@@ -1,0 +1,1 @@
+FAIL: The bundle supports the response’s generic error claim, but omits the essential validation behavior: collecting all missing required flags into one error and bypassing validation when flag parsing is disabled. The response does not identify either behavior.

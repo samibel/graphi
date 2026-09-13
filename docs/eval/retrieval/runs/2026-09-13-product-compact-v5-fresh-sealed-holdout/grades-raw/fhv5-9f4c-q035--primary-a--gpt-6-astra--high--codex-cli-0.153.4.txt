@@ -1,0 +1,1 @@
+FAIL: The response does not answer the requested lifecycle order. The bundle only establishes RunE/Run followed by PostRunE at command.go:981–992; it lacks the persistent and local hook sequence and required/group flag checks needed for a substantive answer.

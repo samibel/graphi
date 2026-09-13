@@ -1,0 +1,1 @@
+FAIL: The response does not answer which long and shorthand candidates are emitted or why equals forms are omitted. The preserved bundle lacks the implementation and explanatory comments needed to establish those facts.

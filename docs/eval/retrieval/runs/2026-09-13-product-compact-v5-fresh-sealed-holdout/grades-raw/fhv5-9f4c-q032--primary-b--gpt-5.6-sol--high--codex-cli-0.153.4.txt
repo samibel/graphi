@@ -1,0 +1,1 @@
+FAIL: The response identifies only DisableDefaultCmd and does not substantively answer the full question. The preserved bundle omits the essential conditions concerning no subcommands and an existing child name or alias supplying completion.

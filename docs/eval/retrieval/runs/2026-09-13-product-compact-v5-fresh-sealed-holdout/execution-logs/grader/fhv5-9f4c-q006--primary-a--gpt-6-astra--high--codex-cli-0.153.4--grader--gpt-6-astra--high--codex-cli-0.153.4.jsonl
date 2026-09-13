@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acb-85f4-7630-b27d-736b9b71214b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes ordered, comma-separated names for combined flags, the Default fallback when no recognized flags are set, and the overriding decimal error string for d >= shellCompDirectiveMaxValue, all supported by completions.go:162–191."}}
+{"type":"turn.completed","usage":{"input_tokens":18280,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":25}}

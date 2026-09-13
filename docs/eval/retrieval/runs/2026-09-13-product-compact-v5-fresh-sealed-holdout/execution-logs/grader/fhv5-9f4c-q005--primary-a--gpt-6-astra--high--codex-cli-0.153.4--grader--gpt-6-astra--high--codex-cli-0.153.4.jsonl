@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acb-5024-7dc0-80e3-33701593ee72"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The bundle supports both errors—missing flag and duplicate registration—and confirms that the mutex protects the duplicate check and callback assignment, with deferred unlocking and a nil return on success. All cited line ranges exist and support the claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18150,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

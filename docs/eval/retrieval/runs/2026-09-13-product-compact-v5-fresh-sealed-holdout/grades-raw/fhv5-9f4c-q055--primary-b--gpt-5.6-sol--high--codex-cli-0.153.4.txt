@@ -1,0 +1,1 @@
+PASS: The response correctly identifies that nil Args delegates to ArbitraryArgs in command.go:1139-1144, supported by args.go:68 stating it never returns an error. The cited NoArgs span supports explicitly rejecting positional arguments.

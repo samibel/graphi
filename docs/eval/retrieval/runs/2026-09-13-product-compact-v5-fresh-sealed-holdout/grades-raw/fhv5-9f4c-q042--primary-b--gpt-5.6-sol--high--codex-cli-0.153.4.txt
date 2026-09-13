@@ -1,0 +1,1 @@
+FAIL: The response does not substantively answer how group rules become required or hidden flags. The bundle supports requiring peers when a group member is present, but omits the one-required and mutually exclusive completion behavior needed for a complete answer.

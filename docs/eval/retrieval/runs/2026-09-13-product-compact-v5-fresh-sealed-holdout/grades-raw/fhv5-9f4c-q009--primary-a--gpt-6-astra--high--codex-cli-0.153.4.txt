@@ -1,0 +1,1 @@
+PASS: The response identifies all three mechanisms supported by command.go:831–850: Levenshtein distance within SuggestionsMinimumDistance, case-insensitive command-name prefix, and case-insensitive explicit SuggestFor match. It correctly states the IsAvailableCommand gate, and its citations support the attached claims.

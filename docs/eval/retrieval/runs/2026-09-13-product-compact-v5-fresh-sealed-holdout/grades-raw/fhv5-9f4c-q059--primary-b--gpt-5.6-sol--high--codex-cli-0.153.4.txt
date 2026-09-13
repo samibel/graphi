@@ -1,0 +1,1 @@
+FAIL: The behavioral summary is supported, but the pinpoint citations are not: command.go:1369 contains `continue main`, not the parent reset at line 1368; line 1375 is a comment, not the slice replacement at line 1374.

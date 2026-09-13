@@ -1,0 +1,1 @@
+FAIL: The response does not explain the V1/V2 behavioral differences. The bundle supports that Cobra’s default completion command uses V2, but lacks the essential comparison facts about Go callbacks, descriptions, and the smaller aligned script.

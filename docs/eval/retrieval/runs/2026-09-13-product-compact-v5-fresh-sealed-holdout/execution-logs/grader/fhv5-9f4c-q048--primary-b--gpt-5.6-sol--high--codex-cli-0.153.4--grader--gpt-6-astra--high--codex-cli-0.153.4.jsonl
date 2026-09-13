@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad5-8a8f-7fa2-8c58-a8e69013bb62"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response identifies the V1 generation APIs and V2 default, but omits essential differences: V2 drops legacy Bash dynamic completion, uses Go callbacks, and provides a smaller aligned script. These differences are also absent from the preserved bundle, so the required comparison is not substantively supported."}}
+{"type":"turn.completed","usage":{"input_tokens":18228,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":124,"reasoning_output_tokens":58}}

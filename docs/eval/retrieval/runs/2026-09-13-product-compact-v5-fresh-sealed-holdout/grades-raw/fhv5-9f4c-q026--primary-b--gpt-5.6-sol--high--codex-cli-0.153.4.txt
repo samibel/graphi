@@ -1,0 +1,1 @@
+FAIL: The response does not answer what result is returned. The bundle only states that ValidateFlagGroups returns the first error encountered; it omits the branch establishing that two set members produce an error naming the group and selected members.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09ad2-a5f9-7fe1-88a8-6d868a854581"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes local-first and parent-recursive help resolution, invocation with the current command and empty arguments, persistent-flag merging, rendering through OutOrStdout(), and printing template errors without propagating them. Its additional flag-initialization details and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":18310,"cached_input_tokens":13952,"cache_write_input_tokens":0,"output_tokens":90,"reasoning_output_tokens":23}}

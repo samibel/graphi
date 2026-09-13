@@ -1,0 +1,1 @@
+FAIL: The response explains the supported handling of an occupied `-v`, but omits the essential condition that no default flag is added if `version` already exists. That guard is absent from the preserved bundle, so the required behavior cannot be verified.

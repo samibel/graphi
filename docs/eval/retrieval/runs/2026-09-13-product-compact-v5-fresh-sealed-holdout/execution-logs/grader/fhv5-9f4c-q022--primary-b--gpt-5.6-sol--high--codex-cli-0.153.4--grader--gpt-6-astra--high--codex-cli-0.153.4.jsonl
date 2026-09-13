@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acf-3c16-7ed2-9f5b-3336848ab69f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response describes the printed message and default duration but omits the essential wait behavior and exit with status 1. The preserved bundle does not establish the exit behavior, so the required answer cannot be fully supported."}}
+{"type":"turn.completed","usage":{"input_tokens":17983,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

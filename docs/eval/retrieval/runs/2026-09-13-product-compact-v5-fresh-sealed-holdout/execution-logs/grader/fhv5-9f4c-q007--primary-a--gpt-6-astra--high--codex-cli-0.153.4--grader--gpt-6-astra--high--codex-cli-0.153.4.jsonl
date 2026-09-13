@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a09acb-bb86-73f2-b743-5fac9b57a1d2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: args.go:113–123 confirms that MatchAll evaluates validators in order and immediately returns the first non-nil error unchanged, without running subsequent validators. The cited lines 116–119 support the response."}}
+{"type":"turn.completed","usage":{"input_tokens":17950,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":37}}
