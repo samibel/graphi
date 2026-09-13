@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -166,17 +167,53 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 
 func TestBuildGraderPacketNamesTheRubricFrozenForThisRun(t *testing.T) {
 	const rubric = "docs/eval/retrieval/runs/fresh-run/grading-rubric.md"
+	const rubricBody = "# exact fresh rubric\n"
+	rubricSHA := retrieval.SHA256Hex([]byte(rubricBody))
 	packet := buildGraderPacket(
 		retrieval.Query{ID: "q-1", Text: "where"},
 		retrieval.CapturedCandidateBundle{},
 		retrieval.RaterResponse{SHA256: strings.Repeat("a", 64), Text: "answer"},
 		rubric,
+		rubricSHA,
+		[]byte(rubricBody),
 	)
-	if !strings.Contains(packet, "rubric at "+rubric+".") {
+	if !strings.Contains(packet, "FROZEN RUBRIC PATH: "+rubric) || !strings.Contains(packet, "FROZEN RUBRIC SHA256: "+rubricSHA) {
 		t.Fatalf("grader packet does not name frozen rubric: %q", packet)
+	}
+	if !strings.Contains(packet, "BEGIN THE EXACT FROZEN GRADING RUBRIC -----\n"+rubricBody+"----- END") {
+		t.Fatalf("grader packet does not embed exact frozen rubric bytes: %q", packet)
 	}
 	if strings.Contains(packet, "2026-09-05-sw280-qrel-blind-smoke") {
 		t.Fatalf("grader packet leaked the historical run rubric: %q", packet)
+	}
+}
+
+func TestLoadFrozenGradingRubricFailsClosedOnMissingOrDriftedBytes(t *testing.T) {
+	root := t.TempDir()
+	const rubricPath = "run/grading-rubric.md"
+	if err := os.MkdirAll(filepath.Join(root, "run"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	original := []byte("# frozen rubric\n")
+	precondition := retrieval.PreconditionRecord{Inputs: []retrieval.FrozenInput{{
+		Role: retrieval.PreconditionInputGradingRubric, Path: rubricPath, SHA256: retrieval.SHA256Hex(original),
+	}}}
+
+	if _, _, _, err := loadFrozenGradingRubric(root, precondition); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing rubric error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(rubricPath)), []byte("# drifted rubric\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := loadFrozenGradingRubric(root, precondition); err == nil || !strings.Contains(err.Error(), "drifted") {
+		t.Fatalf("drifted rubric error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, filepath.FromSlash(rubricPath)), original, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	path, sha, raw, err := loadFrozenGradingRubric(root, precondition)
+	if err != nil || path != rubricPath || sha != precondition.Inputs[0].SHA256 || !bytes.Equal(raw, original) {
+		t.Fatalf("frozen rubric = %q %q %q %v", path, sha, raw, err)
 	}
 }
 

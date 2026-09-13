@@ -151,6 +151,9 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev/` — the
   public-version-bound candidate recapture after the facade identity was tied
   directly to the selector identity.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
+  presealed-rubric successor recapture after the release harness became
+  fail-closed on rubric-byte drift.
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
   — the reserved independent fresh-holdout run; any future captured bundles are
   invalidated by rotating this production embedder.

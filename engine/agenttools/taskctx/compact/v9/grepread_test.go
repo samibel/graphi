@@ -215,6 +215,30 @@ func TestDiscoverySnapshotIncludesMarkdownWithoutSearchingIt(t *testing.T) {
 	}
 }
 
+func TestOptionalHydrationSkipsSourceMissingFromSnapshotWithoutReopening(t *testing.T) {
+	repository := &openCountingFS{
+		FS:    fstest.MapFS{"FLOW.md": {Data: []byte("# Order\nfirst then second\n")}},
+		opens: make(map[string]int),
+	}
+	snapshot := &grepReadSnapshot{}
+	items := []contract.Item{{
+		RefID: "markdown", Rank: 1,
+		Reason: "candidate: markdown flow (FLOW.md:1) score 1",
+	}}
+	evidence, linked, err := compactTaskContextHydrateDefinitions(
+		context.Background(), repository, snapshot, "what is the order sequence", items,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(evidence) != 0 || len(linked) != 0 {
+		t.Fatalf("missing snapshot source hydrated unexpectedly: %#v %#v", evidence, linked)
+	}
+	if repository.opens["FLOW.md"] != 0 {
+		t.Fatalf("optional hydration reopened source outside snapshot %d times", repository.opens["FLOW.md"])
+	}
+}
+
 func TestGrepReadV2CapsRepositoryFileScan(t *testing.T) {
 	repository := make(fstest.MapFS, GrepReadV2MaxFiles+1)
 	for i := 0; i <= GrepReadV2MaxFiles; i++ {

@@ -116,6 +116,9 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-dev/` — the
   public-version-bound candidate recapture; its byte identity and exact
   serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev/` — the
+  presealed-rubric successor recapture; its byte identity and exact serialized
+  wire ceiling use this tokenizer.
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
   — the preregistered fresh sealed-holdout scaffold and any future response
   counts are bound to this tokenizer.
