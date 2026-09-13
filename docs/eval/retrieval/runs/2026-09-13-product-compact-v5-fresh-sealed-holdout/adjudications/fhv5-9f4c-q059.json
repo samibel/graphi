@@ -1,0 +1,37 @@
+{
+  "query_id": "fhv5-9f4c-q059",
+  "response": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+    "evaluation": "qrel-blind smoke evaluation",
+    "role": "adjudicator",
+    "query_id": "fhv5-9f4c-q059",
+    "rater_id": "adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "pre_registration_sha256": "fe927cb7e9cae8ae251e5d7fcfabeba92cc26cc4c6163f836407576ae3860515",
+    "query_text_sha256": "315c4972e1db1ce94c4183d1399a1eadd73ed3a8a22768d93716d261ed19d423",
+    "bundle_sha256": "793b43bbaebc7385520aa4e724dc8782cb544bc704bcf501194ae2650a74afae",
+    "prompt_sha256": "1ae7da2509a7a56b42002280d8c10e404883e2a7e79bf8a356231d1269ef6403",
+    "inputs": [
+      "answer_instructions",
+      "query_text",
+      "preserved_bundle"
+    ],
+    "status": "answered",
+    "text": "Related state is updated too. In `command.go:1361-1393`, `RemoveCommand`:\n\n- removes matching entries from `c.commands`,\n- sets each removed command’s `command.parent = nil`,\n- resets and recomputes the parent’s layout-length caches: `commandsMaxUseLen`, `commandsMaxCommandPathLen`, and `commandsMaxNameLen`.\n\nSo removal is not limited to deleting the slice entry.",
+    "responded_at": "2026-09-13T13:02:48Z",
+    "sha256": "1f4fc8675da4d1841fca80e3249e56ba88daaf3f10465de7ac200539bfe3438a"
+  },
+  "disclosure": {
+    "query_id": "fhv5-9f4c-q059",
+    "adjudicator_response_sha256": "1f4fc8675da4d1841fca80e3249e56ba88daaf3f10465de7ac200539bfe3438a",
+    "disclosed_artifact_sha256": [
+      "113a8cd04af292b0e2d746c6e99535235b9edb4492bdd7b44387a0879b44fcfa",
+      "2e976d4645d5f2f3b9540093bd73391c6261db6d5f95a0a0d67654062fc597cf",
+      "4b9d78f789ead1816b236df6dd609139aa91a301c91140bf0c984ff24c94eeb4",
+      "8fb77386e14d5e7cb9b9de90ba0f526022347031c88d04bdf25eb338f8c4bcbc"
+    ],
+    "ordering_evidence": "this record names the adjudicator response's content address and the content address of every primary response for the query and of every grade bound to those responses; a record written before those artifacts existed could not name their digests",
+    "limitation": "these artifacts do NOT establish that no primary response or primary grade reached the adjudicator by another route; adjudicator blindness here is instruction-enforced, not artifact-enforced, and no mechanism in this slice evidences it"
+  }
+}
