@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 129,
+  "previous_sha256": "209c41dd11cf006ce60e41929af05011a12cafbc9b4675153618af8c90a1e36f",
+  "kind": "grade",
+  "query_id": "cb-35",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "eb1cc62908f41a94ad20ba423470c535fb7721798e4717c784930c5cae0bc37e",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete completion-related summary fully supported by the preserved bundle: automatic command/flag completion and customization through `ValidArgs` are stated in `site/content/completions/_index.md:115-127`; the three conditions governing `(*Command).InitDefaultCompletionCmd` are documented in `completions.go:678-685`; `DisableDescriptions` is shown in `site/content/completions/_index.md:112-115`; and the `no-descriptions` completion-command flag is evidenced by `compCmdNoDescFlagName` and its description in `completions.go:95-102`.\n",
+  "sha256": "3f9e60a4a02db622e5b46654318b0c61d24c994483d307e03a26e350782b501a"
+}

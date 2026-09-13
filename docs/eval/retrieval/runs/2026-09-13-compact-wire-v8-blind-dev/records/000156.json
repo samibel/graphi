@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 156,
+  "previous_sha256": "2e7081a3af1ca4adda1f69c77edea3f7134f522117fc2873b6f20f97763d4413",
+  "kind": "grade",
+  "query_id": "ci-943",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "3cf7cb38ef39eda65319e6848268425fec6c8e63f8759a0e85e3cc0a0e084e7d",
+  "outcome": "pass",
+  "rationale": "The answer correctly identifies the relevant cause and supports it with preserved bundle evidence: `site/content/user_guide.md:590-592` states that Cobra adds the top-level `--version` flag only when the root command's `Version` field is set, while `command.go:1202-1204` states that `InitDefaultVersionFlag` does nothing when `c.Version` is empty. The explanation is concrete and sufficient for the question.\n",
+  "sha256": "1b4390f18dd9c207bababc24f37c0b2dd55d59948d00807964b67a12b90ec21f"
+}

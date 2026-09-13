@@ -1,0 +1,6 @@
+Persistent flags propagate by being merged into the child command’s complete flag set:
+
+- `Command.mergePersistentFlags()` first calls `updateParentsPflags()`, then adds the command’s own `PersistentFlags()` and the collected `parentsPflags` to `c.Flags()` (`command.go:1847-1853`).
+- Flag lookup follows the same hierarchy: `persistentFlag(name)` checks the current command’s persistent flags first, then updates and searches `parentsPflags` (`command.go:1805-1816`).
+- Non-persistent local flags are explicitly excluded from inheritance (`LocalNonPersistentFlags`, `command.go:1654-1666`).
+- Separately, `TraverseChildren` controls whether flags on all parents are parsed before executing the child (`command.go:224-225`).

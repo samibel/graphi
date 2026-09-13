@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 32,
+  "previous_sha256": "88e083118124cf2b5d81e0cc2f3f2bc2550e2ecbb5f66c088fdd9a8a8789748a",
+  "kind": "response",
+  "query_id": "ci-1970",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-primary-a-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "db9b53605a573ddb8e981818568bde1d1d7c5956eb84daf8a7dbb0f404ffb5ae",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `cmd.Flags()` to get the command’s `*flag.FlagSet`.\n\nEvidence: `command.go:1641-1653` says `Flags` returns the complete flag set applying to the command, including local and persistent flags declared by it and its parents. For subsets, use `cmd.LocalFlags()` (`command.go:1669-1672`) or `cmd.InheritedFlags()` (`command.go:1695-1698`).",
+  "sha256": "db4c638b26fb64f68af7052bb7f1833083cbb6a07f640589f3dbedbba9ff5f14"
+}

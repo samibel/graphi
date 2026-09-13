@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 139,
+  "previous_sha256": "1c2f3a2be3027cd6b8312a444e570aba1b6c1222ec0a44b6e19ca78d3007953e",
+  "kind": "grade",
+  "query_id": "ci-1408",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "88e083118124cf2b5d81e0cc2f3f2bc2550e2ecbb5f66c088fdd9a8a8789748a",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete, supported access path: `cmd.Flag(\"flag-name\")`. The preserved bundle states that `(*Command).Flag` “climbs up the command tree looking for matching flag” and falls back to `persistentFlag` (`command.go:1794-1803`); `persistentFlag` checks the command’s persistent flags and then `parentsPflags` (`command.go:1805-1816`). The statement that a global flag should be declared as a persistent parent flag is also supported by `Flags()` applying local and persistent flags declared by all parents (`command.go:1641-1653`).\n",
+  "sha256": "d13fed5e5e35d39897dbe5f9f84e8e93d8742595c8e7e2963b470039a7bacac6"
+}

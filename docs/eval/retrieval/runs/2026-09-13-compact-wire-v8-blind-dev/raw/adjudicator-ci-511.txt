@@ -1,0 +1,18 @@
+You cannot read parsed persistent-flag values during Go’s `init()` itself. Register a callback with `OnInitialize`; it runs after flag parsing:
+
+```go
+func init() {
+    OnInitialize(func() {
+        f := cmd.Flag("my-flag")
+        value := f.Value.String()
+        // use value
+    })
+}
+```
+
+Evidence:
+
+- `OnInitialize` registers functions for command execution: `cobra.go:97-101`.
+- `ParseFlags(a)` occurs before `c.preRun()`: `command.go:883-898`, `command.go:926`.
+- `preRun()` invokes the registered initializers: `command.go:1015-1019`.
+- `Command.Flag(name)` searches both local and persistent flags: `command.go:1794-1803`.

@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 165,
+  "previous_sha256": "3a204fc03ebdc5dc9f4cf3fb35d284523b45ef1c41c74fa1c92d2080fa7da297",
+  "kind": "grade",
+  "query_id": "ci-511",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "726d34570ad27d5788644977aa36f63f80249c1b6a309897bee3c32e8943bf31",
+  "outcome": "pass",
+  "rationale": "The answer is concrete, correct, and supported by the preserved bundle. `cobra.go:97-101` shows that `OnInitialize` registers callbacks run during command execution; `command.go:883-898` shows `ParseFlags(a)` occurs first; `command.go:926-927` then calls `c.preRun()`; and `command.go:1015-1019` shows `preRun()` invokes those callbacks. Thus the callback can access parsed values even though Go package `init()` itself runs too early. The lookup shown is also supported by `command.go:1794-1803`, where `Command.Flag(name)` checks local flags and then persistent flags.\n",
+  "sha256": "21712b6f7190bc85191193fe18efaf88901adafc31239fd856f581e71386d5c6"
+}

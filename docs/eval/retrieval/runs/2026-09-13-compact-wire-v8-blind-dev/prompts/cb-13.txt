@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how are unknown command suggestions computed
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 3ceb5b8cb1f4; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"command.go","start_line":248,"end_line":249,"text":"\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages."},{"path":"command.go","start_line":50,"end_line":50,"text":"// definition to ensure usability."},{"path":"command.go","start_line":831,"end_line":850,"text":"// SuggestionsFor provides suggestions for the typedName.\nfunc (c *Command) SuggestionsFor(typedName string) []string {\n\tsuggestions := []string{}\n\tfor _, cmd := range c.commands {\n\t\tif cmd.IsAvailableCommand() {\n\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance\n\t\t\tsuggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))\n\t\t\tif suggestByLevenshtein || suggestByPrefix {\n\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t}\n\t\t\tfor _, explicitSuggestion := range cmd.SuggestFor {\n\t\t\t\tif strings.EqualFold(typedName, explicitSuggestion) {\n\t\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn suggestions\n}"},{"path":"command.go","start_line":852,"end_line":852,"text":"// VisitParents visits all parents of the command and invokes fn on each parent."},{"path":"command.go","start_line":750,"end_line":765,"text":"func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance \u003c= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) \u003e 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"command.go","start_line":1361,"end_line":1363,"text":"// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"},{"path":"command.go","start_line":1367,"end_line":1367,"text":"\t\t\tif command == cmd {"},{"path":"command.go","start_line":1495,"end_line":1503,"text":"// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i \u003e= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"cobra.go","start_line":187,"end_line":188,"text":"// ld compares two strings and returns the levenshtein distance between them.\nfunc ld(s, t string, ignoreCase bool) int {"}],"provenance":{"input_sha256":"794cb0d07c6208d9a7b7c4ad78ca5b32156b5d0c44e5ef7bb7298b24aa5081ad","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----

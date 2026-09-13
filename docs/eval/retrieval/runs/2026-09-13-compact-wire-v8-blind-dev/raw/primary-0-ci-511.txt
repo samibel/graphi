@@ -1,0 +1,12 @@
+Register an initializer with `OnInitialize` and access the command through a closure:
+
+```go
+func init() {
+    OnInitialize(func() {
+        f := rootCmd.Flag("my-flag")
+        // use f.Value here
+    })
+}
+```
+
+This works because flags are parsed first (`c.ParseFlags(a)` in `command.go:889`), then initializers run via `c.preRun()` (`command.go:926`, `command.go:1015-1019`). `Command.Flag(name)` searches both local and persistent flags (`command.go:1794-1803`). A normal Go `init()` runs too early to observe command-line values.

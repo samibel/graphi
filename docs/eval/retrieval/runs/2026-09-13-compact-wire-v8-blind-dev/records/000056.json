@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 56,
+  "previous_sha256": "007fd1d7177615cf3ed8b66fe0afdb73f37d9f4559b4de4ce9da8784a6320eec",
+  "kind": "response",
+  "query_id": "cb-21",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-primary-b-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "29747915ebe779b34b096a076d2d5da62c9a361ec501dabe017b81b45e5d34af",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Commands are added through `(*Command).AddCommand(cmds ...*Command)` in `command.go:1303`.\n\nFor each child command, it:\n\n- Rejects adding the parent as its own child, panicking with `\"Command can't be a child of itself\"` (`command.go:1304-1307`).\n- Sets the back-pointer directly with `cmds[i].parent = c` (`command.go:1308`).\n- Updates the parent’s cached maximum use, command-path, and name lengths (`command.go:1309-1321`).\n- Propagates the parent’s global normalization function to the child when present (`command.go:1322-1325`).\n- Appends the child to `c.commands` and marks that collection unsorted (`command.go:1326-1327`).\n\nThe pointer is exposed by `(*Command).Parent()`, which simply returns `c.parent` (`command.go:1842-1845`).",
+  "sha256": "ea5bd4e9c6df35a197d535e43186a167edf02c5dcaf32d17f106c9966120bb49"
+}

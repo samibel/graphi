@@ -1,0 +1,1 @@
+INSUFFICIENT The prompt only names `shell_completions.go` but does not ask a specific question about it.

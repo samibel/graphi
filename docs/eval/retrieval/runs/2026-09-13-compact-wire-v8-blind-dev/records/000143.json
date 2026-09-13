@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 143,
+  "previous_sha256": "6594c24fd3dea99545271b13320ecb3b022be08e515d8617b4658a9e5ca7588b",
+  "kind": "grade",
+  "query_id": "ci-1991",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "153f9f796138438fae6201328cae7e499b98adf834ef6087e7637437ca468146",
+  "outcome": "pass",
+  "rationale": "The answer is concrete and supported by the sealed response. `command.go:1794-1803` explicitly says `Command.Flag(name)` climbs the command tree and returns a matching flag, while the response summary states to “read the returned flag.Value.” The nil check is appropriate, and `command.go:1641-1653` further supports that `Flags()` includes persistent flags declared by parents.\n",
+  "sha256": "e46f7f216ce790ea20cf32dc0951d302ec456d07427d296198004567cac5ef76"
+}

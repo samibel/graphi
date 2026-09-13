@@ -1,0 +1,25 @@
+For a command flag, write a function with this signature:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```
+
+Then register it:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("flag-name",
+    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+        return choices, directive
+    },
+)
+```
+
+Evidence: [`completions.go:133`](completions.go:133) defines `RegisterFlagCompletionFunc` with that callback signature; lines 134–145 verify the flag exists, reject duplicate registration, and store the function.
+
+For static choices, use:
+
+```go
+completion := FixedCompletions(choices, directive)
+```
+
+[`completions.go:124`](completions.go:124)–130 shows that `FixedCompletions` returns a compatible function that always returns the supplied choices and directive.

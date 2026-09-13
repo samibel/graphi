@@ -1,0 +1,3 @@
+INSUFFICIENT
+
+The response shows that a shell adapter must invoke `__complete`, read stdout choices followed by `:<directive>`, and ignore stderr (`completions.go:26-33, 240-251`), but it omits the argument encoding, completion format, directive values, and shell-specific integration needed to implement another shell.

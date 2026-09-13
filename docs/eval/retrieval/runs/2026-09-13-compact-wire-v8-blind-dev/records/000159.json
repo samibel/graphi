@@ -1,0 +1,23 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 159,
+  "previous_sha256": "19709b20754f76fbf1557f282efe4e9b596613b74621f4c74a8f74a12229a02a",
+  "kind": "response",
+  "query_id": "cb-19",
+  "slot": 2,
+  "participant": {
+    "id": "codex-v8-adjudicator-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "prompt_sha256": "0429d97822544531583d0c05de57f0afcc404128d6363de87346e4ea91869202",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Execute` follows this lifecycle:\n\n1. `Execute()` begins at `command.go:1038` and always executes through the root command, regardless of which command receives the call (`command.go:1057`).\n2. The response identifies the call chain as `Execute → ExecuteC → execute`. `ExecuteC` resolves the target command, accounting for `TraverseChildren` (`command.go:1087`), then calls `cmd.execute(flags)` (`command.go:1115`).\n3. `execute` parses flags with `c.ParseFlags(a)` (`command.go:888`).\n4. Persistent pre-run hooks execute next (`command.go:940-969`):\n   - Normally, only the first `PersistentPreRunE` or `PersistentPreRun` found while walking from the command toward its parents runs.\n   - With `EnableTraverseRunHooks`, all persistent pre-runs run from the root down to the selected command (`cobra.go:64`, `command.go:943-948`).\n   - An error from `PersistentPreRunE` stops execution.\n5. The selected command’s local `PreRunE`, or otherwise `PreRun`, runs (`command.go:971-977`). A `PreRunE` error stops execution.\n6. Required flags and flag groups are validated (`command.go:979-985`).\n7. Finally, `RunE` executes if defined; otherwise `Run` executes (`command.go:987-989`). A `RunE` error is returned immediately.",
+  "sha256": "f42a1d25373037e69d730e4e7b22a0235a335dfb77b7c0fb08e1027af8469712"
+}

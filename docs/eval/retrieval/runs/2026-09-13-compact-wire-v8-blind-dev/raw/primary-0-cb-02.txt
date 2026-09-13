@@ -1,0 +1,11 @@
+`(*Command).MarkFlagsMutuallyExclusive(flagNames ...string)` defines a set of flags that cannot be used together.
+
+In `flag_groups.go:63-77`, it:
+
+- Merges persistent flags via `c.mergePersistentFlags()`.
+- Looks up every named flag in `c.Flags()`.
+- Panics if a flag does not exist.
+- Adds the annotation key `cobra_annotation_mutually_exclusive` (defined as `mutuallyExclusive` at `flag_groups.go:25-29`) with the space-joined group names.
+- Appends annotations, allowing a flag to belong to multiple mutually exclusive groups.
+
+The resulting annotations are validated by `(*Command).ValidateFlagGroups()` (`flag_groups.go:79-88`), which returns no group-validation error when `DisableFlagParsing` is enabled.

@@ -1,0 +1,7 @@
+Create a child command whose parent defines a persistent flag, then assert:
+
+- `child.InheritedFlags().Lookup(flagName) != nil`; inherited flags come from `parentsPflags`, excluding names already present in `LocalFlags()` (`command.go:1695–1718`).
+- `child.HasInheritedFlags()` is true (`command.go:1766–1769`).
+- `child.HasAvailableInheritedFlags()` reflects whether inherited flags are neither hidden nor deprecated (`command.go:1788–1792`).
+- A locally defined flag with the same name is not included in `InheritedFlags()` (`command.go:1713–1717`).
+- `child.NonInheritedFlags()` contains only local flags, since it directly returns `LocalFlags()` (`command.go:1721–1723`).

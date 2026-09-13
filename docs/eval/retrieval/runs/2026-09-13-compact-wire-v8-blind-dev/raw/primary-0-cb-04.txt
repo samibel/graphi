@@ -1,0 +1,18 @@
+`RegisterFlagCompletionFunc` is a method on `*Command` that registers a shell-completion callback for a named flag:
+
+```go
+func (c *Command) RegisterFlagCompletionFunc(
+    flagName string,
+    f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective),
+) error
+```
+
+It:
+
+- Resolves the flag with `c.Flag(flagName)`.
+- Returns `RegisterFlagCompletionFunc: flag '%s' does not exist` if missing.
+- Locks `flagCompletionMutex` for thread-safe registration.
+- Returns `RegisterFlagCompletionFunc: flag '%s' already registered` if that flag already has a callback.
+- Otherwise stores `f` in `flagCompletionFunctions[flag]` and returns `nil`.
+
+Evidence: `completions.go:132–146`. The callback registry is a global `map[*pflag.Flag]func(...)` at `completions.go:35–36`, protected by a `sync.RWMutex` at `completions.go:38–39`. Registered callbacks can be retrieved through `GetFlagCompletionFunc` (`completions.go:148–160`).

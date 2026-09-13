@@ -1,0 +1,12 @@
+Register a callback with `OnInitialize` and read the flag there:
+
+```go
+func init() {
+    OnInitialize(func() {
+        value, err := cmd.Flags().GetBool("flag-name")
+        // use value
+    })
+}
+```
+
+This works because `Execute` calls `ParseFlags` first (`command.go:883-890`), then `preRun` (`command.go:926`), which invokes registered initializers (`command.go:1015-1019`). Persistent flags are available to descendant commands (`site/content/user_guide.md:270-273`), and `Command.Flag(name)` explicitly searches normal flags and then persistent flags (`command.go:1794-1803`).

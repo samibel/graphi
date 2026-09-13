@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 125,
+  "previous_sha256": "b14bfc987b5b81b00d670acae57faad9b57a9d190767f859c12011da463b35e7",
+  "kind": "grade",
+  "query_id": "cb-32",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "db22fdf20d896ecf34a095dd714264d0a6d579db2813598c423a1d840646501e",
+  "outcome": "pass",
+  "rationale": "The candidate directly identifies the exact `(*Command).Execute()` symbol and accurately states that it uses `os.Args[1:]` by default, calls `c.ExecuteC()`, discards the returned command, and returns the error, all supported by `command.go:1035–1041`. Its additional claims are also supported: context initialization and root delegation appear in `command.go:1051–1062`, and the lifecycle-hook order appears in `command.go:114–123`.\n",
+  "sha256": "56c86e14eb8b1c36d03efd869518fbe96e16b957697696d81711f65213578a20"
+}

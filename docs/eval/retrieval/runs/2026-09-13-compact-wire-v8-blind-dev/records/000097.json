@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 97,
+  "previous_sha256": "9b6afe76de6e5424c4c28b835d27a2b81653a0397d488501ede4e61b37e6e89c",
+  "kind": "grade",
+  "query_id": "cb-13",
+  "slot": 0,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "6a96ea774ca215758851f8a6a0bc65d1318644fc15d03f8259e82e2cd6d74a4d",
+  "outcome": "pass",
+  "rationale": "The answer accurately and concretely describes the preserved implementation. command.go:750-765 supports disabling suggestions, defaulting a non-positive distance to 2, and rendering matches under “Did you mean this?”; command.go:831-850 supports iterating available child commands and matching by `ld(..., true)` within the threshold, case-insensitive prefix, or case-insensitive `SuggestFor` equality; cobra.go:187-188 identifies `ld` as Levenshtein distance with an `ignoreCase` parameter; and command.go:1495-1503 supports deriving the command name from the first word of `Use`. Traversal-order output follows directly from the unsorted `c.commands` loop and append behavior.\n",
+  "sha256": "e85e18b6225c599bd97599579e31c70045c5090488bbc4f01a6b920802c61100"
+}

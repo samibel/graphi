@@ -1,0 +1,71 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v8-blind-empty
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a098b6-1c1c-7412-ae3f-48f517df12e4
+--------
+user
+You are the independent grader for one preregistered development-only blind sufficiency record. Grade only the candidate answer correctness and sufficiency for the question using the development answer key below. Every factual claim required for a correct answer must be supported by the exact preserved bundle bytes inside the sealed prompt. External repository knowledge cannot repair missing bundle evidence. Pass only a concrete, correct, supported answer; otherwise fail. Cite the supporting or missing bundle evidence in the rationale. Do not disclose the answer key or other answers. Return only the required JSON object.
+
+--- SEALED ANSWERER PROMPT ---
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How to write shell completion function in Go
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query bab27b85b409; read in order (248/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"completions.go","start_line":132,"end_line":146,"text":"// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag.\nfunc (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn fmt.Errorf(\"RegisterFlagCompletionFunc: flag '%s' does not exist\", flagName)\n\t}\n\tflagCompletionMutex.Lock()\n\tdefer flagCompletionMutex.Unlock()\n\n\tif _, exists := flagCompletionFunctions[flag]; exists {\n\t\treturn fmt.Errorf(\"RegisterFlagCompletionFunc: flag '%s' already registered\", flagName)\n\t}\n\tflagCompletionFunctions[flag] = f\n\treturn nil\n}"},{"path":"completions.go","start_line":148,"end_line":160,"text":"// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available.\nfunc (c *Command) GetFlagCompletionFunc(flagName string) (func(*Command, []string, string) ([]string, ShellCompDirective), bool) {\n\tflag := c.Flag(flagName)\n\tif flag == nil {\n\t\treturn nil, false\n\t}\n\n\tflagCompletionMutex.RLock()\n\tdefer flagCompletionMutex.RUnlock()\n\n\tcompletionFunc, exists := flagCompletionFunctions[flag]\n\treturn completionFunc, exists\n}"},{"path":"completions.go","start_line":124,"end_line":130,"text":"// FixedCompletions can be used to create a completion function which always\n// returns the same results.\nfunc FixedCompletions(choices []string, directive ShellCompDirective) func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\t\treturn choices, directive\n\t}\n}"},{"path":"completions.go","start_line":132,"end_line":132,"text":"// RegisterFlagCompletionFunc should be called to register a function to provide completion for a flag."},{"path":"powershell_completions.go","start_line":310,"end_line":314,"text":"// GenPowerShellCompletion generates powershell completion file without descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletion(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, false)\n}"},{"path":"powershell_completions.go","start_line":288,"end_line":289,"text":"func (c *Command) genPowerShellCompletion(w io.Writer, includeDesc bool) error {\n\tbuf := new(bytes.Buffer)"},{"path":"powershell_completions.go","start_line":311,"end_line":311,"text":"// and writes it to the passed writer."},{"path":"powershell_completions.go","start_line":323,"end_line":325,"text":"func (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"bash_completions.go","start_line":690,"end_line":691,"text":"\t\tbuf.WriteString(c.BashCompletionFunction + \"\\n\")\n\t}"},{"path":"completions.go","start_line":715,"end_line":715,"text":"\t\tShort: fmt.Sprintf(shortDesc, \"bash\"),"}],"provenance":{"input_sha256":"ce8ae7aadf8dc3cf09f63ea18387076c61755c273267adf76053ffcf7845a1cc","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----
+
+--- CANDIDATE ANSWER ---
+Write a flag-completion callback with this signature and register it on the command:
+
+```go
+err := cmd.RegisterFlagCompletionFunc("flag-name",
+    func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {
+        return []string{"choice-a", "choice-b"}, directive
+    },
+)
+```
+
+For fixed choices, use:
+
+```go
+completion := FixedCompletions(
+    []string{"choice-a", "choice-b"},
+    directive,
+)
+err := cmd.RegisterFlagCompletionFunc("flag-name", completion)
+```
+
+Evidence:
+
+- `completions.go:132-146`: `RegisterFlagCompletionFunc` accepts `func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)`. It errors if the flag does not exist or already has a registered function.
+- `completions.go:124-130`: `FixedCompletions` creates a callback that always returns the supplied choices and directive.
+- `powershell_completions.go:310-314`: generate a PowerShell completion script with `cmd.GenPowerShellCompletion(w)`.
+--- DEVELOPMENT ANSWER KEY ---
+{"id":"ci-1222","query":"How to write shell completion function in Go","stratum":"config_docs","judgements":[{"path":"completions.go","start_line":132,"end_line":146,"anchor":"func (c *Command) RegisterFlagCompletionFunc(flagName string,","grade":3,"reason":"The registration operation for a Go completion function for a flag, including its exact signature func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) and its two error conditions (unknown flag, already registered). This is the mechanism and the ordered step the query asks for.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"command.go","start_line":84,"end_line":87,"anchor":"ValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)","grade":3,"reason":"The other half of the mechanism: the field a caller assigns to supply a Go function completing a command's positional arguments, with the same signature, plus the constraint that it is mutually exclusive with ValidArgs.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"completions.go","start_line":54,"end_line":93,"anchor":"ShellCompDirectiveNoFileComp","grade":2,"reason":"Defines the ShellCompDirective values such a function returns alongside its candidates, which the caller must choose from; explains the return contract but is not itself the writing/registration procedure.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"},{"path":"completions.go","start_line":118,"end_line":130,"anchor":"func NoFileCompletions(cmd *Command, args []string, toComplete string)","grade":1,"reason":"Ready-made implementations of the same function type; corroborating examples of the shape a caller writes.","annotator":"Claude Opus 5 (SW-279 answerability annotator A3)","reviewer":"Claude Opus 5 (SW-279 answerability reviewer R3)"}]}
+
+codex
+{"outcome":"fail","rationale":"The candidate gives a supported and correct flag-completion callback: `completions.go:132-146` establishes the signature, registration method, and error conditions, while `completions.go:124-130` supports `FixedCompletions`. However, it presents flag completion as the complete answer to the broader shell-completion-function question. The preserved bundle contains no evidence about defining completion for positional command arguments or enough of the `ShellCompDirective` contract to explain how to choose the returned directive. Because the response is explicitly marked `truncated: true` and lacks those required mechanisms, the candidate should have answered `INSUFFICIENT` rather than giving a partial answer as sufficient. The PowerShell generation claim is supported by `powershell_completions.go:310-314` but does not cure that omission."}
+tokens used
+4.538
+{"outcome":"fail","rationale":"The candidate gives a supported and correct flag-completion callback: `completions.go:132-146` establishes the signature, registration method, and error conditions, while `completions.go:124-130` supports `FixedCompletions`. However, it presents flag completion as the complete answer to the broader shell-completion-function question. The preserved bundle contains no evidence about defining completion for positional command arguments or enough of the `ShellCompDirective` contract to explain how to choose the returned directive. Because the response is explicitly marked `truncated: true` and lacks those required mechanisms, the candidate should have answered `INSUFFICIENT` rather than giving a partial answer as sufficient. The PowerShell generation claim is supported by `powershell_completions.go:310-314` but does not cure that omission."}

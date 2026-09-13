@@ -1,0 +1,7 @@
+Set the package-level option before executing commands:
+
+```go
+cobra.EnablePrefixMatching = true
+```
+
+Evidence: `cobra.go:55` defines `EnablePrefixMatching`. In `command.go:767-786`, `findNext` accepts a prefix only when that flag is true and only when exactly one command matches. Prefixes apply to command names and aliases via `hasNameOrAliasPrefix` in `command.go:1524-1538`.

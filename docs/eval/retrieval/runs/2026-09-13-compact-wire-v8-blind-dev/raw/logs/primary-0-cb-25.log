@@ -1,0 +1,51 @@
+OpenAI Codex v0.153.4
+--------
+workdir: /private/tmp/graphi-v8-blind-empty
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: medium
+reasoning summaries: none
+session id: 01a098b0-3b9b-7761-943c-56f99b0950c7
+--------
+user
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+how do I disable the default completion command
+
+----- BEGIN task_context/compact-dev/8 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"12 ranked source span(s); query 6612070312e3; read in order (243/250 source tokens)"}],"structuredContent":{"version":"task_context/compact-dev/8","sources":[{"path":"command.go","start_line":178,"end_line":179,"text":"\t// cobra uses default help command.\n\thelpCommand *Command"},{"path":"command.go","start_line":183,"end_line":183,"text":"\t// completionCommandGroupID is the group id for the completion command"},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"completions.go","start_line":684,"end_line":687,"text":"\tif c.CompletionOptions.DisableDefaultCmd || !c.HasSubCommands() {\n\t\treturn\n\t}\n"},{"path":"completions.go","start_line":678,"end_line":678,"text":"// InitDefaultCompletionCmd adds a default 'completion' command to c."},{"path":"command.go","start_line":1228,"end_line":1233,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n"},{"path":"command.go","start_line":1240,"end_line":1240,"text":"\t\t\tValidArgsFunction: func(c *Command, args []string, toComplete string) ([]string, ShellCompDirective) {"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"powershell_completions.go","start_line":321,"end_line":325,"text":"// GenPowerShellCompletionWithDesc generates powershell completion file with descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"completions.go","start_line":118,"end_line":122,"text":"// NoFileCompletions can be used to disable file completion for commands that should\n// not trigger file completions.\nfunc NoFileCompletions(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\treturn nil, ShellCompDirectiveNoFileComp\n}"},{"path":"completions.go","start_line":683,"end_line":683,"text":"func (c *Command) InitDefaultCompletionCmd() {"},{"path":"zsh_completions.go","start_line":49,"end_line":49,"text":"// default for every argument. One can disable file completion on a per-argument"}],"provenance":{"input_sha256":"baa741ebc61190ff9071a96ca5eca079491874dbb54398be1045ca575796d78b","method":"task_context/2","retrieval":"retrieval/7","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/compact-dev/8 RESPONSE BYTES -----
+
+codex
+Set the root command’s completion option before execution:
+
+```go
+rootCmd.CompletionOptions.DisableDefaultCmd = true
+```
+
+Evidence: `completions.go:103-116` defines `CompletionOptions.DisableDefaultCmd` as preventing creation of the default `completion` command, and `completions.go:683-687` shows `InitDefaultCompletionCmd()` returns immediately when it is true.
+tokens used
+3.307
+Set the root command’s completion option before execution:
+
+```go
+rootCmd.CompletionOptions.DisableDefaultCmd = true
+```
+
+Evidence: `completions.go:103-116` defines `CompletionOptions.DisableDefaultCmd` as preventing creation of the default `completion` command, and `completions.go:683-687` shows `InitDefaultCompletionCmd()` returns immediately when it is true.

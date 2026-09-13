@@ -1,0 +1,18 @@
+{
+  "version": "compact-dev-sufficiency/1",
+  "registration_sha256": "1dece869ed223711dd616258b5272f2695c3a3ab4a9afa00f8f064198d743dd0",
+  "sequence": 146,
+  "previous_sha256": "c3a0578184a39db68f58ebdb16d344a924c1959b30c972714e011781e87b77de",
+  "kind": "grade",
+  "query_id": "ci-2249",
+  "slot": 1,
+  "participant": {
+    "id": "codex-v8-grader-20260913",
+    "provider": "openai",
+    "model": "gpt-5.6-sol"
+  },
+  "response_sha256": "f3c0aef73d7982cfb4b525b424ba892c6ef19ac4c19f754945d736c635ab284e",
+  "outcome": "pass",
+  "rationale": "The candidate gives a concrete test strategy supported by the preserved bundle: `InheritedFlags()` merges persistent flags and adds entries from `parentsPflags` only when absent from both the inherited set and `LocalFlags()` (`command.go:1695–1718`); `HasInheritedFlags()` delegates to `InheritedFlags().HasFlags()` (`command.go:1766–1769`); `HasAvailableInheritedFlags()` is documented as excluding hidden or deprecated inherited flags (`command.go:1788–1792`); and `NonInheritedFlags()` directly returns `LocalFlags()` (`command.go:1721–1723`). The proposed assertions accurately follow this evidence.\n",
+  "sha256": "4999d43b8dc7b1f5350eb27402a2c24e3200827653bfd7f328c2cc419d5a8ddc"
+}
