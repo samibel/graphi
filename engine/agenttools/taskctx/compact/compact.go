@@ -18,10 +18,11 @@ const (
 	// Version changes whenever source discovery, ordering, or wire semantics
 	// change. It is deliberately separate from the retrieval method version.
 	Version = compactv9.CompactTaskContextVersion
-	// DefaultSourceBudget leaves room inside the frozen 1,200-token response
-	// budget for JSON, citations, summary and provenance. The development
-	// frontier selected 250 source whitespace-fields before productization.
-	DefaultSourceBudget = 250
+	// DefaultSourceBudget is the measured source-field frontier inside the
+	// frozen 1,200-token serialized response ceiling. The projector still counts
+	// the real wire and deterministically backs off when JSON and provenance make
+	// a particular response exceed that ceiling.
+	DefaultSourceBudget = 325
 )
 
 // ErrRetrievalNotReady tells a surface to preserve task_context/2's canonical

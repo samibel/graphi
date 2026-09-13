@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
@@ -55,6 +56,27 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	if captures.DatasetSHA != loaded.SHA256 || len(captures.Runs) != 2 {
 		t.Fatal("development captures have unexpected identity")
 	}
+	comparatorRaw, err := os.ReadFile(filepath.Join(moduleRoot, "docs/eval/retrieval/runs/2026-09-07-grepread-v2-dev/grepread-v2.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var comparator struct {
+		DatasetSHA string `json:"dataset_sha256"`
+		Queries    []struct {
+			QueryID              string `json:"query_id"`
+			TokensToFirstOverlap int    `json:"tokens_to_first_overlap"`
+		} `json:"queries"`
+	}
+	if err := json.Unmarshal(comparatorRaw, &comparator); err != nil {
+		t.Fatal(err)
+	}
+	if comparator.DatasetSHA != loaded.SHA256 {
+		t.Fatal("GrepRead/2 comparator has unexpected dataset identity")
+	}
+	comparatorTokens := make(map[string]int, len(comparator.Queries))
+	for _, query := range comparator.Queries {
+		comparatorTokens[query.QueryID] = query.TokensToFirstOverlap
+	}
 	inputs := make(map[string]PreservedPayload)
 	for _, row := range captures.Runs[0] {
 		inputs[row.QueryID] = row.Capture.Payload
@@ -68,8 +90,20 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		t.Fatal(err)
 	}
 	repository := os.DirFS(repositoryRoot)
-	reached, withinBudget, maxTokens := 0, 0, 0
+	sourceBudget := taskcompact.DefaultSourceBudget
+	if raw := os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_SOURCE_BUDGET"); raw != "" {
+		sourceBudget, err = strconv.Atoi(raw)
+		if err != nil || sourceBudget < 1 || sourceBudget > SavingsCandidateBudget {
+			t.Fatalf("invalid GRAPHI_PRODUCT_COMPACT_DEV_SOURCE_BUDGET %q", raw)
+		}
+	}
+	reached, allOverlapped, anyComplete, requiredComplete, allComplete, withinBudget, maxTokens := 0, 0, 0, 0, 0, 0, 0
+	var tokenCounts []int
+	var pairedSavings []int
+	var pairedSavingsPercent []float64
+	cheaperThanComparator := 0
 	var misses []string
+	var incomplete []string
 	for _, member := range members {
 		query := queries[member.QueryID]
 		bundle, err := taskContextBundleFromCandidateBytes(inputs[member.QueryID].Bytes)
@@ -80,11 +114,11 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		first, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
+		first, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
 		if err != nil {
 			t.Fatalf("%s build: %v", member.QueryID, err)
 		}
-		second, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, taskcompact.DefaultSourceBudget)
+		second, err := taskcompact.Build(t.Context(), query.Text, legacy, repository, sourceBudget)
 		if err != nil || !reflect.DeepEqual(first, second) {
 			t.Fatalf("%s is not byte-reproducible: %v", member.QueryID, err)
 		}
@@ -116,8 +150,10 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			t.Fatal(err)
 		}
 		wire = append(wire, '\n')
-		if _, err := ValidateCompactCandidateBundleBytes(member.QueryID, wire); err != nil {
-			t.Fatalf("%s compact wire validation: %v", member.QueryID, err)
+		if sourceBudget == taskcompact.DefaultSourceBudget {
+			if _, err := ValidateCompactCandidateBundleBytes(member.QueryID, wire); err != nil {
+				t.Fatalf("%s compact wire validation: %v", member.QueryID, err)
+			}
 		}
 		tokens, err := counter.Count(wire)
 		if err != nil {
@@ -129,7 +165,24 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		if tokens > maxTokens {
 			maxTokens = tokens
 		}
+		tokenCounts = append(tokenCounts, tokens)
+		baselineTokens := comparatorTokens[member.QueryID]
+		if baselineTokens < 1 {
+			t.Fatalf("%s missing GrepRead/2 equal-recall token count", member.QueryID)
+		}
+		if tokens < baselineTokens {
+			cheaperThanComparator++
+		}
+		pairedSavings = append(pairedSavings, baselineTokens-tokens)
+		pairedSavingsPercent = append(pairedSavingsPercent, float64(baselineTokens-tokens)*100/float64(baselineTokens))
 		covered := make(map[int]bool)
+		complete := make(map[int]bool)
+		grade3Spans := 0
+		for _, judgement := range query.Judgements {
+			if judgement.Grade == SavingsGrade {
+				grade3Spans++
+			}
+		}
 		for _, source := range first.Structured.Sources {
 			raw, err := exactSourceSpan(repository, source.Path, source.StartLine, source.EndLine)
 			if err != nil || raw != source.Text {
@@ -138,8 +191,34 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			for i, judgement := range query.Judgements {
 				if judgement.Grade == SavingsGrade && source.Path == judgement.Path && source.StartLine <= judgement.EndLine && source.EndLine >= judgement.StartLine {
 					covered[i] = true
+					if source.StartLine <= judgement.StartLine && source.EndLine >= judgement.EndLine {
+						complete[i] = true
+					}
 				}
 			}
+		}
+		if len(complete) > 0 {
+			anyComplete++
+		}
+		if len(complete) >= member.Target.RequiredSpans {
+			requiredComplete++
+		} else {
+			var targets, citations []string
+			for _, judgement := range query.Judgements {
+				if judgement.Grade == SavingsGrade {
+					targets = append(targets, judgement.Path+":"+strconv.Itoa(judgement.StartLine)+"-"+strconv.Itoa(judgement.EndLine))
+				}
+			}
+			for _, source := range first.Structured.Sources {
+				citations = append(citations, source.Path+":"+strconv.Itoa(source.StartLine)+"-"+strconv.Itoa(source.EndLine))
+			}
+			incomplete = append(incomplete, member.QueryID+" ["+string(query.Stratum)+"] "+strconv.Quote(query.Text)+" targets="+strings.Join(targets, ",")+" sources="+strings.Join(citations, ","))
+		}
+		if len(complete) == grade3Spans {
+			allComplete++
+		}
+		if len(covered) == grade3Spans {
+			allOverlapped++
 		}
 		if len(covered) >= member.Target.RequiredSpans {
 			reached++
@@ -150,6 +229,23 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 				citations = append(citations, source.Path+":"+strconv.Itoa(source.StartLine)+"-"+strconv.Itoa(source.EndLine))
 			}
 			t.Logf("miss %s (%q): %v", member.QueryID, query.Text, citations)
+		}
+	}
+	sort.Ints(tokenCounts)
+	sort.Ints(pairedSavings)
+	sort.Float64s(pairedSavingsPercent)
+	medianTokens := 0.0
+	medianSavingTokens := 0.0
+	medianSavingPercent := 0.0
+	if len(tokenCounts) > 0 {
+		middle := len(tokenCounts) / 2
+		medianTokens = float64(tokenCounts[middle])
+		medianSavingTokens = float64(pairedSavings[middle])
+		medianSavingPercent = pairedSavingsPercent[middle]
+		if len(tokenCounts)%2 == 0 {
+			medianTokens = float64(tokenCounts[middle-1]+tokenCounts[middle]) / 2
+			medianSavingTokens = float64(pairedSavings[middle-1]+pairedSavings[middle]) / 2
+			medianSavingPercent = (pairedSavingsPercent[middle-1] + pairedSavingsPercent[middle]) / 2
 		}
 	}
 	for _, query := range loaded.Dataset.Queries {
@@ -169,7 +265,11 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		}
 	}
 	sort.Strings(misses)
-	t.Logf("production compact dev: reached=%d/%d within_1200=%d/%d max_tokens=%d misses=%v", reached, len(members), withinBudget, len(members), maxTokens, misses)
+	sort.Strings(incomplete)
+	for _, detail := range incomplete {
+		t.Logf("incomplete %s", detail)
+	}
+	t.Logf("production compact dev: source_budget=%d reached=%d/%d all_overlapped=%d/%d any_complete=%d/%d required_complete=%d/%d all_complete=%d/%d within_1200=%d/%d median_tokens=%.1f max_tokens=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f median_saving_percent=%.4f misses=%v", sourceBudget, reached, len(members), allOverlapped, len(members), anyComplete, len(members), requiredComplete, len(members), allComplete, len(members), withinBudget, len(members), medianTokens, maxTokens, cheaperThanComparator, len(members), medianSavingTokens, medianSavingPercent, misses)
 	if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_REQUIRE") == "1" && (reached != len(members) || withinBudget != len(members)) {
 		t.Fatalf("production compact development target missed")
 	}

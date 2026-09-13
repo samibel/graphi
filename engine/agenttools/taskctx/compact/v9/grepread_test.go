@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
 type openCountingFS struct {
@@ -236,6 +237,34 @@ func TestOptionalHydrationSkipsSourceMissingFromSnapshotWithoutReopening(t *test
 	}
 	if repository.opens["FLOW.md"] != 0 {
 		t.Fatalf("optional hydration reopened source outside snapshot %d times", repository.opens["FLOW.md"])
+	}
+}
+
+func TestFlowSelectionLimitsBreadthToPreserveDepth(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	for i := 0; i < 8; i++ {
+		ref := fmt.Sprintf("e%d", i)
+		text := fmt.Sprintf("func handler%d() {\n\tflow := dispatch(%d)\n\t_ = flow\n}", i, i)
+		evidence = append(evidence, contract.Evidence{
+			RefID: ref, Path: fmt.Sprintf("handler%d.go", i), Line: 1, Span: "1-4", Role: "snippet",
+			Snippet: text, TextHash: shape.TextHash(text),
+		})
+		items = append(items, contract.Item{
+			RefID: ref, Rank: i + 1, Reason: fmt.Sprintf("candidate: function p.handler%d (handler%d.go:1) score 1", i, i), EvidenceRefIDs: []string{ref},
+		})
+	}
+	sources, _, err := compactTaskContextSelect("how does dispatch flow through the handlers", evidence, items, 80)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) > 4 {
+		t.Fatalf("selected %d flow sources, want at most 4 coherent regions", len(sources))
+	}
+	for _, source := range sources {
+		if source.Start != 1 || source.End != 4 {
+			t.Fatalf("fragmented flow source = %#v, want complete declaration", source)
+		}
 	}
 }
 

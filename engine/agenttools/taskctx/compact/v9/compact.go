@@ -1,9 +1,8 @@
 package v9
 
-// V9 coherent-region selection for the production task_context/2 compact wire.
-// The implementation was promoted without changing its selection behavior
-// after the preregistered blind development run. It consumes no judgements,
-// answer spans, or callbacks: source selection sees only the query, the ready
+// V9 is the implementation package for coherent-region selection on the
+// production task_context/2 compact wire. It consumes no judgements, answer
+// spans, or callbacks: source selection sees only the query, the ready
 // retrieval result, and repository bytes.
 
 import (
@@ -27,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/4"
+const CompactTaskContextVersion = "task_context/2-compact/5"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -1899,14 +1898,16 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		maxSources = 6
 		weights = []int{18, 8, 5, 3, 2, 1}
 	} else {
-		selected := make([]compactTaskContextCandidate, 0, maxSources)
 		maxSemantic, maxFallback := 8, 2
 		if compactTaskContextNeedsFlowAllocation(patterns) {
-			// Flow questions need both the operation and the lifecycle hook or
-			// caller that surrounds it. Reserve one more semantic region rather
-			// than a second query-only grep line.
-			maxSemantic, maxFallback = 9, 1
+			// Flow answers need a small call chain with useful bodies, not a broad
+			// list of one-line lexical anchors. Keep one fallback discovery result
+			// and spend the remaining capacity on three semantic regions.
+			maxSources = 4
+			weights = []int{12, 8, 5, 3}
+			maxSemantic, maxFallback = 3, 1
 		}
+		selected := make([]compactTaskContextCandidate, 0, maxSources)
 		semantic, fallback := 0, 0
 		for _, candidate := range candidates {
 			if candidate.fallback {
