@@ -15,8 +15,9 @@ holdout dataset.
   coverage target also pass.
 - Two independent Cobra indexes produced byte-identical MCP responses,
   payload digests and real cl100k counts for all `44/44` queries.
-- All 40 answerable compact bundles are at or below 1,200 cl100k tokens; the
-  range is 577–1,079 tokens.
+- All 40 answerable compact bundles are at or below 1,200 cl100k tokens; their
+  range is 758–1,079 tokens. The full 44-query development population ranges
+  from 577 to 1,079 tokens.
 - Grade-3 overlap remains `40/40`. Against the frozen GrepRead/2 development
   comparator, `32/40` bundles are cheaper and the paired median saving is
   `106.5` tokens (`9.593040233614538%`).
