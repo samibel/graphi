@@ -1,0 +1,1 @@
+FAIL: The ordering is correct, but the cited ranges do not support the attached claims: doc/rest_docs.go:165–167 does not contain the filePrepender write, and 168–170 does not contain the GenReSTCustom call. Those operations appear at lines 163 and 166, respectively.
