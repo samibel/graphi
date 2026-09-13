@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How does a Help call resolve an inherited or default help function, prepare flags, choose its stream, and handle template errors?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query 86af27992ca7; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":470,"end_line":476,"text":"// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":497,"end_line":498,"text":"'create' without any additional configuration; Cobra will work when 'app help\ncreate' is called.  Every command will automatically have the '--help' flag added."},{"path":"command.go","start_line":450,"end_line":468,"text":"// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}"},{"path":"command.go","start_line":470,"end_line":470,"text":"// Help puts out the help for the command."},{"path":"command.go","start_line":1265,"end_line":1267,"text":"\t\t\t\t\tcmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown\n\t\t\t\t\tcmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown\n\t\t\t\t\tCheckErr(cmd.Help())"},{"path":"command.go","start_line":1228,"end_line":1238,"text":"// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tif c.helpCommand == nil {\n\t\tc.helpCommand = &Command{\n\t\t\tUse:   \"help [command]\",\n\t\t\tShort: \"Help about any command\",\n\t\t\tLong: `Help provides help for any command in the application."},{"path":"command.go","start_line":1186,"end_line":1188,"text":"func (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {"},{"path":"command.go","start_line":1203,"end_line":1203,"text":"// If c.Version is empty, it will do nothing."},{"path":"doc/rest_docs.go","start_line":64,"end_line":68,"text":"\tcmd.InitDefaultHelpFlag()\n\n\tbuf := new(bytes.Buffer)\n\tname := cmd.CommandPath()\n"},{"path":"completions.go","start_line":304,"end_line":307,"text":"\t\tfinalCmd.InitDefaultHelpFlag()\n\t\tfinalCmd.InitDefaultVersionFlag()\n\t}\n"},{"path":"command.go","start_line":885,"end_line":887,"text":"\tc.InitDefaultHelpFlag()\n\tc.InitDefaultVersionFlag()\n"}],"provenance":{"input_sha256":"ebacd6c1528a147c889087c6e0e25653379d49b6560b86f69d1d40a2f714cb07","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

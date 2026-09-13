@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How does the hidden completion request command transform and emit completion results before removing itself when unused?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query a9b09e4633e7; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":183,"end_line":185,"text":"\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n"},{"path":"completions.go","start_line":27,"end_line":29,"text":"\t// ShellCompRequestCmd is the name of the hidden command that is used to request\n\t// completion results from the program.  It is used by the shell completion scripts.\n\tShellCompRequestCmd = \"__complete\""},{"path":"completions.go","start_line":35,"end_line":35,"text":"// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it."},{"path":"completions.go","start_line":193,"end_line":194,"text":"// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {"},{"path":"completions.go","start_line":201,"end_line":201,"text":"\t\tArgs:                  MinimumNArgs(1),"},{"path":"completions.go","start_line":681,"end_line":683,"text":"// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {"},{"path":"completions.go","start_line":689,"end_line":689,"text":"\t\tif cmd.Name() == compCmdName || cmd.HasAlias(compCmdName) {"},{"path":"zsh_completions.go","start_line":29,"end_line":33,"text":"// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}"},{"path":"powershell_completions.go","start_line":321,"end_line":325,"text":"// GenPowerShellCompletionWithDesc generates powershell completion file with descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}"},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"completions.go","start_line":119,"end_line":119,"text":"// not trigger file completions."}],"provenance":{"input_sha256":"fcc2b32bef62008a8cef2bde4f9accc1c120ef3d7af41350065a3271fe4cab9f","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

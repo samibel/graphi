@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Under what condition does forceMultiLine append a newline to a string?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"10 ranked source span(s); query e5dc37510445; read in order (250/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"doc/util.go","start_line":39,"end_line":46,"text":"// Temporary workaround for yaml lib generating incorrect yaml with long strings\n// that do not contain \\n.\nfunc forceMultiLine(s string) string {\n\tif len(s) > 60 && !strings.Contains(s, \"\\n\") {\n\t\ts = s + \"\\n\"\n\t}\n\treturn s\n}"},{"path":"cobra.go","start_line":165,"end_line":171,"text":"// appendIfNotPresent will append stringToAppend to the end of s, but only if it's not yet present in s.\nfunc appendIfNotPresent(s, stringToAppend string) string {\n\tif strings.Contains(s, stringToAppend) {\n\t\treturn s\n\t}\n\treturn s + \" \" + stringToAppend\n}"},{"path":"cobra.go","start_line":173,"end_line":173,"text":"// rpad adds padding to the right of a string."},{"path":"completions.go","start_line":898,"end_line":901,"text":"// CompErrorln prints the specified completion message to stderr with a newline at the end.\nfunc CompErrorln(msg string) {\n\tCompError(fmt.Sprintf(\"%s\\n\", msg))\n}"},{"path":"completions.go","start_line":193,"end_line":195,"text":"// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {\n\tcompleteCmd := &Command{"},{"path":"completions.go","start_line":204,"end_line":204,"text":"\t\t\t\"to request completion choices for the specified command-line.\", ShellCompRequestCmd),"},{"path":"completions.go","start_line":892,"end_line":896,"text":"// CompError prints the specified completion message to stderr.\nfunc CompError(msg string) {\n\tmsg = fmt.Sprintf(\"[Error] %s\", msg)\n\tCompDebug(msg, true)\n}"},{"path":"command.go","start_line":1436,"end_line":1451,"text":"// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"active_help.go","start_line":42,"end_line":44,"text":"func AppendActiveHelp(compArray []string, activeHelpStr string) []string {\n\treturn append(compArray, fmt.Sprintf(\"%s%s\", activeHelpMarker, activeHelpStr))\n}"},{"path":"doc/yaml_docs.go","start_line":93,"end_line":94,"text":"func GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()"}],"provenance":{"input_sha256":"4076b20f90ff277fedf430e8d2a7f4af05dd8763b66d6fab41856bab37534e69","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

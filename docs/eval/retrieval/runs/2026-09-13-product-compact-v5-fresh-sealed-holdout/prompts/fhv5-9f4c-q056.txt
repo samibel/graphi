@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+For a Use string containing a command token followed by argument syntax, which portion becomes the command name?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"11 ranked source span(s); query db24dbddd6ef; read in order (249/250 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/4","sources":[{"path":"command.go","start_line":57,"end_line":58,"text":"\t//       argument to the right of the separator. You cannot use both arguments in a single use of the command.\n\t//   { } delimits a set of mutually exclusive arguments when one of the arguments is required. If the arguments are"},{"path":"command.go","start_line":85,"end_line":85,"text":"\t// It is a dynamic version of using ValidArgs."},{"path":"command.go","start_line":681,"end_line":685,"text":"// argsMinusFirstX removes only the first x from args.  Otherwise, commands that look like\n// openshift admin policy add-role-to-user admin my-user, lose the admin argument (arg[4]).\n// Special care needs to be taken not to remove a flag value.\nfunc (c *Command) argsMinusFirstX(args []string, x string) []string {\n\tif len(args) == 0 {"},{"path":"command.go","start_line":724,"end_line":728,"text":"// Find the target command given the args and command tree\n// Meant to be run on the highest node. Only searches down.\nfunc (c *Command) Find(args []string) (*Command, []string, error) {\n\tvar innerfind func(*Command, []string) (*Command, []string)\n"},{"path":"args.go","start_line":27,"end_line":28,"text":"// - subcommands will always accept arbitrary arguments\nfunc legacyArgs(cmd *Command, args []string) error {"},{"path":"args.go","start_line":41,"end_line":41,"text":"// NoArgs returns an error if any args are included."},{"path":"command.go","start_line":1436,"end_line":1451,"text":"// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"command.go","start_line":643,"end_line":643,"text":"func stripFlags(args []string, c *Command) []string {"},{"path":"command.go","start_line":790,"end_line":790,"text":"func (c *Command) Traverse(args []string) (*Command, []string, error) {"},{"path":"completions.go","start_line":194,"end_line":194,"text":"func (c *Command) initCompleteCmd(args []string) {"},{"path":"command.go","start_line":1258,"end_line":1258,"text":"\t\t\t},"}],"provenance":{"input_sha256":"6a7c49d5169db7bf1628e7189f510b936fdcfddc26be43318f241a35494e453e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":250,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
