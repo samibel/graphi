@@ -504,6 +504,25 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 	if rel == ".." || strings.HasPrefix(rel, "../") || filepath.IsAbs(rel) {
 		return "", fmt.Errorf("run directory %s resolves to %s, which is outside the repository at %s; the evaluation's inputs and artifacts must be files git can be asked about", dir, rel, absRoot)
 	}
+	physicalRoot, err := resolveExistingPath(absRoot)
+	if err != nil {
+		return "", fmt.Errorf("resolve repository root %s physically: %w", absRoot, err)
+	}
+	physicalDir, err := resolveExistingPath(absDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve run directory %s physically: %w", dir, err)
+	}
+	physicalRel, err := filepath.Rel(physicalRoot, physicalDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve physical run directory %s relative to repository %s: %w", physicalDir, physicalRoot, err)
+	}
+	physicalRel = filepath.ToSlash(physicalRel)
+	if physicalRel == ".." || strings.HasPrefix(physicalRel, "../") || filepath.IsAbs(physicalRel) {
+		return "", fmt.Errorf("run directory %s resolves physically to %s, which is outside the repository at %s; evaluation inputs and artifacts must remain in the committed repository tree", dir, physicalDir, physicalRoot)
+	}
+	if physicalRel != rel {
+		return "", fmt.Errorf("run directory %s resolves through a symlink to %s instead of repository path %s; the candidate-binding exclusion must name one physical, symlink-free directory", rel, physicalRel, rel)
+	}
 	// Inside the repository is not enough. The run directory is the one path
 	// the candidate binding excludes from its comparison against the frozen
 	// candidate, so a run directory at the root — or any directory that
@@ -519,6 +538,34 @@ func runDirectoryInsideRepository(root, dir string) (string, error) {
 		return "", fmt.Errorf("run directory %s holds candidate source (%s); the candidate binding excludes the run directory from its comparison against the frozen candidate, so a run directory over the implementation excludes the very code the binding exists to pin", rel, swallowed)
 	}
 	return rel, nil
+}
+
+// resolveExistingPath evaluates symlinks in path while permitting the final
+// run directory (and any of its new descendants) not to exist yet during the
+// freeze phase. The nearest existing ancestor is resolved physically and the
+// missing suffix is then appended without interpretation.
+func resolveExistingPath(path string) (string, error) {
+	path = filepath.Clean(path)
+	current := path
+	var missing []string
+	for {
+		resolved, err := filepath.EvalSymlinks(current)
+		if err == nil {
+			for i := len(missing) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, missing[i])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return "", err
+		}
+		missing = append(missing, filepath.Base(current))
+		current = parent
+	}
 }
 
 // runDirectoryHoldsCandidateSource names the first candidate source file found

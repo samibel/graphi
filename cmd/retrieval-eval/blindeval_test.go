@@ -494,6 +494,39 @@ func TestRetrievalEval_BlindEvalRefusesARunDirectoryOutsideTheRepository(t *test
 	}
 }
 
+// A lexical path below the repository can still resolve physically outside it
+// through a symlink. The run directory is the candidate-binding exclusion, so
+// accepting that path would let mutable, uncommitted inputs masquerade as a
+// repository-owned evaluation record.
+func TestRetrievalEval_BlindEvalRefusesASymlinkRunDirectoryOutsideTheRepository(t *testing.T) {
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	parent := filepath.Join(root, "cmd", "retrieval-eval", "testdata")
+	if err := os.MkdirAll(parent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	link := filepath.Join(parent, "blindeval-run-outside-link")
+	if err := os.Symlink(outside, link); err != nil {
+		if os.IsPermission(err) {
+			t.Skipf("symlinks unavailable: %v", err)
+		}
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(link)
+		_ = os.Remove(parent)
+	})
+
+	if rel, err := runDirectoryInsideRepository(root, link); err == nil {
+		t.Fatalf("a symlink to an outside run directory resolved to %q instead of being refused", rel)
+	} else if !strings.Contains(err.Error(), "outside the repository") {
+		t.Errorf("refusal %q does not say the physical directory is outside the repository", err)
+	}
+}
+
 // B3: the rater prompt was never resolved against anything. decide now rebuilds
 // each prompt from the pre-registered bundle bytes and question, so a prompt
 // carrying an expected answer — appended after pre-registration and removed
