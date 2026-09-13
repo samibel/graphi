@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/1",
-  "status": "pre_freeze_attested",
+  "status": "frozen_pre_capture_attested",
   "operator": {
     "id": "codex-independent-second-holdout-operator",
     "provider": "OpenAI Codex",
@@ -31,7 +31,7 @@
   },
   "frozen_identities": {
     "product_candidate_sha": "1430daf27e795c8c3a7dcc230d858935044bc33f",
-    "freeze_base_sha": "pending: static-input commit not yet created",
+    "freeze_base_sha": "595ea58ff030449a68272c285c61d08c29a32856",
     "capture_candidate_sha": "pending: freeze-record commit not yet created",
     "indexed_repository": "cobra",
     "indexed_repository_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
@@ -45,7 +45,7 @@
     "attested_at_utc": "2026-09-13T15:12:22Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
-    "precondition_record_sha256": "pending: created by freeze",
+    "precondition_record_sha256": "e287398747c0b3d263a1ea5a33083ef6aaa424217cc61b18575709d4ca04a17d",
     "pre_registration_sha256": "pending: created by official capture",
     "two_build_reproducibility": "pending: required before participant execution",
     "isolation_controls": [
