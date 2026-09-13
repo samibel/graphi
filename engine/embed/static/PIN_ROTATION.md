@@ -132,6 +132,9 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev/` — development-only
   lifecycle-focus and exact referenced-definition recovery measurement. Its
   ranking report and two-index MCP payload capture use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
+  exact-basename retention development capture. Its two independent indexes,
+  retrieval rows, MCP bytes, and reproducibility result use this pinned model.
 - `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
   `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — the first
   two registered compact development sufficiency runs. Their frozen inputs and

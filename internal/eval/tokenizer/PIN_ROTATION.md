@@ -122,6 +122,9 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev/` — the exact
   fresh-holdout capture-candidate development recapture; its byte identity and
   exact serialized wire ceiling use this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
+  exact-basename retention development recapture; its 44/44 byte identity and
+  exact serialized wire ceiling use this tokenizer.
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-fresh-sealed-holdout/`
   — the completed fresh sealed-holdout capture and its 64 exact response-byte
   counts are bound to this tokenizer.

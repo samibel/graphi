@@ -144,6 +144,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-07-answer-recovery-dev",
 		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency",
 		"docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2",
+		"docs/eval/retrieval/runs/2026-09-13-candidate-path-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v2-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v3-dev",
