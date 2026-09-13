@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q003",
+  "response_sha256": "1ff5357ea4f9ebd636bae2c8e1410703b80f955af496f844fa221e36f685e516",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The bundle supports uppercasing the program name, replacing characters outside A–Z, 0–9, and underscore with underscores, and adding `_ACTIVE_HELP`. The cited caller and `Command.Name()` behavior are also supported; the described transformation order yields the same name.",
+  "graded_at": "2026-09-13T12:43:09Z",
+  "sha256": "e0552a2c6452b11bbcef272648f73e16c8b07163ca5beb87e278f942ea618ae2"
+}

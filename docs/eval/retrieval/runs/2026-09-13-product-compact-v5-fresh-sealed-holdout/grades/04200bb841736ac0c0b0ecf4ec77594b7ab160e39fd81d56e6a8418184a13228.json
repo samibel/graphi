@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q020",
+  "response_sha256": "04200bb841736ac0c0b0ecf4ec77594b7ab160e39fd81d56e6a8418184a13228",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly explains that blank lines remain unprefixed because the prefix is added only when `bol \u0026\u0026 c != '\\n'`. Its cited lines exist in the bundle and support both newline preservation and line-start tracking.",
+  "graded_at": "2026-09-13T12:47:29Z",
+  "sha256": "fee0361ac77e2273bb555915ffcedee6d3c29b827734b1d1351977ef3cc567db"
+}

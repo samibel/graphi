@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q003",
+  "response_sha256": "15e0a65cdcbb59ab879e5743ad93f966fb8fbdd11fcb0e4610feca29a9a207bb",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The bundle supports uppercasing the root command’s name, replacing characters outside `A-Z`, `0-9`, and `_` with underscores, and adding `_ACTIVE_HELP`. All cited locations exist and support the explanation; the stated operation order yields the same name.",
+  "graded_at": "2026-09-13T12:43:17Z",
+  "sha256": "ee79c62f95aa2c0316b69a1d7f06f5a310010c43abc505e980bf85ae64a82ec4"
+}

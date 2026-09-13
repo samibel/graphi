@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q061",
+  "response_sha256": "bbfe069cf8dc21ee411c60f06780c6b272931a5eaef1611cbeb044f46077462e",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly explains recursive inheritance through `c.Parent().HelpFunc()` and fallback to default help only when no command in the ancestor chain defines a custom function. Its cited lines are present and supporting in the preserved `command.go:450–468` span.",
+  "graded_at": "2026-09-13T12:57:57Z",
+  "sha256": "849194fab270aff9085b749f30fb8e4ed41be422add50e8a0568bc0132ef9330"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q063",
+  "response_sha256": "6bf4d1634cad1b9ec74abe21a3c2fc859f987e40ba7df45b6034d55814eb1d0a",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer the question. The preserved bundle includes only the comment at completions.go:667, omitting the NoOptDefVal check, argument reset, and flag clearing needed to establish fallback to noun completion.",
+  "graded_at": "2026-09-13T12:58:37Z",
+  "sha256": "1392646b66c44b33128dbae9ed81f7ed96549dcf14d0727f14fa6097856cba13"
+}

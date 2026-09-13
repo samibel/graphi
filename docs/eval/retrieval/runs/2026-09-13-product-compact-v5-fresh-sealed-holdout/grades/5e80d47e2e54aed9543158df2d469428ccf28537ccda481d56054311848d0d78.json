@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q012",
+  "response_sha256": "5e80d47e2e54aed9543158df2d469428ccf28537ccda481d56054311848d0d78",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer the requested validation difference. The bundle shows only a call to legacyArgs at command.go:745 and omits args.go’s implementation, so the essential root-versus-subcommand behavior cannot be verified.",
+  "graded_at": "2026-09-13T12:45:12Z",
+  "sha256": "1f331488883baef2cc1d96e70452e2f29508676ea5181168dd47ab11162ba2ad"
+}

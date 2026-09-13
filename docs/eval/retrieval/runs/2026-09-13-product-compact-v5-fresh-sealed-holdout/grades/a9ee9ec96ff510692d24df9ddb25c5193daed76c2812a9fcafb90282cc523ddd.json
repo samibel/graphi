@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q004",
+  "response_sha256": "a9ee9ec96ff510692d24df9ddb25c5193daed76c2812a9fcafb90282cc523ddd",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the closure’s signature, captured choices and directive, ignored invocation arguments, and returned values. Its citation to completions.go:126–129 exists in the bundle and supports these claims.",
+  "graded_at": "2026-09-13T12:43:24Z",
+  "sha256": "54eff0e912536bf945e7cefb7cca248f7e8d080c64a7074ebf3464b2216eb2b7"
+}

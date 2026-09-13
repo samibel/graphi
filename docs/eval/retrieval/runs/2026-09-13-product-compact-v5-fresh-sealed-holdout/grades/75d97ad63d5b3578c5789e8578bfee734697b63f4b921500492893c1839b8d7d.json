@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q031",
+  "response_sha256": "75d97ad63d5b3578c5789e8578bfee734697b63f4b921500492893c1839b8d7d",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly identifies deprecated commands, hidden commands, the parent’s configured help command, and non-runnable commands without available subcommands as excluded. All four categories and the cited control flow are supported by command.go:1560–1576 in the preserved bundle.",
+  "graded_at": "2026-09-13T12:50:31Z",
+  "sha256": "cfd58c933379020a1b0087e9381536a05831970312bd45396ca69a88d6fab266"
+}

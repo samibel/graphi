@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q048",
+  "response_sha256": "9586e5b86d2429670bd0f666686e690cc3a2e1a280443d5deb5a6ee35228a309",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response identifies the V1 generation APIs and V2 default, but omits essential differences: V2 drops legacy Bash dynamic completion, uses Go callbacks, and provides a smaller aligned script. These differences are also absent from the preserved bundle, so the required comparison is not substantively supported.",
+  "graded_at": "2026-09-13T12:54:48Z",
+  "sha256": "596cef4eb71c62d73f4b26ade72a4dc9651d8beabd1216acf438b47646d0becd"
+}

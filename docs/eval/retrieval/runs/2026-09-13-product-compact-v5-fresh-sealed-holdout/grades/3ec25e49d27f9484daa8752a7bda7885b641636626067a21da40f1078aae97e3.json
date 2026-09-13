@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q051",
+  "response_sha256": "3ec25e49d27f9484daa8752a7bda7885b641636626067a21da40f1078aae97e3",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "fail",
+  "rationale": "The response does not answer the question. The preserved bundle names only TabCompleteNext and description-generation APIs; it lacks the other two mode names, the conditions for displaying descriptions, and the minimum PowerShell version.",
+  "graded_at": "2026-09-13T12:55:21Z",
+  "sha256": "334bbc3871ae692d86e02d5a6fd2f57abe851b6596b8cf861d8fe2de69581bb9"
+}

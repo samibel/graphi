@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/1",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv5-9f4c-q029",
+  "response_sha256": "c999960c4ef741c978134bc5851624de89baf909aa4804a26a0595918a798e83",
+  "grader_id": "grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c",
+  "outcome": "pass",
+  "rationale": "The response correctly states that a prefix is accepted only when it matches exactly one subcommand’s name or alias, with exact matches taking precedence. Both cited ranges exist in the bundle and directly support these claims.",
+  "graded_at": "2026-09-13T12:49:43Z",
+  "sha256": "5be2672649112570ec61269013c8f9f58f48a8fab01203f512a9815df13e9c2a"
+}
