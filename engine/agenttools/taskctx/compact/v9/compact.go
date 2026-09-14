@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/8"
+const CompactTaskContextVersion = "task_context/2-compact/9"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -2125,6 +2125,25 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		}
 	}
 	if mode == GrepReadV2ExactIdentifier && len(candidates) > 0 && admitted[0] {
+		// Every admitted region is already charged for its anchor line, so a
+		// named declaration that would otherwise fit whole can be left cut by a
+		// handful of one-line neighbour citations. The end of the declaration
+		// the question asked for is worth more than those citations: give the
+		// weakest ones back, lowest rank first, until the complete definition
+		// fits. Nothing is reclaimed unless it then fits the same unchanged
+		// budget, so this can only convert breadth the caller did not ask for
+		// into the depth the caller did.
+		if from, to, ok := compactTaskContextUnitRange(candidates[0]); ok {
+			whole := len(strings.Fields(strings.Join(candidates[0].lines[from:to+1], "\n")))
+			for i := len(candidates) - 1; i > 0 && whole <= budget && whole-candidates[0].cost > primaryRemaining; i-- {
+				if !admitted[i] {
+					continue
+				}
+				admitted[i] = false
+				primaryRemaining += candidates[i].cost
+				candidates[i].cost = 0
+			}
+		}
 		// Exact lookup is depth-first: make the named declaration useful before
 		// wrappers and neighbours consume the budget. Complete a small
 		// definition, or give a long implementation the remaining source budget.

@@ -106,6 +106,11 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 		}
 	}
 	reached, allOverlapped, anyComplete, requiredComplete, allComplete, withinBudget, maxTokens, containedSourceBundles := 0, 0, 0, 0, 0, 0, 0, 0
+	// Whole-span completeness is a coarse proxy: several development answer
+	// spans are larger than any response can hold at the frozen ceiling. The
+	// grade-3 line share measures how much of the reviewed answer actually
+	// reaches the actor, which is the quantity a reader needs.
+	coveredGrade3Lines, totalGrade3Lines, bestSpanShareSum, headroomSum := 0, 0, 0.0, 0
 	var tokenCounts []int
 	var pairedSavings []int
 	var pairedSavingsPercent []float64
@@ -236,6 +241,38 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 				}
 			}
 		}
+		bestShare := 0.0
+		for _, judgement := range query.Judgements {
+			if judgement.Grade != SavingsGrade {
+				continue
+			}
+			lines := make(map[int]bool)
+			for _, source := range first.Structured.Sources {
+				if source.Path != judgement.Path {
+					continue
+				}
+				for line := max(source.StartLine, judgement.StartLine); line <= min(source.EndLine, judgement.EndLine); line++ {
+					lines[line] = true
+				}
+			}
+			span := judgement.EndLine - judgement.StartLine + 1
+			coveredGrade3Lines += len(lines)
+			totalGrade3Lines += span
+			if share := float64(len(lines)) / float64(span); share > bestShare {
+				bestShare = share
+			}
+		}
+		bestSpanShareSum += bestShare
+		headroomSum += SavingsCandidateBudget - tokens
+		if os.Getenv("GRAPHI_PRODUCT_COMPACT_DEV_TRACE") == "1" {
+			var missing []string
+			for i, judgement := range query.Judgements {
+				if judgement.Grade == SavingsGrade && !complete[i] {
+					missing = append(missing, judgement.Path+":"+strconv.Itoa(judgement.StartLine)+"-"+strconv.Itoa(judgement.EndLine))
+				}
+			}
+			t.Logf("headroom: id=%s stratum=%s tokens=%d unused=%d best_span_share=%.3f complete=%d/%d missing=%s", member.QueryID, stratum, tokens, SavingsCandidateBudget-tokens, bestShare, len(complete), grade3Spans, strings.Join(missing, ","))
+		}
 		hasContainedSource := false
 		for i, source := range first.Structured.Sources {
 			for j, other := range first.Structured.Sources {
@@ -358,6 +395,7 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	for _, detail := range incomplete {
 		t.Logf("incomplete %s", detail)
 	}
+	t.Logf("production compact dev answer coverage: grade3_lines=%d/%d (%.4f) mean_best_span_share=%.4f mean_unused_tokens=%.1f", coveredGrade3Lines, totalGrade3Lines, float64(coveredGrade3Lines)/float64(max(1, totalGrade3Lines)), bestSpanShareSum/float64(max(1, len(members))), float64(headroomSum)/float64(max(1, len(members))))
 	t.Logf("production compact dev: source_budget=%d reached=%d/%d all_overlapped=%d/%d any_complete=%d/%d required_complete=%d/%d all_complete=%d/%d within_1200=%d/%d contained_source_bundles=%d/%d median_tokens=%.1f max_tokens=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f median_saving_percent=%.4f misses=%v", sourceBudget, reached, len(members), allOverlapped, len(members), anyComplete, len(members), requiredComplete, len(members), allComplete, len(members), withinBudget, len(members), containedSourceBundles, len(members), medianTokens, maxTokens, cheaperThanComparator, len(members), medianSavingTokens, medianSavingPercent, misses)
 	if containedSourceBundles != 0 {
 		t.Errorf("production compact development emitted redundant contained sources in %d/%d bundles", containedSourceBundles, len(members))
