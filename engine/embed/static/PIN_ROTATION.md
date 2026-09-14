@@ -135,6 +135,11 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
   exact-basename retention development capture. Its two independent indexes,
   retrieval rows, MCP bytes, and reproducibility result use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-named-declaration-dev/` — the
+  candidate-bound named-declaration completion development capture. Its two
+  independent indexes, retrieval rows and ranks, MCP bytes, reproducibility
+  result and the per-stage answer-span loss decomposition in its result all use
+  this pinned model.
 - `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency/` and
   `docs/eval/retrieval/runs/2026-09-07-compact-dev-sufficiency-v2/` — the first
   two registered compact development sufficiency runs. Their frozen inputs and

@@ -154,6 +154,11 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v6-dev",
 		"docs/eval/retrieval/runs/2026-09-13-product-compact-v7-dev",
+		// The named-declaration completion capture, plus the per-stage
+		// answer-span loss decomposition its result reports. That
+		// decomposition reads retrieval ranks recorded by this embedder, so a
+		// rotation invalidates the stage attribution as well as the bytes.
+		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)
