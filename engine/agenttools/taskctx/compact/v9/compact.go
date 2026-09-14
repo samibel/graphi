@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/10"
+const CompactTaskContextVersion = "task_context/2-compact/11"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -422,7 +422,10 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 	files := make(map[string]parsedFile)
 	markdownFiles := make(map[string][]string)
 	mode, patterns := grepReadV2QueryPlan(query)
-	hydrateMarkdown := mode == GrepReadV2NaturalLanguage && compactTaskContextWantsMarkdownFlow(patterns) && !compactTaskContextWantsLifecycleHooks(patterns)
+	// compact/10: every ranked documentation heading is hydrated to its
+	// section for a natural-language question; the selector decides how much
+	// of it to emit. The heading-window alone rarely holds the answer.
+	hydrateMarkdown := mode == GrepReadV2NaturalLanguage
 	seen := make(map[string]bool)
 	var evidence []contract.Evidence
 	var linked []contract.Item
