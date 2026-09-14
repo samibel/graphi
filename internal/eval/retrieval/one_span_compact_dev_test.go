@@ -89,6 +89,23 @@ func TestOneSpanCompactDev(t *testing.T) {
 	shareSum := 0.0
 	var incomplete []string
 	only := os.Getenv("GRAPHI_ONE_SPAN_ONLY")
+	// GRAPHI_ONE_SPAN_FOLLOWUP=<lines> simulates the second-response contract
+	// under study: after the compact response, exactly one deterministic
+	// follow-up read of the whole declaration or section that the first
+	// emitted source lies in, capped at that many lines and charged by its
+	// own cl100k count. It measures what a second response could recover,
+	// not what any product path emits today.
+	followupLines := 0
+	if raw := os.Getenv("GRAPHI_ONE_SPAN_FOLLOWUP"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 1 {
+			t.Fatalf("invalid GRAPHI_ONE_SPAN_FOLLOWUP %q", raw)
+		}
+		followupLines = parsed
+	}
+	extents := newDeclarationExtents(repository)
+	var followupTokens []int
+	followupHelped := 0
 	for _, q := range loaded.Dataset.Queries {
 		if only != "" && q.ID != only {
 			continue
@@ -153,10 +170,58 @@ func TestOneSpanCompactDev(t *testing.T) {
 			t.Errorf("%s: %d cl100k tokens exceed the frozen ceiling", q.ID, n)
 		}
 		tokens = append(tokens, n)
+		sources := res.Structured.Sources
+		if followupLines > 0 && len(sources) > 0 {
+			// Policy "lead": the first source's declaration. Policy
+			// "first-truncated": the first source, in emitted order, whose
+			// declaration extends beyond its emitted window.
+			unit := func(s taskcompact.Source) (int, int) {
+				from, to := extents.extent(s.Path, s.StartLine)
+				if strings.HasSuffix(s.Path, ".md") {
+					// A Markdown source's extent is the section around its
+					// heading; the emitted source may start below the heading.
+					from, to = s.StartLine, s.EndLine
+					for line := s.StartLine; line >= 1 && line > s.StartLine-80; line-- {
+						if a, b := extents.extent(s.Path, line); b > a {
+							from, to = a, b
+							break
+						}
+					}
+				}
+				if to-from+1 > followupLines {
+					to = from + followupLines - 1
+				}
+				return from, to
+			}
+			lead := sources[0]
+			from, to := unit(lead)
+			if os.Getenv("GRAPHI_ONE_SPAN_FOLLOWUP_POLICY") == "first-truncated" {
+				for _, s := range sources {
+					if a, b := unit(s); a < s.StartLine || b > s.EndLine {
+						lead, from, to = s, a, b
+						break
+					}
+				}
+			}
+			if from < lead.StartLine || to > lead.EndLine {
+				text, err := exactSourceSpan(repository, lead.Path, from, to)
+				if err == nil {
+					entry, _ := json.Marshal(struct {
+						Path  string `json:"path"`
+						Start int    `json:"start_line"`
+						End   int    `json:"end_line"`
+						Text  string `json:"text"`
+					}{lead.Path, from, to, text})
+					ft, _ := counter.Count(entry)
+					followupTokens = append(followupTokens, ft)
+					sources = append(sources, taskcompact.Source{Path: lead.Path, StartLine: from, EndLine: to, Text: text})
+				}
+			}
+		}
 		lines := map[int]bool{}
 		overlapped, complete := false, false
 		var cites []string
-		for _, s := range res.Structured.Sources {
+		for _, s := range sources {
 			text, err := exactSourceSpan(repository, s.Path, s.StartLine, s.EndLine)
 			if err != nil || text != s.Text {
 				t.Fatalf("%s unverifiable source %s:%d-%d", q.ID, s.Path, s.StartLine, s.EndLine)
@@ -173,6 +238,17 @@ func TestOneSpanCompactDev(t *testing.T) {
 			}
 			if s.StartLine <= span.StartLine && s.EndLine >= span.EndLine {
 				complete = true
+			}
+		}
+		if followupLines > 0 && complete {
+			firstComplete := false
+			for _, s := range res.Structured.Sources {
+				if s.Path == span.Path && s.StartLine <= span.StartLine && s.EndLine >= span.EndLine {
+					firstComplete = true
+				}
+			}
+			if !firstComplete {
+				followupHelped++
 			}
 		}
 		share := float64(len(lines)) / float64(span.EndLine-span.StartLine+1)
@@ -233,5 +309,13 @@ func TestOneSpanCompactDev(t *testing.T) {
 		t.Fatal("no one-span query measured")
 	}
 	sort.Ints(tokens)
+	if followupLines > 0 {
+		sort.Ints(followupTokens)
+		medianFollowup, maxFollowup := 0, 0
+		if len(followupTokens) > 0 {
+			medianFollowup, maxFollowup = followupTokens[len(followupTokens)/2], followupTokens[len(followupTokens)-1]
+		}
+		t.Logf("one-span follow-up: lines_cap=%d reads=%d completed_by_followup=%d median_followup_tokens=%d max_followup_tokens=%d", followupLines, len(followupTokens), followupHelped, medianFollowup, maxFollowup)
+	}
 	t.Logf("one-span: dataset=%s source_budget=%d rows=%d overlapped=%d complete=%d mean_share=%.4f median_tokens=%d max_tokens=%d", loaded.Dataset.ID, sourceBudget, all.total, all.overlapped, all.complete, shareSum/float64(all.total), tokens[len(tokens)/2], tokens[len(tokens)-1])
 }

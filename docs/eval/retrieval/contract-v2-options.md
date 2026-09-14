@@ -104,6 +104,36 @@ reads; the candidate gets two.
 - Risk: the largest change of the three; it is a different product
   behaviour, not a different measurement of the same one.
 
+**Measured ceiling (2026-09-14, reviewed holdout-shaped split, candidate
+compact/12).** `TestOneSpanCompactDev` with `GRAPHI_ONE_SPAN_FOLLOWUP`
+simulates the contract with one *deterministic* follow-up: after the
+compact response, read the whole declaration or section that the first
+emitted source lies in, capped at 120 lines, charged by its own cl100k
+count. No question-specific choice is made; a real second call chosen by
+the reader can only do better.
+
+| | one response (compact/12) | + one follow-up read |
+|---|---:|---:|
+| Spans overlapped | 51/64 | **54/64** |
+| Spans complete | 39/64 | **45/64** |
+| config_docs overlapped / complete | 8 / 6 | **10 / 9** |
+| architecture_flow overlapped / complete | 7 / 4 | 8 / 6 |
+| nl_behaviour overlapped / complete | 9 / 8 | 9 / 9 |
+| Follow-up reads issued | — | 11 of 64 |
+| Median / max follow-up tokens | — | 626 / 1,062 |
+
+Reading the *first truncated* cited declaration instead of the lead's
+issues 58 reads for the same 54/45, so the lead policy is the right
+default. The remaining ten non-overlapped questions are three non-Go
+`exact_path` files retrieval does not index, five candidate-pool or cap
+misses, and two struct-field targets inside a very long type.
+
+At 84 % overlap the chance of 56 of 64 is about 0.3 — a coin toss made
+fairer, not a pass. The follow-up buys what a single response cannot
+(whole declarations, whole sections) and leaves the pool misses where they
+are; a release-grade result at `k = 56` needs both this contract and the
+upstream pool work.
+
 ### D. Do nothing to the contract; fix ranking and recall
 
 Spend the next slice on the 21 development spans lost upstream of the
