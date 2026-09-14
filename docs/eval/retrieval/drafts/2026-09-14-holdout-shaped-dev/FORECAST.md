@@ -87,6 +87,40 @@ both splits: it must gain here without losing the old gates and cost.
 `exact_identifier` is solved on this shape. `exact_path` waits on the
 rubric answer.
 
+## Selector probes on this shape (2026-09-14, all rejected)
+
+Each probe was a one-variable change to the compact selector, measured on
+this draft and on the committed development split, and reverted. The
+committed selector is unchanged.
+
+| Probe | Draft (overlapped / complete of 64) | Old split (reached / ≥1 complete / all complete of 40; cheaper; paired median saving) | Decision |
+|---|---|---|---|
+| baseline `40133db5` | 50 / 30 | 40 / 33 / 18; 24/40; +67 (5.9 %) | — |
+| H1: when the top-ranked body is too long to complete, grow it to its weighted quota *before* completing its dependencies | 50 / 30 | 40 / 33 / 18; 24/40; +67 | no effect: the "root" the selector picks is not the retrieval's first row (below) |
+| H2: the +1,000,000 whole-symbol tie-break only when the question spells the symbol as declared (`Flag`, not "flag") | 50 / 30 | 40 / 33 / **19**; 21/40; **+15 (1.2 %)** | no draft gain; buys one old-split span for most of the savings claim |
+| H3: retrieval-rank bonus for primary candidates (`300000/seed`) | **51 / 32** (nl_behaviour 4→6) | **38** / 31 / 18; 22/40; +38 | reject: breaks the required-overlap gate (`cb-14`, `ci-678`, whose answers arrive only through the lexical fallback the bonus now outranks) |
+| H3b: the same bonus bounded to seeds 1–3 at `90000/seed` | 50 / 30 | **38** / 29 / 18; 20/40; +10 | reject: the regression stays, the gain does not |
+
+What the traces behind these probes established, for `cd-24` and `cd-31`:
+retrieval placed the answer's declaration first in both (`execute`,
+`InitDefaultHelpCmd`); the compact selector then re-scored every candidate
+from scratch and put `ValidateFlagGroups` and
+`IsAdditionalHelpTopicCommand` above them, because their *names* contain
+more of the question's words ("flag", "help", "command"), and `type Command`
+and `Command.Flag` above everything, because a whole-word name match earns
+a million points. The selector's "root" — the region that receives depth —
+is chosen from that re-scoring, not from retrieval.
+
+The conclusion is not another probe. The compact selector re-ranks the
+retrieval result with lexical name matching, twelve query-shape predicates
+and fixed bonuses spanning five orders of magnitude, and every one-variable
+change to that stack either does nothing on holdout-shaped questions or
+trades a hard gate on the old split. Recovering the 19 selection losses
+needs a selector whose ordering *is* the retrieval ordering — depth
+allocated by retrieval rank, region completion by structural unit, the
+lexical fallback kept for recall — measured on both splits from the start.
+That is a rewrite slice with its own regression suite, not a patch.
+
 Reproduce:
 
 ```sh
