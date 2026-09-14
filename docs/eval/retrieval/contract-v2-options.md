@@ -105,12 +105,11 @@ reads; the candidate gets two.
   behaviour, not a different measurement of the same one.
 
 **Measured ceiling (2026-09-14, reviewed holdout-shaped split, candidate
-compact/12).** `TestOneSpanCompactDev` with `GRAPHI_ONE_SPAN_FOLLOWUP`
-simulates the contract with one *deterministic* follow-up: after the
-compact response, read the whole declaration or section that the first
-emitted source lies in, capped at 120 lines, charged by its own cl100k
-count. No question-specific choice is made; a real second call chosen by
-the reader can only do better.
+compact/12).** `TestOneSpanCompactDev` first simulated the contract with one
+*deterministic* follow-up: after the compact response, read the whole
+declaration or section that the first emitted source lies in, capped at
+120 lines, charged by its own cl100k count. No question-specific choice is
+made; a real second call chosen by the reader can only do better.
 
 | | one response (compact/12) | + one follow-up read |
 |---|---:|---:|
@@ -133,6 +132,13 @@ fairer, not a pass. The follow-up buys what a single response cannot
 (whole declarations, whole sections) and leaves the pool misses where they
 are; a release-grade result at `k = 56` needs both this contract and the
 upstream pool work.
+
+**Made concrete (compact/13).** The designation is now the product's:
+`task_context/2-compact/13` emits a `followup` citation (`path:start-end`)
+whenever its lead source is a cut window, and the instruments follow that
+citation instead of simulating one. The contract itself is drafted in
+`contract-v2-second-response.md`; its measurement is
+`runs/2026-09-14-compact13-followup-dev/RESULT.md`.
 
 ### D. Do nothing to the contract; fix ranking and recall
 

@@ -53,12 +53,38 @@ type Provenance struct {
 	BudgetUnit      string `json:"source_budget_unit"`
 }
 
+// Followup designates the one exact span a reader should fetch next when the
+// lead source is a cut window into a larger declaration or section. It is a
+// citation, not bytes; the read is charged by whoever performs it.
+type Followup struct {
+	Path      string
+	StartLine int
+	EndLine   int
+}
+
+// MarshalJSON writes the citation form `path:start-end`, byte-identical to
+// the production selector's wire.
+func (f Followup) MarshalJSON() ([]byte, error) {
+	return compactv9.CompactTaskContextFollowup{Path: f.Path, Start: f.StartLine, End: f.EndLine}.MarshalJSON()
+}
+
+// UnmarshalJSON accepts the citation form only.
+func (f *Followup) UnmarshalJSON(raw []byte) error {
+	var inner compactv9.CompactTaskContextFollowup
+	if err := inner.UnmarshalJSON(raw); err != nil {
+		return err
+	}
+	*f = Followup{Path: inner.Path, StartLine: inner.Start, EndLine: inner.End}
+	return nil
+}
+
 // Structured is emitted as MCP structuredContent.
 type Structured struct {
 	Version    string     `json:"version"`
 	Sources    []Source   `json:"sources"`
 	Provenance Provenance `json:"provenance"`
 	Truncated  bool       `json:"truncated"`
+	Followup   *Followup  `json:"followup,omitempty"`
 }
 
 // Result is the complete transport-neutral compact projection.
@@ -84,8 +110,12 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 		sources = append(sources, Source{Path: source.Path, StartLine: source.Start, EndLine: source.End, Text: source.Text})
 	}
 	p := structured.Provenance
+	var followup *Followup
+	if f := structured.Followup; f != nil {
+		followup = &Followup{Path: f.Path, StartLine: f.Start, EndLine: f.End}
+	}
 	return Result{Summary: summary, Structured: Structured{
-		Version: Version, Sources: sources, Truncated: structured.Truncated,
+		Version: Version, Sources: sources, Truncated: structured.Truncated, Followup: followup,
 		Provenance: Provenance{
 			InputSHA256: p.InputSHA256, Method: p.Method, Retrieval: p.Retrieval, RetrievalState: p.RetrievalState,
 			Weights: p.Weights, Model: p.Model, SourceSelection: p.SourceSelection,

@@ -89,21 +89,12 @@ func TestOneSpanCompactDev(t *testing.T) {
 	shareSum := 0.0
 	var incomplete []string
 	only := os.Getenv("GRAPHI_ONE_SPAN_ONLY")
-	// GRAPHI_ONE_SPAN_FOLLOWUP=<lines> simulates the second-response contract
-	// under study: after the compact response, exactly one deterministic
-	// follow-up read of the whole declaration or section that the first
-	// emitted source lies in, capped at that many lines and charged by its
-	// own cl100k count. It measures what a second response could recover,
-	// not what any product path emits today.
-	followupLines := 0
-	if raw := os.Getenv("GRAPHI_ONE_SPAN_FOLLOWUP"); raw != "" {
-		parsed, err := strconv.Atoi(raw)
-		if err != nil || parsed < 1 {
-			t.Fatalf("invalid GRAPHI_ONE_SPAN_FOLLOWUP %q", raw)
-		}
-		followupLines = parsed
-	}
-	extents := newDeclarationExtents(repository)
+	// GRAPHI_ONE_SPAN_FOLLOWUP=1 measures the second-response contract: after
+	// the compact response, exactly one read of the span the response itself
+	// designates in its followup field, charged by its own cl100k count. No
+	// question-specific choice is made anywhere; the designation is the
+	// product's, computed from repository bytes and the emitted lead.
+	followup := os.Getenv("GRAPHI_ONE_SPAN_FOLLOWUP") == "1"
 	var followupTokens []int
 	followupHelped := 0
 	for _, q := range loaded.Dataset.Queries {
@@ -171,52 +162,15 @@ func TestOneSpanCompactDev(t *testing.T) {
 		}
 		tokens = append(tokens, n)
 		sources := res.Structured.Sources
-		if followupLines > 0 && len(sources) > 0 {
-			// Policy "lead": the first source's declaration. Policy
-			// "first-truncated": the first source, in emitted order, whose
-			// declaration extends beyond its emitted window.
-			unit := func(s taskcompact.Source) (int, int) {
-				from, to := extents.extent(s.Path, s.StartLine)
-				if strings.HasSuffix(s.Path, ".md") {
-					// A Markdown source's extent is the section around its
-					// heading; the emitted source may start below the heading.
-					from, to = s.StartLine, s.EndLine
-					for line := s.StartLine; line >= 1 && line > s.StartLine-80; line-- {
-						if a, b := extents.extent(s.Path, line); b > a {
-							from, to = a, b
-							break
-						}
-					}
-				}
-				if to-from+1 > followupLines {
-					to = from + followupLines - 1
-				}
-				return from, to
+		if hint := res.Structured.Followup; followup && hint != nil {
+			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
+			if err != nil {
+				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", q.ID, hint.Path, hint.StartLine, hint.EndLine, err)
 			}
-			lead := sources[0]
-			from, to := unit(lead)
-			if os.Getenv("GRAPHI_ONE_SPAN_FOLLOWUP_POLICY") == "first-truncated" {
-				for _, s := range sources {
-					if a, b := unit(s); a < s.StartLine || b > s.EndLine {
-						lead, from, to = s, a, b
-						break
-					}
-				}
-			}
-			if from < lead.StartLine || to > lead.EndLine {
-				text, err := exactSourceSpan(repository, lead.Path, from, to)
-				if err == nil {
-					entry, _ := json.Marshal(struct {
-						Path  string `json:"path"`
-						Start int    `json:"start_line"`
-						End   int    `json:"end_line"`
-						Text  string `json:"text"`
-					}{lead.Path, from, to, text})
-					ft, _ := counter.Count(entry)
-					followupTokens = append(followupTokens, ft)
-					sources = append(sources, taskcompact.Source{Path: lead.Path, StartLine: from, EndLine: to, Text: text})
-				}
-			}
+			entry, _ := json.Marshal(taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
+			ft, _ := counter.Count(append(entry, '\n'))
+			followupTokens = append(followupTokens, ft)
+			sources = append(sources, taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
 		}
 		lines := map[int]bool{}
 		overlapped, complete := false, false
@@ -240,7 +194,7 @@ func TestOneSpanCompactDev(t *testing.T) {
 				complete = true
 			}
 		}
-		if followupLines > 0 && complete {
+		if followup && complete {
 			firstComplete := false
 			for _, s := range res.Structured.Sources {
 				if s.Path == span.Path && s.StartLine <= span.StartLine && s.EndLine >= span.EndLine {
@@ -309,13 +263,13 @@ func TestOneSpanCompactDev(t *testing.T) {
 		t.Fatal("no one-span query measured")
 	}
 	sort.Ints(tokens)
-	if followupLines > 0 {
+	if followup {
 		sort.Ints(followupTokens)
 		medianFollowup, maxFollowup := 0, 0
 		if len(followupTokens) > 0 {
 			medianFollowup, maxFollowup = followupTokens[len(followupTokens)/2], followupTokens[len(followupTokens)-1]
 		}
-		t.Logf("one-span follow-up: lines_cap=%d reads=%d completed_by_followup=%d median_followup_tokens=%d max_followup_tokens=%d", followupLines, len(followupTokens), followupHelped, medianFollowup, maxFollowup)
+		t.Logf("one-span follow-up: reads=%d completed_by_followup=%d median_followup_tokens=%d max_followup_tokens=%d", len(followupTokens), followupHelped, medianFollowup, maxFollowup)
 	}
 	t.Logf("one-span: dataset=%s source_budget=%d rows=%d overlapped=%d complete=%d mean_share=%.4f median_tokens=%d max_tokens=%d", loaded.Dataset.ID, sourceBudget, all.total, all.overlapped, all.complete, shareSum/float64(all.total), tokens[len(tokens)/2], tokens[len(tokens)-1])
 }

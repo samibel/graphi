@@ -78,13 +78,18 @@ func TestDraftDevForecast(t *testing.T) {
 	repository := os.DirFS(root)
 	extents := newDeclarationExtents(repository)
 
-	type tally struct{ total, overlapped, complete, cited int }
+	type tally struct{ total, overlapped, complete, cited, overlapped2, complete2 int }
 	byStratum := map[string]*tally{}
 	all := &tally{}
 	var tokens []int
 	var shares []float64
 	var incomplete []string
 	stageCounts := map[string]int{}
+	// Second-response contract: the one read the response designates in its
+	// followup field, charged by its own cl100k count. Reported beside the
+	// single-response numbers, never folded into them.
+	var followupTokens []int
+	followupCompleted := 0
 	for _, q := range loaded.Dataset.Queries {
 		var span *Judgement
 		for i := range q.Judgements {
@@ -117,27 +122,48 @@ func TestDraftDevForecast(t *testing.T) {
 			}
 		}
 		tokens = append(tokens, realTokens)
-		lines := map[int]bool{}
-		overlapped, complete, cited := false, false, false
-		for _, source := range compact.Sources {
-			raw, err := exactSourceSpan(repository, source.Path, source.StartLine, source.EndLine)
-			if err != nil || raw != source.Text {
-				t.Fatalf("%s unverifiable source %s:%d-%d", q.ID, source.Path, source.StartLine, source.EndLine)
-			}
-			if source.Path != span.Path {
-				continue
-			}
-			if SpanMatches(source.Path, source.StartLine, *span) {
-				cited = true
-			}
-			if source.StartLine <= span.EndLine && source.EndLine >= span.StartLine {
-				overlapped = true
-				for line := max(source.StartLine, span.StartLine); line <= min(source.EndLine, span.EndLine); line++ {
-					lines[line] = true
+		score := func(sources []taskcompact.Source) (overlapped, complete, cited bool, lines map[int]bool) {
+			lines = map[int]bool{}
+			for _, source := range sources {
+				raw, err := exactSourceSpan(repository, source.Path, source.StartLine, source.EndLine)
+				if err != nil || raw != source.Text {
+					t.Fatalf("%s unverifiable source %s:%d-%d", q.ID, source.Path, source.StartLine, source.EndLine)
+				}
+				if source.Path != span.Path {
+					continue
+				}
+				if SpanMatches(source.Path, source.StartLine, *span) {
+					cited = true
+				}
+				if source.StartLine <= span.EndLine && source.EndLine >= span.StartLine {
+					overlapped = true
+					for line := max(source.StartLine, span.StartLine); line <= min(source.EndLine, span.EndLine); line++ {
+						lines[line] = true
+					}
+				}
+				if source.StartLine <= span.StartLine && source.EndLine >= span.EndLine {
+					complete = true
 				}
 			}
-			if source.StartLine <= span.StartLine && source.EndLine >= span.EndLine {
-				complete = true
+			return overlapped, complete, cited, lines
+		}
+		overlapped, complete, cited, lines := score(compact.Sources)
+		overlapped2, complete2 := overlapped, complete
+		if hint := compact.Followup; hint != nil {
+			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
+			if err != nil {
+				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", q.ID, hint.Path, hint.StartLine, hint.EndLine, err)
+			}
+			read := taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text}
+			entry, _ := json.Marshal(read)
+			ft, err := counter.Count(append(entry, '\n'))
+			if err != nil {
+				t.Fatal(err)
+			}
+			followupTokens = append(followupTokens, ft)
+			overlapped2, complete2, _, _ = score(append(append([]taskcompact.Source(nil), compact.Sources...), read))
+			if complete2 && !complete {
+				followupCompleted++
 			}
 		}
 		share := float64(len(lines)) / float64(span.EndLine-span.StartLine+1)
@@ -193,13 +219,23 @@ func TestDraftDevForecast(t *testing.T) {
 			if cited {
 				tl.cited++
 			}
+			if overlapped2 {
+				tl.overlapped2++
+			}
+			if complete2 {
+				tl.complete2++
+			}
 		}
 		if !complete {
 			var cites []string
 			for _, source := range compact.Sources {
 				cites = append(cites, fmt.Sprintf("%s:%d-%d", source.Path, source.StartLine, source.EndLine))
 			}
-			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f rank50=%d target=%s:%d-%d sources=%s", q.ID, q.Stratum, share, rank50, span.Path, span.StartLine, span.EndLine, strings.Join(cites, ",")))
+			followupNote := "none"
+			if compact.Followup != nil {
+				followupNote = fmt.Sprintf("%s:%d-%d(complete=%t)", compact.Followup.Path, compact.Followup.StartLine, compact.Followup.EndLine, complete2)
+			}
+			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f rank50=%d target=%s:%d-%d sources=%s followup=%s", q.ID, q.Stratum, share, rank50, span.Path, span.StartLine, span.EndLine, strings.Join(cites, ","), followupNote))
 		}
 	}
 	strata := make([]string, 0, len(byStratum))
@@ -209,7 +245,7 @@ func TestDraftDevForecast(t *testing.T) {
 	sort.Strings(strata)
 	for _, s := range strata {
 		tl := byStratum[s]
-		t.Logf("forecast stratum %-18s overlapped=%d/%d complete=%d/%d cited=%d/%d", s, tl.overlapped, tl.total, tl.complete, tl.total, tl.cited, tl.total)
+		t.Logf("forecast stratum %-18s overlapped=%d/%d complete=%d/%d cited=%d/%d two_call_overlapped=%d/%d two_call_complete=%d/%d", s, tl.overlapped, tl.total, tl.complete, tl.total, tl.cited, tl.total, tl.overlapped2, tl.total, tl.complete2, tl.total)
 	}
 	for _, line := range incomplete {
 		t.Logf("incomplete %s", line)
@@ -227,6 +263,15 @@ func TestDraftDevForecast(t *testing.T) {
 		loaded.Dataset.ID, loaded.SHA256[:12], all.total, all.overlapped, all.complete, all.cited, rate, meanShare, tokens[len(tokens)/2], tokens[len(tokens)-1])
 	t.Logf("forecast: if the true per-question complete rate were %.4f, P(>=56 of 64) = %.3f; at the overlap rate %.4f, P = %.3f",
 		rate, forecastUpperTail(64, 56, rate), float64(all.overlapped)/float64(max(1, all.total)), forecastUpperTail(64, 56, float64(all.overlapped)/float64(max(1, all.total))))
+	sort.Ints(followupTokens)
+	medianFollowup, maxFollowup := 0, 0
+	if len(followupTokens) > 0 {
+		medianFollowup, maxFollowup = followupTokens[len(followupTokens)/2], followupTokens[len(followupTokens)-1]
+	}
+	rate2 := float64(all.overlapped2) / float64(max(1, all.total))
+	t.Logf("forecast two-call: overlapped=%d complete=%d followup_reads=%d completed_by_followup=%d median_followup_tokens=%d max_followup_tokens=%d; at the two-call overlap rate %.4f, P(>=56 of 64) = %.3f; at the two-call complete rate %.4f, P = %.3f",
+		all.overlapped2, all.complete2, len(followupTokens), followupCompleted, medianFollowup, maxFollowup, rate2, forecastUpperTail(64, 56, rate2),
+		float64(all.complete2)/float64(max(1, all.total)), forecastUpperTail(64, 56, float64(all.complete2)/float64(max(1, all.total))))
 }
 
 // declarationExtents maps a (path, declaration line) retrieval row to the

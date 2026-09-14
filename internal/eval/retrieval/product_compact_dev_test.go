@@ -115,6 +115,11 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	var pairedSavings []int
 	var pairedSavingsPercent []float64
 	cheaperThanComparator := 0
+	// Second-response contract observation (contract-v2 draft): the one read
+	// the response designates in its followup field, charged only when the
+	// first response did not reach the target (earliest-prefix rule).
+	reachedTwoCall, cheaperTwoCall, followupReads := 0, 0, 0
+	var pairedSavingsTwoCall []int
 	var misses []string
 	var incomplete []string
 	type stratumMeasurement struct {
@@ -303,6 +308,39 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			}
 			t.Logf("config trace: id=%s query=%q targets=%s sources=%s", member.QueryID, query.Text, strings.Join(targets, ","), strings.Join(citations, ","))
 		}
+		tokensTwoCall, coveredTwoCall := tokens, len(covered)
+		if hint := first.Structured.Followup; hint != nil {
+			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
+			if err != nil {
+				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", member.QueryID, hint.Path, hint.StartLine, hint.EndLine, err)
+			}
+			followupReads++
+			entry, _ := json.Marshal(taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
+			followupTokens, err := counter.Count(append(entry, '\n'))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(covered) < member.Target.RequiredSpans {
+				tokensTwoCall += followupTokens
+				coveredWithFollowup := make(map[int]bool, len(covered))
+				for i := range covered {
+					coveredWithFollowup[i] = true
+				}
+				for i, judgement := range query.Judgements {
+					if judgement.Grade == SavingsGrade && hint.Path == judgement.Path && hint.StartLine <= judgement.EndLine && hint.EndLine >= judgement.StartLine {
+						coveredWithFollowup[i] = true
+					}
+				}
+				coveredTwoCall = len(coveredWithFollowup)
+			}
+		}
+		if coveredTwoCall >= member.Target.RequiredSpans {
+			reachedTwoCall++
+		}
+		if tokensTwoCall < baselineTokens {
+			cheaperTwoCall++
+		}
+		pairedSavingsTwoCall = append(pairedSavingsTwoCall, baselineTokens-tokensTwoCall)
 		if len(complete) > 0 {
 			anyComplete++
 			byStratum[stratum].anyComplete++
@@ -397,6 +435,16 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 	}
 	t.Logf("production compact dev answer coverage: grade3_lines=%d/%d (%.4f) mean_best_span_share=%.4f mean_unused_tokens=%.1f", coveredGrade3Lines, totalGrade3Lines, float64(coveredGrade3Lines)/float64(max(1, totalGrade3Lines)), bestSpanShareSum/float64(max(1, len(members))), float64(headroomSum)/float64(max(1, len(members))))
 	t.Logf("production compact dev: source_budget=%d reached=%d/%d all_overlapped=%d/%d any_complete=%d/%d required_complete=%d/%d all_complete=%d/%d within_1200=%d/%d contained_source_bundles=%d/%d median_tokens=%.1f max_tokens=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f median_saving_percent=%.4f misses=%v", sourceBudget, reached, len(members), allOverlapped, len(members), anyComplete, len(members), requiredComplete, len(members), allComplete, len(members), withinBudget, len(members), containedSourceBundles, len(members), medianTokens, maxTokens, cheaperThanComparator, len(members), medianSavingTokens, medianSavingPercent, misses)
+	sort.Ints(pairedSavingsTwoCall)
+	medianSavingTwoCall := 0.0
+	if n := len(pairedSavingsTwoCall); n > 0 {
+		if n%2 == 1 {
+			medianSavingTwoCall = float64(pairedSavingsTwoCall[n/2])
+		} else {
+			medianSavingTwoCall = float64(pairedSavingsTwoCall[n/2-1]+pairedSavingsTwoCall[n/2]) / 2
+		}
+	}
+	t.Logf("production compact dev two-call: reached=%d/%d followup_reads=%d cheaper_than_grepread=%d/%d median_saving_tokens=%.1f", reachedTwoCall, len(members), followupReads, cheaperTwoCall, len(members), medianSavingTwoCall)
 	if containedSourceBundles != 0 {
 		t.Errorf("production compact development emitted redundant contained sources in %d/%d bundles", containedSourceBundles, len(members))
 	}

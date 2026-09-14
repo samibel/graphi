@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/12"
+const CompactTaskContextVersion = "task_context/2-compact/13"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -62,6 +62,9 @@ type CompactTaskContextStructured struct {
 	Sources    []CompactTaskContextSource   `json:"sources"`
 	Provenance CompactTaskContextProvenance `json:"provenance"`
 	Truncated  bool                         `json:"truncated"`
+	// Followup designates the one exact read that completes the lead source's
+	// unit when its window was cut; omitted when the lead is whole.
+	Followup *CompactTaskContextFollowup `json:"followup,omitempty"`
 }
 
 type compactTaskContextContent struct {
@@ -294,6 +297,7 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 				StructuredContent: CompactTaskContextStructured{
 					Version: CompactTaskContextVersion, Sources: sources, Provenance: provenance,
 					Truncated: len(sources) < len(all) || used < compactTaskContextWhitespaceTokens(all),
+					Followup:  compactTaskContextFollowup(repository, snapshot, sources),
 				},
 			},
 		}
