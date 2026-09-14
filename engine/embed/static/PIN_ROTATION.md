@@ -135,6 +135,10 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-candidate-path-dev/` — the candidate-bound
   exact-basename retention development capture. Its two independent indexes,
   retrieval rows, MCP bytes, and reproducibility result use this pinned model.
+- `docs/eval/retrieval/runs/2026-09-14-compact14-dev/` — the candidate-bound
+  exact-file, field-declaration and bare-term projection (compact/14)
+  development capture. Its two independent indexes, retrieval rows, MCP
+  bytes and reproducibility result use this pinned model.
 - `docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev/` — the
   candidate-bound follow-up designation (compact/13) development capture. Its
   two independent indexes, retrieval rows, MCP bytes and reproducibility

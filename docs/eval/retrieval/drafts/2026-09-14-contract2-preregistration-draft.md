@@ -72,11 +72,11 @@ lines, rater prompts, rater responses, grades, or which queries passed.
 
 ## Development evidence the curator may read
 
-`../runs/2026-09-14-compact13-followup-dev/RESULT.md` (reviewed
-holdout-shaped split: 54/64 overlapped, 45/64 complete with the read;
-`P(≥ 56) ≈ 0.31` at that overlap rate). It is stated there and repeated
-here: this is not a bar worth spending a holdout on yet. The curator
-should expect to be asked to hold this draft until the candidate's
-two-call overlap on the reviewed split reaches at least 56 of 64, or
-until the author states in writing why a lower development rate is
-acceptable to spend a holdout on.
+`../runs/2026-09-14-compact14-dev/RESULT.md` (reviewed holdout-shaped
+split: 59/64 overlapped, 49/64 complete with the read, `P(≥ 56) ≈ 0.94`
+at that overlap rate; one response alone 56/64, `P ≈ 0.59`). The
+condition this draft first set — hold until two-call overlap reaches 56
+of 64 on the reviewed split — is met as of compact/14. What blocks the
+holdout now is the contract, not the candidate: the four adoption items
+above. A holdout spent under contract 1 today would be graded on one
+response and stands at a coin toss.
