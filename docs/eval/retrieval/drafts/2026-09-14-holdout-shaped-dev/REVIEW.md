@@ -56,6 +56,26 @@ statement, not a proof; the review is what makes it one.
    `Parent`, `Name` are near `ci-*` config_docs spans). They are in the same
    split, so no leak; the reviewer may still prefer fresh ground.
 
+## Mechanical checks already run by the author (2026-09-14)
+
+- Every one of the 64 anchors occurs inside its span in the pinned
+  checkout (0 missing).
+- Collision **counts** against the two sealed keys, computed by a script
+  that printed only totals — the author does not know which rows collide:
+
+  | Sealed holdout | Draft rows whose span overlaps a holdout grade-3 span | Question-text collisions | Family-id collisions |
+  |---|---:|---:|---:|
+  | first fresh | 16/64 | 3/64 | 0 |
+  | second fresh | 13/64 | 2/64 | 0 |
+
+  Both sealed holdouts are spent, so these overlaps cannot contaminate a
+  *rerun* of them; they mean that tuning on this draft partly tunes on
+  answer regions those holdouts also judged, exactly as the committed
+  development split already does in a repository this small. The reviewer
+  with key access must still remove the colliding rows (step 5) before the
+  file is cited by any run, and should replace them so the stratum counts
+  stay 11/11/11/11/10/10.
+
 ## Review procedure
 
 For each of the 64 rows:

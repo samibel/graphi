@@ -44,35 +44,48 @@ draft's overlap and complete rates. Read either as a forecast of the rubric:
 
 ## Where the 34 misses are
 
-Classified from the emitted sources, not from ranks:
+Each miss is attributed to the first stage that loses it. A retrieval row
+carries only its declaration line, so the instrument parses the pinned
+checkout to find the declaration's full extent (Go: top-level declaration
+with doc comment; Markdown: heading to next heading) and asks whether that
+extent overlaps the target span; for a path query the file rows contain
+every span in the file.
 
-- **14 questions receive nothing from their span** (share 0.00): five
-  `nl_behaviour`, three `architecture_flow`, four `config_docs`, two
-  `ambiguous`. These are retrieval or ranking misses; no projection change
-  can recover them. Examples: `cd-53` ("stop cobra from sorting commands in
-  the help output", target `EnableCommandSorting`) is answered entirely with
-  help-template code; `cd-33` (`Commands()` sorting) emits the sorter's
-  one-line methods but never the method that calls them.
-- **9 `exact_path` questions deliver 86–94 % of their span in pieces**: the
-  outline mode emits each declaration as its own region and drops the blank
-  line between them (`active_help.go:24-31` + `33-33` for a target `24-33`).
-  For a reader this is the answer; for the complete-span measure it is not.
-  Whether the sealed holdouts' `exact_path` rubric counts it is unknown to
-  the author. The reviewer who knows the rubric decides whether these nine
-  are quality losses or a measurement artifact.
-- **11 questions reach the span but cut it** (share 0.03–0.67): mostly
-  `architecture_flow` and `nl_behaviour` bodies reduced to one- or two-line
-  anchors beside unrelated regions (`cd-36`, `cd-42`, `cd-24`). These are the
-  depth-versus-breadth losses the earlier frontier sweep showed budget does
-  not fix; they are ranking-order losses inside the compact selector.
+| First stage that loses the span | Misses | What it means |
+|---|---:|---|
+| Retrieved (its declaration is in the 50-row window, within the 15-candidate cap) but the emitted lines do not cover the span | **19** | compact selection: depth, anchor placement, region order |
+| In the 50-row window at rank 16–20, so dropped by the task-context cap | 5 | candidate admission (`cd-23` 17, `cd-28` 19, `cd-34` 17, `cd-40` 17, `cd-42` 20) |
+| `exact_path`: whole span present in adjacent pieces, 86–94 % delivered, blank line dropped | 9 | a rubric question for the reviewer, not an engineering loss until it is one |
+| Not in the 50-row window at all | 1 | retrieval recall (`cd-41`, the completion-function choice inside `getCompletions`) |
+
+(The instrument's own summary line folds the nine `exact_path` rows into
+"lost in selection" — `absent=1 below_cap=5 lost_in_selection=28` — because
+a file row does contain the span; the table separates them because they are
+a different kind of loss.)
+
+Of the 19 selection losses, eleven have their declaration at **rank 1** in
+the window and still lose: the projector emits a one- to three-line anchor
+of the top-ranked declaration and spends the remaining budget on ten to
+thirteen other regions (`cd-24`: `execute` at rank 1, target 33 lines, 3 %
+delivered; `cd-31`, `cd-37`: the help command at rank 1, 0 % delivered;
+`cd-49`, `cd-52`, `cd-54`: the documentation section at rank 1, delivered as
+a two-line fragment or not at all).
 
 ## What this changes in the plan
 
-Nothing in the ranking of levers from `runs/2026-09-14-holdout-answer-span-ceiling/RESULT.md`;
-it puts numbers on them for the holdout's shape. Retrieval recall and
-ranking (14 + 11) dominate. The `exact_path` question is a rubric question
-for the reviewer, not an engineering one yet. `exact_identifier` is solved
-on this shape.
+It reverses the priority order that the committed development split
+suggested. On the old split the losses were retrieval recall (7), the
+candidate cap (3) and selection (11); on holdout-shaped questions they are
+selection (19), the cap (5) and recall (1). Retrieval is finding the answer;
+the compact projection is not showing it. The lever is depth on the
+top-ranked region — the very trade the earlier frontier sweep and the
+"fewer regions" probe rejected *on the old split*, whose multi-span keys
+reward breadth. That is the concrete reason the old split was the wrong
+instrument, and it is why any selector change from here must be measured on
+both splits: it must gain here without losing the old gates and cost.
+
+`exact_identifier` is solved on this shape. `exact_path` waits on the
+rubric answer.
 
 Reproduce:
 

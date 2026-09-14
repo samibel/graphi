@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -72,6 +76,7 @@ func TestDraftDevForecast(t *testing.T) {
 	qs := query.New(idx.store)
 	engine := engineretrieval.New(resolve.Deps{Query: qs, Search: idx.search}, idx.search, idx.store)
 	repository := os.DirFS(root)
+	extents := newDeclarationExtents(repository)
 
 	type tally struct{ total, overlapped, complete, cited int }
 	byStratum := map[string]*tally{}
@@ -79,6 +84,7 @@ func TestDraftDevForecast(t *testing.T) {
 	var tokens []int
 	var shares []float64
 	var incomplete []string
+	stageCounts := map[string]int{}
 	for _, q := range loaded.Dataset.Queries {
 		var span *Judgement
 		for i := range q.Judgements {
@@ -136,6 +142,43 @@ func TestDraftDevForecast(t *testing.T) {
 		}
 		share := float64(len(lines)) / float64(span.EndLine-span.StartLine+1)
 		shares = append(shares, share)
+		// Where in the existing 50-row retrieval window the span first
+		// appears, so a miss can be attributed to retrieval (absent), to the
+		// 15-candidate task-context cap (rank 16..50) or to selection.
+		pool, err := engine.Retrieve(context.Background(), engineretrieval.Request{Query: q.Text, Limit: 50})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// A retrieval row carries only its declaration line. The target is
+		// often a region inside that declaration, so a row counts when the
+		// declaration it names, as parsed from the pinned checkout, overlaps
+		// the target.
+		rank50 := 0
+		for rank, row := range pool.Rows {
+			line, _, err := exactEvidenceSpan(row.Span)
+			if err != nil || row.Path != span.Path {
+				continue
+			}
+			start, end := extents.extent(row.Path, line)
+			if q.Stratum == StratumExactPath {
+				// A path query's rows are the file itself; the file contains
+				// every span in it.
+				start, end = span.StartLine, span.EndLine
+			}
+			if start <= span.EndLine && end >= span.StartLine {
+				rank50 = rank + 1
+				break
+			}
+		}
+		switch {
+		case complete:
+		case rank50 == 0:
+			stageCounts["absent_from_retrieval_window"]++
+		case rank50 > 15:
+			stageCounts["below_candidate_cap"]++
+		default:
+			stageCounts["lost_in_selection"]++
+		}
 		if byStratum[q.Stratum] == nil {
 			byStratum[q.Stratum] = &tally{}
 		}
@@ -156,7 +199,7 @@ func TestDraftDevForecast(t *testing.T) {
 			for _, source := range compact.Sources {
 				cites = append(cites, fmt.Sprintf("%s:%d-%d", source.Path, source.StartLine, source.EndLine))
 			}
-			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f target=%s:%d-%d sources=%s", q.ID, q.Stratum, share, span.Path, span.StartLine, span.EndLine, strings.Join(cites, ",")))
+			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f rank50=%d target=%s:%d-%d sources=%s", q.ID, q.Stratum, share, rank50, span.Path, span.StartLine, span.EndLine, strings.Join(cites, ",")))
 		}
 	}
 	strata := make([]string, 0, len(byStratum))
@@ -171,6 +214,8 @@ func TestDraftDevForecast(t *testing.T) {
 	for _, line := range incomplete {
 		t.Logf("incomplete %s", line)
 	}
+	t.Logf("forecast misses by stage: absent_from_retrieval_window=%d below_candidate_cap=%d lost_in_selection=%d",
+		stageCounts["absent_from_retrieval_window"], stageCounts["below_candidate_cap"], stageCounts["lost_in_selection"])
 	sort.Ints(tokens)
 	meanShare := 0.0
 	for _, s := range shares {
@@ -182,6 +227,75 @@ func TestDraftDevForecast(t *testing.T) {
 		loaded.Dataset.ID, loaded.SHA256[:12], all.total, all.overlapped, all.complete, all.cited, rate, meanShare, tokens[len(tokens)/2], tokens[len(tokens)-1])
 	t.Logf("forecast: if the true per-question complete rate were %.4f, P(>=56 of 64) = %.3f; at the overlap rate %.4f, P = %.3f",
 		rate, forecastUpperTail(64, 56, rate), float64(all.overlapped)/float64(max(1, all.total)), forecastUpperTail(64, 56, float64(all.overlapped)/float64(max(1, all.total))))
+}
+
+// declarationExtents maps a (path, declaration line) retrieval row to the
+// full line range of the declaration it names: a Go top-level declaration
+// including its doc comment, or a Markdown section from its heading to the
+// next heading. Anything else is the line itself.
+type declarationExtents struct {
+	repository fs.FS
+	goFiles    map[string][][2]int
+	mdFiles    map[string][]string
+}
+
+func newDeclarationExtents(repository fs.FS) *declarationExtents {
+	return &declarationExtents{repository: repository, goFiles: map[string][][2]int{}, mdFiles: map[string][]string{}}
+}
+
+func (d *declarationExtents) extent(path string, line int) (int, int) {
+	switch {
+	case strings.HasSuffix(path, ".go"):
+		ranges, ok := d.goFiles[path]
+		if !ok {
+			raw, err := fs.ReadFile(d.repository, path)
+			if err == nil {
+				fset := token.NewFileSet()
+				if file, err := parser.ParseFile(fset, path, raw, parser.ParseComments); err == nil {
+					for _, decl := range file.Decls {
+						start := fset.Position(decl.Pos()).Line
+						switch x := decl.(type) {
+						case *ast.FuncDecl:
+							if x.Doc != nil {
+								start = fset.Position(x.Doc.Pos()).Line
+							}
+						case *ast.GenDecl:
+							if x.Doc != nil {
+								start = fset.Position(x.Doc.Pos()).Line
+							}
+						}
+						ranges = append(ranges, [2]int{start, fset.Position(decl.End()).Line})
+					}
+				}
+			}
+			d.goFiles[path] = ranges
+		}
+		for _, r := range ranges {
+			if line >= r[0] && line <= r[1] {
+				return r[0], r[1]
+			}
+		}
+	case strings.HasSuffix(path, ".md"):
+		lines, ok := d.mdFiles[path]
+		if !ok {
+			raw, err := fs.ReadFile(d.repository, path)
+			if err == nil {
+				lines = strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
+			}
+			d.mdFiles[path] = lines
+		}
+		if line >= 1 && line <= len(lines) && strings.HasPrefix(lines[line-1], "#") {
+			end := len(lines)
+			for i := line; i < len(lines); i++ {
+				if strings.HasPrefix(lines[i], "#") {
+					end = i
+					break
+				}
+			}
+			return line, end
+		}
+	}
+	return line, line
 }
 
 func forecastUpperTail(n, k int, p float64) float64 {
