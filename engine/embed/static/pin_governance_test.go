@@ -159,6 +159,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		// decomposition reads retrieval ranks recorded by this embedder, so a
 		// rotation invalidates the stage attribution as well as the bytes.
 		"docs/eval/retrieval/runs/2026-09-14-compact10-dev",
+		"docs/eval/retrieval/runs/2026-09-14-compact11-dev",
 		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
