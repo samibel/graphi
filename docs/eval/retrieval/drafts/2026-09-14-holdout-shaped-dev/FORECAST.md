@@ -115,11 +115,68 @@ The conclusion is not another probe. The compact selector re-ranks the
 retrieval result with lexical name matching, twelve query-shape predicates
 and fixed bonuses spanning five orders of magnitude, and every one-variable
 change to that stack either does nothing on holdout-shaped questions or
-trades a hard gate on the old split. Recovering the 19 selection losses
-needs a selector whose ordering *is* the retrieval ordering — depth
-allocated by retrieval rank, region completion by structural unit, the
-lexical fallback kept for recall — measured on both splits from the start.
-That is a rewrite slice with its own regression suite, not a patch.
+trades a hard gate on the old split.
+
+## The retrieval-ordered rewrite (compact/10), attempted and withdrawn
+
+A replacement natural-language selector was built and measured in four cuts
+on both splits (retrieval order for primary candidates, depth by rank,
+completion by structural unit, directed growth around the question's words,
+test files demoted without test intent, duplicate windows merged, two
+lexical-discovery regions kept). It is parked outside the tree; the
+committed selector is unchanged.
+
+| Cut | Draft (overlapped / complete of 64) | Old split (reached / ≥1 complete; cheaper; saving) |
+|---|---|---|
+| committed v9 | 50 / 30 | 40 / 33; 24/40; +67 |
+| 1: order + depth | 45 / 27 | 33 / 22; 27/40; +42 |
+| 2: + tests demoted, 6 seeds, alternating growth | 47 / 28 | 33 / 20; 24/40; +30 |
+| 3: + best-line ranking of supporting regions, 2 discovery regions | 47 / 30 | 34 / 20; 23/40; +34 |
+| 4: + duplicate windows merged, supporting regions by priority | 47 / 30 | 35 / 20; 18/40; −13 |
+
+It reaches parity with v9 on the draft and never exceeds it, and it loses
+five to seven old-split questions whose answers v9 reaches only through
+its query-shape predicates (`cb-14` via the shell-protocol literal,
+`cb-21` via the parent-link literal, `ci-678` via the test-flag literal).
+That confirms the earlier diagnosis of the old split — those questions are
+answered by dev-specific rules, not by a general mechanism — but it does
+not make the rewrite better on the shape that matters.
+
+## What actually bounds the draft: two sweeps
+
+With the committed selector, on the draft:
+
+| Source frontier (ceiling 1,200) | Overlapped | Complete |
+|---:|---:|---:|
+| 325 | 50 | 30 |
+| 425 | 50 | 30 |
+| 550 | 50 | 30 |
+| 700 | 50 | 29 |
+| 900 | 49 | 30 |
+| 1,200 | 50 | 29 |
+
+And with the projector's wire ceiling raised temporarily as a diagnostic:
+
+| Ceiling | Frontier | Overlapped | Complete | Median tokens |
+|---:|---:|---:|---:|---:|
+| 2,000 | 700 | 50 | 31 | 1,699 |
+| 2,000 | 1,000 | 50 | 31 | 1,954 |
+| 3,000 | 1,000 | 51 | 33 | 2,245 |
+
+**Fourteen questions do not receive their span at two and a half times the
+budget.** Neither the selector's ordering nor the ceiling is what bounds
+them: the span is not in any window the compact stage is given. The
+candidate stage hands the projector at most 15 items plus hydrated
+declaration windows; when the answer's declaration is not among them, or
+the hydrated window for a reference stops before the answer's lines, no
+selector at any budget can emit it. On this draft that is the binding
+constraint, ahead of selection and far ahead of budget.
+
+The consequence for the plan: the next slice is upstream of the compact
+projector — the candidate pool it receives (the 15-item cap against a
+50-row window, and reference hydration that windows a declaration rather
+than covering it), re-gated on the ranking targets. The compact selector
+itself, v9 or rewritten, is not where the remaining 14 are.
 
 Reproduce:
 
