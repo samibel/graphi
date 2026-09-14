@@ -163,14 +163,14 @@ func TestOneSpanCompactDev(t *testing.T) {
 		tokens = append(tokens, n)
 		sources := res.Structured.Sources
 		if hint := res.Structured.Followup; followup && hint != nil {
-			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
+			read, err := followupReadSource(repository, q.ID, *hint)
 			if err != nil {
-				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", q.ID, hint.Path, hint.StartLine, hint.EndLine, err)
+				t.Fatalf("%s designated an unreadable follow-up: %v", q.ID, err)
 			}
-			entry, _ := json.Marshal(taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
+			entry, _ := json.Marshal(read)
 			ft, _ := counter.Count(append(entry, '\n'))
 			followupTokens = append(followupTokens, ft)
-			sources = append(sources, taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
+			sources = append(sources, read)
 		}
 		lines := map[int]bool{}
 		overlapped, complete := false, false

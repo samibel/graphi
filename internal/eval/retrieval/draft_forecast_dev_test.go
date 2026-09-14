@@ -149,18 +149,18 @@ func TestDraftDevForecast(t *testing.T) {
 		}
 		overlapped, complete, cited, lines := score(compact.Sources)
 		overlapped2, complete2 := overlapped, complete
-		if hint := compact.Followup; hint != nil {
-			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
-			if err != nil {
-				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", q.ID, hint.Path, hint.StartLine, hint.EndLine, err)
-			}
-			read := taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text}
-			entry, _ := json.Marshal(read)
-			ft, err := counter.Count(append(entry, '\n'))
+		if second, err := CaptureFollowupRead(repository, q.ID, captured.Payload, counter); err != nil {
+			t.Fatal(err)
+		} else if second != nil {
+			read, err := followupReadSource(repository, q.ID, *compact.Followup)
 			if err != nil {
 				t.Fatal(err)
 			}
-			followupTokens = append(followupTokens, ft)
+			for _, count := range second.TokenCounts {
+				if count.TokenizerID == counter.TokenizerID {
+					followupTokens = append(followupTokens, count.Tokens)
+				}
+			}
 			overlapped2, complete2, _, _ = score(append(append([]taskcompact.Source(nil), compact.Sources...), read))
 			if complete2 && !complete {
 				followupCompleted++

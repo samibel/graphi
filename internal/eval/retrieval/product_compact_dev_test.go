@@ -308,39 +308,43 @@ func TestProductCompactTaskContextDev(t *testing.T) {
 			}
 			t.Logf("config trace: id=%s query=%q targets=%s sources=%s", member.QueryID, query.Text, strings.Join(targets, ","), strings.Join(citations, ","))
 		}
-		tokensTwoCall, coveredTwoCall := tokens, len(covered)
-		if hint := first.Structured.Followup; hint != nil {
-			text, err := exactSourceSpan(repository, hint.Path, hint.StartLine, hint.EndLine)
-			if err != nil {
-				t.Fatalf("%s designated an unreadable follow-up %s:%d-%d: %v", member.QueryID, hint.Path, hint.StartLine, hint.EndLine, err)
+		if sourceBudget == taskcompact.DefaultSourceBudget {
+			// One implementation scores the transcript: CaptureFollowupRead
+			// builds slice 2 from the designation and the transcript scorer
+			// applies the earliest-prefix rule.
+			firstSlice := PreservedPayload{
+				Sequence: 1, Boundary: PayloadBoundaryCandidate, Operation: PayloadOperationTaskContext,
+				Bytes: wire, SHA256: SHA256Hex(wire), ByteCount: len(wire),
+				TokenCounts: []PayloadTokenCount{
+					{TokenizerID: TokenizerID, Tokens: len(strings.Fields(string(wire)))},
+					{TokenizerID: counter.TokenizerID, VocabularySHA256: counter.VocabularySHA256, Tokens: tokens},
+				},
 			}
-			followupReads++
-			entry, _ := json.Marshal(taskcompact.Source{Path: hint.Path, StartLine: hint.StartLine, EndLine: hint.EndLine, Text: text})
-			followupTokens, err := counter.Count(append(entry, '\n'))
+			transcript := []PreservedPayload{firstSlice}
+			second, err := CaptureFollowupRead(repository, member.QueryID, firstSlice, counter)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(covered) < member.Target.RequiredSpans {
-				tokensTwoCall += followupTokens
-				coveredWithFollowup := make(map[int]bool, len(covered))
-				for i := range covered {
-					coveredWithFollowup[i] = true
-				}
-				for i, judgement := range query.Judgements {
-					if judgement.Grade == SavingsGrade && hint.Path == judgement.Path && hint.StartLine <= judgement.EndLine && hint.EndLine >= judgement.StartLine {
-						coveredWithFollowup[i] = true
-					}
-				}
-				coveredTwoCall = len(coveredWithFollowup)
+			if second != nil {
+				followupReads++
+				transcript = append(transcript, *second)
 			}
+			outcome, err := ScoreTaskContextTranscriptEqualRecallDev(repository, query, transcript, member.Target, counter)
+			if err != nil {
+				t.Fatalf("%s two-call: %v", member.QueryID, err)
+			}
+			tokensTwoCall := 0
+			if outcome.Status == SavingsOutcomeReached {
+				reachedTwoCall++
+				tokensTwoCall = *outcome.TokensToTarget
+			} else {
+				tokensTwoCall = *outcome.CensorLowerBoundTokens
+			}
+			if tokensTwoCall < baselineTokens {
+				cheaperTwoCall++
+			}
+			pairedSavingsTwoCall = append(pairedSavingsTwoCall, baselineTokens-tokensTwoCall)
 		}
-		if coveredTwoCall >= member.Target.RequiredSpans {
-			reachedTwoCall++
-		}
-		if tokensTwoCall < baselineTokens {
-			cheaperTwoCall++
-		}
-		pairedSavingsTwoCall = append(pairedSavingsTwoCall, baselineTokens-tokensTwoCall)
 		if len(complete) > 0 {
 			anyComplete++
 			byStratum[stratum].anyComplete++

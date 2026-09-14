@@ -128,6 +128,9 @@ this contract; a lower bar is not what it buys.
 | `followup` designation: lead only, whole unit, 120-line cap, absent when the lead is whole, absent without repository or on unreadable/unparsable input | enforced — `engine/agenttools/taskctx/compact/v9/followup_test.go` |
 | Wire form is one `path:start-end` citation, round-trips exactly, rejects malformed citations, and is omitted when absent | enforced — same |
 | Response ceiling unchanged with the field present | enforced — projector backoff loop; observed by `TestDraftDevForecast` / `TestProductCompactTaskContextDev` |
-| Two-call development measurement follows the designation exactly and charges by the earliest-prefix rule | instrument — `TestDraftDevForecast` (two-call lines), `TestProductCompactTaskContextDev` (two-call line), `TestOneSpanCompactDev` (`GRAPHI_ONE_SPAN_FOLLOWUP=1`) |
-| Two-slice transcript validation (`sequence 2`, operation label, designation equality) in the release scorer | **UNENFORCED** — no release instrument exists; must be built before adoption |
+| Slice 2 is built from the designation alone (`CaptureFollowupRead`): sequence 2, `task_context/2-followup-read/1`, one newline-terminated source line, both tokenizer counts | enforced — `internal/eval/retrieval/followup_transcript_test.go` |
+| Two-slice transcript validation: designation equality, verbatim pinned bytes, one line, no unknown fields, operation and sequence labels, 120-line cap, at most two slices, no slice 2 without a designation | enforced — same (`ScoreTaskContextTranscriptEqualRecallDev`, development scorer) |
+| Earliest-prefix charging: slice 1 alone when it reaches; both slices when the read reaches; censored at both on a miss | enforced — same |
+| Two-call development measurement uses that one implementation | instrument — `TestDraftDevForecast`, `TestProductCompactTaskContextDev`, `TestOneSpanCompactDev` (`GRAPHI_ONE_SPAN_FOLLOWUP=1`) |
+| The same scorer in the release aggregate (`SavingsAggregateInput` with two-slice candidate arms) | **UNENFORCED** — the release path still calls the contract-1 scorer; wiring it is part of adoption |
 | Rubric packet with both slices | **UNENFORCED** — must be built before adoption |
