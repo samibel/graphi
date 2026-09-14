@@ -164,19 +164,62 @@ And with the projector's wire ceiling raised temporarily as a diagnostic:
 | 3,000 | 1,000 | 51 | 33 | 2,245 |
 
 **Fourteen questions do not receive their span at two and a half times the
-budget.** Neither the selector's ordering nor the ceiling is what bounds
-them: the span is not in any window the compact stage is given. The
-candidate stage hands the projector at most 15 items plus hydrated
-declaration windows; when the answer's declaration is not among them, or
-the hydrated window for a reference stops before the answer's lines, no
-selector at any budget can emit it. On this draft that is the binding
-constraint, ahead of selection and far ahead of budget.
+budget.** Budget is therefore not what bounds them. Checking what the
+projector was *given* for each — the pre-compact bundle's evidence windows
+on the span's path — splits the fourteen:
 
-The consequence for the plan: the next slice is upstream of the compact
-projector — the candidate pool it receives (the 15-item cap against a
-50-row window, and reference hydration that windows a declaration rather
-than covering it), re-gated on the ranking targets. The compact selector
-itself, v9 or rewritten, is not where the remaining 14 are.
+| The bundle's evidence on the span's path… | Questions |
+|---|---:|
+| contains the whole span, and the selector still never emits it, at any budget | **8** (`cd-26`, `cd-29`, `cd-31`, `cd-33`, `cd-37`, `cd-53`, `cd-61`, `cd-62`) |
+| only touches the span — the hydrated window stops short | 1 (`cd-49`) |
+| does not exist — the declaration never reached the bundle | 5 (`cd-28`, `cd-40`, `cd-41`, `cd-51`, `cd-52`) |
+
+So eight are selection after all, of a specific kind: the covering
+evidence is a low-ranked seed (window ranks 6–14) or, twice, the rank-1
+declaration whose emitted window is placed at its doc comment rather than
+at the lines the question is about (`cd-31`, `cd-37`: `InitDefaultHelpCmd`
+at rank 1, emitted as its first four lines). Neither the ten-region cap
+nor the budget lets those eight in; the score order does not reach them.
+Five are the candidate pool (the 15-item cap against the 50-row window, or
+a declaration outside the window altogether), and one is a hydration
+window.
+
+The consequence for the plan: two slices, not one. Upstream, the candidate
+pool and hydration windows (six questions); in the selector, the placement
+of the emitted window inside a long rank-1 declaration and the admission of
+low-ranked seeds whose evidence covers the question's lines (eight). Both
+are measurable on this split alone, both must hold the old split's gates,
+and neither is a budget change.
+
+## The candidate-pool cap, swept (committed selector, both splits)
+
+`taskctx.candidatePoolLimit` was raised temporarily, pre-compact bundles
+re-captured for both splits, and both measured; the cap is restored at 15.
+
+| Cap | Draft (overlapped / complete of 64) | Old split (reached / ≥1 complete / all complete of 40; paired median saving) |
+|---:|---|---|
+| 15 (committed) | 50 / 30 | 40 / 33 / 18; +67 |
+| 18 | 51 / 30 | 40 / 31 / 16; +75.5 |
+| 20 | 51 / 31 | 39 / 31 / 17; +73.5 |
+| 25 | 51 / 32 | 39 / 30 / 17; +83 |
+
+Every widening buys one or two holdout-shaped questions and pays one to
+three old-split ones: more candidates compete for the same ten regions, and
+the committed selector's ordering does not prefer the ones that answer.
+The cap is not a free lever either; it becomes one only together with a
+selector that admits by retrieval order — which is the rewrite that was
+just withdrawn for losing the old split. The two splits pull against each
+other through the same selector, and the old split's `≥1 complete`
+figure is, as the withdrawn rewrite showed, partly earned by dev-specific
+literals.
+
+That is the honest end of this slice. Every projector-side and pool-side
+lever has now been measured on the holdout's shape: ceiling, frontier,
+selector ordering, and pool width. None moves the complete count past
+32 of 64 while the old split is held. The decision that unblocks the next
+step is not an engineering one: whether the reviewed holdout-shaped split
+replaces the old split as the gate for selection decisions. Until then the
+committed candidate stands.
 
 Reproduce:
 

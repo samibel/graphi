@@ -190,7 +190,30 @@ func TestOneSpanCompactDev(t *testing.T) {
 			}
 		}
 		if !complete {
-			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f target=%s:%d-%d sources=%s", q.ID, q.Stratum, share, span.Path, span.StartLine, span.EndLine, strings.Join(cites, ",")))
+			// What the compact stage was given for this span, before any
+			// selection: the bundle's own evidence windows on the span's path.
+			// "covers" means the window contains the whole span; "touches"
+			// means it overlaps it; nothing means the span never reached the
+			// projector at all.
+			var given []string
+			for _, ev := range bundle.Evidence {
+				if ev.Path != span.Path || ev.Snippet == "" {
+					continue
+				}
+				from, to, err := exactEvidenceSpan(ev.Span)
+				if err != nil || from > span.EndLine || to < span.StartLine {
+					continue
+				}
+				relation := "touches"
+				if from <= span.StartLine && to >= span.EndLine {
+					relation = "covers"
+				}
+				given = append(given, fmt.Sprintf("%s:%d-%d(%s)", ev.RefID, from, to, relation))
+			}
+			if len(given) == 0 {
+				given = []string{"none"}
+			}
+			incomplete = append(incomplete, fmt.Sprintf("%s [%s] share=%.2f target=%s:%d-%d given=%s sources=%s", q.ID, q.Stratum, share, span.Path, span.StartLine, span.EndLine, strings.Join(given, ","), strings.Join(cites, ",")))
 		}
 	}
 	strata := make([]string, 0, len(byStratum))
