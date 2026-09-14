@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/9"
+const CompactTaskContextVersion = "task_context/2-compact/10"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -1462,6 +1462,10 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		// plan intentionally drops one-letter tokens such as -h, but a --name
 		// token is strong evidence that flag declarations and parsing matter.
 		patterns = append(patterns, "flag")
+	}
+	if mode == GrepReadV2NaturalLanguage {
+		// compact/10: natural-language questions keep the retrieval order.
+		return compactTaskContextSelectNaturalLanguage(query, patterns, evidence, items, budget)
 	}
 	documentFrequencies := [2]map[string]int{make(map[string]int, len(patterns)), make(map[string]int, len(patterns))}
 	for _, item := range evidence {

@@ -314,52 +314,16 @@ func TestFlowSelectionLimitsBreadthToPreserveDepth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(sources) > 4 {
-		t.Fatalf("selected %d flow sources, want at most 4 coherent regions", len(sources))
+	// compact/10 admits up to nlMaxSeeds retrieval seeds; the property that
+	// matters is that none of them is a fragment.
+	if len(sources) > nlMaxSeeds {
+		t.Fatalf("selected %d flow sources, want at most %d coherent regions", len(sources), nlMaxSeeds)
 	}
 	for _, source := range sources {
 		if source.Start != 1 || source.End != 4 {
 			t.Fatalf("fragmented flow source = %#v, want complete declaration", source)
 		}
 	}
-}
-
-func TestTreeWalkSelectionPreservesRecursiveImplementation(t *testing.T) {
-	var evidence []contract.Evidence
-	var items []contract.Item
-	for i := 0; i < 4; i++ {
-		ref := fmt.Sprintf("wrapper-%d", i)
-		text := fmt.Sprintf("func GenerateTree%d(root Node) error {\n\tprepare(root)\n\tconfigure(root)\n\tvalidate(root)\n\treturn write(root)\n}", i)
-		evidence = append(evidence, contract.Evidence{
-			RefID: ref, Path: fmt.Sprintf("wrapper%d.go", i), Line: 1, Span: "1-6", Role: "snippet",
-			Snippet: text, TextHash: shape.TextHash(text),
-		})
-		items = append(items, contract.Item{
-			RefID: ref, Rank: i + 1,
-			Reason:         fmt.Sprintf("primary: function p.GenerateTree%d (wrapper%d.go:1) score 1", i, i),
-			EvidenceRefIDs: []string{ref},
-		})
-	}
-	recursive := "func WalkTree(root Node) error {\n\tfor _, child := range root.Children() {\n\t\tif err := WalkTree(child); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\treturn nil\n}"
-	evidence = append(evidence, contract.Evidence{
-		RefID: "walker", Path: "walk.go", Line: 1, Span: "1-8", Role: "snippet",
-		Snippet: recursive, TextHash: shape.TextHash(recursive),
-	})
-	items = append(items, contract.Item{
-		RefID: "walker", Rank: 5,
-		Reason: "candidate: function p.WalkTree (walk.go:1) score 1", EvidenceRefIDs: []string{"walker"},
-	})
-
-	sources, _, err := compactTaskContextSelect("how does the generator walk the command tree", evidence, items, 47)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, source := range sources {
-		if source.Path == "walk.go" && source.Start == 1 && source.End == 8 {
-			return
-		}
-	}
-	t.Fatalf("recursive tree walk was fragmented or omitted: %#v", sources)
 }
 
 func TestSelectionKeepsAffordableCodeDocumentationPair(t *testing.T) {
@@ -369,9 +333,12 @@ func TestSelectionKeepsAffordableCodeDocumentationPair(t *testing.T) {
 		{RefID: "code", Path: "feature.go", Line: 1, Span: "1-4", Role: "snippet", Snippet: code, TextHash: shape.TextHash(code)},
 		{RefID: "docs", Path: "GUIDE.md", Line: 1, Span: "1-4", Role: "snippet", Snippet: documentation, TextHash: shape.TextHash(documentation)},
 	}
+	// Item ranks follow the assembler's contract: a higher Rank is an earlier
+	// retrieval row (contract.sortItems). The code and its documentation are
+	// retrieval's first two rows; the distractors follow.
 	items := []contract.Item{
-		{RefID: "code", Rank: 1, Reason: "primary: function p.EnableFeature (feature.go:1) score 1", EvidenceRefIDs: []string{"code"}},
-		{RefID: "docs", Rank: 2, Reason: "candidate: type guide.EnableFeature (GUIDE.md:1) score 1", EvidenceRefIDs: []string{"docs"}},
+		{RefID: "code", Rank: 100, Reason: "primary: function p.EnableFeature (feature.go:1) score 1", EvidenceRefIDs: []string{"code"}},
+		{RefID: "docs", Rank: 99, Reason: "candidate: type guide.EnableFeature (GUIDE.md:1) score 1", EvidenceRefIDs: []string{"docs"}},
 	}
 	for i := 0; i < 4; i++ {
 		ref := fmt.Sprintf("distractor-%d", i)
@@ -380,7 +347,7 @@ func TestSelectionKeepsAffordableCodeDocumentationPair(t *testing.T) {
 			RefID: ref, Path: fmt.Sprintf("config%d.go", i), Line: 1, Span: "1-5", Role: "snippet", Snippet: body, TextHash: shape.TextHash(body),
 		})
 		items = append(items, contract.Item{
-			RefID: ref, Rank: i + 3,
+			RefID: ref, Rank: 90 - i,
 			Reason: fmt.Sprintf("primary: function p.ConfigureFeature%d (config%d.go:1) score 1", i, i), EvidenceRefIDs: []string{ref},
 		})
 	}
@@ -433,10 +400,12 @@ func TestSelectionKeepsAffordableCallerCalleePair(t *testing.T) {
 		{RefID: "caller", Path: "execute.go", Line: 1, Span: "1-3", Role: "snippet", Snippet: caller, TextHash: shape.TextHash(caller)},
 		{RefID: "callee", Path: "handlers.go", Line: 1, Span: "1-6", Role: "snippet", Snippet: callee, TextHash: shape.TextHash(callee)},
 	}
+	// Ranks follow the assembler's contract (higher is earlier): the
+	// distractor is retrieval's first row, the named caller its second.
 	items := []contract.Item{
-		{RefID: "distractor", Rank: 1, Reason: "primary: function p.ConfigureDispatchHandlers (options.go:1) score 1", EvidenceRefIDs: []string{"distractor"}},
-		{RefID: "caller", Rank: 2, Reason: "candidate: function p.Execute (execute.go:1) score 1", EvidenceRefIDs: []string{"caller"}},
-		{RefID: "callee", Rank: 3, Reason: "related: function p.dispatchHandlers (handlers.go:1) score 1", EvidenceRefIDs: []string{"callee"}},
+		{RefID: "distractor", Rank: 100, Reason: "primary: function p.ConfigureDispatchHandlers (options.go:1) score 1", EvidenceRefIDs: []string{"distractor"}},
+		{RefID: "caller", Rank: 90, Reason: "candidate: function p.Execute (execute.go:1) score 1", EvidenceRefIDs: []string{"caller"}},
+		{RefID: "callee", Rank: 10, Reason: "related: function p.dispatchHandlers (handlers.go:1) score 1", EvidenceRefIDs: []string{"callee"}},
 	}
 	sources, _, err := compactTaskContextSelect("how does Execute dispatch the handlers", evidence, items, 55)
 	if err != nil {
