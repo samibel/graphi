@@ -1,0 +1,31 @@
+{
+  "version": "answer-span-ceiling/1",
+  "dataset_id": "cobra-v2-dev",
+  "dataset_sha256": "2d05e3bb015a1447e0c31a9a855712e6aae6f4281adbf7acd72e86c923a43d6c",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "ceiling_tokens": 1200,
+  "response_overhead_tokens": 210,
+  "grade": 3,
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "overall": {
+    "split": "all",
+    "answerable_queries": 40,
+    "grade3_spans": 63,
+    "grade3_spans_over_ceiling": 7,
+    "any_complete_feasible": 35,
+    "all_complete_feasible": 33,
+    "no_complete_span_possible": 5
+  },
+  "splits": [
+    {
+      "split": "dev",
+      "answerable_queries": 40,
+      "grade3_spans": 63,
+      "grade3_spans_over_ceiling": 7,
+      "any_complete_feasible": 35,
+      "all_complete_feasible": 33,
+      "no_complete_span_possible": 5
+    }
+  ]
+}

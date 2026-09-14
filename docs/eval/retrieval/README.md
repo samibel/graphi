@@ -399,3 +399,13 @@ are the recalibrated ones.
   separate name-only control vectors.
 - It does not tune anything. The holdout split exists so that later stories cannot.
 - It does not compute the `grep+read` token baseline (SW-266).
+
+## Answer-span ceiling (evaluator-only)
+
+`go run ./cmd/retrieval-eval -answer-span-ceiling -dataset <path> -checkout <dir> -out <report.json>`
+prices every reviewed grade-3 answer span against the frozen 1,200-token candidate budget and
+reports, as counts only, how many questions can ever carry a complete answer span. It consults
+judgements, so it is run by a split's curator and never by a candidate's author; its aggregate
+report names no query, path or line and is safe to return from a sealed key. Protocol:
+`answer-span-ceiling-protocol.md`. What the resulting bound implies for the pre-registered pass
+count is laid out, as material and not as a decision, in `contract-v2-options.md`.

@@ -26,6 +26,12 @@ import (
 func TestRetrievalEval_FlagSetIsEnumeratedAndCarriesNoOverride(t *testing.T) {
 	want := []string{
 		"aggregate",
+		// answer-span-ceiling reads a dataset and a checkout and writes
+		// counts; answer-span-detail names an extra output file. Neither
+		// touches k, N, a query's membership, a graded response or a pass:
+		// the mode has no access to any evaluation state at all.
+		"answer-span-ceiling",
+		"answer-span-detail",
 		"baseline",
 		"blind-eval",
 		"blind-eval-dir",

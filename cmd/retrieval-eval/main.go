@@ -51,6 +51,7 @@
 //	go run ./cmd/retrieval-eval -aggregate <dir>
 //	go run ./cmd/retrieval-eval -check-claim '<candidate sentence>'
 //	go run ./cmd/retrieval-eval -check-targets <report.json>
+//	go run ./cmd/retrieval-eval -answer-span-ceiling -dataset <path> -checkout <dir> [-out <report.json>] [-answer-span-detail <path>]
 //	go run ./cmd/retrieval-eval -setup-tokenizer [-tokenizer-local <dir>] [-tokenizer-dir <dir>]
 //	go run ./cmd/retrieval-eval -derive -targets-report <report.json> -budget-small <report.json> \
 //	    [-budget-medium <report.json>] [-budget-large <report.json>] -targets-out <path> -budgets-out <path>
@@ -135,6 +136,9 @@ func run(args []string, stdout, stderr io.Writer) int {
 	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
 	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
 
+	answerSpanCeiling := fs.Bool("answer-span-ceiling", false, "price every reviewed grade-3 answer span in -dataset against the frozen 1,200-token candidate budget over -checkout and report, as counts only, how many questions can ever carry a complete answer span; the report names no query, path or line")
+	answerSpanDetail := fs.String("answer-span-detail", "", "answer-span-ceiling mode: additionally write per-query detail (query ids, paths, lines, costs) to this separate file; for a sealed split it must stay in the curator's custody")
+
 	derive := fs.Bool("derive", false, "derive docs/eval/retrieval-targets.json and -budgets.json from finished reports")
 	targetsReport := fs.String("targets-report", "", "derive mode: the report the targets are taken from")
 	budgetReports := map[string]*string{
@@ -211,6 +215,19 @@ func run(args []string, stdout, stderr io.Writer) int {
 			repoName: *repo,
 			checkout: checkoutDir,
 			embedder: *embedder,
+		}, stdout, stderr)
+	case *answerSpanCeiling:
+		checkoutDir := *checkout
+		if checkoutDir == "" && *repo == FixtureRepoName {
+			checkoutDir = filepath.FromSlash(fixtureRepoPath)
+		}
+		if checkoutDir == "" && *repo != "" {
+			if home, herr := os.UserHomeDir(); herr == nil {
+				checkoutDir = filepath.Join(home, ".cache", "graphi", "corpus", *repo)
+			}
+		}
+		return runAnswerSpanCeiling(answerSpanOptions{
+			dataset: *dataset, checkout: checkoutDir, out: *out, detail: *answerSpanDetail,
 		}, stdout, stderr)
 	case *derive:
 		var budgets []budgetReport
