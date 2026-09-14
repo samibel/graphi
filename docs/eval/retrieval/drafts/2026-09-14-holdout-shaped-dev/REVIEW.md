@@ -1,9 +1,43 @@
-# Holdout-shaped development split — DRAFT, unreviewed
+# Holdout-shaped development split — reviewed
 
-Status: **draft for independent review; not a dataset.** Nothing in this
-directory may enter a gate, a measurement, a capture or a release artifact
-until the review below is complete. It is committed so the review has a fixed
-object with a SHA-256, not because it is evidence.
+Status: **independently reviewed on 2026-09-14** by a separate model with
+no context from the author's session (`codex-cli 0.153.4`, run
+non-interactively in a workspace-write sandbox with the six-step procedure
+below as its only instruction). Its report is `review-report.md`; the
+reviewed file is `dataset.json`, id `cobra-v3-dev-reviewed`, SHA-256
+`33760861d5c78f551d4203342f2e3b7350e030882bd74ab6ce166d00ce8168ba`.
+Outcome, from the report: 30 rows confirmed, 1 span adjusted, 3 questions
+reworded, 30 rows replaced for collision with a sealed key (29 by span
+overlap, 14 by paraphrase; the sets overlap). The reviewer authored the
+replacements from the pinned checkout. After review, the author's own
+count-only script finds 0 span overlaps with either sealed key, and a loose
+substring paraphrase heuristic still flags 3 and 1 question texts, which
+the reviewer's stricter judgement did not; those counts are recorded, not
+resolved, because resolving them would mean the author reading the keys.
+
+What the review does not make this: human-reviewed evidence. The
+evidence class says `agent-drafted; agent-reviewed (independent)`. It is a
+development split — fit to steer selection decisions and to forecast, not
+to be cited as a holdout result. Three reviewer-authored `exact_path`
+rows target non-Go files (`go.mod`, `LICENSE.txt`, `Makefile`); whether
+retrieval indexes those at all is a property of the candidate, not of the
+split, and they were kept as the reviewer judged them.
+
+The reviewer also answered the `exact_path` rubric question from the
+sealed holdouts' `grading-rubric.md`: the rubric has no special case for
+path queries and allows paraphrase and reorganisation, so a judged span
+delivered in adjacent pieces with only a blank line omitted **is
+sufficient**. The nine draft `exact_path` rows counted "incomplete" on the
+span measure are therefore not losses under the rubric.
+
+The sections below are the original draft record and the procedure the
+reviewer followed.
+
+---
+
+# Holdout-shaped development split — original draft record
+
+Status at drafting: draft for independent review; not a dataset.
 
 ## Why this exists
 

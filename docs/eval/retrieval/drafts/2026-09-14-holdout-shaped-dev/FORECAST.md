@@ -1,3 +1,43 @@
+# Forecast of candidate `40133db5` on the reviewed split
+
+Status: **the reviewed split is now the reference** (`REVIEW.md`; dataset
+SHA-256 `33760861d5c7…`). Measured with `TestDraftDevForecast` on the
+production compact MCP path, one index build, static embedder:
+
+| Measure (64 reviewed questions) | Count | Rate |
+|---|---:|---:|
+| Span overlapped | 45/64 | 70.3 % |
+| Span cited | 34/64 | 53.1 % |
+| Span complete in one source | 28/64 | 43.8 % |
+| Mean span share delivered | — | 56.6 % |
+| Median / max tokens | 1,036 / 1,190 | — |
+
+| Stratum | Overlapped | Complete |
+|---|---:|---:|
+| exact_identifier | 11/11 | 11/11 |
+| ambiguous | 7/10 | 6/10 |
+| exact_path | 8/11 | 2/11 |
+| nl_behaviour | 7/11 | 3/11 |
+| config_docs | 5/10 | 3/10 |
+| architecture_flow | 7/11 | 3/11 |
+
+Misses by first losing stage: 5 absent from the 50-row window (three are
+the reviewer's non-Go `exact_path` files, which retrieval does not index),
+4 below the 15-candidate cap, 27 retrieved and lost in selection (nine of
+them `exact_path` pieces, which the rubric accepts — see `REVIEW.md`).
+
+Under the rubric's reading (pieces count, paraphrase allowed) the
+candidate's proxy on this split is the overlap rate, 70 %; the last sealed
+holdout scored 66 %. `P(≥56 of 64)` at 70 % is 0.001. The reviewed split
+forecasts the sealed result well and says the same thing the draft said:
+the gap is selection, on questions whose answers fit.
+
+The sections below are the record made on the *unreviewed* draft
+(dataset SHA-256 `d7af540a0515…`) and are kept for the probes and sweeps
+they document; their per-question ids refer to that draft.
+
+---
+
 # Forecast of candidate `40133db5` on the unreviewed draft
 
 Status: **indicative only.** The dataset is an unreviewed draft written by

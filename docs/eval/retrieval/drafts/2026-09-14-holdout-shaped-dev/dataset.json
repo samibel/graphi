@@ -1,160 +1,13 @@
 {
   "schema_version": 1,
-  "id": "cobra-v3-dev-draft",
+  "id": "cobra-v3-dev-reviewed",
   "repo": "cobra",
   "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
   "language": "en",
-  "evidence_class": "agent-drafted; NOT reviewed",
+  "evidence_class": "agent-drafted; agent-reviewed (independent)",
   "relevant_min_grade": 3,
-  "notes": "DRAFT development split shaped like the sealed holdouts: 64 questions, 11/11/11/11/10/10 across the six answerable strata, exactly one small grade-3 span per question, no no_hit rows. Authored on 2026-09-14 against the pinned checkout by the candidate's author without access to any holdout question; every judgement is unreviewed and carries a PENDING reviewer. It must not enter a gate, a measurement or a release artifact until an independent reviewer has confirmed each span, replaced the reviewer field, and diffed the questions against the sealed holdout keys for collisions. See REVIEW.md beside this file.",
+  "notes": "Review complete on 2026-09-14 by codex-cli 0.153.4 as an independent reviewer. Every judgement was checked against the pinned checkout and the completed dataset was collision-checked against both sealed holdouts. This file may be used as a development split.",
   "queries": [
-    {
-      "id": "cd-01",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "ValidateRequiredFlags",
-      "family_id": "cobra-family-51437823a1718eb0",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1146,
-          "end_line": 1168,
-          "anchor": "func (c *Command) ValidateRequiredFlags(",
-          "grade": 3,
-          "reason": "The declaration of ValidateRequiredFlags itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-02",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "Traverse",
-      "family_id": "cobra-family-02c501c2b33ca7fe",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 788,
-          "end_line": 829,
-          "anchor": "func (c *Command) Traverse(",
-          "grade": 3,
-          "reason": "The declaration of Command.Traverse itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-03",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "MatchAll",
-      "family_id": "cobra-family-69e297033b14d0f0",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "args.go",
-          "start_line": 113,
-          "end_line": 123,
-          "anchor": "func MatchAll(",
-          "grade": 3,
-          "reason": "The declaration of MatchAll itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-04",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "GetActiveHelpConfig",
-      "family_id": "cobra-family-e95d7d9bf0b95ded",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "active_help.go",
-          "start_line": 46,
-          "end_line": 57,
-          "anchor": "func GetActiveHelpConfig(",
-          "grade": 3,
-          "reason": "The declaration of GetActiveHelpConfig itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-05",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "RemoveCommand",
-      "family_id": "cobra-family-f7796c29547cefbc",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1361,
-          "end_line": 1393,
-          "anchor": "func (c *Command) RemoveCommand(",
-          "grade": 3,
-          "reason": "The declaration of Command.RemoveCommand itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-06",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "IsAvailableCommand",
-      "family_id": "cobra-family-8584fad9d58a9f7c",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1560,
-          "end_line": 1576,
-          "anchor": "func (c *Command) IsAvailableCommand(",
-          "grade": 3,
-          "reason": "The declaration of Command.IsAvailableCommand itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-07",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "CommandPath",
-      "family_id": "cobra-family-dd667d4fa3106cf8",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1425,
-          "end_line": 1434,
-          "anchor": "func (c *Command) CommandPath(",
-          "grade": 3,
-          "reason": "The declaration of Command.CommandPath itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
     {
       "id": "cd-08",
       "stratum": "exact_identifier",
@@ -162,7 +15,7 @@
       "split": "dev",
       "query": "GenYamlTreeCustom",
       "family_id": "cobra-family-7554451c7901f37a",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "doc/yaml_docs.go",
@@ -172,7 +25,7 @@
           "grade": 3,
           "reason": "The declaration of GenYamlTreeCustom itself.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -183,7 +36,7 @@
       "split": "dev",
       "query": "GetFlagCompletionFunc",
       "family_id": "cobra-family-af5997328ed74469",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -193,28 +46,7 @@
           "grade": 3,
           "reason": "The declaration of Command.GetFlagCompletionFunc itself.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-10",
-      "stratum": "exact_identifier",
-      "language": "en",
-      "split": "dev",
-      "query": "AddTemplateFunc",
-      "family_id": "cobra-family-e5407b268fc7dc98",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "cobra.go",
-          "start_line": 83,
-          "end_line": 87,
-          "anchor": "func AddTemplateFunc(",
-          "grade": 3,
-          "reason": "The declaration of AddTemplateFunc itself.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -225,7 +57,7 @@
       "split": "dev",
       "query": "hasSeeAlso",
       "family_id": "cobra-family-6286a0045729688b",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "doc/util.go",
@@ -235,28 +67,7 @@
           "grade": 3,
           "reason": "The declaration of hasSeeAlso itself.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-12",
-      "stratum": "exact_path",
-      "language": "en",
-      "split": "dev",
-      "query": "args.go",
-      "family_id": "cobra-family-5d8a307a12fc012b",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "args.go",
-          "start_line": 22,
-          "end_line": 39,
-          "anchor": "type PositionalArgs func(",
-          "grade": 3,
-          "reason": "The file's defining type PositionalArgs and the legacyArgs default validator that opens it.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -267,7 +78,7 @@
       "split": "dev",
       "query": "active_help.go",
       "family_id": "cobra-family-6b89d1ea157c55b1",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "active_help.go",
@@ -277,7 +88,7 @@
           "grade": 3,
           "reason": "The file's defining constants: the active-help marker and environment variable names.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -288,7 +99,7 @@
       "split": "dev",
       "query": "cobra.go",
       "family_id": "cobra-family-ada83171e4e59a12",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "cobra.go",
@@ -298,7 +109,7 @@
           "grade": 3,
           "reason": "The file's package-level behaviour toggles and their defaults.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -309,7 +120,7 @@
       "split": "dev",
       "query": "completions.go",
       "family_id": "cobra-family-5741ebf5bd799e5f",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -319,7 +130,7 @@
           "grade": 3,
           "reason": "The file's defining constants and the ShellCompDirective type that the rest of the file implements.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -330,7 +141,7 @@
       "split": "dev",
       "query": "doc/md_docs.go",
       "family_id": "cobra-family-7cf82107a4f140dd",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "doc/md_docs.go",
@@ -340,7 +151,7 @@
           "grade": 3,
           "reason": "The file's public entry point for one command; the tree variant delegates to the same custom generator.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -351,7 +162,7 @@
       "split": "dev",
       "query": "doc/yaml_docs.go",
       "family_id": "cobra-family-9cad15ee1bc6ac96",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "doc/yaml_docs.go",
@@ -361,7 +172,7 @@
           "grade": 3,
           "reason": "The file's defining document types cmdOption and cmdDoc that every generator in it fills.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -372,7 +183,7 @@
       "split": "dev",
       "query": "doc/rest_docs.go",
       "family_id": "cobra-family-34fbe9fbbd31587b",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "doc/rest_docs.go",
@@ -382,91 +193,7 @@
           "grade": 3,
           "reason": "The file's default link handler and its public single-command entry point.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-19",
-      "stratum": "exact_path",
-      "language": "en",
-      "split": "dev",
-      "query": "doc/util.go",
-      "family_id": "cobra-family-ae6b3ac269f20ebf",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "doc/util.go",
-          "start_line": 39,
-          "end_line": 46,
-          "anchor": "func forceMultiLine(",
-          "grade": 3,
-          "reason": "One of the two helpers the file exists for; the other, hasSeeAlso, is judged separately.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-20",
-      "stratum": "exact_path",
-      "language": "en",
-      "split": "dev",
-      "query": "zsh_completions.go",
-      "family_id": "cobra-family-402054e989c5126f",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "zsh_completions.go",
-          "start_line": 24,
-          "end_line": 44,
-          "anchor": "func (c *Command) GenZshCompletionFile(",
-          "grade": 3,
-          "reason": "The file's four public entry points, with and without descriptions.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-21",
-      "stratum": "exact_path",
-      "language": "en",
-      "split": "dev",
-      "query": "fish_completions.go",
-      "family_id": "cobra-family-2edbd5ba26ad0bad",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "fish_completions.go",
-          "start_line": 275,
-          "end_line": 292,
-          "anchor": "func (c *Command) GenFishCompletion(",
-          "grade": 3,
-          "reason": "The file's two public entry points.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-22",
-      "stratum": "exact_path",
-      "language": "en",
-      "split": "dev",
-      "query": "powershell_completions.go",
-      "family_id": "cobra-family-acddb9f89b2d7402",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "powershell_completions.go",
-          "start_line": 305,
-          "end_line": 325,
-          "anchor": "func (c *Command) GenPowerShellCompletionFile(",
-          "grade": 3,
-          "reason": "The file's four public entry points, with and without descriptions.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -477,7 +204,7 @@
       "split": "dev",
       "query": "how does cobra warn that a command is deprecated when it runs",
       "family_id": "cobra-family-0997bf69a5ea9b19",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -487,7 +214,7 @@
           "grade": 3,
           "reason": "execute prints the deprecation notice before anything else runs.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -498,7 +225,7 @@
       "split": "dev",
       "query": "when does executing a command return flag.ErrHelp instead of running it",
       "family_id": "cobra-family-bb4d09bd914753f7",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -508,70 +235,7 @@
           "grade": 3,
           "reason": "The two ErrHelp returns: the help flag was set, or the command is not runnable.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-25",
-      "stratum": "nl_behaviour",
-      "language": "en",
-      "split": "dev",
-      "query": "how does cobra compare a typed command name with a subcommand name when case-insensitive matching is on",
-      "family_id": "cobra-family-7b773859c3ad7865",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1876,
-          "end_line": 1885,
-          "anchor": "func commandNameMatches(",
-          "grade": 3,
-          "reason": "commandNameMatches switches on EnableCaseInsensitive between EqualFold and ==.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-26",
-      "stratum": "nl_behaviour",
-      "language": "en",
-      "split": "dev",
-      "query": "what validation applies to positional arguments when the Args field is left nil",
-      "family_id": "cobra-family-46dbba901460fecc",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1139,
-          "end_line": 1144,
-          "anchor": "func (c *Command) ValidateArgs(",
-          "grade": 3,
-          "reason": "ValidateArgs falls back to ArbitraryArgs when Args is nil.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-27",
-      "stratum": "nl_behaviour",
-      "language": "en",
-      "split": "dev",
-      "query": "how are deprecated-flag warnings printed after flags are parsed",
-      "family_id": "cobra-family-9f0f5ab57d358137",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1830,
-          "end_line": 1839,
-          "anchor": "err := c.Flags().Parse(args)",
-          "grade": 3,
-          "reason": "ParseFlags prints the flag error buffer it grew during a successful parse.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -580,9 +244,9 @@
       "stratum": "nl_behaviour",
       "language": "en",
       "split": "dev",
-      "query": "how do the functions registered with OnInitialize get invoked during execution",
+      "query": "what does Cobra's pre-run stage do with functions registered through OnInitialize",
       "family_id": "cobra-family-3ad98ca4f79e9e7c",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -591,8 +255,8 @@
           "anchor": "func (c *Command) preRun(",
           "grade": 3,
           "reason": "preRun runs every registered initializer; execute calls it before validating arguments.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -603,7 +267,7 @@
       "split": "dev",
       "query": "how does completion resolve a one-letter flag shorthand to its flag",
       "family_id": "cobra-family-0670043f70d87385",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -613,7 +277,7 @@
           "grade": 3,
           "reason": "findFlag converts a shorthand to the long name through the local and inherited flag sets before Flag lookup.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -622,9 +286,9 @@
       "stratum": "nl_behaviour",
       "language": "en",
       "split": "dev",
-      "query": "why are required flags offered first when completing a flag name",
+      "query": "how does Cobra identify which required flags to offer during completion",
       "family_id": "cobra-family-c1a4ac8b1a669b94",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -633,29 +297,8 @@
           "anchor": "func completeRequireFlags(",
           "grade": 3,
           "reason": "completeRequireFlags suggests only unset flags carrying the required annotation; regular flags follow only when it finds none.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-31",
-      "stratum": "nl_behaviour",
-      "language": "en",
-      "split": "dev",
-      "query": "how does the built-in help command complete the names of subcommands",
-      "family_id": "cobra-family-e255e32fc80c096d",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1240,
-          "end_line": 1258,
-          "anchor": "ValidArgsFunction: func(c *Command, args []string, toComplete string)",
-          "grade": 3,
-          "reason": "The help command's ValidArgsFunction finds the target command and lists its available subcommands by prefix.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -664,9 +307,9 @@
       "stratum": "nl_behaviour",
       "language": "en",
       "split": "dev",
-      "query": "how does completion stop when --help or --version is already on the command line",
+      "query": "how does Cobra detect that its --help or --version flag is already present during completion",
       "family_id": "cobra-family-9f7eb80f286ed1c5",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -675,50 +318,8 @@
           "anchor": "func helpOrVersionFlagPresent(",
           "grade": 3,
           "reason": "helpOrVersionFlagPresent detects the Cobra-added flags being set; getCompletions then returns no completions.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-33",
-      "stratum": "nl_behaviour",
-      "language": "en",
-      "split": "dev",
-      "query": "how does cobra keep the list of subcommands sorted by name",
-      "family_id": "cobra-family-823b3aef84f0dea1",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1292,
-          "end_line": 1300,
-          "anchor": "func (c *Command) Commands(",
-          "grade": 3,
-          "reason": "Commands sorts lazily by name unless EnableCommandSorting is off or the slice is already sorted.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-34",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "in what order are persistent pre-run hooks collected from the parents before running a command",
-      "family_id": "cobra-family-75299371d25dc761",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 940,
-          "end_line": 966,
-          "anchor": "parents := make([]*Command, 0, 5)",
-          "grade": 3,
-          "reason": "execute builds the parent list root-first under EnableTraverseRunHooks, otherwise nearest-first, then runs the first or all PersistentPreRun hooks.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -729,7 +330,7 @@
       "split": "dev",
       "query": "how does a command find a flag by climbing the parent chain",
       "family_id": "cobra-family-01fcb86a15b0a3fd",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -739,91 +340,7 @@
           "grade": 3,
           "reason": "Flag tries the local set, then persistentFlag tries the command's persistent set and the merged parents' persistent flags.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-36",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "how does the ReST documentation generator recurse over the command tree",
-      "family_id": "cobra-family-1de94c840c20ab31",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "doc/rest_docs.go",
-          "start_line": 143,
-          "end_line": 170,
-          "anchor": "func GenReSTTreeCustom(",
-          "grade": 3,
-          "reason": "GenReSTTreeCustom recurses into available non-help subcommands first, then writes the file for the current command.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-37",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "how does the default help command run help for a nested command path",
-      "family_id": "cobra-family-effc530307d25f39",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1259,
-          "end_line": 1269,
-          "anchor": "Run: func(c *Command, args []string) {",
-          "grade": 3,
-          "reason": "The help command's Run finds the target from the root, initialises its help and version flags, and calls Help.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-38",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "how does Find recurse through subcommands while stripping flags",
-      "family_id": "cobra-family-61216fcec355ee89",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 727,
-          "end_line": 741,
-          "anchor": "innerfind = func(c *Command, innerArgs []string)",
-          "grade": 3,
-          "reason": "innerfind strips flags, takes the first remaining word as the next subcommand and recurses with that word removed.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-39",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "how does flag group validation collect group status before checking each kind of group",
-      "family_id": "cobra-family-6f48120bd648d2b4",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "flag_groups.go",
-          "start_line": 79,
-          "end_line": 109,
-          "anchor": "func (c *Command) ValidateFlagGroups(",
-          "grade": 3,
-          "reason": "ValidateFlagGroups visits every flag into three status maps, then validates required-together, one-required and mutually-exclusive groups in that order.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -834,7 +351,7 @@
       "split": "dev",
       "query": "how does completion fall back from subcommand names to ValidArgs and ArgAliases",
       "family_id": "cobra-family-7602458727f5435f",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -844,7 +361,7 @@
           "grade": 3,
           "reason": "getCompletions lists subcommands, then required flags, then ValidArgs, and ArgAliases only when nothing matched.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -855,7 +372,7 @@
       "split": "dev",
       "query": "how does getCompletions decide between the flag completion function and ValidArgsFunction",
       "family_id": "cobra-family-e806d681adada9b0",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -865,28 +382,7 @@
           "grade": 3,
           "reason": "A flag under completion selects its registered function; otherwise the command's ValidArgsFunction is called.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-42",
-      "stratum": "architecture_flow",
-      "language": "en",
-      "split": "dev",
-      "query": "how does bash completion assemble the script from preamble, custom function and postscript",
-      "family_id": "cobra-family-b533b631900c09d3",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "bash_completions.go",
-          "start_line": 685,
-          "end_line": 697,
-          "anchor": "func (c *Command) GenBashCompletion(",
-          "grade": 3,
-          "reason": "GenBashCompletion writes the preamble, the optional BashCompletionFunction, the generated commands and the postscript into one buffer.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -897,7 +393,7 @@
       "split": "dev",
       "query": "how does DebugFlags walk the command tree and label local versus persistent flags",
       "family_id": "cobra-family-ca6665934ca864a1",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -907,7 +403,7 @@
           "grade": 3,
           "reason": "DebugFlags recurses over subcommands, printing each flag with an L, LP or P label.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -918,7 +414,7 @@
       "split": "dev",
       "query": "how does completion of subcommand names get suppressed once a local non-persistent flag is present",
       "family_id": "cobra-family-e316353482c9dd8c",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -928,7 +424,7 @@
           "grade": 3,
           "reason": "getCompletions checks changed local non-persistent flags unless TraverseChildren is set, and skips subcommand completion when one is found.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -939,7 +435,7 @@
       "split": "dev",
       "query": "how do I limit a flag's completions to directory names",
       "family_id": "cobra-family-fd2a45235429a3ff",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/completions/_index.md",
@@ -949,28 +445,7 @@
           "grade": 3,
           "reason": "The documented MarkFlagDirname and ShellCompDirectiveFilterDirs options.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-46",
-      "stratum": "config_docs",
-      "language": "en",
-      "split": "dev",
-      "query": "how do I remove the auto generated tag from generated documentation",
-      "family_id": "cobra-family-0fcd11e8c6ac391e",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "site/content/docgen/_index.md",
-          "start_line": 9,
-          "end_line": 13,
-          "anchor": "### `DisableAutoGenTag`",
-          "grade": 3,
-          "reason": "The documented DisableAutoGenTag setting.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -981,7 +456,7 @@
       "split": "dev",
       "query": "how can I make every parent's persistent hooks run instead of only the first",
       "family_id": "cobra-family-8ef9fe67510e5113",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/user_guide.md",
@@ -991,7 +466,7 @@
           "grade": 3,
           "reason": "The documented EnableTraverseRunHooks switch.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1002,7 +477,7 @@
       "split": "dev",
       "query": "how do I customize the Error: prefix of printed errors",
       "family_id": "cobra-family-67ee9adf1933ea8d",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/user_guide.md",
@@ -1012,7 +487,7 @@
           "grade": 3,
           "reason": "The documented SetErrPrefix function.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1023,7 +498,7 @@
       "split": "dev",
       "query": "how do I turn off the descriptions shown next to shell completions",
       "family_id": "cobra-family-6eca3fc0c8b7f88d",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/completions/_index.md",
@@ -1033,28 +508,7 @@
           "grade": 3,
           "reason": "The documented --no-descriptions flag of the default completion command.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-50",
-      "stratum": "config_docs",
-      "language": "en",
-      "split": "dev",
-      "query": "how do I make cobra parse local flags on parent commands",
-      "family_id": "cobra-family-41d61acd62057eeb",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "site/content/user_guide.md",
-          "start_line": 288,
-          "end_line": 299,
-          "anchor": "### Local Flag on Parent Commands",
-          "grade": 3,
-          "reason": "The documented TraverseChildren field.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1065,7 +519,7 @@
       "split": "dev",
       "query": "how do I attach a description to my own completion choices",
       "family_id": "cobra-family-ce8bf724edad3f92",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/completions/_index.md",
@@ -1075,7 +529,7 @@
           "grade": 3,
           "reason": "The documented tab-separated description convention for ValidArgs, ValidArgsFunction and flag completions.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1086,7 +540,7 @@
       "split": "dev",
       "query": "how do I combine several positional argument validators",
       "family_id": "cobra-family-e15493a3ee60e351",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/user_guide.md",
@@ -1096,28 +550,7 @@
           "grade": 3,
           "reason": "The documented MatchAll combinator with its example.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-53",
-      "stratum": "config_docs",
-      "language": "en",
-      "split": "dev",
-      "query": "how do I stop cobra from sorting commands in the help output",
-      "family_id": "cobra-family-edde926f6df6dafd",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "cobra.go",
-          "start_line": 57,
-          "end_line": 59,
-          "anchor": "var EnableCommandSorting = defaultCommandSorting",
-          "grade": 3,
-          "reason": "The EnableCommandSorting variable and its doc comment.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1128,7 +561,7 @@
       "split": "dev",
       "query": "how do I provide my own usage template",
       "family_id": "cobra-family-79f7dd15ed48a263",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "site/content/user_guide.md",
@@ -1138,7 +571,7 @@
           "grade": 3,
           "reason": "The documented SetUsageFunc and SetUsageTemplate methods.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1149,7 +582,7 @@
       "split": "dev",
       "query": "Root",
       "family_id": "cobra-family-fe13f0f5ff0d5833",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -1159,28 +592,7 @@
           "grade": 3,
           "reason": "Command.Root is the canonical definition; other hits are callers and 'root command' prose.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-56",
-      "stratum": "ambiguous",
-      "language": "en",
-      "split": "dev",
-      "query": "Name",
-      "family_id": "cobra-family-1b6e9b1f7b945537",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 1495,
-          "end_line": 1503,
-          "anchor": "func (c *Command) Name(",
-          "grade": 3,
-          "reason": "Command.Name is the canonical definition; the term also appears as struct fields and flag names.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1191,7 +603,7 @@
       "split": "dev",
       "query": "Parent",
       "family_id": "cobra-family-e44d10696f2528c1",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -1201,7 +613,7 @@
           "grade": 3,
           "reason": "Command.Parent is the canonical definition; the term also names fields, helpers and documentation.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1212,7 +624,7 @@
       "split": "dev",
       "query": "Usage",
       "family_id": "cobra-family-7a16f823ad8b160d",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -1222,49 +634,7 @@
           "grade": 3,
           "reason": "Command.Usage is the canonical definition among usage templates, functions and prose.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-59",
-      "stratum": "ambiguous",
-      "language": "en",
-      "split": "dev",
-      "query": "Help",
-      "family_id": "cobra-family-48d4a7ba76eb9add",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 470,
-          "end_line": 476,
-          "anchor": "func (c *Command) Help(",
-          "grade": 3,
-          "reason": "Command.Help is the canonical definition among help templates, commands, flags and prose.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
-        }
-      ]
-    },
-    {
-      "id": "cd-60",
-      "stratum": "ambiguous",
-      "language": "en",
-      "split": "dev",
-      "query": "Suggest",
-      "family_id": "cobra-family-89f41b3bb52fd887",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
-      "judgements": [
-        {
-          "path": "command.go",
-          "start_line": 750,
-          "end_line": 765,
-          "anchor": "func (c *Command) findSuggestions(",
-          "grade": 3,
-          "reason": "findSuggestions renders the suggestion block; SuggestFor and SuggestionsFor are neighbours.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1275,7 +645,7 @@
       "split": "dev",
       "query": "directive",
       "family_id": "cobra-family-8554aca476678847",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "completions.go",
@@ -1285,7 +655,7 @@
           "grade": 3,
           "reason": "The ShellCompDirective type is the definition every directive constant and check refers to.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1296,7 +666,7 @@
       "split": "dev",
       "query": "template",
       "family_id": "cobra-family-14cffcfa2c26ebe3",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "cobra.go",
@@ -1306,7 +676,7 @@
           "grade": 3,
           "reason": "templateFuncs is the definition behind every usage, help and version template.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1317,17 +687,17 @@
       "split": "dev",
       "query": "Aliases",
       "family_id": "cobra-family-4cdc90e60ae79b2c",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
-          "start_line": 1505,
-          "end_line": 1513,
-          "anchor": "func (c *Command) HasAlias(",
+          "start_line": 63,
+          "end_line": 64,
+          "anchor": "Aliases []string",
           "grade": 3,
-          "reason": "HasAlias is the behaviour behind the Aliases field; the field itself is one line in the Command struct.",
-          "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reason": "The Command.Aliases field and its contract are the canonical definition of the bare term.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     },
@@ -1338,7 +708,7 @@
       "split": "dev",
       "query": "prefix",
       "family_id": "cobra-family-0d4ace9cc4fb28c5",
-      "provenance": "draft:2026-09-14:authored-against-pinned-checkout:unreviewed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
       "judgements": [
         {
           "path": "command.go",
@@ -1348,7 +718,637 @@
           "grade": 3,
           "reason": "hasNameOrAliasPrefix is the prefix-matching implementation; EnablePrefixMatching is its switch.",
           "annotator": "claude-fable-5.1 (draft author; unreviewed)",
-          "reviewer": "PENDING: independent reviewer has not confirmed this span"
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-65",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "AllChildCommandsHaveGroup",
+      "family_id": "cobra-family-cd7601504076e7cc",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1336,
+          "end_line": 1344,
+          "anchor": "func (c *Command) AllChildCommandsHaveGroup(",
+          "grade": 3,
+          "reason": "The complete declaration defines which available or help subcommands must carry a group ID.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-66",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "ContainsGroup",
+      "family_id": "cobra-family-9c41779d8465ffe0",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1346,
+          "end_line": 1354,
+          "anchor": "func (c *Command) ContainsGroup(",
+          "grade": 3,
+          "reason": "The complete declaration searches the command-group slice for a matching ID.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-67",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "NameAndAliases",
+      "family_id": "cobra-family-e38999e58d5388a2",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1540,
+          "end_line": 1543,
+          "anchor": "func (c *Command) NameAndAliases(",
+          "grade": 3,
+          "reason": "The complete declaration joins the command name and aliases into the returned display string.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-68",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "CompErrorln",
+      "family_id": "cobra-family-210a895e4c3275e0",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 898,
+          "end_line": 901,
+          "anchor": "func CompErrorln(",
+          "grade": 3,
+          "reason": "The complete declaration appends a newline and delegates completion-error output to CompError.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-69",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "MarkPersistentFlagRequired",
+      "family_id": "cobra-family-5444fe045af7f1c8",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "shell_completions.go",
+          "start_line": 28,
+          "end_line": 33,
+          "anchor": "func (c *Command) MarkPersistentFlagRequired(",
+          "grade": 3,
+          "reason": "The complete declaration marks a named persistent flag required through the shared helper.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-70",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "GenBashCompletionV2",
+      "family_id": "cobra-family-83b084be11bacec7",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 392,
+          "end_line": 396,
+          "anchor": "func (c *Command) GenBashCompletionV2(",
+          "grade": 3,
+          "reason": "The complete declaration delegates Bash V2 generation to the shared writer implementation.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-71",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "SetIn",
+      "family_id": "cobra-family-8d1cd71864ea9fd1",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 300,
+          "end_line": 304,
+          "anchor": "func (c *Command) SetIn(",
+          "grade": 3,
+          "reason": "The complete declaration records the command's input reader.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-72",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "dev",
+      "query": "AddGroup",
+      "family_id": "cobra-family-aa6eb391bf2206d3",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1356,
+          "end_line": 1359,
+          "anchor": "func (c *Command) AddGroup(",
+          "grade": 3,
+          "reason": "The complete declaration appends supplied groups to the command's group list.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-73",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "command_notwin.go",
+      "family_id": "cobra-family-9d15c701813de7f7",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_notwin.go",
+          "start_line": 15,
+          "end_line": 20,
+          "anchor": "var preExecHookFn func(*Command)",
+          "grade": 3,
+          "reason": "The platform build constraint and no-op pre-execution hook are the file's defining implementation.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-74",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "bash_completionsV2.go",
+      "family_id": "cobra-family-1d661114ad7a5e38",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completionsV2.go",
+          "start_line": 24,
+          "end_line": 29,
+          "anchor": "func (c *Command) genBashCompletion(",
+          "grade": 3,
+          "reason": "The file's central writer path buffers the generated Bash V2 script and copies it to the caller's writer.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-75",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "go.mod",
+      "family_id": "cobra-family-3b3a0583268ba947",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "go.mod",
+          "start_line": 1,
+          "end_line": 10,
+          "anchor": "module github.com/spf13/cobra",
+          "grade": 3,
+          "reason": "The module declaration, Go version, and direct requirements are the file's canonical contents.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-76",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "LICENSE.txt",
+      "family_id": "cobra-family-9025f5bf7313f93b",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "LICENSE.txt",
+          "start_line": 1,
+          "end_line": 5,
+          "anchor": "Apache License",
+          "grade": 3,
+          "reason": "The license header identifies the governing license and version.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-77",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "dev",
+      "query": "Makefile",
+      "family_id": "cobra-family-36f3ef70db8d1dc6",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "Makefile",
+          "start_line": 8,
+          "end_line": 24,
+          "anchor": ".PHONY: fmt lint test install_deps clean",
+          "grade": 3,
+          "reason": "The declared targets and their fmt, lint, and test recipes form the Makefile's primary interface.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-78",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "what happens if Cobra tries to execute a nil Command receiver",
+      "family_id": "cobra-family-fd0068906f959336",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 874,
+          "end_line": 877,
+          "anchor": "if c == nil {",
+          "grade": 3,
+          "reason": "The execution method rejects a nil receiver immediately with an error.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-79",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does Cobra report how many parsed arguments appeared before a -- separator",
+      "family_id": "cobra-family-c2f788cd144a1745",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 868,
+          "end_line": 872,
+          "anchor": "func (c *Command) ArgsLenAtDash(",
+          "grade": 3,
+          "reason": "ArgsLenAtDash delegates to the command's flag set to report the pre-separator argument count.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-80",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "when does Cobra append [flags] to a command's use line",
+      "family_id": "cobra-family-a98bb7db13261f11",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1436,
+          "end_line": 1450,
+          "anchor": "func (c *Command) UseLine(",
+          "grade": 3,
+          "reason": "UseLine constructs the full command use, honors DisableFlagsInUseLine, and appends the marker only when available flags exist and the marker is absent.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-81",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "how does NoFileCompletions tell a shell not to offer file names",
+      "family_id": "cobra-family-6c42d9c841e8ebed",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 118,
+          "end_line": 122,
+          "anchor": "func NoFileCompletions(",
+          "grade": 3,
+          "reason": "The completion callback returns no candidates together with ShellCompDirectiveNoFileComp.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-82",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "dev",
+      "query": "when does Cobra consider a command to have an available subcommand for help output",
+      "family_id": "cobra-family-5f216fdbe3981471",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1615,
+          "end_line": 1629,
+          "anchor": "func (c *Command) HasAvailableSubCommands(",
+          "grade": 3,
+          "reason": "The method returns true at the first child accepted by IsAvailableCommand and false if none qualify.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-83",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does GenReSTCustom build a command page from initialization through sections, links, and final output",
+      "family_id": "cobra-family-21a6de024387ba21",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "doc/rest_docs.go",
+          "start_line": 61,
+          "end_line": 130,
+          "anchor": "func GenReSTCustom(",
+          "grade": 3,
+          "reason": "The full function shows initialization, section assembly, parent and child link handling, optional generation tag, and the final writer copy.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-84",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does checkIfFlagCompletion split a current --flag=value or shorthand=value token before completing its value",
+      "family_id": "cobra-family-8c0e663e77de6471",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 599,
+          "end_line": 625,
+          "anchor": "flagWithEqual := false",
+          "grade": 3,
+          "reason": "The flow detects an equals sign, extracts a long name or the last shorthand, advances to the value, and distinguishes ordinary flag-name completion.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-85",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does LocalFlags rebuild the current command's local flag view while excluding unshadowed parent flags",
+      "family_id": "cobra-family-d8a1bb6a5400dc22",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 1668,
+          "end_line": 1693,
+          "anchor": "func (c *Command) LocalFlags(",
+          "grade": 3,
+          "reason": "LocalFlags merges persistent state, initializes its view, propagates sorting and normalization, and adds local or shadowing flags.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-86",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does VisitParents traverse from a command toward the root and invoke its callback",
+      "family_id": "cobra-family-2bf7ef6038719a09",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 852,
+          "end_line": 858,
+          "anchor": "func (c *Command) VisitParents(",
+          "grade": 3,
+          "reason": "The recursive method invokes the callback on the immediate parent and then continues upward.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-87",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does legacy Bash completion serialize available subcommands and their aliases",
+      "family_id": "cobra-family-edb82e269219105f",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completions.go",
+          "start_line": 447,
+          "end_line": 457,
+          "anchor": "func writeCommands(",
+          "grade": 3,
+          "reason": "The writer initializes the command list, filters unavailable children except help, emits each name, and delegates alias emission.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-88",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "dev",
+      "query": "how does legacy Bash completion turn ValidArgs and ValidArgsFunction into required-noun state",
+      "family_id": "cobra-family-d8c641531b5234da",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completions.go",
+          "start_line": 618,
+          "end_line": 630,
+          "anchor": "func writeRequiredNouns(",
+          "grade": 3,
+          "reason": "The writer sorts ValidArgs, strips tab descriptions, emits noun entries, and marks the presence of a dynamic completion function.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-89",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how do I keep Cobra's default completion command but hide it",
+      "family_id": "cobra-family-76378b0748f15cb4",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/completions/_index.md",
+          "start_line": 102,
+          "end_line": 105,
+          "anchor": "rootCmd.CompletionOptions.HiddenDefaultCmd = true",
+          "grade": 3,
+          "reason": "The documentation gives the HiddenDefaultCmd setting on the root command.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-90",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how do I disable Cobra's automatic command suggestions",
+      "family_id": "cobra-family-5828a50a15a11a23",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/user_guide.md",
+          "start_line": 708,
+          "end_line": 714,
+          "anchor": "command.DisableSuggestions = true",
+          "grade": 3,
+          "reason": "The user guide documents the DisableSuggestions command field and its setting.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-91",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "Group",
+      "family_id": "cobra-family-ac2a9bb9ab3c3d9c",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 41,
+          "end_line": 45,
+          "anchor": "type Group struct {",
+          "grade": 3,
+          "reason": "The Group type is the canonical definition among command grouping fields, helpers, and validation code.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-92",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "completion options",
+      "family_id": "cobra-family-645252b61a9523fa",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "completions.go",
+          "start_line": 104,
+          "end_line": 116,
+          "anchor": "type CompletionOptions struct {",
+          "grade": 3,
+          "reason": "The CompletionOptions type is the canonical definition of the completion configuration switches.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-93",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "dev",
+      "query": "post-run",
+      "family_id": "cobra-family-c6c098b832247473",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 136,
+          "end_line": 143,
+          "anchor": "PostRun func(cmd *Command, args []string)",
+          "grade": 3,
+          "reason": "The Command fields define local and persistent post-run callbacks and their error-returning variants.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
+        }
+      ]
+    },
+    {
+      "id": "cd-94",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "dev",
+      "query": "how do I customize links in generated ReST documentation",
+      "family_id": "cobra-family-cf19bfb99e06df95",
+      "provenance": "dev:2026-09-14:independently-reviewed-against-pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/docgen/rest.md",
+          "start_line": 107,
+          "end_line": 114,
+          "anchor": "linkHandler := func(name, ref string) string {",
+          "grade": 3,
+          "reason": "The documentation explains the linkHandler callback and shows a Sphinx cross-reference implementation.",
+          "annotator": "codex-cli 0.153.4 (reviewer-authored)",
+          "reviewer": "codex-cli 0.153.4 (independent reviewer, 2026-09-14)"
         }
       ]
     }
