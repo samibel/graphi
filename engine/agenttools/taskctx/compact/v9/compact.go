@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/11"
+const CompactTaskContextVersion = "task_context/2-compact/12"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -1470,6 +1470,13 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		// compact/10: natural-language questions keep the retrieval order.
 		return compactTaskContextSelectNaturalLanguage(query, patterns, evidence, items, budget)
 	}
+	if mode == GrepReadV2ExactIdentifier && !compactTaskContextAnyItemNamed(items, patterns[0]) {
+		// A single word that names no candidate exactly is a bare term, not
+		// a lookup: "directive", "template", "Aliases". The exact-lookup
+		// path would crown whichever candidate scores best on that word;
+		// retrieval already ranked the candidates for it.
+		return compactTaskContextSelectNaturalLanguage(query, patterns, evidence, items, budget)
+	}
 	documentFrequencies := [2]map[string]int{make(map[string]int, len(patterns)), make(map[string]int, len(patterns))}
 	for _, item := range evidence {
 		channel := 0
@@ -2385,6 +2392,18 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 	out = compactTaskContextRemoveContainedSources(out)
 	out, used := compactTaskContextTrimSources(out, budget)
 	return out, used, nil
+}
+
+// compactTaskContextAnyItemNamed reports whether some ranked item's symbol
+// is exactly the identifier (its last segment, case-insensitively).
+func compactTaskContextAnyItemNamed(items []contract.Item, identifier string) bool {
+	for _, item := range items {
+		symbol, _ := compactTaskContextItemSymbol(item.Reason)
+		if compactTaskContextWholeSymbolMatch([]string{identifier}, symbol) {
+			return true
+		}
+	}
+	return false
 }
 
 func compactTaskContextItemSymbol(reason string) (string, string) {
