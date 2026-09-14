@@ -62,14 +62,33 @@ const candidateRequestID = "1"
 // together with the request that produced it. The request is recorded for
 // provenance only; it is outside the payload boundary and enters no count.
 type CapturedCandidateBundle struct {
-	QueryID      string           `json:"query_id"`
-	RequestBytes []byte           `json:"request_bytes"`
-	Payload      PreservedPayload `json:"payload"`
+	QueryID      string            `json:"query_id"`
+	RequestBytes []byte            `json:"request_bytes"`
+	Payload      PreservedPayload  `json:"payload"`
+	FollowupRead *PreservedPayload `json:"followup_read,omitempty"`
 	// RetrievalStrategy and RetrievalState are the observed engine facts that
 	// prove this was the ready task_context/2 path and not the /1 fallback.
 	RetrievalStrategy string `json:"retrieval_strategy"`
 	RetrievalState    string `json:"retrieval_state"`
 	BundleSummary     string `json:"bundle_summary"`
+}
+
+// ValidateCapturedTranscript preserves contract-1 captures unchanged and,
+// when slice 2 exists, proves it is exactly the span slice 1 designated from
+// the pinned repository. A reader cannot choose or fabricate the follow-up.
+func ValidateCapturedTranscript(repository fs.FS, queryID string, bundle CapturedCandidateBundle, real PayloadCounter) error {
+	if bundle.FollowupRead == nil {
+		return nil
+	}
+	designation, err := compactFollowupDesignation(queryID, bundle.Payload)
+	if err != nil {
+		return err
+	}
+	if designation == nil {
+		return fmt.Errorf("retrieval follow-up transcript: query %s designated no follow-up but a second slice was preserved", queryID)
+	}
+	_, _, err = validateFollowupRead(repository, queryID, *designation, *bundle.FollowupRead, real)
+	return err
 }
 
 // CandidateBinding binds a capture to the exact candidate implementation and

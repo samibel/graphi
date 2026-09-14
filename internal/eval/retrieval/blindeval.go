@@ -265,6 +265,7 @@ type PreconditionRecord struct {
 	TokenizerID                string        `json:"tokenizer_id"`
 	TokenizerVocabularySHA256  string        `json:"tokenizer_vocabulary_sha256"`
 	MeasurementContractVersion string        `json:"measurement_contract_version"`
+	FollowupMaxLines           int           `json:"followup_max_lines,omitempty"`
 	ClaimWordingSHA256         string        `json:"claim_wording_sha256"`
 	Inputs                     []FrozenInput `json:"inputs"`
 	SHA256                     string        `json:"sha256"`
@@ -291,6 +292,11 @@ func FrozenClaimWording() string {
 func ValidatePreconditionRecord(rec PreconditionRecord) error {
 	if rec.ContractVersion != QrelBlindSmokeContractVersion {
 		return fmt.Errorf("retrieval %s: precondition contract_version=%q, want %q", QrelBlindSmokeEvaluationName, rec.ContractVersion, QrelBlindSmokeContractVersion)
+	}
+	// Contract 1 cannot silently carry a contract-2 parameter. Recording the
+	// draft limit would make the precondition look adopted before review.
+	if rec.FollowupMaxLines != 0 {
+		return fmt.Errorf("retrieval %s: precondition followup_max_lines=%d, but the second-response contract is not adopted", QrelBlindSmokeEvaluationName, rec.FollowupMaxLines)
 	}
 	if rec.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: precondition evaluation=%q, want %q", QrelBlindSmokeEvaluationName, rec.Evaluation, QrelBlindSmokeEvaluationName)

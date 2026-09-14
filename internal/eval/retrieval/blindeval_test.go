@@ -454,6 +454,31 @@ func dropInput(inputs []FrozenInput, role string) []FrozenInput {
 	return out
 }
 
+func TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdoption(t *testing.T) {
+	t.Run("zero keeps contract one valid", func(t *testing.T) {
+		rec := fixturePrecondition(t)
+		if rec.FollowupMaxLines != 0 {
+			t.Fatalf("followup_max_lines = %d, want zero", rec.FollowupMaxLines)
+		}
+		if err := ValidatePreconditionRecord(rec); err != nil {
+			t.Fatalf("contract-1 precondition: %v", err)
+		}
+	})
+
+	t.Run("non-zero requires the unadopted contract", func(t *testing.T) {
+		rec := fixturePrecondition(t)
+		rec.FollowupMaxLines = 120
+		sealed, err := SealPreconditionRecord(rec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ValidatePreconditionRecord(sealed)
+		if err == nil || !strings.Contains(err.Error(), "second-response contract is not adopted") {
+			t.Fatalf("error = %v, want the contract-adoption refusal", err)
+		}
+	})
+}
+
 // Refusal: a hand-edited precondition record no longer matches its own content
 // address.
 func TestQrelBlindSmoke_TamperedPreconditionRecordFailsItsOwnAddress(t *testing.T) {

@@ -133,4 +133,8 @@ this contract; a lower bar is not what it buys.
 | Earliest-prefix charging: slice 1 alone when it reaches; both slices when the read reaches; censored at both on a miss | enforced — same |
 | Two-call development measurement uses that one implementation | instrument — `TestDraftDevForecast`, `TestProductCompactTaskContextDev`, `TestOneSpanCompactDev` (`GRAPHI_ONE_SPAN_FOLLOWUP=1`) |
 | The same scorer in the release aggregate (`SavingsAggregateInput` with two-slice candidate arms) | **UNENFORCED** — the release path still calls the contract-1 scorer; wiring it is part of adoption |
-| Rubric packet with both slices | **UNENFORCED** — must be built before adoption |
+| Capture shape: `CapturedCandidateBundle.followup_read` (optional slice 2), `ValidateCapturedTranscript` proves it against the designation and the pinned tree; contract-1 captures are unchanged | enforced — `internal/eval/retrieval/followup_capture_test.go` |
+| Grader packet carries both slices, labelled `RESPONSE 1 OF 2` / `RESPONSE 2 OF 2`, with the read's content address; a one-slice packet is byte-identical to today's | enforced — `cmd/retrieval-eval/blindeval_test.go` (`TestBuildGraderPacketCarriesTwoSliceTranscript`) |
+| The seal step refuses a two-slice bundle whose read is not the designation, and needs `-checkout` at the pinned SHA to prove it | enforced — `TestValidateCapturedBundleForGraderPacketRejectsForgedFollowup` |
+| Precondition record: `followup_max_lines` is refused under contract 1, so the draft cannot be recorded as adopted | enforced — `TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdoption` |
+| Contract-2 version constants, adoption in `methodology.md`, and a two-slice release aggregate | **UNENFORCED** — deliberately; adoption is its own reviewed slice |

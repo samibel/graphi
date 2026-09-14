@@ -192,6 +192,81 @@ func TestBuildGraderPacketNamesTheRubricFrozenForThisRun(t *testing.T) {
 	if strings.Contains(packet, "2026-09-05-sw280-qrel-blind-smoke") {
 		t.Fatalf("grader packet leaked the historical run rubric: %q", packet)
 	}
+	if strings.Contains(packet, "RESPONSE 1 OF") || strings.Contains(packet, "RESPONSE 2 OF") {
+		t.Fatalf("one-slice grader packet gained second-response markers: %q", packet)
+	}
+}
+
+func TestBuildGraderPacketCarriesTwoSliceTranscript(t *testing.T) {
+	const rubricPath = "docs/eval/retrieval/runs/fresh-run/grading-rubric.md"
+	rubric := []byte("# exact fresh rubric\n")
+	rubricSHA := retrieval.SHA256Hex(rubric)
+	first := []byte("slice one\n")
+	second := []byte("slice two\n")
+	followup := retrieval.PreservedPayload{Bytes: second, SHA256: retrieval.SHA256Hex(second)}
+	bundle := retrieval.CapturedCandidateBundle{
+		Payload:      retrieval.PreservedPayload{Bytes: first},
+		FollowupRead: &followup,
+	}
+	query := retrieval.Query{ID: "q-1", Text: "where"}
+	response := retrieval.RaterResponse{SHA256: strings.Repeat("a", 64), Text: "answer"}
+
+	oneSlice := buildGraderPacket(query, retrieval.CapturedCandidateBundle{Payload: bundle.Payload}, response, rubricPath, rubricSHA, rubric)
+	packet := buildGraderPacket(query, bundle, response, rubricPath, rubricSHA, rubric)
+	wantTranscript := "----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n" +
+		string(first) +
+		"----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n" +
+		"----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n" +
+		string(second) +
+		"----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----"
+	if !strings.Contains(packet, wantTranscript) {
+		t.Fatalf("two-slice grader packet does not preserve the transcript in order: %q", packet)
+	}
+	wantAddresses := "RESPONSE CONTENT ADDRESS: " + response.SHA256 + "\n" +
+		"FOLLOW-UP READ CONTENT ADDRESS: " + followup.SHA256 + "\n"
+	if !strings.Contains(packet, wantAddresses) {
+		t.Fatalf("two-slice grader packet content addresses = %q", packet)
+	}
+	oneInstructions, _, ok := strings.Cut(oneSlice, "RESPONSE CONTENT ADDRESS:")
+	if !ok {
+		t.Fatal("one-slice packet has no response content address")
+	}
+	twoInstructions, _, ok := strings.Cut(packet, "RESPONSE CONTENT ADDRESS:")
+	if !ok {
+		t.Fatal("two-slice packet has no response content address")
+	}
+	if twoInstructions != oneInstructions {
+		t.Fatalf("grader instructions changed for two slices:\n--- one ---\n%s--- two ---\n%s", oneInstructions, twoInstructions)
+	}
+}
+
+func TestValidateCapturedBundleForGraderPacketRejectsForgedFollowup(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "answer.go"), []byte("line one\nline two\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	counter := retrieval.PayloadCounter{
+		TokenizerID:      "fixture-real-tokenizer",
+		VocabularySHA256: strings.Repeat("b", 64),
+		Count:            func(raw []byte) (int, error) { return len(raw), nil },
+	}
+	first := []byte(`{"result":{"structuredContent":{"followup":"answer.go:1-2"}}}`)
+	forged := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"forged\ntext"}` + "\n")
+	second := retrieval.PreservedPayload{
+		Sequence: 2, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationFollowupRead,
+		Bytes: forged, SHA256: retrieval.SHA256Hex(forged), ByteCount: len(forged),
+		TokenCounts: []retrieval.PayloadTokenCount{
+			{TokenizerID: retrieval.TokenizerID, Tokens: len(strings.Fields(string(forged)))},
+			{TokenizerID: counter.TokenizerID, VocabularySHA256: counter.VocabularySHA256, Tokens: len(forged)},
+		},
+	}
+	bundle := retrieval.CapturedCandidateBundle{
+		QueryID: "q-1", Payload: retrieval.PreservedPayload{Bytes: first}, FollowupRead: &second,
+	}
+	err := validateCapturedBundleForGraderPacket(os.DirFS(root), bundle.QueryID, bundle, counter)
+	if err == nil || !strings.Contains(err.Error(), "bytes differ") {
+		t.Fatalf("error = %v, want forged-byte refusal", err)
+	}
 }
 
 func TestLoadFrozenGradingRubricFailsClosedOnMissingOrDriftedBytes(t *testing.T) {

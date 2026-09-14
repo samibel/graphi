@@ -26,8 +26,10 @@ package main
 // the old grade was gone with the replacement validly sealed.
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -155,6 +157,8 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// sealed grade below is built from the response object itself.
 	packets, grades := 0, 0
 	var sealedGrades []retrieval.Grade
+	var followupRepository fs.FS
+	var followupCounter retrieval.PayloadCounter
 	for _, response := range sealedResponses {
 		if response.Status != retrieval.ResponseStatusAnswered {
 			continue
@@ -165,6 +169,33 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
+		}
+		if bundle.FollowupRead != nil {
+			if followupRepository == nil {
+				if strings.TrimSpace(o.checkout) == "" {
+					fmt.Fprintln(stderr, "retrieval-eval: sealing a two-slice transcript needs -checkout at the dataset's pinned repository sha")
+					return exitError
+				}
+				head, err := retrieval.CheckoutHEAD(context.Background(), o.checkout)
+				if err != nil {
+					fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+					return exitError
+				}
+				if !strings.EqualFold(head, dataset.Dataset.RepoSHA) {
+					fmt.Fprintf(stderr, "retrieval-eval: follow-up checkout is at %s, dataset pins %s\n", head, dataset.Dataset.RepoSHA)
+					return exitError
+				}
+				followupCounter, err = retrieval.LoadPinnedRealPayloadCounter()
+				if err != nil {
+					fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+					return exitError
+				}
+				followupRepository = os.DirFS(o.checkout)
+			}
+			if err := validateCapturedBundleForGraderPacket(followupRepository, response.QueryID, bundle, followupCounter); err != nil {
+				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+				return exitError
+			}
 		}
 		packet := buildGraderPacket(q, bundle, response, rubricPath, rubricSHA, rubricBytes)
 		if err := os.MkdirAll(filepath.Join(o.dir, blindEvalGraderPacketsDir), 0o755); err != nil {
@@ -410,6 +441,13 @@ func loadCapturedBundle(dir, queryID string) (retrieval.CapturedCandidateBundle,
 	return bundle, nil
 }
 
+func validateCapturedBundleForGraderPacket(repository fs.FS, queryID string, bundle retrieval.CapturedCandidateBundle, real retrieval.PayloadCounter) error {
+	if err := retrieval.ValidateCapturedTranscript(repository, queryID, bundle, real); err != nil {
+		return fmt.Errorf("captured bundle for %s has an invalid transcript: %w", queryID, err)
+	}
+	return nil
+}
+
 // buildGraderPacket assembles the grader's complete input. It carries the
 // reviewed grade-3 answer spans, which is the one input the raters never see:
 // the raters are what is being measured, the grader is the instrument reading
@@ -464,6 +502,9 @@ func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBund
 	}
 	b.WriteString("----- END THE EXACT FROZEN GRADING RUBRIC -----\n\n")
 	b.WriteString("RESPONSE CONTENT ADDRESS: " + response.SHA256 + "\n")
+	if bundle.FollowupRead != nil {
+		b.WriteString("FOLLOW-UP READ CONTENT ADDRESS: " + bundle.FollowupRead.SHA256 + "\n")
+	}
 	b.WriteString("QUERY ID: " + q.ID + "\n\n")
 	b.WriteString("QUESTION:\n" + q.Text + "\n\n")
 	b.WriteString("REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):\n")
@@ -473,9 +514,18 @@ func buildGraderPacket(q retrieval.Query, bundle retrieval.CapturedCandidateBund
 		}
 		b.WriteString(fmt.Sprintf("- %s:%d-%d anchor=%q reason=%s\n", j.Path, j.StartLine, j.EndLine, j.Anchor, j.Reason))
 	}
-	b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----\n")
-	b.Write(bundle.Payload.Bytes)
-	b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----\n\n")
+	if bundle.FollowupRead == nil {
+		b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----\n")
+		b.Write(bundle.Payload.Bytes)
+		b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----\n\n")
+	} else {
+		b.WriteString("\n----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n")
+		b.Write(bundle.Payload.Bytes)
+		b.WriteString("----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----\n")
+		b.WriteString("----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n")
+		b.Write(bundle.FollowupRead.Bytes)
+		b.WriteString("----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----\n\n")
+	}
 	b.WriteString("----- BEGIN THE RATER'S RESPONSE -----\n")
 	b.WriteString(response.Text)
 	b.WriteString("\n----- END THE RATER'S RESPONSE -----\n")
