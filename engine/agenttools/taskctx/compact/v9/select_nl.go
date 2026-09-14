@@ -78,6 +78,14 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 		}
 	}
 	testIntent := compactTaskContextTestIntent(patterns)
+	// A bare identifier ("Aliases", "post-run") asks for the thing so
+	// named: the line that declares it outweighs every mention. A mention
+	// alone earns nothing extra — a prose comment that happens to use the
+	// word would otherwise outrank the declaration that only contains it.
+	identifierQuery := ""
+	if mode, plan := grepReadV2QueryPlan(query); mode == GrepReadV2ExactIdentifier && len(plan) > 0 {
+		identifierQuery = plan[0]
+	}
 	var seeds, others, fallbacks []nlCandidate
 	for order, item := range evidence {
 		if item.ClaimType != "" || item.TextHash != shape.TextHash(item.Snippet) {
@@ -108,6 +116,9 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 			trimmed := strings.TrimSpace(lower)
 			if strings.HasPrefix(trimmed, "func ") || strings.HasPrefix(trimmed, "type ") || strings.HasPrefix(trimmed, "var ") || strings.HasPrefix(trimmed, "const ") {
 				score += 4
+			}
+			if actual := nlWholeToken(line, identifierQuery); actual != "" && grepReadV2DeclarationLine([]byte(line), actual) {
+				score += 100
 			}
 			c.lineScore[i] = score
 			if score > bestScore {
@@ -381,6 +392,25 @@ func nlGrow(c *nlCandidate, remaining *int) bool {
 	c.cost += cost
 	*remaining -= cost
 	return true
+}
+
+// nlWholeToken reports the identifier on the line that the query token
+// names as a whole identifier: the token itself when it is one, or the
+// identifier its separated parts spell ("post-run" names PostRun).
+func nlWholeToken(line, token string) string {
+	switch {
+	case token == "":
+		return ""
+	case grepReadV2Identifier.MatchString(token):
+		if grepReadV2WholeIdentifierColumn([]byte(line), token) > 0 {
+			return token
+		}
+	case grepReadV2SeparatedIdentifier.MatchString(token):
+		folded := strings.ToLower(strings.NewReplacer("-", "", "_", "").Replace(token))
+		_, actual := grepReadV2FoldedIdentifierColumn([]byte(line), folded)
+		return actual
+	}
+	return ""
 }
 
 // compactTaskContextQueryNamesSymbol reports whether the query spells the

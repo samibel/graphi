@@ -182,13 +182,18 @@ type grepReadV2Declaration struct {
 
 var grepReadV2Identifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
+// grepReadV2SeparatedIdentifier is a token written the way people write a
+// name in prose — "post-run", "pre_run" — whose parts joined are an
+// identifier. It is searched as that identifier, ignoring case.
+var grepReadV2SeparatedIdentifier = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)+$`)
+
 func grepReadV2QueryPlan(query string) (GrepReadV2Mode, []string) {
 	trimmed := strings.TrimSpace(query)
 	cleanPath := cleanGrepReadPath(trimmed)
 	if !strings.ContainsAny(trimmed, " \t\r\n") && path.Ext(cleanPath) == ".go" {
 		return GrepReadV2ExactPath, []string{cleanPath}
 	}
-	if grepReadV2Identifier.MatchString(trimmed) {
+	if grepReadV2Identifier.MatchString(trimmed) || grepReadV2SeparatedIdentifier.MatchString(trimmed) {
 		return GrepReadV2ExactIdentifier, []string{trimmed}
 	}
 
@@ -468,6 +473,12 @@ func grepReadV2PathMatches(ctx context.Context, files []grepReadFile, queryPath 
 
 func grepReadV2IdentifierMatches(ctx context.Context, files []grepReadFile, identifier string) ([]grepReadV2Match, error) {
 	var matches []grepReadV2Match
+	// A separated token ("post-run") also matches the identifier its parts
+	// spell ("PostRun"), as a whole identifier, ignoring case.
+	folded := ""
+	if strings.ContainsAny(identifier, "-_") {
+		folded = strings.ToLower(strings.NewReplacer("-", "", "_", "").Replace(identifier))
+	}
 	for _, file := range files {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -485,15 +496,18 @@ func grepReadV2IdentifierMatches(ctx context.Context, files []grepReadFile, iden
 					return nil, err
 				}
 			}
-			column := grepReadV2WholeIdentifierColumn(line.Text, identifier)
+			column, actual := grepReadV2WholeIdentifierColumn(line.Text, identifier), identifier
+			if column == 0 && folded != "" {
+				column, actual = grepReadV2FoldedIdentifierColumn(line.Text, folded)
+			}
 			if column == 0 {
 				continue
 			}
 			declarationStart, declarationEnd := 0, 0
-			if declaration, ok := grepReadV2NamedDeclarationAt(declarations, i+1, identifier); ok {
+			if declaration, ok := grepReadV2NamedDeclarationAt(declarations, i+1, actual); ok {
 				declarationStart, declarationEnd = declaration.Start, declaration.End
 			}
-			declaration := declarationEnd > 0 || grepReadV2DeclarationLine(line.Text, identifier)
+			declaration := declarationEnd > 0 || grepReadV2DeclarationLine(line.Text, actual)
 			if declaration && declarationEnd == 0 {
 				declarationStart = i + 1
 				declarationEnd = i + 1
@@ -906,6 +920,27 @@ func grepReadV2WholeIdentifierColumn(line []byte, identifier string) int {
 	return 0
 }
 
+// grepReadV2FoldedIdentifierColumn finds the first whole identifier on the
+// line whose lower-case form is folded, returning its 1-based column and the
+// identifier as written.
+func grepReadV2FoldedIdentifierColumn(line []byte, folded string) (int, string) {
+	for offset := 0; offset < len(line); {
+		if !grepReadV2IdentifierByte(line[offset]) {
+			offset++
+			continue
+		}
+		end := offset
+		for end < len(line) && grepReadV2IdentifierByte(line[end]) {
+			end++
+		}
+		if token := line[offset:end]; len(token) == len(folded) && strings.EqualFold(string(token), folded) {
+			return offset + 1, string(token)
+		}
+		offset = end
+	}
+	return 0, ""
+}
+
 func grepReadV2IdentifierByte(b byte) bool {
 	return b == '_' || b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9'
 }
@@ -917,6 +952,9 @@ func grepReadV2DeclarationLine(line []byte, identifier string) bool {
 		`^func(?:\s+\([^)]*\))?\s+` + quoted + `\s*\(`,
 		`^type\s+` + quoted + `\b`,
 		`^(?:var|const)\s+` + quoted + `\b`,
+		// A field or parameter line: the name followed by a type, never by
+		// an assignment or a literal key.
+		`^` + quoted + `\s+(?:\[\]|\*|map\[|func\s*\(|<-chan\s|chan\s|[A-Za-z_])`,
 	}
 	for _, pattern := range patterns {
 		if regexp.MustCompile(pattern).MatchString(trimmed) {

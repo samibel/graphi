@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/13"
+const CompactTaskContextVersion = "task_context/2-compact/14"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -199,6 +199,19 @@ func buildCompactTaskContextBound(ctx context.Context, query string, input Prese
 			}
 			inputSHA = SHA256Hex([]byte(inputSHA + "\n" + SHA256Hex(outlineRaw)))
 		}
+		exactFile, exactFileItems, err := compactTaskContextHydrateExactFile(ctx, repository, query, selectionItems)
+		if err != nil {
+			return PreservedPayload{}, err
+		}
+		if len(exactFile) > 0 {
+			exactFileRaw, err := json.Marshal(exactFile)
+			if err != nil {
+				return PreservedPayload{}, fmt.Errorf("compact task_context: bind exact file: %w", err)
+			}
+			inputSHA = SHA256Hex([]byte(inputSHA + "\n" + SHA256Hex(exactFileRaw)))
+		}
+		outline = append(outline, exactFile...)
+		outlineItems = append(outlineItems, exactFileItems...)
 		for index, evidence := range outline {
 			key := evidence.Path + "\x00" + evidence.Span
 			item := outlineItems[index]
@@ -2402,6 +2415,11 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 // is exactly the identifier (its last segment, case-insensitively).
 func compactTaskContextAnyItemNamed(items []contract.Item, identifier string) bool {
 	for _, item := range items {
+		// A documentation heading that spells the word is titled by it, not
+		// a declaration of it; only source declares an identifier.
+		if path, _, ok := compactTaskContextItemLocation(item.Reason); ok && strings.HasSuffix(strings.ToLower(path), ".md") {
+			continue
+		}
 		symbol, _ := compactTaskContextItemSymbol(item.Reason)
 		if compactTaskContextWholeSymbolMatch([]string{identifier}, symbol) {
 			return true
