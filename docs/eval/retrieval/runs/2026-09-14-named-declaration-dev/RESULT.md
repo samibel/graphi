@@ -265,11 +265,14 @@ inventories, which is required by their governance gates but changes no
 product code; pre-register against that evidence commit, not against
 `40133db5`, so the capture's candidate binding can match a clean worktree. Whether it is worth spending one
 is a judgement call this document deliberately does not make for the reader:
-the measured development gain is **one question of forty**, and section 1
-predicts that a holdout evaluated at this ceiling cannot exceed roughly the
-same 87.5% of questions with a complete answer span that the development split
-bounds. If the intent is to clear k=56 of 64, the evidence above says the work
-is in ranking and recall, not in this candidate.
+the measured development gain is **one question of forty**. Section 1
+originally predicted that a holdout at this ceiling could not exceed roughly
+the development split's 87.5%; that prediction was tested the same day and
+was wrong — both sealed holdouts have one small span per question and
+ceilings of 62/64 and 64/64 (`runs/2026-09-14-holdout-answer-span-ceiling/`).
+The development bounds in section 1 stand for the development split only.
+If the intent is to clear k=56 of 64, the evidence says the work is in
+ranking and recall, not in this candidate and not in the ceiling.
 
 ## 7. Reproduce
 

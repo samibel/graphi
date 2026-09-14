@@ -88,13 +88,14 @@ over the pinned Cobra checkout and recorded in
 | Queries with every span feasible | 33 |
 | Queries with no feasible span | 5 |
 
-`F/N = 35/40 = 87.5 %`. The last two sealed holdouts were pre-registered at
-`k = 56` of `N = 64`, which is also exactly 87.5 %: the bar sits on the
-development ceiling with no margin. A candidate whose true rate on feasible
-questions is one hundred percent has, at `p = 0.875`, a binomial probability
-of only about 59 % of observing 56 or more passes in 64; at the current
-development rate of 33/40 = 82.5 % it is about 19 %. See
-`contract-v2-options.md` for what follows from that.
+`F/N = 35/40 = 87.5 %` on development. The two sealed holdouts, measured
+aggregate-only under this protocol (with a custody disclosure, see
+`runs/2026-09-14-holdout-answer-span-ceiling/RESULT.md`), have `F = 62/64`
+and `F = 64/64`: one small grade-3 span per question, none or two over the
+ceiling. The development split's whole-file targets are not what the
+holdout curator judged, so the development `F` must not be read as a
+forecast of a holdout's; it bounds development measurements only. See
+`contract-v2-options.md` for what follows.
 
 ## Pre-registration wording
 

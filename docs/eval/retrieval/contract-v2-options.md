@@ -34,12 +34,16 @@ Two arithmetic consequences:
    inverts. The remaining losses are ranking (11 of 63 dev spans), retrieval
    recall (7) and the candidate cap (3), and 7 spans cannot fit at all.
 
-Both sealed holdouts had 11 of 64 questions in `exact_path`. On the
-development split every `exact_path` answer span is a whole file and none
-fits. If that holds for the holdout, its ceiling is at most 53 of 64 before
-any other stratum loses a question — below `k`. The curator can settle this
-in minutes with `answer-span-ceiling-protocol.md`; that measurement should
-precede any decision below.
+**Measured on the sealed holdouts (2026-09-14, aggregate only; see
+`runs/2026-09-14-holdout-answer-span-ceiling/RESULT.md`):** the first sealed
+holdout has `F = 62/64`, the second `F = 64/64`. The paragraph this replaces
+predicted at most 53 by extrapolating the development split's whole-file
+`exact_path` targets to the holdout; the curator did not judge whole files,
+and every holdout question has exactly one small grade-3 span. The
+development split is therefore a poor proxy for the holdout's shape, and
+consequence 1 above — the bar equals the ceiling — holds for the development
+split only. On the holdouts, `k = 56` is attainable and the entire gap is
+candidate quality.
 
 ## Options
 
@@ -119,19 +123,23 @@ existing nDCG targets, and then spend a holdout.
 
 ## Recommendation
 
-Run the protocol on the sealed key first; it costs nothing and decides
-between two very different worlds. Then:
+The protocol has been run on both sealed keys: `F = 62/64` and `F = 64/64`.
+That settles it in favour of the second branch that this section originally
+left open:
 
-- if the holdout `F` is below 56: adopt **A** for the next pre-registration
-  (it is the smallest honest change), and pursue **D** for quality —
-  neither alone is sufficient; and
-- if the holdout `F` is 56 or above: the bar is attainable in principle and
-  the whole gap is candidate quality; pursue **D**, and treat **C** as the
-  structural change to plan for, since it is the only one that moves the
-  ceiling for `exact_path` at all.
-
-**B** is not recommended on this dataset: it trades the token-savings claim
-for at most three development questions.
+- **A is withdrawn.** The bar is attainable in principle on both holdouts;
+  deriving `k` from the ceiling would change nothing and would look like
+  what it is not.
+- **D is the slice.** The 42 → 56 gap is candidate quality on questions
+  whose answers fit. Before spending it, build a development set shaped like
+  the holdout — one reviewed small span per question, authored fresh, never
+  a holdout question — because the current 40 development questions cannot
+  measure what the holdout grades. Gate the ranking work on *removing*
+  query-shape predicates from the compact selector, not adding to them.
+- **C** remains the structural change to plan for if whole-file or
+  long-function questions ever enter a holdout; on these two they did not.
+- **B** is not recommended: it trades the token-savings claim for at most
+  three development questions and zero holdout questions.
 
 ## What must not happen
 
