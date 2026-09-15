@@ -146,6 +146,11 @@ and become stale when `PinnedRevision` changes:
   compact/16 coherent flow and depth development measurement. Its 64-query
   production MCP forecast and original 40-query cost comparison use this
   pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout/` — the
+  consumed compact/17 holdout attempt that was refused at the first seal step.
+  Its preserved two-index capture and primary-response packets use this pinned
+  model even though the missing required seal argument prevents a release
+  verdict.
 - `docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev/` — the
   compact/17 answer-span projection development measurement. Its 64-query
   production MCP capture, reviewed completeness result, cost comparison and
