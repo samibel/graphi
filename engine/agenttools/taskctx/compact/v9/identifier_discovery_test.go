@@ -62,3 +62,16 @@ func TestDiscoveryFoldsASeparatedTokenToItsIdentifier(t *testing.T) {
 		t.Fatalf("a multi-word question is not an identifier: %s", mode)
 	}
 }
+
+func TestQueryPlanDistinguishesCamelCaseFromSentenceCapitalization(t *testing.T) {
+	_, patterns := grepReadV2QueryPlan("How do Flags reach getCompletions and ValidArgsFunction")
+	want := []string{"flag", "reach", "getcompletions", "validargsfunction"}
+	if len(patterns) != len(want) {
+		t.Fatalf("patterns = %v, want %v", patterns, want)
+	}
+	for i := range want {
+		if patterns[i] != want[i] {
+			t.Fatalf("patterns = %v, want %v", patterns, want)
+		}
+	}
+}

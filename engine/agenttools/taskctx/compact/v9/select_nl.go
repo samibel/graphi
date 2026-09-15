@@ -42,11 +42,14 @@ const (
 
 type nlCandidate struct {
 	compactTaskContextCandidate
-	rank      int   // retrieval rank for seeds (1 first); 0 otherwise
-	hits      int   // question-word hits inside the snippet
-	lineScore []int // per-line question-word score, for directed growth
-	unitFrom  int   // structural unit bounds within lines, or -1
-	unitTo    int
+	rank               int   // retrieval rank for seeds (1 first); 0 otherwise
+	hits               int   // question-word hits inside the snippet
+	lineScore          []int // per-line question-word score, for directed growth
+	unitFrom           int   // structural unit bounds within lines, or -1
+	unitTo             int
+	clustered          bool // long named declaration anchored on an internal query cluster
+	declaresIdentifier bool // anchor declares the bare identifier in the query
+	density            int  // distinct query terms per field in a small declaration
 }
 
 func compactTaskContextSelectNaturalLanguage(query string, patterns []string, evidence []contract.Evidence, items []contract.Item, budget int) ([]CompactTaskContextSource, int, error) {
@@ -104,13 +107,15 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 		c.completeFallback = c.fallback && strings.HasPrefix(item.RefID, "grepread-hydrated-")
 		c.lineScore = make([]int, len(lines))
 		best, bestScore := 0, -1
+		declarationPatterns := make(map[string]bool)
 		for i, line := range lines {
 			lower := strings.ToLower(line)
 			score := 0
 			for _, pattern := range lowerPatterns {
-				if strings.Contains(lower, pattern) {
+				if nlContainsPattern(lower, pattern) {
 					score += 10
 					c.hits++
+					declarationPatterns[pattern] = true
 				}
 			}
 			trimmed := strings.TrimSpace(lower)
@@ -119,10 +124,21 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 			}
 			if actual := nlWholeToken(line, identifierQuery); actual != "" && grepReadV2DeclarationLine([]byte(line), actual) {
 				score += 100
+				c.declaresIdentifier = true
 			}
 			c.lineScore[i] = score
 			if score > bestScore {
 				best, bestScore = i, score
+			}
+		}
+		if identifierQuery == "" && c.fallback && len(lines) > 40 && (h.kind == "function" || h.kind == "method") && compactTaskContextQueryNamesSymbol(query, h.symbol) {
+			namedPattern := h.symbol
+			if dot := strings.LastIndex(namedPattern, "."); dot >= 0 {
+				namedPattern = namedPattern[dot+1:]
+			}
+			if anchor, distinct := nlBestQuestionCluster(lines, lowerPatterns, strings.ToLower(namedPattern)); distinct >= 3 {
+				best = anchor
+				c.clustered = true
 			}
 		}
 		c.anchor, c.from, c.to = best, best, best
@@ -130,13 +146,34 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 		// not on how long they are: a 250-line generator mentions every
 		// question word somewhere without answering anything.
 		c.hits = bestScore*100 + min(c.hits, 50)
+		fieldCount := len(strings.Fields(item.Snippet))
+		if len(declarationPatterns) >= 2 && fieldCount <= nlOtherCompleteLimit && (h.kind == "function" || h.kind == "method") {
+			c.density = len(declarationPatterns) * 100_000 / max(1, fieldCount)
+		}
+		if c.completeFallback && fieldCount <= nlOtherCompleteLimit {
+			c.hits += len(declarationPatterns) * 1000
+		}
 		c.unitFrom, c.unitTo = -1, -1
 		if strings.HasSuffix(strings.ToLower(item.Path), ".md") {
 			if from, to, ok := compactTaskContextMarkdownSection(lines, best+1); ok {
 				c.unitFrom, c.unitTo = from-1, to-1
+				whole := len(strings.Fields(strings.Join(lines[c.unitFrom:c.unitTo+1], "\n")))
+				if whole > nlLeadCompleteLimit {
+					if blockFrom, blockTo, ok := nlMarkdownParagraphWithFence(lines, best); ok {
+						c.unitFrom, c.unitTo = blockFrom, blockTo
+					}
+				}
 			}
 		} else if from, to, ok := compactTaskContextUnitRange(c.compactTaskContextCandidate); ok && from <= best && best <= to {
 			c.unitFrom, c.unitTo = from, to
+		}
+		if c.clustered {
+			lo, hi := 0, len(lines)-1
+			if c.unitFrom >= 0 {
+				lo, hi = c.unitFrom, c.unitTo
+			}
+			c.from = max(lo, c.anchor-12)
+			c.to = min(hi, c.anchor+12)
 		}
 		isTest := strings.HasSuffix(strings.ToLower(item.Path), "_test.go")
 		switch {
@@ -210,8 +247,18 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 	// the raw window around the same line, and the same line found twice is
 	// one region.
 	sort.SliceStable(fallbacks, func(i, j int) bool {
-		if fallbacks[i].completeFallback != fallbacks[j].completeFallback {
-			return fallbacks[i].completeFallback
+		iNamed := compactTaskContextQueryNamesSymbol(query, fallbacks[i].symbol)
+		jNamed := compactTaskContextQueryNamesSymbol(query, fallbacks[j].symbol)
+		if iNamed != jNamed {
+			return iNamed
+		}
+		iCoherent := fallbacks[i].completeFallback && (fallbacks[i].density > 0 || fallbacks[i].clustered)
+		jCoherent := fallbacks[j].completeFallback && (fallbacks[j].density > 0 || fallbacks[j].clustered)
+		if iCoherent != jCoherent {
+			return iCoherent
+		}
+		if fallbacks[i].density != fallbacks[j].density {
+			return fallbacks[i].density > fallbacks[j].density
 		}
 		if fallbacks[i].hits != fallbacks[j].hits {
 			return fallbacks[i].hits > fallbacks[j].hits
@@ -219,6 +266,44 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 		return fallbacks[i].order < fallbacks[j].order
 	})
 	fallbacks = nlDedupe(fallbacks)
+	// A bare identifier which names a field has no independently indexed
+	// symbol item, so compactTaskContextSelect deliberately routes it through
+	// this selector. The declaration line found by exact lexical discovery is
+	// still the primary answer and must not remain below the retrieval-depth
+	// cap merely because the enclosing type has a different symbol name.
+	if identifierQuery != "" {
+		promote := func(candidates *[]nlCandidate) bool {
+			for i, candidate := range *candidates {
+				if !candidate.declaresIdentifier {
+					continue
+				}
+				*candidates = append((*candidates)[:i], (*candidates)[i+1:]...)
+				seeds = append([]nlCandidate{candidate}, seeds...)
+				return true
+			}
+			return false
+		}
+		if !promote(&seeds) && !promote(&others) {
+			promote(&fallbacks)
+		}
+		namedLead = len(seeds) > 0 && seeds[0].declaresIdentifier
+	}
+	// Discovery and indexed retrieval are two ways to find the same source,
+	// not two different relevance classes. If the query explicitly names a
+	// declaration that only query-only discovery found, make it the lead just
+	// as we do for a named indexed seed above. Keeping it in the fallback band
+	// would give the strongest lexical signal only a supporting-region quota.
+	if !namedLead {
+		for i, candidate := range fallbacks {
+			if !compactTaskContextQueryNamesSymbol(query, candidate.symbol) {
+				continue
+			}
+			fallbacks = append(fallbacks[:i], fallbacks[i+1:]...)
+			seeds = append([]nlCandidate{candidate}, seeds...)
+			namedLead = true
+			break
+		}
+	}
 	// Keep a direct call edge intact at the breadth cap. Retrieval can place a
 	// caller at the edge of the retained window and its small callee one row
 	// below it; dropping the callee then turns a flow answer into an unrelated
@@ -262,7 +347,7 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 	remaining := budget
 	admitted := make([]bool, len(selected))
 	for i := range selected {
-		cost := len(strings.Fields(selected[i].lines[selected[i].anchor]))
+		cost := len(strings.Fields(strings.Join(selected[i].lines[selected[i].from:selected[i].to+1], "\n")))
 		if cost == 0 || cost > remaining {
 			continue
 		}
@@ -329,8 +414,12 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 			required := whole - lead.cost
 			eligible := whole <= nlLeadCompleteLimit
 			if namedLead && (lead.kind == "function" || lead.kind == "method") && !eligible {
-				required = max(0, quota(60)-lead.cost)
-				leadTarget = quota(60)
+				share := 60
+				if lead.clustered {
+					share = 64
+				}
+				required = max(0, quota(share)-lead.cost)
+				leadTarget = quota(share)
 				eligible = true
 			}
 			for i := len(selected) - 1; i > 0 && eligible && required > remaining; i-- {
@@ -447,6 +536,12 @@ func nlGrow(c *nlCandidate, remaining *int) bool {
 	pickDown := down
 	if down && up {
 		switch {
+		case c.clustered:
+			// Once a dense internal cluster has located the behaviour, grow
+			// evenly around it. Following the next keyword can otherwise spend
+			// the whole quota on earlier comments and cut the other half of the
+			// decision branch.
+			pickDown = c.to-c.anchor <= c.anchor-c.from
 		case c.lineScore[c.from-1] > c.lineScore[c.to+1]:
 			pickDown = false
 		case c.lineScore[c.from-1] < c.lineScore[c.to+1]:
@@ -513,6 +608,107 @@ func nlHasSeparatedStrongSignals(scores []int) bool {
 		}
 	}
 	return false
+}
+
+// nlBestQuestionCluster treats an explicitly named declaration as a search
+// boundary and uses the other query terms to locate the requested behaviour
+// inside it. A bounded window rewards several different terms appearing
+// together, so a generic early mention cannot beat a later decision branch
+// that contains the query's discriminating identifier.
+func nlBestQuestionCluster(lines, patterns []string, namedPattern string) (anchor, distinct int) {
+	const windowLines = 24
+	bestStart, bestEnd := 0, 0
+	bestQuality := -1
+	for start := range lines {
+		end := min(len(lines), start+windowLines)
+		seen := make(map[string]bool)
+		codeSeen := make(map[string]bool)
+		for _, line := range lines[start:end] {
+			lower := strings.ToLower(line)
+			trimmed := strings.TrimSpace(lower)
+			isComment := strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*")
+			for _, pattern := range patterns {
+				if pattern != namedPattern && nlContainsPattern(lower, pattern) {
+					seen[pattern] = true
+					if !isComment {
+						codeSeen[pattern] = true
+					}
+				}
+			}
+		}
+		quality := len(seen)*100 + len(codeSeen)*10
+		if quality > bestQuality {
+			bestQuality, distinct, bestStart, bestEnd = quality, len(seen), start, end
+		}
+	}
+	if distinct == 0 {
+		return 0, 0
+	}
+	// Start in the middle of the best window rather than on its earliest or
+	// latest matching line. The answer is commonly the branch joining the
+	// signals, and a centred initial span preserves context on both sides.
+	return (bestStart + bestEnd - 1) / 2, distinct
+}
+
+// nlMarkdownParagraphWithFence returns a prose paragraph and the fenced code
+// example immediately attached to it. Long documentation sections often
+// contain several topics under one heading; treating the paragraph and its
+// example atomically keeps the answer coherent without paying for the entire
+// section.
+func nlMarkdownParagraphWithFence(lines []string, anchor int) (from, to int, ok bool) {
+	if anchor < 0 || anchor >= len(lines) || strings.TrimSpace(lines[anchor]) == "" {
+		return 0, 0, false
+	}
+	from = anchor
+	for from > 0 {
+		previous := strings.TrimSpace(lines[from-1])
+		if previous == "" || strings.HasPrefix(previous, "#") || strings.HasPrefix(previous, "```") || strings.HasPrefix(previous, "~~~") {
+			break
+		}
+		from--
+	}
+	paragraphEnd := anchor
+	for paragraphEnd+1 < len(lines) && strings.TrimSpace(lines[paragraphEnd+1]) != "" {
+		next := strings.TrimSpace(lines[paragraphEnd+1])
+		if strings.HasPrefix(next, "#") || strings.HasPrefix(next, "```") || strings.HasPrefix(next, "~~~") {
+			break
+		}
+		paragraphEnd++
+	}
+	fenceStart := paragraphEnd + 1
+	for fenceStart < len(lines) && strings.TrimSpace(lines[fenceStart]) == "" {
+		fenceStart++
+	}
+	if fenceStart >= len(lines) {
+		return 0, 0, false
+	}
+	fence := strings.TrimSpace(lines[fenceStart])
+	marker := ""
+	if strings.HasPrefix(fence, "```") {
+		marker = "```"
+	} else if strings.HasPrefix(fence, "~~~") {
+		marker = "~~~"
+	} else {
+		return 0, 0, false
+	}
+	for fenceEnd := fenceStart + 1; fenceEnd < len(lines); fenceEnd++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[fenceEnd]), marker) {
+			return from, fenceEnd, true
+		}
+	}
+	return 0, 0, false
+}
+
+// nlContainsPattern closes the small gap between an English base verb ending
+// in silent e and its inflected spelling ("combine" / "combining"). The
+// query stemmer already removes "ing" from inflected queries; applying the
+// inverse-compatible prefix here makes matching symmetric without changing
+// exact-identifier mode.
+func nlContainsPattern(lowerLine, pattern string) bool {
+	if strings.Contains(lowerLine, pattern) {
+		return true
+	}
+	return len(pattern) > 5 && strings.HasSuffix(pattern, "e") && strings.Contains(lowerLine, strings.TrimSuffix(pattern, "e"))
 }
 
 func nlHasTrailingCloser(c *nlCandidate) bool {
@@ -603,18 +799,21 @@ func nlOverlaps(a, b nlCandidate) bool {
 	return aFrom <= bTo && bFrom <= aTo
 }
 
-// nlDedupe keeps, for each set of overlapping windows on one path, the widest
-// window, at the position of the earliest member so ordering is preserved.
+// nlDedupe keeps one candidate for overlapping windows on one path. A bounded
+// hydrated unit with multiple query signals wins over an arbitrary read;
+// otherwise the wider window wins. Ordering stays at the earliest member.
 func nlDedupe(list []nlCandidate) []nlCandidate {
 	out := make([]nlCandidate, 0, len(list))
 	for _, c := range list {
 		merged := false
 		for i := range out {
 			if nlOverlaps(out[i], c) {
-				cHydratedMarkdown := strings.HasSuffix(strings.ToLower(c.item.Path), ".md") && strings.HasPrefix(c.item.RefID, "hydrated-")
-				outHydratedMarkdown := strings.HasSuffix(strings.ToLower(out[i].item.Path), ".md") && strings.HasPrefix(out[i].item.RefID, "hydrated-")
-				if (cHydratedMarkdown && !outHydratedMarkdown) ||
-					(cHydratedMarkdown == outHydratedMarkdown && len(c.lines) > len(out[i].lines)) {
+				cHydrated := (strings.HasPrefix(c.item.RefID, "grepread-hydrated-") && (c.density > 0 || c.clustered)) ||
+					(strings.HasSuffix(strings.ToLower(c.item.Path), ".md") && strings.HasPrefix(c.item.RefID, "hydrated-"))
+				outHydrated := (strings.HasPrefix(out[i].item.RefID, "grepread-hydrated-") && (out[i].density > 0 || out[i].clustered)) ||
+					(strings.HasSuffix(strings.ToLower(out[i].item.Path), ".md") && strings.HasPrefix(out[i].item.RefID, "hydrated-"))
+				if (cHydrated && !outHydrated) ||
+					(cHydrated == outHydrated && len(c.lines) > len(out[i].lines)) {
 					rank, order := out[i].rank, out[i].order
 					out[i] = c
 					out[i].rank, out[i].order = rank, order

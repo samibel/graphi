@@ -200,12 +200,18 @@ func grepReadV2QueryPlan(query string) (GrepReadV2Mode, []string) {
 	words := grepReadV2Words(trimmed)
 	var selected []string
 	seen := map[string]bool{}
-	for _, word := range words {
-		word = strings.ToLower(word)
+	for _, rawWord := range words {
+		word := strings.ToLower(rawWord)
 		if grepReadV2StopWords[word] || utf8.RuneCountInString(word) < 3 {
 			continue
 		}
-		word = grepReadV2Stem(word)
+		// Preserve identifier-shaped prose tokens before lowercasing erases
+		// their structure. Language stemming turns names such as
+		// getCompletions into the nonexistent getCompletion and loses the
+		// strongest available query signal.
+		if !grepReadV2IdentifierShaped(rawWord) {
+			word = grepReadV2Stem(word)
+		}
 		if seen[word] {
 			continue
 		}
@@ -227,6 +233,20 @@ func grepReadV2QueryPlan(query string) (GrepReadV2Mode, []string) {
 		selected = selected[:8]
 	}
 	return GrepReadV2NaturalLanguage, selected
+}
+
+func grepReadV2IdentifierShaped(word string) bool {
+	if strings.ContainsRune(word, '_') {
+		return true
+	}
+	first := true
+	for _, r := range word {
+		if !first && unicode.IsUpper(r) {
+			return true
+		}
+		first = false
+	}
+	return false
 }
 
 func grepReadV2Stem(word string) string {

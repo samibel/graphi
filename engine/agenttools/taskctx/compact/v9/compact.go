@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/16"
+const CompactTaskContextVersion = "task_context/2-compact/17"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -692,7 +692,7 @@ func compactTaskContextMarkdownSection(lines []string, line int) (int, int, bool
 func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, repository fs.FS, snapshot *grepReadSnapshot, query string, hits []contract.Evidence) ([]contract.Evidence, []contract.Item, error) {
 	mode, patterns := grepReadV2QueryPlan(query)
 	wantsShellCompletion := compactTaskContextWantsShellCompletion(patterns)
-	if mode != GrepReadV2NaturalLanguage || (!compactTaskContextNeedsFlowAllocation(patterns) && !wantsShellCompletion) {
+	if mode != GrepReadV2NaturalLanguage {
 		return nil, nil, nil
 	}
 	type parsedFile struct {
@@ -776,7 +776,7 @@ func compactTaskContextHydrateGrepReadDeclarations(ctx context.Context, reposito
 				start = parsed.set.Position(doc.Pos()).Line
 			}
 			end := parsed.set.Position(declaration.End()).Line
-			if start < 1 || end < start || end > len(parsed.lines) || (end-start+1 <= GrepReadWindowLines && !wantsShellCompletion) {
+			if start < 1 || end < start || end > len(parsed.lines) {
 				continue
 			}
 			key := fmt.Sprintf("%s\x00%d\x00%d", path, start, end)

@@ -228,6 +228,43 @@ func TestNaturalLanguageDedupePrefersHydratedMarkdownSection(t *testing.T) {
 	t.Fatalf("hydrated Markdown section lost to overlapping raw window: %+v", sources)
 }
 
+func TestNaturalLanguageDedupePrefersSmallHydratedDeclaration(t *testing.T) {
+	raw := nlCandidate{compactTaskContextCandidate: compactTaskContextCandidate{
+		item:  contract.Evidence{RefID: "grepread-read-1", Path: "completion.go"},
+		lines: make([]string, 40), start: 820, anchor: 21,
+	}}
+	hydrated := nlCandidate{compactTaskContextCandidate: compactTaskContextCandidate{
+		item:  contract.Evidence{RefID: "grepread-hydrated-1", Path: "completion.go"},
+		lines: []string{"func findFlag() {", "\tlookup()", "}"}, start: 841, anchor: 0,
+	}, density: 1000}
+	got := nlDedupe([]nlCandidate{hydrated, raw})
+	if len(got) != 1 || got[0].item.RefID != "grepread-hydrated-1" {
+		t.Fatalf("arbitrary read window replaced the coherent declaration: %+v", got)
+	}
+}
+
+func TestNaturalLanguageFallbackPrefersDenseSmallDeclaration(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	var broad strings.Builder
+	broad.WriteString("func ParseFlags() {\n")
+	for i := 0; i < 25; i++ {
+		fmt.Fprintf(&broad, "\tparse%d(arguments) // parsed arguments before separator\n", i)
+	}
+	broad.WriteString("}")
+	nlEvidence(&evidence, &items, "grepread-hydrated-broad", "command.go", "p.ParseFlags", "function", 100, broad.String(), 0)
+	nlEvidence(&evidence, &items, "grepread-hydrated-dense", "command.go", "p.ArgsLenAtDash", "method", 200,
+		"// ArgsLenAtDash reports parsed arguments before the separator.\nfunc (c *Command) ArgsLenAtDash() int {\n\treturn c.Flags().ArgsLenAtDash()\n}", 0)
+
+	sources, _, err := compactTaskContextSelect("how many parsed arguments appeared before a separator", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) == 0 || sources[0].Start != 200 {
+		t.Fatalf("dense small declaration did not win the one fallback slot: %+v", sources)
+	}
+}
+
 func TestNaturalLanguageSeedCapKeepsDirectCallee(t *testing.T) {
 	var evidence []contract.Evidence
 	var items []contract.Item
@@ -321,11 +358,73 @@ func TestNamedLongFunctionReclaimsItsDepthQuota(t *testing.T) {
 	t.Fatalf("named long function was starved below its depth quota: %+v", sources)
 }
 
+func TestNamedLongFunctionAnchorsOnBestQuestionCluster(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	var body strings.Builder
+	body.WriteString("func (c *Command) getCompletions(args []string) error {\n")
+	body.WriteString("\tflagCompletion := true\n")
+	for i := 0; i < 110; i++ {
+		fmt.Fprintf(&body, "\tstep%d := prepare(step%d)\n", i, i)
+	}
+	answerStart := 1 + 1 + 1 + 110
+	body.WriteString("\tvar completionFn func(*Command)\n")
+	body.WriteString("\tif flag != nil && flagCompletion {\n")
+	body.WriteString("\t\tcompletionFn = flagCompletionFunctions[flag]\n")
+	body.WriteString("\t} else {\n")
+	body.WriteString("\t\tcompletionFn = c.ValidArgsFunction\n")
+	body.WriteString("\t}\n\treturn nil\n}")
+	nlEvidence(&evidence, &items, "grepread-hydrated-lead", "completions.go", "p.Command.getCompletions", "method", 1, body.String(), 0)
+
+	sources, _, err := compactTaskContextSelect(
+		"how does getCompletions decide between the flag completion function and ValidArgsFunction", evidence, items, 325,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	answerEnd := answerStart + 5
+	for _, source := range sources {
+		if source.Path == "completions.go" && source.Start <= answerStart && source.End >= answerEnd {
+			return
+		}
+	}
+	t.Fatalf("named declaration missed its strongest question cluster %d-%d: %+v", answerStart, answerEnd, sources)
+}
+
 func TestNLHasSeparatedStrongSignals(t *testing.T) {
 	if !nlHasSeparatedStrongSignals([]int{20, 0, 0, 0, 0, 0, 0, 0, 20}) {
 		t.Fatal("separated strong query lines were not detected")
 	}
 	if nlHasSeparatedStrongSignals([]int{20, 0, 20}) {
 		t.Fatal("nearby lines were treated as separate answer regions")
+	}
+}
+
+func TestNLContainsPatternMatchesSilentEInflection(t *testing.T) {
+	if !nlContainsPattern("enables combining existing checks", "combine") {
+		t.Fatal("base verb did not match its ing inflection")
+	}
+	if nlContainsPattern("unrelated words", "combine") {
+		t.Fatal("base verb matched unrelated prose")
+	}
+}
+
+func TestNLMarkdownParagraphWithFence(t *testing.T) {
+	lines := []string{
+		"## Positional arguments",
+		"Earlier overview.",
+		"",
+		"Moreover, MatchAll combines positional argument validators.",
+		"The following example applies both checks:",
+		"",
+		"```go",
+		"Args: MatchAll(ExactArgs(2), OnlyValidArgs),",
+		"```",
+		"",
+		"Unrelated next paragraph.",
+	}
+	from, to, ok := nlMarkdownParagraphWithFence(lines, 3)
+	if !ok || from != 3 || to != 8 {
+		t.Fatalf("paragraph plus example = %d-%d, %t; want 3-8", from, to, ok)
 	}
 }

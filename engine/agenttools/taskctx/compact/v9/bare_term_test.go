@@ -77,3 +77,26 @@ func TestBareTermAnchorsOnTheLineThatDeclaresIt(t *testing.T) {
 		})
 	}
 }
+
+func TestSeparatedIdentifierKeepsAdjacentFieldFamily(t *testing.T) {
+	declaration := []string{
+		"\tRun func(cmd *Command, args []string)",
+		"\t// RunE: Run but returns an error.",
+		"\tRunE func(cmd *Command, args []string) error",
+		"\t// PostRun: run after the Run command.",
+		"\tPostRun func(cmd *Command, args []string)",
+		"\t// PostRunE: PostRun but returns an error.",
+		"\tPostRunE func(cmd *Command, args []string) error",
+		"\t// PersistentPostRun: children inherit and execute after PostRun.",
+		"\tPersistentPostRun func(cmd *Command, args []string)",
+		"\t// PersistentPostRunE: PersistentPostRun but returns an error.",
+		"\tPersistentPostRunE func(cmd *Command, args []string) error",
+	}
+	sources := bareTermSelect(t, "post-run", declaration)
+	for _, source := range sources {
+		if source.Path == "command.go" && source.Start <= 64 && source.End >= 70 {
+			return
+		}
+	}
+	t.Fatalf("separated lifecycle field lost its adjacent variants: %+v", sources)
+}
