@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/2",
-  "status": "static_inputs_pre_freeze_attested",
+  "status": "frozen_pre_capture_attested",
   "operator": {
     "id": "codex-independent-compact17-holdout-operator",
     "provider": "OpenAI Codex",
@@ -35,7 +35,7 @@
     ],
     "product_candidate_sha": "2d65df335544c2c66c0ff12e8f79db4f6c53e72b",
     "product_candidate_tree": "9af24c26ba6b5b221e70f7e8998c351b640776f8",
-    "freeze_base_sha": "pending: static-input commit not yet created",
+    "freeze_base_sha": "b40356b103b4dbb872e5752ff17632049ac6bf4a",
     "capture_candidate_sha": "pending: freeze-record commit not yet created",
     "candidate_projection": "task_context/2-compact/17",
     "candidate_token_budget": 1200,
@@ -45,9 +45,10 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-15T18:27:19Z",
+    "attested_at_utc": "2026-09-15T18:30:06Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
+    "precondition_record_sha256": "a6f99e9fc42c43c91b2545a468de9e1794121cc10b2f394454917976f22d128f",
     "per_item_command": "codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only -m <model> -c model_reasoning_effort=\"high\" -C <new empty git repository> --json -o <output> - < <single allowed input>",
     "event_allowlist": "exactly thread.started, turn.started, item.completed(agent_message), turn.completed",
     "primary_parallelism": 2,
