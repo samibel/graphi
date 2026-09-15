@@ -122,6 +122,22 @@ unchanged from every RESULT since compact/10 (the 2026-09-06 report in the
 gate-local run directory predates the ranking work and is not the
 comparison point).
 
+## Independent evidence after this result
+
+A third fresh sealed holdout, curated independently and evaluated under
+contract version 2 with the designated read
+(`runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`),
+returned **38 of 64 against k = 56 — RELEASE: NO**. Per stratum:
+exact_identifier 11/11, nl_behaviour 11/11, config_docs 7/10, exact_path
+6/11, architecture_flow 2/11, ambiguous 1/10. The reviewed development
+split's two-call overlap (59/64) predicted a pass; the blind
+transcript-sufficiency grade did not follow it. Overlap with a reviewed
+span is not the quantity the rubric grades — a rater must answer the
+question from the transcript and a grader must find the reviewed
+behaviour identified — and on bare terms and multi-step flows the two
+diverge most. The next development instrument must grade the way the
+holdout grades, before another holdout is spent.
+
 ## Reproduce
 
 ```sh

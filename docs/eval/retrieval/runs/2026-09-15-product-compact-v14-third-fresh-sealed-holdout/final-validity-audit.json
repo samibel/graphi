@@ -1,0 +1,33 @@
+{
+  "contract_version": "fresh-holdout-final-validity-audit/2",
+  "audited_at_utc": "2026-09-15",
+  "status": "PASS_WITH_RECORDED_LIMITATION",
+  "release_decision": "NO",
+  "decision_commit": "5b416151",
+  "result": {"pass_count": 38, "k": 56, "n": 64, "observed_rate": "59.4%", "clopper_pearson_95": ["0.463676877707", "0.714852987189"], "floor": "3/4", "meets_floor": false},
+  "bindings": {
+    "product_candidate_sha": "76752a6e3de0c3c95c78f41e86eb2f32c72c2a45",
+    "freeze_commit": "8b80523a10e281dd9edaf36f45c0cc62dfccfa34",
+    "cobra_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+    "curation_pre_registration_sha256": "bd104cd726b6d65b2d4a845ec0f7f3cd99b10fa33b90df151a07eb26bfdf91f8",
+    "precondition_record_self_sha256": "e247d584b8dcaf15ec11c00281789060da8fc1f0fa40a7af127b2892ba2b85b4",
+    "capture_pre_registration_self_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+    "bundle_aggregate_sha256": "dc3a60b86926beaadb7df94a8738e58bc0f1eab026ae37edb9ea34ded994defe",
+    "prompt_aggregate_sha256": "875ba9dffb776bd54babc42e17d0deb5ce1357923263f408a3b5b52214b85188",
+    "all_frozen_input_hashes_match": true
+  },
+  "capture": {"two_build_reproducibility": "PASS", "pairs": 64, "followup_reads": 11, "maximum_cl100k_tokens": 1179, "token_ceiling": 1200},
+  "verification": {
+    "mandatory_sequence_respected": "curation commit -> freeze commit -> capture commit -> primaries -> seal -> grades -> seal -> adjudications -> seal -> adjudication grades -> seal -> decision; no rater, grader or adjudicator ran before the capture commit",
+    "mechanical_refusals": 0,
+    "retries": 0,
+    "records_carry_run_contract_version": true,
+    "prompt_binding": "every committed prompt rebuilds from its pre-registered bundle and follow-up read (checked at seal and decide)"
+  },
+  "execution_audit": {
+    "operator_of_stages_3_to_7": "root orchestration agent (the candidate's author) through content-free scripts; see operator-attestation.json",
+    "limitation": "Operator separation is weaker than in the second holdout: the sandboxed Codex operator could not commit or create worktrees, so the candidate's author executed the remaining phases mechanically. Blindness rests on the per-item discipline and on scripts that never print content; no separate person witnessed it."
+  },
+  "model_reproducibility_limitation": "OpenAI exposes no immutable backend snapshot or build digest for gpt-6-astra and gpt-5.6-sol; rater, grader and adjudicator behaviour is not byte-reproducible and is recorded as such."
+}

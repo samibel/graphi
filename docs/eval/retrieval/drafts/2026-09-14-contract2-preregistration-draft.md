@@ -84,3 +84,10 @@ of 64 on the reviewed split — is met as of compact/14. What blocks the
 holdout now is the contract, not the candidate: the four adoption items
 above. A holdout spent under contract 1 today would be graded on one
 response and stands at a coin toss.
+
+## Outcome (2026-09-15)
+
+Executed as `../runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`:
+38 of 64, RELEASE: NO. The development condition this draft set (two-call
+overlap ≥ 56/64) was met and was not predictive; see that run's README and
+the compact/14 RESULT for the per-stratum counts and the reading.
