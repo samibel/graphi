@@ -226,6 +226,10 @@ and become stale when `PinnedRevision` changes:
   — the next compact-v17 holdout attempt, refused before capture because its
   evidence checkout was not tree-equivalent to the declared product candidate.
   Its sealed dataset remains tied to this production embedder revision.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/`
+  — the valid candidate-bound compact-v17 holdout run. Its captured bundles,
+  follow-up reads and blind release decision depend on this production
+  embedder revision.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

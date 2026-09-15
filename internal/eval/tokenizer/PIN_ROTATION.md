@@ -162,6 +162,18 @@ SW-280 commits the first tokenizer-dependent run directory:
   — the third fresh sealed-holdout capture under contract version 2: its
   exact response-byte counts and the designated follow-up read counts are
   bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout/` — the
+  refused compact-v17 holdout attempt contains exact capture token counts bound
+  to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/` —
+  the refused unseen attempt contains exact capture and follow-up token counts
+  bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/` —
+  the pre-capture refused attempt records this tokenizer identity and is stale
+  when that identity rotates.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/` —
+  the valid candidate-bound holdout's exact bundle and follow-up token counts
+  are bound to this tokenizer.
 
 The governance test scans every directory immediately below
 `docs/eval/retrieval/runs/` for the current `tokenizer_id`. Once a run contains

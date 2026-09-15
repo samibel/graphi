@@ -32,24 +32,24 @@ const TargetsFilePath = "docs/eval/retrieval-targets.json"
 // It is NOT the report the targets were derived from. CheckTargets refuses a
 // report whose digest equals derived_from.sha256, because a bar checked against
 // the observations it was computed from is arithmetic, not a gate (SW-282 AC-8).
-const GateReportPath = "docs/eval/retrieval/runs/2026-09-06-sw282-gate-local/cobra-v2-dev-report.json"
+const GateReportPath = "docs/eval/retrieval/runs/2026-09-15-compact17-release-dev/cobra-v2-dev-report.json"
 
 // GateCandidateSHA is the candidate SHA the gate asserts the named report
 // carries. A stale or foreign report fails closed.
-const GateCandidateSHA = "e824197cf4610e3824587e0cb76dcb7a17d9410f+dirty"
+const GateCandidateSHA = "26a36f0958cb16d925c4dd871cda76d0e117b15a"
 
 // GateBaseline is the SHIPPED pipeline the targets are enforced against.
 const GateBaseline = BaselineSemanticFirst
 
 // BundleCoverageMeasurementPath is the task_context/2 coverage measurement the
 // bundle_coverage target is enforced against.
-const BundleCoverageMeasurementPath = "docs/eval/retrieval/runs/2026-09-06-sw282-coverage-local/measurement.json"
+const BundleCoverageMeasurementPath = "docs/eval/retrieval/runs/2026-09-15-compact17-release-coverage-dev/measurement.json"
 
 // QrelBlindSmokeOutcomePath is the qrel-blind bundle-sufficiency smoke
 // evaluation the coverage gate SUPPLEMENTS. Coverage says the reviewed span is
 // present in the bundle bytes; this says a reader could answer from them. Both
 // are required (AC-3).
-const QrelBlindSmokeOutcomePath = "docs/eval/retrieval/runs/2026-09-05-sw280-qrel-blind-smoke/outcome.json"
+const QrelBlindSmokeOutcomePath = "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/outcome.json"
 
 // A quality target is compared EXACTLY. There is deliberately no epsilon.
 //
@@ -347,8 +347,8 @@ func checkQrelBlindSmokeGate(in TargetCheckInputs) TargetCheck {
 	}
 	check.Observed = fmt.Sprintf("RELEASE: %s (%d of %d passed against a pre-registered k=%d)", outcome.Release, outcome.PassCount, outcome.N, outcome.K)
 	switch {
-	case outcome.ContractVersion != QrelBlindSmokeContractVersion:
-		check.Detail = fmt.Sprintf("%s was produced under contract %q, this build enforces %q", path, outcome.ContractVersion, QrelBlindSmokeContractVersion)
+	case outcome.ContractVersion != QrelBlindSmokeContractVersion2:
+		check.Detail = fmt.Sprintf("%s was produced under contract %q, this build enforces %q", path, outcome.ContractVersion, QrelBlindSmokeContractVersion2)
 	case outcome.Release != ReleaseYes:
 		check.Detail = fmt.Sprintf("the smoke evaluation recorded RELEASE: %s. There is no override: %s", outcome.Release, strings.Join(outcome.Reasons, "; "))
 	default:

@@ -597,12 +597,12 @@ const targetsGateExpectationsPath = "docs/eval/retrieval/targets-gate-expectatio
 // which recomputes every published metric from raw/ and dataset.json — that is
 // the test an edited report fails, and it is the guard to cite.
 const (
-	gateExpectedMissCount                 = 3
-	gateExpectedFirstMiss                 = "architecture_flow fusion_target"
+	gateExpectedMissCount                 = 1
+	gateExpectedFirstMiss                 = "qrel_blind_smoke"
 	gateExpectedArchitectureFlowMustReach = 0.4578575262772977
-	gateExpectedArchitectureFlowObserved  = 0.32777888533499866
+	gateExpectedArchitectureFlowObserved  = 0.4624671522846825
 	gateExpectedExactIdentifierFloor      = 1.0
-	gateExpectedExactIdentifierObserved   = 0.75
+	gateExpectedExactIdentifierObserved   = 1.0
 )
 
 // TargetsGateExpectations is the checked-in verdict record.
@@ -615,10 +615,10 @@ type TargetsGateExpectations struct {
 }
 
 const targetsGateExpectationsNote = "SW-282 recorded per-target verdict of docs/eval/retrieval-targets.json against the committed gate " +
-	"report. The recalibrated architecture_flow bar and the recalibrated exact_identifier Top-1 floor are MISSED by the shipped " +
-	"pipeline, and the qrel-blind smoke evaluation recorded RELEASE: NO. Those misses are recorded here, not fixed and not excepted: " +
-	"SW-282 sets targets and may not change retrieval behaviour, and the release-gate retrieval-targets runner is RED until the " +
-	"recovery story closes them. TestTargets_GateVerdictMatchesCheckedInExpectations fails on drift in EITHER direction — a bar that " +
+	"report. The compact-v17 candidate reaches the architecture_flow target and exact_identifier Top-1 floor, while its valid independent " +
+	"qrel-blind holdout recorded RELEASE: NO at 47/64 against k=56. That remaining miss is recorded here, not fixed and not excepted: " +
+	"the release-gate retrieval-targets runner remains RED until a future candidate passes a new independent holdout. " +
+	"TestTargets_GateVerdictMatchesCheckedInExpectations fails on drift in EITHER direction — a target that " +
 	"starts passing must be recorded here deliberately."
 
 // TestAC9Evidence_RoundTripsFromRaw is the fail-closed evidence-integrity
@@ -703,8 +703,8 @@ func TestTargets_GateVerdictMatchesCheckedInExpectations(t *testing.T) {
 	}
 	for name, wantMet := range map[string]bool{
 		StratumNLBehaviour + " fusion_target":      true,
-		StratumArchitectureFlow + " fusion_target": false,
-		StratumExactIdentifier + " no_regression":  false,
+		StratumArchitectureFlow + " fusion_target": true,
+		StratumExactIdentifier + " no_regression":  true,
 		"bundle_coverage":                          true,
 		"qrel_blind_smoke":                         false,
 	} {
@@ -718,11 +718,9 @@ func TestTargets_GateVerdictMatchesCheckedInExpectations(t *testing.T) {
 		}
 	}
 
-	// The two recalibrated numbers themselves. SW-263's recorded MISS of
-	// -0.00084 stands as history and is NOT retroactively satisfied by the new
-	// bar; this is a different bar, measured against a different comparator set
-	// on a different dataset, and it is missed by 0.130 — twenty-six times one
-	// query's influence on a five-query stratum.
+	// The two recalibrated numbers themselves. The candidate-bound development
+	// report now reaches both targets; these observations remain pinned so a
+	// regenerated expectations file cannot manufacture that recovery.
 	var tg Targets
 	if err := json.Unmarshal(targetsRaw, &tg); err != nil {
 		t.Fatal(err)
@@ -755,9 +753,9 @@ func TestTargets_GateVerdictMatchesCheckedInExpectations(t *testing.T) {
 		}
 	}
 
-	t.Logf("recorded MISS on %s: %s %.17g < must_reach %.17g over %d dev queries (resolution 1/%d)",
+	t.Logf("recorded PASS on %s: %s %.17g >= must_reach %.17g over %d dev queries (resolution 1/%d)",
 		StratumArchitectureFlow, GateBaseline, gateExpectedArchitectureFlowObserved, gateExpectedArchitectureFlowMustReach, af.DevQueries, af.DevQueries)
-	t.Logf("recorded MISS on %s: %s top1 %.17g < floor %.17g over %d dev queries (resolution 1/%d; the shortfall is exactly one query)",
+	t.Logf("recorded PASS on %s: %s top1 %.17g >= floor %.17g over %d dev queries (resolution 1/%d)",
 		StratumExactIdentifier, GateBaseline, gateExpectedExactIdentifierObserved, gateExpectedExactIdentifierFloor, ei.DevQueries, ei.DevQueries)
 }
 
@@ -1239,7 +1237,7 @@ func (w *syntheticGateWorld) writeCoverage(t *testing.T, covered, total int, ids
 func (w *syntheticGateWorld) writeSmoke(t *testing.T, release string) {
 	t.Helper()
 	o := EvaluationOutcome{
-		ContractVersion: QrelBlindSmokeContractVersion, Evaluation: QrelBlindSmokeEvaluationName,
+		ContractVersion: QrelBlindSmokeContractVersion2, Evaluation: QrelBlindSmokeEvaluationName,
 		N: 64, K: 56, PassCount: 60, Release: release,
 		Reasons: []string{"synthetic fixture"},
 	}
