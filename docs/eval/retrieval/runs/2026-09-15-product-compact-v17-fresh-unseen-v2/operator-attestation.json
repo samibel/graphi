@@ -1,6 +1,6 @@
 {
   "schema": "graphi-fresh-holdout-operator-attestation/3",
-  "status": "capture_complete_pre_rating",
+  "status": "refused_invalid_run_at_primary_launch",
   "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
   "operator": {
     "identity": "Codex independent holdout operator",
@@ -59,6 +59,19 @@
     "followup_identical_pairs": 12,
     "distinct_index_generations": true,
     "preflight": "PASS"
+  },
+  "refusal": {
+    "path": "run-refusal.json",
+    "phase": "primary actor launch",
+    "primary_completed": 0,
+    "observable_actor_events": 0,
+    "raw_responses": 0,
+    "retries": 0,
+    "overwrites": 0,
+    "seal_invocations": 0,
+    "decide_invocations": 0,
+    "release_verdict": null,
+    "validity": "INVALID"
   },
   "execution_policy": {
     "harness_invocation_plan": "invocation-plan.json",
