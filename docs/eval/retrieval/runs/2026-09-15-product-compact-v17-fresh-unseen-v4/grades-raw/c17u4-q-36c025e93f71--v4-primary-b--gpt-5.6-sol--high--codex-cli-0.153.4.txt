@@ -1,0 +1,1 @@
+PASS: The response identifies both options and correctly explains suppression, the Levenshtein distance threshold, and the default of 2 for nonpositive values. All claims and citations are supported by the preserved bundle.

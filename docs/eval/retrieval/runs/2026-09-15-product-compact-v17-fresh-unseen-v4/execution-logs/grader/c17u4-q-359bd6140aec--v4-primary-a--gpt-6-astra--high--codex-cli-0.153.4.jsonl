@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d4-68c5-7362-be1a-91bb5db034af"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response directly states that DisableFlagParsing disables parsing and passes all flags to the command as arguments, exactly supported by the cited command.go:236–237 span in the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17829,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":42,"reasoning_output_tokens":0}}

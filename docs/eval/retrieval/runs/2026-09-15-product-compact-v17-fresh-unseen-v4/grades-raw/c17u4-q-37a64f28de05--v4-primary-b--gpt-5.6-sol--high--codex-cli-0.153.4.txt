@@ -1,0 +1,1 @@
+FAIL: The response does not answer what behavior is verified. The bundle omits TestChildSameName and does not establish that invoking the repeated name successfully runs the child with both positional arguments.

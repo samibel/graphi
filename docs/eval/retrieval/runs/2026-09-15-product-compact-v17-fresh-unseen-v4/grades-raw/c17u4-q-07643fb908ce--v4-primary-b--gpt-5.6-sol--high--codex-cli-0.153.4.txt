@@ -1,0 +1,1 @@
+PASS: The bundle supports supplied-order execution, immediate return of the first non-nil error, and nil after all validators succeed. The example is supported, and all citations resolve within the preserved args.go span.

@@ -1,0 +1,1 @@
+FAIL: The cited bundle supports child-targeted usage and flag behavior, but omits the essential reviewed test establishing that root `help child` displays the child’s long description without error. The response does not establish that required behavior.

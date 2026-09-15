@@ -1,0 +1,1 @@
+PASS: The response accurately describes `stringInSlice` scanning for exact equality, returning true on the first match and false otherwise. Its citation to `cobra.go` lines 222–230 resolves within the preserved bundle.

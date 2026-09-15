@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c9-28b3-7f83-b8ff-ded80f968d5a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response states both required conditions, `len(s) > 60` and no existing `\"\\n\"`, matching the preserved implementation. Its citation to `doc/util.go` lines 41–44 resolves within the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17817,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

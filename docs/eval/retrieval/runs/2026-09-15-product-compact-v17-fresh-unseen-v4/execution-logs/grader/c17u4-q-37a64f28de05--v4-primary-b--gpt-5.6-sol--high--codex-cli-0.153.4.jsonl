@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d4-f447-7353-a152-e34ba13c5d5b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer what behavior is verified. The bundle omits TestChildSameName and does not establish that invoking the repeated name successfully runs the child with both positional arguments."}}
+{"type":"turn.completed","usage":{"input_tokens":17659,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":42,"reasoning_output_tokens":0}}

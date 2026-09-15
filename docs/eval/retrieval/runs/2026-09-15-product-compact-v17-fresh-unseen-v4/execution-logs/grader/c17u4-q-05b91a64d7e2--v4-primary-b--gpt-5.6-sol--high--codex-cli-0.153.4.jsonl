@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c9-63ee-7060-b2d2-c6d21f49dcfd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response correctly explains when shorthand is included or omitted, but misses the essential normalization behavior: both branches apply `forceMultiLine` to `Usage`, while only the absent/deprecated branch applies it to `DefaultValue`, as shown in `doc/yaml_docs.go:148-175`."}}
+{"type":"turn.completed","usage":{"input_tokens":17797,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":116,"reasoning_output_tokens":50}}

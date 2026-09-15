@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cf-ca10-7e73-bdca-d2b84944b81f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that WriteStringAndCheck captures the error from b.WriteString(s) and delegates it to CheckErr, which prints to stderr and exits with code 1 for a non-nil error. The nil behavior and citations are supported by the preserved cobra.go span."}}
+{"type":"turn.completed","usage":{"input_tokens":17513,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

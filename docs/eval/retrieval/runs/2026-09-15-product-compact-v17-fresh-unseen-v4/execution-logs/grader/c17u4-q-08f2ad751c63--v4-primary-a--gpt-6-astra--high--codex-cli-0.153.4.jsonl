@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ca-0d03-7ff1-97e2-6ae185938427"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes filtering hidden/deprecated flags, independent prefix matching for long and nonempty shorthand spellings, long-first ordering, omission of the `=` form, and tab-separated usage descriptions. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17899,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

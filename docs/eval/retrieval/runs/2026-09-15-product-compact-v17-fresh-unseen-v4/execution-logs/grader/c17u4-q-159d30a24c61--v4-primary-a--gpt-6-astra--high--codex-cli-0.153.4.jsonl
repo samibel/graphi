@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cd-0959-7813-b995-9f7725236a82"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states all three conditions for appending `\" [flags]\"`: flags are enabled in the usage line, available flags exist, and the marker is absent. The bundle supports these conditions and the hidden/deprecated flag explanation; all citations resolve within preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17749,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":104,"reasoning_output_tokens":43}}

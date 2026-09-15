@@ -1,0 +1,1 @@
+PASS: The response correctly states that the callback returns the captured choices and directive unchanged on every invocation, regardless of its arguments. The cited closure and return statement are preserved in the bundle’s completions.go:117–130 span.

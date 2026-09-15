@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ce-a655-7e01-ae8c-50febb85eef1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response matches the preserved Eq implementation: signed integer kinds and strings are compared, arrays/channels/maps/slices panic with the stated message, and other kinds return false. Both citations resolve to bundle spans, including the `\"eq\": Eq` registration."}}
+{"type":"turn.completed","usage":{"input_tokens":17910,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

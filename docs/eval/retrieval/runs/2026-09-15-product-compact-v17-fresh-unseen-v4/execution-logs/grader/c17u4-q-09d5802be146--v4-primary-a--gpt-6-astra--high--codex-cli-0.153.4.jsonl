@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ca-4355-70e0-9dee-11579b4c8dbc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that the callback returns the captured choices and directive unchanged on every invocation, regardless of its arguments. The cited closure and return statement are preserved in the bundle’s completions.go:117–130 span."}}
+{"type":"turn.completed","usage":{"input_tokens":17600,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

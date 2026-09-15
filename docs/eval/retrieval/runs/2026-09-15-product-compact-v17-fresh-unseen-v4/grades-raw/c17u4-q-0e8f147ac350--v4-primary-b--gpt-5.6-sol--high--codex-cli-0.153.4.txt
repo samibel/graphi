@@ -1,0 +1,1 @@
+PASS: The response correctly states that OnFinalize appends variadic functions to the package-level finalizers slice, preserving existing entries and argument order. The quoted append and cited locations are supported by the bundle.

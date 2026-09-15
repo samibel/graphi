@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d0-f7ca-7dc0-aa63-a72c3d8b6319"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states the runnable/deprecated/hidden rejection, recursive requirement that every child qualify, and childless success case. Its Runnable definition and both citations are supported by the preserved command.go spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17530,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

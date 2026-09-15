@@ -1,0 +1,1 @@
+PASS: The response accurately describes the local errWriter check, recursive parent inheritance, and fallback to def. It also correctly identifies os.Stderr as the default supplied by ErrOrStderr(); all cited lines resolve within the preserved bundle.

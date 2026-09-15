@@ -1,0 +1,1 @@
+FAIL: The response does not answer how the removal test verifies detachment. The bundle omits TestRemoveCommand and the required assertion that invoking the removed child through its former parent returns an error.

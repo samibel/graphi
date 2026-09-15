@@ -1,0 +1,1 @@
+FAIL: The response does not answer the nil versus non-nil behavior. The bundle shows a `cobra.CheckErr(err)` call but lacks its implementation or documented behavior; the rubric rejects insufficient answers and missing necessary facts.

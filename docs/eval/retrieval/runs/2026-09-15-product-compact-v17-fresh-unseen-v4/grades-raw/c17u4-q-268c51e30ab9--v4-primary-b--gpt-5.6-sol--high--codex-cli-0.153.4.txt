@@ -1,0 +1,1 @@
+PASS: The response accurately states the runnable/deprecated/hidden exclusions, recursive requirement that every child qualify, and qualifying leaf case. All claims and citations are supported by the preserved command.go spans.

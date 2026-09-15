@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cc-829f-7ca0-8016-f5d5b81544e4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the local errWriter check, recursive parent inheritance, and fallback to def. Its ErrOrStderr default claim is supported, and all cited locations resolve within the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17589,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":15}}

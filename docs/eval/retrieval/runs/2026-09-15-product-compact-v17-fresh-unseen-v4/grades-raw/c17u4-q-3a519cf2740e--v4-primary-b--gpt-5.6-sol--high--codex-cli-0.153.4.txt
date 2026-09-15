@@ -1,0 +1,1 @@
+FAIL: The response declares insufficiency and omits the essential verification of the invocation name in both root and child help usage. The bundle shows the display-name annotation but lacks the help invocations and assertions.

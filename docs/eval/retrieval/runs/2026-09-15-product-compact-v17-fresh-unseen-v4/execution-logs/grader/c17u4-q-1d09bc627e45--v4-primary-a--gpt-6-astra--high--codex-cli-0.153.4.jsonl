@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ce-bdfe-75f0-8156-7e4b1c382fec"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies trailing Unicode whitespace removal via `strings.TrimRightFunc(s, unicode.IsSpace)`, satisfying the essential behavior. The helper aliases, `trim` mapping, and default help-template usage are supported by the bundle, and all citations resolve within preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17612,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":132,"reasoning_output_tokens":71}}

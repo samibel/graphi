@@ -1,0 +1,1 @@
+PASS: The response accurately describes iterating over every map entry and assigning `templateFuncs[k] = v`, including overwriting matching keys. The cited `cobra.go:91–95` resolves within the bundle and contains the essential reviewed behavior.

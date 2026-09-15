@@ -1,0 +1,1 @@
+PASS: The response accurately describes scanning `c.commands`, returning true on the first child classified as an additional help topic, and false otherwise. Its qualification and runnable definitions are supported by the bundle, and all citations resolve to preserved spans.

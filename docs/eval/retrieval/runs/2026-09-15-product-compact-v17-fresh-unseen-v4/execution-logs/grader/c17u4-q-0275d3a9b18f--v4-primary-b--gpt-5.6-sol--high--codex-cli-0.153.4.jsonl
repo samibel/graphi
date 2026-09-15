@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c8-b4e2-7153-8871-189bbc63cca8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that OnlyValidArgs removes tab-separated descriptions from ValidArgs before checking positional arguments for exact matches. Both the implementation and exact-match behavior are supported by the cited args.go and cobra.go spans in the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17767,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

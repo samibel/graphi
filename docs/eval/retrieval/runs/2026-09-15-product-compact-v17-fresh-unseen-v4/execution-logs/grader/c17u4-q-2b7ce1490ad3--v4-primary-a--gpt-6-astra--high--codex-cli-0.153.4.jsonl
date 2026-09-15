@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d2-1b0e-7f73-ae9b-36d44a0d21b6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how metadata is assembled. The bundle lacks `writeFlags` and the required annotation preparation, parse-state emission, distinct flag-set visits, hidden/deprecated filtering, and traversal-dependent tracking of local nonpersistent flags."}}
+{"type":"turn.completed","usage":{"input_tokens":17572,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":66,"reasoning_output_tokens":11}}

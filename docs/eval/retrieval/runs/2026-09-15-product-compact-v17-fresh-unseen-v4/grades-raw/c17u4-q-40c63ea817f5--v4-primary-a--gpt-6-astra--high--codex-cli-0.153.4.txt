@@ -1,0 +1,1 @@
+FAIL: The response does not answer the question, and the bundle lacks the essential test that marks a flag deprecated, invokes its shorthand, and asserts that the configured warning text is printed.

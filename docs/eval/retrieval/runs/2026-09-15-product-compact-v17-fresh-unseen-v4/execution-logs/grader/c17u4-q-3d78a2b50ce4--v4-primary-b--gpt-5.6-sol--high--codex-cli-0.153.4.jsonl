@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d6-7954-7a21-b4aa-2ec67c35811f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The cited bundle supports child-targeted usage and flag behavior, but omits the essential reviewed test establishing that root `help child` displays the child’s long description without error. The response does not establish that required behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":17684,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":73,"reasoning_output_tokens":21}}

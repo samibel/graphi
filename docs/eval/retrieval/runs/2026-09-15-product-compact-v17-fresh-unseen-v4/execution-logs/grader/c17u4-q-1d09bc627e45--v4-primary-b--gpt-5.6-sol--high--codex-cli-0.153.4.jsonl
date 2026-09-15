@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ce-e2aa-7e71-b5cd-6ca5d7d0136a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that `trimRightSpace` and `trimTrailingWhitespaces` remove Unicode whitespace only from the right edge using `strings.TrimRightFunc(s, unicode.IsSpace)`. Its additional claims about `trim` and help-template usage are supported, and all citations resolve within the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17612,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

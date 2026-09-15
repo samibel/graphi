@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cd-7a58-7323-a9ea-1d188a4514a9"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how the argument is reported. The bundle omits the `NoArgs` implementation needed to establish that the error names the first argument and command path, and that validation otherwise succeeds."}}
+{"type":"turn.completed","usage":{"input_tokens":18274,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

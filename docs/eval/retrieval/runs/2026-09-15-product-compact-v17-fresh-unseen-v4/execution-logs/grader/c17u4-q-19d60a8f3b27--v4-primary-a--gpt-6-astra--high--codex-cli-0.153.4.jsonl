@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cd-f5a4-7cd2-a151-8b43b90eb94c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response explicitly reports insufficient evidence and does not explain the required marker-prefix encoding. The preserved bundle shows helper usage but omits the implementation needed to support that essential behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":18566,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

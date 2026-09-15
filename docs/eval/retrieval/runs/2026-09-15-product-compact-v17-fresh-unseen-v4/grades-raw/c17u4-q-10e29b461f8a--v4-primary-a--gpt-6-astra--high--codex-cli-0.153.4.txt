@@ -1,0 +1,1 @@
+PASS: The response accurately describes template creation, shared function registration, parsing, and execution with the supplied writer and data. Error behavior and function-extension claims are supported by the bundle, and both citations resolve within preserved spans.

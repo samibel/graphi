@@ -1,0 +1,1 @@
+PASS: The preserved args.go span confirms supplied-order execution, the same cmd and args for each validator, immediate return of the first non-nil error, and nil after all validators pass or none are supplied. All citations resolve within the bundle.

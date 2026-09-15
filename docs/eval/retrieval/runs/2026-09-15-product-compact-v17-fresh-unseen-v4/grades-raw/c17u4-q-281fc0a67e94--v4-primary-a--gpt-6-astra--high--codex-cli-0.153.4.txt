@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the replaced error buffer, rebuilt `c.flags` and `c.pflags` sharing that buffer, and invalidated `c.lflags`, `c.iflags`, and `c.parentsPflags`. All claims and citations are supported by the preserved bundle.

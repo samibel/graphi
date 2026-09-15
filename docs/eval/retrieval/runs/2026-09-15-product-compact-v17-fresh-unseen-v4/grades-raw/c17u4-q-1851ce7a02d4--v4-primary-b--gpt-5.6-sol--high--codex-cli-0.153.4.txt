@@ -1,0 +1,1 @@
+PASS: The response correctly states that `ArbitraryArgs` rejects no positional arguments, supported by its unconditional `return nil` in `args.go:67-71`. Both citations resolve within the preserved bundle, and the guide corroborates the answer.

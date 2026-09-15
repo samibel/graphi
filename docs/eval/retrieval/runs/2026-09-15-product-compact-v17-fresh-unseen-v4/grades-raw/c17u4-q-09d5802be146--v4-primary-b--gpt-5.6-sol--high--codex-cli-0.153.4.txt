@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the captured `choices` slice and `directive` as the values returned unchanged on every invocation, independent of callback arguments. The cited code is present in the preserved `completions.go` bundle.
