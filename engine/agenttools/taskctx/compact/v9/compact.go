@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/14"
+const CompactTaskContextVersion = "task_context/2-compact/15"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -571,15 +571,16 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 	items := make([]contract.Item, 0, min(len(file.Decls)+1, 64))
 	packageLine := set.Position(file.Name.Pos()).Line
 	if packageLine >= 1 && packageLine <= len(lines) {
-		text := lines[packageLine-1]
+		packageStart := compactTaskContextPackagePreambleStart(lines, packageLine)
+		text := strings.Join(lines[packageStart-1:packageLine], "\n")
 		ref := "path-declaration-001"
 		evidence = append(evidence, contract.Evidence{
-			RefID: ref, Path: path, Line: packageLine, Span: fmt.Sprintf("%d-%d", packageLine, packageLine),
+			RefID: ref, Path: path, Line: packageStart, Span: fmt.Sprintf("%d-%d", packageStart, packageLine),
 			Role: "snippet", Snippet: text, TextHash: shape.TextHash(text),
 		})
 		items = append(items, contract.Item{
 			RefID: "path-declaration-item-" + ref, Rank: 1,
-			Reason:         fmt.Sprintf("path-declaration: variable %s.package (%s:%d) score 0", file.Name.Name, path, packageLine),
+			Reason:         fmt.Sprintf("path-declaration: variable %s.package (%s:%d) score 0", file.Name.Name, path, packageStart),
 			EvidenceRefIDs: []string{ref},
 		})
 	}
@@ -593,6 +594,12 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 		start := set.Position(declaration.Pos()).Line
 		if doc := compactTaskContextDeclarationDoc(declaration); doc != nil {
 			start = set.Position(doc.Pos()).Line
+		}
+		// Exact-path answers are file outlines. Keep the zero-word separators
+		// immediately before each declaration so adjacent selected declarations
+		// form faithful contiguous source coverage instead of artificial holes.
+		for start > 1 && strings.TrimSpace(lines[start-2]) == "" {
+			start--
 		}
 		end := set.Position(declaration.End()).Line
 		if start < 1 || end < start || end > len(lines) {
@@ -615,6 +622,28 @@ func compactTaskContextHydrateExactPath(ctx context.Context, repository fs.FS, s
 		})
 	}
 	return evidence, items, nil
+}
+
+// compactTaskContextPackagePreambleStart retains a Go file's build
+// constraints with its package declaration without pulling in a licence
+// header. Build constraints are part of the file's defining implementation,
+// especially for one-platform files, and cost no source words beyond the two
+// directive lines.
+func compactTaskContextPackagePreambleStart(lines []string, packageLine int) int {
+	index := packageLine - 2
+	for index >= 0 && strings.TrimSpace(lines[index]) == "" {
+		index--
+	}
+	start := packageLine
+	for index >= 0 {
+		trimmed := strings.TrimSpace(lines[index])
+		if !strings.HasPrefix(trimmed, "//go:build ") && !strings.HasPrefix(trimmed, "// +build ") {
+			break
+		}
+		start = index + 1
+		index--
+	}
+	return start
 }
 
 func compactTaskContextMarkdownSection(lines []string, line int) (int, int, bool) {
@@ -1799,6 +1828,9 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 		}
 	}
 	sort.SliceStable(candidates, func(i, j int) bool {
+		if mode == GrepReadV2ExactPath && candidates[i].start != candidates[j].start {
+			return candidates[i].start < candidates[j].start
+		}
 		if candidates[i].score != candidates[j].score {
 			return candidates[i].score > candidates[j].score
 		}
@@ -2406,9 +2438,44 @@ func compactTaskContextSelect(query string, evidence []contract.Evidence, items 
 			}
 		}
 	}
+	if mode == GrepReadV2ExactPath {
+		out = compactTaskContextMergeAdjacentSources(out)
+	}
 	out = compactTaskContextRemoveContainedSources(out)
 	out, used := compactTaskContextTrimSources(out, budget)
 	return out, used, nil
+}
+
+// compactTaskContextMergeAdjacentSources turns an exact-path outline back
+// into coherent file regions after declaration-level ranking has decided what
+// fits. Only already selected, exactly touching spans are joined, so this
+// spends no additional source budget and never invents bytes for a gap.
+func compactTaskContextMergeAdjacentSources(sources []CompactTaskContextSource) []CompactTaskContextSource {
+	out := append([]CompactTaskContextSource(nil), sources...)
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); {
+			if out[i].Path != out[j].Path {
+				j++
+				continue
+			}
+			switch {
+			case out[i].End+1 == out[j].Start:
+				out[i].End = out[j].End
+				out[i].Text += "\n" + out[j].Text
+			case out[j].End+1 == out[i].Start:
+				out[i].Start = out[j].Start
+				out[i].Text = out[j].Text + "\n" + out[i].Text
+			default:
+				j++
+				continue
+			}
+			out = append(out[:j], out[j+1:]...)
+			// The enlarged interval may now touch an earlier source which was
+			// not adjacent before. Restart this row's scan deterministically.
+			j = i + 1
+		}
+	}
+	return out
 }
 
 // compactTaskContextAnyItemNamed reports whether some ranked item's symbol
