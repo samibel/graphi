@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-302bc1e8496d",
+  "response_sha256": "ee795cebf9a38a3b220672038b2214d4580660d68f992bc7ee24700e16ac7c36",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response identifies stdin as the replaced source and os.Stdin as the fallback, with parent-reader inheritance supported by getIn. All claims and citations resolve within the preserved bundle.",
+  "graded_at": "2026-09-15T20:47:40Z",
+  "sha256": "127fd8e112d2ddb43c087c3d56e0fc27cd6fefe5d1d551df2cb6da7a2301fb5c"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-2968ad35f1c0",
+  "response_sha256": "505a78078ee56e815d4681f0a7a8de91347f0c3f6d90a34e39bb53ca68de1cac",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly describes visiting inherited and non-inherited flag sets directly when parsing may not have merged them, selecting unchanged flags with the one-required annotation, and appending their name completions. All claims and citations are supported by the preserved bundle.",
+  "graded_at": "2026-09-15T20:45:57Z",
+  "sha256": "d4acc582bcb94cda57da75b48b5c19f7cabd6b636057e8f312a9e3ac515d2510"
+}

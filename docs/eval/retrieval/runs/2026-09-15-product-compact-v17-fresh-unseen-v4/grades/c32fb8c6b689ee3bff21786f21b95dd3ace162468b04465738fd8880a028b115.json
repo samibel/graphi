@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0bb13d8a6f20",
+  "response_sha256": "c32fb8c6b689ee3bff21786f21b95dd3ace162468b04465738fd8880a028b115",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly describes appending `_ACTIVE_HELP`, uppercasing the result, and replacing characters outside `A–Z`, `0–9`, and `_` with underscores. Its citations resolve within the bundle, and its example matches the preserved implementation.",
+  "graded_at": "2026-09-15T20:38:36Z",
+  "sha256": "f9176aa99bf8458248bf3cf79b33ce934204d9b1cd4851962922ae9b36a7f20a"
+}

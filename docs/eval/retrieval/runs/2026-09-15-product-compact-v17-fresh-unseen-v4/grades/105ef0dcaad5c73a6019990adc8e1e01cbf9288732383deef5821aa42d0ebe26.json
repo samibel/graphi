@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1ce7419b50d3",
+  "response_sha256": "105ef0dcaad5c73a6019990adc8e1e01cbf9288732383deef5821aa42d0ebe26",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response matches the preserved Eq implementation: signed integer kinds and strings are compared, arrays/channels/maps/slices panic with the stated message, and other kinds return false. Both citations resolve to bundle spans, including the `\"eq\": Eq` registration.",
+  "graded_at": "2026-09-15T20:42:41Z",
+  "sha256": "66aec4c94be102e57a2b39dd4a83184baf34a5d74fc7d1a12419c4593ad981b9"
+}

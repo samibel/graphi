@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-20b5794c31ea",
+  "response_sha256": "40e48935c63227b366f753523b6a19907ef2cb325221bc1377c192d5d7f4e125",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer the nil versus non-nil behavior. The bundle shows a `cobra.CheckErr(err)` call but lacks its implementation or documented behavior; the rubric rejects insufficient answers and missing necessary facts.",
+  "graded_at": "2026-09-15T20:43:43Z",
+  "sha256": "dc667d54c8f0cb825203dc20c4fa8f53de0b4778f137c626628ce746faee7338"
+}

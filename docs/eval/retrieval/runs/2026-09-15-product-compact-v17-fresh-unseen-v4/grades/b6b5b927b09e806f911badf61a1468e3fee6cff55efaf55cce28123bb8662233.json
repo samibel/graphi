@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-21ed0468a792",
+  "response_sha256": "b6b5b927b09e806f911badf61a1468e3fee6cff55efaf55cce28123bb8662233",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly states that WriteStringAndCheck captures the error from b.WriteString(s) and delegates it to CheckErr, which prints to stderr and exits with code 1 for a non-nil error. The nil behavior and citations are supported by the preserved cobra.go span.",
+  "graded_at": "2026-09-15T20:43:57Z",
+  "sha256": "707731aa32acf4a246451031824874152c17db21ad51fbc9fd9b6061f32a88a3"
+}

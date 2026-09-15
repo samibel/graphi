@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-37a64f28de05",
+  "response_sha256": "4f7af14133ef074da0639b08b4b3c7a786c041b06f2b6c85474c59ac962c7e17",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer what behavior is verified. The bundle omits TestChildSameName and does not establish that invoking the repeated name successfully runs the child with both positional arguments.",
+  "graded_at": "2026-09-15T20:49:36Z",
+  "sha256": "157b74a6e1bf17cb774dc3eb375bc894043a5566bbec13e2d66deea58a11d441"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1d09bc627e45",
+  "response_sha256": "051fe7705f87d9f3516fd9080f484433e2b14ab2290a848706f72b85c51e618c",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly states that `trimRightSpace` and `trimTrailingWhitespaces` remove Unicode whitespace only from the right edge using `strings.TrimRightFunc(s, unicode.IsSpace)`. Its additional claims about `trim` and help-template usage are supported, and all citations resolve within the bundle.",
+  "graded_at": "2026-09-15T20:42:58Z",
+  "sha256": "f9ec71ee36888f241b64fde5b2bea2cef71888774747b9453987cb68263d5130"
+}
