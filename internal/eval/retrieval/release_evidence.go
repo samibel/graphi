@@ -256,8 +256,8 @@ func validateReleaseArtifacts(root string, manifest ReleaseEvidenceManifest, art
 	if err := decodeReleaseEvidenceJSON("blind_smoke_outcome", artifacts["blind_smoke_outcome"], &smoke); err != nil {
 		return nil, err
 	}
-	if smoke.ContractVersion != QrelBlindSmokeContractVersion {
-		return nil, fmt.Errorf("retrieval release evidence: blind_smoke_outcome contract %q is not %q", smoke.ContractVersion, QrelBlindSmokeContractVersion)
+	if smoke.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return nil, fmt.Errorf("retrieval release evidence: blind_smoke_outcome contract %q is not %q", smoke.ContractVersion, QrelBlindSmokeContractVersion2)
 	}
 	if smoke.Release != ReleaseYes || !smoke.CaptureBinding.Bound {
 		return nil, fmt.Errorf("retrieval release evidence: blind_smoke_outcome is not a bound RELEASE: YES")

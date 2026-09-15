@@ -281,7 +281,7 @@ func releaseEvidenceCoverage(datasetSHA string) TaskContextMeasurement {
 }
 
 func releaseEvidenceSmoke() EvaluationOutcome {
-	return EvaluationOutcome{ContractVersion: QrelBlindSmokeContractVersion, Release: ReleaseYes,
+	return EvaluationOutcome{ContractVersion: QrelBlindSmokeContractVersion2, Release: ReleaseYes,
 		CaptureBinding: CaptureBindingAssessment{Bound: true, CaptureVersion: CandidateCaptureVersion,
 			CandidateSHA: releaseEvidenceFixtureCandidate, CheckoutSHA: releaseEvidenceFixtureRepo}}
 }
