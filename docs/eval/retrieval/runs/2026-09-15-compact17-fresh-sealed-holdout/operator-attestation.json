@@ -1,0 +1,64 @@
+{
+  "contract_version": "fresh-holdout-operator-attestation/2",
+  "status": "static_inputs_pre_freeze_attested",
+  "operator": {
+    "id": "codex-independent-compact17-holdout-operator",
+    "provider": "OpenAI Codex",
+    "model": "GPT-5 Codex agent (session-declared)",
+    "model_build": "not exposed by provider",
+    "task_path": "/root/holdout_operator",
+    "host_id": "MB-VQYG0FKHQL",
+    "workspace_id": "/private/tmp/graphi-compact17-holdout-operator"
+  },
+  "independence": {
+    "implemented_candidate": false,
+    "curated_dataset": false,
+    "accessed_holdout_content_before_capture": false,
+    "accessed_prior_holdout_responses_or_answer_keys": false,
+    "root_agent_excluded_from_holdout_content": true,
+    "basis": "Independent operator task. Before freeze it inspected only public code, methodology, preregistration, attestations, reuse determination, file identities, and aggregate metadata; the sealed dataset was handled only as an opaque path and digest."
+  },
+  "curator": {
+    "status": "independent_candidate_exact_handoff_complete",
+    "id": "Codex subagent /root/fresh_holdout_curator",
+    "handoff_commit": "11c9eac46610c499f2a7e52dd33e27ed077a2ad7",
+    "operator_cherry_pick_commit": "fd161d2a",
+    "curation_pre_registration_sha256": "31a83a29d8d89f9ba50a0d2663709ad7e83453435d0fb25debdccfba5f140c75",
+    "curator_attestation_sha256": "5fcb759f85c824804c0eb6db12920d5c64278a6957476a20ce2133ed84213e19",
+    "reuse_determination_sha256": "c23216775febee562466a01b303387f8d53490cacac92c07faf1e2a41c1d8bf6",
+    "sealed_dataset_sha256": "8b194e4bb2bec052458d77e0e49e86269d7b1a0d4357c1f68f26009c455d3562"
+  },
+  "frozen_identities": {
+    "contract_versions": [
+      "sw280-qrel-blind-smoke-evaluation/2",
+      "sw266-measurement-contract/2"
+    ],
+    "product_candidate_sha": "2d65df335544c2c66c0ff12e8f79db4f6c53e72b",
+    "product_candidate_tree": "9af24c26ba6b5b221e70f7e8998c351b640776f8",
+    "freeze_base_sha": "pending: static-input commit not yet created",
+    "capture_candidate_sha": "pending: freeze-record commit not yet created",
+    "candidate_projection": "task_context/2-compact/17",
+    "candidate_token_budget": 1200,
+    "corpus_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "embedder": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+    "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+    "run_directory": "docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout"
+  },
+  "execution": {
+    "attested_at_utc": "2026-09-15T18:27:19Z",
+    "candidate_worktree_clean": true,
+    "indexed_worktree_clean": true,
+    "per_item_command": "codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only -m <model> -c model_reasoning_effort=\"high\" -C <new empty git repository> --json -o <output> - < <single allowed input>",
+    "event_allowlist": "exactly thread.started, turn.started, item.completed(agent_message), turn.completed",
+    "primary_parallelism": 2,
+    "within_role_serial": true,
+    "grader_serial": true,
+    "adjudicator_input": "original generated prompt only",
+    "failure_policy": "Any process error, unexpected event or item type, nonempty required output failure, overwrite attempt, binding drift, validation error, or capture mismatch refuses the run without retry."
+  },
+  "limitations": [
+    "OpenAI exposes no immutable backend model snapshot/build digest, so participant model behavior is not byte-reproducible.",
+    "The unchanged dataset carries its original compact/16 curation note; the authoritative compact/17 binding is the distinct curation preregistration and forthcoming harness records in this run."
+  ],
+  "declaration": "Before freeze, the independent operator attests to the exact compact/17 candidate and corpus identities, unchanged eligible dataset seal, frozen N=64/k=56 and 1200-token rule, fail-closed two-build capture requirement, stateless participant controls, and no disclosure of holdout content to the root orchestration agent."
+}
