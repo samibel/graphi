@@ -166,6 +166,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
 		"docs/eval/retrieval/runs/2026-09-15-compact15-exact-path-dev",
 		"docs/eval/retrieval/runs/2026-09-15-compact16-coherent-flow-dev",
+		"docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev",
 		"docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {

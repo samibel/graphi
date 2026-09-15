@@ -146,6 +146,10 @@ and become stale when `PinnedRevision` changes:
   compact/16 coherent flow and depth development measurement. Its 64-query
   production MCP forecast and original 40-query cost comparison use this
   pinned model.
+- `docs/eval/retrieval/runs/2026-09-15-compact17-projection-dev/` — the
+  compact/17 answer-span projection development measurement. Its 64-query
+  production MCP capture, reviewed completeness result, cost comparison and
+  two-index byte-reproducibility proof use this pinned model.
 - `docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev/` — the
   candidate-bound follow-up designation (compact/13) development capture. Its
   two independent indexes, retrieval rows, MCP bytes and reproducibility
