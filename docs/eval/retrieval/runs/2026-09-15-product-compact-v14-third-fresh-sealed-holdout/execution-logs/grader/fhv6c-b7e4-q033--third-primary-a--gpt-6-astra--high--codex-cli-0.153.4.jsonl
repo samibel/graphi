@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-b90a-7520-874e-377ba3fd0fe6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states the error `accepts 2 arg(s), received 3`, supported by the count mismatch check and error formatting at preserved args.go lines 96–97."}}
+{"type":"turn.completed","usage":{"input_tokens":17942,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

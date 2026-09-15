@@ -1,0 +1,1 @@
+FAIL: The response does not explain the verification: creating the child first, installing the root normalization function, and comparing function identities. The preserved transcript shows recursive propagation in command.go:362-372 but omits the test and assertions needed to answer the question.

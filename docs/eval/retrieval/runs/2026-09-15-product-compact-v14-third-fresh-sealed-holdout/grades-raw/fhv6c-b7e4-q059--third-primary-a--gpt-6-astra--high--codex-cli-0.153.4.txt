@@ -1,0 +1,1 @@
+FAIL: The response does not answer whether flags may precede a command. The preserved transcript shows flag lookup and parsing but lacks the test establishing short and long child flags before the child command token.

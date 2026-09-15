@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved callback’s prefix filtering of both described choices, its nil/NoFileComp return when args is nonempty, and its Default directive otherwise. The cited lines support these claims, and cmd is unused.

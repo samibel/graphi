@@ -1,0 +1,1 @@
+PASS: The response correctly states the error `accepts at most 2 arg(s), received 3`, directly supported by the `len(args) > n` check and error format in the supplied args.go:83–91.

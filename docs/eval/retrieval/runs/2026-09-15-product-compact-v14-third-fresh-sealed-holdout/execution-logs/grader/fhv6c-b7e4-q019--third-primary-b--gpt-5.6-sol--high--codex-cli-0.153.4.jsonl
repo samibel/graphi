@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-11ea-7703-b4ff-619fd5fa860c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies the visible helpers and tests, including the essential `translate` behavior: replacing hyphens with `\\-` using `strings.ReplaceAll` at doc/man_docs_test.go:36–38. Its cited locations match the preserved transcript, and it acknowledges the truncated coverage."}}
+{"type":"turn.completed","usage":{"input_tokens":18344,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":115,"reasoning_output_tokens":50}}

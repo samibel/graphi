@@ -1,0 +1,1 @@
+PASS: The response accurately describes the preserved helpers and six test declarations, including `translate` escaping hyphens with `strings.ReplaceAll` at lines 36–38. Its citations support the claims, and it explicitly acknowledges the transcript’s incomplete coverage.

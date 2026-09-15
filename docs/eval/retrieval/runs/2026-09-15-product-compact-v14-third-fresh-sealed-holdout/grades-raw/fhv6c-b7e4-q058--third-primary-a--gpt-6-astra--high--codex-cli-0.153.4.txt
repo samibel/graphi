@@ -1,0 +1,1 @@
+FAIL: The transcript shows only TestChildSameName’s setup comment, not its body or assertions. The response acknowledges that the expected execution result is absent, leaving the essential same-name child behavior unverified and unanswered.

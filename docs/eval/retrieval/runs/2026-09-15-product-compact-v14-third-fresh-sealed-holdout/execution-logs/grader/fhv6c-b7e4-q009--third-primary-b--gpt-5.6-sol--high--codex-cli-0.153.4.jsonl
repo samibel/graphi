@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-a6c2-7172-8315-e3c9688f76d1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper’s shared output buffer, argument setup, execution with the supplied context, and returned output and error, all supported by command_test.go:37-46. Its explanation of ExecuteContext is supported by command.go:1027-1033."}}
+{"type":"turn.completed","usage":{"input_tokens":18015,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":60,"reasoning_output_tokens":0}}

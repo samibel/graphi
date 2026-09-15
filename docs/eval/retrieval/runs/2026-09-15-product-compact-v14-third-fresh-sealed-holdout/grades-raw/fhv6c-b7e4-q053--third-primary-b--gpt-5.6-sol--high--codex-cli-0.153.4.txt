@@ -1,0 +1,1 @@
+PASS: The response gives the exact generator installation command preserved in README.md:95–109, `go install github.com/spf13/cobra-cli@latest`. Its cited lines 95–105 support both the generator’s purpose and the command.

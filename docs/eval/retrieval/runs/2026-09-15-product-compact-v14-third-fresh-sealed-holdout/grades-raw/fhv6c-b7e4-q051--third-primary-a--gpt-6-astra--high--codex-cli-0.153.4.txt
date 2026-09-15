@@ -1,0 +1,1 @@
+FAIL: The transcript names `GenMarkdown` and shows `GenMarkdownCustom` accepting a buffer, but never establishes that either generates documentation only for the selected command. That essential behavior appears only in the reviewed span, which is absent from the preserved transcript.

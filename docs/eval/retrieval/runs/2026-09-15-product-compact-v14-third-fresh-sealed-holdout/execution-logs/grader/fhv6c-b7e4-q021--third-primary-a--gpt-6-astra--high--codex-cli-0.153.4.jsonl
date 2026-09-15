@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-2e21-7912-bdf9-5cb6c4bd15da"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies package cobra and TestPwshCompletionNoActiveHelp at the supplied lines, including successful completion generation and verification that the generated script disables Active Help with `${env:<active-help-variable>}=0`. It appropriately limits its description to the truncated transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17399,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":24}}

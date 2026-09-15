@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-700e-7e60-ba2b-06d32903c643"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The transcript names `GenMarkdown` and shows `GenMarkdownCustom` accepting a buffer, but never establishes that either generates documentation only for the selected command. That essential behavior appears only in the reviewed span, which is absent from the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18134,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":39}}

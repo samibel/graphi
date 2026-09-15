@@ -1,0 +1,1 @@
+PASS: The response accurately describes expectSuccess’s empty-output and nil-error checks, including the respective t.Errorf and t.Fatalf calls, supported by args_test.go:35–42. Its usage example is supported by args_test.go:246–250.

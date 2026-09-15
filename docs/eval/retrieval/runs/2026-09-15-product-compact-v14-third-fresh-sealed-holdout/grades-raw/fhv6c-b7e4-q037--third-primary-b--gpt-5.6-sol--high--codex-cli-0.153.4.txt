@@ -1,0 +1,1 @@
+FAIL: The response explains the LocalFlags insertion guard but does not identify the verification test that applies two normalizers sequentially and checks differently cased lookups for duplicate instances. That essential test behavior is absent from the preserved transcript.

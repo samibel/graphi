@@ -1,0 +1,1 @@
+PASS: The cited command.go:478–495 span redirects both normal and error writers to the same bytes.Buffer during Usage(), then returns its contents, supporting preservation of the relative order of writes.

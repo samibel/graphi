@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-6a49-7160-8095-e7a813995dd3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies getCommand in args_test.go:23–33 and describes its command construction, assigned fields, optional ValidArgs values, and returned pointer, all supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18011,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s non-nil error check and exact comparison against "requires at least 2 arg(s), only received 1", including the failure calls, all supported by args_test.go:66–75 in the preserved transcript.

@@ -1,0 +1,1 @@
+PASS: The transcript supports immediate return of an invalid-argument error for the first value outside nonempty ValidArgs, including the value, command path, and possible suggestions. The cited spans also support exact matching after description stripping, suggestions based on args[0], and nil when ValidArgs is empty.

@@ -1,0 +1,1 @@
+FAIL: The response correctly describes the callback’s behavior, but cites completions_test.go:52 for the return of matching completions with ShellCompDirectiveDefault. That return is on line 51; line 52 contains only the closing brace and does not support the attached claim.

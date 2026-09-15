@@ -1,0 +1,1 @@
+FAIL: The transcript documents `TraverseChildren` generally but does not show how `Traverse` handles preceding root flags, selects the child, or preserves remaining child arguments. The response substitutes a `TraverseChildren` condition for the specific `Traverse` behavior, which cannot be verified from the supplied transcript.

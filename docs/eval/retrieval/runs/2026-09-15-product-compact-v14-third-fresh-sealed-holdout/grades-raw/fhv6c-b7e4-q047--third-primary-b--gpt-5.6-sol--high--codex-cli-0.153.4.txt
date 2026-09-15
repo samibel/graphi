@@ -1,0 +1,1 @@
+PASS: The response correctly identifies the hidden `__complete` command for inspecting completion output and explains contrasting Active Help settings: program-supported values for enabled levels, program-specific `0` to suppress all Active Help, and global `COBRA_ACTIVE_HELP=0`. The preserved transcript supports these behaviors and the cited locations.

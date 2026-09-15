@@ -1,0 +1,1 @@
+PASS: The response accurately describes args_test.go:44–53: the helper fails on a nil error and otherwise checks for the exact text `invalid argument "a" for "c"`, reporting mismatches with t.Errorf. All cited lines and claims are supported by the preserved transcript.

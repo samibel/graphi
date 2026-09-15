@@ -1,0 +1,1 @@
+PASS: The transcript shows SetOutput(nil) clears both outWriter and errWriter. The response correctly explains that OutOrStdout then inherits a parent writer or falls back to stdout, with supporting citations, and acknowledges the absent error-writer fallback implementation.

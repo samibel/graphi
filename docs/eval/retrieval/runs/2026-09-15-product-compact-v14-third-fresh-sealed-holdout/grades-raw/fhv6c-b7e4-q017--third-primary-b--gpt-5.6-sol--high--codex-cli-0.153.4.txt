@@ -1,0 +1,1 @@
+PASS: The response accurately describes package doc_test and both preserved example declarations, including ExampleGenManTree’s command/header setup and generation into "/tmp" through cobra.CheckErr. Its cited line ranges and ExampleGenMan buffer-and-print behavior are supported by the transcript.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-8478-7410-8304-a98e1313cd93"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper’s non-nil error check and exact comparison against \"requires at least 2 arg(s), only received 1\", including the failure calls, all supported by args_test.go:66–75 in the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17662,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

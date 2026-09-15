@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a434-5f63-7791-8e33-d47978621a22"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies `ValidArgsFunction`, default file completion, and the filtering and disabling directives as replacements. The preserved transcript supports these behaviors and confirms in the cited lines that both old positional helpers are deprecated and silently ignored."}}
+{"type":"turn.completed","usage":{"input_tokens":18974,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":23}}

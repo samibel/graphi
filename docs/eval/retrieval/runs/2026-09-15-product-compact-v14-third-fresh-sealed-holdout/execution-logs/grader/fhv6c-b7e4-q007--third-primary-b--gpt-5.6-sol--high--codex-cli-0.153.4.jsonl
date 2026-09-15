@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a432-9d7b-7021-ab0a-41cecd8e1177"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the helper in args_test.go:88–97: it rejects a nil error, checks the exact message \"accepts 2 arg(s), received 3\", and calls t.Fatalf on mismatch. All claims and the cited range are supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17630,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":63,"reasoning_output_tokens":0}}

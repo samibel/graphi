@@ -1,0 +1,1 @@
+FAIL: The response accurately cites Bash alias registration and alias matching, but omits the essential legacy Bash command-alias emission behavior in writeCmdAliases. The transcript preserves only its signature at bash_completions.go:632; the follow-up supplies no implementation.

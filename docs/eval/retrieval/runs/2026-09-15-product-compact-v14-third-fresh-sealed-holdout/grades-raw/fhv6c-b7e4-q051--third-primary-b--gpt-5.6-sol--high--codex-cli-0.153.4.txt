@@ -1,0 +1,1 @@
+FAIL: The transcript supports GenMarkdownTree’s whole-tree behavior and GenMarkdownCustom’s signature, but does not establish that GenMarkdown or GenMarkdownCustom generates documentation for only one command. That essential behavior appears only in the omitted reviewed span at site/content/docgen/md.md:58-70.

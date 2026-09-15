@@ -1,0 +1,1 @@
+FAIL: The response describes SetOutput and getOut but omits the essential public output accessors represented by OutOrStdout. Those accessors are absent from the preserved transcript, so the required behavior cannot be verified from this bundle.

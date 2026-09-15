@@ -1,0 +1,1 @@
+PASS: The transcript shows SetErr(nil) clears c.errWriter, and ErrOrStderr calls getErr(os.Stderr), which recursively checks parents for a non-nil error writer before falling back to os.Stderr. All cited ranges exist and support the response.

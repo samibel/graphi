@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper in args_test.go:88–97: it rejects a nil error, checks the exact message "accepts 2 arg(s), received 3", and calls t.Fatalf on mismatch. All claims and the cited range are supported by the preserved transcript.

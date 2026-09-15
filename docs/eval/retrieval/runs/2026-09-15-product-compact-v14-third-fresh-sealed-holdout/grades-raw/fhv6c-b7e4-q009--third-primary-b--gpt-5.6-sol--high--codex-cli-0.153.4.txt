@@ -1,0 +1,1 @@
+PASS: The response accurately describes the helper’s shared output buffer, argument setup, execution with the supplied context, and returned output and error, all supported by command_test.go:37-46. Its explanation of ExecuteContext is supported by command.go:1027-1033.

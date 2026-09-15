@@ -1,0 +1,1 @@
+FAIL: The response covers the preserved flags and declarations but omits the command-tree construction essential to the reviewed setup behavior. The transcript truncates `init` at line 40 and supplies no command-tree wiring, so that required behavior cannot be verified.

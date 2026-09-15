@@ -1,0 +1,1 @@
+PASS: The transcript shows SetOut(nil) clears outWriter, and OutOrStdout calls getOut(os.Stdout), which returns the nearest ancestor’s non-nil writer or ultimately os.Stdout. The cited lines exist and support these claims.

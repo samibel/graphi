@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a433-8eb6-7271-97f5-518fd2f319b3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response directly answers “No,” supported by args.go:41-43: NoArgs returns an error if any arguments are included and checks len(args) > 0. This supports rejecting a single positional value even without ValidArgs configured."}}
+{"type":"turn.completed","usage":{"input_tokens":18021,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":31}}
