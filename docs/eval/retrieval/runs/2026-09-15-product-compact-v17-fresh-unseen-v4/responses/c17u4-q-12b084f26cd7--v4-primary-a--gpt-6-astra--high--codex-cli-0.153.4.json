@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-12b084f26cd7",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "249b96a55a2c8e4a1affa2b8d2a28fb3755636fab3272d974e8d3d047fe01c06",
+  "bundle_sha256": "a18eb25c10edc4c7b362a241adca08c8614177c9d89891c911f5f522648fe598",
+  "prompt_sha256": "d6ca59dc1ea8b1220067831a84d0f523e147b1ed29f4e9100e47dad52e135f83",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go`, `getErr(def io.Writer)` returns:\n\n1. Its own `c.errWriter` if non-nil (lines 405–406).\n2. Otherwise, `c.parent.getErr(def)` if it has a parent, recursively inheriting the nearest ancestor’s non-nil error writer (lines 408–409).\n3. Otherwise, the supplied `def` writer (line 411).\n\n`ErrOrStderr()` supplies `os.Stderr` as that default (lines 384–387).",
+  "responded_at": "2026-09-15T20:24:43Z",
+  "sha256": "ae94897804bdf0b748f42acdeb6247030778f56abffcac7e704772f180e6f4c2"
+}

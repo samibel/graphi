@@ -1,0 +1,51 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: adf6d1dbc45fc21a719b291ef1759736d4f2a103a1e40404950ac0eb2f25b53b
+QUERY ID: c17u4-q-05b91a64d7e2
+
+QUESTION:
+How does genFlagResult represent a flag differently when its shorthand is usable versus absent or deprecated?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/yaml_docs.go:149-175 anchor="func genFlagResult(flags *pflag.FlagSet) []cmdOption" reason=The visitor includes shorthand only in the usable branch and always normalizes long text fields before appending options.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 1ce678547c6f; read in order (239/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"doc/yaml_docs.go","start_line":148,"end_line":175,"text":"\nfunc genFlagResult(flags *pflag.FlagSet) []cmdOption {\n\tvar result []cmdOption\n\n\tflags.VisitAll(func(flag *pflag.Flag) {\n\t\t// Todo, when we mark a shorthand is deprecated, but specify an empty message.\n\t\t// The flag.ShorthandDeprecated is empty as the shorthand is deprecated.\n\t\t// Using len(flag.ShorthandDeprecated) > 0 can't handle this, others are ok.\n\t\tif !(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0 {\n\t\t\topt := cmdOption{\n\t\t\t\tflag.Name,\n\t\t\t\tflag.Shorthand,\n\t\t\t\tflag.DefValue,\n\t\t\t\tforceMultiLine(flag.Usage),\n\t\t\t}\n\t\t\tresult = append(result, opt)\n\t\t} else {\n\t\t\topt := cmdOption{\n\t\t\t\tName:         flag.Name,\n\t\t\t\tDefaultValue: forceMultiLine(flag.DefValue),\n\t\t\t\tUsage:        forceMultiLine(flag.Usage),\n\t\t\t}\n\t\t\tresult = append(result, opt)\n\t\t}\n\t})\n\n\treturn result\n}"},{"path":"doc/util.go","start_line":38,"end_line":46,"text":"\n// Temporary workaround for yaml lib generating incorrect yaml with long strings\n// that do not contain \\n.\nfunc forceMultiLine(s string) string {\n\tif len(s) > 60 && !strings.Contains(s, \"\\n\") {\n\t\ts = s + \"\\n\"\n\t}\n\treturn s\n}"},{"path":"doc/man_docs.go","start_line":165,"end_line":166,"text":"\t\tif len(flag.Shorthand) > 0 && len(flag.ShorthandDeprecated) == 0 {\n\t\t\tformat = fmt.Sprintf(\"**-%s**, **--%s**\", flag.Shorthand, flag.Name)"},{"path":"bash_completions.go","start_line":698,"end_line":701,"text":"\nfunc nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) > 0\n}"},{"path":"command.go","start_line":1793,"end_line":1803,"text":"\n// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"bash_completions.go","start_line":607,"end_line":611,"text":"\t\t\t\tformat += cbn\n\t\t\t\tWriteStringAndCheck(buf, fmt.Sprintf(format, flag.Name))\n\n\t\t\t\tif len(flag.Shorthand) > 0 {\n\t\t\t\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    must_have_one_flag+=(\\\"-%s\"+cbn, flag.Shorthand))"},{"path":"doc/yaml_docs.go","start_line":111,"end_line":116,"text":"\tflags := cmd.NonInheritedFlags()\n\tif flags.HasFlags() {\n\t\tyamlDoc.Options = genFlagResult(flags)\n\t}\n\tflags = cmd.InheritedFlags()\n\tif flags.HasFlags() {"},{"path":"doc/man_docs.go","start_line":188,"end_line":189,"text":"\tflags := command.NonInheritedFlags()\n\tif flags.HasAvailableFlags() {"},{"path":"command.go","start_line":1766,"end_line":1766,"text":"// HasInheritedFlags checks if the command has flags inherited from its parent command."}],"provenance":{"input_sha256":"ae188a84e4115ae945dac971fe4271dbd9e5fdbf43830aab9f84fb8f102f16a2","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `doc/yaml_docs.go`, `genFlagResult` uses two representations:
+
+- **Usable shorthand** (`Shorthand` nonempty and `ShorthandDeprecated` empty): creates a `cmdOption` containing `flag.Name`, `flag.Shorthand`, the unchanged `flag.DefValue`, and `forceMultiLine(flag.Usage)` (lines 156–163).
+- **Absent or deprecated shorthand**: creates a `cmdOption` without setting shorthand, using `Name`, `DefaultValue: forceMultiLine(flag.DefValue)`, and `Usage: forceMultiLine(flag.Usage)` (lines 164–170).
+
+Thus, the second branch also formats the default value. `forceMultiLine` appends a newline to strings longer than 60 characters that contain no newline (`doc/util.go`, lines 41–45).
+
+The comment notes a limitation: deprecation with an empty message is not detected by this check (`doc/yaml_docs.go`, lines 153–155).
+----- END THE RATER'S RESPONSE -----

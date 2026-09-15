@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-159d30a24c61",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "47f1e6b02e89d58a205dadb3e30d20647ba8a0190effa15ab40ee661cbe75937",
+  "bundle_sha256": "ddef82661a77f1884b5b455c38b67bec768ad087495f8ad89fb15f8876ed05b6",
+  "prompt_sha256": "860cb231eac54b876f4047d786a9ef263ce2d000d31a118d00edead674152a12",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`UseLine` appends `\" [flags]\"` only when:\n\n- `c.DisableFlagsInUseLine` is false.\n- `c.HasAvailableFlags()` is true.\n- The usage text does not already contain `\"[flags]\"`.\n\nThese checks and the append appear in `command.go:1443–1447`. `HasAvailableFlags` is documented as checking for flags that are neither hidden nor deprecated (`command.go:1771–1774`).",
+  "responded_at": "2026-09-15T20:25:10Z",
+  "sha256": "f43cadd1e4500750e5a61e39c67225ccb682ac2ba5392c781cc726f272d6133b"
+}

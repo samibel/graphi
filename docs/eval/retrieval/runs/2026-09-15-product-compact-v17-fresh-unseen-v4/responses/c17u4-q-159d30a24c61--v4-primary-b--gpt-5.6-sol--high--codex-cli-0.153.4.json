@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-159d30a24c61",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "47f1e6b02e89d58a205dadb3e30d20647ba8a0190effa15ab40ee661cbe75937",
+  "bundle_sha256": "ddef82661a77f1884b5b455c38b67bec768ad087495f8ad89fb15f8876ed05b6",
+  "prompt_sha256": "860cb231eac54b876f4047d786a9ef263ce2d000d31a118d00edead674152a12",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`UseLine` appends `\" [flags]\"` when:\n\n- `DisableFlagsInUseLine` is false,\n- `c.HasAvailableFlags()` is true, meaning there are non-hidden, non-deprecated local or inherited persistent flags, and\n- the usage line does not already contain `\"[flags]\"`.\n\nEvidence: `command.go:1436-1450` (`UseLine`) and `command.go:1770-1775` (`HasAvailableFlags`).",
+  "responded_at": "2026-09-15T20:24:47Z",
+  "sha256": "41a7bb1143a2ee8103ab4fc050a4f6ba4624a70fc5d7b19e05bc58363b793289"
+}

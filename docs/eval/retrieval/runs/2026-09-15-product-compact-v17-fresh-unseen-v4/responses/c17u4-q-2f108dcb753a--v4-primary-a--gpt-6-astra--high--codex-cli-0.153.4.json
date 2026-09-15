@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2f108dcb753a",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "6cc74fefb38393cc8d92daa6e3c6fdac0b320577fdb935812c14e2d5ff2f9a0d",
+  "bundle_sha256": "8ac2bb8c03b850226f8842d8da0a4587f61f689b3703537c5c4a89f7812f8bbf",
+  "prompt_sha256": "c78f5da8ff1e3ade472f248b6f8eee6df509fd92bca08df6cc6a97d033352b53",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "- **`ValidArgs`** supplies a list of values; `OnlyValidArgs` checks positional arguments against that list, stripping tab-separated descriptions (`args.go:49–65`). For shell completion, it applies to the **first argument only** (`zsh_completions.go:61–63`).\n- **`ValidArgsFunction`** is a callback taking `cmd`, `args`, and `toComplete`, returning `[]string` and `ShellCompDirective` (`command.go:87`). It supports completion for **any argument**, including the first (`zsh_completions.go:61–63`).\n\n**They cannot both be used on one command.** `command.go:86` explicitly states: “Only one of ValidArgs and ValidArgsFunction can be used for a command.”",
+  "responded_at": "2026-09-15T20:29:18Z",
+  "sha256": "e0262194d8565881d5993c9a59d8e90e251028f686788b020efeef81ed98e764"
+}

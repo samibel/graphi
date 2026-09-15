@@ -1,0 +1,48 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f77ea70b1319e56a56d8723fe4736730d8dbab2bfcb8b3dfa6c50deb5c879a84
+FOLLOW-UP READ CONTENT ADDRESS: 681442c6462e71d5671482f4dc1bd9868144798301856a65460e4ca0c49fae10
+QUERY ID: c17u4-q-1ac4936e71f8
+
+QUESTION:
+Which environment setting takes precedence when Cobra determines whether Active Help is enabled?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- active_help.go:46-57 anchor="func GetActiveHelpConfig(cmd *Command) string" reason=The function makes the global disable value authoritative and otherwise reads the root-program-specific setting.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"4 ranked source span(s); query a2bc4ac9e655; read in order (313/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/active_help.md","start_line":93,"end_line":102,"text":"The way to configure Active Help is to use the program's Active Help environment\nvariable.  That variable is named `<PROGRAM>_ACTIVE_HELP` where `<PROGRAM>` is the name of your \nprogram in uppercase with any non-ASCII-alphanumeric characters replaced by an `_`.  The variable should be set by the user to whatever\nActive Help configuration values are supported by the program.\n\nFor example, say `helm` has chosen to support three levels for Active Help: `on`, `off`, `local`.  Then a user\nwould set the desired behavior to `local` by doing `export HELM_ACTIVE_HELP=local` in their shell.\n\nFor simplicity, when in `cmd.ValidArgsFunction(...)` or a flag's completion function, the program should read the\nActive Help configuration using the `cobra.GetActiveHelpConfig(cmd)` function and select what Active Help messages"},{"path":"active_help.go","start_line":45,"end_line":67,"text":"\n// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}\n\n// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":859,"end_line":866,"text":"\n// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"}],"provenance":{"input_sha256":"fa5ab34ea99d3cc12987cb0a4db52b36b55676e8c1c054a3584b05fcdf0193e6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/active_help.md:88-131"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/active_help.md","start_line":88,"end_line":131,"text":"## User control of Active Help\n\nYou may want to allow your users to disable Active Help or choose between different levels of Active Help.  It is entirely up to the program to define the type of configurability of Active Help that it wants to offer, if any.\nAllowing to configure Active Help is entirely optional; you can use Active Help in your program without doing anything about Active Help configuration.\n\nThe way to configure Active Help is to use the program's Active Help environment\nvariable.  That variable is named `\u003cPROGRAM\u003e_ACTIVE_HELP` where `\u003cPROGRAM\u003e` is the name of your \nprogram in uppercase with any non-ASCII-alphanumeric characters replaced by an `_`.  The variable should be set by the user to whatever\nActive Help configuration values are supported by the program.\n\nFor example, say `helm` has chosen to support three levels for Active Help: `on`, `off`, `local`.  Then a user\nwould set the desired behavior to `local` by doing `export HELM_ACTIVE_HELP=local` in their shell.\n\nFor simplicity, when in `cmd.ValidArgsFunction(...)` or a flag's completion function, the program should read the\nActive Help configuration using the `cobra.GetActiveHelpConfig(cmd)` function and select what Active Help messages\nshould or should not be added (instead of reading the environment variable directly).\n\nFor example:\n```go\nValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\tactiveHelpLevel := cobra.GetActiveHelpConfig(cmd)\n\n\tvar comps []string\n\tif len(args) == 0 {\n\t\tif activeHelpLevel != \"off\"  {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must choose a name for the repo you are adding\")\n\t\t}\n\t} else if len(args) == 1 {\n\t\tif activeHelpLevel != \"off\" {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must specify the URL for the repo you are adding\")\n\t\t}\n\t} else {\n\t\tif activeHelpLevel == \"local\" {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"This command does not take any more arguments\")\n\t\t}\n\t}\n\treturn comps, cobra.ShellCompDirectiveNoFileComp\n},\n```\n**Note 1**: If the `\u003cPROGRAM\u003e_ACTIVE_HELP` environment variable is set to the string \"0\", Cobra will automatically disable all Active Help output (even if some output was specified by the program using the `cobra.AppendActiveHelp(...)` function).  Using \"0\" can simplify your code in situations where you want to blindly disable Active Help without having to call `cobra.GetActiveHelpConfig(cmd)` explicitly.\n\n**Note 2**: If a user wants to disable Active Help for every single program based on Cobra, she can set the environment variable `COBRA_ACTIVE_HELP` to \"0\".  In this case `cobra.GetActiveHelpConfig(cmd)` will return \"0\" no matter what the variable `\u003cPROGRAM\u003e_ACTIVE_HELP` is set to.\n\n**Note 3**: If the user does not set `\u003cPROGRAM\u003e_ACTIVE_HELP` or `COBRA_ACTIVE_HELP` (which will be a common case), the default value for the Active Help configuration returned by `cobra.GetActiveHelpConfig(cmd)` will be the empty string. "}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The global `COBRA_ACTIVE_HELP=0` setting takes precedence over `<PROGRAM>_ACTIVE_HELP`. In `active_help.go:51-58`, `GetActiveHelpConfig` only reads the program-specific variable when the global value is not `"0"`; `site/content/active_help.md:126-128` confirms it returns `"0"` regardless of `<PROGRAM>_ACTIVE_HELP`.
+----- END THE RATER'S RESPONSE -----

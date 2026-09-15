@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0bb13d8a6f20",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "9a928c2ebe17f78382f882b534c209bcd3844684cbb2e5a716f462005c050193",
+  "bundle_sha256": "e89584e3fe25e8d90c0d411ebf9f837a1b8f1b4ee0cafcf4a293a5993cd08dd2",
+  "prompt_sha256": "990b95784acc670311a2428c497d9d48e6fef26dc210bf963b17f3d88962cdd4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`activeHelpEnvVar`:\n\n1. Appends `\"_ACTIVE_HELP\"` to the program name.\n2. Uppercases the entire result.\n3. Replaces every character except `A–Z`, `0–9`, and `_` with `_`.\n\nEvidence: `active_help.go:23-33` defines the suffix and regexp `[^A-Z0-9_]`; `active_help.go:60-67` applies `strings.ToUpper(...)` followed by `ReplaceAllString(..., \"_\")`.\n\nFor example, `my-app` becomes `MY_APP_ACTIVE_HELP`.",
+  "responded_at": "2026-09-15T20:23:41Z",
+  "sha256": "c32fb8c6b689ee3bff21786f21b95dd3ace162468b04465738fd8880a028b115"
+}

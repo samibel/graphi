@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 59c2d39247cbb3038e22985db901522fc0898cfe44ab17c0d67df6073d047ad7
+QUERY ID: c17u4-q-32a59f06ce43
+
+QUESTION:
+Which callback can customize errors produced by flag parsing?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:316-320 anchor="func (c *Command) SetFlagErrorFunc(f func(*Command, error) error)" reason=The setter's contract and assignment identify the flag-error callback and its signature.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 46dd4050265d; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":49,"end_line":52,"text":"\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":1817,"end_line":1840,"text":"\n// ParseFlags parses persistent flag tree and local flags.\nfunc (c *Command) ParseFlags(args []string) error {\n\tif c.DisableFlagParsing {\n\t\treturn nil\n\t}\n\n\tif c.flagErrorBuf == nil {\n\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t}\n\tbeforeErrorBufLen := c.flagErrorBuf.Len()\n\tc.mergePersistentFlags()\n\n\t// do it here after merging all flags and just before parse\n\tc.Flags().ParseErrorsWhitelist = flag.ParseErrorsWhitelist(c.FParseErrWhitelist)\n\n\terr := c.Flags().Parse(args)\n\t// Print warnings if they occurred (e.g. deprecated flag messages).\n\tif c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {\n\t\tc.Print(c.flagErrorBuf.String())\n\t}\n\n\treturn err\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1394,"end_line":1398,"text":"\n// Print is a convenience method to Print to the defined output, fallback to Stderr if not set.\nfunc (c *Command) Print(i ...interface{}) {\n\tfmt.Fprint(c.OutOrStderr(), i...)\n}"},{"path":"command.go","start_line":1846,"end_line":1853,"text":"\n// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":"command.go","start_line":496,"end_line":511,"text":"\n// FlagErrorFunc returns either the function set by SetFlagErrorFunc for this\n// command or a parent, or it returns a function which returns the original\n// error.\nfunc (c *Command) FlagErrorFunc() (f func(*Command, error) error) {\n\tif c.flagErrorFunc != nil {\n\t\treturn c.flagErrorFunc\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.FlagErrorFunc()\n\t}\n\treturn func(c *Command, err error) error {\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":170,"end_line":171,"text":"\t// flagErrorFunc is func defined by user and it's called when the parsing of\n\t// flags returns an error."},{"path":"completions.go","start_line":323,"end_line":324,"text":"\tif err = finalCmd.ParseFlags(finalArgs); err != nil {\n\t\treturn finalCmd, []string{}, ShellCompDirectiveDefault, fmt.Errorf(\"Error while parsing flags from args %v: %s\", finalArgs, err.Error())"},{"path":"shell_completions.go","start_line":43,"end_line":44,"text":"// limit completions for the named flag to the specified file extensions.\nfunc (c *Command) MarkFlagFilename(name string, extensions ...string) error {"}],"provenance":{"input_sha256":"8f3499f6513dc3afe5177ebdbadf66bdc48851f869292839bf8eff05d7f72917","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`FlagErrorFunc`, configured via `SetFlagErrorFunc`, can customize flag-parsing errors. Its signature is `func(*Command, error) error` (`command.go:496-511`). The `flagErrorFunc` field is explicitly described as user-defined and called when flag parsing returns an error (`command.go:170-171`).
+----- END THE RATER'S RESPONSE -----

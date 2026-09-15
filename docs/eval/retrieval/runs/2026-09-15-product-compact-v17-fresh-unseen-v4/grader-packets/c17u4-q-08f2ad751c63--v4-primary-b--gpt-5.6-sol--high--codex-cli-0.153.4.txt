@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 6105d0b98ff2252dc200e6a3486af286ee2974f0e314686e894bd46b7f9844c5
+QUERY ID: c17u4-q-08f2ad751c63
+
+QUESTION:
+How does getFlagNameCompletions decide which long and shorthand spellings to suggest?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:534-565 anchor="func getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string" reason=The helper filters non-completable flags and adds prefix-matching long and shorthand forms with usage descriptions.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query af0354672647; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":533,"end_line":565,"text":"\nfunc getFlagNameCompletions(flag *pflag.Flag, toComplete string) []string {\n\tif nonCompletableFlag(flag) {\n\t\treturn []string{}\n\t}\n\n\tvar completions []string\n\tflagName := \"--\" + flag.Name\n\tif strings.HasPrefix(flagName, toComplete) {\n\t\t// Flag without the =\n\t\tcompletions = append(completions, fmt.Sprintf(\"%s\\t%s\", flagName, flag.Usage))\n\n\t\t// Why suggest both long forms: --flag and --flag= ?\n\t\t// This forces the user to *always* have to type either an = or a space after the flag name.\n\t\t// Let's be nice and avoid making users have to do that.\n\t\t// Since boolean flags and shortname flags don't show the = form, let's go that route and never show it.\n\t\t// The = form will still work, we just won't suggest it.\n\t\t// This also makes the list of suggested flags shorter as we avoid all the = forms.\n\t\t//\n\t\t// if len(flag.NoOptDefVal) == 0 {\n\t\t// \t// Flag requires a value, so it can be suffixed with =\n\t\t// \tflagName += \"=\"\n\t\t// \tcompletions = append(completions, fmt.Sprintf(\"%s\\t%s\", flagName, flag.Usage))\n\t\t// }\n\t}\n\n\tflagName = \"-\" + flag.Shorthand\n\tif len(flag.Shorthand) > 0 && strings.HasPrefix(flagName, toComplete) {\n\t\tcompletions = append(completions, fmt.Sprintf(\"%s\\t%s\", flagName, flag.Usage))\n\t}\n\n\treturn completions\n}"},{"path":"bash_completions.go","start_line":698,"end_line":701,"text":"\nfunc nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) > 0\n}"},{"path":"command.go","start_line":1793,"end_line":1803,"text":"\n// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}"},{"path":"command.go","start_line":832,"end_line":833,"text":"func (c *Command) SuggestionsFor(typedName string) []string {\n\tsuggestions := []string{}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"cobra.go","start_line":188,"end_line":188,"text":"func ld(s, t string, ignoreCase bool) int {"},{"path":"command.go","start_line":66,"end_line":66,"text":"\t// SuggestFor is an array of command names for which this command will be suggested -"},{"path":"completions.go","start_line":399,"end_line":399,"text":"\t\t\t\t\t// we suggest it as a completion"},{"path":"completions.go","start_line":573,"end_line":573,"text":"\t\t\t\t// If the flag is not already present, we suggest it as a completion"}],"provenance":{"input_sha256":"149e16726bf5c1fa3ca2a33488d3d72517e6018795958d8a066825db34236786","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`getFlagNameCompletions` in `completions.go:533-565` works as follows:
+
+- It returns no suggestions when `nonCompletableFlag(flag)` is true; `bash_completions.go:698-701` defines that as a hidden or deprecated flag.
+- It constructs the long spelling as `"--" + flag.Name` and suggests it only when that string starts with `toComplete` (`completions.go:540-543`).
+- It intentionally suggests only `--flag`, never the `--flag=` variant; the commented code at `completions.go:545-557` says the equals form remains valid but is omitted to shorten suggestions and avoid forcing users to type `=` or a space.
+- It constructs the shorthand as `"-" + flag.Shorthand` and suggests it only when the shorthand is nonempty and the constructed spelling starts with `toComplete` (`completions.go:560-562`).
+- Each suggestion is formatted as `"<spelling>\t<flag.Usage>"`.
+----- END THE RATER'S RESPONSE -----

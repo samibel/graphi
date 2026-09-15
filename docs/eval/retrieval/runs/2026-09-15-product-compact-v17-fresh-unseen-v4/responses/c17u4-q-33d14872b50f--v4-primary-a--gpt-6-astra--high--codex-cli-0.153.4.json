@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-33d14872b50f",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2a323ee464552ff1a0cb4ec49f901c63eceb08d09eedf1a3a6bc070125ff9118",
+  "bundle_sha256": "94e2bf5a981ec46b922f2921c5ef6c9b98faaba715adecd05b750cca0a1eb620",
+  "prompt_sha256": "ea08e7cd411b66f4c1c4e1089135d1d1f35f4c5368aae5587ce38e84bec76273",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetHelpFunc` on the command with a function of type `func(*Command, []string)`:\n\n```go\ncmd.SetHelpFunc(func(c *cobra.Command, args []string) {\n    // Write your application's help output.\n})\n```\n\n`SetHelpFunc` stores the callback in `c.helpFunc` (`command.go:321–325`). `HelpFunc()` uses that callback, otherwise inherits the parent’s function, otherwise uses the default (`command.go:449–468`). Thus, setting it on the root command also applies to children unless they override it, as documented in `site/content/user_guide.md:541–553`.",
+  "responded_at": "2026-09-15T20:29:49Z",
+  "sha256": "20413d466fdadff0c2097c04fcc26b77e17d7044bdc9b16ba0aabe704504c302"
+}

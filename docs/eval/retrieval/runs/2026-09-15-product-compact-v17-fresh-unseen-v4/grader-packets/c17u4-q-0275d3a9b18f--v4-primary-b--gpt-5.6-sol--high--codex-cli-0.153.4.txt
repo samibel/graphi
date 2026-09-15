@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 8b48ac63a006b85193f80923c7e7e92c58383c67e0e0b0cfa39df8de01584c2b
+QUERY ID: c17u4-q-0275d3a9b18f
+
+QUESTION:
+How does OnlyValidArgs treat descriptions embedded in ValidArgs before validating positional arguments?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args.go:49-66 anchor="func OnlyValidArgs(cmd *Command, args []string) error" reason=The implementation strips tab-separated descriptions and checks each argument against the resulting values.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query ba87b1405b12; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":48,"end_line":66,"text":"\n// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`\nfunc OnlyValidArgs(cmd *Command, args []string) error {\n\tif len(cmd.ValidArgs) > 0 {\n\t\t// Remove any description that may be included in ValidArgs.\n\t\t// A description is following a tab character.\n\t\tvar validArgs []string\n\t\tfor _, v := range cmd.ValidArgs {\n\t\t\tvalidArgs = append(validArgs, strings.Split(v, \"\\t\")[0])\n\t\t}\n\t\tfor _, v := range args {\n\t\t\tif !stringInSlice(v, validArgs) {\n\t\t\t\treturn fmt.Errorf(\"invalid argument %q for %q%s\", v, cmd.CommandPath(), cmd.findSuggestions(args[0]))\n\t\t\t}\n\t\t}\n\t}\n\treturn nil\n}"},{"path":"cobra.go","start_line":222,"end_line":230,"text":"\nfunc stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1424,"end_line":1434,"text":"\n// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":749,"end_line":765,"text":"\nfunc (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"args.go","start_line":124,"end_line":131,"text":"\n// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"args.go","start_line":112,"end_line":115,"text":"\n// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {"},{"path":"command.go","start_line":82,"end_line":84,"text":"\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion."},{"path":"args.go","start_line":24,"end_line":24,"text":"// legacyArgs validation has the following behaviour:"},{"path":"command.go","start_line":1139,"end_line":1139,"text":"func (c *Command) ValidateArgs(args []string) error {"}],"provenance":{"input_sha256":"ae99903943e76c193618801d9e16e5bebaa2476186bcb2c4d9c9833a6e3109b6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`OnlyValidArgs` strips embedded descriptions before validation. In [`args.go`, lines 52–57], it iterates over `cmd.ValidArgs`, splits each entry at the tab character (`strings.Split(v, "\t")[0]`), and keeps only the argument portion. It then checks every positional argument for an exact match in that cleaned list (`args.go`, lines 58–63; `stringInSlice` in `cobra.go`, lines 222–230).
+----- END THE RATER'S RESPONSE -----

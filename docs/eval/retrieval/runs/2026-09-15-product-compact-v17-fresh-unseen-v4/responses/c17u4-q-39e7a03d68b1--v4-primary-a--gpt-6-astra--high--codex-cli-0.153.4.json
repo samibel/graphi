@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-39e7a03d68b1",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "8a04d0ad1bade4a7fac3c1404e5491cfcd1fa5521fa1019bbc21cd2b8e7ef1ad",
+  "bundle_sha256": "c7223687f3bda9c8f312a9e2968ea6500d03043b44f479753893f075291a133f",
+  "prompt_sha256": "49e589f9dae2478efe085d9fa994c49662d1b3d0874271ec9c641ad2e9c5d1f9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows alias-prefix matching in `command.go:1523–1538` (`hasNameOrAliasPrefix`), but contains no nested command invocation or test assertions showing how that behavior is verified.",
+  "responded_at": "2026-09-15T20:30:34Z",
+  "sha256": "d6c91702847affd679ac7868a8ce5ee0bfd5e63df9689d53bdf9a31a81143c88"
+}

@@ -1,0 +1,48 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 40e48935c63227b366f753523b6a19907ef2cb325221bc1377c192d5d7f4e125
+FOLLOW-UP READ CONTENT ADDRESS: 7b8288abdd8f0c2e06861fcee2eaa3707e7fd9aa92626455f9049dd0e207bf80
+QUERY ID: c17u4-q-20b5794c31ea
+
+QUESTION:
+What does Cobra's fatal convenience helper do for nil versus non-nil input?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:232-238 anchor="func CheckErr(msg interface{})" reason=It does nothing for nil; otherwise it prints an Error-prefixed line to stderr and exits with status one.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query ccff80ea177a; read in order (261/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/user_guide.md","start_line":60,"end_line":72,"text":"func Execute() {\n  if err := rootCmd.Execute(); err != nil {\n    fmt.Fprintln(os.Stderr, err)\n    os.Exit(1)\n  }\n}\n```\n\nYou will additionally define flags and handle configuration in your init() function.\n\nFor example cmd/root.go:\n\n```go"},{"path":"site/content/active_help.md","start_line":47,"end_line":55,"text":"\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must specify the URL for the repo you are adding\")\n\t\t} else {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"This command does not take any more arguments\")\n\t\t}\n\t\treturn comps, cobra.ShellCompDirectiveNoFileComp\n\t},\n}\n```\nThe example above defines the completions (none, in this specific example) as well as the Active Help messages for the `helm repo add` command.  It yields the following behavior:"},{"path":"cobra.go","start_line":43,"end_line":50,"text":"var finalizers []func()\n\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)"},{"path":"site/content/docgen/yaml.md","start_line":15,"end_line":33,"text":"func main() {\n\tcmd := &cobra.Command{\n\t\tUse:   \"test\",\n\t\tShort: \"my test program\",\n\t}\n\terr := doc.GenYamlTree(cmd, \"/tmp\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n```\n\nThat will get you a Yaml document `/tmp/test.yaml`\n\n## Generate yaml docs for the entire command tree\n\nThis program can actually generate docs for the kubectl command in the kubernetes project\n\n```go"},{"path":"site/content/completions/_index.md","start_line":180,"end_line":184,"text":"\tValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\t\tif len(args) != 0 {\n\t\t\treturn nil, cobra.ShellCompDirectiveNoFileComp\n\t\t}\n\t\treturn getReleasesFromCluster(toComplete), cobra.ShellCompDirectiveNoFileComp"},{"path":"cobra.go","start_line":60,"end_line":62,"text":"\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive"},{"path":"cobra.go","start_line":102,"end_line":107,"text":"\n// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"command.go","start_line":300,"end_line":304,"text":"// SetIn sets the source for input data\n// If newIn is nil, os.Stdin is used.\nfunc (c *Command) SetIn(newIn io.Reader) {\n\tc.inReader = newIn\n}"}],"provenance":{"input_sha256":"d3f55cc21732e73102a8be911aec49580b7f0863f82683f3bd361be8c2f8dcc0","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:42-140"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":42,"end_line":140,"text":"### Create rootCmd\n\nCobra doesn't require any special constructors. Simply create your commands.\n\nIdeally you place this in app/cmd/root.go:\n\n```go\nvar rootCmd = \u0026cobra.Command{\n  Use:   \"hugo\",\n  Short: \"Hugo is a very fast static site generator\",\n  Long: `A Fast and Flexible Static Site Generator built with\n                love by spf13 and friends in Go.\n                Complete documentation is available at https://gohugo.io/documentation/`,\n  Run: func(cmd *cobra.Command, args []string) {\n    // Do Stuff Here\n  },\n}\n\nfunc Execute() {\n  if err := rootCmd.Execute(); err != nil {\n    fmt.Fprintln(os.Stderr, err)\n    os.Exit(1)\n  }\n}\n```\n\nYou will additionally define flags and handle configuration in your init() function.\n\nFor example cmd/root.go:\n\n```go\npackage cmd\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\n\t\"github.com/spf13/cobra\"\n\t\"github.com/spf13/viper\"\n)\n\nvar (\n\t// Used for flags.\n\tcfgFile     string\n\tuserLicense string\n\n\trootCmd = \u0026cobra.Command{\n\t\tUse:   \"cobra-cli\",\n\t\tShort: \"A generator for Cobra based Applications\",\n\t\tLong: `Cobra is a CLI library for Go that empowers applications.\nThis application is a tool to generate the needed files\nto quickly create a Cobra application.`,\n\t}\n)\n\n// Execute executes the root command.\nfunc Execute() error {\n\treturn rootCmd.Execute()\n}\n\nfunc init() {\n\tcobra.OnInitialize(initConfig)\n\n\trootCmd.PersistentFlags().StringVar(\u0026cfgFile, \"config\", \"\", \"config file (default is $HOME/.cobra.yaml)\")\n\trootCmd.PersistentFlags().StringP(\"author\", \"a\", \"YOUR NAME\", \"author name for copyright attribution\")\n\trootCmd.PersistentFlags().StringVarP(\u0026userLicense, \"license\", \"l\", \"\", \"name of license for the project\")\n\trootCmd.PersistentFlags().Bool(\"viper\", true, \"use Viper for configuration\")\n\tviper.BindPFlag(\"author\", rootCmd.PersistentFlags().Lookup(\"author\"))\n\tviper.BindPFlag(\"useViper\", rootCmd.PersistentFlags().Lookup(\"viper\"))\n\tviper.SetDefault(\"author\", \"NAME HERE \u003cEMAIL ADDRESS\u003e\")\n\tviper.SetDefault(\"license\", \"apache\")\n\n\trootCmd.AddCommand(addCmd)\n\trootCmd.AddCommand(initCmd)\n}\n\nfunc initConfig() {\n\tif cfgFile != \"\" {\n\t\t// Use config file from the flag.\n\t\tviper.SetConfigFile(cfgFile)\n\t} else {\n\t\t// Find home directory.\n\t\thome, err := os.UserHomeDir()\n\t\tcobra.CheckErr(err)\n\n\t\t// Search config in home directory with name \".cobra\" (without extension).\n\t\tviper.AddConfigPath(home)\n\t\tviper.SetConfigType(\"yaml\")\n\t\tviper.SetConfigName(\".cobra\")\n\t}\n\n\tviper.AutomaticEnv()\n\n\tif err := viper.ReadInConfig(); err == nil {\n\t\tfmt.Println(\"Using config file:\", viper.ConfigFileUsed())\n\t}\n}\n```\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The responses show `cobra.CheckErr(err)` at `site/content/user_guide.md:121` but do not include its implementation or document its nil versus non-nil behavior.
+----- END THE RATER'S RESPONSE -----

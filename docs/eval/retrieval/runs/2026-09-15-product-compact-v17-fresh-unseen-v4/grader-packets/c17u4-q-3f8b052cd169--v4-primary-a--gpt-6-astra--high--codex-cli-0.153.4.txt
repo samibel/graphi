@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d44a2ec46ea707a741ebdd399b4bb69a9f2f92ef227fc0e89d6e8e61fa7c096d
+QUERY ID: c17u4-q-3f8b052cd169
+
+QUESTION:
+How does the removal test show that a detached child can no longer be invoked through its former parent?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:1450-1460 anchor="func TestRemoveCommand(t *testing.T)" reason=The test adds then removes a child and requires the former invocation to return an error.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query b6b36680170e; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_test.go","start_line":931,"end_line":961,"text":"func TestHelpCommandExecutedOnChildWithFlagThatShadowsParentFlag(t *testing.T) {\n\tparent := &Command{Use: \"parent\", Run: emptyRun}\n\tchild := &Command{Use: \"child\", Run: emptyRun}\n\tparent.AddCommand(child)\n\n\tparent.PersistentFlags().Bool(\"foo\", false, \"parent foo usage\")\n\tparent.PersistentFlags().Bool(\"bar\", false, \"parent bar usage\")\n\tchild.Flags().Bool(\"foo\", false, \"child foo usage\") // This shadows parent's foo flag\n\tchild.Flags().Bool(\"baz\", false, \"child baz usage\")\n\n\tgot, err := executeCommand(parent, \"help\", \"child\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\texpected := `Usage:\n  parent child [flags]\n\nFlags:\n      --baz    child baz usage\n      --foo    child foo usage\n  -h, --help   help for child\n\nGlobal Flags:\n      --bar   parent bar usage\n`\n\n\tif got != expected {\n\t\tt.Errorf(\"Help text mismatch.\\nExpected:\\n%s\\n\\nGot:\\n%s\\n\", expected, got)\n\t}\n}"},{"path":"command_test.go","start_line":1267,"end_line":1294,"text":"func TestVisitParents(t *testing.T) {\n\tc := &Command{Use: \"app\"}\n\tsub := &Command{Use: \"sub\"}\n\tdsub := &Command{Use: \"dsub\"}\n\tsub.AddCommand(dsub)\n\tc.AddCommand(sub)\n\n\ttotal := 0\n\tadd := func(x *Command) {\n\t\ttotal++\n\t}\n\tsub.VisitParents(add)\n\tif total != 1 {\n\t\tt.Errorf(\"Should have visited 1 parent but visited %d\", total)\n\t}\n\n\ttotal = 0\n\tdsub.VisitParents(add)\n\tif total != 2 {\n\t\tt.Errorf(\"Should have visited 2 parents but visited %d\", total)\n\t}\n\n\ttotal = 0\n\tc.VisitParents(add)\n\tif total != 0 {\n\t\tt.Errorf(\"Should have visited no parents but visited %d\", total)\n\t}\n}"},{"path":"command_test.go","start_line":861,"end_line":862,"text":"func TestPersistentRequiredFlagsWithDisableFlagParsing(t *testing.T) {\n\t// Make sure a required persistent flag does not break"},{"path":"command_test.go","start_line":754,"end_line":754,"text":"func TestChildFlagShadowsParentPersistentFlag(t *testing.T) {"},{"path":"command_test.go","start_line":1770,"end_line":1776,"text":"// test to ensure hidden commands do not show up in usage/help text\nfunc TestHiddenCommandIsHidden(t *testing.T) {\n\tc := &Command{Use: \"c\", Hidden: true, Run: emptyRun}\n\tif c.IsAvailableCommand() {\n\t\tt.Errorf(\"Hidden command should be unavailable\")\n\t}\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":163,"end_line":163,"text":"\t// that we can use on every pflag set and children commands"},{"path":"command.go","start_line":852,"end_line":852,"text":"// VisitParents visits all parents of the command and invokes fn on each parent."},{"path":"command.go","start_line":1515,"end_line":1515,"text":"// CalledAs returns the command name or alias that was used to invoke"}],"provenance":{"input_sha256":"2d933bf2408b8733f8f81bd4279695e33af21b0f334ab4a57ee6395fb42e7cc3","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains no removal test or assertions showing that invoking a detached child through its former parent fails.
+----- END THE RATER'S RESPONSE -----

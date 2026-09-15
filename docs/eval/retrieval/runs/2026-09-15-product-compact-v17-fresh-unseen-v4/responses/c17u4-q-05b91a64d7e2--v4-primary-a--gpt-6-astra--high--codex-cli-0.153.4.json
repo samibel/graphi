@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-05b91a64d7e2",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "1ce678547c6f9807f885ef569d773a0ed030428953bc01930482cd4ed71872e1",
+  "bundle_sha256": "a61bd7239fc60f0a5d9d374c46852c82419ce5182c8a48659e6167ef0589465d",
+  "prompt_sha256": "d922bbaa79d82c1b7204f2f88d90a85d6945d84209b60a870335b7cbcb167e47",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/yaml_docs.go`, `genFlagResult` uses two representations:\n\n- **Usable shorthand** (`Shorthand` nonempty and `ShorthandDeprecated` empty): creates a `cmdOption` containing `flag.Name`, `flag.Shorthand`, the unchanged `flag.DefValue`, and `forceMultiLine(flag.Usage)` (lines 156–163).\n- **Absent or deprecated shorthand**: creates a `cmdOption` without setting shorthand, using `Name`, `DefaultValue: forceMultiLine(flag.DefValue)`, and `Usage: forceMultiLine(flag.Usage)` (lines 164–170).\n\nThus, the second branch also formats the default value. `forceMultiLine` appends a newline to strings longer than 60 characters that contain no newline (`doc/util.go`, lines 41–45).\n\nThe comment notes a limitation: deprecation with an empty message is not detected by this check (`doc/yaml_docs.go`, lines 153–155).",
+  "responded_at": "2026-09-15T20:22:50Z",
+  "sha256": "adf6d1dbc45fc21a719b291ef1759736d4f2a103a1e40404950ac0eb2f25b53b"
+}

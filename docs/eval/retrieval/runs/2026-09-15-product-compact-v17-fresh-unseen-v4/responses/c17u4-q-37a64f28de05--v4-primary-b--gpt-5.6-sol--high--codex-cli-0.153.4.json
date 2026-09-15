@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-37a64f28de05",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "51b9bbb0f98213d474d81827249e7fd55a2ce4df7e2894a3237884cb0c82a33c",
+  "bundle_sha256": "00dfec8d9bfac685cfe992c08850454080f61ebfc81844feceb6af2ce17c38da",
+  "prompt_sha256": "d8ece2083e5d82d3652113336dd0a0628a65befc314c3dc5d050f3da81a91e07",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains no test or implementation snippet showing the behavior when an application and its direct child share the same command name.",
+  "responded_at": "2026-09-15T20:29:09Z",
+  "sha256": "4f7af14133ef074da0639b08b4b3c7a786c041b06f2b6c85474c59ac962c7e17"
+}

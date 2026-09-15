@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0e8f147ac350",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "e270c2e2282dd57d5e39d3a447d19ef18d0c5db0ae3f12631400676792ab24df",
+  "bundle_sha256": "fc006f4131435738fc36563552a064e8692af50c0cba7cbf9c498118077ec9f9",
+  "prompt_sha256": "0c0534ad6a48694244b0cff117b200c88b877f99971071835b8347aa62b6ecd2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnFinalize` appends every variadic function argument to the package-level `finalizers []func()` slice, preserving existing entries and argument order:\n\n```go\nfinalizers = append(finalizers, y...)\n```\n\nEvidence: `cobra.go:43` declares `finalizers`, and `cobra.go:104-106` defines `OnFinalize` and performs the append.",
+  "responded_at": "2026-09-15T20:24:02Z",
+  "sha256": "b0ec23b9092a796d4baee682e6dd7056209646ea3e2e4b3108d9ce1a33abf9ed"
+}

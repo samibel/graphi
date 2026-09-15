@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-24d0257ac4f1",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "eb643e83266fe0609380eceabc9aa8dac712858122097bbc5ddf00046ca5e5a2",
+  "bundle_sha256": "2429fa62b8ed8f475626a258199e574cef06e370502d80c473b3a6079400030f",
+  "prompt_sha256": "2febe325cb6bd4a5de0033ce663445c99117c1a1b0783173762e7343d5c879c9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows only `Command.SetFlagErrorFunc` assigning `c.flagErrorFunc` (`command.go:315–320`), but not how Cobra searches or inherits handlers across the command hierarchy.",
+  "responded_at": "2026-09-15T20:26:48Z",
+  "sha256": "32aff4954d60f926a3f47e0e57279426c91dd3b260afc0438f14c391a221a23d"
+}

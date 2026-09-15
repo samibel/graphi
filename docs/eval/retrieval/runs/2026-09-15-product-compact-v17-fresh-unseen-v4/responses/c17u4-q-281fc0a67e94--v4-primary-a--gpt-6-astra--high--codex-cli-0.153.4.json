@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-281fc0a67e94",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "af35c91a1d237b3590cf2b6b5784e8c1cd598ddd02eaf89f09d5556e03133857",
+  "bundle_sha256": "0fdb3a0f64cf3e4c13cb3f72560cdd1012962856fbe325c613828e61413a4581",
+  "prompt_sha256": "3a9390451f61ef36dc49509e19bdbd5bb06b1109089f7511cdb78fe16e6c433f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ResetFlags` in `command.go:1738–1749`:\n\n- **Replaces the error buffer:** assigns `c.flagErrorBuf = new(bytes.Buffer)` and calls `Reset()` on it (lines 1739–1740).\n- **Rebuilds `c.flags` and `c.pflags`:** creates each with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)` and directs both outputs to the new error buffer (lines 1741–1744).\n- **Invalidates cached flag sets:** sets `c.lflags`, `c.iflags`, and `c.parentsPflags` to `nil` (lines 1746–1748). These represent local flags, inherited flags, and parent persistent flags, as shown by `LocalFlags`, `InheritedFlags` (`command.go:1667–1718`), and `mergePersistentFlags` (`command.go:1846–1853`).",
+  "responded_at": "2026-09-15T20:28:22Z",
+  "sha256": "7001225ae8921511660021efc26c3b44f5ab2e127f34d16d7d514c125affab7a"
+}

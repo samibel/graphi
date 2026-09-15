@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 7df2cf3b22e519d2f9faef74e07fb9e31edb44914eb46303cd3c2fbe1c851d56
+FOLLOW-UP READ CONTENT ADDRESS: 1e5c3a6b9eadc6472e6062f3ee73513c55cdc4c3689f470000eb6fcf5591a40e
+QUERY ID: c17u4-q-19d60a8f3b27
+
+QUESTION:
+How is an Active Help message encoded and added to an existing completion list?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- active_help.go:35-44 anchor="func AppendActiveHelp(compArray []string, activeHelpStr string) []string" reason=The helper prefixes the message with the marker and appends the formatted string to the supplied slice.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 2d4b75dd74b0; read in order (289/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/active_help.md","start_line":28,"end_line":53,"text":"Adding Active Help is done through the use of the `cobra.AppendActiveHelp(...)` function, where the program repeatedly adds Active Help messages to the list of completions.  Keep reading for details.\n\n### Active Help for nouns\n\nAdding Active Help when completing a noun is done within the `ValidArgsFunction(...)` of a command.  Please notice the use of `cobra.AppendActiveHelp(...)` in the following example:\n\n```go\ncmd := &cobra.Command{\n\tUse:   \"add [NAME] [URL]\",\n\tShort: \"add a chart repository\",\n\tArgs:  require.ExactArgs(2),\n\tRunE: func(cmd *cobra.Command, args []string) error {\n\t\treturn addRepo(args)\n\t},\n\tValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\t\tvar comps []string\n\t\tif len(args) == 0 {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must choose a name for the repo you are adding\")\n\t\t} else if len(args) == 1 {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must specify the URL for the repo you are adding\")\n\t\t} else {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"This command does not take any more arguments\")\n\t\t}\n\t\treturn comps, cobra.ShellCompDirectiveNoFileComp\n\t},\n}"},{"path":"site/content/user_guide.md","start_line":746,"end_line":750,"text":"## Providing Active Help\n\nCobra makes use of the shell-completion system to define a framework allowing you to provide Active Help to your users.\nActive Help are messages (hints, warnings, etc) printed as the program is being used.\nRead more about it in [Active Help](active_help.md)."},{"path":"active_help.go","start_line":35,"end_line":35,"text":"// AppendActiveHelp adds the specified string to the specified array to be used as ActiveHelp."},{"path":"site/content/active_help.md","start_line":141,"end_line":141,"text":"Debugging your Active Help code is done in the same way as debugging your dynamic completion code, which is with Cobra's hidden `__complete` command.  Please refer to [debugging shell completion](shell_completions.md#debugging) for details."},{"path":"site/content/active_help.md","start_line":102,"end_line":102,"text":"Active Help configuration using the `cobra.GetActiveHelpConfig(cmd)` function and select what Active Help messages"},{"path":"active_help_test.go","start_line":304,"end_line":304,"text":"\t// Test that multiple activeHelp message can be added"},{"path":"active_help_test.go","start_line":239,"end_line":239,"text":"\t// Test that multiple activeHelp message can be added"},{"path":"completions.go","start_line":892,"end_line":892,"text":"// CompError prints the specified completion message to stderr."}],"provenance":{"input_sha256":"fade65f2426f1a1e19b0ab159b822c09c4b2cf2f45450252d8cae81bfa9e7374","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/active_help.md:24-87"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/active_help.md","start_line":24,"end_line":87,"text":"## Adding Active Help messages\n\nAs Active Help uses the shell completion system, the implementation of Active Help messages is done by enhancing custom dynamic completions.  If you are not familiar with dynamic completions, please refer to [Shell Completions](shell_completions.md).\n\nAdding Active Help is done through the use of the `cobra.AppendActiveHelp(...)` function, where the program repeatedly adds Active Help messages to the list of completions.  Keep reading for details.\n\n### Active Help for nouns\n\nAdding Active Help when completing a noun is done within the `ValidArgsFunction(...)` of a command.  Please notice the use of `cobra.AppendActiveHelp(...)` in the following example:\n\n```go\ncmd := \u0026cobra.Command{\n\tUse:   \"add [NAME] [URL]\",\n\tShort: \"add a chart repository\",\n\tArgs:  require.ExactArgs(2),\n\tRunE: func(cmd *cobra.Command, args []string) error {\n\t\treturn addRepo(args)\n\t},\n\tValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\t\tvar comps []string\n\t\tif len(args) == 0 {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must choose a name for the repo you are adding\")\n\t\t} else if len(args) == 1 {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"You must specify the URL for the repo you are adding\")\n\t\t} else {\n\t\t\tcomps = cobra.AppendActiveHelp(comps, \"This command does not take any more arguments\")\n\t\t}\n\t\treturn comps, cobra.ShellCompDirectiveNoFileComp\n\t},\n}\n```\nThe example above defines the completions (none, in this specific example) as well as the Active Help messages for the `helm repo add` command.  It yields the following behavior:\n```\nbash-5.1$ helm repo add [tab]\nYou must choose a name for the repo you are adding\n\nbash-5.1$ helm repo add grafana [tab]\nYou must specify the URL for the repo you are adding\n\nbash-5.1$ helm repo add grafana https://grafana.github.io/helm-charts [tab]\nThis command does not take any more arguments\n```\n**Hint**: As can be seen in the above example, a good place to use Active Help messages is when the normal completion system does not provide any suggestions. In such cases, Active Help nicely supplements the normal shell completions.\n\n### Active Help for flags\n\nProviding Active Help for flags is done in the same fashion as for nouns, but using the completion function registered for the flag.  For example:\n```go\n_ = cmd.RegisterFlagCompletionFunc(\"version\", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {\n\t\tif len(args) != 2 {\n\t\t\treturn cobra.AppendActiveHelp(nil, \"You must first specify the chart to install before the --version flag can be completed\"), cobra.ShellCompDirectiveNoFileComp\n\t\t}\n\t\treturn compVersionFlag(args[1], toComplete)\n\t})\n```\nThe example above prints an Active Help message when not enough information was given by the user to complete the `--version` flag.\n```\nbash-5.1$ bin/helm install myrelease --version 2.0.[tab]\nYou must first specify the chart to install before the --version flag can be completed\n\nbash-5.1$ bin/helm install myrelease bitnami/solr --version 2.0.[tab][tab]\n2.0.1  2.0.2  2.0.3\n```\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT
+
+The responses show `cobra.AppendActiveHelp(comps, message)` adding messages to `comps` (`site/content/active_help.md`, lines 28–53), but do not include the function implementation that reveals how the message is encoded.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-281fc0a67e94",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "af35c91a1d237b3590cf2b6b5784e8c1cd598ddd02eaf89f09d5556e03133857",
+  "bundle_sha256": "0fdb3a0f64cf3e4c13cb3f72560cdd1012962856fbe325c613828e61413a4581",
+  "prompt_sha256": "3a9390451f61ef36dc49509e19bdbd5bb06b1109089f7511cdb78fe16e6c433f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`ResetFlags` rebuilds:\n\n- `c.flagErrorBuf` as a new `bytes.Buffer`, then resets it.\n- `c.flags` as a new `flag.FlagSet` named with `c.Name()`, using `flag.ContinueOnError`, with output directed to `c.flagErrorBuf`.\n- `c.pflags` identically as a new persistent `flag.FlagSet`, sharing that error buffer.\n\nIt invalidates the cached flag sets by setting these to `nil`:\n\n- `c.lflags` — local flags\n- `c.iflags` — inherited flags\n- `c.parentsPflags` — parent persistent flags\n\nEvidence: `command.go:1736–1749`, specifically the assignments in `(*Command).ResetFlags`. The snippets at `command.go:1667–1718` show that `LocalFlags` and `InheritedFlags` lazily rebuild `lflags` and `iflags`; `command.go:1846–1853` shows `parentsPflags` is refreshed during persistent-flag merging.",
+  "responded_at": "2026-09-15T20:27:23Z",
+  "sha256": "19210a657eafba6d158ee9a2fea3368a570515f72ba65157a65b67ec3cbdb4e5"
+}

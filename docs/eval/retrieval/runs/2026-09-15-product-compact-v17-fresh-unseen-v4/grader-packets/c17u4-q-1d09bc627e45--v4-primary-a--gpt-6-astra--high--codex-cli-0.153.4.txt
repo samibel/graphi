@@ -1,0 +1,49 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: ce82c3662cd8571f88f134b86e733933389f95cfcbdaa0db28862f524539b66c
+QUERY ID: c17u4-q-1d09bc627e45
+
+QUESTION:
+Which whitespace does Cobra remove when trimming text for template output?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:159-161 anchor="func trimRightSpace(s string) string" reason=The helper uses unicode.IsSpace with TrimRightFunc, removing Unicode whitespace only from the right edge.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 588404cff958; read in order (248/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":31,"end_line":40,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}"},{"path":"cobra.go","start_line":158,"end_line":161,"text":"\nfunc trimRightSpace(s string) string {\n\treturn strings.TrimRightFunc(s, unicode.IsSpace)\n}"},{"path":"cobra.go","start_line":178,"end_line":185,"text":"\n// tmpl executes the given template text on data, writing the result to w.\nfunc tmpl(w io.Writer, text string, data interface{}) error {\n\tt := template.New(\"top\")\n\tt.Funcs(templateFuncs)\n\ttemplate.Must(t.Parse(text))\n\treturn t.Execute(w, data)\n}"},{"path":"command.go","start_line":1026,"end_line":1041,"text":"\n// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}\n\n// Execute uses the args (os.Args[1:] by default)\n// and run through the command tree finding appropriate matches\n// for commands and then corresponding flags.\nfunc (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}"},{"path":"command.go","start_line":583,"end_line":596,"text":"\n// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}\n\n{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":70,"end_line":73,"text":"\t// Short is the short description shown in the 'help' output.\n\tShort string\n\n\t// The group id under which this subcommand is grouped in the 'help' output of its parent."},{"path":"doc/rest_docs.go","start_line":56,"end_line":59,"text":"// GenReST creates reStructured Text output.\nfunc GenReST(cmd *cobra.Command, w io.Writer) error {\n\treturn GenReSTCustom(cmd, w, defaultLinkHandler)\n}"}],"provenance":{"input_sha256":"396d62d076366cff2fb751ef9505cd2fbb51da78d834bed2083a88a2e9adae9b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Cobra’s template helpers remove whitespace as follows:
+
+- **`trimRightSpace` and `trimTrailingWhitespaces`** remove trailing Unicode whitespace, using `strings.TrimRightFunc(s, unicode.IsSpace)` (`cobra.go:158–161`). Both names map to `trimRightSpace` (`cobra.go:32–35`).
+- **`trim`** removes leading and trailing whitespace via `strings.TrimSpace` (`cobra.go:33`).
+
+The default help template applies `trimTrailingWhitespaces` to `.Long` or `.Short`, so it trims only trailing whitespace there (`command.go:593`).
+----- END THE RATER'S RESPONSE -----

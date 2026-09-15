@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 1f2b252ae7b8fb1a2a602b2595fa3de55e350bdf2ab2fb126f289f40420617b5
+QUERY ID: c17u4-q-34f80c3a927e
+
+QUESTION:
+How is a custom help command installed?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:327-330 anchor="func (c *Command) SetHelpCommand(cmd *Command)" reason=The public setter directly records the supplied command as helpCommand.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query ad0f2e405806; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":449,"end_line":476,"text":"\n// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}\n\n// Help puts out the help for the command.\n// Used when a user calls help [command].\n// Can be defined by user by overriding HelpFunc.\nfunc (c *Command) Help() error {\n\tc.HelpFunc()(c, []string{})\n\treturn nil\n}"},{"path":"site/content/user_guide.md","start_line":492,"end_line":495,"text":"## Help Command\n\nCobra automatically adds a help command to your application when you have subcommands.\nThis will be called when a user runs 'app help'. Additionally, help will also"},{"path":"command.go","start_line":326,"end_line":330,"text":"\n// SetHelpCommand sets help command.\nfunc (c *Command) SetHelpCommand(cmd *Command) {\n\tc.helpCommand = cmd\n}"},{"path":"command.go","start_line":1599,"end_line":1613,"text":"\n// HasHelpSubCommands determines if a command has any available 'help' sub commands\n// that need to be shown in the usage/help default template under 'additional help\n// topics'.\nfunc (c *Command) HasHelpSubCommands() bool {\n\t// return true on the first found available 'help' sub command\n\tfor _, sub := range c.commands {\n\t\tif sub.IsAdditionalHelpTopicCommand() {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// the command either has no sub commands, or no available 'help' sub commands\n\treturn false\n}"},{"path":"command.go","start_line":1580,"end_line":1583,"text":"// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated.\n// Concrete example: https://github.com/spf13/cobra/issues/393#issuecomment-282741924.\nfunc (c *Command) IsAdditionalHelpTopicCommand() bool {"},{"path":"doc/rest_docs.go","start_line":142,"end_line":145,"text":"\n// GenReSTTreeCustom is the the same as GenReSTTree, but\n// with custom filePrepender and linkHandler.\nfunc GenReSTTreeCustom(cmd *cobra.Command, dir string, filePrepender func(string) string, linkHandler func(string, string) string) error {"},{"path":"doc/md_docs.go","start_line":55,"end_line":59,"text":"\n// GenMarkdownCustom creates custom markdown output.\nfunc GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {\n\tcmd.InitDefaultHelpCmd()\n\tcmd.InitDefaultHelpFlag()"},{"path":"command.go","start_line":347,"end_line":347,"text":"// SetHelpTemplate sets help template to be used. Application can use it to set custom template."}],"provenance":{"input_sha256":"29b5bebb0282052a567ca1a194284356fba1106fc5b261caef9937f7b464b447","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Install a custom help command by calling:
+
+```go
+parentCmd.SetHelpCommand(customHelpCmd)
+```
+
+Evidence: [`command.go:326-330`](command.go:326) defines `func (c *Command) SetHelpCommand(cmd *Command)` and assigns the supplied command to `c.helpCommand`. Cobra otherwise automatically adds a help command when subcommands exist, per [`site/content/user_guide.md:492-495`](site/content/user_guide.md:492).
+----- END THE RATER'S RESPONSE -----

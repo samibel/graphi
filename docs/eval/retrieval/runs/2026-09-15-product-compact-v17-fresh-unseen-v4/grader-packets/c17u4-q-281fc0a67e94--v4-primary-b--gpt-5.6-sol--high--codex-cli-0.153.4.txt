@@ -1,0 +1,56 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 19210a657eafba6d158ee9a2fea3368a570515f72ba65157a65b67ec3cbdb4e5
+QUERY ID: c17u4-q-281fc0a67e94
+
+QUESTION:
+Which internal flag sets and buffers are rebuilt or invalidated when ResetFlags runs?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:1737-1749 anchor="func (c *Command) ResetFlags()" reason=The method rebuilds shared error buffering plus local and persistent sets and clears derived local, inherited, and parent sets.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query af35c91a1d23; read in order (289/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1736,"end_line":1749,"text":"\n// ResetFlags deletes all flags from command.\nfunc (c *Command) ResetFlags() {\n\tc.flagErrorBuf = new(bytes.Buffer)\n\tc.flagErrorBuf.Reset()\n\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.flags.SetOutput(c.flagErrorBuf)\n\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\tc.pflags.SetOutput(c.flagErrorBuf)\n\n\tc.lflags = nil\n\tc.iflags = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1667,"end_line":1718,"text":"\n// LocalFlags returns the local FlagSet specifically set in the current command.\nfunc (c *Command) LocalFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.lflags == nil {\n\t\tc.lflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.lflags.SetOutput(c.flagErrorBuf)\n\t}\n\tc.lflags.SortFlags = c.Flags().SortFlags\n\tif c.globNormFunc != nil {\n\t\tc.lflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\taddToLocal := func(f *flag.Flag) {\n\t\t// Add the flag if it is not a parent PFlag, or it shadows a parent PFlag\n\t\tif c.lflags.Lookup(f.Name) == nil && f != c.parentsPflags.Lookup(f.Name) {\n\t\t\tc.lflags.AddFlag(f)\n\t\t}\n\t}\n\tc.Flags().VisitAll(addToLocal)\n\tc.PersistentFlags().VisitAll(addToLocal)\n\treturn c.lflags\n}\n\n// InheritedFlags returns all flags which were inherited from parent commands.\nfunc (c *Command) InheritedFlags() *flag.FlagSet {\n\tc.mergePersistentFlags()\n\n\tif c.iflags == nil {\n\t\tc.iflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.iflags.SetOutput(c.flagErrorBuf)\n\t}\n\n\tlocal := c.LocalFlags()\n\tif c.globNormFunc != nil {\n\t\tc.iflags.SetNormalizeFunc(c.globNormFunc)\n\t}\n\n\tc.parentsPflags.VisitAll(func(f *flag.Flag) {\n\t\tif c.iflags.Lookup(f.Name) == nil && local.Lookup(f.Name) == nil {\n\t\t\tc.iflags.AddFlag(f)\n\t\t}\n\t})\n\treturn c.iflags\n}"},{"path":"command.go","start_line":1846,"end_line":1853,"text":"\n// mergePersistentFlags merges c.PersistentFlags() to c.Flags()\n// and adds missing persistent flags of all parents.\nfunc (c *Command) mergePersistentFlags() {\n\tc.updateParentsPflags()\n\tc.Flags().AddFlagSet(c.PersistentFlags())\n\tc.Flags().AddFlagSet(c.parentsPflags)\n}"},{"path":"command.go","start_line":1727,"end_line":1730,"text":"\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)"},{"path":"command.go","start_line":151,"end_line":151,"text":"\tflagErrorBuf *bytes.Buffer"},{"path":"command.go","start_line":1858,"end_line":1858,"text":"func (c *Command) updateParentsPflags() {"},{"path":"command.go","start_line":316,"end_line":316,"text":"// SetFlagErrorFunc sets a function to generate an error when flag parsing"}],"provenance":{"input_sha256":"40c200ae52d901c4dc9db1849a778e35874825ab504f953206cd4e224698da70","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`ResetFlags` rebuilds:
+
+- `c.flagErrorBuf` as a new `bytes.Buffer`, then resets it.
+- `c.flags` as a new `flag.FlagSet` named with `c.Name()`, using `flag.ContinueOnError`, with output directed to `c.flagErrorBuf`.
+- `c.pflags` identically as a new persistent `flag.FlagSet`, sharing that error buffer.
+
+It invalidates the cached flag sets by setting these to `nil`:
+
+- `c.lflags` — local flags
+- `c.iflags` — inherited flags
+- `c.parentsPflags` — parent persistent flags
+
+Evidence: `command.go:1736–1749`, specifically the assignments in `(*Command).ResetFlags`. The snippets at `command.go:1667–1718` show that `LocalFlags` and `InheritedFlags` lazily rebuild `lflags` and `iflags`; `command.go:1846–1853` shows `parentsPflags` is refreshed during persistent-flag merging.
+----- END THE RATER'S RESPONSE -----

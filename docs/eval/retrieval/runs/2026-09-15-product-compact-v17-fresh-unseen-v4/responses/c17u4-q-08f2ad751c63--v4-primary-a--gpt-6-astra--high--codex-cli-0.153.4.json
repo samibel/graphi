@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-08f2ad751c63",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "af0354672647d40a5b7cb2d25ca34f51ab5a57b7d399c78fd75f4b26cbce1749",
+  "bundle_sha256": "dfd97a97fdacbe395c52ed03593dbd5584ae29a21932a41700404e09fbba1107",
+  "prompt_sha256": "7c24acc5297a32f0cba2ea98b20ed5aa235ddfc2bdd732e15abbc1839b9d0830",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getFlagNameCompletions` applies these rules:\n\n- **Skip hidden or deprecated flags entirely.** It first calls `nonCompletableFlag`, which returns `flag.Hidden || len(flag.Deprecated) \u003e 0` (`completions.go:534–537`; `bash_completions.go:699–701`).\n- **Suggest the long spelling `--\u003cName\u003e`** if `strings.HasPrefix(flagName, toComplete)` matches (`completions.go:540–543`).\n- **Suggest the shorthand `-\u003cShorthand\u003e`** independently, only when `flag.Shorthand` is nonempty and that spelling starts with `toComplete` (`completions.go:559–561`). Both spellings can therefore appear, with the long form first.\n- **Never suggest `--\u003cName\u003e=`.** The comments explicitly say the `=` form still works but is omitted to shorten suggestions and avoid requiring an extra `=` or space (`completions.go:545–556`).\n\nEach suggestion includes a tab followed by `flag.Usage`, using `fmt.Sprintf(\"%s\\t%s\", flagName, flag.Usage)` (`completions.go:543,561`).",
+  "responded_at": "2026-09-15T20:23:19Z",
+  "sha256": "1b16b713f8b3e0528259c1caf0841bfa4ca666071ff49f06df9d722bea5cc1d2"
+}

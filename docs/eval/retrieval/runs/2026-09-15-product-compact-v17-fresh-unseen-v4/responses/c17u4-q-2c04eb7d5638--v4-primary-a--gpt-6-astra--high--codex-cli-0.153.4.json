@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2c04eb7d5638",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "7ece0ec992440d93b5b6752da29b003d77d1164d11db8bd8ea9d09a440f141e0",
+  "bundle_sha256": "ddbe1b2f3f10ca08f43cc17c3dc56cc136ed5e96a3a4fe7d4ba2b6ace65d719b",
+  "prompt_sha256": "dff246fe492d330ba3c237150e5b607461925c9fb59fb9527103982c047b9049",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows `GenBashCompletion` calling `gen(buf, c)` in `bash_completions.go:684–697`, but omits the recursive `gen` implementation needed to explain command-function naming and body population.",
+  "responded_at": "2026-09-15T20:28:49Z",
+  "sha256": "bbcf8d4cbb94239bf69384f274a80025ad010f6659c646f11cf00b1e26c63770"
+}

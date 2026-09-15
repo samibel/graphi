@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-19d60a8f3b27",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2d4b75dd74b092d268997c6b4afb40a029517788aa2483a644a99cf1291f4961",
+  "bundle_sha256": "ebe509541d9a758b293ba3f16a60d0fbf5163f0863cd971afa0d0d6d4dec2c02",
+  "prompt_sha256": "0500086b9ff29436f9335dc598edfde9efa6c97dbeeddebaefeacb9f0f791141",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The responses show adding messages with `comps = cobra.AppendActiveHelp(comps, message)` in `site/content/active_help.md:45`, but omit the implementation of `AppendActiveHelp` and how it encodes the message.",
+  "responded_at": "2026-09-15T20:25:38Z",
+  "sha256": "83f9ea20dea4c75df35d71be722c1576639a3077cb070694d6b2c81a88beb86f"
+}

@@ -1,0 +1,49 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 4dbfc6e6b05b424d663ec9ae45a0ce044a8ae56f2f44276dd03df64921160b50
+QUERY ID: c17u4-q-2e6ac50719f4
+
+QUESTION:
+What four independent switches are available for controlling Cobra's default completion command and descriptions?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:104-116 anchor="type CompletionOptions struct" reason=The public struct documents switches for command creation, the no-description flag, all descriptions, and command visibility.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 5090141de0bd; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/active_help.md","start_line":132,"end_line":138,"text":"## Active Help with Cobra's default completion command\n\nCobra provides a default `completion` command for programs that wish to use it.\nWhen using the default `completion` command, Active Help is configurable in the same\nfashion as described above using environment variables.  You may wish to document this in more\ndetails for your users.\n"},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"site/content/completions/_index.md","start_line":452,"end_line":462,"text":"## Zsh completions\n\nCobra supports native zsh completion generated from the root `cobra.Command`.\nThe generated completion script should be put somewhere in your `$fpath` and be named\n`_<yourProgram>`.  You will need to start a new shell for the completions to become available.\n\nZsh supports descriptions for completions. Cobra will provide the description automatically,\nbased on usage information. Cobra provides a way to completely disable such descriptions by\nusing `GenZshCompletionNoDesc()` or `GenZshCompletionFileNoDesc()`. You can choose to make\nthis a configurable option to your users.\n```"},{"path":"site/content/completions/_index.md","start_line":92,"end_line":94,"text":"## Adapting the default completion command\n\nCobra provides a few options for the default `completion` command.  To configure such options you must set"},{"path":"completions.go","start_line":680,"end_line":683,"text":"// 1- the feature has been explicitly disabled by the program,\n// 2- c has no subcommands (to avoid creating one),\n// 3- c already has a 'completion' command provided by the program.\nfunc (c *Command) InitDefaultCompletionCmd() {"},{"path":"cobra.go","start_line":44,"end_line":50,"text":"\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)"},{"path":"command.go","start_line":1068,"end_line":1071,"text":"\tc.InitDefaultHelpCmd()\n\t// initialize completion at the last point to allow for user overriding\n\tc.InitDefaultCompletionCmd()\n"},{"path":"bash_completionsV2.go","start_line":394,"end_line":395,"text":"func (c *Command) GenBashCompletionV2(w io.Writer, includeDesc bool) error {\n\treturn c.genBashCompletion(w, includeDesc)"},{"path":"completions.go","start_line":148,"end_line":148,"text":"// GetFlagCompletionFunc returns the completion function for the given flag of the command, if available."}],"provenance":{"input_sha256":"ae6f7e0ca8af676d746fe49cfc26ac55ed6befc79ba6a6d6003cacb722e2352c","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `completions.go` lines 103–116, `CompletionOptions` provides four independent switches:
+
+- `DisableDefaultCmd`: prevents creation of the default `completion` command.
+- `DisableNoDescFlag`: prevents creation of the `--no-descriptions` flag.
+- `DisableDescriptions`: turns off all completion descriptions for supporting shells.
+- `HiddenDefaultCmd`: hides the default `completion` command.
+----- END THE RATER'S RESPONSE -----

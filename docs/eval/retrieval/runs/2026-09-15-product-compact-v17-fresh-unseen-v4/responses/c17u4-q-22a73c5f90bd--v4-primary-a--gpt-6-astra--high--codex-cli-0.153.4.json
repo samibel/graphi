@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-22a73c5f90bd",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2ce9320e1c325a203c257f495f3a6c934f62466ea5b229b0699a6dc7f31ad8cb",
+  "bundle_sha256": "78e8bcedf4c482e5d6ccce964faff9a08e7b4fa0d202a9481d92e7db24ead00a",
+  "prompt_sha256": "e314e4ea2d4eb1e07ad38723a00b769cf17527a357bb980885f6902523977558",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response omits the body of `UsageFunc()` in `command.go:426`, which is needed to establish the selection order and how the default function renders usage.",
+  "responded_at": "2026-09-15T20:27:23Z",
+  "sha256": "490f7ba35ff420de7c62d02fd44c82bf21cac57e208091457b01cf847ee1c9b7"
+}

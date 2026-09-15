@@ -1,0 +1,51 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 082f1130da7cb3132266d6434c6c2332959cf685dffaa8ada5ed82bf5cf02398
+QUERY ID: c17u4-q-10e29b461f8a
+
+QUESTION:
+In cobra.go, how does tmpl prepare and execute a user-facing template?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:179-185 anchor="func tmpl(w io.Writer, text string, data interface{}) error" reason=The function creates a template, installs shared functions, parses text, then executes against the writer and data.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"6 ranked source span(s); query 8721fc8c2ef6; read in order (223/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":178,"end_line":185,"text":"\n// tmpl executes the given template text on data, writing the result to w.\nfunc tmpl(w io.Writer, text string, data interface{}) error {\n\tt := template.New(\"top\")\n\tt.Funcs(templateFuncs)\n\ttemplate.Must(t.Parse(text))\n\treturn t.Execute(w, data)\n}"},{"path":"command.go","start_line":1034,"end_line":1041,"text":"\n// Execute uses the args (os.Args[1:] by default)\n// and run through the command tree finding appropriate matches\n// for commands and then corresponding flags.\nfunc (c *Command) Execute() error {\n\t_, err := c.ExecuteC()\n\treturn err\n}"},{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":346,"end_line":355,"text":"\n// SetHelpTemplate sets help template to be used. Application can use it to set custom template.\nfunc (c *Command) SetHelpTemplate(s string) {\n\tc.helpTemplate = s\n}\n\n// SetVersionTemplate sets version template to be used. Application can use it to set custom template.\nfunc (c *Command) SetVersionTemplate(s string) {\n\tc.versionTemplate = s\n}"},{"path":"command.go","start_line":168,"end_line":170,"text":"\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of"},{"path":"command.go","start_line":911,"end_line":915,"text":"\t\t\tc.Println(\"\\\"version\\\" flag declared as non-bool. Please correct your code\")\n\t\t\treturn err\n\t\t}\n\t\tif versionVal {\n\t\t\terr := tmpl(c.OutOrStdout(), c.VersionTemplate(), c)"}],"provenance":{"input_sha256":"c796d4f20b0565cdb8db60fef8d2d1a7322ff0e488f74935d8f3a1bbddea2d2b","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `cobra.go:180–184`, `tmpl(w, text, data)`:
+
+1. Creates a template named `"top"` with `template.New("top")`.
+2. Registers `templateFuncs` through `t.Funcs(templateFuncs)`.
+3. Parses the supplied text with `template.Must(t.Parse(text))`, which panics on a parse error.
+4. Executes it with `t.Execute(w, data)`, writing output to `w` and returning the execution error.
+
+The registered functions can be extended using `AddTemplateFunc` and `AddTemplateFuncs` (`cobra.go:83–94`).
+----- END THE RATER'S RESPONSE -----

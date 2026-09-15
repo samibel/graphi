@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-178ab4315fe0",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "c3b0bf93c9ddeb8c0588932003c244f2db861b0dbf28c28b103dd1c05b6f5492",
+  "bundle_sha256": "6f4b2313983f4e47e0b8fc928f6adfb79cdd457778cd64c9421b739342cbec93",
+  "prompt_sha256": "2c00f870c5ee40c55f65c55ba4b4788031b570acf5c7c33b6dcc7a900bee955f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT\n`site/content/user_guide.md:373` says `NoArgs` reports an error for any positional argument, but the responses omit its implementation and the error message used to report the unexpected argument.",
+  "responded_at": "2026-09-15T20:25:24Z",
+  "sha256": "f9f0c4449a14e6997db68dd0ceeed2a0c4251cfd02599d23be0b8f544ef77e5f"
+}

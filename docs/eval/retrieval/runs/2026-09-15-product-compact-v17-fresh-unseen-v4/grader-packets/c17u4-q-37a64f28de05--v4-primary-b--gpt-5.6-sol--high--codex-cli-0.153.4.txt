@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 4f7af14133ef074da0639b08b4b3c7a786c041b06f2b6c85474c59ac962c7e17
+QUERY ID: c17u4-q-37a64f28de05
+
+QUESTION:
+What behavior is verified when an application and its direct child have the same command name?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:399-425 anchor="func TestChildSameName(t *testing.T)" reason=The test invokes the repeated name and verifies the child runs successfully with both positional arguments.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 51b9bbb0f982; read in order (321/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"README.md","start_line":58,"end_line":67,"text":"## Commands\n\nCommand is the central point of the application. Each interaction that\nthe application supports will be contained in a Command. A command can\nhave children commands and optionally run an action.\n\nIn the example above, 'server' is the command.\n\n[More about cobra.Command](https://pkg.go.dev/github.com/spf13/cobra#Command)\n"},{"path":"command.go","start_line":1335,"end_line":1344,"text":"\n// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1724,"end_line":1735,"text":"\n// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"command.go","start_line":1306,"end_line":1311,"text":"\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen > c.commandsMaxUseLen {"},{"path":"site/content/user_guide.md","start_line":288,"end_line":300,"text":"### Local Flag on Parent Commands\n\nBy default, Cobra only parses local flags on the target command, and any local flags on\nparent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will\nparse local flags on each command before executing the target command.\n\n```go\ncommand := cobra.Command{\n  Use: \"print [OPTIONS] [COMMANDS]\",\n  TraverseChildren: true,\n}\n```\n"},{"path":"command.go","start_line":47,"end_line":48,"text":"// Command is just that, a command for your application.\n// E.g.  'go run ...' - 'run' is the command. Cobra requires"},{"path":"command.go","start_line":362,"end_line":363,"text":"// SetGlobalNormalizationFunc sets a normalization function to all flag sets and also to child commands.\n// The user should not have a cyclic dependency on commands."},{"path":"completions.go","start_line":125,"end_line":126,"text":"// returns the same results.\nfunc FixedCompletions(choices []string, directive ShellCompDirective) func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective) {"}],"provenance":{"input_sha256":"402bcac8fa3049a72569acab682cf02df68bd1045668e09d88d3b94fda465399","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response contains no test or implementation snippet showing the behavior when an application and its direct child share the same command name.
+----- END THE RATER'S RESPONSE -----

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2e6ac50719f4",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "5090141de0bd676dcc0fa1f5c237d4ae7dfe76b80f8de543e13ba76a0374d402",
+  "bundle_sha256": "196d06c48132c5cfd2f58aece8b3477c1961374179c4f257bb020016ed9cdbb0",
+  "prompt_sha256": "264293eeadc10c151fd6918dcf6d9a5a478fe46be90b7ed0e8ac639821854d93",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `completions.go` lines 103–116, `CompletionOptions` provides four independent switches:\n\n- `DisableDefaultCmd`: prevents creation of the default `completion` command.\n- `DisableNoDescFlag`: prevents creation of the `--no-descriptions` flag.\n- `DisableDescriptions`: turns off all completion descriptions for supporting shells.\n- `HiddenDefaultCmd`: hides the default `completion` command.",
+  "responded_at": "2026-09-15T20:28:07Z",
+  "sha256": "4dbfc6e6b05b424d663ec9ae45a0ce044a8ae56f2f44276dd03df64921160b50"
+}

@@ -1,0 +1,47 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 6c3e824d7cddacce65c312b2f1464fcdfbedf11ab6c066ecf21ba7cd44853b57
+QUERY ID: c17u4-q-36c025e93f71
+
+QUESTION:
+Which options control whether unknown-command suggestions appear and the minimum distance used for them?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:248-254 anchor="DisableSuggestions bool" reason=The adjacent option comments define complete suppression and the positive minimum Levenshtein distance.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 5166acafb973; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"site/content/user_guide.md","start_line":694,"end_line":734,"text":"## Suggestions when \"unknown command\" happens\n\nCobra will print automatic suggestions when \"unknown command\" errors happen. This allows Cobra to behave similarly to the `git` command when a typo happens. For example:\n\n```\n$ hugo srever\nError: unknown command \"srever\" for \"hugo\"\n\nDid you mean this?\n        server\n\nRun 'hugo --help' for usage.\n```\n\nSuggestions are automatically generated based on existing subcommands and use an implementation of [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance). Every registered command that matches a minimum distance of 2 (ignoring case) will be displayed as a suggestion.\n\nIf you need to disable suggestions or tweak the string distance in your command, use:\n\n```go\ncommand.DisableSuggestions = true\n```\n\nor\n\n```go\ncommand.SuggestionsMinimumDistance = 1\n```\n\nYou can also explicitly set names for which a given command will be suggested using the `SuggestFor` attribute. This allows suggestions for strings that are not close in terms of string distance, but make sense in your set of commands but for which\nyou don't want aliases. Example:\n\n```\n$ kubectl remove\nError: unknown command \"remove\" for \"kubectl\"\n\nDid you mean this?\n        delete\n\nRun 'kubectl help' for usage.\n```\n"},{"path":"command.go","start_line":749,"end_line":765,"text":"\nfunc (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"command.go","start_line":837,"end_line":837,"text":"\t\t\tsuggestByLevenshtein := levenshteinDistance <= c.SuggestionsMinimumDistance"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"cobra.go","start_line":188,"end_line":188,"text":"func ld(s, t string, ignoreCase bool) int {"},{"path":"completions.go","start_line":104,"end_line":104,"text":"// CompletionOptions are the options to control shell completion"},{"path":"command.go","start_line":202,"end_line":203,"text":"\t// CompletionOptions is a set of options to control the handling of shell completion\n\tCompletionOptions CompletionOptions"},{"path":"command.go","start_line":1362,"end_line":1362,"text":"func (c *Command) RemoveCommand(cmds ...*Command) {"},{"path":"doc/man_docs.go","start_line":187,"end_line":187,"text":"func manPrintOptions(buf io.StringWriter, command *cobra.Command) {"}],"provenance":{"input_sha256":"652724d69cbc0f656c5ac99ad6a717b087238058a37a96a33458ecf523f1244e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The `Command` options are:
+
+- `DisableSuggestions`: set to `true` to suppress unknown-command suggestions (`site/content/user_guide.md:712-716`; checked in `command.go:750-752`).
+- `SuggestionsMinimumDistance`: sets the maximum Levenshtein distance for suggested commands (`site/content/user_guide.md:718-722`; comparison in `command.go:837`). Values `<= 0` default to `2` (`command.go:753-755`).
+----- END THE RATER'S RESPONSE -----

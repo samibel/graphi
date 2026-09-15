@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-40c63ea817f5",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "daacd3e9bfd77017b96cbb7651e628c0acccbf5c7a5f0f05eb8eddb44215b3d4",
+  "bundle_sha256": "280a586ffac3257c5e96f573f35d509451bd76e6f34ac2da64ea8b4925bad289",
+  "prompt_sha256": "b358592ccbee1d8f55d3483b284180c71a7dc27ae210564a4bbadcdbb3034030",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows deprecated-flag warnings enter `c.flagErrorBuf` during parsing (`command.go:1833-1835`), but omits the code or test demonstrating that the notice is actually emitted to observable output.",
+  "responded_at": "2026-09-15T20:30:18Z",
+  "sha256": "70f1e4b8562f940512f1f058a9379baa50ea887c2e094806b9e05f610c3550d0"
+}
