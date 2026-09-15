@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-27f3-76e2-bc2e-cdf4073b4535"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response identifies `GenBashCompletion` in `bash_completions.go:686` but does not include the implementation or any lines showing how subcommands and aliases are serialized."}}
+{"type":"turn.completed","usage":{"input_tokens":16493,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

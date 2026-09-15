@@ -1,0 +1,1 @@
+`(*Command).Root()` returns the top-level command. If the command has a parent, it recursively calls `c.Parent().Root()`; otherwise, it returns `c` itself (`command.go:860–866`). A command has a parent when `c.parent != nil` (`command.go:1631–1634`).

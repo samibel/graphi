@@ -1,0 +1,3 @@
+`(*Command).Root() *Command` returns the root command by recursively following parents. If the command has no parent, it returns itself (`command.go`, lines 860–866).
+
+The parent check uses `HasParent()`, which returns `c.parent != nil` (`command.go`, lines 1631–1634).

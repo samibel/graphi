@@ -1,0 +1,1 @@
+PASS: The response correctly sets `rootCmd.CompletionOptions.HiddenDefaultCmd = true` while leaving `DisableDefaultCmd` false to preserve the command. The cited documentation and struct comments exist in the transcript and support these claims.

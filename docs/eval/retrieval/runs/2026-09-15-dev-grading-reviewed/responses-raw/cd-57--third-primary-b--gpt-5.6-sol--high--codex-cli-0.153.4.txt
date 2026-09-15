@@ -1,0 +1,6 @@
+`(*Command).Parent()` returns the command’s immediate parent by returning `c.parent` (`command.go:1842–1845`).
+
+Related behavior:
+
+- `VisitParents` repeatedly calls `Parent()` to traverse all ancestors (`command.go:852–858`).
+- `Root` follows `Parent()` recursively until reaching a command without a parent (`command.go:860–866`).

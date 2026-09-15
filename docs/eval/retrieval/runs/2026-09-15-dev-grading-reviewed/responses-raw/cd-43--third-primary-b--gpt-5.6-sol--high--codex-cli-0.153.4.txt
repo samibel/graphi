@@ -1,0 +1,12 @@
+`DebugFlags` defines a recursive closure, `debugflags`, then starts it with `debugflags(c)` (`command.go:1457–1459, 1492`). For each command `x`, it:
+
+- Prints the command name if it has local or persistent flags (`command.go:1461–1463`).
+- Visits `x.flags` with `VisitAll`. Each flag is labeled:
+  - `[LP]` if `x.HasPersistentFlags()` and `x.persistentFlag(f.Name) != nil`
+  - `[L]` otherwise  
+  (`command.go:1464–1472`).
+- Visits `x.pflags` with `VisitAll`. It prints `[P]` for persistent flags, but when local flags exist, skips any persistent flag whose name is already present in `x.flags` (`command.go:1473–1483`). This avoids printing an `[LP]` flag twice.
+- Prints `x.flagErrorBuf` (`command.go:1485`).
+- Recurses depth-first through `x.commands` in slice order when `x.HasSubCommands()` is true (`command.go:1486–1490`).
+
+Thus the labels mean local-only (`[L]`), persistent-only (`[P]`), or represented in both local and persistent sets (`[LP]`).

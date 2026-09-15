@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-d23f-71a2-a2ac-a624ea07a585"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).execute` returns `flag.ErrHelp` before running the command in two cases:\n\n- **The boolean `help` flag is true** (`command.go:895–905`), even if other flags are set.\n- **The command isn’t runnable** (`command.go:923–925`): both `Run` and `RunE` are nil, per `Runnable()` (`command.go:1550–1553`).\n\nFlag parsing happens first; a parsing error returns through `FlagErrorFunc()` before either check (`command.go:888–891`). Version handling occurs before the runnable check and can return early (`command.go:908–921`)."}}
+{"type":"turn.completed","usage":{"input_tokens":18421,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":327,"reasoning_output_tokens":185}}

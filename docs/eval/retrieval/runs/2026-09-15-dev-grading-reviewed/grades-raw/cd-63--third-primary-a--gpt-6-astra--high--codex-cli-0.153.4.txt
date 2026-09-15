@@ -1,0 +1,1 @@
+PASS: The response correctly defines `Command.Aliases` as alternative names for the first word in `Use`, citing preserved `command.go:63–64`. Its additional claims about `HasAlias`, argument aliases, and Bash completion setup are supported by the cited transcript spans and follow-up read.

@@ -1,0 +1,1 @@
+PASS: The response identifies EnablePrefixMatching as the switch and accurately describes hasNameOrAliasPrefix checking command names and aliases with strings.HasPrefix and recording the match. Its additional error-prefix behavior and all cited locations are supported by the preserved transcript.

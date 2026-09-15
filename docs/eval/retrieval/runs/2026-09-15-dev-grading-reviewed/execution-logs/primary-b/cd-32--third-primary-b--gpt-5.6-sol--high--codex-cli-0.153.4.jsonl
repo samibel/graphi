@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-0632-7ad1-b6a2-bff3809ca10b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"During completion, Cobra calls `helpOrVersionFlagPresent(cmd)` in `completions.go:522-532`. It:\n\n- Looks up `\"version\"` and `\"help\"` in `cmd.Flags()`.\n- For each flag, verifies it exists, has a non-empty `FlagSetByCobraAnnotation`, and its `Changed` field is true.\n- Returns `true` if either matches; otherwise `false`.\n\nThe annotation distinguishes Cobra-created flags from user-defined flags. For example, `InitDefaultHelpFlag` creates `--help` and applies `FlagSetByCobraAnnotation` in `command.go:1183-1198`."}}
+{"type":"turn.completed","usage":{"input_tokens":16618,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":135,"reasoning_output_tokens":0}}

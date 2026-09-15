@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-1fb8-7dd1-becd-555aa3fafa9f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies that `Command.Usage()` calls `c.UsageFunc()(c)`, supported by `command.go:443-448`. Its descriptions of usage-function resolution, default rendering, string capture, and installation are supported by the cited preserved spans and follow-up read."}}
+{"type":"turn.completed","usage":{"input_tokens":18087,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":39}}

@@ -1,0 +1,1 @@
+PASS: The response exactly reproduces the preserved go.mod lines 1–10, including the module declaration, Go version, and all four direct requirements with their versions.

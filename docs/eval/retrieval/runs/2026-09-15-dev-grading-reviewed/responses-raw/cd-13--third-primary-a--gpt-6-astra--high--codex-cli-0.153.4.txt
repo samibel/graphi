@@ -1,0 +1,9 @@
+`active_help.go` belongs to package `cobra` and defines ActiveHelp completion helpers and configuration:
+
+- **Constants** (lines 24–31): `activeHelpMarker = "_activeHelp_ "`, program environment suffix `_ACTIVE_HELP`, global variable `COBRA_ACTIVE_HELP`, and disable value `"0"`.
+- **Validation pattern** (line 33): `activeHelpEnvVarPrefixSubstRegexp` matches characters outside `[A-Z0-9_]`.
+- **`AppendActiveHelp(compArray []string, activeHelpStr string) []string`** (lines 35–44): prefixes help text with the marker and appends it to the completion slice. Its comments state that repeated calls display help lines in insertion order.
+- **`GetActiveHelpConfig(cmd *Command) string`** (lines 46–57): returns `"0"` when `COBRA_ACTIVE_HELP` is `"0"`; otherwise reads the root command’s program-specific environment variable.
+- **`activeHelpEnvVar(name string) string`** (lines 59–67): constructs `<PROGRAM>_ACTIVE_HELP`, uppercases it, and replaces characters matching the pattern with `_`.
+
+The package declaration is at line 15. The response is marked truncated, so it does not establish the file’s complete contents.

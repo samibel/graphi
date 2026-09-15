@@ -1,0 +1,1 @@
+PASS: The response correctly explains using `--no-descriptions` with the default `completion` command and loading the generated script. The follow-up transcript explicitly supports the flag, the example command, and the cited lines showing descriptions removed.

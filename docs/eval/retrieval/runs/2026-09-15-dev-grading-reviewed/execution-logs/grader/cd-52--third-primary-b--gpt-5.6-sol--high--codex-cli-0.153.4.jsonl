@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-e887-7651-9457-f97dba365e99"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly uses MatchAll in Command.Args to combine ExactArgs(2) and OnlyValidArgs. The cited transcript supports both the example and the behavior of running validators in order and returning the first error."}}
+{"type":"turn.completed","usage":{"input_tokens":18723,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":69,"reasoning_output_tokens":19}}

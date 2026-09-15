@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-08ae-73f1-8a19-3780e1b4eb24"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `Command.Flag` checking `c.Flags().Lookup(name)` and falling back to `c.persistentFlag(name)` (`command.go:1794–1803`), but omits the `persistentFlag` implementation that would show how it climbs the parent chain."}}
+{"type":"turn.completed","usage":{"input_tokens":17318,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":169,"reasoning_output_tokens":103}}

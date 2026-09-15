@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-dfef-70f3-bf0f-bf35676b8afc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the recursion, command filtering, filename construction, prepended content, GenYamlCustom call, and error propagation shown in doc/yaml_docs.go:58-85. Its explanation of command availability is supported by command.go:1560-1576, and both cited ranges exist in the transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18153,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":28}}

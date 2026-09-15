@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-d1e9-7da3-af58-10efaef0d580"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response does not answer how Cobra reports the count. The preserved transcript omits `Command.ArgsLenAtDash` and its delegation to the command’s flag set, so the essential behavior cannot be verified."}}
+{"type":"turn.completed","usage":{"input_tokens":17881,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":47,"reasoning_output_tokens":0}}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+AddGroup
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query cc37340f33e7; read in order (320/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":1356,"end_line":1359,"text":"// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":41,"end_line":45,"text":"// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"command.go","start_line":60,"end_line":97,"text":"\t// Example: add [-F file | -D dir]... [-f format] profile\n\tUse string\n\n\t// Aliases is an array of aliases that can be used instead of the first word in Use.\n\tAliases []string\n\n\t// SuggestFor is an array of command names for which this command will be suggested -\n\t// similar to aliases but only suggests.\n\tSuggestFor []string\n\n\t// Short is the short description shown in the 'help' output.\n\tShort string\n\n\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string\n\n\t// Long is the long message shown in the 'help <this-command>' output.\n\tLong string\n\n\t// Example is examples of how to use the command.\n\tExample string\n\n\t// ValidArgs is list of all valid non-flag arguments that are accepted in shell completions\n\tValidArgs []string\n\t// ValidArgsFunction is an optional function that provides valid non-flag arguments for shell completion.\n\t// It is a dynamic version of using ValidArgs.\n\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)\n\n\t// Expected arguments\n\tArgs PositionalArgs\n\n\t// ArgAliases is List of aliases for ValidArgs.\n\t// These are not suggested to the user in the shell completion,\n\t// but accepted if entered manually.\n\tArgAliases []string\n\n\t// BashCompletionFunction is custom bash functions used by the legacy bash autocompletion generator."},{"path":"command.go","start_line":1346,"end_line":1354,"text":"// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1331,"end_line":1334,"text":"// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}"}],"provenance":{"input_sha256":"ee8ea866e67b2cb32ff2e512d3d88f7803c235aed4863bcdbf671e8ece8884e6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

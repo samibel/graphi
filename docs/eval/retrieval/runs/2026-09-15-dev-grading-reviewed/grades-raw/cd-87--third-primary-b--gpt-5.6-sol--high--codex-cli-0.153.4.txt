@@ -1,0 +1,1 @@
+FAIL: The response does not answer how subcommands and aliases are serialized. The preserved transcript shows only the GenBashCompletion signature, with no implementation supporting command-list initialization, availability filtering, name emission, or alias delegation.

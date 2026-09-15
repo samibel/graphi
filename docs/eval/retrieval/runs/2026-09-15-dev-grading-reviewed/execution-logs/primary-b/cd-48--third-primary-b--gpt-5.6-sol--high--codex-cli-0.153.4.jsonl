@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-68f1-72a1-a6fd-5803f4fb4738"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetErrPrefix` on the command:\n\n```go\ncmd.SetErrPrefix(\"MyError:\")\n```\n\nCobra stores this in `Command.errPrefix` ([`command.go:357–360`](command.go)) and prints it via `c.PrintErrln(c.ErrPrefix(), err.Error())` ([`command.go:1095–1101`](command.go)). Child commands inherit their parent’s prefix unless they define their own; otherwise the default is `\"Error:\"` ([`command.go:611–621`](command.go)).\n\nNote: `CheckErr` separately hard-codes `\"Error:\"` ([`cobra.go:232–238`](cobra.go)), so `SetErrPrefix` does not customize errors printed through `CheckErr`."}}
+{"type":"turn.completed","usage":{"input_tokens":16311,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":156,"reasoning_output_tokens":0}}

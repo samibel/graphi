@@ -1,0 +1,7 @@
+In `bash_completions.go:618-630`, `writeRequiredNouns` converts the command fields into Bash state:
+
+- It initializes `must_have_one_noun=()`.
+- It sorts `cmd.ValidArgs`, strips any tab-separated descriptions, and appends each value as `must_have_one_noun+=(%q)`.
+- If `cmd.ValidArgsFunction != nil`, it emits `has_completion_function=1`.
+
+This state is written during completion generation immediately after required-flag state (`bash_completions.go:679-680`). Thus, `ValidArgs` supplies the required-noun candidates, while `ValidArgsFunction` only signals that a completion function exists; the shown code does not invoke that function or add its returned values.

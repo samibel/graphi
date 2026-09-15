@@ -1,0 +1,1 @@
+PASS: The response accurately identifies the required annotation and explains that completeRequireFlags visits inherited and non-inherited flags, offering completions only for annotated flags with flag.Changed false. Its citations exist and support these claims.

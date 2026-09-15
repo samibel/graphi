@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-1e6d-7a91-a2b3-a3d7d5b2f571"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Completion uses this priority order:\n\n1. Subcommand names\n2. The command’s `ValidArgs`\n3. `ArgAliases`, only if neither subcommands nor `ValidArgs` produced any completions\n\nEvidence: `site/content/completions/_index.md:163-166` states that aliases “are shown … only if no completions were found within sub-commands or `ValidArgs`.” The same file defines `ValidArgs` as predefined noun choices (`:123-151`) and shows `ArgAliases` configured alongside it (`:153-164`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16576,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":119,"reasoning_output_tokens":0}}

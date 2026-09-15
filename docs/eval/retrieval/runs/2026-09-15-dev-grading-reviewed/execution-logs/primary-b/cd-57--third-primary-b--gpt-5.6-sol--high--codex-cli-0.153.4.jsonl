@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-b437-7a92-8bb3-04fcd302b185"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).Parent()` returns the command’s immediate parent by returning `c.parent` (`command.go:1842–1845`).\n\nRelated behavior:\n\n- `VisitParents` repeatedly calls `Parent()` to traverse all ancestors (`command.go:852–858`).\n- `Root` follows `Parent()` recursively until reaching a command without a parent (`command.go:860–866`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16388,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":123,"reasoning_output_tokens":38}}

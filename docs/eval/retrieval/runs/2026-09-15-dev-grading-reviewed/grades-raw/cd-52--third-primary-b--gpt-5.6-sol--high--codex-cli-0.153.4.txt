@@ -1,0 +1,1 @@
+PASS: The response correctly uses MatchAll in Command.Args to combine ExactArgs(2) and OnlyValidArgs. The cited transcript supports both the example and the behavior of running validators in order and returning the first error.

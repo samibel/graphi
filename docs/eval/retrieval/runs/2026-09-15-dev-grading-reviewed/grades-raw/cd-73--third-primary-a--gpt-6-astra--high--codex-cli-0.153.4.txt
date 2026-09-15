@@ -1,0 +1,1 @@
+FAIL: The transcript supports the package and function-variable declarations, but omits the platform build constraint and no-op pre-execution behavior identified as essential by the reviewed spans. The response therefore does not establish the file’s defining implementation.

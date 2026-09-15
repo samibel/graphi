@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-23db-7860-b75b-9671b08de83d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response only shows the signature and opening comment of `getCompletions` (`completions.go:266–267`), omitting the logic that selects between a flag completion function and `ValidArgsFunction`."}}
+{"type":"turn.completed","usage":{"input_tokens":17237,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":52,"reasoning_output_tokens":0}}

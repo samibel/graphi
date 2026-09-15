@@ -1,0 +1,5 @@
+`PostRun` is a command hook executed after `Run`, with signature `func(cmd *Command, args []string)`; `PostRunE` is the error-returning variant (`command.go:136–138`).
+
+- **Order:** `PersistentPreRun` → `PreRun` → `Run` → `PostRun` → `PersistentPostRun`. The guide says these hooks execute only when the current command declares `Run` (`site/content/user_guide.md:607–613`).
+- **Inheritance:** Persistent hooks are inherited unless the child declares its own. By default, only the first persistent hook found executes; setting `EnableTraverseRunHooks = true` enables all parents’ persistent hooks (`site/content/user_guide.md:607,691–693`). The example shows the child’s `PostRun` and `PersistentPostRun` executing after its `Run` (`:684–688`).
+- **Internal helper:** The separate lowercase `(*Command).postRun()` iterates over `finalizers` and calls each function. Its invocation timing is not shown (`command.go:1021–1025`).

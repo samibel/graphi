@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-57ae-7e83-857b-c71df8ff1b01"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Set the global variable `EnableTraverseRunHooks` to `true`:\n\n```go\ncobra.EnableTraverseRunHooks = true\n```\n\nThe guide explicitly recommends this to execute all parents’ persistent hooks (`site/content/user_guide.md:690–692`). It is disabled by default (`cobra.go:64–66`).\n\nExecution order (`command.go:944–945`):\n\n- Persistent pre-run hooks: root → current command.\n- Persistent post-run hooks: current command → root."}}
+{"type":"turn.completed","usage":{"input_tokens":17200,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":0}}

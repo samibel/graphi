@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-126c-72e2-822c-7dbc83cfd482"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).ContainsGroup(groupID string) bool` reports whether a command group with the given ID exists. It iterates over `c.commandgroups`, returning `true` when `x.ID == groupID`; otherwise it returns `false` ([command.go, lines 1346–1354]). Group IDs come from the `Group.ID string` field ([command.go, lines 41–45])."}}
+{"type":"turn.completed","usage":{"input_tokens":16371,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":117,"reasoning_output_tokens":28}}

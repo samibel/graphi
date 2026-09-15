@@ -1,0 +1,13 @@
+`GenYamlTreeCustom` generates YAML reference files for a command and its eligible descendants.
+
+Defined in `doc/yaml_docs.go:60`:
+```go
+func GenYamlTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error
+```
+
+- Recursively processes children first, skipping unavailable commands and additional help topics (`doc/yaml_docs.go:61–68`).
+- Names each file using `cmd.CommandPath()`, replacing spaces with underscores and appending `.yaml`, then creates it inside `dir` (`doc/yaml_docs.go:70–72`).
+- Writes `filePrepender(filename)` before calling `GenYamlCustom(cmd, f, linkHandler)` (`doc/yaml_docs.go:78–83`).
+- Returns recursion, creation, or writing errors immediately; otherwise returns `nil`. File closure is deferred (`doc/yaml_docs.go:65–84`).
+
+`IsAvailableCommand` excludes deprecated, hidden, and designated help commands, and requires the command to be runnable or have available subcommands (`command.go:1560–1576`).

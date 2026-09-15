@@ -1,0 +1,1 @@
+PASS: The transcript supports using `cobra.MatchAll` in `Command.Args`, combining `ExactArgs(2)` with `OnlyValidArgs`, executing validators in order until the first error, and including custom validators with the stated signature. All cited locations exist and support the attached claims.

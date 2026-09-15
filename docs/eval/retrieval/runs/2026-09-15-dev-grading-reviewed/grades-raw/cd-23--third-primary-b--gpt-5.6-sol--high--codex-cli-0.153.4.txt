@@ -1,0 +1,1 @@
+PASS: The response accurately describes the non-empty `c.Deprecated` check and the warning printed with the command name and deprecation message, directly supported by the preserved `command.go:879-881` span.

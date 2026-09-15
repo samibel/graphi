@@ -1,0 +1,17 @@
+Use `cmd.MarkFlagDirname()` with the flag’s name:
+
+```go
+cmd.MarkFlagDirname("output")
+```
+
+The example appears in `site/content/completions/_index.md:334–354`; `shell_completions.go:81–85` explicitly says this method limits the named flag’s completions to directory names.
+
+Alternatively, register a completion function:
+
+```go
+cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+    return nil, cobra.ShellCompDirectiveFilterDirs
+})
+```
+
+To restrict completion to directories **within `themes`**, return `[]string{"themes"}` instead of `nil` (same documentation snippet, lines 334–354).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-54e8-7e91-8c3a-b437bfc98a66"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Group` is a command-group descriptor with two string fields:\n\n```go\ntype Group struct {\n    ID    string\n    Title string\n}\n```\n\nDefined in `command.go:41–45`. Commands can expose groups via `(*Command).Groups` (`command.go:1331–1334`), add them with `(*Command).AddGroup` (`command.go:1356–1359`), and check an ID with `(*Command).ContainsGroup` (`command.go:1346–1354`). Subcommands associate themselves with a group through `Command.GroupID` (`command.go:73–74`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16330,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":158,"reasoning_output_tokens":24}}

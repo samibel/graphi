@@ -1,0 +1,1 @@
+PASS: The response accurately describes all four preserved declarations, including the essential writer path at lines 24–29 that buffers the generated script, writes it to the caller’s writer, and returns the write error. Its cited locations and additional behavior are supported by the transcript, and it correctly acknowledges truncation.

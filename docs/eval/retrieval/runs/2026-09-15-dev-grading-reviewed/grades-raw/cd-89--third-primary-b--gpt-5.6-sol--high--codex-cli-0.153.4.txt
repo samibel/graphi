@@ -1,0 +1,1 @@
+PASS: The response correctly sets `rootCmd.CompletionOptions.HiddenDefaultCmd = true` to retain the default completion command while hiding it. The supplied documentation and struct definition support this behavior, and the cited initialization code supports avoiding `DisableDefaultCmd`.

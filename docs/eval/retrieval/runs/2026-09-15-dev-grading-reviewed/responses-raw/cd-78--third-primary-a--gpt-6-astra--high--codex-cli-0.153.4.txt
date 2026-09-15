@@ -1,0 +1,3 @@
+The internal `(*Command).execute` immediately checks `c == nil` and returns the error `"Called Execute() on a nil Command"` (`command.go:874–877`). It stops before flag parsing or run hooks.
+
+For the public `Execute()` method, the supplied code only shows delegation to `ExecuteC()` (`command.go:1038–1040`); without `ExecuteC()`’s body, these excerpts do not establish how that entry point handles a nil receiver.

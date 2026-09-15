@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-2956-7450-8965-afe9b1341666"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response only includes the opening of `getCompletions` (`completions.go:266-267`), not the decision logic that chooses between a registered flag completion function and `ValidArgsFunction`."}}
+{"type":"turn.completed","usage":{"input_tokens":16472,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

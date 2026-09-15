@@ -1,0 +1,9 @@
+`completions.go` is in package `cobra` (`completions.go:15`) and contains Cobra’s shell-completion infrastructure:
+
+- Completion command constants `ShellCompRequestCmd = "__complete"` and `ShellCompNoDescRequestCmd = "__completeNoDesc"` (`completions.go:26–33`).
+- A global `flagCompletionFunctions` map keyed by `*pflag.Flag`, with a comment requiring synchronization via `flagCompletionMutex` (`completions.go:35–36`).
+- Shell-completion directives, including `ShellCompDirectiveError` (`completions.go:54–55`), plus `ShellCompDirective.string()` for listing enabled directives (`completions.go:162–167`).
+- `NoFileCompletions`, which returns `ShellCompDirectiveNoFileComp` (`completions.go:118–121`).
+- Core completion resolution through `(*Command).getCompletions`, which separates the final partially typed argument from preceding arguments (`completions.go:266–275`).
+- Flag helpers `getFlagNameCompletions` (`completions.go:534–536`) and `checkIfFlagCompletion` (`completions.go:592–593`).
+- `(*Command).InitDefaultCompletionCmd`, which conditionally adds a default `completion` subcommand unless disabled, inappropriate, or already supplied (`completions.go:678–684`).

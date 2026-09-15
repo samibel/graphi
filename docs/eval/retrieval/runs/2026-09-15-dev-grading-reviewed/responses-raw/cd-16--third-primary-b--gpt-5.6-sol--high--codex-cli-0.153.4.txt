@@ -1,0 +1,10 @@
+`doc/md_docs.go` is in package `doc` (`doc/md_docs.go:15`) and declares:
+
+- `const markdownExtension = ".md"` (`:30`).
+- Private helper `printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error` (`:32`), which emits non-inherited options and begins handling inherited flags (`:32–43`).
+- `GenMarkdown(cmd *cobra.Command, w io.Writer) error` (`:51–54`), a wrapper around `GenMarkdownCustom` using an identity link handler.
+- `GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error` (`:56–89`), which initializes help, builds Markdown containing the command heading, summary, optional synopsis, usage, examples, options, and “SEE ALSO” links.
+- `GenMarkdownTree(cmd *cobra.Command, dir string) error` (`:119–129`), which delegates to `GenMarkdownTreeCustom` with an empty file prepender and identity link handler.
+- `GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error` (`:131–144`), which recursively processes available non-help subcommands, then derives an underscore-separated `.md` filename from the command path.
+
+Its tree-generation documentation warns that hyphens in command names can produce ambiguous output filenames (`:119–125`).

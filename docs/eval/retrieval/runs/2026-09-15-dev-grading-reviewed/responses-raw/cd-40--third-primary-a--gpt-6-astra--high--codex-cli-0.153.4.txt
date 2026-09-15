@@ -1,0 +1,5 @@
+`ArgAliases` is the last fallback: aliases appear only when **neither subcommands nor `ValidArgs` produce completions** (`site/content/completions/_index.md:166`).
+
+`ValidArgs` supplies predefined noun completions on a command—for example, setting it on `get` makes `kubectl get [tab][tab]` offer resource names (`site/content/completions/_index.md:123–150`; `command.go:82–83`).
+
+The response does **not** establish that `ValidArgs` is tried only after subcommand names fail; it establishes only that both take precedence over `ArgAliases`.

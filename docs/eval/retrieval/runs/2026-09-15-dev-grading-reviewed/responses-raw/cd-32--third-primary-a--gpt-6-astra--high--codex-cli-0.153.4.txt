@@ -1,0 +1,9 @@
+Cobra uses `helpOrVersionFlagPresent(cmd *Command)` in `completions.go:522–532`. It looks up `"version"` and then `"help"` with `cmd.Flags().Lookup(...)`. For either flag, it returns `true` only when:
+
+- The flag exists (`!= nil`).
+- Its `FlagSetByCobraAnnotation` annotation is nonempty.
+- Its `Changed` field is `true`.
+
+Otherwise, it returns `false`. Thus, merely defining a flag with either name is insufficient: it must be marked as Cobra-provided and changed.
+
+The default help flag receives that annotation in `InitDefaultHelpFlag`, via `SetAnnotation("help", FlagSetByCobraAnnotation, []string{"true"})` (`command.go:1183–1198`).

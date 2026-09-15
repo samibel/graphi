@@ -1,0 +1,1 @@
+FAIL: The response correctly lists the package and hook variable, but omits the defining platform build constraint and no-op pre-execution behavior. Neither essential fact is available in the preserved transcript, which contains only lines 18 and 20.

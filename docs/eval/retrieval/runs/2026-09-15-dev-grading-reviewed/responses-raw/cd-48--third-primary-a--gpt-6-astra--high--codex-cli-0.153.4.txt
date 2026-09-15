@@ -1,0 +1,11 @@
+Call `SetErrPrefix` on your command:
+
+```go
+cmd.SetErrPrefix("Oops:")
+```
+
+The guide documents this customization (`site/content/user_guide.md:599–604`), and `SetErrPrefix` stores the supplied string (`command.go:357–360`). Printed command errors use `c.ErrPrefix()` (`command.go:1098`).
+
+Commands inherit their parent’s prefix unless they set their own nonempty value; otherwise the default is `"Error:"`. Setting `""` therefore does not remove the prefix (`command.go:611–621`).
+
+This does **not** affect `cobra.CheckErr`, which hardcodes `"Error:"` (`cobra.go:232–238`).

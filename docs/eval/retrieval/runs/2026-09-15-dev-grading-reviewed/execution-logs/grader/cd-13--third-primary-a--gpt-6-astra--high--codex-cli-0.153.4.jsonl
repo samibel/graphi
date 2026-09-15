@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-fce3-7d73-943c-a944359e70f4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately identifies the defining constants, regexp, and all three helper functions, including global disable precedence and environment-variable normalization. Its cited line ranges and material claims are supported by the preserved transcript, and it appropriately acknowledges the bundle’s truncation."}}
+{"type":"turn.completed","usage":{"input_tokens":18064,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":19}}

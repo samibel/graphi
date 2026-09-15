@@ -1,0 +1,10 @@
+`VisitParents` recursively walks the `parent` chain, starting with the command’s immediate parent:
+
+```go
+if c.HasParent() {
+    fn(c.Parent())
+    c.Parent().VisitParents(fn)
+}
+```
+
+Thus, it invokes `fn` once per ancestor in nearest-to-farthest order. It stops at the root because `HasParent()` returns `c.parent != nil`; the root itself is visited when called from its child, but recursion on the root ends without invoking the callback again. Evidence: `command.go:852-858`, with `HasParent` in `command.go:1631-1634` and `Parent` in `command.go:1842-1845`.

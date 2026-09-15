@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-afc4-7673-a103-73b60a3c3364"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes MarkFlagDirname and RegisterFlagCompletionFunc with ShellCompDirectiveFilterDirs, including the optional themes directory restriction. All examples and cited locations are supported by the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":18173,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

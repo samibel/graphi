@@ -1,0 +1,1 @@
+INSUFFICIENT The response only includes the opening of `getCompletions` (`completions.go:266-267`), not the decision logic that chooses between a registered flag completion function and `ValidArgsFunction`.

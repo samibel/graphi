@@ -1,0 +1,1 @@
+PASS: The response accurately describes the available-or-help child check, the empty GroupID condition returning false, and the true return otherwise. Its availability explanation and both cited line ranges are supported by the preserved transcript.

@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `Command.ParseFlags` in `command.go:1818–1827`, but no method or logic reporting how many parsed arguments appeared before a `--` separator.

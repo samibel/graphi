@@ -1,0 +1,1 @@
+PASS: The response correctly identifies `Parent()` as returning `c.parent` as a `*Command`, directly supported by the preserved transcript at `command.go:1842–1845`.

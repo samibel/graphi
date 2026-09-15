@@ -1,0 +1,10 @@
+`bash_completionsV2.go` belongs to package `cobra` (line 15) and generates Bash completion scripts, version 2.
+
+The supplied spans show four Go declarations:
+
+- **`(*Command).genBashCompletion(w io.Writer, includeDesc bool) error`** (lines 24–29): creates a `bytes.Buffer`, calls `genBashComp` with `c.Name()`, then writes the buffer to `w`, returning the write error.
+- **`genBashComp(buf io.StringWriter, name string, includeDesc bool)`** (lines 31–85, partial): selects `ShellCompRequestCmd` or `ShellCompNoDescRequestCmd` according to `includeDesc` and emits a Bash script. Visible shell functions provide debug logging, minimal completion initialization, and completion requests. The request logic handles aliases, trailing empty arguments, and flags containing `=`.
+- **`(*Command).GenBashCompletionFileV2(filename string, includeDesc bool) error`** (lines 381–390): creates the output file, returns creation errors, defers closing it, and delegates to `GenBashCompletionV2`.
+- **`(*Command).GenBashCompletionV2(w io.Writer, includeDesc bool) error`** (lines 392–396): the exported writer API; delegates to `genBashCompletion`.
+
+The response is marked `truncated: true`, so these spans do not establish the file’s complete contents.

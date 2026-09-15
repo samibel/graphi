@@ -1,0 +1,5 @@
+Cobra’s internal `(*Command).execute` returns an error immediately:
+
+`Called Execute() on a nil Command`
+
+This is the explicit nil check in `command.go:874-877`; no flags or run hooks execute afterward.

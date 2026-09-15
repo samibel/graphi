@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-dcb9-7080-a203-2740d2283f13"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly identifies all three conditions shown in command.go:1436–1451: DisableFlagsInUseLine is false, HasAvailableFlags() is true, and the constructed use line does not already contain \"[flags]\". Both cited ranges exist and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18040,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

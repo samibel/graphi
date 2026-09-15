@@ -1,0 +1,7 @@
+Set `HiddenDefaultCmd` on your root command, and leave `DisableDefaultCmd` false:
+
+```go
+rootCmd.CompletionOptions.HiddenDefaultCmd = true
+```
+
+Evidence: `site/content/completions/_index.md:94–104` explicitly documents this setting on the root command. `completions.go:106–107` says `DisableDefaultCmd` prevents creation, while `completions.go:114–115` says `HiddenDefaultCmd` makes the default command hidden.

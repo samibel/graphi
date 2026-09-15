@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-e219-7750-ab85-7166dcdf7db2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains the tab-separated completion description format and its applicability to ValidArgs, ValidArgsFunction, and RegisterFlagCompletionFunc(). The cited transcript lines support these claims and the Bash completion V2 requirement."}}
+{"type":"turn.completed","usage":{"input_tokens":18722,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":88,"reasoning_output_tokens":38}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-06be-7b53-8cac-e96a18d8c05f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies Command.Root and accurately describes its recursive parent traversal and return of c when no parent exists, supported by command.go:860–866. Its parent check is supported by command.go:1631–1634."}}
+{"type":"turn.completed","usage":{"input_tokens":17789,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":51,"reasoning_output_tokens":0}}

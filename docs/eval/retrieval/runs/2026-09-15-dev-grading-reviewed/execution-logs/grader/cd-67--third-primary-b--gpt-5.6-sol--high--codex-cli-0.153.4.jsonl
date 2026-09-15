@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-5f64-7082-822a-64a6713cc727"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes NameAndAliases joining the command name followed by all aliases with \", \", supported by command.go:1540–1543. Its explanation of Name() taking the first word of c.Use is supported by command.go:1495–1503."}}
+{"type":"turn.completed","usage":{"input_tokens":18061,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

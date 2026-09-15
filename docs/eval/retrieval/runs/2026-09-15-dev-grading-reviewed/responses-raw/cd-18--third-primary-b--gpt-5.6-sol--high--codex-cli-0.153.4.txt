@@ -1,0 +1,11 @@
+`doc/rest_docs.go` belongs to `package doc` (line 15) and generates reStructuredText documentation for Cobra commands.
+
+Its shown declarations are:
+
+- `printOptionsReST(*bytes.Buffer, *cobra.Command, string) error` — prints local and inherited flag sections using `NonInheritedFlags`, `InheritedFlags`, and `PrintDefaults` (lines 30–45).
+- `defaultLinkHandler(name, ref string) string` — formats links as `` `name <ref.rst>`_ `` (lines 51–54).
+- `GenReST(*cobra.Command, io.Writer) error` — delegates to `GenReSTCustom` with `defaultLinkHandler` (lines 56–59).
+- `GenReSTCustom(...) error` — initializes default help, derives the command path and descriptions, creates a space-to-underscore reference, and begins writing the ReST anchor/title (lines 61–77).
+- `GenReSTTree(*cobra.Command, string) error` — generates pages for a command tree by calling `GenReSTTreeCustom` with an empty file prepender and the default link handler (lines 132–141).
+- `GenReSTTreeCustom(...) error` — iterates child commands and skips unavailable commands and additional help topics (lines 143–148).
+- `indentString(s, p string) string` — prefixes each non-empty line, implemented byte-by-byte (lines 172–185).

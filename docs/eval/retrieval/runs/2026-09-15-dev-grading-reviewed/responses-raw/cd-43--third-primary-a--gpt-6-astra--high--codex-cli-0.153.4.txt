@@ -1,0 +1,9 @@
+`DebugFlags` walks the tree **depth-first, parent before children**, starting at the receiver with `debugflags(c)`. After printing each command’s flags and `x.flagErrorBuf`, it recursively calls `debugflags(y)` for every child in `x.commands` when `x.HasSubCommands()` is true. Commands without flags are still traversed. (`command.go:1453–1493`, recursive `debugflags` closure.)
+
+Labels are determined by membership in the command’s flag sets:
+
+- **`[L]`**: a flag visited through `x.flags.VisitAll` that does not match a persistent flag.
+- **`[LP]`**: a flag visited through `x.flags.VisitAll` for which `x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil`.
+- **`[P]`**: a flag visited through `x.pflags.VisitAll` whose name is absent from `x.flags`, or when `x.HasFlags()` is false. This avoids printing an already-listed persistent flag twice.
+
+Each flag line includes its shorthand, long name, default value, current value, and label. The method prints command names only when they have flags, and all output goes through the original receiver’s `c.Println`. (`command.go:1453–1493`, `VisitAll` callbacks and `c.Println` calls.)

@@ -1,0 +1,1 @@
+PASS: The response correctly describes MarkFlagDirname and RegisterFlagCompletionFunc with ShellCompDirectiveFilterDirs, including the optional themes directory restriction. All examples and cited locations are supported by the preserved transcript.

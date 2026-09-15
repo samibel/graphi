@@ -1,0 +1,7 @@
+In `checkIfFlagCompletion`, if the current `lastArg` starts with `-`, it splits at the **first `=`** using `strings.Index(lastArg, "=")` (`completions.go:607–608`):
+
+- **Long flag:** `--flag=value` → `flagName = lastArg[2:index]`, giving `"flag"` (`610–612`).
+- **Shorthand:** `-f=value` → `"f"`; a cluster like `-asd=value` → `"d"`, using `lastArg[index-1:index]` (`614–618`).
+- **Value:** `lastArg = lastArg[index+1:]` keeps everything after that first `=`, including any further `=` characters, and sets `flagWithEqual = true` (`620–621`).
+
+It then resolves the flag with `findFlag(finalCmd, flagName)` and, on success, returns the flag, unchanged `args`, and the extracted value as `lastArg` (`659–675`).

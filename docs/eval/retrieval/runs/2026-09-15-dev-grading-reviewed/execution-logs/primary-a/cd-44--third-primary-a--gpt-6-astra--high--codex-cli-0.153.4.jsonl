@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-3a12-7de3-b5c4-f3cbcce77f63"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows the check `localNonPersistentFlags.Lookup(flag.Name) != nil && flag.Changed` (`completions.go:444`), but omits its body and the control flow that suppresses subcommand-name completions."}}
+{"type":"turn.completed","usage":{"input_tokens":17442,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":42}}

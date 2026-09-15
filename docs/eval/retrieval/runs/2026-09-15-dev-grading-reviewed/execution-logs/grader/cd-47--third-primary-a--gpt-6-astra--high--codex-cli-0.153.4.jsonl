@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-c4b8-7f40-bb8c-1a58de3b9a20"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly sets `EnableTraverseRunHooks` to `true` to run all parents’ persistent hooks. The preserved transcript supports the default behavior, both execution orders, and every cited location."}}
+{"type":"turn.completed","usage":{"input_tokens":17937,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

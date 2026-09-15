@@ -1,0 +1,1 @@
+PASS: The response states the canonical contract that Command.Aliases contains alternatives to the first word in Use, supported by command.go:63-66. Its additional descriptions of HasAlias, ArgAliases, and Bash alias completion are supported by the preserved spans and follow-up read, with valid citations.

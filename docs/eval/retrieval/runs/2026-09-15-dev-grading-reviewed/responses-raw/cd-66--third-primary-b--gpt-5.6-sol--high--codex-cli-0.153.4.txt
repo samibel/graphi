@@ -1,0 +1,1 @@
+`(*Command).ContainsGroup(groupID string) bool` reports whether a command group with the given ID exists. It iterates over `c.commandgroups`, returning `true` when `x.ID == groupID`; otherwise it returns `false` ([command.go, lines 1346–1354]). Group IDs come from the `Group.ID string` field ([command.go, lines 41–45]).

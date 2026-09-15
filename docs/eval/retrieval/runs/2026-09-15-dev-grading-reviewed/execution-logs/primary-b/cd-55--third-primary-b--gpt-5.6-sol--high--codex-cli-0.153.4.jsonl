@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47f-a212-71a0-a586-97caa4ab2acf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`(*Command).Root()` returns the top-level command. If the command has a parent, it recursively calls `c.Parent().Root()`; otherwise, it returns `c` itself (`command.go:860–866`). A command has a parent when `c.parent != nil` (`command.go:1631–1634`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16315,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":106,"reasoning_output_tokens":33}}

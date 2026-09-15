@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a47e-3f68-7c41-a77d-585cddcbdde8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`GetFlagCompletionFunc` retrieves a command flag’s registered shell-completion function.\n\nIn [`completions.go`, lines 149–160], it:\n\n1. Resolves `flagName` using `c.Flag(flagName)`.\n2. Returns `(nil, false)` if the flag does not exist.\n3. Acquires `flagCompletionMutex.RLock()`.\n4. Looks up the flag in `flagCompletionFunctions`.\n5. Returns `(completionFunc, exists)`.\n\nThe registry is a global `map[*pflag.Flag]func(...)` protected by a `sync.RWMutex` ([`completions.go`, lines 35–39]). `Command.Flag` searches the command’s flags first, then its persistent flags ([`command.go`, lines 1794–1803])."}}
+{"type":"turn.completed","usage":{"input_tokens":16466,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":208,"reasoning_output_tokens":40}}

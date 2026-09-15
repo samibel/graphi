@@ -1,0 +1,15 @@
+`GenReSTCustom` builds the page sequentially in an in-memory buffer:
+
+1. It initializes Cobra’s default help command and flag, creates a `bytes.Buffer`, and obtains the full command path. It uses `cmd.Long` for the description, falling back to `cmd.Short` when `Long` is empty (`doc/rest_docs.go:63-74`).
+
+2. It emits the page header: a reStructuredText anchor derived by replacing spaces in the command path with underscores, the command-path title with a matching underline, the short description, and a `Synopsis` section containing the long description (`doc/rest_docs.go:74-82`).
+
+3. If the command is runnable, it adds `cmd.UseLine()` as a literal block. If `cmd.Example` is present, it adds an `Examples` section and indents the example as a literal block (`doc/rest_docs.go:84-92`).
+
+4. It delegates option rendering to `printOptionsReST(buf, cmd, name)` and immediately returns any error (`doc/rest_docs.go:94-96`).
+
+5. When `hasSeeAlso(cmd)` is true, it creates a `SEE ALSO` section. For a parent command, it calls `linkHandler(parent.CommandPath(), parentRef)` and includes `parent.Short`; it also inherits `DisableAutoGenTag` from any ancestor that sets it (`doc/rest_docs.go:97-110`).
+
+6. It retrieves and sorts child commands with `sort.Sort(byName(children))`. It skips unavailable commands and additional help topics, then links each remaining child through `linkHandler(cname, ref)` alongside `child.Short` (`doc/rest_docs.go:111-122`).
+
+7. Unless `cmd.DisableAutoGenTag` is set, it appends a dated auto-generation notice. Finally, it writes the completed buffer to `w` with `buf.WriteTo(w)` and returns that write error (`doc/rest_docs.go:124-128`).

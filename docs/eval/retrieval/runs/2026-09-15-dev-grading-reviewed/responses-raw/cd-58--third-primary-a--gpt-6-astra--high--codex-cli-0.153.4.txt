@@ -1,0 +1,18 @@
+To use Cobra, install it and import it:
+
+```sh
+go get -u github.com/spf13/cobra@latest
+```
+
+```go
+import "github.com/spf13/cobra"
+```
+
+These steps appear in `README.md:81–94`. The Usage section describes `cobra-cli` as a generator for application scaffolding and command files, but the supplied excerpts omit its installation command (`README.md:95–101`).
+
+For command usage output:
+
+- `(*Command).Usage()` calls `c.UsageFunc()(c)`; its comments say it is used for invalid input (`command.go:443–448`).
+- `UsageFunc()` selects the command’s custom function, inherits a parent’s function, or defaults to merging persistent flags and rendering `UsageTemplate()` to `OutOrStderr()` (`command.go:424–441`).
+- `UsageString()` captures usage output in a buffer, restores the original writers, and returns the string (`command.go:478–495`).
+- `Command.Use` describes one-line usage: `[]` marks optional arguments, `...` allows multiple values, and `|` separates mutually exclusive alternatives (`command.go:49–57`).

@@ -1,0 +1,1 @@
+PASS: The response accurately describes flag resolution, the missing-flag return `(nil, false)`, the mutex-protected registry lookup, and the returned function and existence boolean. Its cited locations and supporting details match the preserved transcript.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a483-a524-7190-b97f-961e2d6745e3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response exactly reproduces the preserved go.mod:1–10 contents, including the module declaration, Go version, and all four requirements with their versions. The cited range supports the complete answer."}}
+{"type":"turn.completed","usage":{"input_tokens":17966,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

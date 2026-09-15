@@ -1,0 +1,1 @@
+PASS: The response accurately describes persistent-flag merging, cached local-set initialization, sorting and normalization, and traversal of both flag sets. It correctly explains that name lookup prevents duplicates while pointer comparison excludes unshadowed parent flags and permits distinct local flags to shadow them, all supported by command.go:1668–1693.

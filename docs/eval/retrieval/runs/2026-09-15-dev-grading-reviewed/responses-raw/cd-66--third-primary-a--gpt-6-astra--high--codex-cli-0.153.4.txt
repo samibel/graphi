@@ -1,0 +1,1 @@
+`ContainsGroup(groupID string) bool` is a method on `*Command` that checks whether a command group with the given ID exists. It loops over `c.commandgroups`, returns `true` when `x.ID == groupID`, and returns `false` if no match is found (`command.go:1346–1354`).

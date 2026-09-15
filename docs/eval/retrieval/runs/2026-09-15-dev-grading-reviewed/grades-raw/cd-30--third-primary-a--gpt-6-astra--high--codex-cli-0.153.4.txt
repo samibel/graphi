@@ -1,0 +1,1 @@
+PASS: The response correctly explains that completeRequireFlags visits inherited and non-inherited flags, selects flags with the required annotation present and flag.Changed false, and generates suggestions through getFlagNameCompletions. Its annotation setup and cited locations are supported by the preserved transcript.

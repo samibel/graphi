@@ -1,0 +1,7 @@
+Cobra appends `" [flags]"` in `(*Command).UseLine()` when all three conditions hold:
+
+- `c.DisableFlagsInUseLine` is false.
+- `c.HasAvailableFlags()` returns true.
+- The assembled use line does not already contain `"[flags]"`.
+
+The use line is `c.Use`, prefixed with `c.parent.CommandPath() + " "` if the command has a parent. These conditions and the append appear in `command.go:1436–1451`.

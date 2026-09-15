@@ -155,6 +155,9 @@ SW-280 commits the first tokenizer-dependent run directory:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
   — the completed second fresh sealed-holdout capture and its exact
   response-byte counts are bound to this tokenizer.
+- `docs/eval/retrieval/runs/2026-09-15-dev-grading-reviewed/` — the development
+  grading of the reviewed split with the holdout pipeline; its captured
+  response and follow-up read token counts use this tokenizer.
 - `docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`
   — the third fresh sealed-holdout capture under contract version 2: its
   exact response-byte counts and the designated follow-up read counts are

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-0931-7b13-9ebc-c895efc29837"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AllChildCommandsHaveGroup` reports whether every relevant child command has a group.\n\nIn `command.go:1336-1344`, it iterates over `c.commands` and returns `false` when a child is either available (`sub.IsAvailableCommand()`) or is `c.helpCommand`, but has an empty `sub.GroupID`. Otherwise, it returns `true`.\n\n“Available” excludes deprecated, hidden, and help commands, and requires the command to be runnable or have available subcommands (`command.go:1560-1576`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16391,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":115,"reasoning_output_tokens":0}}

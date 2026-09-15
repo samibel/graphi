@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-260d-7e31-adb6-ec6d9577a404"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`CompErrorln(msg string)` prints a completion error to stderr with a trailing newline.\n\n- It calls `CompError(fmt.Sprintf(\"%s\\n\", msg))` (`completions.go:898–901`).\n- `CompError` adds `[Error] ` and calls `CompDebug(msg, true)` (`completions.go:892–896`).\n- `CompDebug` adds `[Debug] `, prints to stderr, and also appends to `BASH_COMP_DEBUG_FILE` if set and successfully opened (`completions.go:860–882`).\n\nThus, `CompErrorln(\"oops\")` produces:\n```text\n[Debug] [Error] oops\n```\nfollowed by a newline."}}
+{"type":"turn.completed","usage":{"input_tokens":17238,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":153,"reasoning_output_tokens":0}}

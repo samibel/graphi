@@ -1,0 +1,1 @@
+PASS: The response identifies the method’s signature and delegation to `c.genBashCompletion(w, includeDesc)`, supported by lines 392–396. Its description of buffering, generation, writing, and returning the write error matches lines 24–29, and it correctly avoids inferring the effect of `includeDesc`.

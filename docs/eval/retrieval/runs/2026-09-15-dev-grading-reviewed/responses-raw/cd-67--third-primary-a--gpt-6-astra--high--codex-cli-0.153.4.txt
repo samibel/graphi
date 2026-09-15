@@ -1,0 +1,7 @@
+`(*Command).NameAndAliases() string` returns the command name followed by all aliases, separated by `", "` (`command.go:1540–1543`):
+
+```go
+return strings.Join(append([]string{c.Name()}, c.Aliases...), ", ")
+```
+
+The name is `c.Use` up to the first space, or the entire value if no space exists (`Name()`, `command.go:1495–1503`).

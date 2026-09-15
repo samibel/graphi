@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-f0c1-7163-9a79-9b8a99279049"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response directly explains how to supply a usage template with `cmd.SetUsageTemplate(string)`. The cited transcript spans support the method, storage in `c.usageTemplate`, and rendering through the default usage function with the command as template data."}}
+{"type":"turn.completed","usage":{"input_tokens":18139,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

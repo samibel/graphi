@@ -1,0 +1,1 @@
+PASS: The response correctly identifies all three conditions shown in command.go:1436–1451: DisableFlagsInUseLine is false, HasAvailableFlags() is true, and the constructed use line does not already contain "[flags]". Both cited ranges exist and support the attached claims.

@@ -1,0 +1,5 @@
+Templates use Go’s `text/template` mechanism: `tmpl` creates `"top"`, registers `templateFuncs`, parses the template with `template.Must`, and executes it against the supplied data (`cobra.go:179-185`).
+
+Built-in functions include `trim`, `trimRightSpace`, `trimTrailingWhitespaces`, `appendIfNotPresent`, `rpad`, `gt`, and `eq` (`cobra.go:31-40`). Applications can register more through `AddTemplateFunc` or `AddTemplateFuncs` (`cobra.go:83-95`).
+
+A command can customize its version template with `SetVersionTemplate`; otherwise `VersionTemplate` inherits from its parent or uses the default `"<name> version <version>"` template (`command.go:352-355`, `command.go:598-609`). Help templates likewise inherit from the parent when no command-specific template exists (`command.go:584-593`).

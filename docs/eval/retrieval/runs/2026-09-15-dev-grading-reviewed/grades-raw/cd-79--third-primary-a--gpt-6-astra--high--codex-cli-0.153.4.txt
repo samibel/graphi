@@ -1,0 +1,1 @@
+FAIL: The response does not answer how Cobra reports the count. The preserved transcript omits `Command.ArgsLenAtDash` and its delegation to the command’s flag set, so the essential behavior cannot be verified.

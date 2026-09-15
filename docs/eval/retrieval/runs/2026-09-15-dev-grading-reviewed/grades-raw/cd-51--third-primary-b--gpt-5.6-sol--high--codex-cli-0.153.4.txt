@@ -1,0 +1,1 @@
+FAIL: The citation `site/content/completions/_index.md:371-372` points to a closing code fence and blank line, not the tab-separated description convention or supported APIs. That claim appears at line 373, so the response fails the requirement that cited locations support their attached claims.

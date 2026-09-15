@@ -1,0 +1,7 @@
+Set `DisableSuggestions` on your Cobra command:
+
+```go
+command.DisableSuggestions = true
+```
+
+This is documented in `site/content/user_guide.md:713`, and `command.go:751-753` confirms that `findSuggestions` immediately returns an empty string when `c.DisableSuggestions` is true.

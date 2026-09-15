@@ -1,0 +1,1 @@
+PASS: The transcript supports using GenReSTTreeCustom with a linkHandler that receives the command name and reference and returns custom link markup, including Sphinx :ref: links. All cited locations exist and support the attached claims.

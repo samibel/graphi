@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-00d4-7641-801f-78543747dfef"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the defining ActiveHelp constants, regex, and three helpers, including the global `\"0\"` override and program-specific environment-variable normalization. All cited paths and line ranges exist in the preserved transcript and support the attached claims."}}
+{"type":"turn.completed","usage":{"input_tokens":18037,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":66,"reasoning_output_tokens":11}}

@@ -1,0 +1,1 @@
+PASS: The response correctly gives `command.DisableSuggestions = true`, supported by `site/content/user_guide.md:713`, and accurately cites `command.go:751-753` for the immediate empty-string return that suppresses suggestions.

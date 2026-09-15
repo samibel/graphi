@@ -1,0 +1,1 @@
+PASS: The transcript shows OnInitialize appending functions to initializers and preRun iterating over that slice, calling each with x(). This supports execution of every registered function in registration order with no arguments, and both cited ranges exist and support the claims.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-01c8-7422-b6ed-fc58345d0ed8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The response only reports truncation and does not substantively describe the file’s declarations, including the transcript-supported defaults of case-sensitive command names and disabled parent-hook traversal."}}
+{"type":"turn.completed","usage":{"input_tokens":17920,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":101,"reasoning_output_tokens":60}}

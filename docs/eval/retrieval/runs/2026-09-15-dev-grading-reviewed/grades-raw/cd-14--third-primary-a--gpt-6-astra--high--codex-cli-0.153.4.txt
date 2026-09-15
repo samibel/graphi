@@ -1,0 +1,1 @@
+FAIL: The transcript omits `defaultPrefixMatching = false` and most of the reviewed package-level toggles and defaults at cobra.go:45–66. The response accurately summarizes available spans but does not identify that essential behavior; acknowledging truncation does not resolve the gap.

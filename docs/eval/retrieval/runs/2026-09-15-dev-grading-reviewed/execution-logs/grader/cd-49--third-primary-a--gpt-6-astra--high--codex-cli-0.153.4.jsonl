@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a482-cf06-7073-b502-429a5a00b9df"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly explains using `--no-descriptions` with the default `completion` command and loading the generated script. The follow-up transcript explicitly supports the flag, the example command, and the cited lines showing descriptions removed."}}
+{"type":"turn.completed","usage":{"input_tokens":18613,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":75,"reasoning_output_tokens":22}}

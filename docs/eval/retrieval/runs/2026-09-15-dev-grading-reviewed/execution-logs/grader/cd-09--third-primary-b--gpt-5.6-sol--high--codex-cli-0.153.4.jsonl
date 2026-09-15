@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a481-e022-7f61-a33b-37c412e013e5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes flag resolution, the missing-flag return `(nil, false)`, the mutex-protected registry lookup, and the returned function and existence boolean. Its cited locations and supporting details match the preserved transcript."}}
+{"type":"turn.completed","usage":{"input_tokens":17922,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":93,"reasoning_output_tokens":41}}

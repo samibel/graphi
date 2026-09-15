@@ -1,0 +1,9 @@
+The `Makefile` defines formatting, linting, testing, dependency installation, and cleanup:
+
+- **Default:** `default: all` → `all: fmt test`; runs formatting checks and tests (`Makefile:10–12`).
+- **`fmt`:** Finds Go files with `find . -name "*.go"`, checks them with `gofmt -l`, and prints formatting differences and fails if needed (`Makefile:2,14–16`).
+- **`lint`:** Runs `golangci-lint run -v` (`Makefile:18–20`). A missing executable triggers a warning (`Makefile:4–6`).
+- **`test`:** Depends on `install_deps`, then runs `go test -v ./...` (`Makefile:22–24`).
+- **`richtest`:** Depends on `install_deps`, then runs `richgo test -v ./...` (`Makefile:26–28`).
+- **`install_deps`:** Runs `go get -v ./...` (`Makefile:30–32`).
+- **`clean`:** Runs `rm -rf $(BIN)`, where `BIN="./bin"` (`Makefile:1,34–35`).

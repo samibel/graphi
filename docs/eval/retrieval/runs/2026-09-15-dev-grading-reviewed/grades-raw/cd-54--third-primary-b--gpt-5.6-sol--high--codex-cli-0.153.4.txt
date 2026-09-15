@@ -1,0 +1,1 @@
+PASS: The response directly answers with `cmd.SetUsageTemplate(myTemplate)`, supported by `site/content/user_guide.md:583-591`. Its claims about storing the template and rendering it through the default usage function are supported by the cited `command.go` spans.

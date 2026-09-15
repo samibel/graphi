@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a480-c2fa-7a01-83c6-88c1718ce1a8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`NoFileCompletions` returns no candidates (`nil`) together with the `ShellCompDirectiveNoFileComp` directive:\n\n```go\nreturn nil, ShellCompDirectiveNoFileComp\n```\n\n([completions.go, lines 118–122]). That directive explicitly means the shell “should not provide file completion even when no completion is provided” ([completions.go, lines 62–65]). The Bash completion generator also embeds `ShellCompDirectiveNoFileComp` into its generated script ([bash_completions.go, lines 389–402])."}}
+{"type":"turn.completed","usage":{"input_tokens":16522,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":211,"reasoning_output_tokens":90}}
