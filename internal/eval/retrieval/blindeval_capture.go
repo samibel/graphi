@@ -26,6 +26,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
@@ -76,7 +77,21 @@ type CapturedCandidateBundle struct {
 // ValidateCapturedTranscript preserves contract-1 captures unchanged and,
 // when slice 2 exists, proves it is exactly the span slice 1 designated from
 // the pinned repository. A reader cannot choose or fabricate the follow-up.
-func ValidateCapturedTranscript(repository fs.FS, queryID string, bundle CapturedCandidateBundle, real PayloadCounter) error {
+func ValidateCapturedTranscript(repository fs.FS, queryID string, bundle CapturedCandidateBundle, real PayloadCounter, contractVersions ...string) error {
+	if len(contractVersions) > 1 {
+		return fmt.Errorf("retrieval follow-up transcript: query %s received %d contract versions, want at most one", queryID, len(contractVersions))
+	}
+	if len(contractVersions) == 1 {
+		switch contractVersions[0] {
+		case QrelBlindSmokeContractVersion:
+			if bundle.FollowupRead != nil {
+				return fmt.Errorf("retrieval follow-up transcript: query %s carries followup_read under %s, which accepts only one response", queryID, QrelBlindSmokeContractVersion)
+			}
+		case QrelBlindSmokeContractVersion2:
+		default:
+			return fmt.Errorf("retrieval follow-up transcript: query %s contract_version=%q, want %q or %q", queryID, contractVersions[0], QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+		}
+	}
 	if bundle.FollowupRead == nil {
 		return nil
 	}
@@ -89,6 +104,83 @@ func ValidateCapturedTranscript(repository fs.FS, queryID string, bundle Capture
 	}
 	_, _, err = validateFollowupRead(repository, queryID, *designation, *bundle.FollowupRead, real)
 	return err
+}
+
+// CapturedBundleDesignatesFollowup reports whether slice 1 itself designates a
+// follow-up. It reads only captured response bytes; no qrel, judgement or
+// target span participates in the decision.
+func CapturedBundleDesignatesFollowup(bundle CapturedCandidateBundle) (bool, error) {
+	designation, err := compactFollowupDesignation(bundle.QueryID, bundle.Payload)
+	if err != nil {
+		return false, err
+	}
+	return designation != nil, nil
+}
+
+// CheckPreRegisteredBundleBinding binds the pre-registered byte and token
+// identities to the captured one- or two-slice bundle. Transcript byte
+// validity against the pinned tree remains ValidateCapturedTranscript's job;
+// this check proves that the bytes validated there are the bytes frozen here.
+func CheckPreRegisteredBundleBinding(contractVersion string, pre PreRegisteredQuery, bundle CapturedCandidateBundle) error {
+	queryID := pre.QueryID
+	if queryID == "" {
+		queryID = bundle.QueryID
+	}
+	if pre.QueryID != bundle.QueryID {
+		return fmt.Errorf("retrieval %s: pre-registered query %q is bound to captured query %q", QrelBlindSmokeEvaluationName, pre.QueryID, bundle.QueryID)
+	}
+	if pre.BundleSHA256 != bundle.Payload.SHA256 || pre.BundleSHA256 != SHA256Hex(bundle.Payload.Bytes) {
+		return fmt.Errorf("retrieval %s: query %s bundle_sha256=%q does not match the captured first slice %q", QrelBlindSmokeEvaluationName, queryID, pre.BundleSHA256, SHA256Hex(bundle.Payload.Bytes))
+	}
+	if pre.BundleByteCount != bundle.Payload.ByteCount || pre.BundleByteCount != len(bundle.Payload.Bytes) {
+		return fmt.Errorf("retrieval %s: query %s bundle_byte_count=%d does not match the captured first slice byte count %d", QrelBlindSmokeEvaluationName, queryID, pre.BundleByteCount, len(bundle.Payload.Bytes))
+	}
+	if pre.BundleBoundary != bundle.Payload.Boundary {
+		return fmt.Errorf("retrieval %s: query %s bundle boundary=%q does not match the captured first slice boundary=%q", QrelBlindSmokeEvaluationName, queryID, pre.BundleBoundary, bundle.Payload.Boundary)
+	}
+	if !reflect.DeepEqual(pre.BundleTokenCounts, bundle.Payload.TokenCounts) {
+		return fmt.Errorf("retrieval %s: query %s bundle_token_counts do not match the captured first slice", QrelBlindSmokeEvaluationName, queryID)
+	}
+
+	metadataPresent := pre.FollowupSHA256 != "" || pre.FollowupByteCount != 0 || len(pre.FollowupTokenCounts) != 0
+	switch contractVersion {
+	case QrelBlindSmokeContractVersion:
+		if bundle.FollowupRead != nil || metadataPresent {
+			return fmt.Errorf("retrieval %s: query %s carries a followup_read or follow-up pre-registration fields under %s, which accepts only one response", QrelBlindSmokeEvaluationName, queryID, QrelBlindSmokeContractVersion)
+		}
+		return nil
+	case QrelBlindSmokeContractVersion2:
+	default:
+		return fmt.Errorf("retrieval %s: query %s bundle binding contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, queryID, contractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+
+	designated, err := CapturedBundleDesignatesFollowup(bundle)
+	if err != nil {
+		return err
+	}
+	if designated && bundle.FollowupRead == nil {
+		return fmt.Errorf("retrieval %s: query %s first slice designates a follow-up but the captured bundle has no followup_read", QrelBlindSmokeEvaluationName, queryID)
+	}
+	if !designated && bundle.FollowupRead != nil {
+		return fmt.Errorf("retrieval %s: query %s designated no follow-up but the captured bundle carries followup_read", QrelBlindSmokeEvaluationName, queryID)
+	}
+	if (bundle.FollowupRead != nil) != metadataPresent {
+		return fmt.Errorf("retrieval %s: query %s under %s must pre-register follow-up fields if and only if the captured bundle carries the designated read", QrelBlindSmokeEvaluationName, queryID, QrelBlindSmokeContractVersion2)
+	}
+	if bundle.FollowupRead == nil {
+		return nil
+	}
+	followup := *bundle.FollowupRead
+	if pre.FollowupSHA256 != followup.SHA256 || pre.FollowupSHA256 != SHA256Hex(followup.Bytes) {
+		return fmt.Errorf("retrieval %s: query %s followup_sha256=%q does not match the captured follow-up read %q", QrelBlindSmokeEvaluationName, queryID, pre.FollowupSHA256, SHA256Hex(followup.Bytes))
+	}
+	if pre.FollowupByteCount != followup.ByteCount || pre.FollowupByteCount != len(followup.Bytes) {
+		return fmt.Errorf("retrieval %s: query %s followup_byte_count=%d does not match the captured follow-up read byte count %d", QrelBlindSmokeEvaluationName, queryID, pre.FollowupByteCount, len(followup.Bytes))
+	}
+	if !reflect.DeepEqual(pre.FollowupTokenCounts, followup.TokenCounts) {
+		return fmt.Errorf("retrieval %s: query %s followup_token_counts do not match the captured follow-up read", QrelBlindSmokeEvaluationName, queryID)
+	}
+	return nil
 }
 
 // CandidateBinding binds a capture to the exact candidate implementation and

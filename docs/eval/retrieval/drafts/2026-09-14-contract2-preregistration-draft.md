@@ -27,13 +27,17 @@ candidate:
    through `ScoreTaskContextTranscriptEqualRecallDev` instead of the
    contract-1 scorer, with `ValidateSavingsAggregateInput` accepting a
    two-payload candidate arm only under contract 2.
-4. `methodology.md` gaining a versioned section that says the same thing
-   as the draft, reviewed and adopted.
+4. A versioned methodology text that says the same thing as the draft,
+   reviewed and adopted.
 
-Until those exist, a holdout captured with a follow-up read can be
-sealed and graded (the packet and seal path are built) but **cannot
-produce a release result**, because the aggregate still measures one
-response.
+**Status (2026-09-15): all four have landed** — version constants
+`MeasurementContractVersion2` / `QrelBlindSmokeContractVersion2` coupled
+to `followup_max_lines = 120`; `PreRegisteredQuery.followup_*` fields bound
+to the captured read at capture, seal and decide; `validateSavingsArm`
+accepting one- or two-payload candidate arms under version 2 only; and
+`methodology-v2.md` (a separate file, because `methodology.md` is a frozen,
+hash-pinned input of the sealed evaluations). Version 1 remains the
+default; a pre-registration selects version 2 by naming it.
 
 ## What the curator freezes, and with which tool
 
@@ -43,8 +47,8 @@ response.
 | Answer-span ceiling `F` | computed on the sealed key before capture, aggregate only, recorded with its SHA-256 | `go run ./cmd/retrieval-eval -answer-span-ceiling …` (`answer-span-ceiling-protocol.md`) |
 | Pass count `k` | smallest count whose exact Clopper-Pearson 95 % lower bound is ≥ 3/4 — for `N = 64`, `k = 56`; **unchanged** by this contract | `DerivePassCount` |
 | Candidate | one commit SHA; compact version `task_context/2-compact/13` or later; `FollowupMaxLines = 120` | precondition record |
-| Contract versions | `sw266`/2, `sw280`/2 | precondition record (blocked on item 1 above) |
-| Capture | per query: slice 1 = the exact `task_context/2` MCP response bytes; slice 2 = `CaptureFollowupRead` of slice 1's designation, present iff designated; two independent index builds, byte-identical | `TestRecoveryDevCapture`-style instrument extended to write `followup_read` (to build with item 2) |
+| Contract versions | `sw266`/2, `sw280`/2, `followup_max_lines: 120`; `methodology` input role → `methodology-v2.md` | precondition record |
+| Capture | per query: slice 1 = the exact `task_context/2` MCP response bytes; slice 2 = `CaptureFollowupRead` of slice 1's designation, present iff designated | `retrieval-eval -blind-eval capture` under a version-2 precondition (writes `followup_read` and the `followup_*` pre-registration fields) |
 | Transcript validity | `ValidateCapturedTranscript` on every captured bundle before sealing | seal step (`-checkout` at the pinned SHA) |
 | Rater prompt | the exact packet bytes both raters see: both slices when designated | pre-registered `prompt_sha256` |
 | Grader packet | both slices, labelled, with both content addresses | `buildGraderPacket` |

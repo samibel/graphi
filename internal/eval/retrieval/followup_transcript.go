@@ -11,15 +11,16 @@ import (
 	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
-// Second-response transcript (contract-v2 draft, `contract-v2-second-response.md`).
+// Second-response transcript (alternative contract version 2,
+// `contract-v2-second-response.md`).
 //
 // A candidate transcript is one task_context/2 response and, when that
 // response designates a follow-up, at most one exact read of exactly that
 // span. The read is not a graphi response; whoever reads the file produces
 // it, and for measurement it is preserved as one newline-terminated JSON
-// source line under its own operation label. Nothing here is adopted: the
-// release scorer still runs contract 1, and every number produced through
-// these functions is a development observation.
+// source line under its own operation label. Contract version 1 remains the
+// default; release inputs select this transcript only by embedding the exact
+// version-2 measurement literal.
 const (
 	// PayloadOperationFollowupRead labels slice 2 of a two-slice transcript.
 	PayloadOperationFollowupRead = "task_context/2-followup-read/1"

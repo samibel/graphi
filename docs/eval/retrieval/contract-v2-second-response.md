@@ -1,10 +1,9 @@
 # Second-response contract (draft): `sw266-measurement-contract/2`, `sw280-qrel-blind-smoke-evaluation/2`
 
-Status: **draft, not adopted.** `sw266-measurement-contract/1` and
-`sw280-qrel-blind-smoke-evaluation/1` remain in force. This draft changes no
-frozen input, reopens no sealed evaluation and authorises no claim. Adoption
-is its own reviewed slice; until then every number produced under it is a
-development observation, labelled as such.
+Status: **adopted as an alternative version (see `methodology-v2.md`);
+version 1 remains the default and `methodology.md` is unchanged.** This alternative changes no frozen input, reopens no
+sealed evaluation and authorises no claim. A pre-registration must explicitly
+name both version-2 contracts and the frozen follow-up line cap to select it.
 
 It is option C of `contract-v2-options.md`, made concrete after the measured
 ceiling there (54/64 overlapped, 45/64 complete on the reviewed
@@ -132,9 +131,9 @@ this contract; a lower bar is not what it buys.
 | Two-slice transcript validation: designation equality, verbatim pinned bytes, one line, no unknown fields, operation and sequence labels, 120-line cap, at most two slices, no slice 2 without a designation | enforced — same (`ScoreTaskContextTranscriptEqualRecallDev`, development scorer) |
 | Earliest-prefix charging: slice 1 alone when it reaches; both slices when the read reaches; censored at both on a miss | enforced — same |
 | Two-call development measurement uses that one implementation | instrument — `TestDraftDevForecast`, `TestProductCompactTaskContextDev`, `TestOneSpanCompactDev` (`GRAPHI_ONE_SPAN_FOLLOWUP=1`) |
-| The same scorer in the release aggregate (`SavingsAggregateInput` with two-slice candidate arms) | **UNENFORCED** — the release path still calls the contract-1 scorer; wiring it is part of adoption |
+| The same scorer in the release aggregate (`SavingsAggregateInput` with two-slice candidate arms) | enforced — `TestValidateSavingsAggregateInput_SecondResponseCandidateShapes` (the accepted reached and censored shapes are the outcomes of `ScoreTaskContextTranscriptEqualRecallDev`) |
 | Capture shape: `CapturedCandidateBundle.followup_read` (optional slice 2), `ValidateCapturedTranscript` proves it against the designation and the pinned tree; contract-1 captures are unchanged | enforced — `internal/eval/retrieval/followup_capture_test.go` |
 | Grader packet carries both slices, labelled `RESPONSE 1 OF 2` / `RESPONSE 2 OF 2`, with the read's content address; a one-slice packet is byte-identical to today's | enforced — `cmd/retrieval-eval/blindeval_test.go` (`TestBuildGraderPacketCarriesTwoSliceTranscript`) |
 | The seal step refuses a two-slice bundle whose read is not the designation, and needs `-checkout` at the pinned SHA to prove it | enforced — `TestValidateCapturedBundleForGraderPacketRejectsForgedFollowup` |
-| Precondition record: `followup_max_lines` is refused under contract 1, so the draft cannot be recorded as adopted | enforced — `TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdoption` |
-| Contract-2 version constants, adoption in `methodology.md`, and a two-slice release aggregate | **UNENFORCED** — deliberately; adoption is its own reviewed slice |
+| Precondition record: version 1 refuses `followup_max_lines`; version 2 requires the exact imported cap and measurement-contract version 2 | enforced — `TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdoption`, `TestQrelBlindSmoke_PreconditionVersionTwoCoupling` |
+| Contract-2 version constants, adoption in `methodology-v2.md`, and a two-slice release aggregate | enforced — `TestSecondResponseMeasurementContract_IsFrozen`, `TestValidateMeasurementContract_RefusesPartialVersionCombinations`, `TestValidateSavingsAggregateInput_SecondResponseCandidateShapes`, `TestQrelBlindSmoke_PreconditionVersionTwoCoupling`, `TestQrelBlindSmoke_PreRegistrationVersionTwoCoupling`, `TestValidateCapturedTranscript_ContractVersionCoupling`, `TestPreRegisteredQueryFromBundleBindsFollowup`, `TestCheckPreRegisteredBundleBinding_EnforcesFollowupPresenceAndIdentity`, `TestCheckPreRegisteredCapturedBundlesRejectsFollowupBindingDrift` |

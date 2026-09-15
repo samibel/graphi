@@ -83,6 +83,14 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	if err := retrieval.ValidatePreRegistration(pre, precondition); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	if err := checkPreRegisteredCapturedBundles(o.dir, pre); err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
 	// Sealing writes the append-only records and the sidecar manifest, and both
 	// are only evidence if they land in the run directory this evaluation was
 	// frozen into.
@@ -192,7 +200,7 @@ func runBlindEvalSeal(o blindEvalOptions, stdout, stderr io.Writer) int {
 				}
 				followupRepository = os.DirFS(o.checkout)
 			}
-			if err := validateCapturedBundleForGraderPacket(followupRepository, response.QueryID, bundle, followupCounter); err != nil {
+			if err := validateCapturedBundleForGraderPacket(followupRepository, response.QueryID, bundle, followupCounter, pre.ContractVersion); err != nil {
 				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 				return exitError
 			}
@@ -441,8 +449,8 @@ func loadCapturedBundle(dir, queryID string) (retrieval.CapturedCandidateBundle,
 	return bundle, nil
 }
 
-func validateCapturedBundleForGraderPacket(repository fs.FS, queryID string, bundle retrieval.CapturedCandidateBundle, real retrieval.PayloadCounter) error {
-	if err := retrieval.ValidateCapturedTranscript(repository, queryID, bundle, real); err != nil {
+func validateCapturedBundleForGraderPacket(repository fs.FS, queryID string, bundle retrieval.CapturedCandidateBundle, real retrieval.PayloadCounter, contractVersions ...string) error {
+	if err := retrieval.ValidateCapturedTranscript(repository, queryID, bundle, real, contractVersions...); err != nil {
 		return fmt.Errorf("captured bundle for %s has an invalid transcript: %w", queryID, err)
 	}
 	return nil

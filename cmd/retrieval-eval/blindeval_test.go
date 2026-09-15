@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -237,6 +238,67 @@ func TestBuildGraderPacketCarriesTwoSliceTranscript(t *testing.T) {
 	}
 	if twoInstructions != oneInstructions {
 		t.Fatalf("grader instructions changed for two slices:\n--- one ---\n%s--- two ---\n%s", oneInstructions, twoInstructions)
+	}
+}
+
+func TestCheckPreRegisteredCapturedBundlesRejectsFollowupBindingDrift(t *testing.T) {
+	dir := t.TempDir()
+	firstBytes := []byte(`{"result":{"structuredContent":{"followup":"answer.go:1-2"}}}`)
+	secondBytes := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"answer"}` + "\n")
+	first := retrieval.PreservedPayload{
+		Sequence: 1, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationTaskContext,
+		Bytes: firstBytes, SHA256: retrieval.SHA256Hex(firstBytes), ByteCount: len(firstBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}, {TokenizerID: "real", VocabularySHA256: strings.Repeat("a", 64), Tokens: 2}},
+	}
+	second := retrieval.PreservedPayload{
+		Sequence: 2, Boundary: retrieval.PayloadBoundaryCandidate, Operation: retrieval.PayloadOperationFollowupRead,
+		Bytes: secondBytes, SHA256: retrieval.SHA256Hex(secondBytes), ByteCount: len(secondBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}, {TokenizerID: "real", VocabularySHA256: strings.Repeat("a", 64), Tokens: 2}},
+	}
+	bundle := retrieval.CapturedCandidateBundle{QueryID: "q-1", Payload: first, FollowupRead: &second}
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(dir, retrieval.BlindEvalBundlesDir, retrieval.BundleFileName(bundle.QueryID)), bundle); err != nil {
+		t.Fatal(err)
+	}
+	pre := retrieval.PreRegistration{
+		ContractVersion: retrieval.QrelBlindSmokeContractVersion2,
+		Queries: []retrieval.PreRegisteredQuery{{
+			QueryID:      bundle.QueryID,
+			BundleSHA256: first.SHA256, BundleByteCount: first.ByteCount, BundleBoundary: first.Boundary, BundleTokenCounts: first.TokenCounts,
+			FollowupSHA256: second.SHA256, FollowupByteCount: second.ByteCount, FollowupTokenCounts: second.TokenCounts,
+		}},
+	}
+	if err := checkPreRegisteredCapturedBundles(dir, pre); err != nil {
+		t.Fatalf("valid on-disk binding: %v", err)
+	}
+	pre.Queries[0].FollowupByteCount++
+	err := checkPreRegisteredCapturedBundles(dir, pre)
+	if err == nil || !strings.Contains(err.Error(), "followup_byte_count") {
+		t.Fatalf("error = %v, want follow-up binding drift refusal", err)
+	}
+}
+
+func TestPreRegisteredQueryFromBundleBindsFollowup(t *testing.T) {
+	firstBytes := []byte("first\n")
+	secondBytes := []byte("second\n")
+	first := retrieval.PreservedPayload{
+		Boundary: retrieval.PayloadBoundaryCandidate, Bytes: firstBytes,
+		SHA256: retrieval.SHA256Hex(firstBytes), ByteCount: len(firstBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}},
+	}
+	second := retrieval.PreservedPayload{
+		Boundary: retrieval.PayloadBoundaryCandidate, Bytes: secondBytes,
+		SHA256: retrieval.SHA256Hex(secondBytes), ByteCount: len(secondBytes),
+		TokenCounts: []retrieval.PayloadTokenCount{{TokenizerID: retrieval.TokenizerID, Tokens: 1}},
+	}
+	query := retrieval.Query{ID: "q-1", FamilyID: "family-1", Stratum: retrieval.StratumNLBehaviour, Text: "question"}
+	prompt := retrieval.RaterPrompt{SHA256: strings.Repeat("a", 64)}
+	got := preRegisteredQueryFromBundle(query, prompt, retrieval.CapturedCandidateBundle{QueryID: query.ID, Payload: first, FollowupRead: &second})
+	if got.FollowupSHA256 != second.SHA256 || got.FollowupByteCount != second.ByteCount || !reflect.DeepEqual(got.FollowupTokenCounts, second.TokenCounts) {
+		t.Fatalf("follow-up binding = %+v", got)
+	}
+	one := preRegisteredQueryFromBundle(query, prompt, retrieval.CapturedCandidateBundle{QueryID: query.ID, Payload: first})
+	if one.FollowupSHA256 != "" || one.FollowupByteCount != 0 || len(one.FollowupTokenCounts) != 0 {
+		t.Fatalf("one-slice query gained follow-up fields: %+v", one)
 	}
 }
 

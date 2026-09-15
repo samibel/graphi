@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
 // ---------------------------------------------------------------------------
@@ -80,6 +82,20 @@ func fixturePrecondition(t *testing.T) PreconditionRecord {
 			{Role: "methodology", Path: "docs/eval/retrieval/methodology.md", SHA256: fixtureMethodSHA},
 		},
 	}
+	sealed, err := SealPreconditionRecord(rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
+}
+
+func fixturePreconditionV2(t *testing.T) PreconditionRecord {
+	t.Helper()
+	rec := fixturePrecondition(t)
+	rec.ContractVersion = QrelBlindSmokeContractVersion2
+	rec.MeasurementContractVersion = MeasurementContractVersion2
+	rec.FollowupMaxLines = compactv9.FollowupMaxLines
+	rec.ClaimWordingSHA256 = SHA256Hex([]byte(SecondResponseClaimWording()))
 	sealed, err := SealPreconditionRecord(rec)
 	if err != nil {
 		t.Fatal(err)
@@ -475,6 +491,141 @@ func TestQrelBlindSmoke_PreconditionRejectsFollowupMaxLinesBeforeContractTwoAdop
 		err = ValidatePreconditionRecord(sealed)
 		if err == nil || !strings.Contains(err.Error(), "second-response contract is not adopted") {
 			t.Fatalf("error = %v, want the contract-adoption refusal", err)
+		}
+	})
+}
+
+func TestQrelBlindSmoke_PreconditionVersionTwoCoupling(t *testing.T) {
+	if err := ValidatePreconditionRecord(fixturePreconditionV2(t)); err != nil {
+		t.Fatalf("complete contract-2 precondition: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreconditionRecord)
+		want string
+	}{
+		{"contract one refuses measurement contract two", func(rec *PreconditionRecord) {
+			rec.ContractVersion = QrelBlindSmokeContractVersion
+			rec.FollowupMaxLines = 0
+			rec.ClaimWordingSHA256 = SHA256Hex([]byte(FrozenClaimWording()))
+		}, QrelBlindSmokeContractVersion},
+		{"contract two requires the line cap", func(rec *PreconditionRecord) {
+			rec.FollowupMaxLines = 0
+		}, QrelBlindSmokeContractVersion2},
+		{"contract two requires the exact imported line cap", func(rec *PreconditionRecord) {
+			rec.FollowupMaxLines = compactv9.FollowupMaxLines - 1
+		}, QrelBlindSmokeContractVersion2},
+		{"contract two requires measurement contract two", func(rec *PreconditionRecord) {
+			rec.MeasurementContractVersion = MeasurementContractVersion
+			rec.ClaimWordingSHA256 = SHA256Hex([]byte(FrozenClaimWording()))
+		}, QrelBlindSmokeContractVersion2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := fixturePreconditionV2(t)
+			tc.edit(&rec)
+			sealed, err := SealPreconditionRecord(rec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreconditionRecord(sealed)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error = %v, want refusal naming %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestQrelBlindSmoke_PreRegistrationVersionTwoCoupling(t *testing.T) {
+	v1Artifacts := buildBlindEvalArtifacts(t, specsFor(20, 19))
+	v2Precondition := fixturePreconditionV2(t)
+	v2 := v1Artifacts.PreRegistration
+	v2.ContractVersion = QrelBlindSmokeContractVersion2
+	v2.PreconditionSHA256 = v2Precondition.SHA256
+	derivation, err := DerivePassCountForContract(QrelBlindSmokeContractVersion2, v2.Derivation.N, v2.Derivation.DatasetSHA256, v2.Derivation.NSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v2.Derivation = derivation
+	sealedV2, err := SealPreRegistration(v2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidatePreRegistration(sealedV2, v2Precondition); err != nil {
+		t.Fatalf("contract-2 pre-registration without designated follow-ups: %v", err)
+	}
+
+	withFollowup := sealedV2
+	withFollowup.Queries = append([]PreRegisteredQuery(nil), sealedV2.Queries...)
+	followupBytes := []byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"answer"}` + "\n")
+	withFollowup.Queries[0].FollowupSHA256 = SHA256Hex(followupBytes)
+	withFollowup.Queries[0].FollowupByteCount = len(followupBytes)
+	withFollowup.Queries[0].FollowupTokenCounts = []PayloadTokenCount{
+		{TokenizerID: TokenizerID, Tokens: 4},
+		{TokenizerID: "tiktoken:cl100k_base:ordinary", VocabularySHA256: fixtureVocabSHA, Tokens: 17},
+	}
+	withFollowup, err = SealPreRegistration(withFollowup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidatePreRegistration(withFollowup, v2Precondition); err != nil {
+		t.Fatalf("contract-2 pre-registration with a follow-up binding: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreRegisteredQuery)
+	}{
+		{"sha only", func(q *PreRegisteredQuery) { q.FollowupSHA256 = strings.Repeat("a", 64) }},
+		{"byte count only", func(q *PreRegisteredQuery) { q.FollowupByteCount = 12 }},
+		{"token counts only", func(q *PreRegisteredQuery) {
+			q.FollowupTokenCounts = []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 1}}
+		}},
+	} {
+		t.Run("contract two refuses partial "+tc.name, func(t *testing.T) {
+			broken := sealedV2
+			broken.Queries = append([]PreRegisteredQuery(nil), sealedV2.Queries...)
+			tc.edit(&broken.Queries[0])
+			broken, err = SealPreRegistration(broken)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreRegistration(broken, v2Precondition)
+			if err == nil || !strings.Contains(err.Error(), QrelBlindSmokeContractVersion2) {
+				t.Fatalf("error = %v, want partial-field refusal naming contract version 2", err)
+			}
+		})
+	}
+
+	for _, tc := range []struct {
+		name string
+		edit func(*PreRegisteredQuery)
+	}{
+		{"sha", func(q *PreRegisteredQuery) { q.FollowupSHA256 = strings.Repeat("a", 64) }},
+		{"byte count", func(q *PreRegisteredQuery) { q.FollowupByteCount = 12 }},
+		{"token counts", func(q *PreRegisteredQuery) {
+			q.FollowupTokenCounts = []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 1}}
+		}},
+	} {
+		t.Run("contract one refuses follow-up "+tc.name, func(t *testing.T) {
+			broken := v1Artifacts.PreRegistration
+			broken.Queries = append([]PreRegisteredQuery(nil), v1Artifacts.PreRegistration.Queries...)
+			tc.edit(&broken.Queries[0])
+			broken, err = SealPreRegistration(broken)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = ValidatePreRegistration(broken, v1Artifacts.Precondition)
+			if err == nil || !strings.Contains(err.Error(), QrelBlindSmokeContractVersion) {
+				t.Fatalf("error = %v, want v1 refusal naming its version", err)
+			}
+		})
+	}
+
+	t.Run("pre-registration and precondition versions must agree", func(t *testing.T) {
+		err := ValidatePreRegistration(sealedV2, v1Artifacts.Precondition)
+		if err == nil || !strings.Contains(err.Error(), "precondition") {
+			t.Fatalf("error = %v, want cross-record version refusal", err)
 		}
 	})
 }

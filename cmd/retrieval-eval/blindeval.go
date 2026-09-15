@@ -211,7 +211,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	// "Records" means an artifact on disk, not a line on stderr: printing the
 	// typed error and exiting left automation unable to tell the mandatory
 	// refusal apart from a run that was interrupted or never started.
-	derivation, err := retrieval.DerivePassCount(len(population), dataset.SHA256,
+	derivation, err := retrieval.DerivePassCountForContract(precondition.ContractVersion, len(population), dataset.SHA256,
 		"count of answerable holdout queries in the sealed dataset: split=holdout, stratum!=no_hit, at least one grade-3 span")
 	if err != nil {
 		outcome := retrieval.UnsatisfiableOutcome(precondition, len(population), err)
@@ -270,6 +270,17 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
+	if precondition.ContractVersion == retrieval.QrelBlindSmokeContractVersion2 {
+		repository := os.DirFS(o.checkout)
+		for i := range captured {
+			followup, err := retrieval.CaptureFollowupRead(repository, captured[i].QueryID, captured[i].Payload, counter)
+			if err != nil {
+				fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+				return exitError
+			}
+			captured[i].FollowupRead = followup
+		}
+	}
 
 	// The field is named precondition_record_commit, so it must name the
 	// commit that CONTAINS the precondition record. It used to be copied from
@@ -284,7 +295,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	pre := retrieval.PreRegistration{
-		ContractVersion:    retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:    precondition.ContractVersion,
 		Evaluation:         retrieval.QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: preconditionCommit,
@@ -319,17 +330,12 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
 		}
-		pre.Queries = append(pre.Queries, retrieval.PreRegisteredQuery{
-			QueryID:           q.ID,
-			FamilyID:          q.FamilyID,
-			Stratum:           q.Stratum,
-			QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
-			PromptSHA256:      retrieval.SHA256Hex(prompt.Bytes),
-			BundleSHA256:      bundle.Payload.SHA256,
-			BundleByteCount:   bundle.Payload.ByteCount,
-			BundleBoundary:    bundle.Payload.Boundary,
-			BundleTokenCounts: bundle.Payload.TokenCounts,
-		})
+		registered := preRegisteredQueryFromBundle(q, prompt, bundle)
+		if err := retrieval.CheckPreRegisteredBundleBinding(pre.ContractVersion, registered, bundle); err != nil {
+			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+			return exitError
+		}
+		pre.Queries = append(pre.Queries, registered)
 	}
 	if err := retrieval.WriteBlindEvalJSON(filepath.Join(o.dir, retrieval.BlindEvalProvenanceFile), provenance); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
@@ -352,7 +358,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
-	if err := retrieval.ValidatePreRegistration(sealed); err != nil {
+	if err := retrieval.ValidatePreRegistration(sealed, precondition); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -363,6 +369,26 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "retrieval-eval: captured %d task_context/2 bundles and pre-registered N=%d k=%d (record sha256 %s)\n",
 		len(captured), sealed.Derivation.N, sealed.Derivation.K, sealed.SHA256)
 	return exitOK
+}
+
+func preRegisteredQueryFromBundle(q retrieval.Query, prompt retrieval.RaterPrompt, bundle retrieval.CapturedCandidateBundle) retrieval.PreRegisteredQuery {
+	registered := retrieval.PreRegisteredQuery{
+		QueryID:           q.ID,
+		FamilyID:          q.FamilyID,
+		Stratum:           q.Stratum,
+		QueryTextSHA256:   retrieval.SHA256Hex([]byte(q.Text)),
+		PromptSHA256:      prompt.SHA256,
+		BundleSHA256:      bundle.Payload.SHA256,
+		BundleByteCount:   bundle.Payload.ByteCount,
+		BundleBoundary:    bundle.Payload.Boundary,
+		BundleTokenCounts: append([]retrieval.PayloadTokenCount(nil), bundle.Payload.TokenCounts...),
+	}
+	if bundle.FollowupRead != nil {
+		registered.FollowupSHA256 = bundle.FollowupRead.SHA256
+		registered.FollowupByteCount = bundle.FollowupRead.ByteCount
+		registered.FollowupTokenCounts = append([]retrieval.PayloadTokenCount(nil), bundle.FollowupRead.TokenCounts...)
+	}
+	return registered
 }
 
 // blindEvalParticipants is the declared panel, read from the run directory
@@ -403,6 +429,10 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	artifacts, err := retrieval.LoadEvaluationArtifacts(o.dir)
 	if err != nil {
+		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
+		return exitError
+	}
+	if err := checkPreRegisteredCapturedBundles(o.dir, artifacts.PreRegistration); err != nil {
 		fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 		return exitError
 	}
@@ -477,6 +507,22 @@ func runBlindEvalDecide(o blindEvalOptions, stdout, stderr io.Writer) int {
 		return exitError
 	}
 	return exitOK
+}
+
+// checkPreRegisteredCapturedBundles is the command boundary that reopens every
+// captured bundle and compares both response slices with the identities frozen
+// before rating. It runs both before sealing and again before deciding.
+func checkPreRegisteredCapturedBundles(dir string, pre retrieval.PreRegistration) error {
+	for _, query := range pre.Queries {
+		bundle, err := loadCapturedBundle(dir, query.QueryID)
+		if err != nil {
+			return err
+		}
+		if err := retrieval.CheckPreRegisteredBundleBinding(pre.ContractVersion, query, bundle); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // runDirectoryInsideRepository resolves the run directory relative to the

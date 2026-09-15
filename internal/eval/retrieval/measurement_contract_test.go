@@ -1,8 +1,11 @@
 package retrieval
 
 import (
+	"reflect"
 	"strings"
 	"testing"
+
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 )
 
 const testVocabularySHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -26,6 +29,72 @@ func TestMeasurementContract_IsFrozen(t *testing.T) {
 	drifted.ComparatorReadWindowLines++
 	if err := ValidateMeasurementContract(drifted); err == nil {
 		t.Fatal("method drift under the frozen version was accepted")
+	}
+}
+
+func TestSecondResponseMeasurementContract_IsFrozen(t *testing.T) {
+	want := MeasurementContract{
+		Version:                   MeasurementContractVersion2,
+		CandidateMethod:           SavingsCandidateMethod,
+		CandidateTokenBudget:      SavingsCandidateBudget,
+		ComparatorMethod:          SavingsComparatorMethod,
+		ComparatorReadWindowLines: GrepReadWindowLines,
+		RelevantGrade:             SavingsGrade,
+		MissRule: "a miss is a right-censored observation at the complete preserved transcript token count; " +
+			"tokens-to-target and paired percent saving are undefined, the miss count is reported, and any magnitude aggregate fails validation",
+		PayloadRule:          "count only complete response byte slices captured below final serialization; the candidate transcript is one complete task_context/2 response plus at most one designated follow-up read, preserved as one newline-terminated JSON source line under operation task_context/2-followup-read/1; preserve each slice and sha256, and recompute every byte and token count from those bytes",
+		EqualRecallRule:      "compare the earliest indivisible response prefix reaching the same predeclared rational grade-3 span-recall target; charge slice 1 alone when it reaches, otherwise charge slices 1 and 2 together; censor a miss at both slices, or at slice 1 when no follow-up is designated; whole spans only, ties contribute zero",
+		FollowupMaxLines:     compactv9.FollowupMaxLines,
+		FollowupOperation:    PayloadOperationFollowupRead,
+		Confidence:           FrozenConfidenceSpec(),
+		DisplayDecimalPlaces: SavingsDisplayDecimalPlaces,
+	}
+	got := SecondResponseMeasurementContract()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("second-response contract drifted\ngot:  %+v\nwant: %+v", got, want)
+	}
+	if err := ValidateMeasurementContract(got); err != nil {
+		t.Fatalf("second-response contract rejected: %v", err)
+	}
+}
+
+func TestValidateMeasurementContract_RefusesPartialVersionCombinations(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		got  MeasurementContract
+	}{
+		{"version one with the line cap", func() MeasurementContract {
+			got := FrozenMeasurementContract()
+			got.FollowupMaxLines = compactv9.FollowupMaxLines
+			return got
+		}()},
+		{"version one with the follow-up operation", func() MeasurementContract {
+			got := FrozenMeasurementContract()
+			got.FollowupOperation = PayloadOperationFollowupRead
+			return got
+		}()},
+		{"version two name on the version one literal", func() MeasurementContract {
+			got := FrozenMeasurementContract()
+			got.Version = MeasurementContractVersion2
+			return got
+		}()},
+		{"version two without the line cap", func() MeasurementContract {
+			got := SecondResponseMeasurementContract()
+			got.FollowupMaxLines = 0
+			return got
+		}()},
+		{"version two with the wrong operation", func() MeasurementContract {
+			got := SecondResponseMeasurementContract()
+			got.FollowupOperation = PayloadOperationRead
+			return got
+		}()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateMeasurementContract(tc.got)
+			if err == nil || !strings.Contains(err.Error(), tc.got.Version) {
+				t.Fatalf("error = %v, want refusal naming version %q", err, tc.got.Version)
+			}
+		})
 	}
 }
 
@@ -221,6 +290,101 @@ func TestValidateSavingsAggregateInput_EnforcesEqualRecallAndPopulation(t *testi
 		err := ValidateSavingsAggregateInput(got, counters)
 		if err == nil || !strings.Contains(err.Error(), "frozen population order") {
 			t.Fatalf("error = %v, want order rejection", err)
+		}
+	})
+}
+
+func TestValidateSavingsAggregateInput_SecondResponseCandidateShapes(t *testing.T) {
+	base, counters := validSavingsAggregateInput(t)
+	followup := preservedPayload(2, PayloadBoundaryCandidate, PayloadOperationFollowupRead,
+		[]byte(`{"path":"answer.go","start_line":1,"end_line":2,"text":"the answer"}`+"\n"), base.TokenizerID)
+
+	withTwoSlices := func(contract MeasurementContract) SavingsAggregateInput {
+		got := base
+		got.Contract = contract
+		got.Observations = cloneSavingsObservations(base.Observations)
+		arm := &got.Observations[0].Candidate
+		arm.Payloads = append(arm.Payloads, followup)
+		arm.StopReason = SavingsStopFollowupReadComplete
+		arm.ConsumedPayloadSlices = 2
+		tokens := payloadTokens(arm.Payloads, got.TokenizerID)
+		arm.TokensToTarget = &tokens
+		return got
+	}
+
+	t.Run("contract one refuses a two-payload candidate", func(t *testing.T) {
+		err := ValidateSavingsAggregateInput(withTwoSlices(FrozenMeasurementContract()), counters)
+		if err == nil || !strings.Contains(err.Error(), MeasurementContractVersion) {
+			t.Fatalf("error = %v, want a refusal naming contract version 1", err)
+		}
+	})
+
+	t.Run("contract two accepts one payload", func(t *testing.T) {
+		got := base
+		got.Contract = SecondResponseMeasurementContract()
+		if err := ValidateSavingsAggregateInput(got, counters); err != nil {
+			t.Fatalf("one-payload contract-2 candidate: %v", err)
+		}
+	})
+
+	t.Run("contract two accepts a completed follow-up read", func(t *testing.T) {
+		if err := ValidateSavingsAggregateInput(withTwoSlices(SecondResponseMeasurementContract()), counters); err != nil {
+			t.Fatalf("two-payload contract-2 candidate: %v", err)
+		}
+	})
+
+	t.Run("contract two charges the earliest reaching prefix", func(t *testing.T) {
+		got := withTwoSlices(SecondResponseMeasurementContract())
+		arm := &got.Observations[0].Candidate
+		arm.StopReason = SavingsStopOneCallComplete
+		arm.ConsumedPayloadSlices = 1
+		tokens := payloadToken(arm.Payloads[0], got.TokenizerID)
+		arm.TokensToTarget = &tokens
+		if err := ValidateSavingsAggregateInput(got, counters); err != nil {
+			t.Fatalf("earliest-prefix contract-2 candidate: %v", err)
+		}
+	})
+
+	t.Run("contract two censors a miss at both slices", func(t *testing.T) {
+		got := withTwoSlices(SecondResponseMeasurementContract())
+		arm := &got.Observations[0].Candidate
+		arm.Status = SavingsOutcomeMissed
+		arm.Grade3SpansAtPrefix = 0
+		arm.TokensToTarget = nil
+		bound := payloadTokens(arm.Payloads, got.TokenizerID)
+		arm.CensorLowerBoundTokens = &bound
+		err := ValidateSavingsAggregateInput(got, counters)
+		if err == nil || !strings.Contains(err.Error(), "right-censored") {
+			t.Fatalf("error = %v, want the aggregate's post-validation censor refusal", err)
+		}
+	})
+
+	t.Run("contract two refuses the wrong follow-up operation", func(t *testing.T) {
+		got := withTwoSlices(SecondResponseMeasurementContract())
+		got.Observations[0].Candidate.Payloads[1].Operation = PayloadOperationRead
+		err := ValidateSavingsAggregateInput(got, counters)
+		if err == nil || !strings.Contains(err.Error(), PayloadOperationFollowupRead) {
+			t.Fatalf("error = %v, want follow-up operation refusal", err)
+		}
+	})
+
+	t.Run("contract two refuses the wrong follow-up sequence", func(t *testing.T) {
+		got := withTwoSlices(SecondResponseMeasurementContract())
+		got.Observations[0].Candidate.Payloads[1].Sequence = 3
+		err := ValidateSavingsAggregateInput(got, counters)
+		if err == nil || !strings.Contains(err.Error(), "sequence=3, want 2") {
+			t.Fatalf("error = %v, want follow-up sequence refusal", err)
+		}
+	})
+
+	t.Run("contract two refuses a follow-up stop with one payload", func(t *testing.T) {
+		got := base
+		got.Contract = SecondResponseMeasurementContract()
+		got.Observations = cloneSavingsObservations(base.Observations)
+		got.Observations[0].Candidate.StopReason = SavingsStopFollowupReadComplete
+		err := ValidateSavingsAggregateInput(got, counters)
+		if err == nil || !strings.Contains(err.Error(), "one payload") {
+			t.Fatalf("error = %v, want incomplete follow-up stop refusal", err)
 		}
 	})
 }
