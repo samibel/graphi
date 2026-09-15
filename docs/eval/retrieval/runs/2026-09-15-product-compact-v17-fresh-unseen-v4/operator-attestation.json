@@ -1,6 +1,6 @@
 {
   "schema":"graphi-fresh-holdout-operator-attestation/3",
-  "status":"raw_adjudication_complete_pre_seal",
+  "status":"adjudication_sealed_pre_grade",
   "run_id":"2026-09-15-product-compact-v17-fresh-unseen-v4",
   "operator":{"identity":"Codex independent holdout operator","task_path":"/root/holdout_operator","provider":"OpenAI","resolved_model_identity":"GPT-5 Codex agent (session-declared)","immutable_backend_snapshot_exposed":false},
   "isolation":{"branch":"fresh-holdout-compact17-unseen-v4-operator","worktree":"/private/tmp/graphi-compact17-unseen-v4-operator","root_excluded_from_holdout_content":true,"manual_holdout_content_accessed":false,"consumed_holdout_accessed":false},
@@ -13,5 +13,6 @@
   "raw_grading":{"raw_grades":128,"confidential_event_logs":128,"allowlist_conformant_logs":128,"valid_grade_prefixes":128,"errors":0,"retries":0,"tool_events":0,"empty_grades":0},
   "grade_seal":{"invocations":1,"sealed_grades":128,"query_groups_with_exactly_two_primary_grades":64,"disagreements":1,"checkout_argument_present":true,"preflight":"PASS"},
   "raw_adjudication":{"required":1,"raw_responses":1,"confidential_event_logs":1,"allowlist_conformant_logs":1,"errors":0,"retries":0,"tool_events":0,"empty_responses":0},
+  "adjudication_seal":{"invocations":1,"sealed_adjudications":1,"adjudication_grader_packets":1,"checkout_argument_present":true,"preflight":"PASS"},
   "limitations":["Provider exposes no immutable backend snapshot or build digest; model-level byte reproducibility cannot be claimed."]
 }
