@@ -1,0 +1,1 @@
+`hasNoOptDefVal` looks up the long flag by name using `fs.Lookup(name)`. If the flag is missing, it returns `false`; otherwise, it returns whether `flag.NoOptDefVal != ""`. Thus, an existing flag with a nonempty `NoOptDefVal` is treated as allowing no explicit value (`command.go`, lines 623–629).

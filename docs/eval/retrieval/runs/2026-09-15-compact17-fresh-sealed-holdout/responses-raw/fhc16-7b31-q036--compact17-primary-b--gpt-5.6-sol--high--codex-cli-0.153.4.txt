@@ -1,0 +1,12 @@
+In `command.go:680-717`, `argsMinusFirstX`:
+
+1. Returns immediately for empty `args`.
+2. Calls `mergePersistentFlags()` and gets `c.Flags()`, ensuring local, persistent, and inherited parent flags are known (`command.go:1846-1853`).
+3. Scans arguments left to right:
+   - Stops at `"--"`.
+   - For a long flag like `--flag value` or a one-character short flag like `-f value`, when there is no `=` and the flag does not have `NoOptDefVal`, it increments `pos` to skip the following value.
+   - `hasNoOptDefVal` confirms this by looking up the flag and checking `flag.NoOptDefVal != ""` (`command.go:622-629`).
+4. Only arguments not beginning with `-` are eligible matches. On the first `s == x`, it returns `args[:pos] + args[pos+1:]`, removing exactly that occurrence.
+5. If no eligible match exists, it returns the original slice.
+
+Thus a flag value equal to `x` is skipped, while the first positional `x` is removed.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-5870-7d00-aa11-db93219fa3c8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It panics with:\n\n```text\ngroup id '<GroupID>' is not defined for subcommand '<full command path>'\n```\n\nIn `command.go:1175–1176`, `checkCommandGroups()` checks `sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID)` and raises that panic using `sub.GroupID` and `sub.CommandPath()`. `CommandPath()` returns the full command path (`command.go:1425–1433`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17278,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":99,"reasoning_output_tokens":0}}

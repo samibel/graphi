@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q014",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "844ecc2b89810f7584b94dd125ce07125e423b9fec9385aa7f97d78d93fbefd8",
+  "bundle_sha256": "5a315893f614d4fe32d638ff8ce077b9b8315f71412bdf3645f289eab89e72e6",
+  "prompt_sha256": "f56de12e81209ae404c377d77f470a340b4467071a8486c1285a17236fd19a5f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows only `compCmd := ShellCompRequestCmd` at `bash_completionsV2.go:32`, but omits the logic that changes or selects it when `includeDesc` is false.",
+  "responded_at": "2026-09-15T18:36:33Z",
+  "sha256": "51609f9457856ac74693e42ad9f272e60a2540ff4f646b7be31e200eb8311619"
+}

@@ -1,0 +1,7 @@
+`UseLine()` builds the usage string in three steps:
+
+1. **Combine parent path and Use text:** If `c.HasParent()`, it uses `c.parent.CommandPath() + " " + c.Use`; otherwise, it uses `c.Use` alone (`command.go:1438–1443`). `HasParent()` means `c.parent != nil` (`command.go:1632–1634`).
+2. **Build the parent path recursively:** `CommandPath()` joins ancestor paths and command names with spaces. At the root, it uses `CommandDisplayNameAnnotation` if present, otherwise `c.Name()` (`command.go:1426–1434`).
+3. **Optionally append flags:** If `DisableFlagsInUseLine` is true, it returns immediately. Otherwise, it appends `" [flags]"` only when `c.HasAvailableFlags()` is true and the assembled string does not already contain `"[flags]"` (`command.go:1444–1451`). Thus, disabling insertion does not remove an existing marker in `Use`.
+
+`HasAvailableFlags()` delegates to `c.Flags().HasAvailableFlags()`; its comment describes available flags as neither hidden nor deprecated (`command.go:1771–1775`).

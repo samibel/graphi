@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a662-712b-7c83-b96a-4bd160e0a5a0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. For the same flag, the second call returns `RegisterFlagCompletionFunc: flag '%s' already registered` and leaves the first callback intact.\n\nIn `completions.go:141–144`, `RegisterFlagCompletionFunc` checks for an existing registration and returns before the assignment `flagCompletionFunctions[flag] = f`. The map is keyed by `*pflag.Flag` (`completions.go:36`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17139,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":155,"reasoning_output_tokens":62}}

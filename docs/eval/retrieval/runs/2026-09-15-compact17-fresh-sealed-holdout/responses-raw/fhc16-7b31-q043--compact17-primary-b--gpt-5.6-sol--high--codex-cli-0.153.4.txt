@@ -1,0 +1,7 @@
+In `doc/rest_docs.go:61-130`, `GenReSTCustom` works as follows:
+
+- Descriptions: it takes `short := cmd.Short` and `long := cmd.Long`; if `Long` is empty, it falls back to `Short` (`lines 69-73`). The short description is printed beneath the title, while the long description appears under “Synopsis” (`lines 80-84`).
+- Page reference: it derives `name` from `cmd.CommandPath()` and creates `ref` by replacing spaces with underscores (`lines 67, 74`). It emits the target as `.. _<ref>:` (`line 76`).
+- Links are emitted only when `hasSeeAlso(cmd)` is true (`line 100`).
+- Parent link: when `cmd.HasParent()`, it gets `parent.CommandPath()`, converts spaces to underscores for the reference, then calls `linkHandler(pname, ref)`. The displayed description is `parent.Short` (`lines 103-107`).
+- Child links: it obtains `cmd.Commands()`, sorts them by name, and skips unavailable commands and additional-help topics (`lines 115-121`). For each remaining child, it constructs the linked name as `name + " " + child.Name()`, converts spaces to underscores for its reference, calls `linkHandler(cname, ref)`, and appends `child.Short` as the description (`lines 123-125`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a662-e73f-7ff0-bb69-6be77963b9bf"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `HasPersistentFlags()` returns `c.PersistentFlags().HasFlags()` (`command.go:1757–1758`). `PersistentFlags()` returns `c.pflags`, documented as flags “specifically set in the current command” (`command.go:1725–1734`).\n\nParent persistent flags are stored separately in `parentsPflags` (`command.go:160–161`) and merged into `c.Flags()`, not `c.PersistentFlags()` (`command.go:1847–1853`). Thus, flags inherited only from a parent do not make `HasPersistentFlags()` return true."}}
+{"type":"turn.completed","usage":{"input_tokens":17389,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":126,"reasoning_output_tokens":0}}

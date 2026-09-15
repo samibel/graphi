@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-a2ef-7bd3-8f91-ad8fc943739d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `doc/man_docs.go`:\n\n- String defaults use the quoted format `=%q` when `flag.Value.Type() == \"string\"` (lines 172–175), so `flag.DefValue` is rendered with Go-style quotes.\n- If `flag.NoOptDefVal` is non-empty, the value expression is wrapped in brackets by adding `[` before and `]` after it (lines 168–170 and 179–181).\n\nThus a string flag with an optional value renders like `--flag[=\"default\"]`; without an optional value, it renders like `--flag=\"default\"`. Shorthand, when available and not deprecated, is rendered alongside the long form (lines 165–169)."}}
+{"type":"turn.completed","usage":{"input_tokens":16707,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":151,"reasoning_output_tokens":0}}

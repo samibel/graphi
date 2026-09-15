@@ -1,0 +1,3 @@
+The command name comes first, followed by aliases in their current `c.Aliases` order, separated by a comma and space (`", "`). `NameAndAliases()` does no sorting: it uses `strings.Join(append([]string{c.Name()}, c.Aliases...), ", ")` (`command.go:1540–1543`).
+
+The name is the portion of `c.Use` before the first space (`Name()`, `command.go:1495–1503`).

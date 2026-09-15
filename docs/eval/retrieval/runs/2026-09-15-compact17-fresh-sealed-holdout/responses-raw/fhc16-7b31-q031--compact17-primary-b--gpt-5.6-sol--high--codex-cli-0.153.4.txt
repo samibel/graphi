@@ -1,0 +1,6 @@
+In `command.go:1182-1198`, `InitDefaultHelpFlag` starts with `usage := "help for "` and then:
+
+- If `c.Name() == ""`, appends `"this command"`, producing `help for this command`.
+- Otherwise, appends `c.Name()`, producing `help for <command-name>`.
+
+It registers that text on the default `-h, --help` flag via `c.Flags().BoolP("help", "h", false, usage)`. The guide example at `site/content/user_guide.md:576` shows a named command rendering `help for cobra-cli`.

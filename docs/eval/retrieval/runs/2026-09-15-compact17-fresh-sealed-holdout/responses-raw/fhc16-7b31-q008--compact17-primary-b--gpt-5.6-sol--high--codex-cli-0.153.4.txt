@@ -1,0 +1,1 @@
+`CompError` prefixes the diagnostic with `[Error] ` and routes it to standard error by calling `CompDebug(msg, true)` (`completions.go`, lines 892–896).

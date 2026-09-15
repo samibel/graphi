@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q049",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "a0e9703aaab48f461de257c56513303e3c3ef98540bd62f25c5b815945f03323",
+  "bundle_sha256": "cc7b61de04714ee81d89d6eb804cd0ec8ed5640340923b9902e817ab1116d310",
+  "prompt_sha256": "4236e6e7c068d6eb00b0babac9d65dc7f6bec25238fa56d7e439a00844bf13b6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response mentions `ValidArgs` and `ValidArgsFunction` in `zsh_completions.go:62–63`, but contains no declaration, rule, or implementation establishing whether a single command may define both.",
+  "responded_at": "2026-09-15T18:43:38Z",
+  "sha256": "bf8f0f9ed0124848ad6b01b2c7b24271980d9cbe55eba4df7ae74c33be496212"
+}

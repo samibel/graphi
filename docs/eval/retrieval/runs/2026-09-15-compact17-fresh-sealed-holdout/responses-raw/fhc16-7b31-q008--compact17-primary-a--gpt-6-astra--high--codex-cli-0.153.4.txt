@@ -1,0 +1,1 @@
+`CompError` prefixes the diagnostic with `[Error] ` and routes it to stderr via `CompDebug(msg, true)`. Evidence: `completions.go:892–896` documents stderr output and shows `msg = fmt.Sprintf("[Error] %s", msg)` followed by `CompDebug(msg, true)`.

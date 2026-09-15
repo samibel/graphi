@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-3688-7a03-8f7b-e83ab685cfcd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetHelpCommand` on the parent/root command, passing your replacement command:\n\n```go\ncmd.SetHelpCommand(customHelpCmd)\n```\n\nEvidence: `site/content/user_guide.md:538-551` says help is “a command like any other” and lists `cmd.SetHelpCommand(cmd *Command)` under “Defining your own help.” Also, `command.go:1067-1068` says default help is initialized last “to allow for user overriding.”"}}
+{"type":"turn.completed","usage":{"input_tokens":17113,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":102,"reasoning_output_tokens":0}}

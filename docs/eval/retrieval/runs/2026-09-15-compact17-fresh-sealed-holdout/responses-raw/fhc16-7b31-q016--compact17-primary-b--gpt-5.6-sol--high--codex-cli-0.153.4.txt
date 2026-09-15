@@ -1,0 +1,1 @@
+Hyphen (`-`) and colon (`:`), according to the comment in `powershell_completions.go` lines 28–30: “Variables should not contain a '-' or ':' character.”

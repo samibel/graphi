@@ -1,0 +1,36 @@
+{
+  "contract_version": "fresh-holdout-run-refusal/1",
+  "recorded_at_utc": "2026-09-15T18:47:02Z",
+  "status": "REFUSED_INVALID_RUN",
+  "phase": "primary seal",
+  "reason": "The first contract-2 seal invocation omitted the mandatory -checkout argument and exited 1 after partial output. A corrected invocation would be a forbidden retry and would overwrite write-once paths.",
+  "seal_invocations": 1,
+  "seal_exit_code": 1,
+  "harness_error": "sealing a two-slice transcript needs -checkout at the dataset's pinned repository sha",
+  "artifacts_before_refusal": {
+    "captured_bundles": 64,
+    "generated_prompts": 64,
+    "raw_primary_responses": 128,
+    "primary_event_logs": 128,
+    "sealed_response_records_written_by_failed_call": 128,
+    "grader_packets_written_by_failed_call": 1,
+    "sidecar_manifest_written": false,
+    "raw_grades": 0,
+    "adjudications": 0,
+    "outcome_written": false
+  },
+  "partial_seal_artifact_aggregate_sha256": "29b09fe1230c14c0e97b748acc84f17572f675f5a775fe43230049f1f16168f3",
+  "downstream_execution": {
+    "grader_processes": 0,
+    "adjudicator_processes": 0,
+    "decide_invocations": 0
+  },
+  "policy": {
+    "retry_performed": false,
+    "overwrite_performed": false,
+    "waiver_applied": false,
+    "threshold_or_rubric_changed": false
+  },
+  "release_verdict": null,
+  "validity": "INVALID: no RELEASE YES/NO may be inferred from this run"
+}

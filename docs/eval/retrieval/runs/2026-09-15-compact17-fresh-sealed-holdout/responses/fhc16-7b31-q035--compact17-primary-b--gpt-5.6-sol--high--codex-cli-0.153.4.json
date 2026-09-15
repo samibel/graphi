@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q035",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "5c37933dea9aeb1d00abc19a76bfeeeea3f477289fb1b61b55eafe69550e0a43",
+  "bundle_sha256": "8cd78759aae022323bbd1aca931cd657affa6dec98afcd936e4bf20dc2858d19",
+  "prompt_sha256": "9c4083918d8074fac12164d18004c9dddef7a8086a555ccc8e369b48231e87a0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`InheritedFlags` builds the result as follows:\n\n1. It calls `c.mergePersistentFlags()`, which refreshes `c.parentsPflags` and merges both the command’s persistent flags and its parents’ persistent flags into `c.Flags()` (`command.go:1698`, `command.go:1846-1853`).\n2. It lazily creates `c.iflags`, using the command name, `flag.ContinueOnError`, and the shared error buffer (`command.go:1700-1706`).\n3. It obtains `local := c.LocalFlags()` and applies the global normalization function when configured (`command.go:1709-1712`).\n4. It visits every flag in `c.parentsPflags`, adding a flag only when it is absent from both the inherited result and the local set:\n   `c.iflags.Lookup(f.Name) == nil \u0026\u0026 local.Lookup(f.Name) == nil`\n   (`command.go:1714-1718`).\n\nThe `local.Lookup(f.Name) == nil` condition is what prevents an inherited parent flag from overriding a same-named local flag. `LocalFlags` specifically includes flags that are not the identical parent flag object—including a local flag that shadows a parent flag—using `f != c.parentsPflags.Lookup(f.Name)` (`command.go:1682-1689`).",
+  "responded_at": "2026-09-15T18:39:13Z",
+  "sha256": "88831685183c961289a40cc42a0cddc781f65b99a57903500b841afb6e44e949"
+}

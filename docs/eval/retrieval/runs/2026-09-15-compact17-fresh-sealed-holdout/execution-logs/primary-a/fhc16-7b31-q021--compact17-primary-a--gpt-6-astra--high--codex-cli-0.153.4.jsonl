@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-7f40-7133-9194-49eeb5cdd519"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`hasSeeAlso` returns `true` if the command has a parent, or if any child command passes `IsAvailableCommand()` and is not an `IsAdditionalHelpTopicCommand()`. Otherwise, it returns `false` (`doc/util.go:26–37`).\n\nAn available child must be neither deprecated nor hidden nor the parent’s help command, and must be runnable or have available subcommands (`command.go:1562–1576`). A parent alone is sufficient; no child checks are required."}}
+{"type":"turn.completed","usage":{"input_tokens":17301,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":107,"reasoning_output_tokens":0}}

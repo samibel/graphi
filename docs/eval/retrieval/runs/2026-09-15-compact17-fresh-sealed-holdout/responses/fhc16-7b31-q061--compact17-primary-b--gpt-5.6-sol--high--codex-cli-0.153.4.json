@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q061",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "27d72f931d614c58355a18d50b2c7546885c3f53a83e2347be43ba7b54bfdc3c",
+  "bundle_sha256": "49e1f80b748b23ddb32e7d184156884690037c1ecb87c0af00d25489b2a1f1b2",
+  "prompt_sha256": "b0becf23cafbe58135c614b1d08c017293fc1f750b6d929faac948229579f63f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. `Command.Groups` directly returns the backing field—`return c.commandgroups`—without copying it ([command.go, lines 1330–1334], symbol `(*Command).Groups`).",
+  "responded_at": "2026-09-15T18:42:59Z",
+  "sha256": "ce11c25f799f98b7b4d717d4d5d3b9006bc19d8d96a0fbbfef60c6d2fbb1c4ac"
+}

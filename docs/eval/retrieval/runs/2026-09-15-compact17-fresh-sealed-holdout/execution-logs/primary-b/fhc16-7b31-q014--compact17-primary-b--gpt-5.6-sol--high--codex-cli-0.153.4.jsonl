@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-2cdd-7463-bbe5-bc5d53a554fb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows only `compCmd := ShellCompRequestCmd` at `bash_completionsV2.go:32`, but omits the logic that changes or selects it when `includeDesc` is false."}}
+{"type":"turn.completed","usage":{"input_tokens":16547,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":33}}

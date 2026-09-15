@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-c93f-7bc0-a711-cb9c660bc127"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `doc/yaml_docs.go`, the fields with explicit snake_case YAML names are:\n\n- `cmdDoc.InheritedOptions` → `inherited_options`\n- `cmdDoc.SeeAlso` → `see_also`\n\nAdditionally, the nested `cmdOption.DefaultValue` field → `default_value`.\n\nEvidence: `doc/yaml_docs.go:29-46`, specifically the tags `yaml:\"inherited_options,omitempty\"`, `yaml:\"see_also,omitempty\"`, and `yaml:\"default_value,omitempty\"`."}}
+{"type":"turn.completed","usage":{"input_tokens":17530,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

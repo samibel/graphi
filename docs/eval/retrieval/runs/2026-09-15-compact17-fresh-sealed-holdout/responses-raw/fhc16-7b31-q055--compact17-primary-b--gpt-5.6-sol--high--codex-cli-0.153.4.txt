@@ -1,0 +1,1 @@
+No. The second registration returns an error and leaves the first callback intact. In `completions.go:142-144`, `RegisterFlagCompletionFunc` checks `flagCompletionFunctions[flag]` and returns `flag '<name>' already registered` if present; assignment occurs only afterward at line 146.

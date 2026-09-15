@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q031",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "a4ddf0770a3faa42e0d182d122754437968604b81eee7b5809511e862ea5c88f",
+  "bundle_sha256": "b3a0546bdc3f58343146ab7aac958771e7c8bc88e306d0278a5101018171a35a",
+  "prompt_sha256": "ddc8f2d67a0ff314bbab9838010bd2c698f5a4c6c6b51248abdc3ae2743da426",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `(*Command).InitDefaultHelpFlag`, usage starts as `\"help for \"`:\n\n- **Named command:** appends `c.Name()`, producing `\"help for \u003cname\u003e\"`.\n- **Unnamed command** (`c.Name() == \"\"`): appends `\"this command\"`, producing `\"help for this command\"`.\n\nThe text is passed to `c.Flags().BoolP(\"help\", \"h\", false, usage)`. This happens only if no `help` flag already exists after merging persistent flags. Evidence: `command.go`, lines 1186–1195.",
+  "responded_at": "2026-09-15T18:39:30Z",
+  "sha256": "2a478e522a440dd044b122ef0daf0a0300f4908c498370f47c140c2ad9cff22b"
+}

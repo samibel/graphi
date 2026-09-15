@@ -1,0 +1,11 @@
+It produces default reStructuredText hyperlink markup:
+
+```text
+`name <ref.rst>`_
+```
+
+Evidence: `doc/rest_docs.go`, lines 52–54, symbol `defaultLinkHandler`:
+
+```go
+return fmt.Sprintf("`%s <%s.rst>`_", name, ref)
+```

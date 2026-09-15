@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q041",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "28770d1db753410a5a5e3cd076b868c3da8900efd53c23c52fec581a8c06be54",
+  "bundle_sha256": "9c9bd03b5fe236a481c63f0d95285dd670f1769acba4e385b663d2601ed6815a",
+  "prompt_sha256": "eb33f601d4e71ccb56029ee0ea4c5feb4717e36fba51b019006b11129441bc86",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`completeRequireFlags` gathers required-flag suggestions in two passes:\n\n1. It visits every inherited flag with `finalCmd.InheritedFlags().VisitAll(...)`.\n2. It then visits every non-inherited flag with `finalCmd.NonInheritedFlags().VisitAll(...)`.\n\nBoth passes invoke `doCompleteRequiredFlags`, which checks for the `BashCompOneRequiredFlag` annotation, skips flags whose `Changed` field is true, and appends matches from `getFlagNameCompletions(flag, toComplete)` (`completions.go:566-590`).\n\nThe sets are distinct:\n\n- `InheritedFlags()` merges persistent flags and adds parent flags only when neither the inherited set nor local flags already contain that name (`command.go:1694-1719`).\n- `NonInheritedFlags()` returns `LocalFlags()` (`command.go:1721-1723`).\n\nThe code deliberately does not use `finalCmd.Flags()`, because inherited and non-inherited flags may not have been merged by `ParseFlags()` when `DisableFlagParsing` is set (`completions.go:579-581`). Required status originates from `MarkFlagRequired`, which sets the `BashCompOneRequiredFlag` annotation to `\"true\"` (`shell_completions.go:34-40`).",
+  "responded_at": "2026-09-15T18:40:16Z",
+  "sha256": "5f293083c5eba42132b026ba2c8a00a6625994d7a46a33079737a6e815d0ae1a"
+}

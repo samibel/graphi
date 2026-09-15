@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q019",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "729d42f4567508949a3f4e84e3a7c153bec3be8591bc9e8f2689b1617b6a3f44",
+  "bundle_sha256": "7e11476d6b7f2282f39ec444ace20049cc2c61333e90760b0d7481c4c910a9dc",
+  "prompt_sha256": "bfc6e0048520fdc33549e90e8a614a581610016d1da184b7ec9aa89289ea5768",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/man_docs.go`, `manPrintFlags`:\n\n- Renders string defaults with `=%q`, which quotes and escapes `flag.DefValue`; other types use `=%s` (lines 173–178, 183).\n- When `flag.NoOptDefVal` is nonempty, wraps the entire `=value` portion in brackets, producing forms like `**--name**[=\"default\"]`. Otherwise, it renders `**--name**=\"default\"` (lines 170–181).",
+  "responded_at": "2026-09-15T18:37:46Z",
+  "sha256": "ae739d204b053e5cc4c61697313b11797a5e90769e45dbebe1223ba0553e24a1"
+}

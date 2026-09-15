@@ -1,0 +1,9 @@
+`ErrOrStderr()` calls `c.getErr(os.Stderr)`, supplying stderr as the fallback (`command.go:384–387`).
+
+`getErr` resolves the writer in this order (`command.go:404–412`):
+
+1. Return the current command’s `errWriter` if non-nil.
+2. Otherwise, if `HasParent()`, recurse with `c.parent.getErr(def)`, preserving the fallback. `HasParent()` checks `c.parent != nil` (`command.go:1631–1634`).
+3. If no parent remains, return `def`, which is `os.Stderr`.
+
+Thus, the nearest command in the hierarchy with a non-nil error writer wins. `SetErr(newErr)` assigns `c.errWriter = newErr` (`command.go:294–298`); setting it to nil permits parent lookup before falling back to stderr.

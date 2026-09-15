@@ -1,0 +1,11 @@
+It panics with:
+
+`group id '<GroupID>' is not defined for subcommand '<full command path>'`
+
+Evidence: `command.go:1169-1181`, in `(*Command).checkCommandGroups`, checks `sub.GroupID != "" && !c.ContainsGroup(sub.GroupID)` and calls:
+
+```go
+panic(fmt.Sprintf("group id '%s' is not defined for subcommand '%s'", sub.GroupID, sub.CommandPath()))
+```
+
+`CommandPath()` builds the full parent-and-subcommand path (`command.go:1424-1434`).

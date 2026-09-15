@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-17e5-7141-83a4-7bb855d2d8b3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A child command recursively inherits its parent’s input reader. In `command.go:413-422`, `getIn` returns `c.inReader` if set; otherwise, when `c.HasParent()` is true, it calls `c.parent.getIn(def)`. If no ancestor has a reader, it returns the default—`os.Stdin` when invoked through `InOrStdin` (`command.go:388-392`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16285,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":92,"reasoning_output_tokens":0}}

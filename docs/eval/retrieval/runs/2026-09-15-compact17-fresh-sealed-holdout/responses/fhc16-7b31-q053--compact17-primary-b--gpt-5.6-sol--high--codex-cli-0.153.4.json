@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q053",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ef79a8cf3f7b5bc141a8ed7b111d4f9bc58f499f61e47042f2f2eb11efc3393d",
+  "bundle_sha256": "583285379293c127033459c5068407e377a3aac518914340b8ea5d02751d3f06",
+  "prompt_sha256": "1e0f5b2a5bc792cd8ff9ab314ae714914f06097e2fd825d4e3e1df03022fb840",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response only shows the `GenZshCompletionFile` symbol at `zsh_completions.go:25` and contains no documentation or snippets describing repeated-flag completion or the equals form.",
+  "responded_at": "2026-09-15T18:42:07Z",
+  "sha256": "eb948b2d844d2afb8017deceb59f617c6d06bb8d8753abe430878275d0870580"
+}

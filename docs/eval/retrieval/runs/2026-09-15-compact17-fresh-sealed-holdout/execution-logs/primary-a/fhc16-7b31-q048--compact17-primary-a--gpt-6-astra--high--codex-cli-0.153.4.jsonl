@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a661-8350-7813-901f-dbdf95fcbe84"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Configure them in the **root command’s `CompletionOptions` field**, as documented in `site/content/completions/_index.md:92–116`.\n\nThe four documented controls, each set to `true`, are:\n\n- `DisableDefaultCmd`: prevent creation of the default `completion` command.\n- `HiddenDefaultCmd`: hide the default `completion` command.\n- `DisableNoDescFlag`: omit the `--no-descriptions` flag from completion subcommands.\n- `DisableDescriptions`: disable completion descriptions entirely.\n\nThese fields and their meanings are also defined in the `CompletionOptions` struct in `completions.go:103–116`."}}
+{"type":"turn.completed","usage":{"input_tokens":17332,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":135,"reasoning_output_tokens":0}}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q044",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ed0c8298cde1339a096e18ca182d2b23e45bbcabdf23252ff93da70e73f9a9cc",
+  "bundle_sha256": "c8b519224cfd4bc270f709628ce0c4507cc8ec16fc6694c8043204e376b42f54",
+  "prompt_sha256": "9d19cdb509a5e25b487a4190297ba6e962c6595ff02a3703434fe62dfb8c2395",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`GenYamlCustom` builds a `cmdDoc` in this order:\n\n1. **Initialize and populate metadata.** It initializes the default help command and flag, sets `Name` to `cmd.CommandPath()`, and passes `cmd.Short` and `cmd.Long` through `forceMultiLine` for `Synopsis` and `Description`. It sets `Usage` only if the command is runnable, and `Example` only if nonempty. (`doc/yaml_docs.go:93–109`)\n\n2. **Populate options.** It passes nonempty `cmd.NonInheritedFlags()` to `genFlagResult` for `Options`, then does the same with `cmd.InheritedFlags()` for `InheritedOptions`. (`doc/yaml_docs.go:111–118`) The supplied `InheritedFlags` implementation collects parent persistent flags while excluding names already present locally or in the inherited set. (`command.go:1694–1718`)\n\n3. **Build SEE ALSO.** If `hasSeeAlso(cmd)` returns true, it adds the parent first, if present, formatted as `CommandPath() + \" - \" + Short`. It sorts children using `byName`, skips unavailable commands and additional help topics, and appends the remaining children in the same format. The resulting string slice becomes `yamlDoc.SeeAlso`. (`doc/yaml_docs.go:120–135`)\n\n4. **Serialize.** It calls `yaml.Marshal(\u0026yamlDoc)` and writes the resulting bytes to `w`. The `linkHandler` parameter is never used in the shown function. (`doc/yaml_docs.go:93,137–147`)\n\nThe response does not show the implementations of `forceMultiLine`, `genFlagResult`, or the body of `hasSeeAlso`, so their internal transformations and gating rules cannot be traced further.",
+  "responded_at": "2026-09-15T18:42:58Z",
+  "sha256": "8d9b78d8ce89212555975e1eca83be0c7a1b2ccb069abab447ba35f21df70f4a"
+}

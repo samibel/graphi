@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q013",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "cfa5a185dac5df42b53c946ae5b86410beb97790cd23d97d1c019cb02fda2ec7",
+  "bundle_sha256": "4fb61f59189d1895883ee83557d6146d1dab211b49317f3459a2f330164ef31a",
+  "prompt_sha256": "7b4ed25c37369b4170725966ce859f7e28fb80aa53930b14dd90000ccde6ad15",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "None. On non-Windows builds, [`command_notwin.go:19-20`](command_notwin.go:19) declares `preExecHookFn` as a nil function variable:\n\n```go\nvar preExecHookFn func(*Command)\n```\n\nTherefore, the nil check in [`command.go:1062-1065`](command.go:1062) skips the hook.",
+  "responded_at": "2026-09-15T18:36:27Z",
+  "sha256": "288da59f0cc433e6a3aaad27835eec0104eafabca096aabf3a66c335b7540805"
+}

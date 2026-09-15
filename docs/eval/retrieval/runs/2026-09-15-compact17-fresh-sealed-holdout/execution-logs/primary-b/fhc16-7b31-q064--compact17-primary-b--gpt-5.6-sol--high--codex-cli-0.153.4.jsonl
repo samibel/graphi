@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a661-5504-7d81-8e95-4e75f38b5daa"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. In `command.go:718-722`, `isFlagArg` returns true whenever `len(arg) >= 3 && arg[0:2] == \"--\"`. Since `---verbose` begins with `--` and is at least three characters long, it is accepted as a flag argument."}}
+{"type":"turn.completed","usage":{"input_tokens":16557,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

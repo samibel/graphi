@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q035",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "5c37933dea9aeb1d00abc19a76bfeeeea3f477289fb1b61b55eafe69550e0a43",
+  "bundle_sha256": "8cd78759aae022323bbd1aca931cd657affa6dec98afcd936e4bf20dc2858d19",
+  "prompt_sha256": "9c4083918d8074fac12164d18004c9dddef7a8086a555ccc8e369b48231e87a0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`InheritedFlags()` builds its result in four steps:\n\n1. **Merge persistent flags.** It calls `mergePersistentFlags()`, which updates `c.parentsPflags`, then adds the current command’s persistent flags and parent persistent flags to `c.Flags()` (`command.go:1697`, `1849–1853`).\n2. **Prepare the result.** It lazily creates `c.iflags` with `flag.ContinueOnError`, sets its output buffer, and applies `c.globNormFunc` when present (`command.go:1699–1709`).\n3. **Identify local flags.** `local := c.LocalFlags()` builds a set from `c.Flags()` and `c.PersistentFlags()`. Its condition `f != c.parentsPflags.Lookup(f.Name)` excludes the actual parent flag object while allowing a distinct local flag with the same name (`command.go:1684–1691`, `1707`).\n4. **Add only unshadowed parent flags.** It visits `c.parentsPflags` and adds a flag only when both `c.iflags.Lookup(f.Name) == nil` and `local.Lookup(f.Name) == nil`. The first check prevents duplicates; the second excludes parent flags whose names are already local. It then returns `c.iflags` (`command.go:1712–1717`).",
+  "responded_at": "2026-09-15T18:40:32Z",
+  "sha256": "154a29ec4bd3932d765d98f59204c023879bc8ae3e25113f952e7fdf54846719"
+}

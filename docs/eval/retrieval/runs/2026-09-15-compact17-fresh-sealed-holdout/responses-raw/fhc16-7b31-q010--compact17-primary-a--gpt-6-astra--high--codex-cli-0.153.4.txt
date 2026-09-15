@@ -1,0 +1,1 @@
+It returns the input unchanged if the requested suffix occurs anywhere in it. In `cobra.go:167–169`, `appendIfNotPresent` checks `strings.Contains(s, stringToAppend)` and immediately executes `return s`, so the match need not be at the end.

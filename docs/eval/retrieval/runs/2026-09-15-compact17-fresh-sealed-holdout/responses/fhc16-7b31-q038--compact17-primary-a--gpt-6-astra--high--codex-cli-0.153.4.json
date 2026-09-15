@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q038",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "3541e8d4355250cf2985cfcc78bb30239da14c272662b5f538261fd32eb7fd3a",
+  "bundle_sha256": "e30b72f8cd6b820faaf75c22b777ea74edf60a213e52bad0b387fab6cc978cb0",
+  "prompt_sha256": "233259ebc3867c96f97aa5bdd79de91e2a8b9f1ccd4ffb250e2b45930b423d28",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`UseLine()` builds the usage string in three steps:\n\n1. **Combine parent path and Use text:** If `c.HasParent()`, it uses `c.parent.CommandPath() + \" \" + c.Use`; otherwise, it uses `c.Use` alone (`command.go:1438–1443`). `HasParent()` means `c.parent != nil` (`command.go:1632–1634`).\n2. **Build the parent path recursively:** `CommandPath()` joins ancestor paths and command names with spaces. At the root, it uses `CommandDisplayNameAnnotation` if present, otherwise `c.Name()` (`command.go:1426–1434`).\n3. **Optionally append flags:** If `DisableFlagsInUseLine` is true, it returns immediately. Otherwise, it appends `\" [flags]\"` only when `c.HasAvailableFlags()` is true and the assembled string does not already contain `\"[flags]\"` (`command.go:1444–1451`). Thus, disabling insertion does not remove an existing marker in `Use`.\n\n`HasAvailableFlags()` delegates to `c.Flags().HasAvailableFlags()`; its comment describes available flags as neither hidden nor deprecated (`command.go:1771–1775`).",
+  "responded_at": "2026-09-15T18:41:19Z",
+  "sha256": "35c9216cec2fd7cc86222f08ac7e0d7831d1f450889e12b0e3fe92047d7ec77b"
+}

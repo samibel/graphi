@@ -1,0 +1,1 @@
+`ArgAliases` are offered only when noun completion finds no matches among subcommands or `ValidArgs` (`site/content/completions/_index.md`, “Aliases for nouns,” lines 154–169).

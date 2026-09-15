@@ -1,0 +1,10 @@
+`InheritedFlags` builds the result as follows:
+
+1. It calls `c.mergePersistentFlags()`, which refreshes `c.parentsPflags` and merges both the command’s persistent flags and its parents’ persistent flags into `c.Flags()` (`command.go:1698`, `command.go:1846-1853`).
+2. It lazily creates `c.iflags`, using the command name, `flag.ContinueOnError`, and the shared error buffer (`command.go:1700-1706`).
+3. It obtains `local := c.LocalFlags()` and applies the global normalization function when configured (`command.go:1709-1712`).
+4. It visits every flag in `c.parentsPflags`, adding a flag only when it is absent from both the inherited result and the local set:
+   `c.iflags.Lookup(f.Name) == nil && local.Lookup(f.Name) == nil`
+   (`command.go:1714-1718`).
+
+The `local.Lookup(f.Name) == nil` condition is what prevents an inherited parent flag from overriding a same-named local flag. `LocalFlags` specifically includes flags that are not the identical parent flag object—including a local flag that shadows a parent flag—using `f != c.parentsPflags.Lookup(f.Name)` (`command.go:1682-1689`).

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Does Groups return a defensive copy of the command-group slice?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 27d72f931d61; read in order (303/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1330,"end_line":1334,"text":"\n// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}"},{"path":"command.go","start_line":1345,"end_line":1359,"text":"\n// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":1169,"end_line":1181,"text":"\n// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {\n\t\t// if Group is not defined let the developer know right away\n\t\tif sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID) {\n\t\t\tpanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n\t\t}\n\n\t\tsub.checkCommandGroups()\n\t}\n}"},{"path":"site/content/user_guide.md","start_line":533,"end_line":535,"text":"### Grouping commands in help\n\nCobra supports grouping of available commands in the help output.  To group commands, each group must be explicitly"},{"path":"command.go","start_line":1424,"end_line":1434,"text":"\n// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":73,"end_line":74,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string"},{"path":"command.go","start_line":1059,"end_line":1067,"text":"\t\treturn c.Root().ExecuteC()\n\t}\n\n\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding"},{"path":"command.go","start_line":1292,"end_line":1300,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {\n\t// do not sort commands if it already sorted or sorting was disabled\n\tif EnableCommandSorting && !c.commandsAreSorted {\n\t\tsort.Sort(commandSorterByName(c.commands))\n\t\tc.commandsAreSorted = true\n\t}\n\treturn c.commands\n}"}],"provenance":{"input_sha256":"6993604711fb9f487f5d0a56406896166238e6f1578eebf44efd536674d442f8","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

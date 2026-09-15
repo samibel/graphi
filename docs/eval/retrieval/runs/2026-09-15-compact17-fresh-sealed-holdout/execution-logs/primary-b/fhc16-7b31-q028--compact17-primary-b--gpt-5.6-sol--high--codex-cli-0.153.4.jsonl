@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-ab73-7c91-8b42-ebf28ed0fda1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`VisitParents` invokes the callback from the nearest parent upward to the root.\n\nIn `command.go:851-858`, it first calls `fn(c.Parent())`, then recursively calls `c.Parent().VisitParents(fn)`. Thus, for `child → parent → grandparent → root`, the callback order is `parent`, `grandparent`, `root`."}}
+{"type":"turn.completed","usage":{"input_tokens":16272,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

@@ -1,0 +1,7 @@
+Call `SetHelpCommand` on the application’s command, passing your custom `*Command`:
+
+```go
+rootCmd.SetHelpCommand(customHelpCmd)
+```
+
+The follow-up read of `site/content/user_guide.md:543-548` explicitly says you can provide your own help command and lists `cmd.SetHelpCommand(cmd *Command)`.

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In command_notwin.go, what pre-execution hook is installed on non-Windows builds?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query cfa5a185dac5; read in order (231/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_notwin.go","start_line":19,"end_line":20,"text":"\nvar preExecHookFn func(*Command)"},{"path":"site/content/user_guide.md","start_line":605,"end_line":607,"text":"## PreRun and PostRun Hooks\n\nIt is possible to run functions before or after the main `Run` function of your command. The `PersistentPreRun` and `PreRun` functions will be executed before `Run`. `PersistentPostRun` and `PostRun` will be executed after `Run`.  The `Persistent*Run` functions will be inherited by children if they do not declare their own.  The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared.  These functions are run in the following order:"},{"path":"command.go","start_line":1301,"end_line":1304,"text":"\n// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {"},{"path":"command_win.go","start_line":27,"end_line":28,"text":"\nvar preExecHookFn = preExecHook"},{"path":"cobra.go","start_line":64,"end_line":65,"text":"// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed."},{"path":"command.go","start_line":1062,"end_line":1067,"text":"\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding"},{"path":"command.go","start_line":55,"end_line":56,"text":"\t//   ... indicates that you can specify multiple values for the previous argument.\n\t//   |   indicates mutually exclusive information. You can use the argument to the left of the separator or the"},{"path":"completions.go","start_line":719,"end_line":721,"text":"If it is not installed already, you can install it via your OS's package manager.\n\nTo load completions in your current shell session:"},{"path":"bash_completions.go","start_line":699,"end_line":701,"text":"func nonCompletableFlag(flag *pflag.Flag) bool {\n\treturn flag.Hidden || len(flag.Deprecated) > 0\n}"}],"provenance":{"input_sha256":"f8d74276ba9c84ee48e9838293d2643511a32103bd859d6e4f6c60061627fb8e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65e-1e00-7d90-afd6-0c4819b9037f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go:233–238`, `CheckErr(msg interface{})` checks `if msg != nil`:\n\n- **Nil:** Does nothing.\n- **Non-nil:** Prints `Error:` followed by the value and a newline to standard error using `fmt.Fprintln(os.Stderr, \"Error:\", msg)`, then terminates with exit code 1 using `os.Exit(1)`."}}
+{"type":"turn.completed","usage":{"input_tokens":17320,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":0}}

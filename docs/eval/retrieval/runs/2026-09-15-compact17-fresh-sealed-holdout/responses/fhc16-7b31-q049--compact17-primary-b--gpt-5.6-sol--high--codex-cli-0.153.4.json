@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q049",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "a0e9703aaab48f461de257c56513303e3c3ef98540bd62f25c5b815945f03323",
+  "bundle_sha256": "cc7b61de04714ee81d89d6eb804cd0ec8ed5640340923b9902e817ab1116d310",
+  "prompt_sha256": "4236e6e7c068d6eb00b0babac9d65dc7f6bec25238fa56d7e439a00844bf13b6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response lacks the `Command` field definitions or validation logic stating whether `ValidArgs` and `ValidArgsFunction` are mutually exclusive; `zsh_completions.go:62-63` merely says “ValidArgs … or ValidArgsFunction.”",
+  "responded_at": "2026-09-15T18:41:41Z",
+  "sha256": "bda79a3c5262b3e6a55eb0b4f492304e01979157598a2407fc5d5cdf1edf7dfb"
+}

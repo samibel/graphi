@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q015",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "ab86a68c5918b3c984f9fa99910587b671dc2e49d80aaff97381e0cf17fab444",
+  "bundle_sha256": "6b802bb704dfe52a1c7244fef18b530c2830c0a777b90e9ecb3f256102623d37",
+  "prompt_sha256": "3528f4c7415e24ede691f586919585107ef1d4184ad41738927f02387834d0af",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The `fish_completions.go:24–27` snippet shows `nameForVar := name` and says variables should not contain `-` or `:`, but omits the code that sanitizes those characters.",
+  "responded_at": "2026-09-15T18:37:11Z",
+  "sha256": "4ef4f4cd9532e75f69c235b6498b59aa62b4babc67565330abc59a18471d79e1"
+}

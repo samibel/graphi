@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q001",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "f1ab8d2168a4aa51ad6833fc01dd16850ac314d176f6d77317043e6fe6b66d18",
+  "bundle_sha256": "0b4d6d1efaa1c53c0b8533e02c963af945e39ca411026858af96f2f99d74363e",
+  "prompt_sha256": "b23ebd32968467fe00ca9244e892a28c0378537b1574f618198acb89f4111f5d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`flagCompError.Error()` constructs:\n\n```text\nSubcommand '\u003csubCommand\u003e' does not support flag '\u003cflagName\u003e'\n```\n\nIn `completions.go:50–52`, its return statement is:\n```go\nreturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n```\n\nThere is no trailing period or newline.",
+  "responded_at": "2026-09-15T18:35:11Z",
+  "sha256": "549bbe81e8947ae90571f28c7102dcef2f4f8976bf30969e09c47f133d4593ad"
+}

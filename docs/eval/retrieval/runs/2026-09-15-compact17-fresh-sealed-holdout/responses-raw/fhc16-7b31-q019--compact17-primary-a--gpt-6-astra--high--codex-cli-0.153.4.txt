@@ -1,0 +1,4 @@
+In `doc/man_docs.go`, `manPrintFlags`:
+
+- Renders string defaults with `=%q`, which quotes and escapes `flag.DefValue`; other types use `=%s` (lines 173–178, 183).
+- When `flag.NoOptDefVal` is nonempty, wraps the entire `=value` portion in brackets, producing forms like `**--name**[="default"]`. Otherwise, it renders `**--name**="default"` (lines 170–181).

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q012",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "d109388156d419b2b2ac0fc2401bf2fcf3fe02ae0c3de6da54063afa8a255a5b",
+  "bundle_sha256": "5d03ae88343606b0ec9aa8be245fe192610f82072656211caed85e8dd84d7a46",
+  "prompt_sha256": "d94b7bfd61eecd2d531dc25fa46d06dec8adb4df42bd98a199cb8eba6e5b4515",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Generated scripts require **PowerShell 5.0 or above**. The supplied `site/content/completions/_index.md:529` explicitly states: “Users need PowerShell version 5.0 or above.”",
+  "responded_at": "2026-09-15T18:36:48Z",
+  "sha256": "32e4a69a4372a67752f963c256d18c80c7da21b192952c34d04ceab8914ca5ae"
+}

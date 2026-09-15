@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a663-84ea-7383-9b03-f6346627d846"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `isFlagArg` returns `true` for `---verbose`: in `command.go`, lines 719–722, its first condition is `len(arg) >= 3 && arg[0:2] == \"--\"`. The token satisfies both checks; there is no check rejecting a third hyphen."}}
+{"type":"turn.completed","usage":{"input_tokens":17322,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":69,"reasoning_output_tokens":0}}

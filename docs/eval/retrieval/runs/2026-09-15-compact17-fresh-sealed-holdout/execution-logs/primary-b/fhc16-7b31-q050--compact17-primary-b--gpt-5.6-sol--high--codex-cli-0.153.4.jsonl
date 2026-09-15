@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65f-f7a6-75e0-8167-caa360ccf71d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ArgAliases` are offered only when noun completion finds no matches among subcommands or `ValidArgs` (`site/content/completions/_index.md`, “Aliases for nouns,” lines 154–169)."}}
+{"type":"turn.completed","usage":{"input_tokens":17815,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":46,"reasoning_output_tokens":0}}

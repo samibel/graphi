@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a660-c537-7e43-923d-d68cb7210271"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. `HasAvailableFlags` excludes hidden and deprecated flags. In `command.go:1770-1775`, its comment explicitly says it checks for flags “which are not hidden or deprecated,” and the method delegates to `c.Flags().HasAvailableFlags()`."}}
+{"type":"turn.completed","usage":{"input_tokens":16658,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":58,"reasoning_output_tokens":0}}

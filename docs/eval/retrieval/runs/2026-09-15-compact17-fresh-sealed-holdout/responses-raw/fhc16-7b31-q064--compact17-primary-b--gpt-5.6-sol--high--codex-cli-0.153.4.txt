@@ -1,0 +1,1 @@
+No. In `command.go:718-722`, `isFlagArg` returns true whenever `len(arg) >= 3 && arg[0:2] == "--"`. Since `---verbose` begins with `--` and is at least three characters long, it is accepted as a flag argument.

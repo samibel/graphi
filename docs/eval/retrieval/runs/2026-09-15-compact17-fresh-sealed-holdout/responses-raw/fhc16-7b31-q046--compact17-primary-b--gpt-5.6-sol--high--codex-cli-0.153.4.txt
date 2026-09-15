@@ -1,0 +1,1 @@
+An application-defined `completion` command takes precedence over Cobra’s default completion command. Evidence: `site/content/completions/_index.md:16-17` says you can “provide your own, which will take precedence over the default one,” preserving backward compatibility.

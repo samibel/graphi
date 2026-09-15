@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-5317-7711-a5ad-96b0e9cbd9f5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`helpOrVersionFlagPresent(cmd)` returns `true` if **either** the `\"version\"` or `\"help\"` flag in `cmd.Flags()` satisfies all three conditions:\n\n- `Lookup` returns a non-`nil` flag.\n- `len(flag.Annotations[FlagSetByCobraAnnotation]) > 0`.\n- `flag.Changed` is `true`.\n\nThe `\"version\"` check occurs first (`completions.go:523–526`), followed by `\"help\"` (`completions.go:527–530`). If neither qualifies, it returns `false` (`completions.go:531`). It does not check the flag’s value."}}
+{"type":"turn.completed","usage":{"input_tokens":17266,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":139,"reasoning_output_tokens":0}}

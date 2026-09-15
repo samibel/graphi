@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q052",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "3d6a0d3a98e3c31b15b71ac095479a7c38d515e5a01d06bead7fef910d0afe4c",
+  "bundle_sha256": "b4781a8c08a4a51f34c8b060bf3b2daf41a0c76ac55b80e1e62c70ddcfafc7ef",
+  "prompt_sha256": "e53ad8e916b4c029598348ee2d5fd8c58351cf35b9a7348ab5746d9f998f60d9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response does not document Zsh noun file completion defaults or the per-argument mechanism for disabling them.",
+  "responded_at": "2026-09-15T18:42:01Z",
+  "sha256": "4aadfa713e100ac3f9accb402e567687946d1dc707d3fb1eb7964721ec256652"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q005",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "263b1a3ec50aff26631a1a1b881ed2ea2671d807f76b36df25f017342ece9946",
+  "bundle_sha256": "6ad66e5af145082119fdc6bea9305325939eaa9eb35ec131bf1cbfe27b8b5516",
+  "prompt_sha256": "007c6a1f05bba002465d837bd051badf03ee483d77e72124cf6aee5f2520754d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`helpOrVersionFlagPresent(cmd)` returns `true` if **either** the `\"version\"` or `\"help\"` flag in `cmd.Flags()` satisfies all three conditions:\n\n- `Lookup` returns a non-`nil` flag.\n- `len(flag.Annotations[FlagSetByCobraAnnotation]) \u003e 0`.\n- `flag.Changed` is `true`.\n\nThe `\"version\"` check occurs first (`completions.go:523–526`), followed by `\"help\"` (`completions.go:527–530`). If neither qualifies, it returns `false` (`completions.go:531`). It does not check the flag’s value.",
+  "responded_at": "2026-09-15T18:35:43Z",
+  "sha256": "53f7f416cea1c9ef4e0a6a67878794d3a04fdf1b6c4d1fd5285b88ac046ed638"
+}

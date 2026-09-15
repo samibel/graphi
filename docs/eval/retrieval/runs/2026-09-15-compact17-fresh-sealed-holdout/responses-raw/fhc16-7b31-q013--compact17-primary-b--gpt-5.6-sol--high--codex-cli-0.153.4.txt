@@ -1,0 +1,7 @@
+None. On non-Windows builds, [`command_notwin.go:19-20`](command_notwin.go:19) declares `preExecHookFn` as a nil function variable:
+
+```go
+var preExecHookFn func(*Command)
+```
+
+Therefore, the nil check in [`command.go:1062-1065`](command.go:1062) skips the hook.

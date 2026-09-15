@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a660-45fb-7292-ae1d-f17052e15774"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response only shows the `GenZshCompletionFile` symbol at `zsh_completions.go:25` and contains no documentation or snippets describing repeated-flag completion or the equals form."}}
+{"type":"turn.completed","usage":{"input_tokens":16692,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":48,"reasoning_output_tokens":0}}

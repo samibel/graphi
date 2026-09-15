@@ -1,0 +1,1 @@
+Generated scripts require **PowerShell 5.0 or later**. Evidence: `site/content/completions/_index.md`, lines 529–531: “Users need PowerShell version 5.0 or above.”

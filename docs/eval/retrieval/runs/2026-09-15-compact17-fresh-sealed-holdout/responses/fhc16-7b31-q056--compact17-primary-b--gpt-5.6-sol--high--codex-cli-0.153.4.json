@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q056",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "0bafc3253977a5cebc9e2bd4ba4e21487c7bb2f471657fc9e17430ba8f0c92cc",
+  "bundle_sha256": "665794a0d8fc0497c7d652102889ca582d72f396a29b74344420798a018507f1",
+  "prompt_sha256": "7e61e1d518e3dfb4f2d1f63fed79a04c15caf6f3a26aca63e62d5bebc1512ec0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It returns `(nil, false)`. In `completions.go:148–150`, `GetFlagCompletionFunc` calls `c.Flag(flagName)` and, when that returns `nil`, executes `return nil, false`.",
+  "responded_at": "2026-09-15T18:42:26Z",
+  "sha256": "fdaf1a4f494ac00e7b1be64b7e9afb0c96bbf033ca2ea468e99fa7eb2f0d55c7"
+}
