@@ -3,6 +3,7 @@ package tokenizer
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
@@ -19,11 +20,14 @@ import (
 	"unicode/utf8"
 )
 
-// embeddedVocabulary is the same governed artifact used by offline evaluator
-// tests. Embedding makes the production task_context wire ceiling executable
-// without a cache, network access, cgo, or an estimated token count.
+// embeddedVocabulary is a deterministic gzip representation of the governed
+// artifact used by offline evaluator tests. LoadEmbedded verifies the
+// decompressed bytes against PinnedVocabularySHA256 before parsing them.
+// Compression keeps the exact production token counter within the shipped
+// binary-size budget without adding a cache, network access, cgo, or an
+// estimated token count.
 //
-//go:embed testdata/artifact/cl100k_base.tiktoken
+//go:embed testdata/artifact/cl100k_base.tiktoken.gz
 var embeddedVocabulary []byte
 
 var (
@@ -64,13 +68,24 @@ type Tokenizer struct {
 // and share the exact parser and counting implementation.
 func LoadEmbedded() (*Tokenizer, error) {
 	embeddedOnce.Do(func() {
-		digest := sha256.Sum256(embeddedVocabulary)
+		compressedDigest := sha256.Sum256(embeddedVocabulary)
+		compressedActual := hex.EncodeToString(compressedDigest[:])
+		if compressedActual != EmbeddedVocabularyGzipSHA256 {
+			embeddedErr = &PinMismatchError{File: EmbeddedVocabularyFile, Path: "embedded", Expected: EmbeddedVocabularyGzipSHA256, Actual: compressedActual}
+			return
+		}
+		raw, err := decompressEmbeddedVocabulary()
+		if err != nil {
+			embeddedErr = err
+			return
+		}
+		digest := sha256.Sum256(raw)
 		actual := hex.EncodeToString(digest[:])
 		if actual != PinnedVocabularySHA256 {
 			embeddedErr = &PinMismatchError{File: PinnedVocabularyFile, Path: "embedded", Expected: PinnedVocabularySHA256, Actual: actual}
 			return
 		}
-		ranks, err := parseVocabulary(bytes.NewReader(embeddedVocabulary))
+		ranks, err := parseVocabulary(bytes.NewReader(raw))
 		if err != nil {
 			embeddedErr = fmt.Errorf("eval tokenizer: parse embedded verified %s: %w", PinnedVocabularyFile, err)
 			return
@@ -78,6 +93,25 @@ func LoadEmbedded() (*Tokenizer, error) {
 		embeddedTokenizer = &Tokenizer{ranks: ranks}
 	})
 	return embeddedTokenizer, embeddedErr
+}
+
+func decompressEmbeddedVocabulary() ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(embeddedVocabulary))
+	if err != nil {
+		return nil, fmt.Errorf("eval tokenizer: open embedded %s gzip: %w", PinnedVocabularyFile, err)
+	}
+	raw, readErr := io.ReadAll(io.LimitReader(reader, maxVocabularyBytes+1))
+	closeErr := reader.Close()
+	if readErr != nil {
+		return nil, fmt.Errorf("eval tokenizer: decompress embedded %s: %w", PinnedVocabularyFile, readErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("eval tokenizer: close embedded %s gzip: %w", PinnedVocabularyFile, closeErr)
+	}
+	if len(raw) > maxVocabularyBytes {
+		return nil, fmt.Errorf("eval tokenizer: decompressed embedded %s exceeds %d bytes", PinnedVocabularyFile, maxVocabularyBytes)
+	}
+	return raw, nil
 }
 
 // LoadPinned resolves the immutable local artifact directory and loads it. It

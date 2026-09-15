@@ -1,6 +1,7 @@
 package tokenizer
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -11,6 +12,20 @@ import (
 	"strings"
 	"testing"
 )
+
+func TestEmbeddedVocabularyUsesBoundedCompressedBytes(t *testing.T) {
+	const maxEmbeddedBytes = 1 << 20
+	if got := len(embeddedVocabulary); got > maxEmbeddedBytes {
+		t.Fatalf("embedded tokenizer vocabulary = %d bytes, want <= %d so the real-token ceiling does not break the shipped binary-size gate", got, maxEmbeddedBytes)
+	}
+	if !bytes.HasPrefix(embeddedVocabulary, []byte{0x1f, 0x8b}) {
+		t.Fatal("embedded tokenizer vocabulary is not a deterministic gzip stream")
+	}
+	sum := sha256.Sum256(embeddedVocabulary)
+	if got := hex.EncodeToString(sum[:]); got != EmbeddedVocabularyGzipSHA256 {
+		t.Fatalf("embedded gzip SHA-256 = %s, want %s", got, EmbeddedVocabularyGzipSHA256)
+	}
+}
 
 func TestGoldenTokenVectors_DifferFromWhitespace(t *testing.T) {
 	tok := loadRealArtifact(t)
