@@ -86,6 +86,38 @@ func TestNaturalLanguageSelectionFollowsRetrievalOrder(t *testing.T) {
 	}
 }
 
+// TestNamedNaturalLanguageLeadReclaimsCompletedLowerCitations pins the
+// depth-first contract for an explicitly named implementation. The lead fits
+// whole, but the anchor lines of five lower-ranked, already-complete helpers
+// initially consume enough budget to cut it. Those helpers must not become
+// undeletable merely because their declarations are one line long.
+func TestNamedNaturalLanguageLeadReclaimsCompletedLowerCitations(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	lead := longBody("Execute", 65, 0, "")
+	nlEvidence(&evidence, &items, "lead", "execute.go", "p.Execute", "function", 1, lead, 1)
+	for i := 0; i < 5; i++ {
+		params := make([]string, 12)
+		for j := range params {
+			params[j] = fmt.Sprintf("arg%d int", j)
+		}
+		text := fmt.Sprintf("func Helper%d(%s) {}", i, strings.Join(params, ", "))
+		nlEvidence(&evidence, &items, fmt.Sprintf("helper-%d", i), "helpers.go", fmt.Sprintf("p.Helper%d", i), "function", 10+i, text, i+2)
+	}
+
+	sources, _, err := compactTaskContextSelect("how does Execute coordinate the workflow", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEnd := strings.Count(lead, "\n") + 1
+	for _, source := range sources {
+		if source.Path == "execute.go" && source.Start == 1 && source.End == wantEnd {
+			return
+		}
+	}
+	t.Fatalf("named lead was cut despite fitting the budget: want execute.go:1-%d, sources=%+v", wantEnd, sources)
+}
+
 // TestNaturalLanguageSelectionKeepsLexicalFallback: when only the query-only
 // grep discovery found the answer, that region must still be emitted. This
 // is the recall path the committed development split depends on.
@@ -140,4 +172,160 @@ func TestNaturalLanguageSelectionDeliversTheDocumentationSection(t *testing.T) {
 		}
 	}
 	t.Fatalf("the documentation paragraph naming --no-descriptions (line %d) was not delivered: %+v", target, sources)
+}
+
+// TestNaturalLanguageLeadCompletesAffordableMarkdownSection keeps the source
+// budget, rather than a smaller arbitrary unit limit, as the final authority
+// for a documentation lead. A coherent section just over 230 words is still
+// cheaper and more useful than returning only its middle.
+func TestNaturalLanguageLeadCompletesAffordableMarkdownSection(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	var section strings.Builder
+	section.WriteString("### Completion descriptions\n")
+	for i := 0; i < 58; i++ {
+		fmt.Fprintf(&section, "context filler words %d\n", i)
+	}
+	section.WriteString("disable completion descriptions here")
+	text := section.String()
+	nlEvidence(&evidence, &items, "docs", "completion.md", "", "", 10, text, 1)
+	for i := 0; i < 5; i++ {
+		params := make([]string, 10)
+		for j := range params {
+			params[j] = fmt.Sprintf("arg%d int", j)
+		}
+		helper := fmt.Sprintf("func Helper%d(%s) {}", i, strings.Join(params, ", "))
+		nlEvidence(&evidence, &items, fmt.Sprintf("helper-%d", i), "helpers.go", fmt.Sprintf("p.Helper%d", i), "function", 100+i, helper, i+2)
+	}
+
+	sources, _, err := compactTaskContextSelect("how do I disable completion descriptions", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantEnd := 10 + strings.Count(text, "\n")
+	if len(sources) == 0 || sources[0].Start != 10 || sources[0].End != wantEnd {
+		t.Fatalf("affordable Markdown lead was fragmented: want 10-%d, sources=%+v", wantEnd, sources)
+	}
+}
+
+func TestNaturalLanguageDedupePrefersHydratedMarkdownSection(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	raw := "intro zero\nintro one\n### Usage template\nProvide your own usage template.\n\n```go\ncmd.SetUsageTemplate(s)"
+	hydrated := "### Usage template\nProvide your own usage template.\n\n```go\ncmd.SetUsageTemplate(s)\n```\n"
+	nlEvidence(&evidence, &items, "raw", "guide.md", "content.Usage", "type", 1, raw, 1)
+	nlEvidence(&evidence, &items, "hydrated-001", "guide.md", "content.Usage", "type", 3, hydrated, 1)
+
+	sources, _, err := compactTaskContextSelect("how do I provide my own usage template", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source.Path == "guide.md" && source.Start == 3 && source.End == 9 {
+			return
+		}
+	}
+	t.Fatalf("hydrated Markdown section lost to overlapping raw window: %+v", sources)
+}
+
+func TestNaturalLanguageSeedCapKeepsDirectCallee(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	for i := 0; i < 4; i++ {
+		nlEvidence(&evidence, &items, fmt.Sprintf("generic-%d", i), fmt.Sprintf("generic%d.go", i), fmt.Sprintf("p.Generic%d", i), "function", 1,
+			fmt.Sprintf("func Generic%d() { work() }", i), i+1)
+	}
+	nlEvidence(&evidence, &items, "caller", "chain.go", "p.Flag", "method", 10,
+		"func Flag() {\n\tpersistentFlag()\n}", 5)
+	nlEvidence(&evidence, &items, "distractor", "distractor.go", "p.Distractor", "function", 1,
+		"func Distractor() { work() }", 6)
+	nlEvidence(&evidence, &items, "callee", "chain.go", "p.persistentFlag", "method", 13,
+		"\nfunc persistentFlag() {\n\tfindParent()\n}", 7)
+
+	sources, _, err := compactTaskContextSelect("how does flag lookup climb the parent chain", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source.Path == "chain.go" && source.Start == 10 && source.End == 16 {
+			return
+		}
+	}
+	t.Fatalf("direct caller/callee chain was cut at the seed cap: %+v", sources)
+}
+
+func TestSpecificRetrievalSeedCanLeadGenericSeed(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	nlEvidence(&evidence, &items, "generic", "guide.md", "content.Generating", "type", 1,
+		"## Documentation\nGeneral overview.", 1)
+	nlEvidence(&evidence, &items, "specific", "rest.md", "content.Customize", "type", 10,
+		"## Customize ReST links\nUse linkHandler to customize generated ReST documentation links.", 5)
+
+	sources, _, err := compactTaskContextSelect("how do I customize links in generated ReST documentation", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sources) == 0 || sources[0].Path != "rest.md" {
+		t.Fatalf("specific retrieval seed did not lead generic documentation: %+v", sources)
+	}
+}
+
+func TestNaturalLanguageGrowthFollowsNextQuerySignal(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	var body strings.Builder
+	body.WriteString("func workflow() {\n")
+	for i := 0; i < 45; i++ {
+		fmt.Fprintf(&body, "\tbefore%d := prepare(value)\n", i)
+	}
+	body.WriteString("\tuse(sharedMarker)\n")
+	for i := 0; i < 45; i++ {
+		fmt.Fprintf(&body, "\tmiddle%d := prepare(value)\n", i)
+	}
+	body.WriteString("\tfinish(sharedMarker)\n}")
+	nlEvidence(&evidence, &items, "lead", "workflow.go", "p.workflow", "function", 1, body.String(), 1)
+
+	sources, _, err := compactTaskContextSelect("how does sharedMarker connect both stages", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 1 + 1 + 45 + 1 + 45 + 1
+	for _, source := range sources {
+		if source.Path == "workflow.go" && source.Start <= want && source.End >= want {
+			return
+		}
+	}
+	t.Fatalf("growth stopped before the next query signal at line %d: %+v", want, sources)
+}
+
+func TestNamedLongFunctionReclaimsItsDepthQuota(t *testing.T) {
+	var evidence []contract.Evidence
+	var items []contract.Item
+	nlEvidence(&evidence, &items, "lead", "completion.go", "p.checkIfFlagCompletion", "function", 1,
+		longBody("checkIfFlagCompletion", 150, 0, ""), 1)
+	for i := 0; i < 5; i++ {
+		nlEvidence(&evidence, &items, fmt.Sprintf("helper-%d", i), fmt.Sprintf("helper%d.go", i), fmt.Sprintf("p.Helper%d", i), "function", 10,
+			longBody(fmt.Sprintf("Helper%d", i), 25, 0, ""), i+2)
+	}
+
+	sources, _, err := compactTaskContextSelect("how does checkIfFlagCompletion split the current flag value", evidence, items, 325)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range sources {
+		if source.Path == "completion.go" && len(strings.Fields(source.Text)) >= 190 {
+			return
+		}
+	}
+	t.Fatalf("named long function was starved below its depth quota: %+v", sources)
+}
+
+func TestNLHasSeparatedStrongSignals(t *testing.T) {
+	if !nlHasSeparatedStrongSignals([]int{20, 0, 0, 0, 0, 0, 0, 0, 20}) {
+		t.Fatal("separated strong query lines were not detected")
+	}
+	if nlHasSeparatedStrongSignals([]int{20, 0, 20}) {
+		t.Fatal("nearby lines were treated as separate answer regions")
+	}
 }

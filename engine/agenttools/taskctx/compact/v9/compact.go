@@ -26,7 +26,7 @@ import (
 	"github.com/samibel/graphi/engine/agenttools/shape"
 )
 
-const CompactTaskContextVersion = "task_context/2-compact/15"
+const CompactTaskContextVersion = "task_context/2-compact/16"
 
 // CompactTaskContextSource is both the source body and its citation. Source
 // order is the read order; removing the separate item/evidence join is the
@@ -519,6 +519,11 @@ func compactTaskContextHydrateDefinitions(ctx context.Context, repository fs.FS,
 		start, end, ok := compactTaskContextDeclarationSpan(parsed.set, parsed.file, line)
 		if !ok || start < 1 || end < start || end > len(parsed.lines) {
 			continue
+		}
+		// Keep zero-cost declaration separators so two selected adjacent
+		// declarations can be serialized as one faithful caller/callee region.
+		for start > 1 && strings.TrimSpace(parsed.lines[start-2]) == "" {
+			start--
 		}
 		key := fmt.Sprintf("%s\x00%d\x00%d", path, start, end)
 		if seen[key] {

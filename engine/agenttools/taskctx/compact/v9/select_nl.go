@@ -35,7 +35,7 @@ const (
 	// nlCompleteLimits bounds atomic unit completion by depth rank: the
 	// first-ranked implementation may be finished whole up to this many
 	// whitespace fields, later regions progressively less.
-	nlLeadCompleteLimit   = 230
+	nlLeadCompleteLimit   = 250
 	nlSecondCompleteLimit = 120
 	nlOtherCompleteLimit  = 90
 )
@@ -168,11 +168,13 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 	// Execute dispatch…") is asking about that declaration; it leads, whatever
 	// retrieval put first. Only the exact spelling counts — "flag" is a word,
 	// "Flag" is the method.
+	namedLead := false
 	for i := range seeds {
 		if compactTaskContextQueryNamesSymbol(query, seeds[i].symbol) {
 			named := seeds[i]
 			copy(seeds[1:i+1], seeds[:i])
 			seeds[0] = named
+			namedLead = true
 			break
 		}
 	}
@@ -180,6 +182,20 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 	// with different windows. Keep the wider one; a duplicate would spend a
 	// slot and budget repeating lines the reader already has.
 	seeds = nlDedupe(seeds)
+	if !namedLead && len(seeds) > 1 {
+		best := 0
+		for i := 1; i < len(seeds); i++ {
+			if seeds[i].hits > seeds[best].hits {
+				best = i
+			}
+		}
+		if best > 0 && nlQueryNamesPathStem(patterns, seeds[best].item.Path) &&
+			seeds[best].hits >= 3000 && seeds[best].hits >= seeds[0].hits+1000 {
+			specific := seeds[best]
+			copy(seeds[1:best+1], seeds[:best])
+			seeds[0] = specific
+		}
+	}
 	others = nlDedupe(nlWithout(others, seeds))
 	sort.SliceStable(others, func(i, j int) bool {
 		if others[i].itemPriority != others[j].itemPriority {
@@ -203,6 +219,33 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 		return fallbacks[i].order < fallbacks[j].order
 	})
 	fallbacks = nlDedupe(fallbacks)
+	// Keep a direct call edge intact at the breadth cap. Retrieval can place a
+	// caller at the edge of the retained window and its small callee one row
+	// below it; dropping the callee then turns a flow answer into an unrelated
+	// breadth list. Only an exact symbol mention in an already retained seed
+	// can promote one below-cap seed, and it replaces rather than widens the
+	// fixed seed count.
+	bestCaller, bestCallee, bestPair := -1, -1, -1
+	for callerIndex := 0; callerIndex < min(nlMaxSeeds, len(seeds)); callerIndex++ {
+		callerText := strings.Join(seeds[callerIndex].lines, "\n")
+		for calleeIndex := nlMaxSeeds; calleeIndex < len(seeds); calleeIndex++ {
+			callee := seeds[calleeIndex]
+			if callee.hits < seeds[callerIndex].hits || !nlLeadNames(callerText, callee.symbol) {
+				continue
+			}
+			if pair := seeds[callerIndex].hits + callee.hits; pair > bestPair {
+				bestCaller, bestCallee, bestPair = callerIndex, calleeIndex, pair
+			}
+		}
+	}
+	if bestCallee >= 0 {
+		callee := seeds[bestCallee]
+		seeds = append(seeds[:bestCallee], seeds[bestCallee+1:]...)
+		insertAt := bestCaller + 1
+		seeds = append(seeds, nlCandidate{})
+		copy(seeds[insertAt+1:], seeds[insertAt:])
+		seeds[insertAt] = callee
+	}
 	if len(seeds) > nlMaxSeeds {
 		seeds = seeds[:nlMaxSeeds]
 	}
@@ -279,9 +322,29 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 	remaining += leadReserve
 	if len(seeds) > 0 && admitted[0] {
 		lead := &selected[0]
+		coherentLead := namedLead || strings.HasSuffix(strings.ToLower(lead.item.Path), ".md")
+		leadTarget := quota(48)
 		if lead.unitFrom >= 0 {
 			whole := len(strings.Fields(strings.Join(lead.lines[lead.unitFrom:lead.unitTo+1], "\n")))
-			for i := len(selected) - 1; i > 0 && whole <= nlLeadCompleteLimit && whole-lead.cost > remaining; i-- {
+			required := whole - lead.cost
+			eligible := whole <= nlLeadCompleteLimit
+			if namedLead && (lead.kind == "function" || lead.kind == "method") && !eligible {
+				required = max(0, quota(60)-lead.cost)
+				leadTarget = quota(60)
+				eligible = true
+			}
+			for i := len(selected) - 1; i > 0 && eligible && required > remaining; i-- {
+				if !admitted[i] || (selected[i].complete && !coherentLead) {
+					continue
+				}
+				admitted[i] = false
+				remaining += selected[i].cost
+				selected[i].cost = 0
+			}
+		}
+		if !namedLead && nlHasSeparatedStrongSignals(lead.lineScore) {
+			leadTarget = quota(53)
+			for i := len(selected) - 1; i > 0 && leadTarget-lead.cost > remaining; i-- {
 				if !admitted[i] || selected[i].complete {
 					continue
 				}
@@ -290,7 +353,24 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 				selected[i].cost = 0
 			}
 		}
-		grow(lead, nlLeadCompleteLimit, quota(48))
+		grow(lead, nlLeadCompleteLimit, leadTarget)
+		for count := 0; count < 3 && nlHasTrailingCloser(lead); count++ {
+			cost := len(strings.Fields(lead.lines[lead.to+1]))
+			for i := len(selected) - 1; i > 0 && cost > remaining; i-- {
+				if !admitted[i] || selected[i].complete {
+					continue
+				}
+				admitted[i] = false
+				remaining += selected[i].cost
+				selected[i].cost = 0
+			}
+			if cost > remaining {
+				break
+			}
+			lead.to++
+			lead.cost += cost
+			remaining -= cost
+		}
 	}
 	// Phase 4: bounded depth for everything else, by retrieval order.
 	for i := 1; i < len(selected); i++ {
@@ -327,6 +407,7 @@ func compactTaskContextSelectNaturalLanguage(query string, patterns []string, ev
 			Text: strings.Join(c.lines[c.from:c.to+1], "\n"),
 		})
 	}
+	out = compactTaskContextMergeAdjacentSources(out)
 	out = compactTaskContextRemoveContainedSources(out)
 	out, used := compactTaskContextTrimSources(out, budget)
 	return out, used, nil
@@ -371,9 +452,20 @@ func nlGrow(c *nlCandidate, remaining *int) bool {
 		case c.lineScore[c.from-1] < c.lineScore[c.to+1]:
 			pickDown = true
 		default:
-			// No signal either way: alternate, so a region grows around its
-			// anchor rather than trailing away from it.
-			pickDown = (c.to-c.from)%2 == 0
+			upScore, upDistance := nlNextSignal(c.lineScore, c.from-1, -1, lo)
+			downScore, downDistance := nlNextSignal(c.lineScore, c.to+1, 1, hi)
+			switch {
+			case upScore > downScore:
+				pickDown = false
+			case upScore < downScore:
+				pickDown = true
+			case upScore > 0 && upDistance < downDistance:
+				pickDown = false
+			case downScore > 0 && downDistance < upDistance:
+				pickDown = true
+			default:
+				pickDown = (c.to-c.from)%2 == 0
+			}
 		}
 	}
 	index := c.to + 1
@@ -391,6 +483,55 @@ func nlGrow(c *nlCandidate, remaining *int) bool {
 	}
 	c.cost += cost
 	*remaining -= cost
+	return true
+}
+
+func nlNextSignal(scores []int, start, step, bound int) (best, distance int) {
+	distance = len(scores) + 1
+	for i, d := start, 1; ; i, d = i+step, d+1 {
+		if (step < 0 && i < bound) || (step > 0 && i > bound) {
+			break
+		}
+		if scores[i] > best {
+			best, distance = scores[i], d
+		}
+	}
+	return best, distance
+}
+
+func nlHasSeparatedStrongSignals(scores []int) bool {
+	first := -1
+	for line, score := range scores {
+		if score < 20 {
+			continue
+		}
+		if first >= 0 && line-first >= 8 {
+			return true
+		}
+		if first < 0 {
+			first = line
+		}
+	}
+	return false
+}
+
+func nlHasTrailingCloser(c *nlCandidate) bool {
+	hi := len(c.lines) - 1
+	if c.unitFrom >= 0 {
+		hi = c.unitTo
+	}
+	if c.to >= hi {
+		return false
+	}
+	trimmed := strings.TrimSpace(c.lines[c.to+1])
+	if trimmed == "" {
+		return false
+	}
+	for _, r := range trimmed {
+		if !strings.ContainsRune("}])(),;", r) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -438,6 +579,21 @@ func nlLeadNames(leadText, symbol string) bool {
 	return false
 }
 
+func nlQueryNamesPathStem(patterns []string, sourcePath string) bool {
+	if slash := strings.LastIndex(sourcePath, "/"); slash >= 0 {
+		sourcePath = sourcePath[slash+1:]
+	}
+	if dot := strings.LastIndex(sourcePath, "."); dot > 0 {
+		sourcePath = sourcePath[:dot]
+	}
+	for _, pattern := range patterns {
+		if strings.EqualFold(pattern, sourcePath) {
+			return true
+		}
+	}
+	return false
+}
+
 func nlOverlaps(a, b nlCandidate) bool {
 	if a.item.Path != b.item.Path {
 		return false
@@ -455,7 +611,10 @@ func nlDedupe(list []nlCandidate) []nlCandidate {
 		merged := false
 		for i := range out {
 			if nlOverlaps(out[i], c) {
-				if len(c.lines) > len(out[i].lines) {
+				cHydratedMarkdown := strings.HasSuffix(strings.ToLower(c.item.Path), ".md") && strings.HasPrefix(c.item.RefID, "hydrated-")
+				outHydratedMarkdown := strings.HasSuffix(strings.ToLower(out[i].item.Path), ".md") && strings.HasPrefix(out[i].item.RefID, "hydrated-")
+				if (cHydratedMarkdown && !outHydratedMarkdown) ||
+					(cHydratedMarkdown == outHydratedMarkdown && len(c.lines) > len(out[i].lines)) {
 					rank, order := out[i].rank, out[i].order
 					out[i] = c
 					out[i].rank, out[i].order = rank, order
