@@ -126,7 +126,7 @@ func SealSidecarManifest(dir string, pre PreRegistration) (SidecarManifest, erro
 		return SidecarManifest{}, err
 	}
 	manifest := SidecarManifest{
-		ContractVersion:       QrelBlindSmokeContractVersion,
+		ContractVersion:       legacyContractVersion(pre.ContractVersion),
 		Evaluation:            QrelBlindSmokeEvaluationName,
 		PreRegistrationSHA256: pre.SHA256,
 		Sidecars:              observed,
@@ -227,8 +227,11 @@ func CheckSidecarBinding(dir string, pre PreRegistration) error {
 // identity: every response names it, so a manifest copied from a different run
 // cannot claim this one.
 func checkSidecarManifestBinding(m SidecarManifest, pre PreRegistration) error {
-	if m.ContractVersion != QrelBlindSmokeContractVersion {
-		return fmt.Errorf("retrieval %s: %s has contract_version=%q, want %q", QrelBlindSmokeEvaluationName, BlindEvalSidecarManifestFile, m.ContractVersion, QrelBlindSmokeContractVersion)
+	if m.ContractVersion != QrelBlindSmokeContractVersion && m.ContractVersion != QrelBlindSmokeContractVersion2 {
+		return fmt.Errorf("retrieval %s: %s has contract_version=%q, want %q or %q", QrelBlindSmokeEvaluationName, BlindEvalSidecarManifestFile, m.ContractVersion, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	if want := legacyContractVersion(pre.ContractVersion); m.ContractVersion != want {
+		return fmt.Errorf("retrieval %s: %s has contract_version=%q, but this run's pre-registration is %q", QrelBlindSmokeEvaluationName, BlindEvalSidecarManifestFile, m.ContractVersion, want)
 	}
 	if m.Evaluation != QrelBlindSmokeEvaluationName {
 		return fmt.Errorf("retrieval %s: %s names evaluation %q", QrelBlindSmokeEvaluationName, BlindEvalSidecarManifestFile, m.Evaluation)

@@ -123,16 +123,23 @@ func fixtureBundleBytes(id string) []byte {
 }
 
 func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArtifacts {
+	return buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion, specs)
+}
+
+func buildBlindEvalArtifactsForContract(t *testing.T, contractVersion string, specs []blindEvalSpec) EvaluationArtifacts {
 	t.Helper()
 	precondition := fixturePrecondition(t)
+	if contractVersion == QrelBlindSmokeContractVersion2 {
+		precondition = fixturePreconditionV2(t)
+	}
 	primaries, grader, adjudicator := fixtureParticipants()
 
-	derivation, err := DerivePassCount(len(specs), precondition.DatasetSHA256, "fixture population")
+	derivation, err := DerivePassCountForContract(contractVersion, len(specs), precondition.DatasetSHA256, "fixture population")
 	if err != nil {
 		t.Fatalf("DerivePassCount(%d): %v", len(specs), err)
 	}
 	pre := PreRegistration{
-		ContractVersion:    QrelBlindSmokeContractVersion,
+		ContractVersion:    contractVersion,
 		Evaluation:         QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: "fedcbafedcbafedcbafedcbafedcbafedcbafedc",
@@ -194,9 +201,11 @@ func buildBlindEvalArtifacts(t *testing.T, specs []blindEvalSpec) EvaluationArti
 			}
 		}
 		artifacts.Adjudications = append(artifacts.Adjudications, Adjudication{
-			QueryID:  spec.queryID,
-			Response: adjResponse,
+			ContractVersion: pre.ContractVersion,
+			QueryID:         spec.queryID,
+			Response:        adjResponse,
 			Disclosure: DisclosureRecord{
+				ContractVersion:           pre.ContractVersion,
 				QueryID:                   spec.queryID,
 				AdjudicatorResponseSHA256: adjResponse.SHA256,
 				DisclosedArtifactSHA256:   disclosed,
@@ -223,7 +232,7 @@ func newFixtureResponse(t *testing.T, pre PreRegistration, q PreRegisteredQuery,
 		text = ""
 	}
 	response := RaterResponse{
-		ContractVersion:       QrelBlindSmokeContractVersion,
+		ContractVersion:       pre.ContractVersion,
 		Evaluation:            QrelBlindSmokeEvaluationName,
 		Role:                  role,
 		QueryID:               q.QueryID,
@@ -249,7 +258,7 @@ func newFixtureResponse(t *testing.T, pre PreRegistration, q PreRegisteredQuery,
 func newFixtureGrade(t *testing.T, grader Participant, response RaterResponse, outcome string, at time.Time) Grade {
 	t.Helper()
 	grade := Grade{
-		ContractVersion: QrelBlindSmokeContractVersion,
+		ContractVersion: response.ContractVersion,
 		Evaluation:      QrelBlindSmokeEvaluationName,
 		QueryID:         response.QueryID,
 		ResponseSHA256:  response.SHA256,
@@ -375,6 +384,132 @@ func TestQrelBlindSmoke_CompleteEvaluationAtKReleasesYes(t *testing.T) {
 	}
 	if err := ValidateEvaluationOutcome(outcome, artifacts); err != nil {
 		t.Errorf("a freshly computed outcome must revalidate: %v", err)
+	}
+}
+
+func TestQrelBlindSmoke_ContractTwoRecordsEvaluateUnderContractTwo(t *testing.T) {
+	artifacts := buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specsFor(20, 19))
+	comparison := matchingComparison(t, artifacts.Precondition)
+	if comparison.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("comparison contract_version=%q, want %q", comparison.ContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	outcome, err := EvaluateQrelBlindSmoke(artifacts, comparison)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("outcome contract_version=%q, want %q", outcome.ContractVersion, QrelBlindSmokeContractVersion2)
+	}
+	for _, response := range artifacts.Responses {
+		if response.ContractVersion != QrelBlindSmokeContractVersion2 {
+			t.Fatalf("response for query %s contract_version=%q, want %q", response.QueryID, response.ContractVersion, QrelBlindSmokeContractVersion2)
+		}
+	}
+	for _, grade := range artifacts.Grades {
+		if grade.ContractVersion != QrelBlindSmokeContractVersion2 {
+			t.Fatalf("grade for query %s contract_version=%q, want %q", grade.QueryID, grade.ContractVersion, QrelBlindSmokeContractVersion2)
+		}
+	}
+	if err := ValidateEvaluationOutcome(outcome, artifacts); err != nil {
+		t.Fatalf("contract-2 outcome does not revalidate: %v", err)
+	}
+}
+
+func TestQrelBlindSmoke_OutcomeValidatorRejectsUnknownContractVersion(t *testing.T) {
+	artifacts := buildBlindEvalArtifacts(t, specsFor(20, 19))
+	outcome, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+	if err != nil {
+		t.Fatal(err)
+	}
+	outcome.ContractVersion = "sw280-qrel-blind-smoke-evaluation/3"
+	err = ValidateEvaluationOutcome(outcome, artifacts)
+	if err == nil {
+		t.Fatal("the outcome validator accepted an unknown contract version")
+	}
+	for _, want := range []string{QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal %q does not name %q", err, want)
+		}
+	}
+}
+
+func TestQrelBlindSmoke_ContractOneGradeIsRefusedInContractTwoRun(t *testing.T) {
+	artifacts := buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specsFor(20, 19))
+	queryID := artifacts.Grades[0].QueryID
+	artifacts.Grades[0].ContractVersion = QrelBlindSmokeContractVersion
+	sealed, err := SealGrade(artifacts.Grades[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts.Grades[0] = sealed
+
+	_, err = EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+	if err == nil {
+		t.Fatal("a contract-1 grade was accepted in a contract-2 run")
+	}
+	for _, want := range []string{queryID, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal %q does not name %q", err, want)
+		}
+	}
+}
+
+func TestQrelBlindSmoke_ContractOneRecordsAreRefusedInContractTwoRun(t *testing.T) {
+	specs := specsFor(20, 19)
+	specs[19] = blindEvalSpec{
+		queryID:   specs[19].queryID,
+		stratum:   StratumNLBehaviour,
+		status:    [2]string{ResponseStatusAnswered, ResponseStatusAnswered},
+		grades:    [2]string{GradeOutcomePass, GradeOutcomeFail},
+		adjStatus: ResponseStatusAnswered,
+		adjGrade:  GradeOutcomePass,
+	}
+	build := func(t *testing.T) EvaluationArtifacts {
+		return buildBlindEvalArtifactsForContract(t, QrelBlindSmokeContractVersion2, specs)
+	}
+	tests := []struct {
+		name    string
+		queryID func(EvaluationArtifacts) string
+		mutate  func(*testing.T, *EvaluationArtifacts)
+	}{
+		{"primary response", func(a EvaluationArtifacts) string { return a.Responses[0].QueryID }, func(t *testing.T, a *EvaluationArtifacts) {
+			a.Responses[0].ContractVersion = QrelBlindSmokeContractVersion
+			sealed, err := SealRaterResponse(a.Responses[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			a.Responses[0] = sealed
+		}},
+		{"adjudicator response", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(t *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].Response.ContractVersion = QrelBlindSmokeContractVersion
+			sealed, err := SealRaterResponse(a.Adjudications[0].Response)
+			if err != nil {
+				t.Fatal(err)
+			}
+			a.Adjudications[0].Response = sealed
+		}},
+		{"adjudication", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(_ *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].ContractVersion = QrelBlindSmokeContractVersion
+		}},
+		{"disclosure", func(a EvaluationArtifacts) string { return a.Adjudications[0].QueryID }, func(_ *testing.T, a *EvaluationArtifacts) {
+			a.Adjudications[0].Disclosure.ContractVersion = QrelBlindSmokeContractVersion
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			artifacts := build(t)
+			queryID := tc.queryID(artifacts)
+			tc.mutate(t, &artifacts)
+			_, err := EvaluateQrelBlindSmoke(artifacts, matchingComparison(t, artifacts.Precondition))
+			if err == nil {
+				t.Fatalf("a contract-1 %s was accepted in a contract-2 run", tc.name)
+			}
+			for _, want := range []string{queryID, QrelBlindSmokeContractVersion, QrelBlindSmokeContractVersion2} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("refusal %q does not name %q", err, want)
+				}
+			}
+		})
 	}
 }
 

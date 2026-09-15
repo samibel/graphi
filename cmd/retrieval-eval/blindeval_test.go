@@ -513,6 +513,10 @@ func TestLoadFrozenGradingRubricFailsClosedOnMissingOrDriftedBytes(t *testing.T)
 // directory. A fixture that lived in a temp directory outside the repository
 // would only prove those checks do not run.
 func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
+	return buildBlindEvalRunDirForContract(t, n, passes, retrieval.QrelBlindSmokeContractVersion)
+}
+
+func buildBlindEvalRunDirForContract(t *testing.T, n, passes int, contractVersion string) string {
 	t.Helper()
 	root, err := repositoryRoot()
 	if err != nil {
@@ -538,8 +542,17 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		{retrieval.PreconditionInputGradingRubric, rubricPath},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
+	measurementContractVersion := retrieval.MeasurementContractVersion
+	claimWording := retrieval.FrozenClaimWording()
+	followupMaxLines := 0
+	if contractVersion == retrieval.QrelBlindSmokeContractVersion2 {
+		measurementContractVersion = retrieval.MeasurementContractVersion2
+		claimWording = retrieval.SecondResponseClaimWording()
+		followupMaxLines = compactv9.FollowupMaxLines
+		inputs[len(inputs)-1].path = "docs/eval/retrieval/methodology-v2.md"
+	}
 	precondition := retrieval.PreconditionRecord{
-		ContractVersion:            retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:            contractVersion,
 		Evaluation:                 retrieval.QrelBlindSmokeEvaluationName,
 		FreezeCommit:               "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
 		FreezeTimestamp:            "2026-09-05T08:00:00Z",
@@ -550,8 +563,9 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		ComparatorVersion:          retrieval.BlindEvalComparatorVersion,
 		TokenizerID:                evaltokenizer.TokenizerID,
 		TokenizerVocabularySHA256:  evaltokenizer.PinnedVocabularySHA256,
-		MeasurementContractVersion: retrieval.MeasurementContractVersion,
-		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())),
+		MeasurementContractVersion: measurementContractVersion,
+		FollowupMaxLines:           followupMaxLines,
+		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(claimWording)),
 	}
 	datasetSHA, err := read(precondition.DatasetPath)
 	if err != nil {
@@ -577,7 +591,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		t.Fatal(err)
 	}
 
-	derivation, err := retrieval.DerivePassCount(n, precondition.DatasetSHA256, "cmd fixture")
+	derivation, err := retrieval.DerivePassCountForContract(contractVersion, n, precondition.DatasetSHA256, "cmd fixture")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -589,7 +603,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 	adjudicator := retrieval.Participant{ID: "adjudicator", Role: "adjudicator", Provider: "fixture", Model: "m-x", IndependenceBasis: "cmd fixture"}
 
 	pre := retrieval.PreRegistration{
-		ContractVersion:    retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:    contractVersion,
 		Evaluation:         retrieval.QrelBlindSmokeEvaluationName,
 		PreconditionSHA256: precondition.SHA256,
 		PreconditionCommit: precondition.FreezeCommit,
@@ -706,7 +720,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		}
 		for _, rater := range raters {
 			response := retrieval.RaterResponse{
-				ContractVersion:       retrieval.QrelBlindSmokeContractVersion,
+				ContractVersion:       contractVersion,
 				Evaluation:            retrieval.QrelBlindSmokeEvaluationName,
 				Role:                  "primary",
 				QueryID:               q.QueryID,
@@ -731,7 +745,7 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 				t.Fatal(err)
 			}
 			grade := retrieval.Grade{
-				ContractVersion: retrieval.QrelBlindSmokeContractVersion,
+				ContractVersion: contractVersion,
 				Evaluation:      retrieval.QrelBlindSmokeEvaluationName,
 				QueryID:         q.QueryID,
 				ResponseSHA256:  sealedResponse.SHA256,
@@ -760,6 +774,170 @@ func buildBlindEvalRunDir(t *testing.T, n, passes int) string {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+func buildBlindEvalRawRunDirForContract(t *testing.T, n, passes int, contractVersion string) string {
+	t.Helper()
+	dir := buildBlindEvalRunDirForContract(t, n, passes, contractVersion)
+	pre, err := retrieval.LoadPreRegistration(filepath.Join(dir, retrieval.BlindEvalPreRegFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{
+		filepath.Join(dir, retrieval.BlindEvalResponsesDir),
+		filepath.Join(dir, retrieval.BlindEvalGradesDir),
+		filepath.Join(dir, retrieval.BlindEvalAdjudicationsDir),
+		filepath.Join(dir, retrieval.BlindEvalSidecarManifestFile),
+	} {
+		if err := os.RemoveAll(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i, query := range pre.Queries {
+		outcome := "FAIL: fixture failure"
+		if i < passes {
+			outcome = "PASS: fixture pass"
+		}
+		for _, rater := range pre.PrimaryRaters {
+			responsePath := filepath.Join(dir, blindEvalRawResponsesDir, rawResponseFileName(query.QueryID, rater.ID))
+			if err := os.MkdirAll(filepath.Dir(responsePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(responsePath, []byte("answer for "+query.QueryID+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			gradePath := filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(query.QueryID, rater.ID))
+			if err := os.MkdirAll(filepath.Dir(gradePath), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(gradePath, []byte(outcome+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
+}
+
+func TestRetrievalEval_BlindEvalContractTwoSealsAndDecidesWithOneRunVersion(t *testing.T) {
+	dir := buildBlindEvalRawRunDirForContract(t, 13, 13, retrieval.QrelBlindSmokeContractVersion2)
+	pre, err := retrieval.LoadPreRegistration(filepath.Join(dir, retrieval.BlindEvalPreRegFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	queryID := pre.Queries[0].QueryID
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(queryID, pre.PrimaryRaters[1].ID)), []byte("FAIL: fixture disagreement\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, blindEvalRawAdjudicationsDir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawAdjudicationsDir, queryID+".txt"), []byte("adjudicator answer\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, blindEvalRawGradesDir, rawGradeFileName(queryID, pre.Adjudicator.ID)), []byte("PASS: fixture majority\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalSeal, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("seal exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	artifacts, err := retrieval.LoadEvaluationArtifacts(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, response := range artifacts.Responses {
+		if response.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+			t.Fatalf("response for query %s contract_version=%q", response.QueryID, response.ContractVersion)
+		}
+	}
+	for _, grade := range artifacts.Grades {
+		if grade.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+			t.Fatalf("grade for query %s contract_version=%q", grade.QueryID, grade.ContractVersion)
+		}
+	}
+	if len(artifacts.Adjudications) != 1 {
+		t.Fatalf("adjudications=%d, want 1", len(artifacts.Adjudications))
+	}
+	adjudication := artifacts.Adjudications[0]
+	if adjudication.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		adjudication.Disclosure.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		adjudication.Response.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+		t.Fatalf("adjudication versions = envelope %q disclosure %q response %q", adjudication.ContractVersion, adjudication.Disclosure.ContractVersion, adjudication.Response.ContractVersion)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("decide exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	var comparison retrieval.HashComparisonResult
+	if err := readTestJSON(filepath.Join(dir, retrieval.BlindEvalComparisonFile), &comparison); err != nil {
+		t.Fatal(err)
+	}
+	var outcome retrieval.EvaluationOutcome
+	if err := readTestJSON(filepath.Join(dir, retrieval.BlindEvalOutcomeFile), &outcome); err != nil {
+		t.Fatal(err)
+	}
+	if comparison.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 || outcome.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 {
+		t.Fatalf("decision versions = comparison %q outcome %q", comparison.ContractVersion, outcome.ContractVersion)
+	}
+}
+
+func TestRetrievalEval_BlindEvalDecideRefusesContractOneGradeInContractTwoRun(t *testing.T) {
+	dir := buildBlindEvalRawRunDirForContract(t, 13, 13, retrieval.QrelBlindSmokeContractVersion2)
+	root, err := repositoryRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalSeal, dir: dir, root: root}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("seal exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, retrieval.BlindEvalGradesDir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("the sealed fixture has no grades")
+	}
+	gradePath := filepath.Join(dir, retrieval.BlindEvalGradesDir, entries[0].Name())
+	var grade retrieval.Grade
+	if err := readTestJSON(gradePath, &grade); err != nil {
+		t.Fatal(err)
+	}
+	queryID := grade.QueryID
+	grade.ContractVersion = retrieval.QrelBlindSmokeContractVersion
+	grade, err = retrieval.SealGrade(grade)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := retrieval.WriteBlindEvalJSON(gradePath, grade); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := runBlindEval(blindEvalOptions{phase: blindEvalDecide, dir: dir, root: root}, &stdout, &stderr); code == exitOK {
+		t.Fatal("decide accepted a contract-1 grade in a contract-2 run")
+	}
+	for _, want := range []string{queryID, retrieval.QrelBlindSmokeContractVersion, retrieval.QrelBlindSmokeContractVersion2} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Errorf("stderr %q does not name %q", stderr.String(), want)
+		}
+	}
+}
+
+func readTestJSON(path string, dst any) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return jsonUnmarshalStrict(raw, dst)
 }
 
 // blindEvalFixtureRunDir makes a throwaway run directory INSIDE the repository

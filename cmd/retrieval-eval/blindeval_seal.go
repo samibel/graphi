@@ -309,7 +309,7 @@ func sealOneResponse(dir string, pre retrieval.PreRegistration, prq retrieval.Pr
 		return retrieval.RaterResponse{}, fmt.Errorf("read the prompt the rater was given (%s): %w", promptPath, err)
 	}
 	response := retrieval.RaterResponse{
-		ContractVersion:       retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:       pre.ContractVersion,
 		Evaluation:            retrieval.QrelBlindSmokeEvaluationName,
 		Role:                  role,
 		QueryID:               prq.QueryID,
@@ -372,7 +372,7 @@ func sealOneGrade(rawPath string, info os.FileInfo, grader retrieval.Participant
 		return retrieval.Grade{}, fmt.Errorf("raw grade %s carries no rationale", rawPath)
 	}
 	grade := retrieval.Grade{
-		ContractVersion: retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion: response.ContractVersion,
 		Evaluation:      retrieval.QrelBlindSmokeEvaluationName,
 		QueryID:         response.QueryID,
 		ResponseSHA256:  response.SHA256,
@@ -425,9 +425,11 @@ func buildAdjudication(dir, queryID string, response retrieval.RaterResponse, se
 	}
 	sort.Strings(disclosed)
 	return retrieval.Adjudication{
-		QueryID:  queryID,
-		Response: response,
+		ContractVersion: response.ContractVersion,
+		QueryID:         queryID,
+		Response:        response,
 		Disclosure: retrieval.DisclosureRecord{
+			ContractVersion:           response.ContractVersion,
 			QueryID:                   queryID,
 			AdjudicatorResponseSHA256: response.SHA256,
 			DisclosedArtifactSHA256:   disclosed,

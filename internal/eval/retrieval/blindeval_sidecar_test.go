@@ -461,3 +461,27 @@ func TestQrelBlindSmoke_WriteOnceIsAnExclusiveCreate(t *testing.T) {
 		}
 	}
 }
+
+// TestQrelBlindSmoke_SidecarManifestCarriesTheRunsContractVersion: the
+// manifest is stamped with the pre-registration's version, and a manifest
+// from a version-1 run does not bind a version-2 run.
+func TestQrelBlindSmoke_SidecarManifestCarriesTheRunsContractVersion(t *testing.T) {
+	dir := t.TempDir()
+	pre := PreRegistration{ContractVersion: QrelBlindSmokeContractVersion2, SHA256: strings.Repeat("a", 64)}
+	manifest, err := SealSidecarManifest(dir, pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.ContractVersion != QrelBlindSmokeContractVersion2 {
+		t.Fatalf("manifest contract_version = %q", manifest.ContractVersion)
+	}
+	stale := manifest
+	stale.ContractVersion = QrelBlindSmokeContractVersion
+	if err := checkSidecarManifestBinding(stale, pre); err == nil || !strings.Contains(err.Error(), "pre-registration is") {
+		t.Fatalf("error = %v, want the run-version refusal", err)
+	}
+	stale.ContractVersion = "sw280-qrel-blind-smoke-evaluation/3"
+	if err := checkSidecarManifestBinding(stale, pre); err == nil || !strings.Contains(err.Error(), "want") {
+		t.Fatalf("error = %v, want the unknown-version refusal", err)
+	}
+}
