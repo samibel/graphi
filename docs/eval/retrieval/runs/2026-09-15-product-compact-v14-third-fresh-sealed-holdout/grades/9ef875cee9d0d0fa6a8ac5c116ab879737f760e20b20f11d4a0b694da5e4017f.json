@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q034",
+  "response_sha256": "9ef875cee9d0d0fa6a8ac5c116ab879737f760e20b20f11d4a0b694da5e4017f",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response does not explain the verification: creating the child first, installing the root normalization function, and comparing function identities. The preserved transcript shows recursive propagation in command.go:362-372 but omits the test and assertions needed to answer the question.",
+  "graded_at": "2026-09-15T08:34:19Z",
+  "sha256": "c96a0d635d75e9103b8c4a8652f2133b889b180f34fdb96a30ed2cff94743862"
+}

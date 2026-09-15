@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q018",
+  "response_sha256": "5d1a677d92449311d79c538faed1a75af2beb1dae17574c0bb3762713a51a771",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response describes the visible flag setup and declarations, but omits the command-tree construction essential to the reviewed initialization behavior. The preserved transcript ends `init()` at line 40 and does not establish that construction; acknowledging truncation does not resolve this gap.",
+  "graded_at": "2026-09-15T08:33:32Z",
+  "sha256": "a7b6e8f107397ee7b0c218f9c4f11b33ef6070bbe03594c4d47218cae31c9b14"
+}

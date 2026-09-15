@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q015",
+  "response_sha256": "6de90f03f842a7eb9bf3522d4d935ec28e89a102fa55e376b3469af922fcac01",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response omits the essential `runShellCheck` helper that runs generated Bash through shellcheck and returns its result. That behavior is absent from the preserved transcript, so the bundle cannot support the required description.",
+  "graded_at": "2026-09-15T08:33:21Z",
+  "sha256": "cab82f9d1e81f526cb36307c5718b5ad88a45ec9ea1c427ded7fe6e38e0450ac"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q021",
+  "response_sha256": "18a929a857f1ed71c155fde0c9dc302426cb762fc3fad5c8a8cf271ef24f2803",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately identifies package cobra and TestPwshCompletionNoActiveHelp at the supplied lines, including successful completion generation and verification that the generated script disables Active Help with `${env:\u003cactive-help-variable\u003e}=0`. It appropriately limits its description to the truncated transcript.",
+  "graded_at": "2026-09-15T08:33:40Z",
+  "sha256": "29b7fea1ae4d9e650cf02e81dd5e0c5d1d8e72e461d1a9d9c84c43adf1433c50"
+}

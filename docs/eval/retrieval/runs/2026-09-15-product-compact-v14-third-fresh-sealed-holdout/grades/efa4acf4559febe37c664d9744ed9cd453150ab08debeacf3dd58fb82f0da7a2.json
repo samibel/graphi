@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q030",
+  "response_sha256": "efa4acf4559febe37c664d9744ed9cd453150ab08debeacf3dd58fb82f0da7a2",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the preserved implementation: it returns an error immediately for the first invalid positional argument, strips tab-separated descriptions before comparison, appends suggestions based on args[0], and returns nil when all arguments are valid or ValidArgs is empty. The cited transcript locations support these claims.",
+  "graded_at": "2026-09-15T08:34:07Z",
+  "sha256": "9ad28e989f278e6337f98af443b3409eaed932b49f8f054595466f25df76c48d"
+}

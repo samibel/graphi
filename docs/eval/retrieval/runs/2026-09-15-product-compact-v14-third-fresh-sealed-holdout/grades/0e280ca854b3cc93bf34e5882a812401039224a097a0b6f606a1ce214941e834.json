@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q009",
+  "response_sha256": "0e280ca854b3cc93bf34e5882a812401039224a097a0b6f606a1ce214941e834",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the helper’s parameters, shared buffer for output and errors, argument setup, ExecuteContext call, and returned output and error. Both cited ranges exist in the transcript and support the attached claims, including ExecuteContext assigning c.ctx and calling Execute().",
+  "graded_at": "2026-09-15T08:33:02Z",
+  "sha256": "f026a24bfc40976daad80b5d765fccaf24790aa756ec547b23a482b270667421"
+}

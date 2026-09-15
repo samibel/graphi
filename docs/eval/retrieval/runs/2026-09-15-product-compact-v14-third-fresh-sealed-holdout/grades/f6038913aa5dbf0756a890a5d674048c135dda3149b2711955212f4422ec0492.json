@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q054",
+  "response_sha256": "f6038913aa5dbf0756a890a5d674048c135dda3149b2711955212f4422ec0492",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The transcript confirms that GenYamlTreeCustom accepts both filePrepender and linkHandler, writes the prepended content, and forwards linkHandler to GenYamlCustom. GenYamlCustom accepts only linkHandler. All cited line ranges exist and support the attached claims.",
+  "graded_at": "2026-09-15T08:35:10Z",
+  "sha256": "d7632fb317f95a33e2c7bee90f0d19c68b7c394954a9a94e0dcfc3b4d14bd146"
+}

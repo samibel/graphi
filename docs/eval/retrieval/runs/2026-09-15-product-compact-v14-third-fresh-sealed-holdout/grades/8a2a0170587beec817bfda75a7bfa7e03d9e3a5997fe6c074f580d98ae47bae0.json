@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q060",
+  "response_sha256": "8a2a0170587beec817bfda75a7bfa7e03d9e3a5997fe6c074f580d98ae47bae0",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response does not address blank argument strings surrounding a valid flag, the essential behavior identified by TestEmptyInputs. The transcript includes only that test’s declaration, so the behavior cannot be verified. MinimumNArgs(1) checks argument count; it does not establish rejection of empty-string arguments.",
+  "graded_at": "2026-09-15T08:35:26Z",
+  "sha256": "6faebadfd631f95d104abbbae7bc225c428d5d8989b70bdda73583aaa3329b30"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q043",
+  "response_sha256": "9ff28ef43e87e81b8ac22f039ab7189aae24300e01f66e7cac50be9a81040bb9",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The preserved command.go:788–829 supports recursive descent through two subcommands via findNext and cmd.Traverse(args[i+1:]), parsing parent flags before each descent and returning the grandchild with remaining arguments when no further subcommand matches. The stated flag-parsing error behavior is also supported.",
+  "graded_at": "2026-09-15T08:34:42Z",
+  "sha256": "9c3025966ac5628c8979ff12da6029329602406aba57a88ff17409f16509ca06"
+}

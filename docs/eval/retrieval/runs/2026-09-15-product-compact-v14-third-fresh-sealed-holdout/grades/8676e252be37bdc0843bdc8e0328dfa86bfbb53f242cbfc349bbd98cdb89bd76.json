@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q054",
+  "response_sha256": "8676e252be37bdc0843bdc8e0328dfa86bfbb53f242cbfc349bbd98cdb89bd76",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The transcript confirms that GenYamlTreeCustom accepts filePrepender and linkHandler, while GenYamlCustom accepts only linkHandler. The cited lines also show the tree function writing the prepended content before calling GenYamlCustom.",
+  "graded_at": "2026-09-15T08:35:13Z",
+  "sha256": "5d2a577f8f9e078e57d3407ecf120934acae88f7d2686d86b325a3cd5eeef91e"
+}

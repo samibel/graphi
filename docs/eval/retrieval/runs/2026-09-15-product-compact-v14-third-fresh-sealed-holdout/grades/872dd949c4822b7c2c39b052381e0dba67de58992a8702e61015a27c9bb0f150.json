@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q045",
+  "response_sha256": "872dd949c4822b7c2c39b052381e0dba67de58992a8702e61015a27c9bb0f150",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "fail",
+  "rationale": "The response declares insufficiency rather than fully answering the question. The transcript supports adequate tests and `go test ./...` or `make test`, but truncates the formatting requirement at CONTRIBUTING.md:35, leaving the required formatting command unsupported and unanswered.",
+  "graded_at": "2026-09-15T08:34:43Z",
+  "sha256": "5b27d9d6d2d138f0f7ff7d34cd0f0e4a4d3e8e2839f47feccc3b829fa12af3ad"
+}

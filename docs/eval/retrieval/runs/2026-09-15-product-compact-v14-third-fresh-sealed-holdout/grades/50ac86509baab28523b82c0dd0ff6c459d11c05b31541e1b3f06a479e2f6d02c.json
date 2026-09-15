@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q026",
+  "response_sha256": "50ac86509baab28523b82c0dd0ff6c459d11c05b31541e1b3f06a479e2f6d02c",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response correctly explains that SetErr(nil) clears the command’s error writer, so ErrOrStderr returns the nearest ancestor’s non-nil error writer or falls back to os.Stderr. All cited ranges exist in the transcript and support this behavior.",
+  "graded_at": "2026-09-15T08:33:55Z",
+  "sha256": "70769338948353a8651901bbfde7e6696a0e62f3cc16a02c32dee9cdb49d751b"
+}

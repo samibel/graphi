@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q002",
+  "response_sha256": "3cb87f05495f45b0e519cf7d7e2f93f5025facb58004e015911dcd0af475eea4",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes expectSuccess’s empty-output and nil-error checks, including the respective t.Errorf and t.Fatalf calls, supported by args_test.go:35–42. Its usage example is supported by args_test.go:246–250.",
+  "graded_at": "2026-09-15T08:32:50Z",
+  "sha256": "5b682bf5f0901c9b0e51b47b9127031c067d6b5d71c12aa4e1c4c17977d770ad"
+}

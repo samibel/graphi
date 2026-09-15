@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q011",
+  "response_sha256": "e6d3455da90b6793f1426af0a5e06eeec12836080e29d4286b06fb3743417b9a",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the preserved callback’s prefix filtering of both described choices, its nil/NoFileComp return when args is nonempty, and its Default directive otherwise. The cited lines support these claims, and cmd is unused.",
+  "graded_at": "2026-09-15T08:33:08Z",
+  "sha256": "f1007ffac146d1842053fa09a20449c8085ac702675a4fc78915ab7d6ace2a60"
+}

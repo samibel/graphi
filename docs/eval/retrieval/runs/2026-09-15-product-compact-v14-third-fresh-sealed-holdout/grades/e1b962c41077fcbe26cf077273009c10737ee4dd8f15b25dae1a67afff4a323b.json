@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "fhv6c-b7e4-q050",
+  "response_sha256": "e1b962c41077fcbe26cf077273009c10737ee4dd8f15b25dae1a67afff4a323b",
+  "grader_id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+  "outcome": "pass",
+  "rationale": "The response accurately covers all six flag-value behaviors preserved in the follow-up transcript, including default file completion, filtering syntax, directory completion, repeated flags, and equals-form suggestions. Its line citations 34–39 and 48 exist and support the attached claims.",
+  "graded_at": "2026-09-15T08:35:00Z",
+  "sha256": "b9da35b034eb712fa5514fbef6738e3cb6f3aac494eaa6a7b076b741b4cc6985"
+}
