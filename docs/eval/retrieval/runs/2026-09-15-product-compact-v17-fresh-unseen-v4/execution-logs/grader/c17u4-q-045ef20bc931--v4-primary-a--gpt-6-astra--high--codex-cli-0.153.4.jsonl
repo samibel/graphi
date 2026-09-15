@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c9-0afe-70b3-9d53-b8c215fe42f1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response states the exact condition, `len(s) > 60 && !strings.Contains(s, \"\\n\")`, and correctly describes appending one newline and otherwise returning the text unchanged. Its citations resolve to the preserved `doc/util.go` span."}}
+{"type":"turn.completed","usage":{"input_tokens":17835,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":28}}

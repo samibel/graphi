@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bc-b0af-76c0-9f67-4d90b548bd91"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`MatchAll` runs validators sequentially in the order supplied, using `for _, parg := range pargs` (`args.go:116`). Each receives the same `cmd` and `args`.\n\nIt stops immediately at the first non-nil error and returns that error (`args.go:117–118`). If every validator succeeds—or none are supplied—it returns `nil` (`args.go:121`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17250,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":86,"reasoning_output_tokens":0}}

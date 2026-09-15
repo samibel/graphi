@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-0c87-70c2-8de7-13744dacde37"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOutput` preserves the legacy ability to route both usage and error messages to one writer. It changes `c.outWriter` and `c.errWriter` to the supplied `output` (`command.go:283–285`). Its comments mark it deprecated in favor of `SetOut` and/or `SetErr` and document `os.Stderr` when output is nil (`command.go:280–282`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17397,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":87,"reasoning_output_tokens":0}}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only the `Flags()` comment describing local and inherited flags (`command.go:1641–1643`), but lacks the legacy Bash generator’s metadata assembly logic and its handling of hidden flags, deprecated flags, and traversal.

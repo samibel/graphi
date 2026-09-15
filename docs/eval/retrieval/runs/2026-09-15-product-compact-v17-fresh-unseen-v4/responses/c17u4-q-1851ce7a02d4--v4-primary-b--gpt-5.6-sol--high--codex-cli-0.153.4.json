@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1851ce7a02d4",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "f70d382634a5cb282b474eee18082b141c7c502b54d329e2a68afdbd8975c5e4",
+  "bundle_sha256": "e2b995ae0152d756c937198b55e6db0340b80f50e8b7eecb6b7e77fbaa069bb3",
+  "prompt_sha256": "16b2aeceef7bebb531d6a176b7d4bae9a909a242dd029642d02d28ca7d93206b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "None. `ArbitraryArgs` rejects no positional arguments: `args.go:67-71` says it “never returns an error” and its implementation unconditionally returns `nil`. The guide likewise says it “accept[s] any number of args” (`site/content/user_guide.md:374`).",
+  "responded_at": "2026-09-15T20:25:08Z",
+  "sha256": "1fdb876328786240dd0c207bcaaa9fc23e8829814e0b115a196abe72f9e8a298"
+}

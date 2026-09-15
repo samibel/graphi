@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no test or implementation snippet showing the behavior when an application and its direct child share the same command name.

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2968ad35f1c0",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "87cc8adb23325d7d6552093aae63411169251893f22c8b07149aa930670425e5",
+  "bundle_sha256": "2dbf5836bc45885b14348f2fe3274d1df754425ea4ecbf40eec4b52b918147bc",
+  "prompt_sha256": "535af8bcf2f28d2c774a11d43bc9c9ec83fedaa1227d98c4569e788b4c20feb3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`completeRequireFlags` gathers flags by visiting both `finalCmd.InheritedFlags()` and `finalCmd.NonInheritedFlags()`, rather than `finalCmd.Flags()`. Its comment explains that with `DisableFlagParsing`, `ParseFlags()` may not have run to merge inherited and non-inherited flags (`completions.go:579–586`).\n\nFor each flag, it checks for the `BashCompOneRequiredFlag` annotation and requires `!flag.Changed`, then appends `getFlagNameCompletions(flag, toComplete)` (`completions.go:570–576`).\n\n`InheritedFlags()` calls `mergePersistentFlags()` and gathers parent flags excluding local-name conflicts; `NonInheritedFlags()` returns `LocalFlags()` (`command.go:1695–1723`).",
+  "responded_at": "2026-09-15T20:28:31Z",
+  "sha256": "505a78078ee56e815d4681f0a7a8de91347f0c3f6d90a34e39bb53ca68de1cac"
+}

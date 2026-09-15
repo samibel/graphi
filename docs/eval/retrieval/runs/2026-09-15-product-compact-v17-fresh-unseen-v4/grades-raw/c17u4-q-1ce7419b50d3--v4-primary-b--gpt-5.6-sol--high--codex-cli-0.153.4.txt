@@ -1,0 +1,1 @@
+PASS: The response matches the preserved Eq implementation: signed integer kinds and strings are compared, arrays/channels/maps/slices panic with the stated message, and other kinds return false. Both citations resolve to bundle spans, including the `"eq": Eq` registration.

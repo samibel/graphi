@@ -1,0 +1,3 @@
+`MatchAll` runs validators sequentially in the order supplied, using `for _, parg := range pargs` (`args.go:116`). Each receives the same `cmd` and `args`.
+
+It stops immediately at the first non-nil error and returns that error (`args.go:117–118`). If every validator succeeds—or none are supplied—it returns `nil` (`args.go:121`).

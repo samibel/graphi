@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cb-89cf-7f70-ab60-8068b7bc0b44"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that OnFinalize appends variadic functions to the package-level finalizers slice, preserving existing entries and argument order. The quoted append and cited locations are supported by the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17650,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":96,"reasoning_output_tokens":49}}

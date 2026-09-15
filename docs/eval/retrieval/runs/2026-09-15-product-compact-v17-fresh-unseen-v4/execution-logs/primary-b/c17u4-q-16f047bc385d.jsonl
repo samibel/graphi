@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-5b21-7db0-a05b-352652a0a697"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `command.go` lines 1878–1885, `commandNameMatches(s, t)` checks the global `EnableCaseInsensitive`:\n\n- If enabled, it returns `strings.EqualFold(s, t)` for case-insensitive comparison.\n- Otherwise, it returns `s == t` for exact, case-sensitive comparison."}}
+{"type":"turn.completed","usage":{"input_tokens":16588,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":71,"reasoning_output_tokens":0}}

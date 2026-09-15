@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-34f80c3a927e",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ad0f2e405806b4cd7fdbac6d2f07bdad8c8309b79802477b72fb499ede197806",
+  "bundle_sha256": "18ecbf2f16a08a2e43e9932100249a901a84d5edc4faf2864eb081e01655d506",
+  "prompt_sha256": "70170ba0785bcef97f288927051ebb4ba8484286b26b74ae1961db652ee8e09d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetHelpCommand` on the command, passing your custom `*Command`:\n\n```go\nrootCmd.SetHelpCommand(customHelpCmd)\n```\n\nIn `command.go:327–330`, `func (c *Command) SetHelpCommand(cmd *Command)` installs it by assigning `c.helpCommand = cmd`.",
+  "responded_at": "2026-09-15T20:29:56Z",
+  "sha256": "4b1ec262921b04701971e879e237f0b2593a22b0bc0d237c174f9ebf59a0b838"
+}

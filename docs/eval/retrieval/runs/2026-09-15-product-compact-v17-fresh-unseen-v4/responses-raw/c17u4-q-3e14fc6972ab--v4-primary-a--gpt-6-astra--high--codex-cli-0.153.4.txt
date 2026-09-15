@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no test or help-output assertion for an already-owned `-v`, and the relevant comment in `command.go:109–110` ends before stating the shorthand condition.

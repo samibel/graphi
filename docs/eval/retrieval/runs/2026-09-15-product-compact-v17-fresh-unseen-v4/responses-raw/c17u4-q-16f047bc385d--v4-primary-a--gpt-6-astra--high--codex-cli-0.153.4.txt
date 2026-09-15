@@ -1,0 +1,1 @@
+In `command.go:1879–1885`, `commandNameMatches(s, t)` checks the global `EnableCaseInsensitive` flag. When true, it returns `strings.EqualFold(s, t)` for case-insensitive comparison; otherwise, it returns `s == t` for exact, case-sensitive comparison.

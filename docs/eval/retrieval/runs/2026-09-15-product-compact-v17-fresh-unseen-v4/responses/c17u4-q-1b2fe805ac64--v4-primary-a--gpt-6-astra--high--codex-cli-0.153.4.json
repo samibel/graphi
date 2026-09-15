@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1b2fe805ac64",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2ff7e9da8ba8d275d6c56ec3fcfff8e1368a71c3883ed7edcda977012e729fab",
+  "bundle_sha256": "49b57ace95bda488ccc3d0e7d1e02d4a766a57010627906872a05da46864c392",
+  "prompt_sha256": "3f249f17a853beb5b9bbbcb5380d49194f592fac737d0183abc31ef687e3187e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes only an incomplete `Gt` comment at `cobra.go:111`, with no implementation or explanation of how collections, integers, or numeric strings are converted before comparison.",
+  "responded_at": "2026-09-15T20:26:11Z",
+  "sha256": "426ac03505faec8cf10cf465a836c29237c3e4788d06f82f4e96c33d15116dc1"
+}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-22a73c5f90bd",
+  "response_sha256": "b5a5d8b6751b83f6e38ee49015e4f64bb765547827b24fcd61dce53c44f2fcbb",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response states insufficiency rather than answering the question. The bundle omits the UsageFunc body needed to establish local override precedence, parent inheritance, and default flag merging and template execution.",
+  "graded_at": "2026-09-15T20:44:23Z",
+  "sha256": "8a2d27be19bb6992ae053c486499b0c5e94ca36b538bd46d5fb90e8887e08baa"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d3-7320-7db2-a10a-617d1d5f9361"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies SetUsageFunc with the required func(*Command) error signature and its assignment to c.usageFunc. The invocation behavior and template alternative are supported by the bundle, and all citations resolve within preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17649,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":73,"reasoning_output_tokens":21}}

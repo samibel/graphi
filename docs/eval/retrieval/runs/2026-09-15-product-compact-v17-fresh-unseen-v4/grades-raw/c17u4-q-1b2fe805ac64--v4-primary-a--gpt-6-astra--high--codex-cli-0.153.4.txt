@@ -1,0 +1,1 @@
+FAIL: The response does not answer how operands are converted. The bundle contains only an incomplete `Gt` comment at `cobra.go:111`, with no implementation supporting collection lengths, integer conversion, numeric-string parsing, or the resulting int64 comparison.

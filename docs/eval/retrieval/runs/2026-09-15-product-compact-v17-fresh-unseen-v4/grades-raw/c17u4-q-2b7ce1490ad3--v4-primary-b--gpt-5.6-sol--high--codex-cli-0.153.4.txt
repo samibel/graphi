@@ -1,0 +1,1 @@
+FAIL: The response does not answer how legacy Bash completion assembles flag metadata. The bundle supports only `Command.Flags()` including local and inherited persistent flags; it lacks the required `writeFlags` behavior for annotations, parse state, distinct flag sets, hidden/deprecated filtering, and conditional local nonpersistent flag tracking.

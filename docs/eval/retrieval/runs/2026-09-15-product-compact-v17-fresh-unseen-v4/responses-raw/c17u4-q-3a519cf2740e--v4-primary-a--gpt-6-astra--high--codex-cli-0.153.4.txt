@@ -1,0 +1,1 @@
+INSUFFICIENT The `TestPlugin` snippet (`command_test.go:369–381`) sets `CommandDisplayNameAnnotation` to `"kubectl plugin"` with `Use: "plugin"`, but omits the help execution and assertions needed to show how the test verifies the displayed name.

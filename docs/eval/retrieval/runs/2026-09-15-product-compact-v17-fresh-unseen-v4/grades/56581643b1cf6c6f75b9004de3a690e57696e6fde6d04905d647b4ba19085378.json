@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0a76ce41f953",
+  "response_sha256": "56581643b1cf6c6f75b9004de3a690e57696e6fde6d04905d647b4ba19085378",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response accurately describes the enabled-label order and comma-space joining, the default label when no flags are recognized, and the error returned for d \u003e= shellCompDirectiveMaxValue. All claims and cited lines are supported by the preserved completions.go span.",
+  "graded_at": "2026-09-15T20:38:10Z",
+  "sha256": "f45f6bf2e1023f6ce0dd70cefd84448a2da4a7810f0f7918b9ee5fd9e8586c67"
+}

@@ -1,0 +1,1 @@
+`RangeArgs` checks whether `len(args) < min || len(args) > max`, so the interval is inclusive. If either condition is true, it returns an error reporting the accepted bounds and actual count; otherwise it returns `nil` (`args.go`, `RangeArgs`, lines 104–112).

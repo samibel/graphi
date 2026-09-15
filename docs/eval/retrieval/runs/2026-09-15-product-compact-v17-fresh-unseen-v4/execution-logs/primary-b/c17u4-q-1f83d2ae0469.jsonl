@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-6fff-7711-9604-d4a26d785222"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s `stringInSlice` performs a linear scan and compares each element with exact equality (`b == a`). It returns `true` on the first match and `false` if none match (`cobra.go`, lines 222–230, symbol `stringInSlice`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16394,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":41}}

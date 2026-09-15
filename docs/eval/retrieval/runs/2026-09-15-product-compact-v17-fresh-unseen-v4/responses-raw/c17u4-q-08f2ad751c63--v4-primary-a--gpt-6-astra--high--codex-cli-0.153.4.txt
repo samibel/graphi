@@ -1,0 +1,8 @@
+`getFlagNameCompletions` applies these rules:
+
+- **Skip hidden or deprecated flags entirely.** It first calls `nonCompletableFlag`, which returns `flag.Hidden || len(flag.Deprecated) > 0` (`completions.go:534–537`; `bash_completions.go:699–701`).
+- **Suggest the long spelling `--<Name>`** if `strings.HasPrefix(flagName, toComplete)` matches (`completions.go:540–543`).
+- **Suggest the shorthand `-<Shorthand>`** independently, only when `flag.Shorthand` is nonempty and that spelling starts with `toComplete` (`completions.go:559–561`). Both spellings can therefore appear, with the long form first.
+- **Never suggest `--<Name>=`.** The comments explicitly say the `=` form still works but is omitted to shorten suggestions and avoid requiring an extra `=` or space (`completions.go:545–556`).
+
+Each suggestion includes a tab followed by `flag.Usage`, using `fmt.Sprintf("%s\t%s", flagName, flag.Usage)` (`completions.go:543,561`).

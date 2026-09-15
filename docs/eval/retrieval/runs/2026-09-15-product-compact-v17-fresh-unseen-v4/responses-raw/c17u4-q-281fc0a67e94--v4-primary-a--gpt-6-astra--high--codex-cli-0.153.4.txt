@@ -1,0 +1,5 @@
+`ResetFlags` in `command.go:1738–1749`:
+
+- **Replaces the error buffer:** assigns `c.flagErrorBuf = new(bytes.Buffer)` and calls `Reset()` on it (lines 1739–1740).
+- **Rebuilds `c.flags` and `c.pflags`:** creates each with `flag.NewFlagSet(c.Name(), flag.ContinueOnError)` and directs both outputs to the new error buffer (lines 1741–1744).
+- **Invalidates cached flag sets:** sets `c.lflags`, `c.iflags`, and `c.parentsPflags` to `nil` (lines 1746–1748). These represent local flags, inherited flags, and parent persistent flags, as shown by `LocalFlags`, `InheritedFlags` (`command.go:1667–1718`), and `mergePersistentFlags` (`command.go:1846–1853`).

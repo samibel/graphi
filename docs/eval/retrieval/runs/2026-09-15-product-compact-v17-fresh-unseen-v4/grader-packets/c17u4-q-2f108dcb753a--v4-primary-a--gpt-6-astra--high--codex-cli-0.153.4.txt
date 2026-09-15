@@ -1,0 +1,47 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: e0262194d8565881d5993c9a59d8e90e251028f686788b020efeef81ed98e764
+QUERY ID: c17u4-q-2f108dcb753a
+
+QUESTION:
+How do ValidArgs and ValidArgsFunction differ, and may they both be configured on one command?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:82-87 anchor="ValidArgs []string" reason=The field documentation distinguishes static and dynamic completion arguments and explicitly makes them mutually exclusive.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 6cc74fefb383; read in order (311/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":48,"end_line":66,"text":"\n// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`\nfunc OnlyValidArgs(cmd *Command, args []string) error {\n\tif len(cmd.ValidArgs) > 0 {\n\t\t// Remove any description that may be included in ValidArgs.\n\t\t// A description is following a tab character.\n\t\tvar validArgs []string\n\t\tfor _, v := range cmd.ValidArgs {\n\t\t\tvalidArgs = append(validArgs, strings.Split(v, \"\\t\")[0])\n\t\t}\n\t\tfor _, v := range args {\n\t\t\tif !stringInSlice(v, validArgs) {\n\t\t\t\treturn fmt.Errorf(\"invalid argument %q for %q%s\", v, cmd.CommandPath(), cmd.findSuggestions(args[0]))\n\t\t\t}\n\t\t}\n\t}\n\treturn nil\n}"},{"path":"cobra.go","start_line":222,"end_line":230,"text":"\nfunc stringInSlice(a string, list []string) bool {\n\tfor _, b := range list {\n\t\tif b == a {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1424,"end_line":1434,"text":"\n// CommandPath returns the full path to this command.\nfunc (c *Command) CommandPath() string {\n\tif c.HasParent() {\n\t\treturn c.Parent().CommandPath() + \" \" + c.Name()\n\t}\n\tif displayName, ok := c.Annotations[CommandDisplayNameAnnotation]; ok {\n\t\treturn displayName\n\t}\n\treturn c.Name()\n}"},{"path":"command.go","start_line":749,"end_line":765,"text":"\nfunc (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance <= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}"},{"path":"command.go","start_line":86,"end_line":87,"text":"\t// Only one of ValidArgs and ValidArgsFunction can be used for a command.\n\tValidArgsFunction func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)"},{"path":"command.go","start_line":1360,"end_line":1363,"text":"\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"},{"path":"command.go","start_line":1301,"end_line":1304,"text":"\n// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {"},{"path":"zsh_completions.go","start_line":61,"end_line":64,"text":"// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//"}],"provenance":{"input_sha256":"e8b0e0dd0110deff7720a74987c4a5b25e2d3e33a1b171768f66a526fd64f20f","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+- **`ValidArgs`** supplies a list of values; `OnlyValidArgs` checks positional arguments against that list, stripping tab-separated descriptions (`args.go:49–65`). For shell completion, it applies to the **first argument only** (`zsh_completions.go:61–63`).
+- **`ValidArgsFunction`** is a callback taking `cmd`, `args`, and `toComplete`, returning `[]string` and `ShellCompDirective` (`command.go:87`). It supports completion for **any argument**, including the first (`zsh_completions.go:61–63`).
+
+**They cannot both be used on one command.** `command.go:86` explicitly states: “Only one of ValidArgs and ValidArgsFunction can be used for a command.”
+----- END THE RATER'S RESPONSE -----

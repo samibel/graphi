@@ -1,0 +1,6 @@
+In `completions.go` lines 103–116, `CompletionOptions` provides four independent switches:
+
+- `DisableDefaultCmd`: prevents creation of the default `completion` command.
+- `DisableNoDescFlag`: prevents creation of the `--no-descriptions` flag.
+- `DisableDescriptions`: turns off all completion descriptions for supporting shells.
+- `HiddenDefaultCmd`: hides the default `completion` command.

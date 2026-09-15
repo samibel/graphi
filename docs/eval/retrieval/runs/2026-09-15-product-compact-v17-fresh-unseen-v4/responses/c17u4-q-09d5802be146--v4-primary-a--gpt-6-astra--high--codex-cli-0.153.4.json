@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-09d5802be146",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "0dc68a492d368ae9fcb609b1d02a97b6208d1bff87fe519f6ccf28954c133005",
+  "bundle_sha256": "522abbbfafe4095dfc51c41706ee7f3a4cc4e9b913dca4699c0e88ba86d557b6",
+  "prompt_sha256": "28230a4d68d88a0c4e5bfee0cc2efe42080331f5fde8e024f159fc5e2e8c18ef",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The callback preserves the supplied `choices []string` and `directive ShellCompDirective`, returning both unchanged regardless of `cmd`, `args`, or `toComplete`. In `completions.go:125–128`, `FixedCompletions` returns a closure whose body is `return choices, directive`.",
+  "responded_at": "2026-09-15T20:23:25Z",
+  "sha256": "7420aa9499e359f4da65cba656259a668011fca4d91bc861b0420fc6b39ef6c8"
+}

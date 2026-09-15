@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6cd-27ec-70e2-aa38-2d8c15e8104b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states all three conditions for appending `\" [flags]\"`: flags are not disabled in the usage line, available flags exist, and the constructed usage line lacks `\"[flags]\"`. Its explanation of available flags and both citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17756,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":23}}

@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes availability checks in `command.go:1559–1576`, but no legacy Bash generator implementation showing how it collects child commands and their aliases.

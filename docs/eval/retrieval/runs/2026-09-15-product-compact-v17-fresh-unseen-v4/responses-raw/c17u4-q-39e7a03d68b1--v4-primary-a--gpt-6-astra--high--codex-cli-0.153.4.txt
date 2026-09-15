@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows alias-prefix matching in `command.go:1523–1538` (`hasNameOrAliasPrefix`), but contains no nested command invocation or test assertions showing how that behavior is verified.

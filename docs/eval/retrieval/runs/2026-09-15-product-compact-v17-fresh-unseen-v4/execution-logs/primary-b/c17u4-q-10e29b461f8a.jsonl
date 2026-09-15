@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-bef3-7641-937e-31de01216a7d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go` lines 180–185, `tmpl`:\n\n1. Creates a template named `\"top\"` with `template.New(\"top\")`.\n2. Registers the shared `templateFuncs` function map via `t.Funcs(templateFuncs)`.\n3. Parses the supplied template text; `template.Must(t.Parse(text))` panics on a parse error.\n4. Executes the parsed template with `data`, writing output to `w`, and returns the execution error from `t.Execute(w, data)`.\n\nThe registered functions can be extended through `AddTemplateFunc` and `AddTemplateFuncs` (`cobra.go` lines 82–95)."}}
+{"type":"turn.completed","usage":{"input_tokens":16266,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":137,"reasoning_output_tokens":0}}

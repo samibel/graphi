@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-2a48-7453-ba83-d5c46ef0104f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The four boolean switches in `CompletionOptions` (`completions.go:105–116`) are:\n\n- **`DisableDefaultCmd`**: Prevents creation of the default `completion` command (lines 106–107).\n- **`DisableNoDescFlag`**: Prevents creation of `--no-descriptions` for shells supporting descriptions (lines 108–110).\n- **`DisableDescriptions`**: Turns off all completion descriptions for shells supporting them (lines 111–113).\n- **`HiddenDefaultCmd`**: Hides the default `completion` command (lines 114–115)."}}
+{"type":"turn.completed","usage":{"input_tokens":17223,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":0}}

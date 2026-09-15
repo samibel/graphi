@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2349eb61d708",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "f7a7cf27da643a1589f739e7459b17f052e3e57040a5d5031aff4eb6cad49b02",
+  "bundle_sha256": "1b3335ed5db4afe7e1dcb0c626b00712cd27ac01405cf9433f8a55557e7ab4c2",
+  "prompt_sha256": "00be8f7106305d2736d345cfddcd9aaa03966c34be0eb19ac51bba6264049de4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Help-function inheritance resolves from the command upward: `HelpFunc()` returns `c.helpFunc` if set; otherwise it recursively calls `c.Parent().HelpFunc()`. The nearest ancestor with a custom function wins; if none has one, it returns the default function (`command.go:452–459`).\n\nDefault help merges persistent flags, then renders `c.HelpTemplate()` through `tmpl(c.OutOrStdout(), ...)`. The snippet explicitly says help should go to **stdout**; rendering errors are passed to `c.PrintErrln(err)` (`command.go:460–466`).",
+  "responded_at": "2026-09-15T20:27:34Z",
+  "sha256": "c9f8dba5d33d17ce086436da3ff51df92421baaaaea209af73e472896a3ad1a3"
+}

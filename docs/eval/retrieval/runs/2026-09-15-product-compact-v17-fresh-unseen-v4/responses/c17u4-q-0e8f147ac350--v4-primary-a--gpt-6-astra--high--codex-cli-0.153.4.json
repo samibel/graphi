@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0e8f147ac350",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "e270c2e2282dd57d5e39d3a447d19ef18d0c5db0ae3f12631400676792ab24df",
+  "bundle_sha256": "fc006f4131435738fc36563552a064e8692af50c0cba7cbf9c498118077ec9f9",
+  "prompt_sha256": "0c0534ad6a48694244b0cff117b200c88b877f99971071835b8347aa62b6ecd2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`OnFinalize(y ...func())` appends all supplied functions to the package-level `finalizers []func()` slice using `finalizers = append(finalizers, y...)`. Repeated calls accumulate functions in order, preserving earlier entries (`cobra.go`, lines 105–106; slice declaration at line 43).",
+  "responded_at": "2026-09-15T20:24:09Z",
+  "sha256": "05cfe420186e6718633445f2bc5d5e4b7aaf53c030e9faf26fb9a15fedd07e56"
+}

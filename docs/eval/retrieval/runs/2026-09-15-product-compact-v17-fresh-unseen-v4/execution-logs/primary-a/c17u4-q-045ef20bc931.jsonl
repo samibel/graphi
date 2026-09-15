@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bc-3cca-7c22-9f55-7fc95a70af60"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`forceMultiLine` appends one newline (`\"\\n\"`) only when `len(s) > 60` **and** `s` contains no newline: `!strings.Contains(s, \"\\n\")`. The condition is in `doc/util.go:42`, and the append (`s = s + \"\\n\"`) is on line 43. Otherwise, it returns the text unchanged."}}
+{"type":"turn.completed","usage":{"input_tokens":17446,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":0}}

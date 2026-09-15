@@ -1,0 +1,1 @@
+When `DisableFlagParsing` is `true`, flag parsing is disabled and all flags are passed to the command as arguments. The comment in `command.go:236–237` states: “If this is true all flags will be passed to the command as arguments.”

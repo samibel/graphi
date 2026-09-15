@@ -1,0 +1,3 @@
+Help-function inheritance resolves from the command upward: `HelpFunc()` returns `c.helpFunc` if set; otherwise it recursively calls `c.Parent().HelpFunc()`. The nearest ancestor with a custom function wins; if none has one, it returns the default function (`command.go:452–459`).
+
+Default help merges persistent flags, then renders `c.HelpTemplate()` through `tmpl(c.OutOrStdout(), ...)`. The snippet explicitly says help should go to **stdout**; rendering errors are passed to `c.PrintErrln(err)` (`command.go:460–466`).

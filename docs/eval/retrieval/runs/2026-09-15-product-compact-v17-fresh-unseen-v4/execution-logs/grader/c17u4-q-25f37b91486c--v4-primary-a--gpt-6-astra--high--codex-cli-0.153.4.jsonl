@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d0-bf51-7212-8206-0bbb0078fb7c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states all exclusions and the positive condition: runnable or having an available subcommand after passing the exclusions. Its definitions and line references are supported by the preserved command.go spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17714,"cached_input_tokens":6400,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

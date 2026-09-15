@@ -1,0 +1,7 @@
+`TestRequiredFlags` tests that executing the command with neither required flag supplied returns an error with the exact message:
+
+```text
+required flag(s) "foo1", "foo2" not set
+```
+
+In `command_test.go:818–834`, the test marks `foo1` and `foo2` required, calls `executeCommand(c)` without arguments, and compares `err.Error()` against that exact string. Both missing flags must appear together, in that order.

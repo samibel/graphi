@@ -1,0 +1,7 @@
+`UseLine` appends `" [flags]"` when:
+
+- `DisableFlagsInUseLine` is false,
+- `c.HasAvailableFlags()` is true, meaning there are non-hidden, non-deprecated local or inherited persistent flags, and
+- the usage line does not already contain `"[flags]"`.
+
+Evidence: `command.go:1436-1450` (`UseLine`) and `command.go:1770-1775` (`HasAvailableFlags`).

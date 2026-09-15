@@ -1,0 +1,1 @@
+FAIL: The response does not answer how verification works. The bundle lacks the essential test behavior: abbreviating an alias, invoking its nested child, checking both arguments, and resetting prefix matching.

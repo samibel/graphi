@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1e6a50f918cb",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "5793bb9b780abf445dc3b5a83c9d18f7a4c2e1c0dc746eccf80fe8117ff026bf",
+  "bundle_sha256": "08e9b6fd2724a04c03b1f9f06ef8dde6a803da7c2685295dadcfc218f5fb2398",
+  "prompt_sha256": "4255e5e11ee9bec8266e38dd2cda1482891b9033cf1ab0150af527a332e7c6fa",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra templates use `rpad`, registered as `\"rpad\": rpad` in `cobra.go:37`.\n\nIn `cobra.go:174–176`, `rpad(s string, padding int)` builds a left-aligned format with `fmt.Sprintf(\"%%-%ds\", padding)`, then applies it with `fmt.Sprintf(formattedString, s)`. This adds spaces on the right to reach the requested width; longer strings are not truncated.",
+  "responded_at": "2026-09-15T20:26:39Z",
+  "sha256": "b1301f2a745d8960942729c3cf1ad064665c92a27461a75ce9334c701c8140ea"
+}

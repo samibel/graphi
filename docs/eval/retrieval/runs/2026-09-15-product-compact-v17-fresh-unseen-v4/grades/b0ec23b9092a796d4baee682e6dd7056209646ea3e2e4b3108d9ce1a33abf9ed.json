@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0e8f147ac350",
+  "response_sha256": "b0ec23b9092a796d4baee682e6dd7056209646ea3e2e4b3108d9ce1a33abf9ed",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly states that OnFinalize appends variadic functions to the package-level finalizers slice, preserving existing entries and argument order. The quoted append and cited locations are supported by the bundle.",
+  "graded_at": "2026-09-15T20:39:21Z",
+  "sha256": "7054cd83734c56c204ea9aae72d52bd4894015ab84e6dcf62281e64948079b53"
+}

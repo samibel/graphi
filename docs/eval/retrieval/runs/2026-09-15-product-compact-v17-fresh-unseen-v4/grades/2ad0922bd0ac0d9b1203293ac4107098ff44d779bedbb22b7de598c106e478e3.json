@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-2b7ce1490ad3",
+  "response_sha256": "2ad0922bd0ac0d9b1203293ac4107098ff44d779bedbb22b7de598c106e478e3",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer how metadata is assembled. The bundle lacks `writeFlags` and the required annotation preparation, parse-state emission, distinct flag-set visits, hidden/deprecated filtering, and traversal-dependent tracking of local nonpersistent flags.",
+  "graded_at": "2026-09-15T20:46:28Z",
+  "sha256": "33e1bbece407d9a15bd168b65f22e84936561bb796dcd66d8e6df6eb7dff6385"
+}

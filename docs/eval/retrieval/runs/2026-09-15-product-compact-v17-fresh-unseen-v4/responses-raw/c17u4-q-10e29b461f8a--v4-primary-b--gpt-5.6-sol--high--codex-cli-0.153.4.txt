@@ -1,0 +1,8 @@
+In `cobra.go` lines 180–185, `tmpl`:
+
+1. Creates a template named `"top"` with `template.New("top")`.
+2. Registers the shared `templateFuncs` function map via `t.Funcs(templateFuncs)`.
+3. Parses the supplied template text; `template.Must(t.Parse(text))` panics on a parse error.
+4. Executes the parsed template with `data`, writing output to `w`, and returns the execution error from `t.Execute(w, data)`.
+
+The registered functions can be extended through `AddTemplateFunc` and `AddTemplateFuncs` (`cobra.go` lines 82–95).

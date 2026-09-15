@@ -1,0 +1,1 @@
+PASS: The response accurately states all exclusions and the positive condition: runnable or having an available subcommand after passing the exclusions. Its definitions and line references are supported by the preserved command.go spans.

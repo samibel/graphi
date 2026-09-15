@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d2-c802-74b0-aa43-989dabfb48e0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response names all four CompletionOptions switches and accurately describes their independent effects. Every claim and cited line is supported by the preserved completions.go:103–116 span."}}
+{"type":"turn.completed","usage":{"input_tokens":17658,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

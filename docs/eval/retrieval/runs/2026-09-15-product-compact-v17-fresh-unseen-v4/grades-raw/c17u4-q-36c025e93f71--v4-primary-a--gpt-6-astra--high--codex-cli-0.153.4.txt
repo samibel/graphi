@@ -1,0 +1,1 @@
+PASS: The response identifies both options, correctly explains complete suppression and the Levenshtein distance threshold, and states that nonpositive values default to 2. All claims and citations are supported by the preserved command.go spans.

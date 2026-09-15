@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bc-49ff-78d1-b605-d2184500a864"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`forceMultiLine` appends `\"\\n\"` exactly when the input string is longer than 60 characters and does not already contain a newline:\n\n```go\nif len(s) > 60 && !strings.Contains(s, \"\\n\")\n```\n\nEvidence: `doc/util.go`, lines 41–44."}}
+{"type":"turn.completed","usage":{"input_tokens":16679,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":0}}

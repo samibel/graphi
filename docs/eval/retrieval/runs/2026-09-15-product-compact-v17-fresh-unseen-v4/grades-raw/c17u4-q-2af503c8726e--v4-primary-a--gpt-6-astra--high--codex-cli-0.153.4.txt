@@ -1,0 +1,1 @@
+FAIL: The response does not answer how child commands and aliases are collected. The bundle lacks the required `writeCommands` implementation showing filtering, command-name emission, and delegated alias emission.

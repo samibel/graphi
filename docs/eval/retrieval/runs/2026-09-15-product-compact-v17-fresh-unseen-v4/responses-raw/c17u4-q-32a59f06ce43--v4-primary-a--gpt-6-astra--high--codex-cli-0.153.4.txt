@@ -1,0 +1,3 @@
+The `flagErrorFunc` callback, configured with `SetFlagErrorFunc`, customizes flag-parsing errors. Its signature is `func(*Command, error) error`.
+
+Evidence: `command.go:170–171` says it is user-defined and called when flag parsing returns an error. `Command.FlagErrorFunc()` in `command.go:496–511` returns the configured callback from the command or a parent, defaulting to returning the original error.

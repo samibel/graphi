@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d3-13a8-7e12-a097-7c20c97461dd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly distinguishes ValidArgs candidates for the first positional argument from dynamic ValidArgsFunction candidates for any argument. The preserved function signature and zsh_completions.go:61-64 support this distinction; command.go:86-87 explicitly establishes mutual exclusivity. Both citations resolve inside the bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17693,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":117,"reasoning_output_tokens":49}}

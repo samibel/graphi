@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-33d14872b50f",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "2a323ee464552ff1a0cb4ec49f901c63eceb08d09eedf1a3a6bc070125ff9118",
+  "bundle_sha256": "94e2bf5a981ec46b922f2921c5ef6c9b98faaba715adecd05b750cca0a1eb620",
+  "prompt_sha256": "ea08e7cd411b66f4c1c4e1089135d1d1f35f4c5368aae5587ce38e84bec76273",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Call `SetHelpFunc` on the command:\n\n```go\ncmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {\n    // custom help behavior\n})\n```\n\n`command.go:321-325` shows that `SetHelpFunc` stores the replacement in `c.helpFunc`. `Command.HelpFunc` then returns that function when set, otherwise inherits one from its parent or uses Cobra’s default (`command.go:449-467`). Therefore, setting it on a parent also affects child commands, as confirmed by `site/content/user_guide.md:543-553`.",
+  "responded_at": "2026-09-15T20:28:41Z",
+  "sha256": "c315802815b719ef099b8e63c96a01f53629589fcfb1da6f6ac63cc31cbbc5a4"
+}

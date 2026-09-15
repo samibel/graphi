@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-0e8f147ac350",
+  "response_sha256": "05cfe420186e6718633445f2bc5d5e4b7aaf53c030e9faf26fb9a15fedd07e56",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The bundle shows `OnFinalize` appending `y...` to the package-level `finalizers []func()` slice, supporting accumulation in order across calls while preserving earlier entries. All cited lines resolve within the bundle.",
+  "graded_at": "2026-09-15T20:39:11Z",
+  "sha256": "39aa320a088293b4aa6107d7331873196e0da86f0c70a7c3074afd62bd606350"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0f5ca7904bd1",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "db6bea58096f39f93e72752a9e84ad5c203910f947ceceb71c5de17200b966b6",
+  "bundle_sha256": "8b4d273690a8572c0cd42eb39ab74ef34925d0fd0992afbd35b361507537be13",
+  "prompt_sha256": "869f4fba4231a46ea3c270e63807435cc06f833c74b1d281f62f3b5232bc5e5d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `cobra.go:166–172`, `appendIfNotPresent` returns `s` unchanged when `strings.Contains(s, stringToAppend)` is true. Otherwise, it returns `s + \" \" + stringToAppend`, inserting one space before the appended string.",
+  "responded_at": "2026-09-15T20:24:07Z",
+  "sha256": "dcbbd48dc97246e67602104e30ad9ffdd7ee791ceb2b64a40954be5abebb307c"
+}

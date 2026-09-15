@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-dff5-7891-bbc2-18aa79a080fe"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go:180–184`, `tmpl(w, text, data)`:\n\n1. Creates a template named `\"top\"` with `template.New(\"top\")`.\n2. Registers `templateFuncs` through `t.Funcs(templateFuncs)`.\n3. Parses the supplied text with `template.Must(t.Parse(text))`, which panics on a parse error.\n4. Executes it with `t.Execute(w, data)`, writing output to `w` and returning the execution error.\n\nThe registered functions can be extended using `AddTemplateFunc` and `AddTemplateFuncs` (`cobra.go:83–94`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17033,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":129,"reasoning_output_tokens":0}}

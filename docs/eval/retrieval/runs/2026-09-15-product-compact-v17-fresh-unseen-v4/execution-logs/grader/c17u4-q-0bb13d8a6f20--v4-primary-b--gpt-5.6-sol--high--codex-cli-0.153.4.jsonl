@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ca-e4dc-7fe3-9a78-e4614bfd1c2b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes appending `_ACTIVE_HELP`, uppercasing the result, and replacing characters outside `A–Z`, `0–9`, and `_` with underscores. Its citations resolve within the bundle, and its example matches the preserved implementation."}}
+{"type":"turn.completed","usage":{"input_tokens":17730,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

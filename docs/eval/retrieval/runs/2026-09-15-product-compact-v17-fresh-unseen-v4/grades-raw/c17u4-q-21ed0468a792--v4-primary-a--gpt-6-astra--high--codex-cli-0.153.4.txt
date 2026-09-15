@@ -1,0 +1,1 @@
+PASS: The response correctly describes WriteStringAndCheck capturing the write error and passing it to CheckErr, which prints to stderr and exits with status 1 for non-nil errors and does nothing for nil. Both citations resolve within the preserved cobra.go span.

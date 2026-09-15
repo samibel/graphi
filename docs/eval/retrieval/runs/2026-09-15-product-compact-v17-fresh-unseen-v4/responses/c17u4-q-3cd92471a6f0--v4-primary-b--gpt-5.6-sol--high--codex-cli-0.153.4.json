@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-3cd92471a6f0",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "3bc1026bed65d74470a4d22f994d43951a84d083a83c82a29b14f8f09b00bccb",
+  "bundle_sha256": "51bed3f7aeea2f45dc11c043612b397a13a390291197dbbbcf03fa336fee9297",
+  "prompt_sha256": "5b88eba8b5fe3c96aef5d4f99ed4666e82228c86b962050e7b439f9cf4d59479",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It establishes that a child inherits the parent’s persistent `help` flag and does not create a duplicate default flag. `InitDefaultHelpFlag` first calls `mergePersistentFlags()` and only adds `help` when `c.Flags().Lookup(\"help\") == nil` ([command.go:1185–1197]); `mergePersistentFlags` adds all parents’ persistent flags through `parentsPflags` ([command.go:1846–1874]).",
+  "responded_at": "2026-09-15T20:29:49Z",
+  "sha256": "ce406ef1ff3a8cc32663b63c2e58086f56042d6318f051a07a5fe08a6850f96d"
+}

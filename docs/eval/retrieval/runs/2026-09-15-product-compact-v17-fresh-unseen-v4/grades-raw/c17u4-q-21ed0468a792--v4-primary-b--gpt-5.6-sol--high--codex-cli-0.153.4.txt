@@ -1,0 +1,1 @@
+PASS: The response correctly states that WriteStringAndCheck captures the error from b.WriteString(s) and delegates it to CheckErr, which prints to stderr and exits with code 1 for a non-nil error. The nil behavior and citations are supported by the preserved cobra.go span.

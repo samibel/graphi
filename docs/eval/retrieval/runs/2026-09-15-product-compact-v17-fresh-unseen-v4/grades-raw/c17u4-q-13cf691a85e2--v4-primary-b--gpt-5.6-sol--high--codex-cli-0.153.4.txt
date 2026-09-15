@@ -1,0 +1,1 @@
+PASS: The response correctly states local non-nil input, then the nearest ancestor’s configured input, then the supplied default. All claims and citations, including InOrStdin passing os.Stdin, are supported by the preserved bundle.

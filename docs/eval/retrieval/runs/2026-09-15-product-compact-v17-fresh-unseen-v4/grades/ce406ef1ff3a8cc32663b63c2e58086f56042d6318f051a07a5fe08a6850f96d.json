@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-3cd92471a6f0",
+  "response_sha256": "ce406ef1ff3a8cc32663b63c2e58086f56042d6318f051a07a5fe08a6850f96d",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response explains inheritance and duplicate prevention but omits the essential behavior: initializing help on the child preserves the parent flag’s custom usage instead of replacing it with default usage. The bundle also lacks the test and its assertion.",
+  "graded_at": "2026-09-15T20:51:01Z",
+  "sha256": "cec09f839d88a1d08a91ca2ba3d8c36ada56c9d923f8fd3712e29c331af87cae"
+}

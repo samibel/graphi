@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-aa29-7cd3-a9d1-024d1cbd23a7"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go:166–172`, `appendIfNotPresent` returns `s` unchanged when `strings.Contains(s, stringToAppend)` is true. Otherwise, it returns `s + \" \" + stringToAppend`, inserting one space before the appended string."}}
+{"type":"turn.completed","usage":{"input_tokens":16648,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

@@ -1,0 +1,7 @@
+`getFlagNameCompletions` in `completions.go:533-565` works as follows:
+
+- It returns no suggestions when `nonCompletableFlag(flag)` is true; `bash_completions.go:698-701` defines that as a hidden or deprecated flag.
+- It constructs the long spelling as `"--" + flag.Name` and suggests it only when that string starts with `toComplete` (`completions.go:540-543`).
+- It intentionally suggests only `--flag`, never the `--flag=` variant; the commented code at `completions.go:545-557` says the equals form remains valid but is omitted to shorten suggestions and avoid forcing users to type `=` or a space.
+- It constructs the shorthand as `"-" + flag.Shorthand` and suggests it only when the shorthand is nonempty and the constructed spelling starts with `toComplete` (`completions.go:560-562`).
+- Each suggestion is formatted as `"<spelling>\t<flag.Usage>"`.

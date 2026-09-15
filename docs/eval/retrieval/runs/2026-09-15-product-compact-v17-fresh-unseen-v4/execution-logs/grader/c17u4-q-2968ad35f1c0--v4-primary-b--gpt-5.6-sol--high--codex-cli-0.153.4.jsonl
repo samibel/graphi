@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-bd1b-7581-95e1-6d746e5bac2a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes visiting inherited and non-inherited flag sets separately when parsing is disabled, selecting unchanged flags carrying `BashCompOneRequiredFlag`, and appending their name completions. All claims and citations are supported by the preserved bundle."}}
+{"type":"turn.completed","usage":{"input_tokens":17682,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

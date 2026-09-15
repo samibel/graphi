@@ -1,0 +1,53 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: d036d52aa1124209622fef86e57b7b6177d00ae34b61be451cb420cbf489537e
+QUERY ID: c17u4-q-1e6a50f918cb
+
+QUESTION:
+How is a string padded to a requested width for Cobra's templates?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:173-177 anchor="func rpad(s string, padding int) string" reason=The helper builds a left-aligned width format and applies it to the string.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 5793bb9b780a; read in order (250/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":172,"end_line":177,"text":"\n// rpad adds padding to the right of a string.\nfunc rpad(s string, padding int) string {\n\tformattedString := fmt.Sprintf(\"%%-%ds\", padding)\n\treturn fmt.Sprintf(formattedString, s)\n}"},{"path":"cobra.go","start_line":31,"end_line":40,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}"},{"path":"command.go","start_line":583,"end_line":609,"text":"\n// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}\n\n{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`\n}\n\n// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"},{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":168,"end_line":170,"text":"\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of"},{"path":"command.go","start_line":873,"end_line":876,"text":"\nfunc (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")"},{"path":"command.go","start_line":347,"end_line":350,"text":"// SetHelpTemplate sets help template to be used. Application can use it to set custom template.\nfunc (c *Command) SetHelpTemplate(s string) {\n\tc.helpTemplate = s\n}"}],"provenance":{"input_sha256":"0a63c70ddb9178005958f0ffab5e03a4570bfd5e1c73747eeda2a6908fc8acf6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Cobra exposes `rpad` to its templates via `templateFuncs` (`cobra.go:31–40`). The function right-pads a string using a dynamically constructed `fmt.Sprintf` format:
+
+```go
+formattedString := fmt.Sprintf("%%-%ds", padding)
+return fmt.Sprintf(formattedString, s)
+```
+
+(`cobra.go:172–177`)
+
+For width `padding`, this produces a format like `"%-20s"`, which left-aligns `s` and adds spaces on the right until the requested minimum width is reached.
+----- END THE RATER'S RESPONSE -----

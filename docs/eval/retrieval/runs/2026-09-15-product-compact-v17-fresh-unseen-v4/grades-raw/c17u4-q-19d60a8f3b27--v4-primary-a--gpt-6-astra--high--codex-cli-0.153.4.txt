@@ -1,0 +1,1 @@
+FAIL: The response explicitly reports insufficient evidence and does not explain the required marker-prefix encoding. The preserved bundle shows helper usage but omits the implementation needed to support that essential behavior.

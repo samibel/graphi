@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-03c87e512aa4",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "ca6aa86e915b55e3aff5fb40ef48abe647b1d7f5b41a686704ddf1f430cd7b66",
+  "bundle_sha256": "53d3bf7825c983cb2b8009e31e9fd6289120cf7246a1c244cad311efef493ba0",
+  "prompt_sha256": "08d2702e8fee7030afa9f8fe882a91f66f230b226c8801c2010f61f5789f1527",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`hasSeeAlso` returns true when the command has **a parent**, or **at least one child** for which `IsAvailableCommand()` is true and `IsAdditionalHelpTopicCommand()` is false. Otherwise it returns false (`doc/util.go:26–37`).\n\nAn available child must be neither deprecated nor hidden, must not be its parent’s designated help command, and must either be runnable or have an available subcommand (`command.go:1562–1575`, `1617–1629`). The parent check only requires `c.parent != nil` (`command.go:1632–1634`).\n\nThis result gates the Markdown `### SEE ALSO` heading (`doc/md_docs.go:83–84`).",
+  "responded_at": "2026-09-15T20:22:29Z",
+  "sha256": "31aa28e2baf76a993b23dc94ac5f0a827b5289ed53f8f2315cc4071fc74c509b"
+}

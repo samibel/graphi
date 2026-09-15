@@ -1,0 +1,1 @@
+PASS: The response identifies `flagErrorFunc`, configured through `SetFlagErrorFunc`, with signature `func(*Command, error) error`. Both cited spans are preserved in the bundle and support its role, parent fallback, and default behavior.

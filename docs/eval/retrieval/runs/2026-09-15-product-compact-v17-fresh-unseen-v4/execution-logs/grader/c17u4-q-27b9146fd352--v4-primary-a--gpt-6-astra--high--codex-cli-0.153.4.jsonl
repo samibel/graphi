@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-3383-7d31-b57a-3883864f3597"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly describes scanning `c.commands`, returning true for the first child satisfying `IsAdditionalHelpTopicCommand()`, and false if none qualify. The predicate description and runnable definition are supported by the bundle, and all citations resolve to preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17721,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+The `Command` options are:
+
+- `DisableSuggestions`: set to `true` to suppress unknown-command suggestions (`site/content/user_guide.md:712-716`; checked in `command.go:750-752`).
+- `SuggestionsMinimumDistance`: sets the maximum Levenshtein distance for suggested commands (`site/content/user_guide.md:718-722`; comparison in `command.go:837`). Values `<= 0` default to `2` (`command.go:753-755`).

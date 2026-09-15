@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: b0ec23b9092a796d4baee682e6dd7056209646ea3e2e4b3108d9ce1a33abf9ed
+QUERY ID: c17u4-q-0e8f147ac350
+
+QUESTION:
+In cobra.go, how are functions supplied to OnFinalize accumulated?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:103-107 anchor="func OnFinalize(y ...func())" reason=The body appends the variadic functions to the finalizer slice.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query e270c2e2282d; read in order (226/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":102,"end_line":107,"text":"\n// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"cobra.go","start_line":37,"end_line":49,"text":"\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}\n\nvar initializers []func()\nvar finalizers []func()\n\nconst (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false"},{"path":".github/labeler.yml","start_line":1,"end_line":6,"text":"# changes to documentation generation\n\"area/docs-generation\": doc/**/*\n\n# changes to the core cobra command\n\"area/cobra-command\":\n- any: ['./cobra.go', './cobra_test.go', './*command*.go']"},{"path":"bash_completions.go","start_line":492,"end_line":499,"text":"\t}\n}\n\nconst cbn = \"\\\")\\n\"\n\nfunc writeShortFlag(buf io.StringWriter, flag *pflag.Flag, cmd *Command) {\n\tname := flag.Shorthand\n\tformat := \"    \""},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"completions.go","start_line":34,"end_line":36,"text":"\n// Global map of flag completion functions. Make sure to use flagCompletionMutex before you try to read and write from it.\nvar flagCompletionFunctions = map[*pflag.Flag]func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective){}"},{"path":"bash_completions.go","start_line":507,"end_line":533,"text":"\nfunc writeFlag(buf io.StringWriter, flag *pflag.Flag, cmd *Command) {\n\tname := flag.Name\n\tformat := \"    flags+=(\\\"--%s\"\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat += \"=\"\n\t}\n\tformat += cbn\n\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat = \"    two_word_flags+=(\\\"--%s\" + cbn\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\t}\n\twriteFlagHandler(buf, \"--\"+name, flag.Annotations, cmd)\n}\n\nfunc writeLocalNonPersistentFlag(buf io.StringWriter, flag *pflag.Flag) {\n\tname := flag.Name\n\tformat := \"    local_nonpersistent_flags+=(\\\"--%[1]s\" + cbn\n\tif len(flag.NoOptDefVal) == 0 {\n\t\tformat += \"    local_nonpersistent_flags+=(\\\"--%[1]s=\" + cbn\n\t}\n\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.Shorthand) > 0 {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    local_nonpersistent_flags+=(\\\"-%s\\\")\\n\", flag.Shorthand))\n\t}\n}"}],"provenance":{"input_sha256":"6cbf6f8fc406173344d06b1a2944177a01f9c3ead90451bbac7f1e76ba61bd47","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`OnFinalize` appends every variadic function argument to the package-level `finalizers []func()` slice, preserving existing entries and argument order:
+
+```go
+finalizers = append(finalizers, y...)
+```
+
+Evidence: `cobra.go:43` declares `finalizers`, and `cobra.go:104-106` defines `OnFinalize` and performs the append.
+----- END THE RATER'S RESPONSE -----

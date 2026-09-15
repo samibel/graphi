@@ -1,0 +1,1 @@
+PASS: The response states both required conditions, `len(s) > 60` and no existing `"\n"`, matching the preserved implementation. Its citation to `doc/util.go` lines 41–44 resolves within the bundle.

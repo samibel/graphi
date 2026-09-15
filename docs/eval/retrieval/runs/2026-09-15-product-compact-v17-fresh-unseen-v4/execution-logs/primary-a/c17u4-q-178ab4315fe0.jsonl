@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-ca7b-72f0-a182-fc55159d4bd6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT\n`site/content/user_guide.md:373` says `NoArgs` reports an error for any positional argument, but the responses omit its implementation and the error message used to report the unexpected argument."}}
+{"type":"turn.completed","usage":{"input_tokens":17849,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":115,"reasoning_output_tokens":64}}

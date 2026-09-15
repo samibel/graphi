@@ -1,0 +1,1 @@
+FAIL: The response does not answer the question, and the bundle lacks evidence verifying that the combined shorthand version form is absent from help while the long `--version` flag remains when `-v` is already owned.

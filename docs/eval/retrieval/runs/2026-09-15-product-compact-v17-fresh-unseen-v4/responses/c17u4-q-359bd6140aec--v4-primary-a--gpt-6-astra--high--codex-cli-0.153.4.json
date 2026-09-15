@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-359bd6140aec",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "c0ad80b4b168d1c2d31e21329fc7b6c01582f1c6472a44e5bc346453d98fc8e0",
+  "bundle_sha256": "c2d9cd3722eae24cb72ba35a028733d0e740412e51ce3205eff1fc1d84d0effc",
+  "prompt_sha256": "d64fedf56b872ed05dce87027e9e1bbb9aaa330eeacea6d0f86276362f64fd07",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When `DisableFlagParsing` is `true`, flag parsing is disabled and all flags are passed to the command as arguments. The comment in `command.go:236–237` states: “If this is true all flags will be passed to the command as arguments.”",
+  "responded_at": "2026-09-15T20:30:02Z",
+  "sha256": "5486bc7eaf4a5dbcc038277cf9f2955d00efe7b4ae45d208b4741731b38921c2"
+}

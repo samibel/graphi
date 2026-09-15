@@ -1,0 +1,1 @@
+INSUFFICIENT The responses show a `cobra.CheckErr(err)` call in `site/content/user_guide.md:125`, but provide neither its implementation nor documentation specifying its behavior for nil versus non-nil input.

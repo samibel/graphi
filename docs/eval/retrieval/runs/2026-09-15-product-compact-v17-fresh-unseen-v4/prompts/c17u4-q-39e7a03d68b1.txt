@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How is prefix matching through an alias verified for a nested command invocation?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 8a04d0ad1bad; read in order (255/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1523,"end_line":1538,"text":"\n// hasNameOrAliasPrefix returns true if the Name or any of aliases start\n// with prefix\nfunc (c *Command) hasNameOrAliasPrefix(prefix string) bool {\n\tif strings.HasPrefix(c.Name(), prefix) {\n\t\tc.commandCalledAs.name = c.Name()\n\t\treturn true\n\t}\n\tfor _, alias := range c.Aliases {\n\t\tif strings.HasPrefix(alias, prefix) {\n\t\t\tc.commandCalledAs.name = alias\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":1494,"end_line":1513,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}\n\n// HasAlias determines if a given string is an alias of the command.\nfunc (c *Command) HasAlias(s string) bool {\n\tfor _, a := range c.Aliases {\n\t\tif commandNameMatches(a, s) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}"},{"path":"site/content/completions/_index.md","start_line":402,"end_line":409,"text":"### Aliases\n\nYou can also configure `bash` aliases for your program and they will also support completions.\n\n```bash\nalias aliasname=origcommand\ncomplete -o default -F __start_origcommand aliasname\n"},{"path":"site/content/completions/_index.md","start_line":151,"end_line":166,"text":"#### Aliases for nouns\n\nIf your nouns have aliases, you can define them alongside `ValidArgs` using `ArgAliases`:\n\n```go\nargAliases = []string { \"pods\", \"nodes\", \"services\", \"svc\", \"replicationcontrollers\", \"rc\" }\n\ncmd := &cobra.Command{\n    ...\n\tValidArgs:  validArgs,\n\tArgAliases: argAliases\n}\n```\n\nThe aliases are shown to the user on tab completion only if no completions were found within sub-commands or `ValidArgs`.\n"},{"path":"command.go","start_line":1875,"end_line":1885,"text":"\n// commandNameMatches checks if two command names are equal\n// taking into account case sensitivity according to\n// EnableCaseInsensitive global configuration.\nfunc commandNameMatches(s string, t string) bool {\n\tif EnableCaseInsensitive {\n\t\treturn strings.EqualFold(s, t)\n\t}\n\n\treturn s == t\n}"}],"provenance":{"input_sha256":"47399838abb46702956a2d53bd29bcfee6d37cb51f1d3eb49320c7af0c626f9d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

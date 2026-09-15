@@ -1,0 +1,1 @@
+`OnlyValidArgs` strips descriptions by keeping only the text before the first tab in each `ValidArgs` entry: `strings.Split(v, "\t")[0]`. It builds a separate `validArgs` slice, leaving `cmd.ValidArgs` unchanged, then checks positional arguments against that slice (`args.go`, lines 53–60). Matching uses exact string equality (`stringInSlice`, `cobra.go`, lines 223–226).

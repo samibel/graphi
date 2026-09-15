@@ -1,0 +1,1 @@
+PASS: The response correctly identifies `COBRA_ACTIVE_HELP=0` as overriding `<PROGRAM>_ACTIVE_HELP` and explains that other global values defer to the program-specific setting. Both cited passages resolve within the bundle and support the required behavior.

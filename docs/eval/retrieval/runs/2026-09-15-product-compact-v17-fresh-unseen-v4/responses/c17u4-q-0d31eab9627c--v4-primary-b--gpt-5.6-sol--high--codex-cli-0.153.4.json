@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-0d31eab9627c",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "398938e3c72b84a7770fbd2c69909e5ac8458cd0450940c5a0735588c52bd783",
+  "bundle_sha256": "ea0e5141d5cd076a2130e2622c249ea6cfebd68de9048cdd98ad65c81e528e5c",
+  "prompt_sha256": "891b4f96f7ac5891b5ff62379db4a05acc641394c3a401287270096417dfea9b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "They are retained in the package-level slice `initializers []func()` declared in `cobra.go:42`. `OnInitialize` appends all supplied functions to that slice:\n\n```go\ninitializers = append(initializers, y...)\n```\n\n(`cobra.go:99–101`).",
+  "responded_at": "2026-09-15T20:23:54Z",
+  "sha256": "ee637e12854f028d5cbe1fa624dc962057c0929791fd2b940acb55d1aba806d1"
+}

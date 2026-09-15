@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-3b06ed8a951c",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "448a3720bb6545c4bafca2f5b590f88ce6f341e45a60e59e5978225120da5b92",
+  "bundle_sha256": "59e8843aed540fd730681f3dfdd72a4a6a2d887de1c44d7159ae11a47a2ff123",
+  "prompt_sha256": "8c61cf2d716601e269e7236d2f63f38c93092f3d356e5452a909d0d6bd600c15",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Execution must fail with the exact error:\n\n`required flag(s) \"foo1\", \"foo2\" not set`\n\nEvidence: `TestRequiredFlags` defines local flags `foo1` and `foo2`, marks both required, calls `executeCommand(c)` without arguments, and compares `err.Error()` to that exact string ([`command_test.go`, lines 818–834]).",
+  "responded_at": "2026-09-15T20:29:38Z",
+  "sha256": "7396bfba65f63d4d3fb96b26ca9f278878b0f46832222aa059b1bf086bb1039d"
+}

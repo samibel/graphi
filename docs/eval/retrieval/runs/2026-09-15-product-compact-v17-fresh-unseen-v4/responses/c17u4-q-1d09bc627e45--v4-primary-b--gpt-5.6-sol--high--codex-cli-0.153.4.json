@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1d09bc627e45",
+  "rater_id": "v4-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "588404cff9587811175c724fa5b6066ba757fe4742d74bfdb984585d6e53219d",
+  "bundle_sha256": "08ccfaa8b1bdbae12efc391ff4c661b52296e895a7ef65e11579be353eb54345",
+  "prompt_sha256": "9e3697306d99988f54f55a313a71e70766f195363391319d593d9781c4f0fab9",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra’s template functions remove:\n\n- Leading and trailing whitespace with `trim`, mapped to `strings.TrimSpace` ([`cobra.go`, lines 31–40]).\n- Trailing Unicode whitespace with `trimRightSpace` and `trimTrailingWhitespaces`; both call `strings.TrimRightFunc(s, unicode.IsSpace)` ([`cobra.go`, lines 158–161]).\n\nThe help template specifically uses `trimTrailingWhitespaces` on `.Long` or `.Short`, so it removes all trailing runes recognized by `unicode.IsSpace` ([`command.go`, lines 583–596]).",
+  "responded_at": "2026-09-15T20:25:51Z",
+  "sha256": "051fe7705f87d9f3516fd9080f484433e2b14ab2290a848706f72b85c51e618c"
+}

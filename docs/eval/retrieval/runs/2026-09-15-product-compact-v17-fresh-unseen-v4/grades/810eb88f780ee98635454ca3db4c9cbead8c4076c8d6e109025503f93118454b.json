@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1426dbe970af",
+  "response_sha256": "810eb88f780ee98635454ca3db4c9cbead8c4076c8d6e109025503f93118454b",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly describes clearing removed children’s parents, rebuilding `c.commands`, and resetting and recomputing all three cached maximum lengths from remaining children. Its citation resolves within the preserved `command.go:1360–1393` span.",
+  "graded_at": "2026-09-15T20:40:49Z",
+  "sha256": "89e1d96981d0975c27ef4572db1fde734aba25383a8ce6c4a786296dbce23002"
+}

@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 9771f7f0881fa1f8032784945b9217ad6fc4ae7b2469b5aea0983021c565d5e7
+QUERY ID: c17u4-q-045ef20bc931
+
+QUESTION:
+Under what exact condition does forceMultiLine append a newline to documentation text?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- doc/util.go:39-46 anchor="func forceMultiLine(s string) string" reason=The helper changes only strings longer than sixty characters that do not already contain a newline.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 74dc21b2234e; read in order (299/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"doc/util.go","start_line":38,"end_line":46,"text":"\n// Temporary workaround for yaml lib generating incorrect yaml with long strings\n// that do not contain \\n.\nfunc forceMultiLine(s string) string {\n\tif len(s) > 60 && !strings.Contains(s, \"\\n\") {\n\t\ts = s + \"\\n\"\n\t}\n\treturn s\n}"},{"path":"doc/md_docs.go","start_line":29,"end_line":30,"text":"\nconst markdownExtension = \".md\""},{"path":"cobra.go","start_line":164,"end_line":171,"text":"\n// appendIfNotPresent will append stringToAppend to the end of s, but only if it's not yet present in s.\nfunc appendIfNotPresent(s, stringToAppend string) string {\n\tif strings.Contains(s, stringToAppend) {\n\t\treturn s\n\t}\n\treturn s + \" \" + stringToAppend\n}"},{"path":"doc/man_docs.go","start_line":142,"end_line":157,"text":"\nfunc manPreamble(buf io.StringWriter, header *GenManHeader, cmd *cobra.Command, dashedName string) {\n\tdescription := cmd.Long\n\tif len(description) == 0 {\n\t\tdescription = cmd.Short\n\t}\n\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(`%% \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"\n# NAME\n`, header.Title, header.Section, header.date, header.Source, header.Manual))\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(\"%s \\\\- %s\\n\\n\", dashedName, cmd.Short))\n\tcobra.WriteStringAndCheck(buf, \"# SYNOPSIS\\n\")\n\tcobra.WriteStringAndCheck(buf, fmt.Sprintf(\"**%s**\\n\\n\", cmd.UseLine()))\n\tcobra.WriteStringAndCheck(buf, \"# DESCRIPTION\\n\")\n\tcobra.WriteStringAndCheck(buf, description+\"\\n\\n\")\n}"},{"path":"cobra.go","start_line":239,"end_line":244,"text":"\n// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"},{"path":"command.go","start_line":1435,"end_line":1451,"text":"\n// UseLine puts out the full usage for a given command (including parents).\nfunc (c *Command) UseLine() string {\n\tvar useline string\n\tif c.HasParent() {\n\t\tuseline = c.parent.CommandPath() + \" \" + c.Use\n\t} else {\n\t\tuseline = c.Use\n\t}\n\tif c.DisableFlagsInUseLine {\n\t\treturn useline\n\t}\n\tif c.HasAvailableFlags() && !strings.Contains(useline, \"[flags]\") {\n\t\tuseline += \" [flags]\"\n\t}\n\treturn useline\n}"},{"path":"doc/yaml_docs.go","start_line":161,"end_line":169,"text":"\t\t\t\tforceMultiLine(flag.Usage),\n\t\t\t}\n\t\t\tresult = append(result, opt)\n\t\t} else {\n\t\t\topt := cmdOption{\n\t\t\t\tName:         flag.Name,\n\t\t\t\tDefaultValue: forceMultiLine(flag.DefValue),\n\t\t\t\tUsage:        forceMultiLine(flag.Usage),\n\t\t\t}"},{"path":"doc/yaml_docs.go","start_line":100,"end_line":108,"text":"\tyamlDoc.Synopsis = forceMultiLine(cmd.Short)\n\tyamlDoc.Description = forceMultiLine(cmd.Long)\n\n\tif cmd.Runnable() {\n\t\tyamlDoc.Usage = cmd.UseLine()\n\t}\n\n\tif len(cmd.Example) > 0 {\n\t\tyamlDoc.Example = cmd.Example"},{"path":"command.go","start_line":257,"end_line":259,"text":"// Context returns underlying command context. If command was executed\n// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned."}],"provenance":{"input_sha256":"0a6d0b5b0675239fc7c6f5f3da54c06853bdf43d98974383d30ce226c3c76b17","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`forceMultiLine` appends one newline (`"\n"`) only when `len(s) > 60` **and** `s` contains no newline: `!strings.Contains(s, "\n")`. The condition is in `doc/util.go:42`, and the append (`s = s + "\n"`) is on line 43. Otherwise, it returns the text unchanged.
+----- END THE RATER'S RESPONSE -----

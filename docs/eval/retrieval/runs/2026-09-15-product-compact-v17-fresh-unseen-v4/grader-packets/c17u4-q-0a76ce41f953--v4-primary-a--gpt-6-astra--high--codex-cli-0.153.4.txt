@@ -1,0 +1,48 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 56581643b1cf6c6f75b9004de3a690e57696e6fde6d04905d647b4ba19085378
+QUERY ID: c17u4-q-0a76ce41f953
+
+QUESTION:
+How does ShellCompDirective.string render combined flags, the default case, and an out-of-range value?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- completions.go:162-191 anchor="func (d ShellCompDirective) string() string" reason=The method collects enabled directive labels, supplies the default, validates the maximum, and joins labels.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 3cb3bc41fa67; read in order (296/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":161,"end_line":191,"text":"\n// Returns a string listing the different directive enabled in the specified parameter\nfunc (d ShellCompDirective) string() string {\n\tvar directives []string\n\tif d&ShellCompDirectiveError != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveError\")\n\t}\n\tif d&ShellCompDirectiveNoSpace != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoSpace\")\n\t}\n\tif d&ShellCompDirectiveNoFileComp != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveNoFileComp\")\n\t}\n\tif d&ShellCompDirectiveFilterFileExt != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterFileExt\")\n\t}\n\tif d&ShellCompDirectiveFilterDirs != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveFilterDirs\")\n\t}\n\tif d&ShellCompDirectiveKeepOrder != 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveKeepOrder\")\n\t}\n\tif len(directives) == 0 {\n\t\tdirectives = append(directives, \"ShellCompDirectiveDefault\")\n\t}\n\n\tif d >= shellCompDirectiveMaxValue {\n\t\treturn fmt.Sprintf(\"ERROR: unexpected ShellCompDirective value: %d\", d)\n\t}\n\treturn strings.Join(directives, \", \")\n}"},{"path":"completions.go","start_line":90,"end_line":91,"text":"\t// ShellCompDirectiveDefault indicates to let the shell perform its default\n\t// behavior after completions have been provided."},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"completions.go","start_line":133,"end_line":134,"text":"func (c *Command) RegisterFlagCompletionFunc(flagName string, f func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)) error {\n\tflag := c.Flag(flagName)"},{"path":"command.go","start_line":1724,"end_line":1735,"text":"\n// PersistentFlags returns the persistent FlagSet specifically set in the current command.\nfunc (c *Command) PersistentFlags() *flag.FlagSet {\n\tif c.pflags == nil {\n\t\tc.pflags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.pflags.SetOutput(c.flagErrorBuf)\n\t}\n\treturn c.pflags\n}"},{"path":"site/content/completions/_index.md","start_line":336,"end_line":336,"text":"To limit completions of flag values to directory names you can either use the `MarkFlagDirname()` functions or a combination of `RegisterFlagCompletionFunc()` and `ShellCompDirectiveFilterDirs`, like so:"},{"path":"completions.go","start_line":324,"end_line":324,"text":"\t\treturn finalCmd, []string{}, ShellCompDirectiveDefault, fmt.Errorf(\"Error while parsing flags from args %v: %s\", finalArgs, err.Error())"},{"path":"command.go","start_line":803,"end_line":803,"text":"\t\tcase strings.HasPrefix(arg, \"-\") && !strings.Contains(arg, \"=\") && len(arg) == 2 && !shortHasNoOptDefVal(arg[1:], c.Flags()):"},{"path":"shell_completions.go","start_line":38,"end_line":38,"text":"func MarkFlagRequired(flags *pflag.FlagSet, name string) error {"}],"provenance":{"input_sha256":"a275f1e74e5c65f986762dc326c66cdebdff009567a1a41c3ca5199f6c1150e6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+In `completions.go`, `ShellCompDirective.string()` (lines 163–191):
+
+- **Combined flags:** Collects enabled flag names in this order: `ShellCompDirectiveError`, `ShellCompDirectiveNoSpace`, `ShellCompDirectiveNoFileComp`, `ShellCompDirectiveFilterFileExt`, `ShellCompDirectiveFilterDirs`, `ShellCompDirectiveKeepOrder` (lines 165–182), then joins them with `", "` (line 190).
+- **Default:** If no recognized flags are enabled, uses `"ShellCompDirectiveDefault"` (lines 183–185).
+- **Out of range:** If `d >= shellCompDirectiveMaxValue`, returns `"ERROR: unexpected ShellCompDirective value: %d"` with `d` formatted as a decimal integer, overriding the collected names (lines 187–189).
+----- END THE RATER'S RESPONSE -----

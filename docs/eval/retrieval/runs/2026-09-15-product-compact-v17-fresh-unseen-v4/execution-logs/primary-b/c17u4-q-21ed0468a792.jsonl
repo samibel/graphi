@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-a210-7e40-8164-da984a3925c8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s `WriteStringAndCheck` calls `b.WriteString(s)` and passes any returned error to `CheckErr` (`cobra.go`, lines 239–243). `CheckErr` prints `Error: <error>` to `os.Stderr` and exits with status code 1; if the error is `nil`, it does nothing (`cobra.go`, lines 231–237)."}}
+{"type":"turn.completed","usage":{"input_tokens":16357,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":85,"reasoning_output_tokens":0}}

@@ -1,0 +1,46 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 105ef0dcaad5c73a6019990adc8e1e01cbf9288732383deef5821aa42d0ebe26
+QUERY ID: c17u4-q-1ce7419b50d3
+
+QUESTION:
+What operand kinds does the equality template helper support, and what happens for collection kinds?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- cobra.go:141-157 anchor="func Eq(a interface{}, b interface{}) bool" reason=The switch compares integer and string values, panics for collection kinds, and otherwise returns false.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 0a6dda45b96e; read in order (317/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":142,"end_line":157,"text":"\n// Eq takes two types and checks whether they are equal. Supported types are int and string. Unsupported types will panic.\nfunc Eq(a interface{}, b interface{}) bool {\n\tav := reflect.ValueOf(a)\n\tbv := reflect.ValueOf(b)\n\n\tswitch av.Kind() {\n\tcase reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:\n\t\tpanic(\"Eq called on unsupported type\")\n\tcase reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:\n\t\treturn av.Int() == bv.Int()\n\tcase reflect.String:\n\t\treturn av.String() == bv.String()\n\t}\n\treturn false\n}"},{"path":"command.go","start_line":583,"end_line":596,"text":"\n// HelpTemplate return help template for the command.\nfunc (c *Command) HelpTemplate() string {\n\tif c.helpTemplate != \"\" {\n\t\treturn c.helpTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.HelpTemplate()\n\t}\n\treturn `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}\n\n{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`\n}"},{"path":"cobra.go","start_line":82,"end_line":95,"text":"\n// AddTemplateFunc adds a template function that's available to Usage and Help\n// template generation.\nfunc AddTemplateFunc(name string, tmplFunc interface{}) {\n\ttemplateFuncs[name] = tmplFunc\n}\n\n// AddTemplateFuncs adds multiple template functions that are available to Usage and\n// Help template generation.\nfunc AddTemplateFuncs(tmplFuncs template.FuncMap) {\n\tfor k, v := range tmplFuncs {\n\t\ttemplateFuncs[k] = v\n\t}\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"bash_completions.go","start_line":631,"end_line":646,"text":"\nfunc writeCmdAliases(buf io.StringWriter, cmd *Command) {\n\tif len(cmd.Aliases) == 0 {\n\t\treturn\n\t}\n\n\tsort.Strings(cmd.Aliases)\n\n\tWriteStringAndCheck(buf, fmt.Sprint(`    if [[ -z \"${BASH_VERSION:-}\" || \"${BASH_VERSINFO[0]:-}\" -gt 3 ]]; then`, \"\\n\"))\n\tfor _, value := range cmd.Aliases {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"        command_aliases+=(%q)\\n\", value))\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"        aliashash[%q]=%q\\n\", value, cmd.Name()))\n\t}\n\tWriteStringAndCheck(buf, `    fi`)\n\tWriteStringAndCheck(buf, \"\\n\")\n}"},{"path":"cobra.go","start_line":31,"end_line":40,"text":"\nvar templateFuncs = template.FuncMap{\n\t\"trim\":                    strings.TrimSpace,\n\t\"trimRightSpace\":          trimRightSpace,\n\t\"trimTrailingWhitespaces\": trimRightSpace,\n\t\"appendIfNotPresent\":      appendIfNotPresent,\n\t\"rpad\":                    rpad,\n\t\"gt\":                      Gt,\n\t\"eq\":                      Eq,\n}"},{"path":"command.go","start_line":168,"end_line":170,"text":"\t// usageTemplate is usage template defined by user.\n\tusageTemplate string\n\t// flagErrorFunc is func defined by user and it's called when the parsing of"},{"path":"command.go","start_line":598,"end_line":609,"text":"// VersionTemplate return version template for the command.\nfunc (c *Command) VersionTemplate() string {\n\tif c.versionTemplate != \"\" {\n\t\treturn c.versionTemplate\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.VersionTemplate()\n\t}\n\treturn `{{with .Name}}{{printf \"%s \" .}}{{end}}{{printf \"version %s\" .Version}}\n`\n}"}],"provenance":{"input_sha256":"b338e1551eb365ff6f569579256106886cc1a6464a2982167e8d2ee8bb446cff","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+The `eq` template helper supports signed integers (`int`, `int8`, `int16`, `int32`, `int64`) and strings. In [`cobra.go`, lines 142–157], `Eq` switches on `reflect.Kind`, comparing integers via `av.Int() == bv.Int()` and strings via `av.String() == bv.String()`.
+
+For collection-related kinds—arrays, maps, and slices—it panics with `"Eq called on unsupported type"`; channels receive the same treatment (`reflect.Array, reflect.Chan, reflect.Map, reflect.Slice`). Other unhandled kinds return `false`. The helper is registered as `"eq": Eq` in [`cobra.go`, lines 31–40].
+----- END THE RATER'S RESPONSE -----

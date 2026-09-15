@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-047c-7360-8efb-1269e18356df"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`getOut` checks writers in this order:\n\n1. The current command’s `c.outWriter`, if non-nil.\n2. Its parent’s writer, recursively via `c.parent.getOut(def)`, continuing up the ancestor chain.\n3. The supplied default writer `def` if no command in the chain has a writer.\n\nEvidence: `command.go:394–401`, in `(*Command).getOut`, contains those three branches in order. `HasParent` checks `c.parent != nil` (`command.go:1632–1634`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17318,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":118,"reasoning_output_tokens":0}}

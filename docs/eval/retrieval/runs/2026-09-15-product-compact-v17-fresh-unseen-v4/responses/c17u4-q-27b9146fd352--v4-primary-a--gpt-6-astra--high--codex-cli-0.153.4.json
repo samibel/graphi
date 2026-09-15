@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-27b9146fd352",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "46f4b38e05b68bcd2f9ef3bbbb9c0b14f2d6672c5b35d7253217c54d68f3022e",
+  "bundle_sha256": "5d1b777b636d5602aae102e6ec5c478741777ba9d9b1153a15ea6e9e6292fe68",
+  "prompt_sha256": "e1d618ce922888915c738b0455211ea74df438ac2181ddb909b23fa1f0818ff5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`(*Command).HasHelpSubCommands()` loops over `c.commands` and calls `sub.IsAdditionalHelpTopicCommand()` on each child. It returns `true` at the first match, or `false` if there are no children or none qualify (`command.go:1599–1613`).\n\nThe predicate’s comment says an additional help topic is neither runnable, hidden, nor deprecated, and has no subcommands with those properties (`command.go:1578–1584`). “Runnable” means `Run != nil || RunE != nil` (`command.go:1549–1553`).",
+  "responded_at": "2026-09-15T20:28:11Z",
+  "sha256": "23b6e692031345e2b4a08fe4a5e54e301c1ba8a5ec1e32c67b3e47a289a7e600"
+}

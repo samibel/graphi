@@ -1,0 +1,2 @@
+- **`command.DisableSuggestions`**: set to `true` to disable unknown-command suggestions. `(*Command).findSuggestions` returns `""` when this is enabled (`command.go:750–753`).
+- **`command.SuggestionsMinimumDistance`**: controls the Levenshtein distance threshold. Values `<= 0` default to **2** (`command.go:754–756`). Despite its name, suggestions qualify when their distance is **at most** this value: `levenshteinDistance <= c.SuggestionsMinimumDistance` (`command.go:837`).

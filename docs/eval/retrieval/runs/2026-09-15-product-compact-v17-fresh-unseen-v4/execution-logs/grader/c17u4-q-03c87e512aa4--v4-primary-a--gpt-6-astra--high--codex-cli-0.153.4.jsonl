@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c8-cc0a-7ad1-a31a-5bd4a95028c4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response correctly states that any command with a parent qualifies; otherwise, an available child that is not an additional help topic is required. Its availability details, parent check, and Markdown heading behavior are supported by the bundle, and all citations resolve within preserved spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17770,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":17}}

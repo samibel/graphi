@@ -1,0 +1,48 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 138e4e872030bbbcf0561be67cf4229943368e43717945fe9472b3df1c6b3b89
+QUERY ID: c17u4-q-0bb13d8a6f20
+
+QUESTION:
+How does activeHelpEnvVar transform a program name into its program-specific environment variable?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- active_help.go:59-67 anchor="func activeHelpEnvVar(name string) string" reason=The function appends the suffix, uppercases it, and replaces disallowed characters with underscores.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 9a928c2ebe17; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"active_help.go","start_line":45,"end_line":67,"text":"\n// GetActiveHelpConfig returns the value of the ActiveHelp environment variable\n// <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the root command in upper\n// case, with all non-ASCII-alphanumeric characters replaced by `_`.\n// It will always return \"0\" if the global environment variable COBRA_ACTIVE_HELP\n// is set to \"0\".\nfunc GetActiveHelpConfig(cmd *Command) string {\n\tactiveHelpCfg := os.Getenv(activeHelpGlobalEnvVar)\n\tif activeHelpCfg != activeHelpGlobalDisable {\n\t\tactiveHelpCfg = os.Getenv(activeHelpEnvVar(cmd.Root().Name()))\n\t}\n\treturn activeHelpCfg\n}\n\n// activeHelpEnvVar returns the name of the program-specific ActiveHelp environment\n// variable.  It has the format <PROGRAM>_ACTIVE_HELP where <PROGRAM> is the name of the\n// root command in upper case, with all non-ASCII-alphanumeric characters replaced by `_`.\nfunc activeHelpEnvVar(name string) string {\n\t// This format should not be changed: users will be using it explicitly.\n\tactiveHelpEnvVar := strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))\n\tactiveHelpEnvVar = activeHelpEnvVarPrefixSubstRegexp.ReplaceAllString(activeHelpEnvVar, \"_\")\n\treturn activeHelpEnvVar\n}"},{"path":"active_help.go","start_line":23,"end_line":33,"text":"\nconst (\n\tactiveHelpMarker = \"_activeHelp_ \"\n\t// The below values should not be changed: programs will be using them explicitly\n\t// in their user documentation, and users will be using them explicitly.\n\tactiveHelpEnvVarSuffix  = \"_ACTIVE_HELP\"\n\tactiveHelpGlobalEnvVar  = \"COBRA_ACTIVE_HELP\"\n\tactiveHelpGlobalDisable = \"0\"\n)\n\nvar activeHelpEnvVarPrefixSubstRegexp = regexp.MustCompile(`[^A-Z0-9_]`)"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":859,"end_line":866,"text":"\n// Root finds root command.\nfunc (c *Command) Root() *Command {\n\tif c.HasParent() {\n\t\treturn c.Parent().Root()\n\t}\n\treturn c\n}"},{"path":"bash_completions.go","start_line":458,"end_line":461,"text":"\nfunc writeFlagHandler(buf io.StringWriter, name string, annotations map[string][]string, cmd *Command) {\n\tfor key, value := range annotations {\n\t\tswitch key {"},{"path":"completions.go","start_line":293,"end_line":294,"text":"\t\t// Unable to find the real command. E.g., <program> someInvalidCmd <TAB>\n\t\treturn c, []string{}, ShellCompDirectiveDefault, fmt.Errorf(\"Unable to find a command for arguments: %v\", trimmedArgs)"},{"path":"completions.go","start_line":885,"end_line":887,"text":"// to the same file as where the completion script prints its logs.\n// Such logs are only printed when the user has set the environment\n// variable BASH_COMP_DEBUG_FILE to the path of some file to be used."}],"provenance":{"input_sha256":"ecdb6777e2e70f5725d004ff0d16475dd96e7785349068522b25998d421a645d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`activeHelpEnvVar` appends `_ACTIVE_HELP` to the program name, uppercases the whole string, then replaces each character outside `A–Z`, `0–9`, and `_` with `_`.
+
+Evidence: `active_help.go:64–65` calls `strings.ToUpper(fmt.Sprintf("%s%s", name, activeHelpEnvVarSuffix))`, then `ReplaceAllString(..., "_")`. The suffix is defined at line 28 and the replacement regex, `[^A-Z0-9_]`, at line 33.
+
+For example, `my-app` becomes `MY_APP_ACTIVE_HELP`.
+----- END THE RATER'S RESPONSE -----

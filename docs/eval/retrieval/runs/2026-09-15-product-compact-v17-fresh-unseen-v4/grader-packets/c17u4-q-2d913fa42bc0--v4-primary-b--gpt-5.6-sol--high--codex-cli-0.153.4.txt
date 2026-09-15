@@ -1,0 +1,44 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 32bac65d9539cab67999f20dddb7837f004c031bfb8fa882e2c45ff8b0035591
+QUERY ID: c17u4-q-2d913fa42bc0
+
+QUESTION:
+What compatibility behavior does SetOutput provide, and which two destinations does it change?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:280-286 anchor="func (c *Command) SetOutput(output io.Writer)" reason=The deprecated setter assigns the same writer to both usage output and error output.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query ca691b9bcc26; read in order (298/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":273,"end_line":292,"text":"\n// SetArgs sets arguments for the command. It is set to os.Args[1:] by default, if desired, can be overridden\n// particularly useful when testing.\nfunc (c *Command) SetArgs(a []string) {\n\tc.args = a\n}\n\n// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}\n\n// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":373,"end_line":377,"text":"\n// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}"},{"path":"CONDUCT.md","start_line":6,"end_line":8,"text":"### Backward Compatibility\nWe will maintain two major releases in a moving window. The N-1 release will only receive bug fixes and security updates and will be dropped once N+1 is released.\n"},{"path":"command.go","start_line":393,"end_line":402,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"doc/rest_docs.go","start_line":29,"end_line":49,"text":"\nfunc printOptionsReST(buf *bytes.Buffer, cmd *cobra.Command, name string) error {\n\tflags := cmd.NonInheritedFlags()\n\tflags.SetOutput(buf)\n\tif flags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"Options\\n\")\n\t\tbuf.WriteString(\"~~~~~~~\\n\\n::\\n\\n\")\n\t\tflags.PrintDefaults()\n\t\tbuf.WriteString(\"\\n\")\n\t}\n\n\tparentFlags := cmd.InheritedFlags()\n\tparentFlags.SetOutput(buf)\n\tif parentFlags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"Options inherited from parent commands\\n\")\n\t\tbuf.WriteString(\"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\n\\n::\\n\\n\")\n\t\tparentFlags.PrintDefaults()\n\t\tbuf.WriteString(\"\\n\")\n\t}\n\treturn nil\n}"},{"path":"doc/md_docs.go","start_line":31,"end_line":49,"text":"\nfunc printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {\n\tflags := cmd.NonInheritedFlags()\n\tflags.SetOutput(buf)\n\tif flags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"### Options\\n\\n```\\n\")\n\t\tflags.PrintDefaults()\n\t\tbuf.WriteString(\"```\\n\\n\")\n\t}\n\n\tparentFlags := cmd.InheritedFlags()\n\tparentFlags.SetOutput(buf)\n\tif parentFlags.HasAvailableFlags() {\n\t\tbuf.WriteString(\"### Options inherited from parent commands\\n\\n```\\n\")\n\t\tparentFlags.PrintDefaults()\n\t\tbuf.WriteString(\"```\\n\\n\")\n\t}\n\treturn nil\n}"},{"path":"zsh_completions.go","start_line":60,"end_line":68,"text":"// been disabled.\n// To achieve the same behavior across all shells, one can use\n// ValidArgs (for the first argument only) or ValidArgsFunction for\n// any argument (can include the first one also).\n//\n// Deprecated\nfunc (c *Command) MarkZshCompPositionalArgumentWords(argPosition int, words ...string) error {\n\treturn nil\n}"}],"provenance":{"input_sha256":"f4d4749248a1666f30c03d9a7a7c7d5e27b9fe97bfb6c6c92b7d1fb32174c201","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`SetOutput` is a deprecated compatibility method equivalent to calling both `SetOut` and `SetErr` with the same writer. It changes the command’s usage-output destination (`c.outWriter`) and error-message destination (`c.errWriter`) (`command.go:279-286`). If passed `nil`, their documented fallback is `os.Stderr` (`command.go:280-281`).
+----- END THE RATER'S RESPONSE -----

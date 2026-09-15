@@ -1,0 +1,1 @@
+Cobra’s `stringInSlice` performs a linear scan and compares each element with exact equality (`b == a`). It returns `true` on the first match and `false` if none match (`cobra.go`, lines 222–230, symbol `stringInSlice`).

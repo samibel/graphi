@@ -1,0 +1,1 @@
+INSUFFICIENT The responses show adding messages with `comps = cobra.AppendActiveHelp(comps, message)` in `site/content/active_help.md:45`, but omit the implementation of `AppendActiveHelp` and how it encodes the message.

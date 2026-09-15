@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-117acd53e609",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "277a6f71fa1110478babf36029c1a20bba80674b0518faeeee36252f1e9e0fba",
+  "bundle_sha256": "c7d606865bfc1fec320e674dc3a57d18cb1dcdad2c45d9d269c707126f4323a9",
+  "prompt_sha256": "1018e81c72ecb2824e57da0e85b37cd08889e5ad5cf21a61049567d60e40f606",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getOut` checks writers in this order:\n\n1. The current command’s `c.outWriter`, if non-nil.\n2. Its parent’s writer, recursively via `c.parent.getOut(def)`, continuing up the ancestor chain.\n3. The supplied default writer `def` if no command in the chain has a writer.\n\nEvidence: `command.go:394–401`, in `(*Command).getOut`, contains those three branches in order. `HasParent` checks `c.parent != nil` (`command.go:1632–1634`).",
+  "responded_at": "2026-09-15T20:24:33Z",
+  "sha256": "627558980f2d871e95c0eab26caec1d3e8a33a04cd7cea575929ecb1bf8b3bf7"
+}

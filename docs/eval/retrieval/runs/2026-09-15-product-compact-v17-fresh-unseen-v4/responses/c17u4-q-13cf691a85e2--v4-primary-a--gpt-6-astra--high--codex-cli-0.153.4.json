@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-13cf691a85e2",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "f80c8907079e1b783b5ac768fdd321a99de67070737a2a02bdfcc294bea0b15e",
+  "bundle_sha256": "0d631c888cc7f68d384d9f5c609e83a8ea7283504f59ad63638501abdfc9753a",
+  "prompt_sha256": "a964cfa54a9b32a1c8127c1c16107c5803eb9c5f3df1354faf188c87f7e2bc8d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`getIn` uses this precedence:\n\n1. The current command’s `c.inReader`, if non-nil.\n2. The nearest ancestor’s non-nil reader, by recursively calling `c.parent.getIn(def)`.\n3. The supplied default reader, `def`, if no command in the chain has a reader.\n\nEvidence: `command.go:414–422`, specifically `return c.inReader`, `return c.parent.getIn(def)`, and `return def`. When called through `InOrStdin`, the default is `os.Stdin` (`command.go:390–392`).",
+  "responded_at": "2026-09-15T20:24:52Z",
+  "sha256": "b1df35fb015184700ccf7368dadd77de18d3e5737861cb31ff592654c7e94b44"
+}

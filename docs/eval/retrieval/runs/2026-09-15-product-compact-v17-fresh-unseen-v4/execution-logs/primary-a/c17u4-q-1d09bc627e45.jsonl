@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-d00c-7492-a243-e43c0ec73903"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s template helpers remove whitespace as follows:\n\n- **`trimRightSpace` and `trimTrailingWhitespaces`** remove trailing Unicode whitespace, using `strings.TrimRightFunc(s, unicode.IsSpace)` (`cobra.go:158–161`). Both names map to `trimRightSpace` (`cobra.go:32–35`).\n- **`trim`** removes leading and trailing whitespace via `strings.TrimSpace` (`cobra.go:33`).\n\nThe default help template applies `trimTrailingWhitespaces` to `.Long` or `.Short`, so it trims only trailing whitespace there (`command.go:593`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17179,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":0}}

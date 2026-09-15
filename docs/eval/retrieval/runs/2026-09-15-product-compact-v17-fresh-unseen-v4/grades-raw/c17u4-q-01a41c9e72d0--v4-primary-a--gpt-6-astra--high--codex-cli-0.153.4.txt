@@ -1,0 +1,1 @@
+PASS: The response correctly identifies all accepted argument cases and the root-with-subcommands, nonempty-arguments error condition. Its error formatting and suggestion behavior are supported by the preserved spans, and all citations resolve inside the bundle.

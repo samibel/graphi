@@ -1,0 +1,3 @@
+`COBRA_ACTIVE_HELP="0"` takes precedence over `<PROGRAM>_ACTIVE_HELP`, disabling Active Help regardless of the program-specific setting.
+
+Otherwise, Cobra uses `<PROGRAM>_ACTIVE_HELP`. In `active_help.go:51–57`, `GetActiveHelpConfig` reads the global setting first and reads the program-specific variable only when the global value is not the disable value. `site/content/active_help.md:129` (Note 2) explicitly confirms the global `"0"` override.

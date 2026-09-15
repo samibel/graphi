@@ -1,0 +1,1 @@
+FAIL: The response identifies the display-name annotation but does not explain verification in both root and child help usage. The preserved bundle omits the help execution and assertions needed to support that essential behavior.

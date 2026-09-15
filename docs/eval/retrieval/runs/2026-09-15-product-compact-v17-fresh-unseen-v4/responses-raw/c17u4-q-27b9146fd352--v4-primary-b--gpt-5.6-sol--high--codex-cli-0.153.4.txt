@@ -1,0 +1,3 @@
+`Command.HasHelpSubCommands` loops through `c.commands` and calls `sub.IsAdditionalHelpTopicCommand()` for each child. It returns `true` on the first match; otherwise it returns `false` (`command.go:1599–1613`).
+
+A child qualifies when it is not runnable, hidden, or deprecated and has no runnable, hidden, or deprecated subcommands (`command.go:1578–1584`). Runnable means having either `Run` or `RunE` set (`command.go:1549–1553`).

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-05b91a64d7e2",
+  "response_sha256": "adf6d1dbc45fc21a719b291ef1759736d4f2a103a1e40404950ac0eb2f25b53b",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response accurately distinguishes inclusion versus omission of shorthand, preserves the branch-specific default-value handling, and explains usage normalization and the empty-message deprecation limitation. All claims and citations are supported by the bundle.",
+  "graded_at": "2026-09-15T20:36:50Z",
+  "sha256": "b748f88f4e990737a6f9b21b53270474c4708ffe80c805ec2d2672e8a8273896"
+}

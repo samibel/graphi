@@ -1,0 +1,50 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/grading-rubric.md
+FROZEN RUBRIC SHA256: 7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind bundle-sufficiency grading rubric
+
+Grade one response using only its generated grader packet. Return `PASS` only
+when the response directly answers the question, all material claims are
+supported by the preserved bundle, the essential reviewed grade-3 behavior is
+present, any citation resolves inside the bundle, and no material contradiction
+or invented repository fact appears. Otherwise return `FAIL`.
+
+The only valid raw formats are:
+
+```text
+PASS: <specific bundle-grounded rationale>
+FAIL: <specific bundle-grounded rationale>
+```
+
+Do not consult the repository, another response, prior evaluation material, or
+outside knowledge. A missing, empty, refused, conditional, probabilistic, or
+unsupported answer does not pass. When the necessary fact is absent from the
+bundle, return `FAIL`.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 1dc97285c29eaaf736b54feb5901765894e12402c59969f2d160bc0847d980d9
+QUERY ID: c17u4-q-117acd53e609
+
+QUESTION:
+In command.go, what writer lookup order does getOut follow?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command.go:394-402 anchor="func (c *Command) getOut(def io.Writer) io.Writer" reason=The method prefers its local writer, recurses to the parent, then uses the supplied default.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 277a6f71fa11; read in order (309/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":393,"end_line":402,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":279,"end_line":292,"text":"\n// SetOutput sets the destination for usage and error messages.\n// If output is nil, os.Stderr is used.\n// Deprecated: Use SetOut and/or SetErr instead\nfunc (c *Command) SetOutput(output io.Writer) {\n\tc.outWriter = output\n\tc.errWriter = output\n}\n\n// SetOut sets the destination for usage messages.\n// If newOut is nil, os.Stdout is used.\nfunc (c *Command) SetOut(newOut io.Writer) {\n\tc.outWriter = newOut\n}"},{"path":"command.go","start_line":373,"end_line":382,"text":"\n// OutOrStdout returns output to stdout.\nfunc (c *Command) OutOrStdout() io.Writer {\n\treturn c.getOut(os.Stdout)\n}\n\n// OutOrStderr returns output to stderr\nfunc (c *Command) OutOrStderr() io.Writer {\n\treturn c.getOut(os.Stderr)\n}"},{"path":"command.go","start_line":110,"end_line":114,"text":"\t// will print content of the \"Version\" variable. A shorthand \"v\" flag will also be added if the\n\t// command does not define one.\n\tVersion string\n\n\t// The *Run functions are executed in the following order:"},{"path":"command.go","start_line":449,"end_line":468,"text":"\n// HelpFunc returns either the function set by SetHelpFunc for this command\n// or a parent, or it returns a function with default help behavior.\nfunc (c *Command) HelpFunc() func(*Command, []string) {\n\tif c.helpFunc != nil {\n\t\treturn c.helpFunc\n\t}\n\tif c.HasParent() {\n\t\treturn c.Parent().HelpFunc()\n\t}\n\treturn func(c *Command, a []string) {\n\t\tc.mergePersistentFlags()\n\t\t// The help should be sent to stdout\n\t\t// See https://github.com/spf13/cobra/issues/1002\n\t\terr := tmpl(c.OutOrStdout(), c.HelpTemplate(), c)\n\t\tif err != nil {\n\t\t\tc.PrintErrln(err)\n\t\t}\n\t}\n}"},{"path":"bash_completions.go","start_line":618,"end_line":630,"text":"func writeRequiredNouns(buf io.StringWriter, cmd *Command) {\n\tWriteStringAndCheck(buf, \"    must_have_one_noun=()\\n\")\n\tsort.Strings(cmd.ValidArgs)\n\tfor _, value := range cmd.ValidArgs {\n\t\t// Remove any description that may be included following a tab character.\n\t\t// Descriptions are not supported by bash completion.\n\t\tvalue = strings.Split(value, \"\\t\")[0]\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    must_have_one_noun+=(%q)\\n\", value))\n\t}\n\tif cmd.ValidArgsFunction != nil {\n\t\tWriteStringAndCheck(buf, \"    has_completion_function=1\\n\")\n\t}\n}"}],"provenance":{"input_sha256":"2088586bae7c3f83c710097b44d04a733ca1a426b21eb9966aa8bc5564e804b2","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`getOut` checks writers in this order:
+
+1. The command’s own `c.outWriter`, if non-nil.
+2. The parent command’s writer recursively via `c.parent.getOut(def)`, if a parent exists.
+3. The supplied default writer `def`.
+
+Evidence: `command.go:393–402`, symbol `(*Command).getOut`. `HasParent` means `c.parent != nil` (`command.go:1630–1634`).
+----- END THE RATER'S RESPONSE -----

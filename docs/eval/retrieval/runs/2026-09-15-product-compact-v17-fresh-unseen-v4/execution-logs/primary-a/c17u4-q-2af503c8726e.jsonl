@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-c489-7051-be5b-adbf6fbd0ff6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response includes availability checks in `command.go:1559–1576`, but no legacy Bash generator implementation showing how it collects child commands and their aliases."}}
+{"type":"turn.completed","usage":{"input_tokens":17288,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":40,"reasoning_output_tokens":0}}

@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-1851ce7a02d4",
+  "response_sha256": "1fdb876328786240dd0c207bcaaa9fc23e8829814e0b115a196abe72f9e8a298",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "pass",
+  "rationale": "The response correctly states that `ArbitraryArgs` rejects no positional arguments, supported by its unconditional `return nil` in `args.go:67-71`. Both citations resolve within the preserved bundle, and the guide corroborates the answer.",
+  "graded_at": "2026-09-15T20:41:50Z",
+  "sha256": "d94b000169651fbb64ebfce002ed6a04f5fbff369022a3f60813f1f6338e4370"
+}

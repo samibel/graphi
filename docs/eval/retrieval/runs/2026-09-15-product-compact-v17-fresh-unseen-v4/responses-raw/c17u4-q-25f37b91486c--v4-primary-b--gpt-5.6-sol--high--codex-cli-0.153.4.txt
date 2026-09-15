@@ -1,0 +1,6 @@
+A command is unavailable if:
+
+- `Deprecated` is non-empty or `Hidden` is true (`command.go:1562–1564`).
+- It is its parent’s help command (`command.go:1566–1568`).
+
+Otherwise, it becomes available if it is runnable—meaning `Run` or `RunE` is set (`command.go:1549–1553`)—or if it has at least one available subcommand (`command.go:1570–1572`, `1614–1623`).

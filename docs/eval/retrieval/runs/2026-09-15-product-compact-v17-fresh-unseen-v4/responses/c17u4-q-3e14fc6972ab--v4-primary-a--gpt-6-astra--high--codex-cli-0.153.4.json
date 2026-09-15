@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-3e14fc6972ab",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "386115952a5d2b93eb8eb4710e29e364229017335fbf70c5e74c5eee2a408144",
+  "bundle_sha256": "a3770b31d58b2dda68fcb43e2ab08795c70b790088014b336a23b20feeb42783",
+  "prompt_sha256": "e11fe2d9ddb88c5ac0a252a69a3623b22ae8f11ae03a124a900b5f7ce4ffc184",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response contains no test or help-output assertion for an already-owned `-v`, and the relevant comment in `command.go:109–110` ends before stating the shorthand condition.",
+  "responded_at": "2026-09-15T20:31:16Z",
+  "sha256": "159feed41371d0dace98e1dbc2593dafc5df56c4d9a9b7bf2e2d758df4bbfffc"
+}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-424e-7141-842b-ad5f558652e1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows deprecated-flag warnings enter `c.flagErrorBuf` during parsing (`command.go:1833-1835`), but omits the code or test demonstrating that the notice is actually emitted to observable output."}}
+{"type":"turn.completed","usage":{"input_tokens":16566,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":161,"reasoning_output_tokens":106}}

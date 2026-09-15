@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-a47e-7002-aa55-7345c1e00d93"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnFinalize(y ...func())` appends all supplied functions to the package-level `finalizers []func()` slice using `finalizers = append(finalizers, y...)`. Repeated calls accumulate functions in order, preserving earlier entries (`cobra.go`, lines 105–106; slice declaration at line 43)."}}
+{"type":"turn.completed","usage":{"input_tokens":17268,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":68,"reasoning_output_tokens":0}}

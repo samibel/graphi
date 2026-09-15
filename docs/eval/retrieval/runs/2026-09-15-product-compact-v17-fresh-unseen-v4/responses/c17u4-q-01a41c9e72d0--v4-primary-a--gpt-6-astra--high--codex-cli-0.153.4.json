@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-01a41c9e72d0",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "6638aa528fda5b7318489ef9d15630e60d422fa1aec409b4df72db37929ab24b",
+  "bundle_sha256": "b19dd1386f362fba231c18c455e64ddc36dcb15cbbec2edab94ce1380e058e47",
+  "prompt_sha256": "b468b714300891b508619eeea36a3ea908e89ab3367afc2ec4b412936ad5f23b",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`legacyArgs` accepts (returns `nil`):\n\n- Any arguments when the command has no subcommands.\n- Any arguments for a child command, even if it has subcommands.\n- Zero arguments for a root command with subcommands.\n\nThese cases follow from `args.go:23–39`: the early `!cmd.HasSubCommands()` return and the error condition `!cmd.HasParent() \u0026\u0026 len(args) \u003e 0`.\n\nIt returns an error whenever a root command has subcommands and receives at least one argument:\n`unknown command %q for %q%s`, using `args[0]`, `cmd.CommandPath()`, and `cmd.findSuggestions(args[0])`. This function itself performs no argument-name lookup (`args.go:34–36`).\n\nSuggestions are appended only when `DisableSuggestions` is false and `SuggestionsFor(arg)` returns results. They appear under “Did you mean this?”, one per line. A nonpositive `SuggestionsMinimumDistance` is set to `2` (`command.go:749–765`).",
+  "responded_at": "2026-09-15T20:22:10Z",
+  "sha256": "c8d7ab9450330a46ddeb550dd934e3762b920ec2a6f95afd38913c0bfef6a530"
+}

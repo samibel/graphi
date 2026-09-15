@@ -1,0 +1,7 @@
+Cobra’s `(*Command).IsAdditionalHelpTopicCommand()` classifies a command recursively:
+
+1. Returns `false` if the command is runnable, deprecated (`len(c.Deprecated) != 0`), or hidden.
+2. Checks every child in `c.commands` using `sub.IsAdditionalHelpTopicCommand()`; if any child returns `false`, the parent returns `false`.
+3. Otherwise returns `true`, including for a command with no children.
+
+Thus, the command and every descendant must be non-runnable, non-deprecated, and non-hidden (`command.go`, lines 1583–1598). “Runnable” means `c.Run != nil || c.RunE != nil` (`command.go`, lines 1551–1553).

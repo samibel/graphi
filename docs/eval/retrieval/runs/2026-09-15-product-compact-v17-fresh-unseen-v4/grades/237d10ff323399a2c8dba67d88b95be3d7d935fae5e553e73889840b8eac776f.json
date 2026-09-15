@@ -1,0 +1,14 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "query_id": "c17u4-q-3f8b052cd169",
+  "response_sha256": "237d10ff323399a2c8dba67d88b95be3d7d935fae5e553e73889840b8eac776f",
+  "grader_id": "v4-grader--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "rubric_sha256": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2",
+  "outcome": "fail",
+  "rationale": "The response does not answer how the removal test verifies detachment. The bundle omits TestRemoveCommand and the required assertion that invoking the removed child through its former parent returns an error.",
+  "graded_at": "2026-09-15T20:51:37Z",
+  "sha256": "a9ae402a265aff96464c6ab378a010f73913a56579efdde8e2b0b2b85b9ba474"
+}

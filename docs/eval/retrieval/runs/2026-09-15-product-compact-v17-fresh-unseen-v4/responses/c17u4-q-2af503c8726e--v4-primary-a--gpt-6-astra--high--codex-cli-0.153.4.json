@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-2af503c8726e",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "b325e717b6a6f1c9c73dcb1f9148e2e1bed9a3d364f83def056915e6ac4d132d",
+  "bundle_sha256": "e60028baf3f8a32bc5e273a6a2443f7f32008de8cddcf4a13607e99622f4f76c",
+  "prompt_sha256": "e6a5e679fd3e6c30f0c1220e263df9dadf83e9a85f4c7ead227cbd930db0d5d0",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response includes availability checks in `command.go:1559–1576`, but no legacy Bash generator implementation showing how it collects child commands and their aliases.",
+  "responded_at": "2026-09-15T20:28:37Z",
+  "sha256": "7c4ec2b70300427d8826ec6f743408ebf971b75e10a412c0a00ddf55f19b4d44"
+}

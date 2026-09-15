@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6ca-8152-7230-b1e2-2f15c3d24321"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately describes the enabled-label order and comma-space joining, the default label when no flags are recognized, and the error returned for d >= shellCompDirectiveMaxValue. All claims and cited lines are supported by the preserved completions.go span."}}
+{"type":"turn.completed","usage":{"input_tokens":17947,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

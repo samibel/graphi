@@ -1,0 +1,1 @@
+PASS: The response accurately describes clearing removed children’s parent pointers, rebuilding c.commands with survivors, and resetting and recomputing all three cached maximum lengths. All claims and the citation are supported by the preserved command.go span.

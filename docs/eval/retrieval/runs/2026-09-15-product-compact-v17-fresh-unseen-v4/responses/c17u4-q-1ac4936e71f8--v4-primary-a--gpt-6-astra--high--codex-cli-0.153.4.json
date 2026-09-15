@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "c17u4-q-1ac4936e71f8",
+  "rater_id": "v4-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "c237ba22f07a01cd3d1a934cdaa90e75a0e129d999f30e3742cb8425fca65cbf",
+  "query_text_sha256": "a2bc4ac9e655d54e7c672c0764de176f6a602f2df53898f5dd452023dbc73d1c",
+  "bundle_sha256": "23259c5cbb69edbdda383fb552aacd5301e40b2a5d7c9e1577fff696941981e2",
+  "prompt_sha256": "945f87663e142b0132e730b649a91c657afad2b66418e51b0e81f66c9f609293",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`COBRA_ACTIVE_HELP=\"0\"` takes precedence over `\u003cPROGRAM\u003e_ACTIVE_HELP`, disabling Active Help regardless of the program-specific setting.\n\nOtherwise, Cobra uses `\u003cPROGRAM\u003e_ACTIVE_HELP`. In `active_help.go:51–57`, `GetActiveHelpConfig` reads the global setting first and reads the program-specific variable only when the global value is not the disable value. `site/content/active_help.md:129` (Note 2) explicitly confirms the global `\"0\"` override.",
+  "responded_at": "2026-09-15T20:25:53Z",
+  "sha256": "7539552e6b8f57e985d56047a23e2a49bc4e15e43f7059a963098ad6efa3fa79"
+}

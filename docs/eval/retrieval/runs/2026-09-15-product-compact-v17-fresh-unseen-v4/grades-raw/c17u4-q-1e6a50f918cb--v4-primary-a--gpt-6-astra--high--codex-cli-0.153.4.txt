@@ -1,0 +1,1 @@
+PASS: The response accurately describes the bundled `rpad` helper constructing a left-aligned width format and applying it to the string. Its registration and citations resolve within `cobra.go`, and the padding and non-truncation claims match the preserved implementation.

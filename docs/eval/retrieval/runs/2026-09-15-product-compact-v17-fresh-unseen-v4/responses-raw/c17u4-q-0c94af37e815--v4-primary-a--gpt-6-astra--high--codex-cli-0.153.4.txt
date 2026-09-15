@@ -1,0 +1,1 @@
+In `cobra.go:91–95`, `AddTemplateFuncs(tmplFuncs template.FuncMap)` loops over every entry with `for k, v := range tmplFuncs` and assigns `templateFuncs[k] = v`. This adds each function to the registry, overwriting any existing entry with the same key.

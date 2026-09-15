@@ -1,0 +1,3 @@
+Cobra templates use `rpad`, registered as `"rpad": rpad` in `cobra.go:37`.
+
+In `cobra.go:174–176`, `rpad(s string, padding int)` builds a left-aligned format with `fmt.Sprintf("%%-%ds", padding)`, then applies it with `fmt.Sprintf(formattedString, s)`. This adds spaces on the right to reach the requested width; longer strings are not truncated.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c0-4db6-7932-b5e2-e7b495201d45"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s `WriteStringAndCheck` calls `b.WriteString(s)` and passes the returned error to `CheckErr` (`cobra.go:241–243`). If non-nil, `CheckErr` prints `Error: <error>` to stderr and exits with status 1; if nil, it does nothing (`cobra.go:233–237`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17124,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

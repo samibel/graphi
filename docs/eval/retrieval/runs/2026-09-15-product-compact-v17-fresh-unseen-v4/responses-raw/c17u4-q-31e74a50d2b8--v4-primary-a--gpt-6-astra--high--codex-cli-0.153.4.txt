@@ -1,0 +1,3 @@
+Call `cmd.SetUsageFunc` with a function of type `func(*Command) error`. The setter stores it in `c.usageFunc` (`command.go:305–309`), and `cmd.Usage()` invokes the resolved usage function with the command: `c.UsageFunc()(c)` (`command.go:442–448`).
+
+To customize the usage template instead, call `cmd.SetUsageTemplate(s)` with a string. Both public customization methods are documented under “Defining your own usage” (`site/content/user_guide.md:583–590`).

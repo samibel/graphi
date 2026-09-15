@@ -1,0 +1,7 @@
+Install a custom help command by calling:
+
+```go
+parentCmd.SetHelpCommand(customHelpCmd)
+```
+
+Evidence: [`command.go:326-330`](command.go:326) defines `func (c *Command) SetHelpCommand(cmd *Command)` and assigns the supplied command to `c.helpCommand`. Cobra otherwise automatically adds a help command when subcommands exist, per [`site/content/user_guide.md:492-495`](site/content/user_guide.md:492).

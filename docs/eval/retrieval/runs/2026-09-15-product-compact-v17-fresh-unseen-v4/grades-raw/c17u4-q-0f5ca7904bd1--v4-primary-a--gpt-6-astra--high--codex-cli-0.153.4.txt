@@ -1,0 +1,1 @@
+PASS: The response correctly states both behaviors shown in cobra.go: return s unchanged when strings.Contains is true; otherwise return s + " " + stringToAppend. Its line references resolve within the bundle.

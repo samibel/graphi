@@ -1,0 +1,1 @@
+PASS: The response correctly describes local-help precedence, recursive parent inheritance, and fallback rendering through OutOrStdout(), with errors sent through PrintErrln(). Its citations resolve within the preserved command.go span.

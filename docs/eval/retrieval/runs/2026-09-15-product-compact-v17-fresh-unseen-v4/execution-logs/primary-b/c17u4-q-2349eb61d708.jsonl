@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-f040-7160-b0ed-71d76ffa9262"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`Command.HelpFunc()` resolves inheritance by:\n\n1. Returning the command’s own `c.helpFunc` when non-nil.\n2. Otherwise recursively calling `c.Parent().HelpFunc()` when the command has a parent.\n3. Otherwise using the built-in default function.\n\nEvidence: `command.go:449-466`, specifically the `c.helpFunc != nil` check, `c.Parent().HelpFunc()` recursion, and final function literal.\n\nThe default function renders `c.HelpTemplate()` with `tmpl(c.OutOrStdout(), ...)`, so help goes to the command’s configured output or stdout by default. Rendering errors are sent through `c.PrintErrln(err)` (`command.go:460-464`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16522,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":148,"reasoning_output_tokens":0}}

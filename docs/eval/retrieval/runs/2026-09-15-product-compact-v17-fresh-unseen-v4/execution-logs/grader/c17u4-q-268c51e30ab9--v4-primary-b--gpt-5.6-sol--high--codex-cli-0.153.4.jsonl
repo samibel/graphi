@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d1-1759-7701-a8b4-33d64210427b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response accurately states the runnable/deprecated/hidden exclusions, recursive requirement that every child qualify, and qualifying leaf case. All claims and citations are supported by the preserved command.go spans."}}
+{"type":"turn.completed","usage":{"input_tokens":17529,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":43,"reasoning_output_tokens":0}}

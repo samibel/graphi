@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-5425-7113-8d11-9c09f9ca3aa6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra exposes `rpad` to its templates via `templateFuncs` (`cobra.go:31–40`). The function right-pads a string using a dynamically constructed `fmt.Sprintf` format:\n\n```go\nformattedString := fmt.Sprintf(\"%%-%ds\", padding)\nreturn fmt.Sprintf(formattedString, s)\n```\n\n(`cobra.go:172–177`)\n\nFor width `padding`, this produces a format like `\"%-20s\"`, which left-aligns `s` and adds spaces on the right until the requested minimum width is reached."}}
+{"type":"turn.completed","usage":{"input_tokens":16417,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":116,"reasoning_output_tokens":0}}

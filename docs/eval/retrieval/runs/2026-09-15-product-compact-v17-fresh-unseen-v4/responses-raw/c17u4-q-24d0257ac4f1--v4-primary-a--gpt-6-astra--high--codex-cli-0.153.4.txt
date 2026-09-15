@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `SetFlagErrorFunc` assigning `c.flagErrorFunc` in `command.go:315–320`, but omits the logic that chooses a handler across parent commands or supplies a default.

@@ -1,0 +1,1 @@
+PASS: The response accurately describes the bundled function: `EnableCaseInsensitive` selects `strings.EqualFold(s, t)` when true and exact equality (`s == t`) otherwise. Its citation resolves within the preserved `command.go` span.

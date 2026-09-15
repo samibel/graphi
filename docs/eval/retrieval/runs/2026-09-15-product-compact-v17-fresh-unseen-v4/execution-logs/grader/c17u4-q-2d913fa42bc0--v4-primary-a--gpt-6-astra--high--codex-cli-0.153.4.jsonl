@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6d2-8c7c-73a0-bab7-4c88fcab9499"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"PASS: The response identifies the deprecated compatibility behavior of routing usage and error messages to the same writer, correctly names `c.outWriter` and `c.errWriter`, and cites lines preserved in the bundle. Its deprecation and nil-output statements match the bundled comments."}}
+{"type":"turn.completed","usage":{"input_tokens":17786,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}
