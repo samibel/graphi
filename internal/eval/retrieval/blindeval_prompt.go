@@ -30,6 +30,24 @@ If the response does not contain enough information to answer, reply with the
 single word INSUFFICIENT followed by one sentence saying what was missing. That
 is a legitimate answer, not a refusal.`
 
+// RaterInstructionsTwoResponses is the frozen instruction block for a
+// transcript whose tool response designated one follow-up file-span read.
+const RaterInstructionsTwoResponses = `You are answering one question about a Go codebase you cannot see.
+
+Your ONLY sources of information are the two complete, unmodified responses
+printed between the BEGIN and END markers below. The first is one tool response.
+The second is one follow-up read of the file span designated by that tool
+response. You have no checkout, no search, no notes and no other material, and
+you must not use recollection of any public project to supply facts that are not
+in the two responses.
+
+Answer the question directly and concretely, citing the specific evidence in the
+responses you relied on (file paths, symbol names, snippet lines).
+
+If the responses do not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.`
+
 // RaterPrompt is one rater invocation's exact input.
 type RaterPrompt struct {
 	QueryID string
@@ -40,6 +58,10 @@ type RaterPrompt struct {
 	// trusting that it was embedded unchanged.
 	BundleOffset int
 	BundleLength int
+	// FollowupOffset and FollowupLength locate the optional second response.
+	// Both are zero when this is a one-response prompt.
+	FollowupOffset int
+	FollowupLength int
 	// SHA256 is the prompt's content address, recorded on every response.
 	SHA256 string
 	// BundleSHA256 and QueryTextSHA256 are the pre-registered addresses this
@@ -49,8 +71,10 @@ type RaterPrompt struct {
 }
 
 const (
-	bundleBeginMarker = "----- BEGIN task_context/2 RESPONSE BYTES -----\n"
-	bundleEndMarker   = "----- END task_context/2 RESPONSE BYTES -----\n"
+	bundleBeginMarker   = "----- BEGIN task_context/2 RESPONSE BYTES -----\n"
+	bundleEndMarker     = "----- END task_context/2 RESPONSE BYTES -----\n"
+	followupBeginMarker = "----- BEGIN task_context/2 FOLLOW-UP READ BYTES -----\n"
+	followupEndMarker   = "----- END task_context/2 FOLLOW-UP READ BYTES -----\n"
 )
 
 // BuildRaterPrompt assembles the one permitted rater input: the question text
@@ -98,6 +122,56 @@ func BuildRaterPrompt(queryID, queryText string, payload PreservedPayload) (Rate
 	}, nil
 }
 
+// BuildRaterTranscriptPrompt assembles the rater input for a captured
+// transcript. A one-response bundle delegates to BuildRaterPrompt exactly, so
+// contract-1 prompts remain byte-identical. A bundle with a follow-up embeds
+// both preserved responses in sequence and records both byte spans.
+func BuildRaterTranscriptPrompt(queryID, queryText string, bundle CapturedCandidateBundle) (RaterPrompt, error) {
+	if bundle.FollowupRead == nil {
+		return BuildRaterPrompt(queryID, queryText, bundle.Payload)
+	}
+	if _, err := BuildRaterPrompt(queryID, queryText, bundle.Payload); err != nil {
+		return RaterPrompt{}, err
+	}
+	followup := *bundle.FollowupRead
+	if followup.Sequence != 2 {
+		return RaterPrompt{}, fmt.Errorf("retrieval %s: rater prompt for %s was handed a follow-up read with sequence %d, want 2", QrelBlindSmokeEvaluationName, queryID, followup.Sequence)
+	}
+	if followup.Bytes == nil {
+		return RaterPrompt{}, fmt.Errorf("retrieval %s: rater prompt for %s has no preserved follow-up read bytes", QrelBlindSmokeEvaluationName, queryID)
+	}
+	if followup.SHA256 != SHA256Hex(followup.Bytes) || followup.ByteCount != len(followup.Bytes) {
+		return RaterPrompt{}, fmt.Errorf("retrieval %s: rater prompt for %s was handed a follow-up read whose digest or byte count does not recompute", QrelBlindSmokeEvaluationName, queryID)
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(RaterInstructionsTwoResponses)
+	buf.WriteString("\n\nQUESTION:\n")
+	buf.WriteString(queryText)
+	buf.WriteString("\n\n")
+	buf.WriteString(bundleBeginMarker)
+	bundleOffset := buf.Len()
+	buf.Write(bundle.Payload.Bytes)
+	buf.WriteString(bundleEndMarker)
+	buf.WriteString(followupBeginMarker)
+	followupOffset := buf.Len()
+	buf.Write(followup.Bytes)
+	buf.WriteString(followupEndMarker)
+
+	prompt := buf.Bytes()
+	return RaterPrompt{
+		QueryID:         queryID,
+		Bytes:           prompt,
+		BundleOffset:    bundleOffset,
+		BundleLength:    len(bundle.Payload.Bytes),
+		FollowupOffset:  followupOffset,
+		FollowupLength:  len(followup.Bytes),
+		SHA256:          SHA256Hex(prompt),
+		BundleSHA256:    bundle.Payload.SHA256,
+		QueryTextSHA256: SHA256Hex([]byte(queryText)),
+	}, nil
+}
+
 // EmbeddedBundleBytes reads the bundle back out of the prompt at the recorded
 // offset. It is the check side of BuildRaterPrompt: a rater that received a
 // pretty-printed or re-marshaled bundle did not evaluate what the claim charges
@@ -107,6 +181,18 @@ func (p RaterPrompt) EmbeddedBundleBytes() ([]byte, error) {
 		return nil, fmt.Errorf("retrieval %s: prompt for %s records a bundle span outside its own bytes", QrelBlindSmokeEvaluationName, p.QueryID)
 	}
 	return p.Bytes[p.BundleOffset : p.BundleOffset+p.BundleLength], nil
+}
+
+// EmbeddedFollowupBytes reads the optional second response back out at its
+// recorded offset. It returns nil for a one-response prompt.
+func (p RaterPrompt) EmbeddedFollowupBytes() ([]byte, error) {
+	if p.FollowupOffset == 0 && p.FollowupLength == 0 {
+		return nil, nil
+	}
+	if p.FollowupOffset < 0 || p.FollowupLength < 0 || p.FollowupOffset+p.FollowupLength > len(p.Bytes) {
+		return nil, fmt.Errorf("retrieval %s: prompt for %s records a follow-up span outside its own bytes", QrelBlindSmokeEvaluationName, p.QueryID)
+	}
+	return p.Bytes[p.FollowupOffset : p.FollowupOffset+p.FollowupLength], nil
 }
 
 // CheckPromptCarriesPreservedBundle asserts byte identity between the prompt's

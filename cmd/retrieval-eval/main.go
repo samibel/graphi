@@ -134,6 +134,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	checkTargets := fs.String("check-targets", "", "evaluate every target in "+retrieval.TargetsFilePath+" against this report and the committed coverage and smoke-evaluation artifacts; exit non-zero on the first miss and name it. A target this file states but no command evaluates is a note, not a target")
 	blindEval := fs.String("blind-eval", "", "SW-280 qrel-blind smoke evaluation phase: freeze | capture | decide. There is no phase, flag or value that lowers k, waives a query, excludes a query from N, retries a graded response or forces a pass")
+	blindEvalContract := fs.String("blind-eval-contract", "1", "qrel-blind smoke evaluation contract version: 1 | 2 (selects a version only; never a threshold, waiver or retry)")
 	blindEvalDir := fs.String("blind-eval-dir", "", "qrel-blind smoke evaluation run directory (must be inside the repository)")
 
 	answerSpanCeiling := fs.Bool("answer-span-ceiling", false, "price every reviewed grade-3 answer span in -dataset against the frozen 1,200-token candidate budget over -checkout and report, as counts only, how many questions can ever carry a complete answer span; the report names no query, path or line")
@@ -208,13 +209,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 			}
 		}
 		return runBlindEval(blindEvalOptions{
-			phase:    *blindEval,
-			dir:      dir,
-			root:     root,
-			dataset:  *dataset,
-			repoName: *repo,
-			checkout: checkoutDir,
-			embedder: *embedder,
+			phase:           *blindEval,
+			contractVersion: *blindEvalContract,
+			dir:             dir,
+			root:            root,
+			dataset:         *dataset,
+			repoName:        *repo,
+			checkout:        checkoutDir,
+			embedder:        *embedder,
 		}, stdout, stderr)
 	case *answerSpanCeiling:
 		checkoutDir := *checkout

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -15,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
@@ -35,6 +37,9 @@ func TestRetrievalEval_FlagSetIsEnumeratedAndCarriesNoOverride(t *testing.T) {
 		"answer-span-detail",
 		"baseline",
 		"blind-eval",
+		// blind-eval-contract selects a frozen contract version; it never
+		// changes a threshold, waives a query or retries an answer.
+		"blind-eval-contract",
 		"blind-eval-dir",
 		"budget-large",
 		"budget-medium",
@@ -170,6 +175,143 @@ func TestRetrievalEval_BlindEvalRejectsAnUnknownPhase(t *testing.T) {
 	if !strings.Contains(stderr.String(), "freeze, capture, seal, decide") {
 		t.Errorf("stderr %q does not enumerate the accepted phases", stderr.String())
 	}
+}
+
+func TestRetrievalEval_BlindEvalRejectsUnknownContractVersion(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{phase: blindEvalFreeze, contractVersion: "3"}, &stdout, &stderr)
+	if code != exitUsage {
+		t.Fatalf("unknown contract returned %d, want %d", code, exitUsage)
+	}
+	if !strings.Contains(stderr.String(), "-blind-eval-contract must be one of 1, 2") {
+		t.Fatalf("stderr %q does not enumerate the accepted contract versions", stderr.String())
+	}
+}
+
+func TestRetrievalEval_BlindEvalFreezeContractTwoWritesValidRecord(t *testing.T) {
+	root, runDir := newBlindEvalFreezeRepository(t)
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{
+		phase: blindEvalFreeze, contractVersion: blindEvalContractV2,
+		root: root, dir: runDir, dataset: "dataset.json",
+	}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("freeze exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	record, err := retrieval.LoadPreconditionRecord(filepath.Join(runDir, retrieval.BlindEvalPreconditionFile))
+	if err != nil {
+		t.Fatalf("written contract-2 record does not validate: %v", err)
+	}
+	if record.ContractVersion != retrieval.QrelBlindSmokeContractVersion2 ||
+		record.MeasurementContractVersion != retrieval.MeasurementContractVersion2 ||
+		record.FollowupMaxLines != compactv9.FollowupMaxLines ||
+		record.ClaimWordingSHA256 != retrieval.SHA256Hex([]byte(retrieval.SecondResponseClaimWording())) {
+		t.Fatalf("contract-2 fields = %+v", record)
+	}
+	methodology := frozenInputByRole(t, record, "methodology")
+	if methodology.Path != "docs/eval/retrieval/methodology-v2.md" {
+		t.Fatalf("methodology path = %q, want methodology-v2.md", methodology.Path)
+	}
+	wantSHA, err := retrieval.RepoFileSHA256Reader(root)(methodology.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodology.SHA256 != wantSHA {
+		t.Fatalf("methodology sha256 = %s, want %s", methodology.SHA256, wantSHA)
+	}
+}
+
+func TestRetrievalEval_BlindEvalFreezeContractOnePreservesLegacyRecordBytes(t *testing.T) {
+	root, runDir := newBlindEvalFreezeRepository(t)
+	var stdout, stderr bytes.Buffer
+	code := runBlindEval(blindEvalOptions{
+		phase: blindEvalFreeze, contractVersion: blindEvalContractV1,
+		root: root, dir: runDir, dataset: "dataset.json",
+	}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("freeze exit=%d\nstdout: %s\nstderr: %s", code, stdout.String(), stderr.String())
+	}
+	recordPath := filepath.Join(runDir, retrieval.BlindEvalPreconditionFile)
+	record, err := retrieval.LoadPreconditionRecord(recordPath)
+	if err != nil {
+		t.Fatalf("written contract-1 record does not validate: %v", err)
+	}
+	if record.ContractVersion != retrieval.QrelBlindSmokeContractVersion ||
+		record.MeasurementContractVersion != retrieval.MeasurementContractVersion ||
+		record.FollowupMaxLines != 0 ||
+		record.ClaimWordingSHA256 != retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())) {
+		t.Fatalf("legacy contract fields = %+v", record)
+	}
+	wantInputs := blindEvalFrozenInputs("runs/open-run")
+	if len(record.Inputs) != len(wantInputs) {
+		t.Fatalf("frozen input count = %d, want %d", len(record.Inputs), len(wantInputs))
+	}
+	for i, want := range wantInputs {
+		if record.Inputs[i].Role != want.role || record.Inputs[i].Path != want.path {
+			t.Fatalf("frozen input %d = %s/%s, want %s/%s", i, record.Inputs[i].Role, record.Inputs[i].Path, want.role, want.path)
+		}
+	}
+	raw, err := os.ReadFile(recordPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(raw, []byte(`"followup_max_lines"`)) || bytes.Contains(raw, []byte("methodology-v2.md")) {
+		t.Fatalf("contract-1 record gained version-2 bytes:\n%s", raw)
+	}
+}
+
+func newBlindEvalFreezeRepository(t *testing.T) (root, runDir string) {
+	t.Helper()
+	root = t.TempDir()
+	runDir = filepath.Join(root, "runs", "open-run")
+	for path, body := range map[string]string{
+		"docs/eval/retrieval-budgets.json":      "{}\n",
+		"docs/eval/retrieval-targets.json":      "{}\n",
+		"docs/eval/retrieval/methodology.md":    "contract one\n",
+		"docs/eval/retrieval/methodology-v2.md": "contract two\n",
+		"runs/open-run/grading-rubric.md":       "fixture rubric\n",
+	} {
+		full := filepath.Join(root, filepath.FromSlash(path))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dataset := retrieval.Dataset{
+		SchemaVersion: retrieval.SchemaVersion,
+		ID:            "freeze-fixture", Repo: "fixture", Language: "go", EvidenceClass: "fixture",
+		Queries: []retrieval.Query{{
+			ID: "q-1", Stratum: retrieval.StratumNLBehaviour, Language: "go", Split: retrieval.SplitHoldout, Text: "Where?",
+			Judgements: []retrieval.Judgement{{Path: "answer.go", StartLine: 1, EndLine: 1, Anchor: "answer", Grade: 3, Reason: "fixture", Annotator: "fixture", Reviewer: "fixture"}},
+		}},
+	}
+	if err := retrieval.WriteBlindEvalJSON(filepath.Join(root, "dataset.json"), dataset); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"init", "-q"},
+		{"add", "."},
+		{"-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-q", "-m", "fixture"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	return root, runDir
+}
+
+func frozenInputByRole(t *testing.T, record retrieval.PreconditionRecord, role string) retrieval.FrozenInput {
+	t.Helper()
+	for _, input := range record.Inputs {
+		if input.Role == role {
+			return input
+		}
+	}
+	t.Fatalf("record has no %q input", role)
+	return retrieval.FrozenInput{}
 }
 
 func TestBuildGraderPacketNamesTheRubricFrozenForThisRun(t *testing.T) {

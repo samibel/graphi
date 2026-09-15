@@ -389,7 +389,7 @@ func CheckPromptBinding(dir string, a EvaluationArtifacts, queryText map[string]
 		if bundle.Payload.SHA256 != q.BundleSHA256 || SHA256Hex(bundle.Payload.Bytes) != q.BundleSHA256 {
 			return fmt.Errorf("retrieval %s: the committed bundle for query %s hashes to %s, but %s was pre-registered; the bytes on disk are not the bytes this run pre-registered", QrelBlindSmokeEvaluationName, q.QueryID, SHA256Hex(bundle.Payload.Bytes), q.BundleSHA256)
 		}
-		rebuilt, err := BuildRaterPrompt(q.QueryID, text, bundle.Payload)
+		rebuilt, err := BuildRaterTranscriptPrompt(q.QueryID, text, bundle)
 		if err != nil {
 			return err
 		}

@@ -35,16 +35,19 @@ import (
 	"strings"
 	"time"
 
+	compactv9 "github.com/samibel/graphi/engine/agenttools/taskctx/compact/v9"
 	"github.com/samibel/graphi/internal/eval/retrieval"
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
 
 // Blind-evaluation phases. The flag accepts exactly these three values.
 const (
-	blindEvalFreeze  = "freeze"
-	blindEvalCapture = "capture"
-	blindEvalSeal    = "seal"
-	blindEvalDecide  = "decide"
+	blindEvalFreeze     = "freeze"
+	blindEvalCapture    = "capture"
+	blindEvalSeal       = "seal"
+	blindEvalDecide     = "decide"
+	blindEvalContractV1 = "1"
+	blindEvalContractV2 = "2"
 )
 
 // BlindEvalPhases is the closed set of accepted phases, exported so the
@@ -54,16 +57,24 @@ var BlindEvalPhases = []string{blindEvalFreeze, blindEvalCapture, blindEvalSeal,
 // blindEvalOptions is everything the mode reads. Every field is a location or
 // an identity; none of them is a threshold, a waiver or a retry.
 type blindEvalOptions struct {
-	phase    string
-	dir      string
-	root     string
-	dataset  string
-	repoName string
-	checkout string
-	embedder string
+	phase           string
+	contractVersion string
+	dir             string
+	root            string
+	dataset         string
+	repoName        string
+	checkout        string
+	embedder        string
 }
 
 func runBlindEval(o blindEvalOptions, stdout, stderr io.Writer) int {
+	if o.contractVersion == "" {
+		o.contractVersion = blindEvalContractV1
+	}
+	if o.contractVersion != blindEvalContractV1 && o.contractVersion != blindEvalContractV2 {
+		fmt.Fprintln(stderr, "retrieval-eval: -blind-eval-contract must be one of 1, 2")
+		return exitUsage
+	}
 	switch o.phase {
 	case blindEvalFreeze:
 		return runBlindEvalFreeze(o, stdout, stderr)
@@ -89,6 +100,18 @@ func blindEvalFrozenInputs(runDirRelative string) []struct{ role, path string } 
 		{retrieval.PreconditionInputGradingRubric, filepath.ToSlash(filepath.Join(runDirRelative, "grading-rubric.md"))},
 		{"methodology", "docs/eval/retrieval/methodology.md"},
 	}
+}
+
+func blindEvalFrozenInputsForContract(runDirRelative, contractVersion string) []struct{ role, path string } {
+	inputs := blindEvalFrozenInputs(runDirRelative)
+	if contractVersion == blindEvalContractV2 {
+		for i := range inputs {
+			if inputs[i].role == "methodology" {
+				inputs[i].path = "docs/eval/retrieval/methodology-v2.md"
+			}
+		}
+	}
+	return inputs
 }
 
 func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
@@ -121,8 +144,18 @@ func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "retrieval-eval: the %s refuses to freeze: the candidate worktree at %s has uncommitted changes, so candidate_sha %s would not name the code this evaluation runs\n", retrieval.QrelBlindSmokeEvaluationName, o.root, head)
 		return exitError
 	}
+	contractVersion := retrieval.QrelBlindSmokeContractVersion
+	measurementContractVersion := retrieval.MeasurementContractVersion
+	claimWording := retrieval.FrozenClaimWording()
+	followupMaxLines := 0
+	if o.contractVersion == blindEvalContractV2 {
+		contractVersion = retrieval.QrelBlindSmokeContractVersion2
+		measurementContractVersion = retrieval.MeasurementContractVersion2
+		claimWording = retrieval.SecondResponseClaimWording()
+		followupMaxLines = compactv9.FollowupMaxLines
+	}
 	record := retrieval.PreconditionRecord{
-		ContractVersion:            retrieval.QrelBlindSmokeContractVersion,
+		ContractVersion:            contractVersion,
 		Evaluation:                 retrieval.QrelBlindSmokeEvaluationName,
 		FreezeCommit:               head,
 		FreezeTimestamp:            time.Now().UTC().Format(time.RFC3339),
@@ -134,11 +167,12 @@ func runBlindEvalFreeze(o blindEvalOptions, stdout, stderr io.Writer) int {
 		ComparatorVersion:          retrieval.BlindEvalComparatorVersion,
 		TokenizerID:                tokenizerPinID(),
 		TokenizerVocabularySHA256:  tokenizerPinVocabularySHA256(),
-		MeasurementContractVersion: retrieval.MeasurementContractVersion,
-		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(retrieval.FrozenClaimWording())),
+		MeasurementContractVersion: measurementContractVersion,
+		FollowupMaxLines:           followupMaxLines,
+		ClaimWordingSHA256:         retrieval.SHA256Hex([]byte(claimWording)),
 	}
 	read := retrieval.RepoFileSHA256Reader(o.root)
-	for _, input := range blindEvalFrozenInputs(filepath.ToSlash(runDirRelative)) {
+	for _, input := range blindEvalFrozenInputsForContract(filepath.ToSlash(runDirRelative), o.contractVersion) {
 		sha, err := read(input.path)
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: freeze input %s (%s): %v\n", input.role, input.path, err)
@@ -308,7 +342,7 @@ func runBlindEvalCapture(o blindEvalOptions, stdout, stderr io.Writer) int {
 	}
 	for _, bundle := range captured {
 		q := byID[bundle.QueryID]
-		prompt, err := retrieval.BuildRaterPrompt(q.ID, q.Text, bundle.Payload)
+		prompt, err := retrieval.BuildRaterTranscriptPrompt(q.ID, q.Text, bundle)
 		if err != nil {
 			fmt.Fprintf(stderr, "retrieval-eval: %v\n", err)
 			return exitError
