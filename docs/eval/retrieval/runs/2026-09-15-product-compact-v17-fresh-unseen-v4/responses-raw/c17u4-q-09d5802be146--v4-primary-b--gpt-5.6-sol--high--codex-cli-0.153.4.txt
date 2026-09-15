@@ -1,0 +1,1 @@
+It preserves the `choices []string` slice and `directive ShellCompDirective` passed to `FixedCompletions`, returning those same captured values on every callback invocation regardless of `cmd`, `args`, or `toComplete` (`completions.go`, lines 123–129: `return choices, directive`).

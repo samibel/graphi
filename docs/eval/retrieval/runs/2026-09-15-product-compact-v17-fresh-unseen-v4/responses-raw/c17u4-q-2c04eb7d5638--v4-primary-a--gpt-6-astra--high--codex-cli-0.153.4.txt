@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `GenBashCompletion` calling `gen(buf, c)` in `bash_completions.go:684–697`, but omits the recursive `gen` implementation needed to explain command-function naming and body population.

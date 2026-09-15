@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c0-347e-7a10-aa2a-2b95cca8a946"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"A command is unavailable if:\n\n- `Deprecated` is non-empty or `Hidden` is true (`command.go:1562–1564`).\n- It is its parent’s help command (`command.go:1566–1568`).\n\nOtherwise, it becomes available if it is runnable—meaning `Run` or `RunE` is set (`command.go:1549–1553`)—or if it has at least one available subcommand (`command.go:1570–1572`, `1614–1623`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16468,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":112,"reasoning_output_tokens":0}}

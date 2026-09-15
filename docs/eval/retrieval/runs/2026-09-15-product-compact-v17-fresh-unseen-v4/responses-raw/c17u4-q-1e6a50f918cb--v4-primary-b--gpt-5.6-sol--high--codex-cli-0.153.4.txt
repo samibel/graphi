@@ -1,0 +1,10 @@
+Cobra exposes `rpad` to its templates via `templateFuncs` (`cobra.go:31–40`). The function right-pads a string using a dynamically constructed `fmt.Sprintf` format:
+
+```go
+formattedString := fmt.Sprintf("%%-%ds", padding)
+return fmt.Sprintf(formattedString, s)
+```
+
+(`cobra.go:172–177`)
+
+For width `padding`, this produces a format like `"%-20s"`, which left-aligns `s` and adds spaces on the right until the requested minimum width is reached.

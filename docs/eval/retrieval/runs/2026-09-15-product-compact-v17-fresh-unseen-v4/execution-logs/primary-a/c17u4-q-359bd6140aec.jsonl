@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c3-1029-77b1-8ba0-bd84e1bf5f8f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When `DisableFlagParsing` is `true`, flag parsing is disabled and all flags are passed to the command as arguments. The comment in `command.go:236–237` states: “If this is true all flags will be passed to the command as arguments.”"}}
+{"type":"turn.completed","usage":{"input_tokens":17474,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":58,"reasoning_output_tokens":0}}

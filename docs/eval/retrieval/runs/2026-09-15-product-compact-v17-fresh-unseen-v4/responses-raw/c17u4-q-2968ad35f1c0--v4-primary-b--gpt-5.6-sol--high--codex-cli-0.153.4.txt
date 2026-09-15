@@ -1,0 +1,3 @@
+`completeRequireFlags` gathers them by visiting `finalCmd.InheritedFlags()` and `finalCmd.NonInheritedFlags()` separately, because `finalCmd.Flags()` depends on `ParseFlags()` to merge those sets, and parsing may not occur when `DisableFlagParsing` is set (`completions.go:566–590`).
+
+For each flag, it checks for the `BashCompOneRequiredFlag` annotation and, if `flag.Changed` is false, appends `getFlagNameCompletions(flag, toComplete)` (`completions.go:569–576`). `InheritedFlags()` explicitly merges persistent parent flags, while `NonInheritedFlags()` returns local flags (`command.go:1694–1723`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c0-6bd0-7c22-b6bf-f89a0acd862b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response omits the body of `UsageFunc()` in `command.go:426`, which is needed to establish the selection order and how the default function renders usage."}}
+{"type":"turn.completed","usage":{"input_tokens":17214,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":42,"reasoning_output_tokens":0}}

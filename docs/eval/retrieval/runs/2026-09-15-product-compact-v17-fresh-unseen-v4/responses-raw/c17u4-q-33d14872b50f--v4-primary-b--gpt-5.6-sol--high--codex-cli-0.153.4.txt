@@ -1,0 +1,9 @@
+Call `SetHelpFunc` on the command:
+
+```go
+cmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+    // custom help behavior
+})
+```
+
+`command.go:321-325` shows that `SetHelpFunc` stores the replacement in `c.helpFunc`. `Command.HelpFunc` then returns that function when set, otherwise inherits one from its parent or uses Cobra’s default (`command.go:449-467`). Therefore, setting it on a parent also affects child commands, as confirmed by `site/content/user_guide.md:543-553`.

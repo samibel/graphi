@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-702e-7f02-bae9-4f0f8d0b9348"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go:91–95`, `AddTemplateFuncs(tmplFuncs template.FuncMap)` loops over every entry with `for k, v := range tmplFuncs` and assigns `templateFuncs[k] = v`. This adds each function to the registry, overwriting any existing entry with the same key."}}
+{"type":"turn.completed","usage":{"input_tokens":17267,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":67,"reasoning_output_tokens":0}}

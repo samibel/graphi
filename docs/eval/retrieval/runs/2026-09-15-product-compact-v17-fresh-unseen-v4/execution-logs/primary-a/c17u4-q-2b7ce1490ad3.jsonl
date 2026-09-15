@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-dc0a-7151-a3f3-6d7acbbe10ff"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response includes only the `Flags()` comment describing local and inherited flags (`command.go:1641–1643`), but lacks the legacy Bash generator’s metadata assembly logic and its handling of hidden flags, deprecated flags, and traversal."}}
+{"type":"turn.completed","usage":{"input_tokens":17194,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":56,"reasoning_output_tokens":0}}

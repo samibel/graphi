@@ -1,0 +1,3 @@
+`RangeArgs(min, max)` checks `len(args) < min || len(args) > max` (`args.go`, lines 104–107). Thus, the accepted interval is inclusive: counts equal to `min` or `max` pass.
+
+Outside that interval, it returns `"accepts between %d and %d arg(s), received %d"` with the bounds and actual count; otherwise, it returns `nil` (lines 108–110).

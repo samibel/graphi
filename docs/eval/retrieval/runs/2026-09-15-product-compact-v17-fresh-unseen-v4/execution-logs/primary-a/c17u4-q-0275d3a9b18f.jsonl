@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bb-f734-7650-bc72-c87cc17f545e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnlyValidArgs` strips descriptions by keeping only the text before the first tab in each `ValidArgs` entry: `strings.Split(v, \"\\t\")[0]`. It builds a separate `validArgs` slice, leaving `cmd.ValidArgs` unchanged, then checks positional arguments against that slice (`args.go`, lines 53–60). Matching uses exact string equality (`stringInSlice`, `cobra.go`, lines 223–226)."}}
+{"type":"turn.completed","usage":{"input_tokens":17353,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":94,"reasoning_output_tokens":0}}

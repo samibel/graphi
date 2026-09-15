@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-59d8-7d13-ba64-c2feb7fdda0f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`AddTemplateFuncs` iterates over the supplied `template.FuncMap` and inserts each key/value pair into the package-level `templateFuncs` registry:\n\n```go\nfor k, v := range tmplFuncs {\n    templateFuncs[k] = v\n}\n```\n\nEvidence: `cobra.go:89–94`. The registry itself is declared as `var templateFuncs = template.FuncMap{...}` at `cobra.go:31–40`, and is passed to templates via `t.Funcs(templateFuncs)` at `cobra.go:181`."}}
+{"type":"turn.completed","usage":{"input_tokens":16500,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":114,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c4-631a-7452-aa9a-0e02c541e8c0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response lacks a test or output showing that invoking a deprecated shorthand emits its notice; `command.go:1833–1835` only shows parsing and a condition for handling buffered warnings."}}
+{"type":"turn.completed","usage":{"input_tokens":17333,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":72,"reasoning_output_tokens":24}}

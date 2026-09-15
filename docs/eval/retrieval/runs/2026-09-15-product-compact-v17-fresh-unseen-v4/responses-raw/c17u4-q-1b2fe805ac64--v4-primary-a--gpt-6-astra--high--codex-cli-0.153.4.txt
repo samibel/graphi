@@ -1,0 +1,1 @@
+INSUFFICIENT The response includes only an incomplete `Gt` comment at `cobra.go:111`, with no implementation or explanation of how collections, integers, or numeric strings are converted before comparison.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-98ec-7260-b7bf-f5a4d57db16e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"None. `ArbitraryArgs` rejects no positional arguments: `args.go:67-71` says it “never returns an error” and its implementation unconditionally returns `nil`. The guide likewise says it “accept[s] any number of args” (`site/content/user_guide.md:374`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16972,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":65,"reasoning_output_tokens":0}}

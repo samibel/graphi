@@ -1,0 +1,2 @@
+INSUFFICIENT
+`site/content/user_guide.md:373` says `NoArgs` reports an error for any positional argument, but the responses omit its implementation and the error message used to report the unexpected argument.

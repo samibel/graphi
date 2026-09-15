@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-0813-7fc0-abb6-c13027a90717"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`DisableFlagParsing` stops the framework from parsing flags, so every flag token is passed unchanged to the command as a normal argument. Evidence: `command.go:236-237` states, “If this is true all flags will be passed to the command as arguments.” Consequently, the command must handle all flags itself, including flag completion (`completions.go:301-305`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16707,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":0}}

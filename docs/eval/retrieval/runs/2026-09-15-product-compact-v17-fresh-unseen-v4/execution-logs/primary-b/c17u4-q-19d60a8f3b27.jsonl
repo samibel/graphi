@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-ad01-7081-9c7a-d8404ee8553e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT\n\nThe responses show `cobra.AppendActiveHelp(comps, message)` adding messages to `comps` (`site/content/active_help.md`, lines 28–53), but do not include the function implementation that reveals how the message is encoded."}}
+{"type":"turn.completed","usage":{"input_tokens":17352,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":180,"reasoning_output_tokens":120}}

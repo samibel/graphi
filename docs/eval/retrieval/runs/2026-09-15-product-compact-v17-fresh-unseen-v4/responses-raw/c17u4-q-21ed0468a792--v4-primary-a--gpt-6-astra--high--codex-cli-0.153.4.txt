@@ -1,0 +1,1 @@
+Cobra’s `WriteStringAndCheck` calls `b.WriteString(s)` and passes the returned error to `CheckErr` (`cobra.go:241–243`). If non-nil, `CheckErr` prints `Error: <error>` to stderr and exits with status 1; if nil, it does nothing (`cobra.go:233–237`).

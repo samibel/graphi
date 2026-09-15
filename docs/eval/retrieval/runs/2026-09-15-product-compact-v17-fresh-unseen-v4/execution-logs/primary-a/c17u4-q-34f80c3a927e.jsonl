@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c2-f665-7fd3-b465-3e0b28249156"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetHelpCommand` on the command, passing your custom `*Command`:\n\n```go\nrootCmd.SetHelpCommand(customHelpCmd)\n```\n\nIn `command.go:327–330`, `func (c *Command) SetHelpCommand(cmd *Command)` installs it by assigning `c.helpCommand = cmd`."}}
+{"type":"turn.completed","usage":{"input_tokens":17289,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":70,"reasoning_output_tokens":0}}

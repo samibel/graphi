@@ -1,0 +1,1 @@
+`TestEnablePrefixMatching` in `command_test.go:305–332` proves this. It sets `EnablePrefixMatching = true`, defines `aCmd` with `ExactArgs(2)` and a `Run` callback that captures its arguments, then calls `executeCommand(rootCmd, "a", "one", "two")`. It checks for no error or output and verifies the captured arguments, joined with spaces, equal `onetwo`.

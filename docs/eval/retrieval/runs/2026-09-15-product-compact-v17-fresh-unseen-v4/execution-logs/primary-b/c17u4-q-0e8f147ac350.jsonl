@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-8b11-7cd1-a8a5-a666f4b3f4c8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`OnFinalize` appends every variadic function argument to the package-level `finalizers []func()` slice, preserving existing entries and argument order:\n\n```go\nfinalizers = append(finalizers, y...)\n```\n\nEvidence: `cobra.go:43` declares `finalizers`, and `cobra.go:104-106` defines `OnFinalize` and performs the append."}}
+{"type":"turn.completed","usage":{"input_tokens":16501,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":80,"reasoning_output_tokens":0}}

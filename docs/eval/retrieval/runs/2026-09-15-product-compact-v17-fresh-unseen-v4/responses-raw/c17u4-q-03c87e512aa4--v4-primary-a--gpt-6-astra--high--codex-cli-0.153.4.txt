@@ -1,0 +1,5 @@
+`hasSeeAlso` returns true when the command has **a parent**, or **at least one child** for which `IsAvailableCommand()` is true and `IsAdditionalHelpTopicCommand()` is false. Otherwise it returns false (`doc/util.go:26–37`).
+
+An available child must be neither deprecated nor hidden, must not be its parent’s designated help command, and must either be runnable or have an available subcommand (`command.go:1562–1575`, `1617–1629`). The parent check only requires `c.parent != nil` (`command.go:1632–1634`).
+
+This result gates the Markdown `### SEE ALSO` heading (`doc/md_docs.go:83–84`).

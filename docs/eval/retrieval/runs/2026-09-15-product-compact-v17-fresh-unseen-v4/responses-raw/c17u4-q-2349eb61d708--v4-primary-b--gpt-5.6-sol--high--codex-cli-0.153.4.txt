@@ -1,0 +1,9 @@
+`Command.HelpFunc()` resolves inheritance by:
+
+1. Returning the command’s own `c.helpFunc` when non-nil.
+2. Otherwise recursively calling `c.Parent().HelpFunc()` when the command has a parent.
+3. Otherwise using the built-in default function.
+
+Evidence: `command.go:449-466`, specifically the `c.helpFunc != nil` check, `c.Parent().HelpFunc()` recursion, and final function literal.
+
+The default function renders `c.HelpTemplate()` with `tmpl(c.OutOrStdout(), ...)`, so help goes to the command’s configured output or stdout by default. Rendering errors are sent through `c.PrintErrln(err)` (`command.go:460-464`).

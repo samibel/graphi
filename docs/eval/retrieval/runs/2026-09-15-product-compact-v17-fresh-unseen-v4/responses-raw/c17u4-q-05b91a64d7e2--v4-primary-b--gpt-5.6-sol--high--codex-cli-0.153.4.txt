@@ -1,0 +1,9 @@
+In `doc/yaml_docs.go:148-175`, `genFlagResult` includes a shorthand only when it is non-empty and `flag.ShorthandDeprecated` is empty:
+
+```go
+if !(len(flag.ShorthandDeprecated) > 0) && len(flag.Shorthand) > 0
+```
+
+In that case, it constructs `cmdOption` positionally with `flag.Shorthand` as the second field.
+
+When the shorthand is absent or deprecated, it constructs `cmdOption` with named fields—`Name`, `DefaultValue`, and `Usage`—and omits the shorthand field entirely. Thus, deprecated shorthands are represented the same as missing shorthands.

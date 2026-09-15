@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c0-dc51-7fa3-8a20-0c1a01c8aa80"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows how commands are deemed available (`command.go:1559–1576`) but not how the legacy Bash generator collects child commands or aliases."}}
+{"type":"turn.completed","usage":{"input_tokens":16521,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":66,"reasoning_output_tokens":25}}

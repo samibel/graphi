@@ -1,0 +1,10 @@
+In `command.go`, `(*Command).IsAvailableCommand` (lines 1559–1576) makes a command unavailable if:
+
+- `len(c.Deprecated) != 0` or `c.Hidden`.
+- It has a parent and is that parent’s help command: `c.Parent().helpCommand == c`.
+- It is neither runnable nor has any available subcommands.
+
+After passing the first two exclusions, it is available when **`c.Runnable() || c.HasAvailableSubCommands()`**:
+
+- `Runnable()` means `c.Run != nil || c.RunE != nil` (lines 1549–1553).
+- `HasAvailableSubCommands()` means at least one subcommand’s `IsAvailableCommand()` returns true (lines 1614–1628).

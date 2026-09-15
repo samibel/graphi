@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-294d-7e02-aefd-bac4162fdd59"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetOutput` is a deprecated compatibility method equivalent to calling both `SetOut` and `SetErr` with the same writer. It changes the command’s usage-output destination (`c.outWriter`) and error-message destination (`c.errWriter`) (`command.go:279-286`). If passed `nil`, their documented fallback is `os.Stderr` (`command.go:280-281`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16630,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":83,"reasoning_output_tokens":0}}

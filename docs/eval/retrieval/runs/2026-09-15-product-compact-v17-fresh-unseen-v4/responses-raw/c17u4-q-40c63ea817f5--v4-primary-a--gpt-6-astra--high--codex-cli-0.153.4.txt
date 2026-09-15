@@ -1,0 +1,1 @@
+INSUFFICIENT The response lacks a test or output showing that invoking a deprecated shorthand emits its notice; `command.go:1833–1835` only shows parsing and a condition for handling buffered warnings.

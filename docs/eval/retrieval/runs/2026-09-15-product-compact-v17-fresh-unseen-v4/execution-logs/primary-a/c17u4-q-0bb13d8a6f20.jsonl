@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-4a02-7290-bbc6-968a9eebca28"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`activeHelpEnvVar` appends `_ACTIVE_HELP` to the program name, uppercases the whole string, then replaces each character outside `A–Z`, `0–9`, and `_` with `_`.\n\nEvidence: `active_help.go:64–65` calls `strings.ToUpper(fmt.Sprintf(\"%s%s\", name, activeHelpEnvVarSuffix))`, then `ReplaceAllString(..., \"_\")`. The suffix is defined at line 28 and the replacement regex, `[^A-Z0-9_]`, at line 33.\n\nFor example, `my-app` becomes `MY_APP_ACTIVE_HELP`."}}
+{"type":"turn.completed","usage":{"input_tokens":17302,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":130,"reasoning_output_tokens":0}}

@@ -1,0 +1,7 @@
+Call `SetHelpCommand` on the command, passing your custom `*Command`:
+
+```go
+rootCmd.SetHelpCommand(customHelpCmd)
+```
+
+In `command.go:327–330`, `func (c *Command) SetHelpCommand(cmd *Command)` installs it by assigning `c.helpCommand = cmd`.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-4ba1-7a92-abcd-2e7aabab5511"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`getIn` uses this precedence:\n\n1. The current command’s `c.inReader`, if non-nil.\n2. The nearest ancestor’s non-nil reader, by recursively calling `c.parent.getIn(def)`.\n3. The supplied default reader, `def`, if no command in the chain has a reader.\n\nEvidence: `command.go:414–422`, specifically `return c.inReader`, `return c.parent.getIn(def)`, and `return def`. When called through `InOrStdin`, the default is `os.Stdin` (`command.go:390–392`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17110,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":126,"reasoning_output_tokens":0}}

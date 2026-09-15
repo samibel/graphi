@@ -1,0 +1,1 @@
+Cobra uses `stringInSlice(a string, list []string) bool` in `cobra.go:223–230`. It loops through the list, compares each element with `a` using exact, case-sensitive equality (`b == a`), and returns `true` on the first match. If no element matches, it returns `false`.

@@ -1,0 +1,5 @@
+Execution must fail with the exact error:
+
+`required flag(s) "foo1", "foo2" not set`
+
+Evidence: `TestRequiredFlags` defines local flags `foo1` and `foo2`, marks both required, calls `executeCommand(c)` without arguments, and compares `err.Error()` to that exact string ([`command_test.go`, lines 818–834]).

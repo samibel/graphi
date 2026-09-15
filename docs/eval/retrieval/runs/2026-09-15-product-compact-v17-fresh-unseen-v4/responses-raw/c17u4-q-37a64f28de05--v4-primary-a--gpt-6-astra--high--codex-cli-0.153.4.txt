@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains no test or behavior description for an application and its direct child sharing the same command name.

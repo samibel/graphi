@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows help-flag initialization and merging in `command.go`, but omits the help-flag merge test and its assertions needed to identify what it establishes.

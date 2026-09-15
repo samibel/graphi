@@ -1,0 +1,7 @@
+They are retained in the package-level slice `initializers []func()` declared in `cobra.go:42`. `OnInitialize` appends all supplied functions to that slice:
+
+```go
+initializers = append(initializers, y...)
+```
+
+(`cobra.go:99–101`).

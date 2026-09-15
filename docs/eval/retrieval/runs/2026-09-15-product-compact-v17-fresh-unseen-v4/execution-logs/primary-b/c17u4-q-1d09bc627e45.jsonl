@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bf-223d-7b00-b6c6-9c2ba0f23627"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s template functions remove:\n\n- Leading and trailing whitespace with `trim`, mapped to `strings.TrimSpace` ([`cobra.go`, lines 31–40]).\n- Trailing Unicode whitespace with `trimRightSpace` and `trimTrailingWhitespaces`; both call `strings.TrimRightFunc(s, unicode.IsSpace)` ([`cobra.go`, lines 158–161]).\n\nThe help template specifically uses `trimTrailingWhitespaces` on `.Long` or `.Short`, so it removes all trailing runes recognized by `unicode.IsSpace` ([`command.go`, lines 583–596])."}}
+{"type":"turn.completed","usage":{"input_tokens":16412,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":127,"reasoning_output_tokens":0}}

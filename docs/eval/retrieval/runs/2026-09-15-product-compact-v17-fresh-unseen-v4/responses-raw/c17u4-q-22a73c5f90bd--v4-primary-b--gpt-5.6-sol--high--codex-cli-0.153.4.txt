@@ -1,0 +1,1 @@
+INSUFFICIENT The response omits the bodies of `Command.UsageFunc()` and `Command.UsageTemplate()` in `command.go` (lines 425–426 and 542–545), so neither the complete selection logic nor the default rendering behavior is shown.

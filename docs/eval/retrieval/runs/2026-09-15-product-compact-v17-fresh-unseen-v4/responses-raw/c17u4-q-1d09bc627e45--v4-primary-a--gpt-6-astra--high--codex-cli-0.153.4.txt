@@ -1,0 +1,6 @@
+Cobra’s template helpers remove whitespace as follows:
+
+- **`trimRightSpace` and `trimTrailingWhitespaces`** remove trailing Unicode whitespace, using `strings.TrimRightFunc(s, unicode.IsSpace)` (`cobra.go:158–161`). Both names map to `trimRightSpace` (`cobra.go:32–35`).
+- **`trim`** removes leading and trailing whitespace via `strings.TrimSpace` (`cobra.go:33`).
+
+The default help template applies `trimTrailingWhitespaces` to `.Long` or `.Short`, so it trims only trailing whitespace there (`command.go:593`).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c4-31f9-7d82-8e0c-0950735b27f1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response contains no test or help-output assertion for an already-owned `-v`, and the relevant comment in `command.go:109–110` ends before stating the shorthand condition."}}
+{"type":"turn.completed","usage":{"input_tokens":17244,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":45,"reasoning_output_tokens":0}}

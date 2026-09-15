@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6be-d52f-70a3-b600-75393756e841"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The global `COBRA_ACTIVE_HELP=0` setting takes precedence over `<PROGRAM>_ACTIVE_HELP`. In `active_help.go:51-58`, `GetActiveHelpConfig` only reads the program-specific variable when the global value is not `\"0\"`; `site/content/active_help.md:126-128` confirms it returns `\"0\"` regardless of `<PROGRAM>_ACTIVE_HELP`."}}
+{"type":"turn.completed","usage":{"input_tokens":17245,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":84,"reasoning_output_tokens":0}}

@@ -1,0 +1,9 @@
+`AddTemplateFuncs` iterates over the supplied `template.FuncMap` and inserts each key/value pair into the package-level `templateFuncs` registry:
+
+```go
+for k, v := range tmplFuncs {
+    templateFuncs[k] = v
+}
+```
+
+Evidence: `cobra.go:89–94`. The registry itself is declared as `var templateFuncs = template.FuncMap{...}` at `cobra.go:31–40`, and is passed to templates via `t.Funcs(templateFuncs)` at `cobra.go:181`.

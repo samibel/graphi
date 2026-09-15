@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6bd-77e6-7e23-a732-a748f1e5dbd5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"They are retained in the package-level slice `initializers []func()` declared in `cobra.go:42`. `OnInitialize` appends all supplied functions to that slice:\n\n```go\ninitializers = append(initializers, y...)\n```\n\n(`cobra.go:99–101`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16342,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":61,"reasoning_output_tokens":0}}

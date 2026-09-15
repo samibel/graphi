@@ -1,0 +1,3 @@
+The `eq` template helper supports signed integers (`int`, `int8`, `int16`, `int32`, `int64`) and strings. In [`cobra.go`, lines 142–157], `Eq` switches on `reflect.Kind`, comparing integers via `av.Int() == bv.Int()` and strings via `av.String() == bv.String()`.
+
+For collection-related kinds—arrays, maps, and slices—it panics with `"Eq called on unsupported type"`; channels receive the same treatment (`reflect.Array, reflect.Chan, reflect.Map, reflect.Slice`). Other unhandled kinds return `false`. The helper is registered as `"eq": Eq` in [`cobra.go`, lines 31–40].

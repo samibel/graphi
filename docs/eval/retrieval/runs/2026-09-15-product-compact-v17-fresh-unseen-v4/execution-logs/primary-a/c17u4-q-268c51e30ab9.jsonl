@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a6c1-3069-7bc3-b0ea-5b4b7820926e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Cobra’s `(*Command).IsAdditionalHelpTopicCommand()` classifies a command recursively:\n\n1. Returns `false` if the command is runnable, deprecated (`len(c.Deprecated) != 0`), or hidden.\n2. Checks every child in `c.commands` using `sub.IsAdditionalHelpTopicCommand()`; if any child returns `false`, the parent returns `false`.\n3. Otherwise returns `true`, including for a command with no children.\n\nThus, the command and every descendant must be non-runnable, non-deprecated, and non-hidden (`command.go`, lines 1583–1598). “Runnable” means `c.Run != nil || c.RunE != nil` (`command.go`, lines 1551–1553)."}}
+{"type":"turn.completed","usage":{"input_tokens":17061,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":158,"reasoning_output_tokens":0}}

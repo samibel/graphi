@@ -1,0 +1,7 @@
+In `completions.go:161–191`, `ShellCompDirective.string`:
+
+- Renders combined recognized flags as their symbolic names in fixed order, separated by `", "`, e.g. `"ShellCompDirectiveError, ShellCompDirectiveNoSpace"`.
+- Renders zero/no recognized flags as `"ShellCompDirectiveDefault"` (`len(directives) == 0`).
+- For `d >= shellCompDirectiveMaxValue`, returns `"ERROR: unexpected ShellCompDirective value: %d"` with the numeric value substituted.
+
+The flag order is Error, NoSpace, NoFileComp, FilterFileExt, FilterDirs, KeepOrder.

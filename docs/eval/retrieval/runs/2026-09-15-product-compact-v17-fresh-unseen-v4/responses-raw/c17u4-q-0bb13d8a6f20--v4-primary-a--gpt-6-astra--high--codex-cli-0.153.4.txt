@@ -1,0 +1,5 @@
+`activeHelpEnvVar` appends `_ACTIVE_HELP` to the program name, uppercases the whole string, then replaces each character outside `A–Z`, `0–9`, and `_` with `_`.
+
+Evidence: `active_help.go:64–65` calls `strings.ToUpper(fmt.Sprintf("%s%s", name, activeHelpEnvVarSuffix))`, then `ReplaceAllString(..., "_")`. The suffix is defined at line 28 and the replacement regex, `[^A-Z0-9_]`, at line 33.
+
+For example, `my-app` becomes `MY_APP_ACTIVE_HELP`.
