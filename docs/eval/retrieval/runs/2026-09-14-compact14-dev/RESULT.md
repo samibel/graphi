@@ -92,6 +92,36 @@ two-slice release aggregate, `methodology.md`) are unbuilt by design, and
 under the adopted contract 1 — one response — the same split stands at
 56 of 64 overlapped, `P ≈ 0.59`, a coin toss.
 
+## Rejected on the same instruments: candidate pool 15 → 20
+
+Measured 2026-09-15 by codex-cli 0.153.4 from a bounded brief (constant
+`candidatePoolLimit` only; projector and ranking untouched; nothing
+committed). Widening the pool was the one upstream lever the projection
+cannot supply, aimed at the reviewed-split question at retrieval rank 17.
+
+| Reviewed split, production path | pool 15 (this result) | pool 20 |
+|---|---:|---:|
+| One response: overlapped / complete | 56 / 43 | 55 / 42 |
+| + designated read: overlapped / complete | 59 / 49 | **58 / 47** |
+| Follow-up reads | 12 | 10 |
+
+| Committed split, quick rebuild | pool 15 | pool 20 |
+|---|---:|---:|
+| Cheaper than GrepRead/2 / paired median saving | 26 / +74.0 | 28 / +76.5 |
+| Reached / any complete | 35 / 24 | 35 / 24 |
+
+The wider pool reached none of the targeted questions and displaced the
+leads of two others (`cd-23`, `cd-78`: complete → not overlapped), because
+the retrieval-ordered selector still takes six seeds and five more rows
+shift which six those are. The small cost gain on the committed split does
+not buy back two reviewed-split answers. Rejected; the constant stays 15.
+Ranking gates on a fresh report over the committed development split:
+architecture-flow nDCG@10 `0.46246715228468249`, NL-behaviour nDCG@10
+`0.70290472235070689`, exact-identifier Top-1 `1.0`, bundle coverage 6/6 —
+unchanged from every RESULT since compact/10 (the 2026-09-06 report in the
+gate-local run directory predates the ranking work and is not the
+comparison point).
+
 ## Reproduce
 
 ```sh
