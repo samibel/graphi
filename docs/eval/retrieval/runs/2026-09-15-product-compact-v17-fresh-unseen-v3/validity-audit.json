@@ -1,0 +1,26 @@
+{
+  "schema": "graphi-fresh-holdout-validity-audit/1",
+  "audited_at_utc": "2026-09-15T19:58:59Z",
+  "status": "PASS_REFUSAL_CORRECTLY_ENFORCED",
+  "run_valid_for_performance_inference": false,
+  "checks": [
+    {"name":"curator_handoff_hashes","status":"PASS"},
+    {"name":"dataset_hash_without_content_disclosure","status":"PASS"},
+    {"name":"declared_candidate_commit_and_tree_resolve","status":"PASS"},
+    {"name":"actual_head_equals_declared_candidate_outside_current_run","status":"FAIL","differing_paths":835},
+    {"name":"production_runtime_paths_differ","status":"NO","note":"Differences classify as 833 prior docs/eval run artifacts, one governance test and one governance document; no production runtime path differs."},
+    {"name":"pinned_corpus_commit_and_cleanliness","status":"PASS"},
+    {"name":"orchestrator_syntax_and_synthetic_smoke","status":"PASS"},
+    {"name":"cgo_free_tests","status":"PASS"},
+    {"name":"freeze","status":"PASS","invocations":1},
+    {"name":"capture","status":"NOT_RUN","invocations":0},
+    {"name":"primary_rating","status":"NOT_RUN","completed":0},
+    {"name":"seal","status":"NOT_RUN","invocations":0},
+    {"name":"decide","status":"NOT_RUN","invocations":0},
+    {"name":"no_retry_no_overwrite_no_waiver","status":"PASS"}
+  ],
+  "refusal_commit": "99d98f44f0ea1d03a3f9ffa34187bdee387094ed",
+  "refusal_sha256": "6292f43b36a65038957cf7ff4fefb9199e43412f4b068d8a1a1ce39580e2a19e",
+  "operator_attestation_sha256": "2221f839bd3b1d98c3fe75e6c5e5de50144f60cb59e6da21ed408dd4cbc5b84f",
+  "conclusion": "The run must remain refused under its exact full-tree candidate binding. A production-path-only binding would require an explicit pre-freeze contract and cannot be introduced retroactively."
+}
