@@ -1,6 +1,6 @@
 {
   "schema":"graphi-fresh-holdout-operator-attestation/3",
-  "status":"decision_complete_pending_validity_audit",
+  "status":"complete_release_no",
   "run_id":"2026-09-15-product-compact-v17-fresh-unseen-v4",
   "operator":{"identity":"Codex independent holdout operator","task_path":"/root/holdout_operator","provider":"OpenAI","resolved_model_identity":"GPT-5 Codex agent (session-declared)","immutable_backend_snapshot_exposed":false},
   "isolation":{"branch":"fresh-holdout-compact17-unseen-v4-operator","worktree":"/private/tmp/graphi-compact17-unseen-v4-operator","root_excluded_from_holdout_content":true,"manual_holdout_content_accessed":false,"consumed_holdout_accessed":false},
@@ -17,5 +17,6 @@
   "raw_adjudication_grading":{"raw_grades":1,"confidential_event_logs":1,"allowlist_conformant_logs":1,"valid_grade_prefixes":1,"errors":0,"retries":0,"tool_events":0,"empty_grades":0},
   "final_seal":{"invocations":1,"sealed_primary_grades":128,"sealed_adjudication_grades":1,"sealed_adjudications":1,"checkout_argument_present":true,"preflight":"PASS"},
   "decision":{"invocations":1,"exit_code":1,"release":"NO","n":64,"k":56,"pass_count":47,"corrected_pass_count":47,"primary_disagreements":1,"adjudications":1,"non_answered_responses":0,"capture_bound":true,"end_of_run_all_match":true,"disclosed_grading_concerns":0,"outcome_sha256":"79ceb514d173617f895f1d3159cf972939dd176d8d5e23bb18e6efefd7053b1c","end_of_run_comparison_sha256":"0c08400e50c65d36cb35f9a5c507dbf9ca6f209fa84bbb189ad5e9aceef0f9ee"},
+  "validity_audit":{"holdout_decision_valid":true,"procedure_invalidating_error":false,"bindings":"PASS","outside_run_equivalence":"PASS","corpus_pin":"PASS","capture_reproducibility":"PASS","budget_enforcement":"PASS","event_audits":"PASS","write_once_no_retry":"PASS","cgo0_build":"PASS","cgo0_holdout_scoped_tests":"PASS","cgo0_full_go_test":"FAIL","cgo0_full_go_test_failures":["static embedder pin inventory does not yet enumerate this newly committed run","tokenizer pin inventory does not yet enumerate this newly committed run","isolated-worktree release binary test could not observe a VCS revision"],"full_suite_failures_invalidate_holdout_decision":false},
   "limitations":["Provider exposes no immutable backend snapshot or build digest; model-level byte reproducibility cannot be claimed."]
 }
