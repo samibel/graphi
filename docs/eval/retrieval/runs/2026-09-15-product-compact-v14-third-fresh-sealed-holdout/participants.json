@@ -1,0 +1,36 @@
+{
+  "primary_raters": [
+    {
+      "id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-6-astra",
+      "independence_basis": "Stable third-run primary-A configuration: concrete non-alias model gpt-6-astra, reasoning high, one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item in an empty directory with the single prompt file as its only input. It did not implement, tune or measure the candidate and did not curate any dataset. The same model configuration served as a primary rater in the first and second fresh holdouts; each item is a new process with no memory of those runs. OpenAI exposes no immutable backend snapshot/build digest.",
+      "participated_in_track": false
+    },
+    {
+      "id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+      "role": "primary",
+      "provider": "OpenAI Codex via codex-cli 0.153.4",
+      "model": "gpt-5.6-sol",
+      "independence_basis": "Stable third-run primary-B configuration: concrete non-alias model gpt-5.6-sol, reasoning high, one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per item in an empty directory with the single prompt file as its only input. It did not implement, tune or measure the candidate and did not curate any dataset. The same model configuration served as a primary rater in the first and second fresh holdouts; each item is a new process with no memory of those runs. OpenAI exposes no immutable backend snapshot/build digest.",
+      "participated_in_track": false
+    }
+  ],
+  "grader": {
+    "id": "third-grader--gpt-6-astra--high--codex-cli-0.153.4",
+    "role": "grader",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-6-astra",
+    "independence_basis": "Stable third-run grader configuration: concrete non-alias model gpt-6-astra, reasoning high, one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per grader packet in an empty directory. It did not implement, tune or measure the candidate, did not curate any dataset, and does not serve as a primary in this run. The same model configuration graded the first and second fresh holdouts; each packet is a new process with no memory of those runs. OpenAI exposes no immutable backend snapshot/build digest.",
+    "participated_in_track": false
+  },
+  "adjudicator": {
+    "id": "third-adjudicator--gpt-5.6-sol--high--codex-cli-0.153.4",
+    "role": "adjudicator",
+    "provider": "OpenAI Codex via codex-cli 0.153.4",
+    "model": "gpt-5.6-sol",
+    "independence_basis": "Stable third-run adjudicator configuration: concrete non-alias model gpt-5.6-sol, reasoning high, one fresh codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only process per disagreement in an empty directory. It did not implement, tune or measure the candidate, did not curate any dataset, and does not serve as a primary in this run. It receives no primary response or grade before its own answer is sealed. The same model configuration adjudicated the first and second fresh holdouts; each item is a new process with no memory of those runs. OpenAI exposes no immutable backend snapshot/build digest.",
+    "participated_in_track": false
+  }
+}
