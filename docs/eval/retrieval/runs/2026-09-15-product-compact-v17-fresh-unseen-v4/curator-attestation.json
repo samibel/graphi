@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "attestation_type": "independent-fresh-holdout-curation",
+  "curator": {
+    "task_path": "/root/fresh_holdout_curator",
+    "provider": "OpenAI",
+    "model": "GPT-5",
+    "resolved_backend_snapshot": "not exposed to curator"
+  },
+  "times_utc": {
+    "preregistered_at": "2026-09-15T20:09:28Z",
+    "attested_at": "2026-09-15T20:10:45Z"
+  },
+  "branch": "fresh-holdout-curation-compact17-unseen-v4",
+  "preregistration_commit": "abaa74f4e705d82706caa1e5666243138be54f04",
+  "preregistration_tree": "aad838d57720c250e90e7024d24feb3feffc0e03",
+  "candidate": {
+    "commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "branch_created_directly_from_candidate": true
+  },
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "tree": "8590b318bb54874bf1f0c597ff503f8c3b9ace75",
+    "clean": true
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4/sealed-dataset.json",
+    "sha256": "c4115b6331e46f1a8c0b0daad020e86e4826a51de8e06a68e3211dea0770a3a6",
+    "n": 64,
+    "k": 56,
+    "unique_families": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10
+    }
+  },
+  "artifact_sha256": {
+    "curator_preregistration": "777b9e38c1e12a8bcd36d44de15a7011c857ef142e082c18461446361a12bcbb",
+    "operator_handoff": "46591c6add26e20e3addec4dcc40a346c23abbe7d8c7c799204c14fe5d5dd1a6",
+    "operator_preflight": "2f9207e7fcb380bced68791ee71333f488a17a2b6e948677483cddeaeb025c7d",
+    "method": "8354cc4121e4f6d0bf5f2a05b25a0ae096db5d2bee4a1fd0c6c1e9f7396bf07d",
+    "readme": "a59914c1e2875ce6cd05b4a33bfaeb3dc14058e5c3aeeda6860fc11d28153dcc",
+    "grading_rubric": "7adf59a0bf9578a91a80796d9e5d7f6016de803f155c3ceb36a08f5db55f7cd2"
+  },
+  "outside_run_equivalence": {
+    "result": "PASS",
+    "git_diff_empty": true,
+    "candidate_filtered_tree_sha256": "02709301667a8564147d88e363f301812c2c37e2d02f06dc2ccea3b96b682b86",
+    "curator_filtered_tree_sha256": "02709301667a8564147d88e363f301812c2c37e2d02f06dc2ccea3b96b682b86",
+    "method": "SHA-256 of canonical git ls-tree -r records after excluding exactly the v4 run prefix from the curator tree"
+  },
+  "audits": {
+    "schema": "PASS",
+    "answerability": "PASS: 64/64",
+    "span_anchor_resolution": "PASS: 64/64",
+    "answer_span_ceiling": "PASS: 0 over ceiling; 64/64 any/all feasible",
+    "strata": "PASS: 11/11/11/11/10/10",
+    "query_and_family_uniqueness": "PASS: 64/64",
+    "internal_near_duplicate": "PASS: 64 unique normalized texts; maximum token-set Jaccard 0.368",
+    "threshold_derivation": "PASS: k=56 for N=64",
+    "candidate_and_corpus_binding": "PASS",
+    "operator_preflight_syntax": "PASS: zsh -n",
+    "operator_preflight_forbidden_identifier": "PASS: no status identifier",
+    "operator_preflight_smoke": "PASS",
+    "changed_file_scope": "PASS: only this new run directory"
+  },
+  "declarations": {
+    "candidate_capture_started": false,
+    "rating_started": false,
+    "grading_started": false,
+    "adjudication_started": false,
+    "candidate_outputs_used": false,
+    "development_material_opened": false,
+    "consumed_holdout_files_opened": false,
+    "prior_capture_or_result_files_opened": false,
+    "candidate_implementation_diff_content_opened": false,
+    "root_received_holdout_content": false
+  },
+  "limitations": [
+    "Prior and development datasets were deliberately not reopened, so freshness is evidenced by independent source-only construction, new identifiers, thematic distancing, and internal duplicate audits rather than a forbidden content-level comparison.",
+    "The model family is exposed but no immutable backend snapshot identifier is available.",
+    "Repository-local controls detect error, accident, and drift, not deliberate falsification by a repository writer."
+  ]
+}
