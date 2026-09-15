@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "curated-before-capture",
+  "recorded_at": "2026-09-15T19:44:51Z",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v3",
+  "product_method": "task_context/2-compact/17",
+  "candidate_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+  "candidate_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+  "curation_base_commit": "a8afd07500086cede9500c6ce2bf12cc54ffed36",
+  "curation_base_tree": "ecd0ef9fc12f82fa2495fd097a689f383ce9b109",
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "tree": "8590b318bb54874bf1f0c597ff503f8c3b9ace75"
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/sealed-dataset.json",
+    "sha256": "c985a0b5e43cf42c6bf37eee1752cf0f01450e0baeecab7b5888817bb55551aa",
+    "n": 64,
+    "unique_families": 64,
+    "split": "holdout",
+    "grade": 3,
+    "grade3_spans_per_query": 1
+  },
+  "strata": {
+    "exact_identifier": 11,
+    "exact_path": 11,
+    "nl_behaviour": 11,
+    "architecture_flow": 11,
+    "config_docs": 10,
+    "ambiguous": 10
+  },
+  "decision": {
+    "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+    "measurement_contract_version": "sw266-measurement-contract/2",
+    "candidate_token_budget": 1200,
+    "followup_max_lines": 120,
+    "n": 64,
+    "k": 56,
+    "floor": "3/4",
+    "confidence": "two-sided exact Clopper-Pearson 95%"
+  },
+  "frozen_public_inputs": {
+    "methodology_v1_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+    "methodology_v2_sha256": "47fae9f7c4df86d41eae6ae2f12aeb8be5019fe30ac0398fd80d05100fa7212e",
+    "budgets_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+    "targets_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+    "grading_rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c"
+  },
+  "ordering": {
+    "dataset_and_this_record_must_be_committed_before_capture": true,
+    "all_capture_must_be_committed_before_any_rater": true,
+    "capture_started": false,
+    "rating_started": false,
+    "grading_started": false,
+    "adjudication_started": false
+  },
+  "independence": {
+    "curator_task_path": "/root/fresh_holdout_curator",
+    "candidate_outputs_consulted": false,
+    "development_material_consulted": false,
+    "prior_holdout_material_consulted": false,
+    "candidate_implementation_diff_consulted": false
+  }
+}
