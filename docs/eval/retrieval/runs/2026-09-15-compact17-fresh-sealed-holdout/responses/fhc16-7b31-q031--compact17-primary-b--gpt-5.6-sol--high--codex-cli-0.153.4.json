@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q031",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "a4ddf0770a3faa42e0d182d122754437968604b81eee7b5809511e862ea5c88f",
+  "bundle_sha256": "b3a0546bdc3f58343146ab7aac958771e7c8bc88e306d0278a5101018171a35a",
+  "prompt_sha256": "ddc8f2d67a0ff314bbab9838010bd2c698f5a4c6c6b51248abdc3ae2743da426",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go:1182-1198`, `InitDefaultHelpFlag` starts with `usage := \"help for \"` and then:\n\n- If `c.Name() == \"\"`, appends `\"this command\"`, producing `help for this command`.\n- Otherwise, appends `c.Name()`, producing `help for \u003ccommand-name\u003e`.\n\nIt registers that text on the default `-h, --help` flag via `c.Flags().BoolP(\"help\", \"h\", false, usage)`. The guide example at `site/content/user_guide.md:576` shows a named command rendering `help for cobra-cli`.",
+  "responded_at": "2026-09-15T18:38:36Z",
+  "sha256": "54031693518872d26a43b5d35dfc01c97c8c7c0f20a097c4da5cccffdbd5e541"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q010",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "a6aa30dcd615db8cab803576695ef3fff0273cdf780f7ab7747e8046f005b4c0",
+  "bundle_sha256": "590b4126791ca1f3cfa8a3f89266eb0905ab620d985f6404fef49f0b6d79c647",
+  "prompt_sha256": "d69750d1584eabaa2b2a8d0297b6fb9a94ea272b122f35e4b7e11fdbd2778f8f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When the requested suffix appears anywhere in the input, `appendIfNotPresent` returns the input unchanged. In [`cobra.go`, lines 166–169], it checks `strings.Contains(s, stringToAppend)` and immediately `return s`; the match need not be at the end.",
+  "responded_at": "2026-09-15T18:36:08Z",
+  "sha256": "eea8e40c9d4cd15fb94d00c44c518454c99960d888911f0e8156b2afe5318617"
+}

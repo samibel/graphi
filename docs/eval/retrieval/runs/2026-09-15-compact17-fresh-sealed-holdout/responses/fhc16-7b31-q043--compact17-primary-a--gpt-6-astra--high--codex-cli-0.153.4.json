@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q043",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "fab48c8e3da4f472210243e1362a7334632d30ccb004019ba581727e368410b3",
+  "bundle_sha256": "0fbe4025ce3b130938551e392c8df75a62f7c90c36fd89b89d255d0740310e04",
+  "prompt_sha256": "66ef2f83e07738a589b10b9ec03ccbb1cf3d2ae509290f2764534f90c580f3a6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/rest_docs.go`, `GenReSTCustom` follows this flow:\n\n1. **Select descriptions:** It reads `cmd.Short` and `cmd.Long`, falling back to `Short` when `Long` is empty. It prints the short description below the command title and the long description under “Synopsis” (lines 69–82).\n\n2. **Build the command reference:** It takes `name := cmd.CommandPath()`, replaces spaces with underscores, and emits the reStructuredText target `.. _\u003cref\u003e:` before the title (lines 67–78).\n\n3. **Emit the parent link:** Within `if hasSeeAlso(cmd)`, it creates “SEE ALSO.” If `cmd.HasParent()`, it uses the parent’s `CommandPath()`, replaces spaces with underscores for its reference, and emits `* \u003clinkHandler(pname, ref)\u003e \\t - \u003cparent.Short\u003e` (lines 97–104).\n\n4. **Emit child links:** It gets `cmd.Commands()`, sorts with `byName`, and skips children that are unavailable or additional help topics. For each remaining child, it builds `cname := name + \" \" + child.Name()`, replaces spaces with underscores, and emits `* \u003clinkHandler(cname, ref)\u003e \\t - \u003cchild.Short\u003e` (lines 112–121).\n\n5. **Write the output:** The accumulated buffer is written to `w` with `buf.WriteTo(w)`, and its error is returned (lines 128–129).\n\nThe snippet shows where `hasSeeAlso` and `linkHandler` are called, but does not define the former’s condition or the latter’s link formatting.",
+  "responded_at": "2026-09-15T18:42:36Z",
+  "sha256": "cd27e4f210ac480c922aff61ab625e61380487ccf7d957e62289170ddd91cc9e"
+}

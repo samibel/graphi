@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q045",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "085eaae14d448585fed6b294775afc1c1f4323caaf047592d3bfe66e4a2fc283",
+  "bundle_sha256": "67b24837b249280cabe10b55a70a39f5c98e2f7f3342b68f5e36405d09e75b0f",
+  "prompt_sha256": "5223dcde2c8ef27b24cd9367b22cdbb0bb7a9a0fc230b1af08bd75fd32347d5f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra supports **Bash, Zsh, fish, and PowerShell**, as listed in `site/content/completions/_index.md` lines 3–8 and confirmed in `site/content/user_guide.md` lines 742–743.",
+  "responded_at": "2026-09-15T18:41:11Z",
+  "sha256": "81d87573c8a8cd7c7913622bfee9112e2ebf1ffeb439477e10679baa881e642a"
+}

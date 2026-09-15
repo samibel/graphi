@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/2",
-  "status": "captured_pre_response_attested",
+  "status": "invalidated_fail_closed_at_primary_seal",
   "operator": {
     "id": "codex-independent-compact17-holdout-operator",
     "provider": "OpenAI Codex",
@@ -45,12 +45,35 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-15T18:33:46Z",
+    "attested_at_utc": "2026-09-15T18:47:02Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
     "precondition_record_sha256": "a6f99e9fc42c43c91b2545a468de9e1794121cc10b2f394454917976f22d128f",
     "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
     "two_build_capture_reproducibility": "PASS: 64/64 complete MCP responses, response digests, token counts, prompts, and all 5 designated follow-up reads were byte-identical across distinct ready index generations; maximum candidate response 1194/1200 cl100k; follow-up reads obey the separately frozen 120-line contract",
+    "phase_commits": {
+      "curator_handoff_import": "fd161d2a",
+      "static_operator_panel": "b40356b103b4dbb872e5752ff17632049ac6bf4a",
+      "freeze": "6dd95d4e90399f9588049cf7c37b7becc42944b2",
+      "capture": "400f4f700a9223ac6e442ac2eca0a92406233312",
+      "primary_raw": "a57994555da0c4cfa05b04900e66bfbd497e0245"
+    },
+    "refusal": {
+      "phase": "primary seal",
+      "seal_invocations": 1,
+      "exit_code": 1,
+      "error": "sealing a two-slice transcript needs -checkout at the dataset's pinned repository sha",
+      "cause": "The operator omitted the mandatory -checkout argument from the first contract-2 seal invocation.",
+      "partial_sealed_responses_written": 128,
+      "partial_grader_packets_written": 1,
+      "sidecar_manifest_written": false,
+      "grader_processes_started": 0,
+      "adjudicator_processes_started": 0,
+      "decide_invocations": 0,
+      "retry_performed": false,
+      "overwrite_performed": false,
+      "run_valid": false
+    },
     "per_item_command": "codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only -m <model> -c model_reasoning_effort=\"high\" -C <new empty git repository> --json -o <output> - < <single allowed input>",
     "event_allowlist": "exactly thread.started, turn.started, item.completed(agent_message), turn.completed",
     "primary_parallelism": 2,
@@ -63,5 +86,5 @@
     "OpenAI exposes no immutable backend model snapshot/build digest, so participant model behavior is not byte-reproducible.",
     "The unchanged dataset carries its original compact/16 curation note; the authoritative compact/17 binding is the distinct curation preregistration and forthcoming harness records in this run."
   ],
-  "declaration": "Before freeze, the independent operator attests to the exact compact/17 candidate and corpus identities, unchanged eligible dataset seal, frozen N=64/k=56 and 1200-token rule, fail-closed two-build capture requirement, stateless participant controls, and no disclosure of holdout content to the root orchestration agent."
+  "declaration": "The independent operator attests that eligibility, freeze, two-build capture, and 128 primary responses completed without content disclosure, retry, overwrite, or participant event violation. The first contract-2 primary seal invocation failed because the mandatory checkout argument was omitted after it had written 128 sealed-response records and one grader packet. The run stopped immediately; no grader, adjudicator, or decision was executed. Retrying would violate the pre-registered no-retry and no-overwrite policy, so this run is invalid and has no RELEASE verdict."
 }

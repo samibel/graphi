@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q064",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "2ddfbd93ed4c317041442a15180c9bcdc91d7052d895f6a22b818c6393778520",
+  "bundle_sha256": "f726b21a309f8f0e65ccccee6850ca23d44c28e73d0accf7d8c260069dd29758",
+  "prompt_sha256": "f1b368acbb9601c27c8f091be2a433e459a4ac3147c00e4abcdeab370edf4e07",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:718-722`, `isFlagArg` returns true whenever `len(arg) \u003e= 3 \u0026\u0026 arg[0:2] == \"--\"`. Since `---verbose` begins with `--` and is at least three characters long, it is accepted as a flag argument.",
+  "responded_at": "2026-09-15T18:43:16Z",
+  "sha256": "fedc06cc28b245b1f8647441a12711d16f2b7ab4008d0f31b1abd44c539f5666"
+}

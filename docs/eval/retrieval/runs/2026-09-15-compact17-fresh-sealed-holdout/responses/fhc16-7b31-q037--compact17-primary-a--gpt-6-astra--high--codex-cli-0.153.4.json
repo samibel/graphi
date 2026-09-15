@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q037",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "8066879782d8e6896842e7bb92d32765a329d9a13a47b2b28080a8ba92fc0b0d",
+  "bundle_sha256": "226afa60b6104079245b7a4f7c65214d607132e9efc369ff6af7c1bb0320c222",
+  "prompt_sha256": "9b01a31af4ee92c8b3369ce409c6062fb43d28daf6e1d14d6e8327f0766458a2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`DebugFlags` performs a depth-first traversal starting at its receiver (`command.go:1456–1493`):\n\n1. Prints `\"DebugFlags called on\"` with `c.Name()`, then calls the recursive closure `debugflags(c)`.\n2. For each command `x`, prints its name if `x.HasFlags() || x.HasPersistentFlags()`.\n3. Visits `x.flags` with `VisitAll` and labels each flag:\n   - **`[LP]`** when `x.HasPersistentFlags() \u0026\u0026 x.persistentFlag(f.Name) != nil`.\n   - **`[L]`** otherwise.\n4. Visits `x.pflags` and prints **`[P]`** only when there is no matching name in `x.flags`, or when `x.HasFlags()` is false. This avoids printing a persistent flag twice.\n5. Prints `x.flagErrorBuf`, then recursively visits each child in `x.commands` when `x.HasSubCommands()` is true.\n\nEach flag entry includes its shorthand, long name, default value, current value, and label. All output uses the original receiver’s `c.Println`, including output for descendants.\n\n**Ownership caveat:** these labels reflect the checks above, not necessarily where a flag was originally declared. The `Flags()` comment explicitly includes flags declared by parents (`command.go:1641–1642`). The response does not show `persistentFlag`’s implementation, so its precise ancestor-lookup behavior cannot be established.",
+  "responded_at": "2026-09-15T18:41:06Z",
+  "sha256": "5e35ba7d87a6485b5639829d8c631476fb5024d61bf497401eba0cdc5819c27d"
+}

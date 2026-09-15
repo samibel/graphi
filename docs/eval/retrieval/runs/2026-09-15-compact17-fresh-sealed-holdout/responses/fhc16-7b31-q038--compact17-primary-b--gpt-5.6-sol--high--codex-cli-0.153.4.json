@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q038",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "3541e8d4355250cf2985cfcc78bb30239da14c272662b5f538261fd32eb7fd3a",
+  "bundle_sha256": "e30b72f8cd6b820faaf75c22b777ea74edf60a213e52bad0b387fab6cc978cb0",
+  "prompt_sha256": "233259ebc3867c96f97aa5bdd79de91e2a8b9f1ccd4ffb250e2b45930b423d28",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go:1436-1451`, `(*Command).UseLine` builds the usage line as follows:\n\n- If the command has a parent (`HasParent()` means `c.parent != nil`, `command.go:1630-1634`), it concatenates `c.parent.CommandPath()`, a space, and `c.Use`:\n  `useline = c.parent.CommandPath() + \" \" + c.Use`\n- Otherwise, it uses `c.Use` alone.\n- If `DisableFlagsInUseLine` is true, it immediately returns that result.\n- Otherwise, when `HasAvailableFlags()` is true and `useline` does not already contain `\"[flags]\"`, it appends `\" [flags]\"`.\n\n`CommandPath()` recursively constructs the parent path as `parent.CommandPath() + \" \" + Name()` (`command.go:1424-1434`). Thus, a child’s final form is effectively:\n\n`\u003crecursive parent path\u003e \u003cchild Use\u003e [flags]`\n\nwith `[flags]` omitted when disabled, unavailable, or already present in the assembled line.",
+  "responded_at": "2026-09-15T18:39:47Z",
+  "sha256": "87ddafdb00af3d0bac9c0b325887db695d13500cfa16c66a58902dbe31d3b176"
+}

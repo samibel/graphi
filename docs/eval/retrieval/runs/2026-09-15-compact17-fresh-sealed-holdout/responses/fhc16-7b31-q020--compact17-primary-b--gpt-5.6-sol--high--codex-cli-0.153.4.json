@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q020",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "63d6221aae9dcc3bc6c16b734007ebcfbfd397c7e97ad593f59a8fbdf09f60c2",
+  "bundle_sha256": "6ca146896efcdcc524faceac0e7ac09ee1caf17d519bea4036de434b29b27efc",
+  "prompt_sha256": "76d71f999ada7f0dce6c0a6a817b85384db78636eb62a32ab4a0667873bfeca3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `doc/yaml_docs.go`, the fields with explicit snake_case YAML names are:\n\n- `cmdDoc.InheritedOptions` → `inherited_options`\n- `cmdDoc.SeeAlso` → `see_also`\n\nAdditionally, the nested `cmdOption.DefaultValue` field → `default_value`.\n\nEvidence: `doc/yaml_docs.go:29-46`, specifically the tags `yaml:\"inherited_options,omitempty\"`, `yaml:\"see_also,omitempty\"`, and `yaml:\"default_value,omitempty\"`.",
+  "responded_at": "2026-09-15T18:37:15Z",
+  "sha256": "2fc73b2498d0117dd6533d8d1271af4d5b497f78c82e210db8a5780dbf47f7a4"
+}

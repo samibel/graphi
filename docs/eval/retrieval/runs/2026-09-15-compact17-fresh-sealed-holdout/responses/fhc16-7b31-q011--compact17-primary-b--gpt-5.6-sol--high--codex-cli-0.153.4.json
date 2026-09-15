@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q011",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "9f0e0ff8c84427bd49f039b38f866f468d4438d94866193352c14c8ef00c67cd",
+  "bundle_sha256": "a76277cbc06ce2c803a301139e02ded9dd4be60766015d4cac93dd98d8ddaf8c",
+  "prompt_sha256": "915ce809f4dc8f6dc5887d28cfb2a9fcd03fd7abffca56d1528c051a7414652f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`stringInSlice` uses exact, case-sensitive Go string equality. In `cobra.go:222–230`, it iterates over `list` and returns `true` only when `b == a`; otherwise it returns `false`.",
+  "responded_at": "2026-09-15T18:36:13Z",
+  "sha256": "1a5ca5cea52d2e486232d1ae236eb3f9cbb30409dfa41fc3442e12ead474dc1a"
+}

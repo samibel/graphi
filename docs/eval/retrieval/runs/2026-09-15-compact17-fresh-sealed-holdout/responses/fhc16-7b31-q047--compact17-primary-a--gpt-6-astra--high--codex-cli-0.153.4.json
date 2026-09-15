@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q047",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "154f2aaa193e0c3d82e93547f85094cf42f74d34cefb140011dd5918371f7bca",
+  "bundle_sha256": "e747a15ec0c010dfc57f4c7794a20fb9db2a9b68561d16fc4e075dc935bb092f",
+  "prompt_sha256": "e3a30b5f388a09672be64a5774a03ae6903413d9be76e84c2985681341c68fe5",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response explains that stdout traces become completion choices (`completions.go`, `CompDebug`, lines 861–862; `site/content/completions/_index.md`, line 270), but does not explain how setup messages affect completion script generation.",
+  "responded_at": "2026-09-15T18:43:22Z",
+  "sha256": "e88e77a0f41b67997373e4e9058f35198d484d127ef3b5ef9f0b6e9c0c4bc73a"
+}

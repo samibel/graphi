@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q046",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "4fc6eb0ab3958f2810320bef9caebdb9afdb85d18227024393370da4bdff7251",
+  "bundle_sha256": "49703287cd5c479be0ad83fdbb2feacf3298163492b90b66482e274611d0df82",
+  "prompt_sha256": "7cdda65c4947cd2a97d7255042439ba2ca2905ca1041a133913c416469ee0d62",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The application’s own `completion` command takes precedence over Cobra’s default command. `site/content/completions/_index.md:16–17` explicitly says “provide your own, which will take precedence over the default one,” preserving compatibility with programs that already define a `completion` command.",
+  "responded_at": "2026-09-15T18:43:14Z",
+  "sha256": "5a4e59a491894c1a774b0eb9b2def4ffb58b5ac275adb44fab13a565c61dc203"
+}

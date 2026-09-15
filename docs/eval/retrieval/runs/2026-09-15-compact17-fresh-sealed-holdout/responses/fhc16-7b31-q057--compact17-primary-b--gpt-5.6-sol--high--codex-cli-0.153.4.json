@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q057",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "611ee57e042bebcc52371e5220b6c903276a2836908284d43a86fbfaaf2473e0",
+  "bundle_sha256": "e41207d3bce19913f0a7c357911263a760dc517b8c3c4a70f443338708a950dc",
+  "prompt_sha256": "ce2f125ed85151541cf424e5c8b72291308f3cd1d736aacbb10128e5185193f4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. In `command.go:1819-1822`, `ParseFlags` immediately returns `nil` when `c.DisableFlagParsing` is true. Therefore it never reaches `c.mergePersistentFlags()` (`command.go:1828`), whitelist assignment (`command.go:1831`), or `c.Flags().Parse(args)` validation/parsing (`command.go:1833`).",
+  "responded_at": "2026-09-15T18:42:34Z",
+  "sha256": "70636812c97c6ef2347e26f42a40fe8d60a54e7581ceef02b1bd319e76d18abf"
+}

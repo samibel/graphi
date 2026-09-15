@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q027",
+  "rater_id": "compact17-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "867f09abc76066af61b5848c413ee9bff6fcfeb41ff9e96ba6f10f0af2632b15",
+  "bundle_sha256": "0d2e4f1419767f32fdfb440c0f59c52cef06fe3c3dd11472b1f1896cd2dfa673",
+  "prompt_sha256": "b06a0dc12569a41c49952dd06751467cee2859306eda84099c66467215ffc151",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It panics with:\n\n`group id '\u003cGroupID\u003e' is not defined for subcommand '\u003cfull command path\u003e'`\n\nEvidence: `command.go:1169-1181`, in `(*Command).checkCommandGroups`, checks `sub.GroupID != \"\" \u0026\u0026 !c.ContainsGroup(sub.GroupID)` and calls:\n\n```go\npanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n```\n\n`CommandPath()` builds the full parent-and-subcommand path (`command.go:1424-1434`).",
+  "responded_at": "2026-09-15T18:38:05Z",
+  "sha256": "abefb4c35b8c9be585f7907bcddce8f7c78f00ba95ceee4d3ee8d52fa404f4c3"
+}

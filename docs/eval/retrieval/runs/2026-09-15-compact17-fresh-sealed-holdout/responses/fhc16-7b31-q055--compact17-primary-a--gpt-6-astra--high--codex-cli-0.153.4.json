@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhc16-7b31-q055",
+  "rater_id": "compact17-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+  "query_text_sha256": "0bbc06fe65dd5b46bf97ff779fb5f48050e876f0233a7137a391e767b5e6ec91",
+  "bundle_sha256": "6b5a97ab656aaa6e046cab4cb4a5d707b9daa44d8cfd59e8a38e5775f4a76e6c",
+  "prompt_sha256": "bd4c9a922f74dfe15a8dfd09dd098b434e6de9f83db3c45ca73ec042fce6679f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. For the same flag, the second call returns `RegisterFlagCompletionFunc: flag '%s' already registered` and leaves the first callback intact.\n\nIn `completions.go:141–144`, `RegisterFlagCompletionFunc` checks for an existing registration and returns before the assignment `flagCompletionFunctions[flag] = f`. The map is keyed by `*pflag.Flag` (`completions.go:36`).",
+  "responded_at": "2026-09-15T18:44:33Z",
+  "sha256": "6b807df6e3390117fc47f9c2332b6c2728d7de0212c92e116547a807e1d91905"
+}
