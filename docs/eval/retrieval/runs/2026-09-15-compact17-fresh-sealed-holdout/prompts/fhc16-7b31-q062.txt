@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Does AddGroup immediately reject duplicate or empty group definitions?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query e0c1675d2112; read in order (279/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1345,"end_line":1359,"text":"\n// ContainsGroup return if groupID exists in the list of command groups.\nfunc (c *Command) ContainsGroup(groupID string) bool {\n\tfor _, x := range c.commandgroups {\n\t\tif x.ID == groupID {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// AddGroup adds one or more command groups to this parent command.\nfunc (c *Command) AddGroup(groups ...*Group) {\n\tc.commandgroups = append(c.commandgroups, groups...)\n}"},{"path":"command.go","start_line":40,"end_line":45,"text":"\n// Group Structure to manage groups for commands\ntype Group struct {\n\tID    string\n\tTitle string\n}"},{"path":"command.go","start_line":1330,"end_line":1334,"text":"\n// Groups returns a slice of child command groups.\nfunc (c *Command) Groups() []*Group {\n\treturn c.commandgroups\n}"},{"path":"site/content/user_guide.md","start_line":536,"end_line":536,"text":"defined using `AddGroup()` on the parent command.  Then a subcommand can be added to a group using the `GroupID` element"},{"path":"command.go","start_line":1169,"end_line":1181,"text":"\n// checkCommandGroups checks if a command has been added to a group that does not exists.\n// If so, we panic because it indicates a coding error that should be corrected.\nfunc (c *Command) checkCommandGroups() {\n\tfor _, sub := range c.commands {\n\t\t// if Group is not defined let the developer know right away\n\t\tif sub.GroupID != \"\" && !c.ContainsGroup(sub.GroupID) {\n\t\t\tpanic(fmt.Sprintf(\"group id '%s' is not defined for subcommand '%s'\", sub.GroupID, sub.CommandPath()))\n\t\t}\n\n\t\tsub.checkCommandGroups()\n\t}\n}"},{"path":"command.go","start_line":50,"end_line":53,"text":"// definition to ensure usability.\ntype Command struct {\n\t// Use is the one-line usage message.\n\t// Recommended syntax is as follows:"},{"path":"command.go","start_line":1,"end_line":4,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License."},{"path":"command_test.go","start_line":1902,"end_line":1909,"text":"func TestAddGroup(t *testing.T) {\n\tvar rootCmd = &Command{Use: \"root\", Short: \"test\", Run: emptyRun}\n\n\trootCmd.AddGroup(&Group{ID: \"group\", Title: \"Test group\"})\n\trootCmd.AddCommand(&Command{Use: \"cmd\", GroupID: \"group\", Run: emptyRun})\n\n\toutput, err := executeCommand(rootCmd, \"--help\")\n\tif err != nil {"}],"provenance":{"input_sha256":"cc51221e63210683a365bd94a61cb99fd70cf117b9ecd6d6087244b1ac2c9b80","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

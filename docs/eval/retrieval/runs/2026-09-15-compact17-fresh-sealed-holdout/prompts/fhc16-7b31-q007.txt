@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How does CompDebugln add line termination while preserving CompDebug behavior?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 4bf29b4c949d; read in order (283/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"completions.go","start_line":883,"end_line":890,"text":"\n// CompDebugln prints the specified string with a newline at the end\n// to the same file as where the completion script prints its logs.\n// Such logs are only printed when the user has set the environment\n// variable BASH_COMP_DEBUG_FILE to the path of some file to be used.\nfunc CompDebugln(msg string, printToStdErr bool) {\n\tCompDebug(fmt.Sprintf(\"%s\\n\", msg), printToStdErr)\n}"},{"path":"completions.go","start_line":859,"end_line":867,"text":"\n// CompDebug prints the specified string to the same file as where the\n// completion script prints its logs.\n// Note that completion printouts should never be on stdout as they would\n// be wrongly interpreted as actual completion choices by the completion script.\nfunc CompDebug(msg string, printToStdErr bool) {\n\tmsg = fmt.Sprintf(\"[Debug] %s\", msg)\n\n\t// Such logs are only printed when the user has set the environment"},{"path":"completions.go","start_line":95,"end_line":102,"text":"\nconst (\n\t// Constants for the completion command\n\tcompCmdName              = \"completion\"\n\tcompCmdNoDescFlagName    = \"no-descriptions\"\n\tcompCmdNoDescFlagDesc    = \"disable completion descriptions\"\n\tcompCmdNoDescFlagDefault = false\n)"},{"path":"completions.go","start_line":193,"end_line":194,"text":"// initCompleteCmd adds a special hidden command that can be used to request custom completions.\nfunc (c *Command) initCompleteCmd(args []string) {"},{"path":"completions.go","start_line":282,"end_line":283,"text":"\t\t// However, because we have added the __complete sub-command in the current code path, the\n\t\t// call to Find() -> legacyArgs() will return an error if there are any arguments."},{"path":"completions.go","start_line":897,"end_line":901,"text":"\n// CompErrorln prints the specified completion message to stderr with a newline at the end.\nfunc CompErrorln(msg string) {\n\tCompError(fmt.Sprintf(\"%s\\n\", msg))\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":1360,"end_line":1363,"text":"\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"}],"provenance":{"input_sha256":"bd28faa54ae0ed79d99f062bf9d29128f068373b92a1efcba0e24cd46361c3af","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

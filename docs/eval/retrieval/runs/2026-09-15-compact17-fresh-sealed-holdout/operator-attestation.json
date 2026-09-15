@@ -1,6 +1,6 @@
 {
   "contract_version": "fresh-holdout-operator-attestation/2",
-  "status": "frozen_pre_capture_attested",
+  "status": "captured_pre_response_attested",
   "operator": {
     "id": "codex-independent-compact17-holdout-operator",
     "provider": "OpenAI Codex",
@@ -36,7 +36,7 @@
     "product_candidate_sha": "2d65df335544c2c66c0ff12e8f79db4f6c53e72b",
     "product_candidate_tree": "9af24c26ba6b5b221e70f7e8998c351b640776f8",
     "freeze_base_sha": "b40356b103b4dbb872e5752ff17632049ac6bf4a",
-    "capture_candidate_sha": "pending: freeze-record commit not yet created",
+    "capture_candidate_sha": "6dd95d4e90399f9588049cf7c37b7becc42944b2",
     "candidate_projection": "task_context/2-compact/17",
     "candidate_token_budget": 1200,
     "corpus_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
@@ -45,10 +45,12 @@
     "run_directory": "docs/eval/retrieval/runs/2026-09-15-compact17-fresh-sealed-holdout"
   },
   "execution": {
-    "attested_at_utc": "2026-09-15T18:30:06Z",
+    "attested_at_utc": "2026-09-15T18:33:46Z",
     "candidate_worktree_clean": true,
     "indexed_worktree_clean": true,
     "precondition_record_sha256": "a6f99e9fc42c43c91b2545a468de9e1794121cc10b2f394454917976f22d128f",
+    "pre_registration_sha256": "4ba459164e5acf5510815d4afc324ef00a0feb2ab537389918f5ce19cc0f3f48",
+    "two_build_capture_reproducibility": "PASS: 64/64 complete MCP responses, response digests, token counts, prompts, and all 5 designated follow-up reads were byte-identical across distinct ready index generations; maximum candidate response 1194/1200 cl100k; follow-up reads obey the separately frozen 120-line contract",
     "per_item_command": "codex exec --ephemeral --ignore-user-config --ignore-rules -s read-only -m <model> -c model_reasoning_effort=\"high\" -C <new empty git repository> --json -o <output> - < <single allowed input>",
     "event_allowlist": "exactly thread.started, turn.started, item.completed(agent_message), turn.completed",
     "primary_parallelism": 2,
