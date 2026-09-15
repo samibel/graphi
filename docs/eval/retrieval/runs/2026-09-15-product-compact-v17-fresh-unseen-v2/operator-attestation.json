@@ -1,0 +1,58 @@
+{
+  "schema": "graphi-fresh-holdout-operator-attestation/3",
+  "status": "preregistered_pre_freeze",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
+  "operator": {
+    "identity": "Codex independent holdout operator",
+    "task_path": "/root/holdout_operator",
+    "provider": "OpenAI",
+    "resolved_model_identity": "GPT-5 Codex agent (session-declared)",
+    "immutable_backend_snapshot_exposed": false
+  },
+  "isolation": {
+    "operator_branch": "fresh-holdout-compact17-unseen-operator",
+    "operator_worktree": "/private/tmp/graphi-compact17-unseen-operator",
+    "root_agent_excluded_from_holdout_content": true,
+    "content_visible_to_root": "phase, counts, failures, digests, commits and final aggregate verdict only",
+    "manual_holdout_content_accessed": false,
+    "old_or_consumed_holdout_accessed": false
+  },
+  "pre_freeze_bindings": {
+    "curator_commit": "a0bab89f5f0ae2e4f47d1a6a855ca9db933b7552",
+    "product_source_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "product_source_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "dataset_sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c",
+    "curator_preregistration_sha256": "9ab484266eb3657cdadb60848d0cc78c852efa6b6cf269463cb1185e3478cd4e",
+    "operator_handoff_sha256": "9965e7712cef5e2eafaa519c43b4207c5c9293591808b0ab5a91973fb5883e5e",
+    "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "corpus_checkout_clean": true,
+    "candidate_method": "task_context/2-compact/17",
+    "candidate_token_budget": 1200,
+    "n": 64,
+    "k": 56
+  },
+  "execution_policy": {
+    "harness_invocation_plan": "invocation-plan.json",
+    "harness_calls_are_write_once": true,
+    "capture_retries": 0,
+    "actor_retries": 0,
+    "overwrites": false,
+    "waivers": false,
+    "per_item_fresh_ephemeral_process": true,
+    "actor_sandbox": "read-only in a fresh empty Git repository",
+    "confidential_jsonl_event_logs": true,
+    "only_allowed_item_type": "agent_message",
+    "unexpected_event_result": "mechanical refusal with no retry",
+    "seal_checkout_required": "/private/tmp/graphi-cobra-compact17-unseen"
+  },
+  "independence_declarations": {
+    "implemented_or_tuned_candidate": false,
+    "curated_dataset": false,
+    "inspected_holdout_questions_answers_paths_spans_or_bundles": false,
+    "disclosed_holdout_content_to_root": false
+  },
+  "limitations": [
+    "The provider does not expose an immutable backend model snapshot or weights/build digest for the operator or actor processes.",
+    "Actor model behavior is therefore not byte-reproducible, while harness inputs, outputs, configuration and event logs are content-addressed."
+  ]
+}
