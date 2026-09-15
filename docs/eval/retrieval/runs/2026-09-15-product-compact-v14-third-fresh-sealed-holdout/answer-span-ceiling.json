@@ -1,0 +1,31 @@
+{
+  "version": "answer-span-ceiling/1",
+  "dataset_id": "cobra-v2-third-fresh-sealed-holdout",
+  "dataset_sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "ceiling_tokens": 1200,
+  "response_overhead_tokens": 210,
+  "grade": 3,
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "overall": {
+    "split": "all",
+    "answerable_queries": 64,
+    "grade3_spans": 64,
+    "grade3_spans_over_ceiling": 0,
+    "any_complete_feasible": 64,
+    "all_complete_feasible": 64,
+    "no_complete_span_possible": 0
+  },
+  "splits": [
+    {
+      "split": "holdout",
+      "answerable_queries": 64,
+      "grade3_spans": 64,
+      "grade3_spans_over_ceiling": 0,
+      "any_complete_feasible": 64,
+      "all_complete_feasible": 64,
+      "no_complete_span_possible": 0
+    }
+  ]
+}

@@ -1,0 +1,1356 @@
+{
+  "schema_version": 1,
+  "id": "cobra-v2-third-fresh-sealed-holdout",
+  "repo": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "language": "en",
+  "evidence_class": "agent-curated; independent (third fresh holdout)",
+  "relevant_min_grade": 3,
+  "notes": "Curated and sealed on 2026-09-15 by codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator). This file is a sealed holdout and must remain undisclosed until the evaluation protocol permits opening it.",
+  "queries": [
+    {
+      "id": "fhv6c-b7e4-q001",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "getCommand",
+      "family_id": "cobra-family-e3a17c9b402d8f01",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 23,
+          "end_line": 33,
+          "anchor": "func getCommand(",
+          "grade": 3,
+          "reason": "The helper declaration constructs the command fixture used by positional-argument tests, optionally installing the valid-value set.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q002",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "expectSuccess",
+      "family_id": "cobra-family-74c0a92de51b3f68",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 35,
+          "end_line": 42,
+          "anchor": "func expectSuccess(",
+          "grade": 3,
+          "reason": "The complete helper declaration defines the success condition shared by positional-argument tests.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q003",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "nonCompletableFlag",
+      "family_id": "cobra-family-19fd6b80ac734e25",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completions.go",
+          "start_line": 699,
+          "end_line": 701,
+          "anchor": "func nonCompletableFlag(",
+          "grade": 3,
+          "reason": "The complete declaration defines exactly which flags the legacy Bash generator excludes.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q004",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "validOnlyWithInvalidArgs",
+      "family_id": "cobra-family-b8e24571d09ca634",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 44,
+          "end_line": 53,
+          "anchor": "func validOnlyWithInvalidArgs(",
+          "grade": 3,
+          "reason": "The helper declaration defines the expected failure text for a value rejected by OnlyValidArgs.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q005",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "minimumNArgsWithLessArgs",
+      "family_id": "cobra-family-5d3a18efc762904b",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 66,
+          "end_line": 75,
+          "anchor": "func minimumNArgsWithLessArgs(",
+          "grade": 3,
+          "reason": "The complete helper declaration checks the precise MinimumNArgs failure produced for too few values.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q006",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "maximumNArgsWithMoreArgs",
+      "family_id": "cobra-family-a061f4c39b8e2d57",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 77,
+          "end_line": 86,
+          "anchor": "func maximumNArgsWithMoreArgs(",
+          "grade": 3,
+          "reason": "The complete helper declaration checks the precise MaximumNArgs failure produced for too many values.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q007",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "exactArgsWithInvalidCount",
+      "family_id": "cobra-family-42bc9e1576adf803",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 88,
+          "end_line": 97,
+          "anchor": "func exactArgsWithInvalidCount(",
+          "grade": 3,
+          "reason": "The complete helper declaration checks the precise ExactArgs count failure.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q008",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "rangeArgsWithInvalidCount",
+      "family_id": "cobra-family-d71e04ab9635c28f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 99,
+          "end_line": 108,
+          "anchor": "func rangeArgsWithInvalidCount(",
+          "grade": 3,
+          "reason": "The complete helper declaration checks the precise RangeArgs boundary failure.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q009",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "executeCommandWithContext",
+      "family_id": "cobra-family-8ac739f15e2046bd",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 37,
+          "end_line": 46,
+          "anchor": "func executeCommandWithContext(",
+          "grade": 3,
+          "reason": "The helper declaration captures both streams, sets arguments, executes with a context, and returns captured output and error.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q010",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "resetCommandLineFlagSet",
+      "family_id": "cobra-family-f235b7d04ca9618e",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 70,
+          "end_line": 72,
+          "anchor": "func resetCommandLineFlagSet(",
+          "grade": 3,
+          "reason": "The complete helper declaration resets pflag's process-wide command-line set to a fresh instance.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q011",
+      "stratum": "exact_identifier",
+      "language": "en",
+      "split": "holdout",
+      "query": "validArgsFunc2",
+      "family_id": "cobra-family-6b8d31e097a45fc2",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "completions_test.go",
+          "start_line": 40,
+          "end_line": 52,
+          "anchor": "func validArgsFunc2(",
+          "grade": 3,
+          "reason": "The complete test completion callback filters its described choices by prefix and selects the no-file directive after positional input.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q012",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "cobra_test.go",
+      "family_id": "cobra-family-c94e2a71b5038df6",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "cobra_test.go",
+          "start_line": 28,
+          "end_line": 42,
+          "anchor": "func TestAddTemplateFunctions(",
+          "grade": 3,
+          "reason": "The file's principal test verifies that individually and collectively registered template functions participate in usage rendering.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q013",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "args_test.go",
+      "family_id": "cobra-family-17a5d0ce984b326f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 112,
+          "end_line": 116,
+          "anchor": "func TestNoArgs(",
+          "grade": 3,
+          "reason": "The first table-style behavior test establishes the successful no-argument case for the positional validators.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q014",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "bash_completionsV2_test.go",
+      "family_id": "cobra-family-5fa23d81c4760be9",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completionsV2_test.go",
+          "start_line": 23,
+          "end_line": 33,
+          "anchor": "func TestBashCompletionV2WithActiveHelp(",
+          "grade": 3,
+          "reason": "The file's test verifies that Bash V2 completion does not disable Active Help.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q015",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "bash_completions_test.go",
+      "family_id": "cobra-family-da804f2b196ce357",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completions_test.go",
+          "start_line": 56,
+          "end_line": 80,
+          "anchor": "func runShellCheck(",
+          "grade": 3,
+          "reason": "A defining test helper runs generated Bash through shellcheck and returns its result.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q016",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "command_test.go",
+      "family_id": "cobra-family-208b65e1f9a734dc",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 88,
+          "end_line": 111,
+          "anchor": "func TestSingleCommand(",
+          "grade": 3,
+          "reason": "The first command execution test constructs a runnable root with children and verifies that root positional arguments reach its Run callback.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q017",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "doc/man_examples_test.go",
+      "family_id": "cobra-family-eb419c0572df863a",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "doc/man_examples_test.go",
+          "start_line": 25,
+          "end_line": 35,
+          "anchor": "func ExampleGenManTree(",
+          "grade": 3,
+          "reason": "The first package example demonstrates the file's tree-generation usage.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q018",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "doc/cmd_test.go",
+      "family_id": "cobra-family-36c791ab05e48f2d",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "doc/cmd_test.go",
+          "start_line": 24,
+          "end_line": 45,
+          "anchor": "func init() {",
+          "grade": 3,
+          "reason": "The shared documentation-test setup builds the flag and command tree exercised by the package's generators.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q019",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "doc/man_docs_test.go",
+      "family_id": "cobra-family-91f6c4a82d305be7",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "doc/man_docs_test.go",
+          "start_line": 36,
+          "end_line": 38,
+          "anchor": "func translate(",
+          "grade": 3,
+          "reason": "A defining helper in this file escapes hyphens in expected man-page strings.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q020",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "fish_completions_test.go",
+      "family_id": "cobra-family-4ae731d89c2506bf",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "fish_completions_test.go",
+          "start_line": 26,
+          "end_line": 40,
+          "anchor": "func TestCompleteNoDesCmdInFishScript(",
+          "grade": 3,
+          "reason": "The first test establishes which hidden completion command the no-description Fish script calls.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q021",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "powershell_completions_test.go",
+      "family_id": "cobra-family-f07d2a95b6841c3e",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "powershell_completions_test.go",
+          "start_line": 23,
+          "end_line": 33,
+          "anchor": "func TestPwshCompletionNoActiveHelp(",
+          "grade": 3,
+          "reason": "The file's test establishes that generated PowerShell completion disables unsupported Active Help.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q022",
+      "stratum": "exact_path",
+      "language": "en",
+      "split": "holdout",
+      "query": "zsh_completions_test.go",
+      "family_id": "cobra-family-63b910e7ad5428cf",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "zsh_completions_test.go",
+          "start_line": 23,
+          "end_line": 33,
+          "anchor": "func TestZshCompletionWithActiveHelp(",
+          "grade": 3,
+          "reason": "The file's test establishes that generated Zsh completion leaves Active Help enabled.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q023",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What streams does the deprecated SetOutput method affect when it is reset to nil?",
+      "family_id": "cobra-family-b1568ef4207cad39",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1994,
+          "end_line": 2000,
+          "anchor": "func TestSetOutput(",
+          "grade": 3,
+          "reason": "The test resets SetOutput to nil and verifies that ordinary output resolves back to standard output; the method itself sets both output and error writers.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q024",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is a command's input reader inherited when SetIn was not called on that command?",
+      "family_id": "cobra-family-2dc804fa719e35b6",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 414,
+          "end_line": 422,
+          "anchor": "return c.parent.getIn(def)",
+          "grade": 3,
+          "reason": "getIn checks the local reader, recursively consults parents, and finally returns the default reader.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q025",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What does SetOut(nil) make OutOrStdout return?",
+      "family_id": "cobra-family-85c2f6bd107a49e3",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2002,
+          "end_line": 2008,
+          "anchor": "c.SetOut(nil)",
+          "grade": 3,
+          "reason": "The test establishes that a nil explicit output writer restores the standard-output fallback.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q026",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What does SetErr(nil) make ErrOrStderr return?",
+      "family_id": "cobra-family-3e9a61c7402db8f5",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2010,
+          "end_line": 2016,
+          "anchor": "c.SetErr(nil)",
+          "grade": 3,
+          "reason": "The test establishes that a nil explicit error writer restores the standard-error fallback.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q027",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What does SetIn(nil) make InOrStdin return?",
+      "family_id": "cobra-family-c70fb2581e4693ad",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2018,
+          "end_line": 2024,
+          "anchor": "c.SetIn(nil)",
+          "grade": 3,
+          "reason": "The test establishes that a nil explicit input reader restores the standard-input fallback.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q028",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Does UsageString preserve the relative order of writes sent through both normal and error output helpers?",
+      "family_id": "cobra-family-09b37d64e8ac152f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2026,
+          "end_line": 2040,
+          "anchor": "expected := \"[stdout1][stderr2][stdout3]\"",
+          "grade": 3,
+          "reason": "The test writes through both output paths and verifies their combined order in the returned usage string.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q029",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "Does NoArgs accept a single positional value when ValidArgs is not configured?",
+      "family_id": "cobra-family-714e0c9b36f285da",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 118,
+          "end_line": 122,
+          "anchor": "noArgsWithArgs(err, t, \"one\")",
+          "grade": 3,
+          "reason": "The focused test executes a NoArgs command with one value and requires the shared error assertion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q030",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What happens when OnlyValidArgs receives a value outside the configured valid set?",
+      "family_id": "cobra-family-d48a7f1206be953c",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 150,
+          "end_line": 154,
+          "anchor": "validOnlyWithInvalidArgs(err, t)",
+          "grade": 3,
+          "reason": "The focused test supplies an invalid value and requires the shared invalid-argument assertion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q031",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What happens when MinimumNArgs(2) receives only one positional value?",
+      "family_id": "cobra-family-267bc4e509da813f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 208,
+          "end_line": 212,
+          "anchor": "minimumNArgsWithLessArgs(err, t)",
+          "grade": 3,
+          "reason": "The focused test supplies one value and requires the shared too-few-arguments assertion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q032",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What happens when MaximumNArgs(2) receives three positional values?",
+      "family_id": "cobra-family-9f3e605bc1874ad2",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 258,
+          "end_line": 262,
+          "anchor": "maximumNArgsWithMoreArgs(err, t)",
+          "grade": 3,
+          "reason": "The focused test supplies three values and requires the shared too-many-arguments assertion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q033",
+      "stratum": "nl_behaviour",
+      "language": "en",
+      "split": "holdout",
+      "query": "What happens when ExactArgs(2) receives three positional values?",
+      "family_id": "cobra-family-40a8d27f1b65ce93",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "args_test.go",
+          "start_line": 308,
+          "end_line": 312,
+          "anchor": "exactArgsWithInvalidCount(err, t)",
+          "grade": 3,
+          "reason": "The focused test supplies three values and requires the shared exact-count assertion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q034",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is a global normalization function verified to propagate from a root command to an existing child?",
+      "family_id": "cobra-family-acde193b7504f682",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1654,
+          "end_line": 1671,
+          "anchor": "childCmd.GlobalNormalizationFunc()",
+          "grade": 3,
+          "reason": "The test constructs the child first, installs the root normalization function, and compares function identities on both commands.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q035",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is name normalization verified on a command's LocalFlags view?",
+      "family_id": "cobra-family-78b416e0d53ca927",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1673,
+          "end_line": 1685,
+          "anchor": "c.LocalFlags().Lookup(\"FLAGNAME\")",
+          "grade": 3,
+          "reason": "The test installs an uppercase normalizer after defining a flag and confirms equivalent lowercase and uppercase lookups in LocalFlags.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q036",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is inherited-flag normalization checked for children added before and after a parent's persistent flag?",
+      "family_id": "cobra-family-1be592d74360a8cf",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1687,
+          "end_line": 1713,
+          "anchor": "command added before flag",
+          "grade": 3,
+          "reason": "The test covers both child-order cases and requires normalized lookup to return the same inherited flag.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q037",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Cobra verify that replacing a normalization function does not create duplicate local flags?",
+      "family_id": "cobra-family-e06a3571bc8294fd",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1715,
+          "end_line": 1732,
+          "anchor": "Normalizing flag names should not result in duplicate flags",
+          "grade": 3,
+          "reason": "The test applies two normalizers in sequence and confirms differently cased lookups do not resolve to a duplicate instance.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q038",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How is pflag.CommandLine incorporated into a command's effective flags?",
+      "family_id": "cobra-family-54d90b3e716fc2a8",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2161,
+          "end_line": 2170,
+          "anchor": "c.mergePersistentFlags()",
+          "grade": 3,
+          "reason": "The test defines a process-wide flag, merges persistent state, verifies lookup through Flags, and resets the global set.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q039",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Traverse handle root flags that occur before a child command name?",
+      "family_id": "cobra-family-0caf842d6591e73b",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2187,
+          "end_line": 2207,
+          "anchor": "rootCmd.Traverse([]string{\"-b\", \"--str\", \"ok\", \"child\", \"--int\"})",
+          "grade": 3,
+          "reason": "The test builds root and child flag sets, traverses mixed arguments, and verifies the child selection and remaining child argument.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q040",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Traverse resolve a child when no parent flags are present?",
+      "family_id": "cobra-family-b72e06dc31af9458",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2209,
+          "end_line": 2227,
+          "anchor": "rootCmd.Traverse([]string{\"child\"})",
+          "grade": 3,
+          "reason": "The test builds a two-level tree, traverses the bare child name, and verifies the selected command and empty remainder.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q041",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Traverse respond when a child-only flag appears before the child name?",
+      "family_id": "cobra-family-394f61a8d027ce75",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2229,
+          "end_line": 2245,
+          "anchor": "Expected nil command",
+          "grade": 3,
+          "reason": "The test supplies the child flag too early and verifies an unknown-flag error with no selected command.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q042",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "Why can a flag following the final child name remain unparsed during Traverse?",
+      "family_id": "cobra-family-c15b7384e9a026fd",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2247,
+          "end_line": 2266,
+          "anchor": "last commands args shouldn't be parsed",
+          "grade": 3,
+          "reason": "The test states the traversal boundary and verifies the child is selected while the trailing flag remains in the returned arguments.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q043",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How does Traverse descend through two nested subcommands?",
+      "family_id": "cobra-family-6ea24bc850d9137f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2268,
+          "end_line": 2286,
+          "anchor": "[]string{\"sub\", \"subsub\"}",
+          "grade": 3,
+          "reason": "The test builds root, child, and grandchild commands, traverses both names, and verifies the grandchild is selected.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q044",
+      "stratum": "architecture_flow",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can a persistent pre-run hook replace context for a child command's Run callback?",
+      "family_id": "cobra-family-23fd980a5ce147b6",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2540,
+          "end_line": 2569,
+          "anchor": "PersistentPreRun: func(cmd *Command",
+          "grade": 3,
+          "reason": "The test mutates context in the parent's persistent pre-run hook, runs a child, and verifies the child observes the new value.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q045",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What checks should a Cobra contributor run before submitting Go code?",
+      "family_id": "cobra-family-8d5a10cf7342eb69",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "CONTRIBUTING.md",
+          "start_line": 29,
+          "end_line": 36,
+          "anchor": "go test ./...",
+          "grade": 3,
+          "reason": "The contribution guide requires adequate tests and names the test and formatting commands to run.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q046",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Where does Cobra direct developers for the full Fish completion setup instructions?",
+      "family_id": "cobra-family-f46039a1be7285cd",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/completions/fish.md",
+          "start_line": 1,
+          "end_line": 3,
+          "anchor": "Please refer to [Shell Completions](_index.md)",
+          "grade": 3,
+          "reason": "The Fish-specific page directs developers to the central shell-completions guide for configuration details.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q047",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can I inspect completion output with Active Help enabled or disabled?",
+      "family_id": "cobra-family-05ce8b7164af39d2",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/active_help.md",
+          "start_line": 139,
+          "end_line": 156,
+          "anchor": "HELM_ACTIVE_HELP=0",
+          "grade": 3,
+          "reason": "The debugging section uses the hidden __complete command with the program Active Help variable set to contrasting values.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q048",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Where should a legacy custom Bash completion function be attached, and when is it called?",
+      "family_id": "cobra-family-a7b316e0d9524cf8",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/completions/bash.md",
+          "start_line": 50,
+          "end_line": 64,
+          "anchor": "BashCompletionFunction: bash_completion_func",
+          "grade": 3,
+          "reason": "The documentation attaches BashCompletionFunction to the root and explains that its custom processor runs when the built-in processor cannot resolve a completion.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q049",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "What replaced the old position-specific Zsh noun-completion helpers?",
+      "family_id": "cobra-family-31e9c5807abd246f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/completions/zsh.md",
+          "start_line": 21,
+          "end_line": 28,
+          "anchor": "MarkZshCompPositionalArgumentWords",
+          "grade": 3,
+          "reason": "The migration table maps the deprecated positional file and word helpers to default file completion, ValidArgsFunction, and completion directives.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q050",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which flag-value completion behaviors changed when Cobra standardized Zsh completion across shells?",
+      "family_id": "cobra-family-c2864fb913e750ad",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/completions/zsh.md",
+          "start_line": 30,
+          "end_line": 39,
+          "anchor": "Flag-value completion",
+          "grade": 3,
+          "reason": "The table covers default file completion, filename filtering syntax, directory completion, repeated flags, and equals-form flags.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q051",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How do I generate Markdown documentation for just one command rather than its whole tree?",
+      "family_id": "cobra-family-16af02d9e8475cb3",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/docgen/md.md",
+          "start_line": 58,
+          "end_line": 70,
+          "anchor": "doc.GenMarkdown(cmd, out)",
+          "grade": 3,
+          "reason": "The single-command section recommends GenMarkdown, shows a buffer call, and states that only that command is written.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q052",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How can generated Markdown command pages receive Hugo front matter?",
+      "family_id": "cobra-family-5b732ec049a18df6",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/docgen/md.md",
+          "start_line": 72,
+          "end_line": 105,
+          "anchor": "filePrepender := func(filename string) string",
+          "grade": 3,
+          "reason": "The customization section identifies the custom generator callbacks and provides a filePrepender that derives and returns Hugo front matter.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q053",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "How do I install the cobra-cli application generator?",
+      "family_id": "cobra-family-ef94136a7c502bd8",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "README.md",
+          "start_line": 95,
+          "end_line": 106,
+          "anchor": "go install github.com/spf13/cobra-cli@latest",
+          "grade": 3,
+          "reason": "The usage section explains the generator's purpose and gives its Go install command.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q054",
+      "stratum": "config_docs",
+      "language": "en",
+      "split": "holdout",
+      "query": "Which custom YAML documentation entry points accept prepending and link-rewriting callbacks?",
+      "family_id": "cobra-family-802d5e4cb73916af",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "site/content/docgen/yaml.md",
+          "start_line": 69,
+          "end_line": 83,
+          "anchor": "func GenYamlTreeCustom",
+          "grade": 3,
+          "reason": "The customization section shows the tree and single-command custom YAML signatures and their callback parameters.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q055",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "alias invocation",
+      "family_id": "cobra-family-49c620d1e8ab735f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 274,
+          "end_line": 303,
+          "anchor": "func TestCommandAlias(",
+          "grade": 3,
+          "reason": "The alias test is a canonical end-to-end example among alias fields, name-matching helpers, and completion aliases.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q056",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "output writer",
+      "family_id": "cobra-family-d30f879a1265bc4e",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command.go",
+          "start_line": 374,
+          "end_line": 387,
+          "anchor": "func (c *Command) OutOrStdout() io.Writer",
+          "grade": 3,
+          "reason": "The public output accessors are the canonical interface among writer fields, setters, inheritance helpers, and rendering call sites.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q057",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "plugin display name",
+      "family_id": "cobra-family-6f15a3c920eb748d",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 369,
+          "end_line": 397,
+          "anchor": "CommandDisplayNameAnnotation",
+          "grade": 3,
+          "reason": "The plugin test is the canonical example of overriding displayed command paths while keeping the executable's own Use name.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q058",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "same-name child",
+      "family_id": "cobra-family-a482e61d095c3fb7",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 399,
+          "end_line": 425,
+          "anchor": "func TestChildSameName(",
+          "grade": 3,
+          "reason": "The focused test is the canonical behavior record for a root and direct child sharing a name.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q059",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "flag before command",
+      "family_id": "cobra-family-1c74bd508e2a96f3",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 581,
+          "end_line": 606,
+          "anchor": "func TestFlagBeforeCommand(",
+          "grade": 3,
+          "reason": "The test is the canonical example of short and long child flags appearing before the child command token.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q060",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "empty input arguments",
+      "family_id": "cobra-family-f9b203de4671ac85",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 733,
+          "end_line": 752,
+          "anchor": "func TestEmptyInputs(",
+          "grade": 3,
+          "reason": "The focused test is the canonical behavior record for blank argument strings surrounding a valid flag.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q061",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "hidden command execution",
+      "family_id": "cobra-family-3528e7a0dc9461bf",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1747,
+          "end_line": 1768,
+          "anchor": "func TestHiddenCommandExecutes(",
+          "grade": 3,
+          "reason": "The focused test distinguishes execution of a hidden command from its separate visibility behavior.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q062",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "command aliases in Bash",
+      "family_id": "cobra-family-9ad16f3b720ce854",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "bash_completions.go",
+          "start_line": 632,
+          "end_line": 646,
+          "anchor": "func writeCmdAliases(",
+          "grade": 3,
+          "reason": "writeCmdAliases is the canonical legacy Bash emission logic among alias fields, matching methods, and argument aliases.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q063",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "wrong help group",
+      "family_id": "cobra-family-4726c8e19ab350df",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 1954,
+          "end_line": 1972,
+          "anchor": "SetHelpCommandGroupID(\"wrong\")",
+          "grade": 3,
+          "reason": "The focused test is the canonical record of the panic caused by assigning the generated help command to a missing group.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    },
+    {
+      "id": "fhv6c-b7e4-q064",
+      "stratum": "ambiguous",
+      "language": "en",
+      "split": "holdout",
+      "query": "sibling parse whitelist",
+      "family_id": "cobra-family-04e9b751cd683a2f",
+      "provenance": "sealed:2026-09-15:independent-third-fresh-curation:pinned-checkout",
+      "judgements": [
+        {
+          "path": "command_test.go",
+          "start_line": 2437,
+          "end_line": 2466,
+          "anchor": "func TestFParseErrWhitelistSiblingCommand(",
+          "grade": 3,
+          "reason": "The test is the canonical boundary case showing that one child's unknown-flag whitelist does not apply to its sibling.",
+          "annotator": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator)",
+          "reviewer": "codex-cli 0.153.4 / GPT-5 Codex agent (independent third-fresh curator; second-pass source review)"
+        }
+      ]
+    }
+  ]
+}
