@@ -1,0 +1,106 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 5f17d8d0d3b68f247eab945f5d11f7e3ffcf5928137a200e663bc2ec48978958
+FOLLOW-UP READ CONTENT ADDRESS: 8f50e4e93710f066cb1b643e4599d6bf397be2f1392c9c8ea4947450e30860b3
+QUERY ID: fhv6c-b7e4-q044
+
+QUESTION:
+How can a persistent pre-run hook replace context for a child command's Run callback?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- command_test.go:2540-2569 anchor="PersistentPreRun: func(cmd *Command" reason=The test mutates context in the parent's persistent pre-run hook, runs a child, and verifies the child observes the new value.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query a0d408aa201d; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":605,"end_line":629,"text":"## PreRun and PostRun Hooks\n\nIt is possible to run functions before or after the main `Run` function of your command. The `PersistentPreRun` and `PreRun` functions will be executed before `Run`. `PersistentPostRun` and `PostRun` will be executed after `Run`.  The `Persistent*Run` functions will be inherited by children if they do not declare their own.  The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared.  These functions are run in the following order:\n\n- `PersistentPreRun`\n- `PreRun`\n- `Run`\n- `PostRun`\n- `PersistentPostRun`\n\nAn example of two commands which use all of these features is below.  When the subcommand is executed, it will run the root command's `PersistentPreRun` but not the root command's `PersistentPostRun`:\n\n```go\npackage main\n\nimport (\n  \"fmt\"\n\n  \"github.com/spf13/cobra\"\n)\n\nfunc main() {\n\n  var rootCmd = &cobra.Command{\n    Use:   \"root [sub]\","},{"path":"command.go","start_line":1306,"end_line":1307,"text":"\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}"},{"path":"cobra.go","start_line":64,"end_line":64,"text":"// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents."},{"path":"command.go","start_line":258,"end_line":266,"text":"// with ExecuteContext or the context was set with SetContext, the\n// previously set context will be returned. Otherwise, nil is returned.\n//\n// Notice that a call to Execute and ExecuteC will replace a nil context of\n// a command with a context.Background, so a background context will be\n// returned by Context after one of these functions has been called.\nfunc (c *Command) Context() context.Context {\n\treturn c.ctx\n}"},{"path":"command.go","start_line":268,"end_line":272,"text":"// SetContext sets context for the command. This context will be overwritten by\n// Command.ExecuteContext or Command.ExecuteContextC.\nfunc (c *Command) SetContext(ctx context.Context) {\n\tc.ctx = ctx\n}"},{"path":"command.go","start_line":1027,"end_line":1033,"text":"// ExecuteContext is the same as Execute(), but sets the ctx on the command.\n// Retrieve ctx by calling cmd.Context() inside your *Run lifecycle or ValidArgs\n// functions.\nfunc (c *Command) ExecuteContext(ctx context.Context) error {\n\tc.ctx = ctx\n\treturn c.Execute()\n}"},{"path":"command.go","start_line":1015,"end_line":1015,"text":"func (c *Command) preRun() {"},{"path":"command.go","start_line":944,"end_line":944,"text":"\t\t\t// - Execute all persistent pre-runs from the root parent till this command."},{"path":"completions.go","start_line":68,"end_line":68,"text":"\t// For flags, using Command.MarkFlagFilename() and Command.MarkPersistentFlagFilename()"}],"provenance":{"input_sha256":"84f8f7f8b0661246be79caccef614dfb0f1130554d7a29784b5f898f8268ed3e","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"site/content/user_guide.md:605-693"},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN (RESPONSE 1 OF 2) -----
+----- BEGIN THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+{"path":"site/content/user_guide.md","start_line":605,"end_line":693,"text":"## PreRun and PostRun Hooks\n\nIt is possible to run functions before or after the main `Run` function of your command. The `PersistentPreRun` and `PreRun` functions will be executed before `Run`. `PersistentPostRun` and `PostRun` will be executed after `Run`.  The `Persistent*Run` functions will be inherited by children if they do not declare their own.  The `*PreRun` and `*PostRun` functions will only be executed if the `Run` function of the current command has been declared.  These functions are run in the following order:\n\n- `PersistentPreRun`\n- `PreRun`\n- `Run`\n- `PostRun`\n- `PersistentPostRun`\n\nAn example of two commands which use all of these features is below.  When the subcommand is executed, it will run the root command's `PersistentPreRun` but not the root command's `PersistentPostRun`:\n\n```go\npackage main\n\nimport (\n  \"fmt\"\n\n  \"github.com/spf13/cobra\"\n)\n\nfunc main() {\n\n  var rootCmd = \u0026cobra.Command{\n    Use:   \"root [sub]\",\n    Short: \"My root command\",\n    PersistentPreRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside rootCmd PersistentPreRun with args: %v\\n\", args)\n    },\n    PreRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside rootCmd PreRun with args: %v\\n\", args)\n    },\n    Run: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside rootCmd Run with args: %v\\n\", args)\n    },\n    PostRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside rootCmd PostRun with args: %v\\n\", args)\n    },\n    PersistentPostRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside rootCmd PersistentPostRun with args: %v\\n\", args)\n    },\n  }\n\n  var subCmd = \u0026cobra.Command{\n    Use:   \"sub [no options!]\",\n    Short: \"My subcommand\",\n    PreRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside subCmd PreRun with args: %v\\n\", args)\n    },\n    Run: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside subCmd Run with args: %v\\n\", args)\n    },\n    PostRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside subCmd PostRun with args: %v\\n\", args)\n    },\n    PersistentPostRun: func(cmd *cobra.Command, args []string) {\n      fmt.Printf(\"Inside subCmd PersistentPostRun with args: %v\\n\", args)\n    },\n  }\n\n  rootCmd.AddCommand(subCmd)\n\n  rootCmd.SetArgs([]string{\"\"})\n  rootCmd.Execute()\n  fmt.Println()\n  rootCmd.SetArgs([]string{\"sub\", \"arg1\", \"arg2\"})\n  rootCmd.Execute()\n}\n```\n\nOutput:\n```\nInside rootCmd PersistentPreRun with args: []\nInside rootCmd PreRun with args: []\nInside rootCmd Run with args: []\nInside rootCmd PostRun with args: []\nInside rootCmd PersistentPostRun with args: []\n\nInside rootCmd PersistentPreRun with args: [arg1 arg2]\nInside subCmd PreRun with args: [arg1 arg2]\nInside subCmd Run with args: [arg1 arg2]\nInside subCmd PostRun with args: [arg1 arg2]\nInside subCmd PersistentPostRun with args: [arg1 arg2]\n```\n\nBy default, only the first persistent hook found in the command chain is executed.\nThat is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command.\nSet `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks.\n"}
+----- END THE FOLLOW-UP READ THE RATER WAS GIVEN (RESPONSE 2 OF 2) -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Define the parent’s inherited `PersistentPreRun` to call `SetContext` on the command passed to the hook; the child’s `Run` then reads that replacement through `Context()`:
+
+```go
+rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+    ctx := context.WithValue(cmd.Context(), key, value)
+    cmd.SetContext(ctx)
+}
+
+childCmd.Run = func(cmd *cobra.Command, args []string) {
+    ctx := cmd.Context()
+    // use ctx
+}
+```
+
+Evidence:
+
+- Persistent hooks are inherited by children and run before `Run` (`site/content/user_guide.md:607-615`).
+- `SetContext` sets the command context (`command.go:268-272`).
+- `Context()` returns that stored context (`command.go:258-266`).
+
+Thus, when the inherited hook receives the executing child as `cmd`, setting its context makes the new context visible to that child’s subsequent `Run` callback.
+----- END THE RATER'S RESPONSE -----
