@@ -1,0 +1,1 @@
+FAIL: The transcript supports checking that generated completion omits `<activeHelpVar>=0`, but does not establish that the `true` argument to `GenBashCompletionV2` enables Active Help. The response assigns unsupported API semantics to that argument.

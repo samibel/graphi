@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a436-1985-7250-ba4b-2131c412ae94"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"FAIL: The transcript supports hook inheritance, execution order, and context accessors, but never establishes that the parent’s persistent pre-run hook receives the executing child as `cmd`. That required link is unsupported, so the claimed replacement of the child’s context cannot be verified."}}
+{"type":"turn.completed","usage":{"input_tokens":19182,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":94,"reasoning_output_tokens":34}}
