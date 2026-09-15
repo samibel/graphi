@@ -1,0 +1,47 @@
+{
+  "schema": "graphi-holdout-invocation-plan/1",
+  "status": "preregistered_pre_freeze",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v3",
+  "checksum_encoding": "sha256 of RFC 8259 compact JSON encoding of exact argv array without trailing newline",
+  "resolved": {
+    "worktree": "/private/tmp/graphi-compact17-unseen-v3-operator",
+    "run": "/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3",
+    "dataset": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/sealed-dataset.json",
+    "checkout": "/private/tmp/graphi-cobra-compact17-unseen",
+    "tokenizer_dir": "/private/tmp/graphi-compact17-unseen-v3-operator/internal/eval/tokenizer/testdata/artifact",
+    "model_dir": "/private/tmp/graphi-model-potion-code-16M-v2",
+    "embedder": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+  },
+  "bindings": {
+    "curator_commit": "87a8c5320eac8bf5976e9e98267c99d7181542aa",
+    "product_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "product_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "c985a0b5e43cf42c6bf37eee1752cf0f01450e0baeecab7b5888817bb55551aa",
+    "curator_preregistration_sha256": "0853fa95e5e3040a7e0123567265bbba8f17b5608f53c1ea46e4004e31a17ab4",
+    "curator_attestation_sha256": "cfc1e9adfdc876772f677801517856d837cedd258408301dae8320dc4cff802c",
+    "handoff_sha256": "ff0245b9c2f685a31453c4e766940ded9d879d3bc1275c7ddc591f539bb5e723",
+    "actor_version": "task_context/2-compact/17",
+    "budget": 1200,
+    "n": 64,
+    "k": 56
+  },
+  "harness_invocations": [
+    {"phase":"freeze","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","freeze","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-dataset","docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/sealed-dataset.json"],"argv_sha256":"8ac058906c6ca7c544539b58ea0849516692d6cb28639e0e32ac81107b5165a3"},
+    {"phase":"capture","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","capture","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-repo","cobra","-checkout","/private/tmp/graphi-cobra-compact17-unseen","-embedder","static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"],"argv_sha256":"a350679e88075d6ca283a53a7328c0b8810457c9b4d3151fb2ccdc627432280a"},
+    {"phase":"seal_responses","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","seal","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-checkout","/private/tmp/graphi-cobra-compact17-unseen"],"argv_sha256":"399b20dbdcbad757d67017f246b7f52b32b86b49c61f5336c25be90541831ec9"},
+    {"phase":"seal_grades","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","seal","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-checkout","/private/tmp/graphi-cobra-compact17-unseen"],"argv_sha256":"399b20dbdcbad757d67017f246b7f52b32b86b49c61f5336c25be90541831ec9"},
+    {"phase":"seal_adjudications","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","seal","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-checkout","/private/tmp/graphi-cobra-compact17-unseen"],"argv_sha256":"399b20dbdcbad757d67017f246b7f52b32b86b49c61f5336c25be90541831ec9"},
+    {"phase":"seal_adjudication_grades","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","seal","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3","-checkout","/private/tmp/graphi-cobra-compact17-unseen"],"argv_sha256":"399b20dbdcbad757d67017f246b7f52b32b86b49c61f5336c25be90541831ec9"},
+    {"phase":"decide","maximum_invocations":1,"argv":["go","run","./cmd/retrieval-eval","-blind-eval","decide","-blind-eval-contract","2","-blind-eval-dir","/private/tmp/graphi-compact17-unseen-v3-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3"],"argv_sha256":"2ee74040fe30dc9211cbe074e4977a22f534b299167d07275f843cedf7609bf3"}
+  ],
+  "actor_policy": {
+    "orchestrator_sha256": "dc46d54a0f2cb47dc4ba3b8bf734c8c2c82b08ee7c912cb177405f25a8015d03",
+    "actor_mode": "live",
+    "parallel_roles": 2,
+    "serial_per_role": true,
+    "retries": 0,
+    "overwrites": false,
+    "event_allowlist": ["thread.started","turn.started","item.completed(agent_message)","turn.completed"]
+  }
+}

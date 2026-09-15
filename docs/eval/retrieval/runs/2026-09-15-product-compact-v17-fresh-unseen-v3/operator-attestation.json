@@ -1,0 +1,10 @@
+{
+  "schema": "graphi-fresh-holdout-operator-attestation/3",
+  "status": "preregistered_pre_freeze",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v3",
+  "operator": {"identity":"Codex independent holdout operator","task_path":"/root/holdout_operator","provider":"OpenAI","resolved_model_identity":"GPT-5 Codex agent (session-declared)","immutable_backend_snapshot_exposed":false},
+  "isolation": {"branch":"fresh-holdout-compact17-unseen-v3-operator","worktree":"/private/tmp/graphi-compact17-unseen-v3-operator","root_excluded_from_holdout_content":true,"manual_holdout_content_accessed":false,"consumed_holdout_accessed":false},
+  "bindings": {"curator_commit":"87a8c5320eac8bf5976e9e98267c99d7181542aa","product_commit":"26a36f0958cb16d925c4dd871cda76d0e117b15a","product_tree":"6ab1d7075c787b7a8884114d5d732be812cb325f","dataset_sha256":"c985a0b5e43cf42c6bf37eee1752cf0f01450e0baeecab7b5888817bb55551aa","curator_preregistration_sha256":"0853fa95e5e3040a7e0123567265bbba8f17b5608f53c1ea46e4004e31a17ab4","curator_attestation_sha256":"cfc1e9adfdc876772f677801517856d837cedd258408301dae8320dc4cff802c","handoff_sha256":"ff0245b9c2f685a31453c4e766940ded9d879d3bc1275c7ddc591f539bb5e723","corpus_commit":"a0a6ae020bb3899ff0276067863e50523f897370","contract":2,"n":64,"k":56,"budget":1200,"actor_version":"task_context/2-compact/17"},
+  "execution": {"orchestrator_sha256":"dc46d54a0f2cb47dc4ba3b8bf734c8c2c82b08ee7c912cb177405f25a8015d03","orchestrator_preflight_sha256":"b09e4ad8cb935f888ea8c8cbd1934d60fbba4649439a8c07caa5d124bbe8283c","orchestrator_uses_reserved_status_variable":false,"capture_invocations_allowed":1,"retries":0,"overwrites":false,"waivers":false,"every_seal_requires_checkout":"/private/tmp/graphi-cobra-compact17-unseen"},
+  "limitations": ["The provider exposes no immutable backend snapshot or build digest; model-level byte reproducibility cannot be claimed."]
+}
