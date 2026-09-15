@@ -1,0 +1,8 @@
+`bash_completions_test.go` belongs to package `cobra` (line 15). The provided snippets show:
+
+- **Helpers:** `checkOmit` checks for an unexpected substring (27–28); `check` reports an error when an expected substring is absent (33–36); `checkNumOccurrences` counts substring occurrences (39–40).
+- **Custom completion constant:** `bashCompletionFunc` defines `__root_custom_func`, which sets `COMPREPLY` to `"hello"` (77–80).
+- **Main test:** `TestBashCompletions` creates a root command with argument aliases, valid arguments, the custom completion function, and a required `introot` flag (83–93).
+- **Additional tests:** `TestBashCompletionHiddenFlag` (229–235), `TestBashCompletionDeprecatedFlag` (245–253), `TestBashCompletionTraverseChildren` (261–266), and `TestBashCompletionNoActiveHelp` (279–281).
+
+The response is truncated, so these declarations are not necessarily the file’s complete contents.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-1f5b-7a92-a6bb-25506d00b2f6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response lacks the test or `SetGlobalNormalizationFunc` implementation showing how normalization is checked for children added both before and after the parent’s persistent flag."}}
+{"type":"turn.completed","usage":{"input_tokens":16700,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":280,"reasoning_output_tokens":239}}

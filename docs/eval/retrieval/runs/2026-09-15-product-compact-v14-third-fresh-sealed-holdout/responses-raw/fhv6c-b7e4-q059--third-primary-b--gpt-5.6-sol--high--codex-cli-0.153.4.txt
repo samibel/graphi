@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows flag lookup and parsing methods in `command.go`, but not argument-order handling for a flag placed before a command.

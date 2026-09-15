@@ -1,0 +1,5 @@
+`exactArgsWithInvalidCount(err error, t *testing.T)` is a test helper in `args_test.go:88–97` that checks an argument-count error:
+
+- If `err` is nil, it calls `t.Fatal("Expected an error")` (lines 89–91).
+- It requires `err.Error()` to equal `"accepts 2 arg(s), received 3"` (lines 92–93).
+- If the message differs, it calls `t.Fatalf("Expected %q, got %q", expected, got)` (lines 94–96).

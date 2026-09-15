@@ -1,0 +1,14 @@
+Define the parent’s persistent hook to call `SetContext` on the command passed to it:
+
+```go
+rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+    cmd.SetContext(replacementCtx)
+}
+
+childCmd.Run = func(cmd *cobra.Command, args []string) {
+    ctx := cmd.Context()
+    // use replacementCtx
+}
+```
+
+This works because an inherited `PersistentPreRun` executes before the child’s `Run` (`site/content/user_guide.md:607-616`), `SetContext` replaces the command’s stored context (`command.go:268-272`), and lifecycle callbacks retrieve it through `cmd.Context()` (`command.go:1027-1033`). If execution began with `ExecuteContext`, make the replacement inside the hook, since `ExecuteContext` initially overwrites the command context (`command.go:1027-1033`).

@@ -1,0 +1,2 @@
+INSUFFICIENT
+The responses describe `TraverseChildren` generally (`site/content/user_guide.md:290–292`) but omit `Traverse`’s implementation or documentation of how it handles root flags before a child command name.

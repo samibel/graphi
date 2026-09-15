@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-15d9-7380-a781-7d3c04524bc6"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response is truncated and contains only selected spans from `command_test.go`, so its complete structure and declarations are missing."}}
+{"type":"turn.completed","usage":{"input_tokens":16583,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":150,"reasoning_output_tokens":116}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42f-b381-7903-bf50-4f962e69c6f3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`SetErr(nil)` makes `ErrOrStderr()` return the nearest parent command’s non-nil `errWriter`, if one exists; otherwise it returns `os.Stderr`.\n\nEvidence: `SetErr` assigns `nil` to `c.errWriter` (`command.go:294–298`), `ErrOrStderr` calls `c.getErr(os.Stderr)` (`command.go:384–387`), and `getErr` searches parents before returning its default (`command.go:404–412`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16358,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

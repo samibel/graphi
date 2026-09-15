@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-e656-7fb0-b818-123b0854b56f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Use `GenMarkdown` for the specific command rather than `GenMarkdownTree`. The response names both APIs in `site/content/docgen/md.md:74`; lines 29–57 explain that `GenMarkdownTree` creates a file for every command in the tree.\n\nThe documented customizable single-command variant accepts a buffer (`site/content/docgen/md.md:83–85`):\n\n```go\nvar out bytes.Buffer\nerr := doc.GenMarkdownCustom(cmd, &out, func(link string) string {\n\treturn link\n})\n```\n\nPass your chosen command as `cmd`, handle `err`, and use the Markdown in `out`."}}
+{"type":"turn.completed","usage":{"input_tokens":17363,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":298,"reasoning_output_tokens":165}}

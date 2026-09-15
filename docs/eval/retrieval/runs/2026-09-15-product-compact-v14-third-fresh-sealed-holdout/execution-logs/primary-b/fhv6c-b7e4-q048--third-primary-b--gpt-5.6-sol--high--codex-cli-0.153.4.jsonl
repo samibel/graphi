@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-bb8e-7972-8a2b-0ceb63fb4967"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT — `bash_completions.go:688-693` shows it is attached to `Command.BashCompletionFunction` and emitted by `GenBashCompletion()`, but the responses do not show where or when the generated Bash function is invoked."}}
+{"type":"turn.completed","usage":{"input_tokens":16893,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":348,"reasoning_output_tokens":288}}

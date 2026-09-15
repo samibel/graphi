@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows hidden commands are excluded from availability listings (`command.go:1560–1576`) but omits the command-resolution and execution logic needed to determine whether they can still be executed.

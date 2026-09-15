@@ -1,0 +1,8 @@
+`doc/cmd_test.go` belongs to package `doc` (line 15). The supplied snippets show:
+
+- **Helper:** `emptyRun(*cobra.Command, []string)` is a no-op command handler (line 24).
+- **Initialization:** `init()` registers persistent and local string, Boolean, and integer flags on `rootCmd`, `echoCmd`, `timesCmd`, and `printCmd` (lines 26–40).
+- **Command declarations:** Six `*cobra.Command` variables: `rootCmd` (47–52), `echoCmd` with alias `say` and an example (54–60), `echoSubCmd` (62–67), `timesCmd` with `SuggestFor: []string{"counts"}` (69–75), `deprecatedCmd` with deprecation message “Please use echo instead” (77–82), and `printCmd` (84–88).
+- **Assertion helper:** `checkStringOmits(t *testing.T, got, expected string)` reports an error when `strings.Contains(got, expected)` is true (101–105).
+
+The response is truncated, so it does not establish the file’s complete declarations or the remainder of `init()`.

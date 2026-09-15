@@ -1,0 +1,1 @@
+INSUFFICIENT The response specifies adequate tests and `go test ./...` or `make test` (`CONTRIBUTING.md:33–34`), but cuts off the formatting requirement at line 35, leaving the full pre-submission checks unavailable.

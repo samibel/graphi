@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows flag lookup and `ParseFlags` (`command.go:1818–1840`), but lacks command selection logic or tests establishing whether flags may appear before a command.

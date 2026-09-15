@@ -1,0 +1,2 @@
+INSUFFICIENT
+The response shows that `Hidden` excludes commands from availability (`command.go:1560–1565`, `IsAvailableCommand`), but omits the lookup and execution logic needed to determine whether hidden commands can still execute.

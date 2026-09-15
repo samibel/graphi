@@ -1,0 +1,12 @@
+Use `GenMarkdown` for the specific command rather than `GenMarkdownTree`. The response names both APIs in `site/content/docgen/md.md:74`; lines 29–57 explain that `GenMarkdownTree` creates a file for every command in the tree.
+
+The documented customizable single-command variant accepts a buffer (`site/content/docgen/md.md:83–85`):
+
+```go
+var out bytes.Buffer
+err := doc.GenMarkdownCustom(cmd, &out, func(link string) string {
+	return link
+})
+```
+
+Pass your chosen command as `cmd`, handle `err`, and use the Markdown in `out`.

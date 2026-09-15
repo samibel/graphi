@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-b21e-7203-8b91-56196406e4ea"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`rangeArgsWithInvalidCount(err error, t *testing.T)` is a test helper in `args_test.go:99–108` that checks an argument-count error:\n\n- Fails with `t.Fatal(\"Expected an error\")` if `err` is nil (lines 100–102).\n- Requires `err.Error()` to equal `\"accepts between 2 and 4 arg(s), received 1\"` (lines 103–104).\n- Fails with `t.Fatalf(\"Expected %q, got %q\", expected, got)` if the message differs (lines 105–107)."}}
+{"type":"turn.completed","usage":{"input_tokens":17014,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":127,"reasoning_output_tokens":0}}

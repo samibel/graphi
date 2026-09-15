@@ -1,0 +1,1 @@
+INSUFFICIENT The responses show how persistent flag sets are merged, but not where or how `pflag.CommandLine` is added to a command’s effective flags; only the test name `TestFlagOnPflagCommandLine` appears (`command_test.go:1734`) without its body.

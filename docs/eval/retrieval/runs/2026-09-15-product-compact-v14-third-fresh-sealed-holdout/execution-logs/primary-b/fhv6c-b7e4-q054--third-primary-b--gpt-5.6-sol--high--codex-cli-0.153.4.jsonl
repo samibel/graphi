@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-2439-7870-afeb-6a3718fa583b"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"- `GenYamlTreeCustom` accepts both `filePrepender` and `linkHandler` callbacks (`doc/yaml_docs.go:60`).\n- `GenYamlCustom` accepts only a `linkHandler` callback (`doc/yaml_docs.go:93`); prepending is handled by `GenYamlTreeCustom` before calling it (`doc/yaml_docs.go:78–82`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16748,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":196,"reasoning_output_tokens":111}}

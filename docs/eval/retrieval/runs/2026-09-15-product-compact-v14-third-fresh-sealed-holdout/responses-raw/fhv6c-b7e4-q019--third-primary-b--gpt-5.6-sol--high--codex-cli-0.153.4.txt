@@ -1,0 +1,16 @@
+`doc/man_docs_test.go` is a Go test file in package `doc` (`line 15`). Its visible declarations are:
+
+- Helpers:
+  - `assertNoErr(t *testing.T, e error)` reports non-nil errors (`lines 30–34`).
+  - `translate(in string) string` escapes hyphens as `\-` using `strings.ReplaceAll` (`lines 36–38`).
+  - `assertLineFound(scanner *bufio.Scanner, expectedLine string) error` scans for an exact line (`lines 190–194`).
+
+- Tests:
+  - `TestGenManDoc` generates a man page for `echoCmd` with title `Project` and section `2` (`lines 40–49`).
+  - `TestGenManNoHiddenParents` tests generation involving subcommands and parents (`lines 70–76`).
+  - `TestGenManNoGenTag` temporarily enables `echoCmd.DisableAutoGenTag` (`lines 106–111`).
+  - `TestGenManSeeAlso` constructs a root command with visible and hidden subcommands (`lines 128–132`).
+  - `TestManPrintFlagsHidesShortDeprecated` verifies a deprecated shorthand is omitted from rendered flags (`lines 153–166`).
+  - `TestGenManTree` creates a temporary directory and invokes `GenManTree` (`lines 168–177`).
+
+The response is truncated, so additional declarations or the complete bodies of these tests are not visible.

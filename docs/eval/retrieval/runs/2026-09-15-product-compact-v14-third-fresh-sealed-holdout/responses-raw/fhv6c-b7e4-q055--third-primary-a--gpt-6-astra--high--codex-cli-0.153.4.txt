@@ -1,0 +1,3 @@
+A command alias selects the same command as its name: `command.go:768–772` checks `commandNameMatches(cmd.Name(), next) || cmd.HasAlias(next)`, records the supplied invocation token in `cmd.commandCalledAs.name`, and returns that command.
+
+`HasAlias` searches `c.Aliases` (`command.go:1505–1513`). Matching is exact by default; with `EnableCaseInsensitive`, it uses `strings.EqualFold` (`command.go:1876–1885`).

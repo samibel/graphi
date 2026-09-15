@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-6474-7052-83ce-91ba31866d4e"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"An empty positional-argument list is accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `Args == nil` (`command.go:1139–1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68–71`).\n\n- To **require input**, set `Args: cobra.MinimumNArgs(1)`. The guide documents this validator and demonstrates it before accessing `args[0]` (`site/content/user_guide.md:367–421`).\n- To **allow only zero arguments**, use `NoArgs`; it rejects only when `len(args) > 0` (`args.go:41–47`). Thus, `[]string{\"\"}` is rejected by `NoArgs`: it contains one argument, despite that argument being an empty string."}}
+{"type":"turn.completed","usage":{"input_tokens":17915,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":252,"reasoning_output_tokens":79}}

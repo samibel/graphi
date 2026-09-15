@@ -1,0 +1,1 @@
+Cobra directs developers to the **Shell Completions** documentation at `_index.md`, via `site/content/completions/fish.md` lines 1–4: “Please refer to [Shell Completions](_index.md) for details.”

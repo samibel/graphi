@@ -1,0 +1,11 @@
+`fish_completions_test.go` is a Go test file in package `cobra` (line 15). The response exposes seven test declarations:
+
+- `TestCompleteNoDesCmdInFishScript` (lines 26–38): generates Fish completion with descriptions disabled.
+- `TestCompleteCmdInFishScript` (lines 42–55): creates root/child commands, generates completion with descriptions enabled, and checks for `ShellCompRequestCmd`.
+- `TestProgWithDash` (lines 59–61): tests a program name containing `-`.
+- `TestProgWithColon` (lines 74–76): tests a program name containing `:`.
+- `TestFishCompletionNoActiveHelp` (lines 89–95): generates completion for a command without active help.
+- `TestGenFishCompletionFile` (lines 101–111): creates a temporary file and tests file-based Fish completion generation.
+- `TestFailGenFishCompletionFile` (lines 120–127): creates a temporary directory for a completion-file failure case.
+
+The response is truncated, so imports and the complete bodies of several tests are not shown.

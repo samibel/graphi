@@ -1,0 +1,4 @@
+`validOnlyWithInvalidArgs(err error, t *testing.T)` is a test helper in `args_test.go:44–53` that checks for the exact error `invalid argument "a" for "c"`.
+
+- If `err` is nil, it calls `t.Fatal("Expected an error")` (lines 45–47).
+- Otherwise, it compares `err.Error()` with the expected string and calls `t.Errorf("Expected: %q, got: %q", expected, got)` if they differ (lines 48–52).

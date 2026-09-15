@@ -1,0 +1,3 @@
+It returns an error: `accepts at most 2 arg(s), received 3`.
+
+Evidence: [`args.go`, lines 83–91] defines `MaximumNArgs(n)` to check `len(args) > n` and return `fmt.Errorf("accepts at most %d arg(s), received %d", n, len(args))`.

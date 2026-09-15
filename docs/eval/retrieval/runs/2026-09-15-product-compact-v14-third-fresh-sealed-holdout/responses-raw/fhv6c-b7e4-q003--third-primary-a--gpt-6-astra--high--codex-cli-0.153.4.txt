@@ -1,0 +1,7 @@
+`nonCompletableFlag(flag *pflag.Flag) bool` returns whether a flag is hidden or deprecated:
+
+```go
+return flag.Hidden || len(flag.Deprecated) > 0
+```
+
+Defined in `bash_completions.go:699–701`. Completion generation checks it and skips matching flags before calling `writeFlag` or `writeShortFlag`, including inherited flags (`bash_completions.go:567–587`).

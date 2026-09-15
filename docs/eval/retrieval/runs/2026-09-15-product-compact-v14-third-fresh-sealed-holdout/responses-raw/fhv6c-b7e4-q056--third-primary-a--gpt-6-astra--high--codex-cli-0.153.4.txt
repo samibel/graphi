@@ -1,0 +1,5 @@
+The output writer is `Command.outWriter`, an `io.Writer`.
+
+- `SetOutput(output io.Writer)` sets both `c.outWriter` and `c.errWriter`. It is deprecated in favor of `SetOut` and/or `SetErr` (`command.go:280–286`).
+- `getOut(def io.Writer)` returns the command’s writer if set, otherwise checks its parent recursively, then returns `def` (`command.go:394–402`).
+- `UsageString()` temporarily redirects both writers to a `bytes.Buffer`, calls usage, restores the writers, and returns the captured text (`command.go:478–495`).

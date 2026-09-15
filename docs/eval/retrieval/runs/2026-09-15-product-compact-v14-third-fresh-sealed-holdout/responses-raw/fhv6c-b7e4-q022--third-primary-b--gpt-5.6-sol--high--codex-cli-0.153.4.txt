@@ -1,0 +1,8 @@
+`zsh_completions_test.go` belongs to package `cobra` ([line 15](zsh_completions_test.go:15)).
+
+It declares `TestZshCompletionWithActiveHelp`, which:
+
+- Creates a `Command` named `"c"` with `emptyRun`.
+- Generates Zsh completion output into a `bytes.Buffer` via `GenZshCompletion`.
+- Computes the command’s active-help environment variable with `activeHelpEnvVar(c.Name())`.
+- Uses `checkOmit` to verify the generated output does not contain `<activeHelpVar>=0`, ensuring active help remains enabled ([lines 23–33](zsh_completions_test.go:23)).

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-58c2-73d3-b47d-cd359955960d"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The response shows `TestChildSameName` in `command_test.go:399-402` but omits its body and expected behavior."}}
+{"type":"turn.completed","usage":{"input_tokens":16099,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":133,"reasoning_output_tokens":95}}

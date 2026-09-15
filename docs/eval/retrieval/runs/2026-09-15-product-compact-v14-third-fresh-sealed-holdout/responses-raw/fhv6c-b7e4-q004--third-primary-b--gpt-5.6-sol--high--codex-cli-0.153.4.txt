@@ -1,0 +1,5 @@
+`validOnlyWithInvalidArgs` is a test helper in `args_test.go:44–53`. It:
+
+1. Fails immediately with `"Expected an error"` if `err == nil` (`args_test.go:45–47`).
+2. Requires `err.Error()` to equal `invalid argument "a" for "c"` (`args_test.go:48–49`).
+3. Reports the expected and actual messages with `t.Errorf` if they differ (`args_test.go:50–52`).

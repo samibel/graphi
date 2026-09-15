@@ -1,0 +1,3 @@
+`SetIn(nil)` makes `InOrStdin()` return the nearest ancestor’s non-nil input reader, or `os.Stdin` if none exists.
+
+Evidence in `command.go`: `SetIn` assigns nil to `c.inReader` (lines 300–304); `InOrStdin` calls `c.getIn(os.Stdin)` (389–392); `getIn` checks the local reader, recursively checks parents, then returns the default (414–422).

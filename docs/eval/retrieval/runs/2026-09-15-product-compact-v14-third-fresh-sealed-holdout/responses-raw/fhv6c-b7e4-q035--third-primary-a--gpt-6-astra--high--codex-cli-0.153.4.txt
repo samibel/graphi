@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows `LocalFlags()` applying `c.globNormFunc` via `SetNormalizeFunc` in `command.go:1680–1682`, but contains no test or assertion showing how normalization on that view is verified.

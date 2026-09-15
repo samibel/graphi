@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows normalization propagation in `command.go` (`AddCommand`, lines 1302–1329; `updateParentsPflags`, lines 1855–1874), but no tests or assertions checking children added before and after a parent’s persistent flag.

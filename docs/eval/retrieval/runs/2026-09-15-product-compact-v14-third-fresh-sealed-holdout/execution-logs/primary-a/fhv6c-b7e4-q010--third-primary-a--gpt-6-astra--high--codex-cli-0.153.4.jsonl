@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a42e-c630-7423-b9a2-0e84175db4ae"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`resetCommandLineFlagSet()` is defined in `command_test.go`, lines 70–72. It replaces `pflag.CommandLine` with a new flag set named `os.Args[0]`, using `pflag.ExitOnError`:\n\n```go\nfunc resetCommandLineFlagSet() {\n\tpflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)\n}\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":17296,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":89,"reasoning_output_tokens":0}}

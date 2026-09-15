@@ -1,0 +1,1 @@
+INSUFFICIENT The response contains a command display-name annotation key in `command.go`, but no plugin manifest or plugin display name.

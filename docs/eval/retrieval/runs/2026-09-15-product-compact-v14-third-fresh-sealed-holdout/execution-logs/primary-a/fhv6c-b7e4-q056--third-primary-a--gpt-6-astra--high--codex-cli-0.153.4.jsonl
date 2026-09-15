@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a431-38fa-7791-9ba5-bad2a00f8aee"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"The output writer is `Command.outWriter`, an `io.Writer`.\n\n- `SetOutput(output io.Writer)` sets both `c.outWriter` and `c.errWriter`. It is deprecated in favor of `SetOut` and/or `SetErr` (`command.go:280–286`).\n- `getOut(def io.Writer)` returns the command’s writer if set, otherwise checks its parent recursively, then returns `def` (`command.go:394–402`).\n- `UsageString()` temporarily redirects both writers to a `bytes.Buffer`, calls usage, restores the writers, and returns the captured text (`command.go:478–495`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17098,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":135,"reasoning_output_tokens":0}}

@@ -1,0 +1,8 @@
+`executeCommandWithContext` is a test helper defined in `command_test.go:37–46`. It accepts a `context.Context`, a root `*Command`, and variadic string arguments, then:
+
+1. Creates a buffer and directs both command output and errors to it using `SetOut` and `SetErr`.
+2. Sets the arguments with `root.SetArgs(args)`.
+3. Calls `root.ExecuteContext(ctx)`.
+4. Returns the captured output as a string and the execution error.
+
+`ExecuteContext` assigns the supplied context to `c.ctx` and calls `c.Execute()` (`command.go:1027–1033`).

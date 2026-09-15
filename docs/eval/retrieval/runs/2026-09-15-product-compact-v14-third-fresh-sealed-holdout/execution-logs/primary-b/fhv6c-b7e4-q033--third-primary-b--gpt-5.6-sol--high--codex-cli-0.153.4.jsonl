@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-07d0-7440-b4e7-46dcf9f4eef5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It returns an error: `accepts 2 arg(s), received 3`. In `args.go:93-101`, `ExactArgs` checks `len(args) != n` and formats that error with `n` and the received length."}}
+{"type":"turn.completed","usage":{"input_tokens":16476,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":55,"reasoning_output_tokens":0}}

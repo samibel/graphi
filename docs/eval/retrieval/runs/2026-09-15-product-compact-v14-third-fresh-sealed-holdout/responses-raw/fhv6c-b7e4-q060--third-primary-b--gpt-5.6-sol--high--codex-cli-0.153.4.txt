@@ -1,0 +1,3 @@
+Empty positional arguments are accepted by default: `Command.ValidateArgs` calls `ArbitraryArgs` when `c.Args == nil` (`command.go:1139-1144`), and `ArbitraryArgs` always returns `nil` (`args.go:68-71`).
+
+To reject empty input, configure `Args: cobra.MinimumNArgs(1)` (documented in `site/content/user_guide.md:367-382`).

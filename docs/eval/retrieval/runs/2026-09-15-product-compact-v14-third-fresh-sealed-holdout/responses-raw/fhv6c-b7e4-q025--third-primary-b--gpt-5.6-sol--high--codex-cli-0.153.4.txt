@@ -1,0 +1,3 @@
+`SetOut(nil)` makes `OutOrStdout()` fall back to `os.Stdout`, unless a parent command has a non-nil output writer, which it inherits.
+
+Evidence: `SetOut` assigns `nil` to `c.outWriter` (`command.go:288–292`); `OutOrStdout` calls `c.getOut(os.Stdout)` (`command.go:374–377`); and `getOut` checks parent writers before returning the default (`command.go:394–402`).

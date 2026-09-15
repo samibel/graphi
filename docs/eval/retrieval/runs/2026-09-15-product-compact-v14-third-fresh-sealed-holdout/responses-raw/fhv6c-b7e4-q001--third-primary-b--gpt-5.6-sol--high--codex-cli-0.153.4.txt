@@ -1,0 +1,8 @@
+`getCommand` is a test helper in `args_test.go:23–33`. It creates and returns a `*Command` with:
+
+- `Use: "c"`
+- `Args: args`
+- `Run: emptyRun`
+- `ValidArgs: []string{"one", "two", "three"}` only when `withValid` is `true`
+
+Evidence: `func getCommand(args PositionalArgs, withValid bool) *Command` and its struct initialization in `args_test.go:23–33`.

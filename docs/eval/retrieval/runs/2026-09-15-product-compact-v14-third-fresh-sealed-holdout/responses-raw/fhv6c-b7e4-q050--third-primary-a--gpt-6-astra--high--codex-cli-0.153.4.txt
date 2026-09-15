@@ -1,0 +1,8 @@
+Cobra 1.1’s Zsh standardization changed or preserved these flag-value behaviors, documented in `site/content/completions/zsh.md`:
+
+- **File completion became the default.** Disable it with `RegisterFlagCompletionFunc()` and `ShellCompDirectiveNoFileComp` (line 34).
+- **Explicitly enabling file completion became unnecessary.** `cmd.MarkFlagFilename(flag, []string{})` is silently ignored in this context (line 35).
+- **Filename filtering gained cross-shell syntax.** Existing glob patterns such as `[]string{"*.yaml", "*.yml"}` still work, but the recommended syntax is `[]string{"yaml", "yml"}` for compatibility across shells (line 36).
+- **Directory-only completion became available in all shells** through `cmd.MarkFlagDirname(flag)` (line 37).
+- **Flag-name non-repetition stayed in Zsh and was added to Fish:** flag names are offered only once unless their type is `*Array` or `*Slice` (line 38).
+- **Omitting the `=` form from flag-name suggestions stayed in Zsh and was added to Fish** (line 39). Separately, the improvements list records support for using the `=` form of flags (line 48).

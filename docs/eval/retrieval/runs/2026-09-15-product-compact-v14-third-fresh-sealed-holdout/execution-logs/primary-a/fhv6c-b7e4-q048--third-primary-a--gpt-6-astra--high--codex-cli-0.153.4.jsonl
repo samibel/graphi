@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-b942-7db3-afb0-644c3575d541"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The `bash_completions.go:685–697` snippet shows `GenBashCompletion` embedding `c.BashCompletionFunction`, but neither response specifies which command should hold it or when the custom function is called."}}
+{"type":"turn.completed","usage":{"input_tokens":17658,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":54}}

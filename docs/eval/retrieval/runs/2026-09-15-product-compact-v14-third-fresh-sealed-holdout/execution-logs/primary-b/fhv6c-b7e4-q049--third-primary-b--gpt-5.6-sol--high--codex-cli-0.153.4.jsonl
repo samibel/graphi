@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a430-bea0-7b23-82ad-137f445f4b78"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"They were replaced by `ValidArgsFunction`:\n\n- For positional word choices, use `ValidArgsFunction`.\n- For file-extension filtering, use it with `ShellCompDirectiveFilterFileExt`.\n- File completion is now the default; disable it per argument with `ShellCompDirectiveNoFileComp`.\n\nThe old `MarkZshCompPositionalArgumentFile()` and `MarkZshCompPositionalArgumentWords()` helpers are deprecated and silently ignored (`site/content/completions/zsh.md`, lines 25–29)."}}
+{"type":"turn.completed","usage":{"input_tokens":17371,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":109,"reasoning_output_tokens":0}}

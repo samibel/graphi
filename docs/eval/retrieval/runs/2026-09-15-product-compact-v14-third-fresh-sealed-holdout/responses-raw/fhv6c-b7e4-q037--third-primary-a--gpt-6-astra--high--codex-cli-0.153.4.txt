@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows normalization updates in `SetGlobalNormalizationFunc` and a duplicate-name guard in `LocalFlags`, but no test or assertion verifying that replacing the normalization function leaves local flags unduplicated.

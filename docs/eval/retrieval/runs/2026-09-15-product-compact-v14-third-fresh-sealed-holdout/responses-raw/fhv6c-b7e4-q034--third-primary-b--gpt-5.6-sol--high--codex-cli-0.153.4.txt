@@ -1,0 +1,1 @@
+INSUFFICIENT The response shows propagation via `Command.SetGlobalNormalizationFunc` iterating `c.commands` (`command.go:362-372`), but contains no test or assertion verifying an existing child received it.
