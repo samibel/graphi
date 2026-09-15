@@ -218,6 +218,10 @@ and become stale when `PinnedRevision` changes:
   — the third independent fresh-holdout run under contract version 2. Its
   captured bundles, designated follow-up reads and blind decision are bound
   to this production embedder.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/`
+  — the candidate-bound compact-v17 holdout attempt. Its capture and
+  reproducibility evidence remain pin-dependent even though the primary phase
+  failed closed before any rater response and produced no performance verdict.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and
