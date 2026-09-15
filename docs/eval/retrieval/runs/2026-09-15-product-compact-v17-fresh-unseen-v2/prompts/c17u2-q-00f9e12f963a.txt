@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What internal state is repaired after removing child commands, beyond simply deleting them from the slice?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 5591118eb37f; read in order (255/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":1335,"end_line":1344,"text":"\n// AllChildCommandsHaveGroup returns if all subcommands are assigned to a group\nfunc (c *Command) AllChildCommandsHaveGroup() bool {\n\tfor _, sub := range c.commands {\n\t\tif (sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\" {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}"},{"path":"command.go","start_line":1276,"end_line":1283,"text":"\n// ResetCommands delete parent, subcommand and help command from c.\nfunc (c *Command) ResetCommands() {\n\tc.parent = nil\n\tc.commands = nil\n\tc.helpCommand = nil\n\tc.parentsPflags = nil\n}"},{"path":"command.go","start_line":1360,"end_line":1363,"text":"\n// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}"},{"path":"completions.go","start_line":49,"end_line":52,"text":"\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":1306,"end_line":1311,"text":"\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen > c.commandsMaxUseLen {"},{"path":"command.go","start_line":1559,"end_line":1576,"text":"\n// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"doc/md_docs.go","start_line":98,"end_line":105,"text":"\t\tchildren := cmd.Commands()\n\t\tsort.Sort(byName(children))\n\n\t\tfor _, child := range children {\n\t\t\tif !child.IsAvailableCommand() || child.IsAdditionalHelpTopicCommand() {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tcname := name + \" \" + child.Name()"},{"path":"command.go","start_line":136,"end_line":140,"text":"\t// PostRun: run after the Run command.\n\tPostRun func(cmd *Command, args []string)\n\t// PostRunE: PostRun but returns an error.\n\tPostRunE func(cmd *Command, args []string) error\n\t// PersistentPostRun: children of this command will inherit and execute after PostRun."}],"provenance":{"input_sha256":"c10b9ff7a6938ce506623435b32badb3c00908bdc28d11ec324e50499423d5e2","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

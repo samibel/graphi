@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How are the Windows mousetrap help screen, its duration, indefinite wait mode, and complete disablement configured?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query b5aa9162bd18; read in order (321/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":67,"end_line":81,"text":"\n// MousetrapHelpText enables an information splash screen on Windows\n// if the CLI is started from explorer.exe.\n// To disable the mousetrap, just set this variable to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapHelpText = `This is a command line tool.\n\nYou need to open cmd.exe and run it from there.\n`\n\n// MousetrapDisplayDuration controls how long the MousetrapHelpText message is displayed on Windows\n// if the CLI is started from explorer.exe. Set to 0 to wait for the return key to be pressed.\n// To disable the mousetrap, just set MousetrapHelpText to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapDisplayDuration = 5 * time.Second"},{"path":"completions.go","start_line":103,"end_line":116,"text":"\n// CompletionOptions are the options to control shell completion\ntype CompletionOptions struct {\n\t// DisableDefaultCmd prevents Cobra from creating a default 'completion' command\n\tDisableDefaultCmd bool\n\t// DisableNoDescFlag prevents Cobra from creating the '--no-descriptions' flag\n\t// for shells that support completion descriptions\n\tDisableNoDescFlag bool\n\t// DisableDescriptions turns off all completion descriptions for shells\n\t// that support them\n\tDisableDescriptions bool\n\t// HiddenDefaultCmd makes the default 'completion' command hidden\n\tHiddenDefaultCmd bool\n}"},{"path":"site/content/completions/_index.md","start_line":529,"end_line":529,"text":"Users need PowerShell version 5.0 or above, which comes with Windows 10 and can be downloaded separately for Windows 7 or 8.1. They can then write the completions to a file and source this file from their PowerShell profile, which is referenced by the `$Profile` environment variable. See `Get-Help about_Profiles` for more info about PowerShell profiles."},{"path":"completions.go","start_line":700,"end_line":701,"text":"\t\tLong: fmt.Sprintf(`Generate the autocompletion script for %[1]s for the specified shell.\nSee each sub-command's help for details on how to use the generated script."},{"path":"command.go","start_line":1304,"end_line":1306,"text":"\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")"},{"path":"command.go","start_line":73,"end_line":74,"text":"\t// The group id under which this subcommand is grouped in the 'help' output of its parent.\n\tGroupID string"},{"path":"command.go","start_line":1062,"end_line":1067,"text":"\t// windows hook\n\tif preExecHookFn != nil {\n\t\tpreExecHookFn(c)\n\t}\n\n\t// initialize help at the last point to allow for user overriding"}],"provenance":{"input_sha256":"a862e24a8c7857bf23074eab2bb60501c29c82a0b7a8b42cfe71bc3c7959a8d6","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
