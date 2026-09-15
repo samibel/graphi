@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q030",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "497a8ac850d4ffbbddb9b5499ce367ce1a184c194812130266ee89bbd902efeb",
+  "bundle_sha256": "9fa4d2a939d1a3e9cacce179afa87a8c336c132f897b2c61739a00023f57b51f",
+  "prompt_sha256": "1c7df1aa3d931770d1bacb47dacad6fe8525b10493418e04a4d404a185c7a770",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "When `cmd.ValidArgs` is nonempty, `OnlyValidArgs` returns immediately on the first invalid value with an error formatted as `invalid argument %q for %q%s`, containing the value, full command path, and any suggestions (`args.go:59–62`).\n\nMatching uses exact string equality after stripping tab-separated descriptions from valid entries (`args.go:53–57`; `cobra.go:223–230`). Suggestions are based on `args[0]`, even if a later argument is invalid (`args.go:61`; `command.go:750–765`).\n\nIf `cmd.ValidArgs` is empty, validation is skipped and it returns `nil` (`args.go:52–65`).",
+  "responded_at": "2026-09-15T08:30:02Z",
+  "sha256": "697306542ac4c0bdddfafa0580d93b41c94588be4c42a1026eec0e2925ab2e24"
+}

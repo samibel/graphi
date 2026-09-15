@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q038",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "70847452476574addef9790c67b2cf87a8783adb2ed22bd61626797cf7d29feb",
+  "bundle_sha256": "1b20cf91265ed5e5805e498eacf95d136ea70c39812d819efa6e3fe8c7630368",
+  "prompt_sha256": "cde41697ffd676046db2532e89d62c0f2f7ceff461ea2ee84f2980c050b8de08",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The responses show how persistent flag sets are merged, but not where or how `pflag.CommandLine` is added to a command’s effective flags; only the test name `TestFlagOnPflagCommandLine` appears (`command_test.go:1734`) without its body.",
+  "responded_at": "2026-09-15T08:30:27Z",
+  "sha256": "ec3a92fdb1887975d11c63fe8b93a070ee4444b413efd17c59624d396953773f"
+}

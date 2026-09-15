@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q004",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "4d3d12fd67629979116fd14de0f7c3a4082db42efc40562f2ca1a32c41304bbe",
+  "bundle_sha256": "8775388eee59d3035bcbf9f90796a17e4b2015524a49d5d934543bdb700c7f4c",
+  "prompt_sha256": "a2c032aa9047fe345d47985e5669972bb4d8395ab69a293ada5a9bce2347d8db",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`validOnlyWithInvalidArgs` is a test helper in `args_test.go:44–53`. It:\n\n1. Fails immediately with `\"Expected an error\"` if `err == nil` (`args_test.go:45–47`).\n2. Requires `err.Error()` to equal `invalid argument \"a\" for \"c\"` (`args_test.go:48–49`).\n3. Reports the expected and actual messages with `t.Errorf` if they differ (`args_test.go:50–52`).",
+  "responded_at": "2026-09-15T08:28:37Z",
+  "sha256": "4b5c5eac2ad3a3937208d995ea18766c23915d9361b85d3db53744cc558d6cda"
+}

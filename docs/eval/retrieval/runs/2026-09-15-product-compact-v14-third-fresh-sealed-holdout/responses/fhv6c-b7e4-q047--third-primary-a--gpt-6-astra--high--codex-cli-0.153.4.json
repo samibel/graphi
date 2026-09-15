@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q047",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a9a85f83a0522bafb5142e357d53c355c90851eaecc51935f2ac4cdaf0d8652f",
+  "bundle_sha256": "b4130cf47108b74f04f6425826cefae8a0066ed82017152402148e7efc1c556e",
+  "prompt_sha256": "3a5a629f4526c219e8a34e1d52ea1e5b35908d7271b9ff577e74da4562c1fce2",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Use your program’s hidden `__complete` command to inspect completion output; Active Help uses the same debugging mechanism (`site/content/active_help.md:141–142`).\n\nControl Active Help through environment variables:\n\n- **Enabled:** Set `\u003cPROGRAM\u003e_ACTIVE_HELP` to an enabling value supported by your program. There is no universal enabling value: `on`, `off`, and `local` are example program-defined settings (`site/content/active_help.md:88–102`). Ensure `COBRA_ACTIVE_HELP` is not `\"0\"`.\n- **Disabled for this program:** Set `\u003cPROGRAM\u003e_ACTIVE_HELP=0`. Cobra suppresses all Active Help output, including messages added with `cobra.AppendActiveHelp(...)` (`site/content/active_help.md:127`).\n- **Disabled for all Cobra programs:** Set `COBRA_ACTIVE_HELP=0`; this overrides the program-specific setting (`site/content/active_help.md:129`).\n\nReplace `\u003cPROGRAM\u003e` with the root command’s name uppercased, with non-ASCII-alphanumeric characters replaced by `_` (`active_help.go:59–67`).",
+  "responded_at": "2026-09-15T08:31:05Z",
+  "sha256": "d52ccef32b601a2b79345cfb62f962f49dbbab1f809b17f014a662abdfa2fc5d"
+}

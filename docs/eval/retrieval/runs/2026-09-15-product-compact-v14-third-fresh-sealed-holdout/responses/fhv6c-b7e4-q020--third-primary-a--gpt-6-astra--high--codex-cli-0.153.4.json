@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q020",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "1574ac3150d15b5bd829d672b0664c69c418b0966d1e0f8ca3c2a4548b644d57",
+  "bundle_sha256": "cffc3548931110f05af513beccddcff3a9fd15b3842fbb25200a876515836195",
+  "prompt_sha256": "229b8fefc20d6e3d68be5a58568233c5ca1ebc5b792860b76314615b23d15453",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`fish_completions_test.go` belongs to package `cobra` (line 15). The supplied snippets show seven test declarations, all taking `t *testing.T`:\n\n- `TestCompleteNoDesCmdInFishScript` (lines 26–38): creates root and child commands and calls `GenFishCompletion(buf, false)`.\n- `TestCompleteCmdInFishScript` (lines 42–55): creates root and child commands, calls `GenFishCompletion(buf, true)`, and checks the output for `ShellCompRequestCmd`.\n- `TestProgWithDash` (lines 59–61): sets up a command named `root-dash`.\n- `TestProgWithColon` (lines 74–76): sets up a command named `root:colon`.\n- `TestFishCompletionNoActiveHelp` (lines 89–95): generates Fish completion into a buffer with `GenFishCompletion(buf, true)`; its assertions are not shown.\n- `TestGenFishCompletionFile` (lines 101–111): creates a temporary file, schedules its removal, and begins constructing commands.\n- `TestFailGenFishCompletionFile` (lines 120–127): creates a temporary directory and schedules its removal.\n\nThe response is marked `truncated: true`, so it does not establish the file’s complete structure or the omitted test assertions.",
+  "responded_at": "2026-09-15T08:29:31Z",
+  "sha256": "988aa2be6a3959a8e261d9c58b68fb9f0e1083f4ee7ca48cedcfe59a4680abdc"
+}

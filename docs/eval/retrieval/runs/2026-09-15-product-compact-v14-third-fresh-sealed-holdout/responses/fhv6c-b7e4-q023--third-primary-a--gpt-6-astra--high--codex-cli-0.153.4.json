@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q023",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "5a9dfbbec93e2b9766e59f2e083622bfd698c374bf2f3b92642091794e21b48c",
+  "bundle_sha256": "f80c7cad99fcf481b6c8e0c05daa821ffecf54a08bb3711016e3f74a1564015b",
+  "prompt_sha256": "5369a30903ed6d01fb8929d1124be9195551dff2341c527bb8edeffb01404d55",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`SetOutput(nil)` clears **both the output and error writers**: it assigns `nil` to `c.outWriter` and `c.errWriter` (`command.go:283–285`).\n\nFor output, this restores parent inheritance, falling back to stdout when accessed through `OutOrStdout()` (`command.go:374–377, 394–402`). The `SetOutput` comment says nil uses stderr (`command.go:280–282`), but the response does not include the error-writer fallback implementation.",
+  "responded_at": "2026-09-15T08:29:42Z",
+  "sha256": "4c716b1a2b9b5f3e6a1cd0bfe592af5dd5b30ecca08f09134bde2b5a8ab0ee04"
+}

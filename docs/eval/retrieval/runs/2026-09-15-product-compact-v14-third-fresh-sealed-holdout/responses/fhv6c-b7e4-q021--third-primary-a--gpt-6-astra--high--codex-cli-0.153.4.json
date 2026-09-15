@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q021",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "1f46257b0dc56a885f70e2e14dc04b71d4a50666c96d6539780780313a77c04a",
+  "bundle_sha256": "ad40c79494a73b109bdbfe71ee06ec7210a54020690581f10179dde597e3a3fa",
+  "prompt_sha256": "7674fee7bb5f112fb1b2835c3205e03a65ef2c2004fa2b36f12718aac3f6a01d",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The shown portion of `powershell_completions_test.go` contains:\n\n- **Package:** `cobra` (line 15).\n- **Test:** `TestPwshCompletionNoActiveHelp(t *testing.T)` (lines 23–33). It creates a command named `c`, generates PowerShell completion into a buffer, checks generation succeeds, and verifies the output contains `${env:\u003cactive-help-variable\u003e}=0`, disabling active help.\n\nThe response is truncated, so it does not establish the file’s complete structure or declaration list.",
+  "responded_at": "2026-09-15T08:29:36Z",
+  "sha256": "18a929a857f1ed71c155fde0c9dc302426cb762fc3fad5c8a8cf271ef24f2803"
+}

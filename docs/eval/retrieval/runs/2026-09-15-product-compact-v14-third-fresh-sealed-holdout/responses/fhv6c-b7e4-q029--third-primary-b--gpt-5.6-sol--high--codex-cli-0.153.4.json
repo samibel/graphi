@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q029",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "6ae35c6ea3cc0cbc71dff277cea0d0d12439a3108e394ee4a00ebb6172904a54",
+  "bundle_sha256": "10707a5f3ff35ce521c5a7abc07d1309b5faa666710f9fd6c33e1bae23ffbd34",
+  "prompt_sha256": "ca2f0d72ca4efdaf0000d24f862e814ffce588035f7ce231a2fbb1fb8f2e2174",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "No. `args.go:41-43` states, “NoArgs returns an error if any args are included,” and its implementation checks `len(args) \u003e 0`. This is independent of `ValidArgs`, so a single positional value is rejected even when `ValidArgs` is not configured.",
+  "responded_at": "2026-09-15T08:29:59Z",
+  "sha256": "84cc4fe06e15d447e4d04e91b40c6dc0b73e8f6904669b0cf8768d52e947eae9"
+}

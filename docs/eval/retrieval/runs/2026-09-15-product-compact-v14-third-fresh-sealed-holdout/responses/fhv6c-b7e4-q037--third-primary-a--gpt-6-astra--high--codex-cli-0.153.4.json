@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q037",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "7301a3bcaf3cfa9646711bfc149dc6b80119b9cefed9784afaf3eb3de9987318",
+  "bundle_sha256": "3a27a19ebe4affe2849a6c28579010f0c3b763676394bc1c269425d244306524",
+  "prompt_sha256": "0286ab5213339a27ebea4514b144a8f2878f6b5510afca8de34503f9df5f203e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows normalization updates in `SetGlobalNormalizationFunc` and a duplicate-name guard in `LocalFlags`, but no test or assertion verifying that replacing the normalization function leaves local flags unduplicated.",
+  "responded_at": "2026-09-15T08:30:24Z",
+  "sha256": "30c5926dee6b1ff2c474ff404d609082215c77de2484f50929cccdb2e7437aa4"
+}

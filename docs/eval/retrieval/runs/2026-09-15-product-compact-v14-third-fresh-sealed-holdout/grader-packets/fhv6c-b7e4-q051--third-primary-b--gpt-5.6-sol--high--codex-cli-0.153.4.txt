@@ -1,0 +1,101 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: c61f55efef0002816b6a28a91e31142639ee71f04722ed34cff9bb266323b976
+QUERY ID: fhv6c-b7e4-q051
+
+QUESTION:
+How do I generate Markdown documentation for just one command rather than its whole tree?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- site/content/docgen/md.md:58-70 anchor="doc.GenMarkdown(cmd, out)" reason=The single-command section recommends GenMarkdown, shows a buffer call, and states that only that command is written.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query d4000b6d39be; read in order (325/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/docgen/md.md","start_line":72,"end_line":115,"text":"## Customize the output\n\nBoth `GenMarkdown` and `GenMarkdownTree` have alternate versions with callbacks to get some control of the output:\n\n```go\nfunc GenMarkdownTreeCustom(cmd *Command, dir string, filePrepender, linkHandler func(string) string) error {\n\t//...\n}\n```\n\n```go\nfunc GenMarkdownCustom(cmd *Command, out *bytes.Buffer, linkHandler func(string) string) error {\n\t//...\n}\n```\n\nThe `filePrepender` will prepend the return value given the full filepath to the rendered Markdown file. A common use case is to add front matter to use the generated documentation with [Hugo](https://gohugo.io/):\n\n```go\nconst fmTemplate = `---\ndate: %s\ntitle: \"%s\"\nslug: %s\nurl: %s\n---\n`\n\nfilePrepender := func(filename string) string {\n\tnow := time.Now().Format(time.RFC3339)\n\tname := filepath.Base(filename)\n\tbase := strings.TrimSuffix(name, path.Ext(name))\n\turl := \"/commands/\" + strings.ToLower(base) + \"/\"\n\treturn fmt.Sprintf(fmTemplate, now, strings.Replace(base, \"_\", \" \", -1), base, url)\n}\n```\n\nThe `linkHandler` can be used to customize the rendered internal links to the commands, given a filename:\n\n```go\nlinkHandler := func(name string) string {\n\tbase := strings.TrimSuffix(name, path.Ext(name))\n\treturn \"/commands/\" + strings.ToLower(base) + \"/\"\n}\n```"},{"path":"site/content/user_guide.md","start_line":735,"end_line":739,"text":"## Generating documentation for your command\n\nCobra can generate documentation based on subcommands, flags, etc.\nRead more about it in the [docs generation documentation](docgen/_index.md).\n"},{"path":"site/content/docgen/md.md","start_line":29,"end_line":57,"text":"## Generate markdown docs for the entire command tree\n\nThis program can actually generate docs for the kubectl command in the kubernetes project\n\n```go\npackage main\n\nimport (\n\t\"log\"\n\t\"io/ioutil\"\n\t\"os\"\n\n\t\"k8s.io/kubernetes/pkg/kubectl/cmd\"\n\tcmdutil \"k8s.io/kubernetes/pkg/kubectl/cmd/util\"\n\n\t\"github.com/spf13/cobra/doc\"\n)\n\nfunc main() {\n\tkubectl := cmd.NewKubectlCommand(cmdutil.NewFactory(nil), os.Stdin, ioutil.Discard, ioutil.Discard)\n\terr := doc.GenMarkdownTree(kubectl, \"./\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n```\n\nThis will generate a whole series of files, one for each command in the tree, in the directory specified (in this case \"./\")\n"},{"path":"site/content/docgen/_index.md","start_line":1,"end_line":3,"text":"# Documentation generation\n\n- [Man page docs](man.md)"},{"path":"site/content/docgen/md.md","start_line":1,"end_line":7,"text":"# Generating Markdown Docs For Your Own cobra.Command\n\nGenerating Markdown pages from a cobra command is incredibly easy. An example is as follows:\n\n```go\npackage main\n"},{"path":"command.go","start_line":1186,"end_line":1186,"text":"func (c *Command) InitDefaultHelpFlag() {"},{"path":"site/content/user_guide.md","start_line":1,"end_line":1,"text":"# User Guide"},{"path":"doc/md_docs.go","start_line":119,"end_line":119,"text":"// GenMarkdownTree will generate a markdown page for this command and all"}],"provenance":{"input_sha256":"b916cb1ce17c7d98a4d5ecca6ceb389b7cd235810a062c3c11d283b9716e2abe","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+Use `GenMarkdown` instead of `GenMarkdownTree`; the latter generates one file for every command in the tree (`site/content/docgen/md.md:29-57`).
+
+For customized single-command output, use:
+
+```go
+var out bytes.Buffer
+err := doc.GenMarkdownCustom(cmd, &out, linkHandler)
+```
+
+Its signature is shown at `site/content/docgen/md.md:72-87`:
+
+```go
+func GenMarkdownCustom(
+    cmd *Command,
+    out *bytes.Buffer,
+    linkHandler func(string) string,
+) error
+```
+
+The generated Markdown is written to `out`.
+----- END THE RATER'S RESPONSE -----

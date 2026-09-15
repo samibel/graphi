@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q015",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "3152f251ff3a40e61508219a9fc3aa4b4ffd4df61b8e003baedf5b2b2443992d",
+  "bundle_sha256": "bd72571d189b771bc034c25796b308a02243753e06286ca68e30826bd0ec4477",
+  "prompt_sha256": "bfc7c16e5b72e4c4b24f2be6ece6a104ee9755b41ec3b529ee79366168a13bbe",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`bash_completions_test.go` is a Go test file in package `cobra` (`bash_completions_test.go:15`). It contains:\n\n- Assertion helpers:\n  - `check` verifies generated text contains an expected string (`33–36`).\n  - `checkOmit` verifies text excludes an unexpected string (`27–28`).\n  - `checkNumOccurrences` counts occurrences of expected text (`39–40`).\n- `bashCompletionFunc`, a shell-function string that always sets `COMPREPLY` to `\"hello\"` (`77–80`).\n- Bash-completion tests:\n  - `TestBashCompletions` constructs a root `Command` with aliases, valid arguments, a custom completion function, and a required `--introot`/`-i` flag (`83–93`).\n  - `TestBashCompletionHiddenFlag` tests a hidden Boolean flag (`229–235`).\n  - `TestBashCompletionDeprecatedFlag` tests a deprecated flag and calls `GenBashCompletion` (`245–253`).\n  - `TestBashCompletionTraverseChildren` tests completion with `TraverseChildren: true` and string/Boolean flags (`261–266`).\n  - `TestBashCompletionNoActiveHelp` tests completion behavior without active help (`279–281`).",
+  "responded_at": "2026-09-15T08:29:17Z",
+  "sha256": "6de90f03f842a7eb9bf3522d4d935ec28e89a102fa55e376b3469af922fcac01"
+}

@@ -1,0 +1,86 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 8bf9f7a68e69aae979aa1e0efb96478aa206dabdcbd8b181ae9a6a0031e010af
+QUERY ID: fhv6c-b7e4-q008
+
+QUESTION:
+rangeArgsWithInvalidCount
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args_test.go:99-108 anchor="func rangeArgsWithInvalidCount(" reason=The complete helper declaration checks the precise RangeArgs boundary failure.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query e8569c229d05; read in order (156/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args_test.go","start_line":99,"end_line":108,"text":"func rangeArgsWithInvalidCount(err error, t *testing.T) {\n\tif err == nil {\n\t\tt.Fatal(\"Expected an error\")\n\t}\n\tgot := err.Error()\n\texpected := \"accepts between 2 and 4 arg(s), received 1\"\n\tif got != expected {\n\t\tt.Fatalf(\"Expected %q, got %q\", expected, got)\n\t}\n}"},{"path":"args_test.go","start_line":23,"end_line":33,"text":"func getCommand(args PositionalArgs, withValid bool) *Command {\n\tc := &Command{\n\t\tUse:  \"c\",\n\t\tArgs: args,\n\t\tRun:  emptyRun,\n\t}\n\tif withValid {\n\t\tc.ValidArgs = []string{\"one\", \"two\", \"three\"}\n\t}\n\treturn c\n}"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"args_test.go","start_line":1,"end_line":7,"text":"// Copyright 2013-2023 The Cobra Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"}],"provenance":{"input_sha256":"df4bdf96cdc87eb8592ee439bfb05d177a337fbd897a42ccf32bcf8eecf8cd2d","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`rangeArgsWithInvalidCount(err error, t *testing.T)` is a test helper in `args_test.go:99–108` that checks an argument-count error:
+
+- Fails with `t.Fatal("Expected an error")` if `err` is nil (lines 100–102).
+- Requires `err.Error()` to equal `"accepts between 2 and 4 arg(s), received 1"` (lines 103–104).
+- Fails with `t.Fatalf("Expected %q, got %q", expected, got)` if the message differs (lines 105–107).
+----- END THE RATER'S RESPONSE -----

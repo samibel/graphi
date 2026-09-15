@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q036",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "bc94f4ae7860b579f370f6a67f66ba0a97ba15e17c79adcee3ac2eaaefb43665",
+  "bundle_sha256": "81d99f8e40c5dd863f60dd7d392e932552cab4f3d7adb8bcc1b628479e134579",
+  "prompt_sha256": "ce112e4a61c9c99821a1fc7cf700ce8b8fc8e66f8d4a31ff537eb481077c8ed3",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows normalization propagation in `command.go` (`AddCommand`, lines 1302–1329; `updateParentsPflags`, lines 1855–1874), but no tests or assertions checking children added before and after a parent’s persistent flag.",
+  "responded_at": "2026-09-15T08:30:21Z",
+  "sha256": "34cd74e5ea5c378a2ad22d4e845d929369e365cf7b8eb89451a193e4f9262bdf"
+}

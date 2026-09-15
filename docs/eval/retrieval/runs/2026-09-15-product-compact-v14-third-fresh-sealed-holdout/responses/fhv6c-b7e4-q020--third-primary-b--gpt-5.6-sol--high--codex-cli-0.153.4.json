@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q020",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "1574ac3150d15b5bd829d672b0664c69c418b0966d1e0f8ca3c2a4548b644d57",
+  "bundle_sha256": "cffc3548931110f05af513beccddcff3a9fd15b3842fbb25200a876515836195",
+  "prompt_sha256": "229b8fefc20d6e3d68be5a58568233c5ca1ebc5b792860b76314615b23d15453",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`fish_completions_test.go` is a Go test file in package `cobra` (line 15). The response exposes seven test declarations:\n\n- `TestCompleteNoDesCmdInFishScript` (lines 26–38): generates Fish completion with descriptions disabled.\n- `TestCompleteCmdInFishScript` (lines 42–55): creates root/child commands, generates completion with descriptions enabled, and checks for `ShellCompRequestCmd`.\n- `TestProgWithDash` (lines 59–61): tests a program name containing `-`.\n- `TestProgWithColon` (lines 74–76): tests a program name containing `:`.\n- `TestFishCompletionNoActiveHelp` (lines 89–95): generates completion for a command without active help.\n- `TestGenFishCompletionFile` (lines 101–111): creates a temporary file and tests file-based Fish completion generation.\n- `TestFailGenFishCompletionFile` (lines 120–127): creates a temporary directory for a completion-file failure case.\n\nThe response is truncated, so imports and the complete bodies of several tests are not shown.",
+  "responded_at": "2026-09-15T08:29:34Z",
+  "sha256": "0b79c8600c958d1e73bcafc2e48fbf9e82bed83ffb65a9db2dc9686234325a89"
+}

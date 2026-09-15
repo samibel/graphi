@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q022",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "365ef0af29a84d4fd004ba94e379c420a4b5822c6ac6ae66f7aeb6b5904aa691",
+  "bundle_sha256": "a56d64425baebfc4e6624c7c9ac4e2ce6ebce183168c4ca6b9068d22273a6d6e",
+  "prompt_sha256": "d443e1ae32252c0cd9c016651784c400a40002e76654ea6e689da80f707c7513",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "The provided spans show:\n\n- **Package:** `cobra` (`zsh_completions_test.go:15`).\n- **Test declaration:** `TestZshCompletionWithActiveHelp(t *testing.T)` (lines 23–33).\n- **Test behavior:** Creates a `Command` named `\"c\"` with `Run: emptyRun`, generates Zsh completion into a `bytes.Buffer`, and checks generation succeeds (lines 24–28). It then computes `activeHelpEnvVar(c.Name())` and checks the output omits `\"\u003cvariable\u003e=0\"`, verifying active help is not disabled (lines 30–32).\n\nThe response is truncated, so it does not establish the file’s complete structure or all declarations.",
+  "responded_at": "2026-09-15T08:29:42Z",
+  "sha256": "f3b34191cde815f616bd6bca24e98026f2f814a38f715dc495d3f41b90bd6628"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q014",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "6ce055cd4b826efcda65e783804ba1fdee53aec5935191cf9e9a99a66b9827a6",
+  "bundle_sha256": "dc10df1804f59a96119e955af0e8b709696d168c1c9d8e7c6a2df46ebeb57a1a",
+  "prompt_sha256": "a0ef99a2d7c60a6f1cf645473e7209ddd7dde5a21dc90ec51f6b593756123823",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`bash_completionsV2_test.go` belongs to package `cobra` (line 15). The provided excerpt declares one test:\n\n- `TestBashCompletionV2WithActiveHelp(t *testing.T)` (lines 23–33) creates a `Command` named `\"c\"` with `Run: emptyRun`.\n- It generates Bash V2 completions into a `bytes.Buffer` using `c.GenBashCompletionV2(buf, true)` and checks for an error with `assertNoErr`.\n- It verifies that active help is not disabled: `activeHelpEnvVar(c.Name())` supplies the environment variable name, and `checkOmit` checks that the generated output omits `fmt.Sprintf(\"%s=0\", activeHelpVar)`.\n\nThe response is marked `truncated: true`, so it does not establish the file’s remaining structure or declarations.",
+  "responded_at": "2026-09-15T08:29:05Z",
+  "sha256": "6fbf20acd77e571af7a40ecd9e7901832d363604d9eef879f227fdb6c152cefd"
+}

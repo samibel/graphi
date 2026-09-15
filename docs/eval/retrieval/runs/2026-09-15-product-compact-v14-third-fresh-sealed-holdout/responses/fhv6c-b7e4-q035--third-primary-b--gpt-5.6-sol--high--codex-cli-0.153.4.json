@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q035",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "21b98d7e94c5a98b4be87c88ac455d089ccd89602448c2744f81fa41109e5b49",
+  "bundle_sha256": "9372892a09ef3d44f1ea5a1e2807b91f8d94f1f681b4b5b6b0e53bec799c18e8",
+  "prompt_sha256": "ffd25f9a87492ddc7b3458d17e3c78d956231bc4477ee486fd87a7f05f01486f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`Command.LocalFlags()` applies the command’s global normalization function to the local `FlagSet` before adding flags:\n\n- `command.go:1681-1683`: if `c.globNormFunc != nil`, it calls `c.lflags.SetNormalizeFunc(c.globNormFunc)`.\n- `command.go:362-367`: `SetGlobalNormalizationFunc` stores that function in `c.globNormFunc` after applying it to `Flags()` and `PersistentFlags()`.\n\nThus, lookups and names through the `LocalFlags` view use the same global normalization function as the command’s other flag sets.",
+  "responded_at": "2026-09-15T08:30:18Z",
+  "sha256": "69f24c5c1f2af8c3cb9a9f0b94b620e84e5d6b64a7e6166d9f006ff43f9737bd"
+}

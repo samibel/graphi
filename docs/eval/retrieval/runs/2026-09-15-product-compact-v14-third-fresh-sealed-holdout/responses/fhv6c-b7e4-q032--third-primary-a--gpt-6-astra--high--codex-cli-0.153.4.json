@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q032",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "ac437d114d5b135bfe1fb370f5f404961351bfb464ecbb68e5d456de2a2b3e60",
+  "bundle_sha256": "a8a545e0834402cbc581285494d1913aa69ace19989e2b499f3a3e0ce7cd8e03",
+  "prompt_sha256": "2f7eaed997b0216359d79136a6614f0b03434e265f64119ec7e59ce99dd74dc4",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "It returns the error `accepts at most 2 arg(s), received 3`. In `args.go`, `MaximumNArgs` checks `len(args) \u003e n` (line 86) and returns that formatted error (line 87).",
+  "responded_at": "2026-09-15T08:30:06Z",
+  "sha256": "bc8c3141576962263c3bfd221aa2101d843b4e75b9a5faf78c1998e73f7838dc"
+}

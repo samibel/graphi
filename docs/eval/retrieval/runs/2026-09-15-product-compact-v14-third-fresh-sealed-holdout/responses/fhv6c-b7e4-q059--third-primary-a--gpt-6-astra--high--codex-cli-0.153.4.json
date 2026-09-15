@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q059",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "62626df7b8eaafb4d69b7ee4e0a2521c1bee45acb16112c70a6cbd5f2643b7f4",
+  "bundle_sha256": "a48770d242defda51bd257e178a3c2a59e5b4a22499fc553d40ee80a19221002",
+  "prompt_sha256": "180cf3a6308b43594bcb418b763407350a537ca8fcd7c0447e58000fbb4f5a81",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows flag lookup and `ParseFlags` (`command.go:1818–1840`), but lacks command selection logic or tests establishing whether flags may appear before a command.",
+  "responded_at": "2026-09-15T08:31:45Z",
+  "sha256": "8a901528b0496ee8b47ee88eb9199466c8c34e2222bcb9845e16b14a12a6c567"
+}

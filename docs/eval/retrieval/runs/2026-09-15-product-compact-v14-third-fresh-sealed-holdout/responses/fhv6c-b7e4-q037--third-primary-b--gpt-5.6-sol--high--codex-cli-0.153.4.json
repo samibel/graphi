@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q037",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "7301a3bcaf3cfa9646711bfc149dc6b80119b9cefed9784afaf3eb3de9987318",
+  "bundle_sha256": "3a27a19ebe4affe2849a6c28579010f0c3b763676394bc1c269425d244306524",
+  "prompt_sha256": "0286ab5213339a27ebea4514b144a8f2878f6b5510afca8de34503f9df5f203e",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go:1668-1693`, `LocalFlags()` first applies the replacement normalization function to the local `FlagSet` via `c.lflags.SetNormalizeFunc(c.globNormFunc)`. It then visits every regular and persistent flag and only adds a flag when:\n\n```go\nc.lflags.Lookup(f.Name) == nil\n```\n\nBecause the lookup uses the newly normalized names, any existing local flag that normalizes to the same name prevents another from being added. The additional check:\n\n```go\nf != c.parentsPflags.Lookup(f.Name)\n```\n\nexcludes inherited parent persistent flags unless they are shadowed locally.\n\nThe replacement function itself is installed on both command flag sets, stored, and propagated to children by `SetGlobalNormalizationFunc` in `command.go:362-372`.",
+  "responded_at": "2026-09-15T08:30:29Z",
+  "sha256": "8b2ec1c5088d2e4532073e433b8a4f91eaf0e7706a9bb2999b4b290d977e98a2"
+}

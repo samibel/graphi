@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q034",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "7a3a420ff34e7305fb0fd3c4a6e123f065c573f5c25089ad201f5b59df1b648f",
+  "bundle_sha256": "0716ede2634a61bd80f20378ec817b6322bd9e7dfe4e4ac55571d978b8feebb3",
+  "prompt_sha256": "ff8cd4100715fca43f34010dbf4b95f93f6e3140fc9d777a5c042704c067a8bf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT The response shows recursive propagation in `command.go:362–372` (`SetGlobalNormalizationFunc`), but no test or assertions verifying propagation from a root command to an existing child.",
+  "responded_at": "2026-09-15T08:30:17Z",
+  "sha256": "ad8a0015c330b7121f8417ddd9f525b1afe1ea8d7d81928b59684b9995fa9623"
+}

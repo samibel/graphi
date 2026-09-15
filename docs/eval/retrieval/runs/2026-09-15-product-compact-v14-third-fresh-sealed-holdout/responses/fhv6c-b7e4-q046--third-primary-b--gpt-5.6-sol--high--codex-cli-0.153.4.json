@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q046",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2b26bee768b773f5e4ab797b15cbc062c188699ab0e768112ec2aa6c85ac7587",
+  "bundle_sha256": "1b5a1ae84bb133716363166c96bdd870c31bfbfc4ee250b5e9408d2862875485",
+  "prompt_sha256": "a32b89158a8e3423edf675fe405331ce972c1950bf8b9a03d4b8e5db792a0bbc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra directs developers to the **Shell Completions** documentation at `_index.md`, via `site/content/completions/fish.md` lines 1–4: “Please refer to [Shell Completions](_index.md) for details.”",
+  "responded_at": "2026-09-15T08:30:49Z",
+  "sha256": "bc00e5288560649097f77557f6ef68aaa0310ed3b28178100977c769b03d82d1"
+}

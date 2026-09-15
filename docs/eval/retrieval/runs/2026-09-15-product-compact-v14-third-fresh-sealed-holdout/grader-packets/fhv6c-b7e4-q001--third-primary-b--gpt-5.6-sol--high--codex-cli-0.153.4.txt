@@ -1,0 +1,89 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: f550d1de0247dab36e9013124777fac2fe3c7d5eae7e1c72665d654fc49f7745
+QUERY ID: fhv6c-b7e4-q001
+
+QUESTION:
+getCommand
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- args_test.go:23-33 anchor="func getCommand(" reason=The helper declaration constructs the command fixture used by positional-argument tests, optionally installing the valid-value set.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"5 ranked source span(s); query 224ef6274d03; read in order (324/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"args_test.go","start_line":23,"end_line":33,"text":"func getCommand(args PositionalArgs, withValid bool) *Command {\n\tc := &Command{\n\t\tUse:  \"c\",\n\t\tArgs: args,\n\t\tRun:  emptyRun,\n\t}\n\tif withValid {\n\t\tc.ValidArgs = []string{\"one\", \"two\", \"three\"}\n\t}\n\treturn c\n}"},{"path":"command.go","start_line":120,"end_line":137,"text":"\t// All functions get the same args, the arguments after the command name.\n\t// The *PreRun and *PostRun functions will only be executed if the Run function of the current\n\t// command has been declared.\n\t//\n\t// PersistentPreRun: children of this command will inherit and execute.\n\tPersistentPreRun func(cmd *Command, args []string)\n\t// PersistentPreRunE: PersistentPreRun but returns an error.\n\tPersistentPreRunE func(cmd *Command, args []string) error\n\t// PreRun: children of this command will not inherit.\n\tPreRun func(cmd *Command, args []string)\n\t// PreRunE: PreRun but returns an error.\n\tPreRunE func(cmd *Command, args []string) error\n\t// Run: Typically the actual work function. Most commands will only implement this.\n\tRun func(cmd *Command, args []string)\n\t// RunE: Run but returns an error.\n\tRunE func(cmd *Command, args []string) error\n\t// PostRun: run after the Run command.\n\tPostRun func(cmd *Command, args []string)"},{"path":"bash_completions.go","start_line":655,"end_line":667,"text":"func gen(buf io.StringWriter, cmd *Command) {\n\tfor _, c := range cmd.Commands() {\n\t\tif !c.IsAvailableCommand() && c != cmd.helpCommand {\n\t\t\tcontinue\n\t\t}\n\t\tgen(buf, c)\n\t}\n\tcommandName := cmd.CommandPath()\n\tcommandName = strings.ReplaceAll(commandName, \" \", \"_\")\n\tcommandName = strings.ReplaceAll(commandName, \":\", \"__\")\n\n\tif cmd.Root() == cmd {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"_%s_root_command()\\n{\\n\", commandName))"},{"path":"completions.go","start_line":266,"end_line":276,"text":"func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {\n\t// The last argument, which is not completely typed by the user,\n\t// should not be part of the list of arguments\n\ttoComplete := args[len(args)-1]\n\ttrimmedArgs := args[:len(args)-1]\n\n\tvar finalCmd *Command\n\tvar finalArgs []string\n\tvar err error\n\t// Find the real command for which completion must be performed\n\t// check if we need to traverse here to parse local flags on parent commands"},{"path":"command.go","start_line":1292,"end_line":1300,"text":"// Commands returns a sorted slice of child commands.\nfunc (c *Command) Commands() []*Command {\n\t// do not sort commands if it already sorted or sorting was disabled\n\tif EnableCommandSorting && !c.commandsAreSorted {\n\t\tsort.Sort(commandSorterByName(c.commands))\n\t\tc.commandsAreSorted = true\n\t}\n\treturn c.commands\n}"}],"provenance":{"input_sha256":"e52e8e113938b9e8a67cdca8b0d1e4fdad7164f61d98170e0a57061c9e9db2bf","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+`getCommand` is a test helper in `args_test.go:23–33`. It creates and returns a `*Command` with:
+
+- `Use: "c"`
+- `Args: args`
+- `Run: emptyRun`
+- `ValidArgs: []string{"one", "two", "three"}` only when `withValid` is `true`
+
+Evidence: `func getCommand(args PositionalArgs, withValid bool) *Command` and its struct initialization in `args_test.go:23–33`.
+----- END THE RATER'S RESPONSE -----

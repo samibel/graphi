@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q039",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "acdc86bbedfc92b7686d1ddf8fbc4e6daa06646f7d7624c2095f925298ec6945",
+  "bundle_sha256": "269b76e48751b5e23ad846ed4d145aadc1fd7c137a9c31b478c3c55bce08ee20",
+  "prompt_sha256": "47dc7e78119a30214d16096427352f99ca59036f7e650842177c94164523ea4f",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "INSUFFICIENT\nThe responses describe `TraverseChildren` generally (`site/content/user_guide.md:290–292`) but omit `Traverse`’s implementation or documentation of how it handles root flags before a child command name.",
+  "responded_at": "2026-09-15T08:30:29Z",
+  "sha256": "f892a5b808232c778601edcafa6f46576d0f84009fbeeccd96534e9340151811"
+}

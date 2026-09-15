@@ -1,0 +1,82 @@
+You are grading ONE response in a qrel-blind smoke evaluation. Apply only the exact
+frozen rubric embedded below. Do not re-answer the question
+yourself and do not consult any other file, repository or response.
+
+FROZEN RUBRIC PATH: docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md
+FROZEN RUBRIC SHA256: f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918
+----- BEGIN THE EXACT FROZEN GRADING RUBRIC -----
+# Qrel-blind transcript-sufficiency grading rubric
+
+Status: **public candidate-neutral frozen-input scaffold**. This rubric contains
+no question, answer or judgement from any dataset.
+
+Grade one response using only the material in its generated grader packet. Do
+not consult the repository, another response, another grade, a prior run or
+outside knowledge. The reviewed grade-3 spans in the packet are the reference
+facts; they are not permission to infer facts absent from the preserved transcript.
+
+## PASS
+
+Return `PASS` only when all of the following hold:
+
+1. The response directly and substantively answers the question asked.
+2. Its material factual claims are supported by the exact preserved transcript (the task_context/2 response and, when the packet carries one, the follow-up read).
+3. It identifies the essential behavior represented by the reviewed grade-3
+   spans to the extent needed to answer the question.
+4. Any cited path or line range exists in the supplied transcript and supports the
+   claim attached to it.
+5. It contains no material contradiction, invented API, invented control flow
+   or unsupported repository-specific assertion.
+
+Paraphrase, different organization and additional transcript-supported detail are
+allowed. A response need not copy the reviewed spans verbatim.
+
+## FAIL
+
+Return `FAIL` when any PASS condition is not met, including when the response:
+
+- is materially incomplete, evasive or does not answer the question;
+- relies on a required fact present only in the reviewed spans but absent from
+  the preserved transcript;
+- makes a material claim that cannot be verified from the transcript;
+- cites a nonexistent or non-supporting location;
+- contradicts the transcript or reviewed grade-3 facts; or
+- appears correct only by relying on external repository knowledge.
+
+Missing, empty or refused primary responses are handled as failures by the
+harness and are not converted into answered responses by the grader.
+
+## Required raw grade format
+
+Write exactly one plain-text grade beginning with one of:
+
+```text
+PASS: <specific transcript-grounded rationale>
+FAIL: <specific transcript-grounded rationale>
+```
+
+The rationale must name the decisive supported behavior or the decisive gap.
+Do not include both outcomes, a score, a probability, a conditional verdict or
+an alternative grade. A grade without a substantive rationale is invalid.
+
+When uncertain whether a necessary fact is supported by the transcript, grade
+`FAIL`; this gate measures bundle sufficiency, not the grader's ability to fill
+missing context from memory.
+----- END THE EXACT FROZEN GRADING RUBRIC -----
+
+RESPONSE CONTENT ADDRESS: 872dd949c4822b7c2c39b052381e0dba67de58992a8702e61015a27c9bb0f150
+QUERY ID: fhv6c-b7e4-q045
+
+QUESTION:
+What checks should a Cobra contributor run before submitting Go code?
+
+REVIEWED GRADE-3 ANSWER SPANS (the answer key; the rater never saw these):
+- CONTRIBUTING.md:29-36 anchor="go test ./..." reason=The contribution guide requires adequate tests and names the test and formatting commands to run.
+
+----- BEGIN THE EXACT BUNDLE THE RATER WAS GIVEN -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 88e096afe86e; read in order (319/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"CONDUCT.md","start_line":3,"end_line":5,"text":"### Versioning\nCobra will follow a steady release cadence. Non breaking changes will be released as minor versions quarterly. Patch bug releases are at the discretion of the maintainers. Users can expect security patch fixes to be released within relatively short order of a CVE becoming known. For more information on security patch fixes see the CVE section below. Releases will follow [Semantic Versioning](https://semver.org/). Users tracking the Master branch should expect unpredictable breaking changes as the project continues to move forward. For stability, it is highly recommended to use a release.\n"},{"path":"CONTRIBUTING.md","start_line":31,"end_line":35,"text":"1. CLA: Upon submitting a Pull Request (PR), contributors will be prompted to\n   sign a CLA. Please sign the CLA :slightly_smiling_face:\n1. Tests: If you are submitting code, please ensure you have adequate tests\n   for the feature. Tests can be run via `go test ./...` or `make test`.\n1. Since this is golang project, ensure the new code is properly formatted to"},{"path":"command.go","start_line":1015,"end_line":1019,"text":"func (c *Command) preRun() {\n\tfor _, x := range initializers {\n\t\tx()\n\t}\n}"},{"path":".github/labeler.yml","start_line":1,"end_line":6,"text":"# changes to documentation generation\n\"area/docs-generation\": doc/**/*\n\n# changes to the core cobra command\n\"area/cobra-command\":\n- any: ['./cobra.go', './cobra_test.go', './*command*.go']"},{"path":"cobra.go","start_line":45,"end_line":50,"text":"const (\n\tdefaultPrefixMatching   = false\n\tdefaultCommandSorting   = true\n\tdefaultCaseInsensitive  = false\n\tdefaultTraverseRunHooks = false\n)"},{"path":"cobra.go","start_line":64,"end_line":66,"text":"// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks"},{"path":"cobra.go","start_line":240,"end_line":244,"text":"// WriteStringAndCheck writes a string into a buffer, and checks if the error is not nil.\nfunc WriteStringAndCheck(b io.StringWriter, s string) {\n\t_, err := b.WriteString(s)\n\tCheckErr(err)\n}"},{"path":"command.go","start_line":48,"end_line":49,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command"},{"path":"completions.go","start_line":54,"end_line":58,"text":"const (\n\t// ShellCompDirectiveError indicates an error occurred and completions should be ignored.\n\tShellCompDirectiveError ShellCompDirective = 1 << iota\n\n\t// ShellCompDirectiveNoSpace indicates that the shell should not add a space"}],"provenance":{"input_sha256":"7357f34fdfc29de22a31c73c3aca45de71947a1b247bdd19056a77f410b72d52","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END THE EXACT BUNDLE THE RATER WAS GIVEN -----
+
+----- BEGIN THE RATER'S RESPONSE -----
+INSUFFICIENT The response specifies adequate tests and `go test ./...` or `make test` (`CONTRIBUTING.md:33–34`), but cuts off the formatting requirement at line 35, leaving the full pre-submission checks unavailable.
+----- END THE RATER'S RESPONSE -----

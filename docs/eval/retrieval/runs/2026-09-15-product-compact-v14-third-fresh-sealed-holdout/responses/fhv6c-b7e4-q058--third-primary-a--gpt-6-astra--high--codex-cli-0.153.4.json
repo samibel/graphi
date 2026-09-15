@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q058",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "f736be5bdeada5f42085fbf14464aed02745975878fe52658c8dec7934540109",
+  "bundle_sha256": "720c524115d150873a8b0ffdc8bb6c567b16c8ab14338ba1cf499422de87cb13",
+  "prompt_sha256": "9947339a1447ea2d589c2c7ef1e685b1071f3cf9aca8dc2b10be7c9375b89227",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`TestChildSameName` in `command_test.go:399–402` covers an application named `foo` with a subcommand also named `foo`, executed as `foo foo`.\n\nThe child check in `command.go:1304–1308` rejects the command itself (`cmds[i] == c`), not a matching name. The test body and assertions are absent, so the expected execution result is not shown.",
+  "responded_at": "2026-09-15T08:31:39Z",
+  "sha256": "66a69ccbd3a8c44b846cd0edd383444db79ee6519460f8bcd4540ee39af4a7b7"
+}

@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q042",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2d8332762c3d7595f28e457f2b619199a76c74fe9cc317b62c7990c0510d609f",
+  "bundle_sha256": "c6c40d13166734485b4485e0be2c7582c95c0f0736506821a7a1060aff769e94",
+  "prompt_sha256": "f9055b12f728c62fe303ca80d7486c5fb71f0232750b21d28e51037a71eb8ddf",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "In `command.go:788-829`, `Traverse` only calls `c.ParseFlags(flags)` after finding another child, immediately before recursing into it. A flag after the final child is appended to `flags` and skipped with `continue` (`command.go:797-817`); when the loop ends, the function simply returns `c, args, nil` (`command.go:828`) without parsing that accumulated flag.",
+  "responded_at": "2026-09-15T08:30:40Z",
+  "sha256": "72af967690cdf637d5107589300dc2e784a9680f1348ce04e76e33c18e166021"
+}

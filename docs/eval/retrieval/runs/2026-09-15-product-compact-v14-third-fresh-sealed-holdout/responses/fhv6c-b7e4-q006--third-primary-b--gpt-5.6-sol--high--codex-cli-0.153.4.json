@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q006",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "9dc76070df905fd563f438f21fb22122d9a367d45bbf3dd1595bcea8e44d2f04",
+  "bundle_sha256": "ebad8e5cb83437884f7983f84e0b20e4691723dd8be5729c63ab69225877f289",
+  "prompt_sha256": "0aaef58e590725316d4c3cfaea3137aef9533db94fcb2050259ef2df2c273251",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`maximumNArgsWithMoreArgs` is a test helper in `args_test.go:77-86`. It verifies that:\n\n- `err` is non-nil, otherwise calls `t.Fatal(\"Expected an error\")`.\n- `err.Error()` exactly equals `\"accepts at most 2 arg(s), received 3\"`.\n- A mismatch triggers `t.Fatalf(\"Expected %q, got %q\", expected, got)`.",
+  "responded_at": "2026-09-15T08:28:39Z",
+  "sha256": "0be35ec9683c2d8fc0a1c4bfdedaf62b51ea8c307193128f427fae6fff20a03d"
+}

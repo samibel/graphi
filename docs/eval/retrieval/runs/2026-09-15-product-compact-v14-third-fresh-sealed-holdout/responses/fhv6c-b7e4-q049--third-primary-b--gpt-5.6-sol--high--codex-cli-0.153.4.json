@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q049",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "868f2f2935044e857981f32580209d3b3151014ea313535ea797e7fe854c639f",
+  "bundle_sha256": "8750f645716d083639519eb5f1a859bb5bcdf35c121a3bdcf1c7de4ea9f4b87d",
+  "prompt_sha256": "911761767fa6b926f3e235d94b8fc8a57ae54be3550befc672f440f2dc697682",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "They were replaced by `ValidArgsFunction`:\n\n- For positional word choices, use `ValidArgsFunction`.\n- For file-extension filtering, use it with `ShellCompDirectiveFilterFileExt`.\n- File completion is now the default; disable it per argument with `ShellCompDirectiveNoFileComp`.\n\nThe old `MarkZshCompPositionalArgumentFile()` and `MarkZshCompPositionalArgumentWords()` helpers are deprecated and silently ignored (`site/content/completions/zsh.md`, lines 25–29).",
+  "responded_at": "2026-09-15T08:31:02Z",
+  "sha256": "cb9f3801fbb4970f6bd26028e63e72e3caee58e57bda5a487fd97bc6d832e37c"
+}

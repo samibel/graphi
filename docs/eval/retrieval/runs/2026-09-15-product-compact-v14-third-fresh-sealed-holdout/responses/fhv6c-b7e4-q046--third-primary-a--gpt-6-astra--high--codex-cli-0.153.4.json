@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q046",
+  "rater_id": "third-primary-a--gpt-6-astra--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-6-astra",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "2b26bee768b773f5e4ab797b15cbc062c188699ab0e768112ec2aa6c85ac7587",
+  "bundle_sha256": "1b5a1ae84bb133716363166c96bdd870c31bfbfc4ee250b5e9408d2862875485",
+  "prompt_sha256": "a32b89158a8e3423edf675fe405331ce972c1950bf8b9a03d4b8e5db792a0bbc",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "Cobra directs developers to **Shell Completions** at `site/content/completions/_index.md`. The Fish page, `site/content/completions/fish.md`, lines 1–4, states: “Please refer to [Shell Completions](_index.md) for details.”",
+  "responded_at": "2026-09-15T08:30:52Z",
+  "sha256": "7be148952e782ffc2c51b276759cd661c93e934b9825819c40bc5bcc37570391"
+}

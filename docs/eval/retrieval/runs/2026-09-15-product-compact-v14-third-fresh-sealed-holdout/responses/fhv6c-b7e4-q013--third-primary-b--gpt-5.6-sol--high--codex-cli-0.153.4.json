@@ -1,0 +1,22 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "evaluation": "qrel-blind smoke evaluation",
+  "role": "primary",
+  "query_id": "fhv6c-b7e4-q013",
+  "rater_id": "third-primary-b--gpt-5.6-sol--high--codex-cli-0.153.4",
+  "provider": "OpenAI Codex via codex-cli 0.153.4",
+  "model": "gpt-5.6-sol",
+  "pre_registration_sha256": "e9bae0d1ddd6178bbb3b93889282d7ecfa6bd2ba82d3f10499769dd5bd6fd37d",
+  "query_text_sha256": "a48034865676903aed3da7be846f56efab79615c941b4b0089d0eb17584d391a",
+  "bundle_sha256": "d9736ed5a72f12b40438af7e559197e897f833f56b27d12024218ef9bfb04ba3",
+  "prompt_sha256": "80e534da9ef768ef71a5a2758236c67d5fe216bf54d8b93af3889ae574c1f9d6",
+  "inputs": [
+    "answer_instructions",
+    "query_text",
+    "preserved_bundle"
+  ],
+  "status": "answered",
+  "text": "`args_test.go` is a Go test file in package `cobra` (`args_test.go:15`). It contains:\n\n- Assertion helpers that verify argument-validation errors and exact messages:\n  - `validOnlyWithInvalidArgs` (`44–53`)\n  - `noArgsWithArgs` (`55–64`)\n  - `minimumNArgsWithLessArgs` (`66–75`)\n  - `maximumNArgsWithMoreArgs` (`77–86`)\n  - `exactArgsWithInvalidCount` (`88–97`)\n  - `rangeArgsWithInvalidCount` (`99–108`)\n\n- Tests that construct commands with argument validators, execute them, and check results. Examples include:\n  - `TestNoArgs`, testing successful execution with `NoArgs` (`112–116`)\n  - `TestExactArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs`, combining `OnlyValidArgs` and `ExactArgs(2)` through `MatchAll` (`326–330`)\n  - `TestRangeArgs_WithInvalidCount_WithValidOnly_WithInvalidArgs`, combining `OnlyValidArgs` and `RangeArgs(2, 4)` (`376–380`)\n\nThe response is truncated, so it does not expose every declaration in the file.",
+  "responded_at": "2026-09-15T08:29:03Z",
+  "sha256": "b2d1cafd7074d10e70e55efd031f963767ccbbf1417a388a559221a5c83baeb9"
+}
