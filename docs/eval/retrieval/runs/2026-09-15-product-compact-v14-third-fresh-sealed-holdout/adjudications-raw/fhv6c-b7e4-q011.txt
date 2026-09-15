@@ -1,0 +1,11 @@
+`validArgsFunc2` is a shell-completion callback defined in `completions_test.go:40–52`.
+
+- If `args` is non-empty, it returns `nil` with `ShellCompDirectiveNoFileComp`.
+- Otherwise, it filters `"three\tThe third"` and `"four\tThe fourth"` by `strings.HasPrefix(comp, toComplete)`.
+- It returns matching completions with `ShellCompDirectiveDefault`.
+
+Its signature matches `Command.ValidArgsFunction` in `command.go:84–87`:
+
+```go
+func(cmd *Command, args []string, toComplete string) ([]string, ShellCompDirective)
+```

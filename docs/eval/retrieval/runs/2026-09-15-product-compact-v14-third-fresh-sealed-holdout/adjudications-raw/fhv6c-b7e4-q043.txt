@@ -1,0 +1,8 @@
+`Traverse` descends recursively:
+
+1. It scans arguments, collecting flags and their values (`command.go:793–816`).
+2. At the first non-flag argument, it resolves the immediate child with `c.findNext(arg)` (`command.go:818`).
+3. It parses the current parent’s collected flags using `c.ParseFlags(flags)` (`command.go:823`).
+4. It calls `cmd.Traverse(args[i+1:])`, passing the remaining arguments to that child (`command.go:826`).
+
+For two nested subcommands, step 4 repeats on the first child: it finds the second child and recursively traverses into it. If an argument does not match a child, it returns the current command and arguments unchanged (`command.go:819–821`).
