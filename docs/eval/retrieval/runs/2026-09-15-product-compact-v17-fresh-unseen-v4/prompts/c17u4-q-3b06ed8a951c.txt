@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What exact failure behavior is tested when two local flags are marked required but neither is supplied?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query 448a3720bb65; read in order (215/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command_test.go","start_line":818,"end_line":834,"text":"func TestRequiredFlags(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\tc.Flags().String(\"foo1\", \"\", \"\")\n\tassertNoErr(t, c.MarkFlagRequired(\"foo1\"))\n\tc.Flags().String(\"foo2\", \"\", \"\")\n\tassertNoErr(t, c.MarkFlagRequired(\"foo2\"))\n\tc.Flags().String(\"bar\", \"\", \"\")\n\n\texpected := fmt.Sprintf(\"required flag(s) %q, %q not set\", \"foo1\", \"foo2\")\n\n\t_, err := executeCommand(c)\n\tgot := err.Error()\n\n\tif got != expected {\n\t\tt.Errorf(\"Expected error: %q, got: %q\", expected, got)\n\t}\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"cobra_test.go","start_line":22,"end_line":26,"text":"func assertNoErr(t *testing.T, e error) {\n\tif e != nil {\n\t\tt.Error(e)\n\t}\n}"},{"path":"completions.go","start_line":49,"end_line":52,"text":"\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command_test.go","start_line":32,"end_line":35,"text":"func executeCommand(root *Command, args ...string) (output string, err error) {\n\t_, output, err = executeCommandC(root, args...)\n\treturn output, err\n}"},{"path":"command_test.go","start_line":836,"end_line":838,"text":"func TestPersistentRequiredFlags(t *testing.T) {\n\tparent := &Command{Use: \"parent\", Run: emptyRun}\n\tparent.PersistentFlags().String(\"foo1\", \"\", \"\")"},{"path":"bash_completions.go","start_line":551,"end_line":557,"text":"func writeFlags(buf io.StringWriter, cmd *Command) {\n\tprepareCustomAnnotationsForFlags(cmd)\n\tWriteStringAndCheck(buf, `    flags=()\n    two_word_flags=()\n    local_nonpersistent_flags=()\n    flags_with_completion=()\n    flags_completion=()"},{"path":"completions.go","start_line":276,"end_line":276,"text":"\t// check if we need to traverse here to parse local flags on parent commands"},{"path":"bash_completions.go","start_line":529,"end_line":531,"text":"\tWriteStringAndCheck(buf, fmt.Sprintf(format, name))\n\tif len(flag.Shorthand) > 0 {\n\t\tWriteStringAndCheck(buf, fmt.Sprintf(\"    local_nonpersistent_flags+=(\\\"-%s\\\")\\n\", flag.Shorthand))"}],"provenance":{"input_sha256":"a08c862a5c67a24c0fbe392b7f56641c672f259ce073a8c10684434782e3f1e3","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

@@ -1,0 +1,29 @@
+{
+  "capture_version": "sw280-candidate-mcp-capture/4",
+  "transport": "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)",
+  "surface": "surfaces/mcp tools/call task_context",
+  "boundary": "mcp_jsonrpc_response_bytes",
+  "repo_name": "cobra",
+  "repo_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+  "dataset_sha256": "c4115b6331e46f1a8c0b0daad020e86e4826a51de8e06a68e3211dea0770a3a6",
+  "embedder_selector": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b",
+  "model_fingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+  "index_fingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:61022b20c10600c4c2f3e45c36059122",
+  "generation_id": "g-f7af739666e8a093",
+  "persisted_vectors": 768,
+  "semantic_state": "ready",
+  "token_budget": 1200,
+  "method_version": "task_context/2-compact/17",
+  "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+  "tokenizer_vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+  "query_count": 64,
+  "candidate_binding": {
+    "candidate_sha": "3899309e75b40f62cf81cfd7552238c3cb33b570",
+    "frozen_candidate_sha": "ed49ba060a010432303ef8984105ed7d329bdadb",
+    "candidate_worktree_clean": true,
+    "candidate_matches_frozen_candidate_sha": true,
+    "candidate_excluded_path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v4",
+    "checkout_sha": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "checkout_worktree_clean": true
+  }
+}

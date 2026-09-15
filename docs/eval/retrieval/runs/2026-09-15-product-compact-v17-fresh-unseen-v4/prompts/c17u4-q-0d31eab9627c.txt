@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+In cobra.go, how are functions registered by OnInitialize retained for later execution?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 398938e3c72b; read in order (239/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":96,"end_line":107,"text":"\n// OnInitialize sets the passed functions to be run when each command's\n// Execute method is called.\nfunc OnInitialize(y ...func()) {\n\tinitializers = append(initializers, y...)\n}\n\n// OnFinalize sets the passed functions to be run when each command's\n// Execute method is terminated.\nfunc OnFinalize(y ...func()) {\n\tfinalizers = append(finalizers, y...)\n}"},{"path":"cobra.go","start_line":41,"end_line":43,"text":"\nvar initializers []func()\nvar finalizers []func()"},{"path":"command.go","start_line":32,"end_line":36,"text":"\nconst (\n\tFlagSetByCobraAnnotation     = \"cobra_annotation_flag_set_by_cobra\"\n\tCommandDisplayNameAnnotation = \"cobra_annotation_command_display_name\"\n)"},{"path":"command.go","start_line":1635,"end_line":1639,"text":"\n// GlobalNormalizationFunc returns the global normalization function or nil if it doesn't exist.\nfunc (c *Command) GlobalNormalizationFunc() func(f *flag.FlagSet, name string) flag.NormalizedName {\n\treturn c.globNormFunc\n}"},{"path":"command.go","start_line":48,"end_line":51,"text":"// E.g.  'go run ...' - 'run' is the command. Cobra requires\n// you to define the usage and description as part of your command\n// definition to ensure usability.\ntype Command struct {"},{"path":"command.go","start_line":1182,"end_line":1198,"text":"\n// InitDefaultHelpFlag adds default help flag to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help flag, it will do nothing.\nfunc (c *Command) InitDefaultHelpFlag() {\n\tc.mergePersistentFlags()\n\tif c.Flags().Lookup(\"help\") == nil {\n\t\tusage := \"help for \"\n\t\tif c.Name() == \"\" {\n\t\t\tusage += \"this command\"\n\t\t} else {\n\t\t\tusage += c.Name()\n\t\t}\n\t\tc.Flags().BoolP(\"help\", \"h\", false, usage)\n\t\t_ = c.Flags().SetAnnotation(\"help\", FlagSetByCobraAnnotation, []string{\"true\"})\n\t}\n}"},{"path":"shell_completions.go","start_line":52,"end_line":55,"text":"// It is recommended to instead use c.RegisterFlagCompletionFunc(...) which allows\n// to register a Go function which will work across all shells.\nfunc (c *Command) MarkFlagCustom(name string, f string) error {\n\treturn MarkFlagCustom(c.Flags(), name, f)"}],"provenance":{"input_sha256":"90a2b65ed833a39e74835bc0b9c9b4d99ef08c3c77595cf5bdbcce9d0d62ac25","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
