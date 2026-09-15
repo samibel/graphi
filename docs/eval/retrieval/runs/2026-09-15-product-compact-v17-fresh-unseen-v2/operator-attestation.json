@@ -1,6 +1,6 @@
 {
   "schema": "graphi-fresh-holdout-operator-attestation/3",
-  "status": "preregistered_pre_freeze",
+  "status": "frozen_pre_capture",
   "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
   "operator": {
     "identity": "Codex independent holdout operator",
@@ -30,6 +30,16 @@
     "candidate_token_budget": 1200,
     "n": 64,
     "k": 56
+  },
+  "freeze": {
+    "freeze_base_commit": "6977c8cd172299d8725e44ec622637965098fdd5",
+    "precondition_record_sha256": "e81a84b4113291bfca463c81701d83ae1c3639be7f2faa3339eb193be5d7da6e",
+    "harness_candidate_method": "task_context/2",
+    "actor_visible_candidate_version": "task_context/2-compact/17",
+    "candidate_token_budget": 1200,
+    "frozen_input_count_excluding_dataset": 4,
+    "freeze_invocations": 1,
+    "preflight": "PASS"
   },
   "execution_policy": {
     "harness_invocation_plan": "invocation-plan.json",
