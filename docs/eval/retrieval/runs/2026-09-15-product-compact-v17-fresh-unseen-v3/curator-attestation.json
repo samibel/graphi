@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "attestation_type": "independent-fresh-holdout-curation",
+  "curator": {
+    "task_path": "/root/fresh_holdout_curator",
+    "provider": "OpenAI",
+    "model": "GPT-5",
+    "resolved_backend_snapshot": "not exposed to curator"
+  },
+  "times_utc": {
+    "preregistration_recorded_at": "2026-09-15T19:44:51Z",
+    "curation_commit_created_before": "2026-09-15T19:46:48Z",
+    "attested_at": "2026-09-15T19:47:39Z"
+  },
+  "branch": "fresh-holdout-curation-compact17-unseen-v3",
+  "curation_commit": "1f7de748eda63b4d287cfc30e60f767d2906f8eb",
+  "curation_tree": "dc0ca9accb96049a48bcd1676cf630f90ba49992",
+  "candidate": {
+    "product_method": "task_context/2-compact/17",
+    "commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "tree": "6ab1d7075c787b7a8884114d5d732be812cb325f"
+  },
+  "curation_base": {
+    "commit": "a8afd07500086cede9500c6ce2bf12cc54ffed36",
+    "tree": "ecd0ef9fc12f82fa2495fd097a689f383ce9b109"
+  },
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "tree": "8590b318bb54874bf1f0c597ff503f8c3b9ace75",
+    "clean": true
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v3/sealed-dataset.json",
+    "sha256": "c985a0b5e43cf42c6bf37eee1752cf0f01450e0baeecab7b5888817bb55551aa",
+    "n": 64,
+    "k": 56,
+    "unique_families": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10
+    }
+  },
+  "artifact_sha256": {
+    "curator_preregistration": "0853fa95e5e3040a7e0123567265bbba8f17b5608f53c1ea46e4004e31a17ab4",
+    "operator_handoff": "ff0245b9c2f685a31453c4e766940ded9d879d3bc1275c7ddc591f539bb5e723",
+    "method": "6ad521a363f4183f1890222cf40ac17efc3eb0b1daf9894e7e473ea13e59a388",
+    "readme": "341bbc59a62485065a1499ed4e0b82a1073dd49495fb951ac3f06683b1561249",
+    "grading_rubric": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c"
+  },
+  "allowed_inputs_used": [
+    "clean pinned spf13/cobra checkout",
+    "public retrieval methodology and threat model",
+    "public budgets and targets for frozen identities and strata",
+    "public candidate-neutral grading-rubric scaffold",
+    "Go dataset schemas, validators, and aggregate threshold test"
+  ],
+  "audits": {
+    "json_and_schema": "PASS: 64 records, required fields, holdout split, one grade-3 judgement each",
+    "answerability": "PASS: 64/64 independently reviewed against pinned source",
+    "span_and_anchor_resolution": "PASS: 64/64 resolve exactly at pinned corpus commit",
+    "answer_span_ceiling": "PASS: 64 answerable, 64 spans, 0 over ceiling, 64/64 any/all complete feasible",
+    "stratification": "PASS: 11/11/11/11/10/10",
+    "id_and_family_uniqueness": "PASS: 64 unique query ids and 64 unique family ids",
+    "internal_near_duplicate": "PASS: 64 unique normalized texts; maximum token-set Jaccard 0.379",
+    "threshold_derivation": "PASS: repository golden-table test confirms k=56 for N=64",
+    "candidate_binding": "PASS: candidate commit and tree resolve and are content-addressed in curator preregistration",
+    "corpus_binding": "PASS: pinned commit/tree exact and checkout clean",
+    "ordering": "PASS: curation commit predates and contains no capture, response, grade, adjudication, or decision artifacts",
+    "changed_file_scope": "PASS: curation commit changes only the six preregistered files in this new run directory",
+    "pre_commit_policy": "PASS"
+  },
+  "declarations": {
+    "candidate_outputs_used": false,
+    "candidate_capture_started": false,
+    "rating_started": false,
+    "grading_started": false,
+    "adjudication_started": false,
+    "development_dataset_or_results_opened": false,
+    "consumed_holdout_files_opened": false,
+    "prior_capture_or_result_files_opened": false,
+    "candidate_implementation_diff_opened": false,
+    "forbidden_combined_dataset_opened": false,
+    "root_received_holdout_content": false,
+    "user_untracked_grader_packets_modified": false
+  },
+  "limitations": [
+    "Consumed and development datasets were deliberately not opened, so cross-dataset textual comparison was not performed; freshness is supported by source-only construction, new identifiers, internal uniqueness, and exclusion without reopening prior artifacts.",
+    "The provider exposes the model family but not an immutable backend snapshot identifier.",
+    "Repository-local controls detect error, accident, and drift, not deliberate falsification by a repository writer."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "graphi-fresh-holdout-run-refusal/1",
+  "recorded_at_utc": "2026-09-15T19:58:09Z",
+  "status": "REFUSED_INVALID_RUN",
+  "phase": "capture preflight",
+  "reason": "The curation/operator HEAD is not tree-equivalent to the declared product candidate outside this run directory. Capture would therefore execute a composition containing post-candidate changes while the handoff requires the exact product candidate commit and tree. The discrepancy was detected before capture. Because freeze had already written and committed a precondition record, reconstructing the branch or freezing again would be an improvised retry and is refused.",
+  "declared_product_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+  "declared_product_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+  "curator_commit": "87a8c5320eac8bf5976e9e98267c99d7181542aa",
+  "static_operator_commit": "0bb3ee52a52922456cd276e8f28b1c4c57f635ad",
+  "freeze_commit": "8956f578e66b54c486958f4ddd759428dd26eac3",
+  "precondition_record_sha256": "3da332a73ad45b39500ba12abb1c99151eef132931687d2ae68d5945a78d9cc5",
+  "composition_difference": {
+    "paths_outside_current_run": 835,
+    "prior_run_artifact_paths": 833,
+    "engine_static_paths": 2,
+    "other_paths": 0,
+    "commits_after_declared_candidate": 20
+  },
+  "artifacts_before_refusal": {
+    "freeze_invocations": 1,
+    "capture_invocations": 0,
+    "captured_bundles": 0,
+    "generated_prompts": 0,
+    "raw_primary_responses": 0,
+    "primary_events": 0,
+    "sealed_responses": 0,
+    "grades": 0,
+    "adjudications": 0,
+    "outcome_written": false
+  },
+  "policy": {
+    "retry_performed": false,
+    "overwrite_performed": false,
+    "waiver_applied": false,
+    "threshold_or_rubric_changed": false,
+    "seal_invocations": 0,
+    "seal_without_checkout_performed": false,
+    "decide_invocations": 0
+  },
+  "release_verdict": null,
+  "pass_count": null,
+  "validity": "INVALID: no RELEASE YES/NO or pass count may be inferred from this run"
+}
