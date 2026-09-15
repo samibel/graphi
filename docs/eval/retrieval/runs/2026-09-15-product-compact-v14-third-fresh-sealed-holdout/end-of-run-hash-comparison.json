@@ -1,0 +1,42 @@
+{
+  "contract_version": "sw280-qrel-blind-smoke-evaluation/2",
+  "compared_at": "2026-09-15T08:37:10Z",
+  "comparisons": [
+    {
+      "role": "dataset",
+      "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/sealed-dataset.json",
+      "frozen_sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+      "observed_sha256": "a96cfa7d002dad127ff0a1fe7bdffed2515615c7e4cd14fb66dba45fffcf0190",
+      "matches": true
+    },
+    {
+      "role": "budgets",
+      "path": "docs/eval/retrieval-budgets.json",
+      "frozen_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+      "observed_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+      "matches": true
+    },
+    {
+      "role": "targets",
+      "path": "docs/eval/retrieval-targets.json",
+      "frozen_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+      "observed_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+      "matches": true
+    },
+    {
+      "role": "grading_rubric",
+      "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/grading-rubric.md",
+      "frozen_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+      "observed_sha256": "f132ee59f254d57590542eb0ea9d769ecab7062d79540dfcbcf8707c68195918",
+      "matches": true
+    },
+    {
+      "role": "methodology",
+      "path": "docs/eval/retrieval/methodology-v2.md",
+      "frozen_sha256": "47fae9f7c4df86d41eae6ae2f12aeb8be5019fe30ac0398fd80d05100fa7212e",
+      "observed_sha256": "47fae9f7c4df86d41eae6ae2f12aeb8be5019fe30ac0398fd80d05100fa7212e",
+      "matches": true
+    }
+  ],
+  "all_match": true
+}
