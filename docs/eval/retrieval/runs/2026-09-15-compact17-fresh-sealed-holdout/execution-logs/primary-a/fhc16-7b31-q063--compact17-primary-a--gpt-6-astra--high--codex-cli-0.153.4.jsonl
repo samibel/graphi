@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a663-678c-7102-b625-64563ee0e8b1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`ContainsGroup` compares against **group IDs**. In `command.go:1347–1350`, `ContainsGroup(groupID string)` loops over `c.commandgroups` and checks `if x.ID == groupID`. It does not compare the separate `Title` field defined in `Group` (`command.go:42–44`)."}}
+{"type":"turn.completed","usage":{"input_tokens":17184,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":73,"reasoning_output_tokens":0}}

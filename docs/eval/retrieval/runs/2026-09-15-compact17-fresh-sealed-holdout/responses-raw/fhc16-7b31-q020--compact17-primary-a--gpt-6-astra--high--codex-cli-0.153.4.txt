@@ -1,0 +1,7 @@
+The explicit snake_case YAML names in `doc/yaml_docs.go` are:
+
+- `cmdDoc.InheritedOptions` → `inherited_options` (line 43).
+- `cmdDoc.SeeAlso` → `see_also` (line 45).
+- `cmdOption.DefaultValue` → `default_value` (line 33).
+
+Each field’s explicit `yaml` tag also includes `omitempty`, as shown in the supplied lines 29–46.

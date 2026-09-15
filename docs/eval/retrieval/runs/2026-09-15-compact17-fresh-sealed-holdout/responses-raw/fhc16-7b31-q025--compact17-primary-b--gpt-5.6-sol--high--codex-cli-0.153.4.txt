@@ -1,0 +1,8 @@
+Call `SetHelpCommandGroupID(groupID)` on the parent `Command`.
+
+In `command.go:331-339`, the method handles both timings:
+
+- If the help command already exists, it immediately sets `c.helpCommand.GroupID = groupID`.
+- It always stores the value in `c.helpCommandGroupID`, which the comment says is used when no user-defined help command exists.
+
+Thus, the same setter works both before and after help-command creation.

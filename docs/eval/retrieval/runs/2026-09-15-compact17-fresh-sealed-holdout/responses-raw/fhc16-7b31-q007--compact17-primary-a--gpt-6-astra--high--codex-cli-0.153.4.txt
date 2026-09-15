@@ -1,0 +1,1 @@
+`CompDebugln` appends a newline with `fmt.Sprintf("%s\n", msg)`, then calls `CompDebug` with that string and the unchanged `printToStdErr` flag (`completions.go:888–890`). Delegating preserves `CompDebug` behavior, including its `[Debug] ` prefix (`completions.go:864–865`) and the documented logging controlled by `BASH_COMP_DEBUG_FILE` (`completions.go:884–887`).

@@ -1,0 +1,1 @@
+No. `isFlagArg` returns `true` for `---verbose`: in `command.go`, lines 719–722, its first condition is `len(arg) >= 3 && arg[0:2] == "--"`. The token satisfies both checks; there is no check rejecting a third hyphen.

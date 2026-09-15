@@ -1,0 +1,1 @@
+No. `Command.Groups` directly returns the backing field—`return c.commandgroups`—without copying it ([command.go, lines 1330–1334], symbol `(*Command).Groups`).

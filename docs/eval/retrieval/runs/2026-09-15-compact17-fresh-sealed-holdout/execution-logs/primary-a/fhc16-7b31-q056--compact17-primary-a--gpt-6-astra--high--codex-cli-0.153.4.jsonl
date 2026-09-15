@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a662-9600-7e12-9b89-363a1575559f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It returns `nil, false`: no completion function and a false availability indicator. In `completions.go`, `GetFlagCompletionFunc` checks `flag := c.Flag(flagName)` and immediately executes `if flag == nil { return nil, false }` (lines 150–153)."}}
+{"type":"turn.completed","usage":{"input_tokens":17424,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":64,"reasoning_output_tokens":0}}

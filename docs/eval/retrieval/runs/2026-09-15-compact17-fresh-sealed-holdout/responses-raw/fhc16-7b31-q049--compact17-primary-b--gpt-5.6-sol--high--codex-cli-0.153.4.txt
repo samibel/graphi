@@ -1,0 +1,1 @@
+INSUFFICIENT The response lacks the `Command` field definitions or validation logic stating whether `ValidArgs` and `ValidArgsFunction` are mutually exclusive; `zsh_completions.go:62-63` merely says “ValidArgs … or ValidArgsFunction.”

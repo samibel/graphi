@@ -1,0 +1,1 @@
+No. `HasPersistentFlags` calls `c.PersistentFlags().HasFlags()` ([command.go:1755–1759]), and `PersistentFlags()` returns only the flags “specifically set in the current command” ([command.go:1725–1735]). Parent persistent flags are stored separately in `parentsPflags` ([command.go:157–161]) and merged only by `mergePersistentFlags()` ([command.go:1846–1853]).

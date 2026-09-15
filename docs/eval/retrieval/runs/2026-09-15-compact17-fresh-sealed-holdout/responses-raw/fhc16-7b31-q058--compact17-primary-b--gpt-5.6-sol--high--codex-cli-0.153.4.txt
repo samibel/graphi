@@ -1,0 +1,1 @@
+No. `HasAvailableFlags` excludes hidden and deprecated flags. In `command.go:1770-1775`, its comment explicitly says it checks for flags “which are not hidden or deprecated,” and the method delegates to `c.Flags().HasAvailableFlags()`.

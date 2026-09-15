@@ -1,0 +1,8 @@
+All direct child commands in `c.commands` that are either:
+
+- available according to `sub.IsAvailableCommand()`, or
+- exactly `c.helpCommand`
+
+must have a non-empty `GroupID`.
+
+Evidence: `command.go:1336–1343` checks `(sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == ""` and returns `false`. `command.go:1559–1576` defines an available command as non-deprecated, non-hidden, not the parent’s help command, and either runnable or having available subcommands.

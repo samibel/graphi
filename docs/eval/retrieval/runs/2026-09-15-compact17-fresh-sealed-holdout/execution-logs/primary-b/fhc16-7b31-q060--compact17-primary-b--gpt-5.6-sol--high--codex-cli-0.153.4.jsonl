@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a660-f91a-73e2-b197-13fedccca300"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"No. In `command.go:1656-1666`, `LocalNonPersistentFlags` gets `persistentFlags := c.PersistentFlags()` and only adds local flags when `persistentFlags.Lookup(f.Name) == nil`. Although `LocalFlags` includes current-command persistent flags (`command.go:1689`), `LocalNonPersistentFlags` explicitly filters them out."}}
+{"type":"turn.completed","usage":{"input_tokens":16657,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":77,"reasoning_output_tokens":0}}

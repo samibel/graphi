@@ -1,0 +1,7 @@
+It panics with:
+
+```text
+group id '<GroupID>' is not defined for subcommand '<full command path>'
+```
+
+In `command.go:1175–1176`, `checkCommandGroups()` checks `sub.GroupID != "" && !c.ContainsGroup(sub.GroupID)` and raises that panic using `sub.GroupID` and `sub.CommandPath()`. `CommandPath()` returns the full command path (`command.go:1425–1433`).

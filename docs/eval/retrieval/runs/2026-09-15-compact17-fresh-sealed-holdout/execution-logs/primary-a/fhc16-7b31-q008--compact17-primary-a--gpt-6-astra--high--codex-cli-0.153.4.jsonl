@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-c1f0-7542-bddb-b0170e711998"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"`CompError` prefixes the diagnostic with `[Error] ` and routes it to stderr via `CompDebug(msg, true)`. Evidence: `completions.go:892–896` documents stderr output and shows `msg = fmt.Sprintf(\"[Error] %s\", msg)` followed by `CompDebug(msg, true)`."}}
+{"type":"turn.completed","usage":{"input_tokens":17145,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":70,"reasoning_output_tokens":0}}

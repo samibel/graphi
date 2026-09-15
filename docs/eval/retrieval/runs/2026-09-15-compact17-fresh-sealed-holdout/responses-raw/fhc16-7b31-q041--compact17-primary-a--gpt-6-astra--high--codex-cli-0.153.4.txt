@@ -1,0 +1,9 @@
+`completeRequireFlags(finalCmd, toComplete)` gathers suggestions into one slice as follows:
+
+1. **Identify required flags:** `MarkFlagRequired` sets the `BashCompOneRequiredFlag` annotation to `[]string{"true"}` (`shell_completions.go:38–40`). The completion helper checks whether that annotation exists and whether `flag.Changed` is false. For each qualifying flag, it appends `getFlagNameCompletions(flag, toComplete)...` (`completions.go:570–576`).
+
+2. **Visit inherited flags first:** It calls `finalCmd.InheritedFlags().VisitAll(...)` (`completions.go:582–584`). `InheritedFlags` calls `mergePersistentFlags()`, then adds parent flags only when their names are absent from both the inherited set and `LocalFlags()` (`command.go:1696–1718`). Thus, local names exclude matching parent flags from this collection.
+
+3. **Visit non-inherited flags next:** It calls `finalCmd.NonInheritedFlags().VisitAll(...)` using the same helper (`completions.go:585–587`). `NonInheritedFlags()` returns `LocalFlags()` (`command.go:1721–1723`).
+
+The function returns the accumulated slice (`completions.go:589`). It visits the two sets explicitly because commands with `DisableFlagParsing` may not have run the parsing step that merges inherited and non-inherited flags into `finalCmd.Flags()` (`completions.go:579–581`).

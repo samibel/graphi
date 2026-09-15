@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-b9d8-7841-a388-bf07c4ecd7bd"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"INSUFFICIENT The `fish_completions.go:24–27` snippet shows `nameForVar := name` and says variables should not contain `-` or `:`, but omits the code that sanitizes those characters."}}
+{"type":"turn.completed","usage":{"input_tokens":17223,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":53,"reasoning_output_tokens":0}}

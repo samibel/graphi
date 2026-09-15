@@ -1,0 +1,8 @@
+`ErrOrStderr` starts resolution with `os.Stderr` as the default:
+
+- `command.go:384-386`: `ErrOrStderr()` calls `c.getErr(os.Stderr)`.
+- `command.go:403-412`: `getErr` returns the current command’s `c.errWriter` when non-nil. Otherwise, if `c.HasParent()`, it recursively calls `c.parent.getErr(def)`. At the hierarchy root, it returns `def`, which is `os.Stderr`.
+- `command.go:1630-1634`: `HasParent()` means `c.parent != nil`.
+- `command.go:293-298`: `SetErr(newErr)` assigns `c.errWriter`; setting it to `nil` leaves resolution to ancestors and ultimately stderr.
+
+Thus, the nearest error writer found while walking from the command toward its ancestors wins; if none exists, stderr is used.

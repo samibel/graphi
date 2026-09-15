@@ -1,0 +1,1 @@
+It returns `nil, false`: no completion function and a false availability indicator. In `completions.go`, `GetFlagCompletionFunc` checks `flag := c.Flag(flagName)` and immediately executes `if flag == nil { return nil, false }` (lines 150–153).

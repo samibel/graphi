@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-db7c-7fb2-9088-412ff559e839"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Hyphens (`-`) and colons (`:`). In `powershell_completions.go`, `genPowerShellComp` lines 28–30 state: `// Variables should not contain a '-' or ':' character`, followed by `nameForVar := name`."}}
+{"type":"turn.completed","usage":{"input_tokens":17226,"cached_input_tokens":11520,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

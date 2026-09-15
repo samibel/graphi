@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65f-82ff-7f70-94d4-763fdd0901d4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"An application-defined `completion` command takes precedence over Cobra’s default completion command. Evidence: `site/content/completions/_index.md:16-17` says you can “provide your own, which will take precedence over the default one,” preserving backward compatibility."}}
+{"type":"turn.completed","usage":{"input_tokens":17201,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":57,"reasoning_output_tokens":0}}

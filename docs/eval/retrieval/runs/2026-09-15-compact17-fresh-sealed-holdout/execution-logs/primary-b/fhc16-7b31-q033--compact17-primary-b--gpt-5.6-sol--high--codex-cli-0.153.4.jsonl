@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-44c0-72f0-ab97-5d489d697a95"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"In `cobra.go` lines 232–238, `CheckErr(msg interface{})`:\n\n- Does nothing when `msg == nil`.\n- When `msg != nil`, prints `Error: <msg>` to `os.Stderr` using `fmt.Fprintln`, then exits with status code `1` via `os.Exit(1)`."}}
+{"type":"turn.completed","usage":{"input_tokens":16345,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":74,"reasoning_output_tokens":0}}

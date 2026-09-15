@@ -1,0 +1,4 @@
+In `cobra.go:233–238`, `CheckErr(msg interface{})` checks `if msg != nil`:
+
+- **Nil:** Does nothing.
+- **Non-nil:** Prints `Error:` followed by the value and a newline to standard error using `fmt.Fprintln(os.Stderr, "Error:", msg)`, then terminates with exit code 1 using `os.Exit(1)`.

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65c-ddd0-7063-96ed-75f9746d6629"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Call `SetHelpCommand` on the application’s command, passing your custom `*Command`:\n\n```go\nrootCmd.SetHelpCommand(customHelpCmd)\n```\n\nThe follow-up read of `site/content/user_guide.md:543-548` explicitly says you can provide your own help command and lists `cmd.SetHelpCommand(cmd *Command)`."}}
+{"type":"turn.completed","usage":{"input_tokens":17878,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":76,"reasoning_output_tokens":0}}

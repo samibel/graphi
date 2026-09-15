@@ -1,0 +1,3 @@
+`VisitParents` invokes the callback from the nearest parent upward to the root.
+
+In `command.go:851-858`, it first calls `fn(c.Parent())`, then recursively calls `c.Parent().VisitParents(fn)`. Thus, for `child → parent → grandparent → root`, the callback order is `parent`, `grandparent`, `root`.

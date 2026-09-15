@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-144c-7211-9092-52bcf0d5c02a"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"None. On non-Windows builds, [`command_notwin.go:19-20`](command_notwin.go:19) declares `preExecHookFn` as a nil function variable:\n\n```go\nvar preExecHookFn func(*Command)\n```\n\nTherefore, the nil check in [`command.go:1062-1065`](command.go:1062) skips the hook."}}
+{"type":"turn.completed","usage":{"input_tokens":16272,"cached_input_tokens":13184,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":0}}

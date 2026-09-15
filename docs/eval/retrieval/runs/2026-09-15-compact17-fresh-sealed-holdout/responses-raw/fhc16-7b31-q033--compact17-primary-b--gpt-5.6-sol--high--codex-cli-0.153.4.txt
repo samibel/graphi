@@ -1,0 +1,4 @@
+In `cobra.go` lines 232–238, `CheckErr(msg interface{})`:
+
+- Does nothing when `msg == nil`.
+- When `msg != nil`, prints `Error: <msg>` to `os.Stderr` using `fmt.Fprintln`, then exits with status code `1` via `os.Exit(1)`.

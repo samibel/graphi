@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65b-34e4-7e03-bc5f-673fc3ac5da3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Generated scripts require **PowerShell 5.0 or above**. The supplied `site/content/completions/_index.md:529` explicitly states: “Users need PowerShell version 5.0 or above.”"}}
+{"type":"turn.completed","usage":{"input_tokens":17285,"cached_input_tokens":13824,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":50}}

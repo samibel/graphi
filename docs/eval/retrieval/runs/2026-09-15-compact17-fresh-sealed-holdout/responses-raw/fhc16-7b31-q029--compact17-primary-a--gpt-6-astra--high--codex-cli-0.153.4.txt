@@ -1,0 +1,1 @@
+`ArgsLenAtDash()` exposes the length of `c.Flags().Args` at the moment parsing encountered `--`. In `command.go:868–872`, its comment states this behavior, and the method delegates directly to `c.Flags().ArgsLenAtDash()`.

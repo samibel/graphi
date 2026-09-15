@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-3315-7481-a84e-83bf7d95fc45"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It uses the **first byte/character** of `name`: `fs.ShorthandLookup(name[:1])` in `command.go:636`, after checking that `name` is non-empty at lines 632–634."}}
+{"type":"turn.completed","usage":{"input_tokens":16664,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":50,"reasoning_output_tokens":0}}

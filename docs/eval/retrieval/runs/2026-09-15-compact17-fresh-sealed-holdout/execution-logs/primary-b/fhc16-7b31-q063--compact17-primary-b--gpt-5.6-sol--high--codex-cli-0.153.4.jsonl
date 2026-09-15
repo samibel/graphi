@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a661-3eee-71b0-8bc1-98217853a65f"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"It compares against group IDs. In `command.go:1347-1352`, `ContainsGroup(groupID string)` checks `if x.ID == groupID`; the `Group` struct separately defines `ID` and `Title` (`command.go:42-44`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16411,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":59,"reasoning_output_tokens":0}}

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65f-9d1a-7490-8744-b2585b9bfd66"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Setup messages must be removed from stdout because the completion script treats every stdout line as a completion candidate. Any setup text would therefore appear as bogus completion choices. This is stated in `completions.go:861-863` and `site/content/completions/_index.md:270`; diagnostics should instead use Cobra’s debugging functions or stderr (`completions.go:879-880`)."}}
+{"type":"turn.completed","usage":{"input_tokens":16327,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":82,"reasoning_output_tokens":0}}

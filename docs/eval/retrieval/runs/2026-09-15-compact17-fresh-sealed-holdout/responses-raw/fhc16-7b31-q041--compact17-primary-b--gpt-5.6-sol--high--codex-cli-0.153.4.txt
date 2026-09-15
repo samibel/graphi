@@ -1,0 +1,13 @@
+`completeRequireFlags` gathers required-flag suggestions in two passes:
+
+1. It visits every inherited flag with `finalCmd.InheritedFlags().VisitAll(...)`.
+2. It then visits every non-inherited flag with `finalCmd.NonInheritedFlags().VisitAll(...)`.
+
+Both passes invoke `doCompleteRequiredFlags`, which checks for the `BashCompOneRequiredFlag` annotation, skips flags whose `Changed` field is true, and appends matches from `getFlagNameCompletions(flag, toComplete)` (`completions.go:566-590`).
+
+The sets are distinct:
+
+- `InheritedFlags()` merges persistent flags and adds parent flags only when neither the inherited set nor local flags already contain that name (`command.go:1694-1719`).
+- `NonInheritedFlags()` returns `LocalFlags()` (`command.go:1721-1723`).
+
+The code deliberately does not use `finalCmd.Flags()`, because inherited and non-inherited flags may not have been merged by `ParseFlags()` when `DisableFlagParsing` is set (`completions.go:579-581`). Required status originates from `MarkFlagRequired`, which sets the `BashCompOneRequiredFlag` annotation to `"true"` (`shell_completions.go:34-40`).

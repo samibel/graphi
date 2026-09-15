@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65d-261c-7bb0-8d31-463090d17133"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"All direct child commands in `c.commands` that are either:\n\n- available according to `sub.IsAvailableCommand()`, or\n- exactly `c.helpCommand`\n\nmust have a non-empty `GroupID`.\n\nEvidence: `command.go:1336–1343` checks `(sub.IsAvailableCommand() || sub == c.helpCommand) && sub.GroupID == \"\"` and returns `false`. `command.go:1559–1576` defines an available command as non-deprecated, non-hidden, not the parent’s help command, and either runnable or having available subcommands."}}
+{"type":"turn.completed","usage":{"input_tokens":16459,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":122,"reasoning_output_tokens":0}}

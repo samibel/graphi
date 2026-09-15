@@ -1,0 +1,1 @@
+INSUFFICIENT The response mentions `ValidArgs` and `ValidArgsFunction` in `zsh_completions.go:62–63`, but contains no declaration, rule, or implementation establishing whether a single command may define both.

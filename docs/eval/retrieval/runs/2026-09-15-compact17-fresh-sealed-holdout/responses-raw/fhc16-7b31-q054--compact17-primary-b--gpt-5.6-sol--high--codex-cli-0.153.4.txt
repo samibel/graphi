@@ -1,0 +1,3 @@
+The `linkHandler` receives a command documentation **filename** as a `string` and returns a `string` containing the customized internal-link target—such as an absolute URL path.
+
+Evidence: `site/content/docgen/md.md:103-115` says it customizes internal command links “given a filename,” and its example strips the filename extension and returns `"/commands/" + strings.ToLower(base) + "/"`. The signatures in `doc/md_docs.go:56-58` and `site/content/docgen/md.md:76-86` confirm the callback type is `func(string) string`.

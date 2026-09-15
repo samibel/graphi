@@ -1,0 +1,1 @@
+INSUFFICIENT The `doc/md_docs.go:32–36` snippet shows `printOptions` placing `cmd.NonInheritedFlags()` under `### Options`, but the response omits the Markdown code that handles inherited options.

@@ -1,0 +1,5 @@
+Every immediate child in `c.commands` that is **available** (`sub.IsAvailableCommand()`) **or is `c.helpCommand`** must have a nonempty `GroupID`. Other children do not need one (`command.go:1337–1343`, `AllChildCommandsHaveGroup`).
+
+Available commands are neither deprecated nor hidden, are not the parent’s help command, and are runnable or have available subcommands (`command.go:1562–1575`, `IsAvailableCommand`). The help command is explicitly included by the first condition.
+
+This method checks only that `GroupID` is nonempty; group existence is checked separately by `checkCommandGroups` (`command.go:1172–1176`).

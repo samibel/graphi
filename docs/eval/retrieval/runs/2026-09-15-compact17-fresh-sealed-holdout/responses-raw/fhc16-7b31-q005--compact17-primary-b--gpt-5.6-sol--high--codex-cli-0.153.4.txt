@@ -1,0 +1,6 @@
+`helpOrVersionFlagPresent` returns `true` when either:
+
+- The command’s `"version"` flag exists, has at least one `FlagSetByCobraAnnotation` annotation, and its `Changed` field is `true`; or
+- The command’s `"help"` flag exists, has at least one `FlagSetByCobraAnnotation` annotation, and its `Changed` field is `true`.
+
+Otherwise, it returns `false`. Evidence: `completions.go`, `helpOrVersionFlagPresent`, lines 521–532.

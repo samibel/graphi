@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a0a65a-c6b6-7a71-8795-507660dbfab3"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"When the requested suffix appears anywhere in the input, `appendIfNotPresent` returns the input unchanged. In [`cobra.go`, lines 166–169], it checks `strings.Contains(s, stringToAppend)` and immediately `return s`; the match need not be at the end."}}
+{"type":"turn.completed","usage":{"input_tokens":16511,"cached_input_tokens":10624,"cache_write_input_tokens":0,"output_tokens":62,"reasoning_output_tokens":0}}

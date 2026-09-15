@@ -1,0 +1,1 @@
+`ArgAliases` are offered on tab completion **only when no completions are found among subcommands or `ValidArgs`**. The follow-up read states this explicitly in “Aliases for nouns” (`site/content/completions/_index.md:117–236`).
