@@ -1,0 +1,98 @@
+{
+  "schema": "graphi-holdout-invocation-plan/1",
+  "status": "preregistered_pre_freeze",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
+  "checksum_encoding": "sha256 of RFC 8259 compact JSON encoding of the exact argv string array, with no trailing newline",
+  "resolved_paths": {
+    "operator_worktree": "/private/tmp/graphi-compact17-unseen-operator",
+    "run": "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2",
+    "dataset": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/sealed-dataset.json",
+    "checkout": "/private/tmp/graphi-cobra-compact17-unseen",
+    "tokenizer_dir": "/private/tmp/graphi-compact17-unseen-operator/internal/eval/tokenizer/testdata/artifact",
+    "static_model_dir": "/private/tmp/graphi-model-potion-code-16M-v2"
+  },
+  "bindings": {
+    "curator_commit": "a0bab89f5f0ae2e4f47d1a6a855ca9db933b7552",
+    "product_source_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "product_source_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "corpus_commit": "a0a6ae020bb3899ff0276067863e50523f897370",
+    "dataset_sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c",
+    "curator_preregistration_sha256": "9ab484266eb3657cdadb60848d0cc78c852efa6b6cf269463cb1185e3478cd4e",
+    "handoff_sha256": "9965e7712cef5e2eafaa519c43b4207c5c9293591808b0ab5a91973fb5883e5e",
+    "candidate_method": "task_context/2-compact/17",
+    "candidate_token_budget": 1200,
+    "n": 64,
+    "k": 56,
+    "embedder": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"
+  },
+  "harness_invocations": [
+    {
+      "phase": "freeze",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "freeze", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-dataset", "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/sealed-dataset.json"],
+      "argv_sha256": "f9deadfe62e84310d6f51a983008c68afa1f5d8ca62bad4d6ad78e5fd2ba8c77"
+    },
+    {
+      "phase": "capture",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "capture", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-repo", "cobra", "-checkout", "/private/tmp/graphi-cobra-compact17-unseen", "-embedder", "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b"],
+      "argv_sha256": "84e6573cb0144d28152a44a41beb0d197241b8154a430d8fd4ae05f6320ee5b0"
+    },
+    {
+      "phase": "seal_responses",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "seal", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-checkout", "/private/tmp/graphi-cobra-compact17-unseen"],
+      "argv_sha256": "a6b2c0ef1a7d2fce1896543754ac38ddcec4dfb3c87ea15218e0246c858f4173"
+    },
+    {
+      "phase": "seal_grades",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "seal", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-checkout", "/private/tmp/graphi-cobra-compact17-unseen"],
+      "argv_sha256": "a6b2c0ef1a7d2fce1896543754ac38ddcec4dfb3c87ea15218e0246c858f4173"
+    },
+    {
+      "phase": "seal_adjudications",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "seal", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-checkout", "/private/tmp/graphi-cobra-compact17-unseen"],
+      "argv_sha256": "a6b2c0ef1a7d2fce1896543754ac38ddcec4dfb3c87ea15218e0246c858f4173"
+    },
+    {
+      "phase": "seal_adjudication_grades",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "seal", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2", "-checkout", "/private/tmp/graphi-cobra-compact17-unseen"],
+      "argv_sha256": "a6b2c0ef1a7d2fce1896543754ac38ddcec4dfb3c87ea15218e0246c858f4173"
+    },
+    {
+      "phase": "decide",
+      "maximum_invocations": 1,
+      "argv": ["go", "run", "./cmd/retrieval-eval", "-blind-eval", "decide", "-blind-eval-contract", "2", "-blind-eval-dir", "/private/tmp/graphi-compact17-unseen-operator/docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2"],
+      "argv_sha256": "ac4870d9781a3741da4f7e9071bf66d5b3f56a2289fed6cf7f01d1443aa65027"
+    }
+  ],
+  "environment": {
+    "CGO_ENABLED": "0",
+    "GRAPHI_EVAL_TOKENIZER_DIR": "/private/tmp/graphi-compact17-unseen-operator/internal/eval/tokenizer/testdata/artifact",
+    "GRAPHI_STATIC_MODEL_DIR": "/private/tmp/graphi-model-potion-code-16M-v2"
+  },
+  "actor_invocation": {
+    "command_template": ["codex", "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "-s", "read-only", "-m", "<frozen model>", "-c", "model_reasoning_effort=\"high\"", "-C", "<fresh empty git repository>", "--json", "-o", "<write-once raw output>", "-"],
+    "input": "exactly one frozen prompt or packet on standard input",
+    "event_allowlist": ["thread.started", "turn.started", "item.completed(agent_message)", "turn.completed"],
+    "unexpected_event_action": "stop and mechanically refuse the run without retry",
+    "retries": 0,
+    "overwrites": false
+  },
+  "universal_preflight": {
+    "help_validation": "run go run ./cmd/retrieval-eval -h and require the expected Go flag help termination after confirming every planned flag is declared",
+    "clean_operator_worktree": true,
+    "clean_pinned_checkout": true,
+    "dataset_digest_recomputed": true,
+    "candidate_tree_recomputed": true,
+    "exact_argv_digest_recomputed_before_each_call": true
+  },
+  "disclosures": [
+    "The OpenAI provider exposes no immutable backend model snapshot or build digest, so actor behavior is not byte-reproducible at the model level.",
+    "This preregistration does not change N, k, the dataset, bundles, rubric, prompts, scoring, token budget, retry policy or waiver policy.",
+    "Every contract-2 seal invocation includes the explicitly pinned checkout argument."
+  ]
+}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How is an exact positional-argument count enforced, and what does the validation error report?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query de3cdc81fa45; read in order (253/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":112,"end_line":131,"text":"\n// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"args.go","start_line":92,"end_line":101,"text":"\n// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"site/content/user_guide.md","start_line":376,"end_line":377,"text":"  - `MaximumNArgs(int)` - report an error if more than N positional args are provided.\n  - `ExactArgs(int)` - report an error if there are not exactly N positional args."},{"path":"completions.go","start_line":49,"end_line":52,"text":"\nfunc (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"args.go","start_line":21,"end_line":22,"text":"\ntype PositionalArgs func(cmd *Command, args []string) error"},{"path":"args.go","start_line":49,"end_line":50,"text":"// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`"},{"path":"command.go","start_line":89,"end_line":93,"text":"\t// Expected arguments\n\tArgs PositionalArgs\n\n\t// ArgAliases is List of aliases for ValidArgs.\n\t// These are not suggested to the user in the shell completion,"},{"path":"args.go","start_line":68,"end_line":71,"text":"// ArbitraryArgs never returns an error.\nfunc ArbitraryArgs(cmd *Command, args []string) error {\n\treturn nil\n}"}],"provenance":{"input_sha256":"f50b5c6ada704269c0e1e6a492dab3ec0b6a139763e72aae606b2d3afc123f63","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

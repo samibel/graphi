@@ -1,0 +1,31 @@
+{
+  "schema": "graphi-fresh-holdout-validity-audit/1",
+  "audited_at_utc": "2026-09-15T19:31:20Z",
+  "status": "PASS_REFUSAL_CORRECTLY_ENFORCED",
+  "run_valid_for_performance_inference": false,
+  "release_decision_available": false,
+  "pass_count_available": false,
+  "checks": [
+    {"name": "curator_commit_and_handoff", "status": "PASS"},
+    {"name": "dataset_digest", "status": "PASS", "sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c"},
+    {"name": "curator_preregistration_digest", "status": "PASS", "sha256": "9ab484266eb3657cdadb60848d0cc78c852efa6b6cf269463cb1185e3478cd4e"},
+    {"name": "product_source_commit_tree", "status": "PASS"},
+    {"name": "pinned_corpus_commit_and_cleanliness", "status": "PASS"},
+    {"name": "frozen_input_record", "status": "PASS", "sha256": "fc16088b5e5183b3c9f8956c8366e0da196c02cac165071d332fab67aad69ff3"},
+    {"name": "capture_pre_registration", "status": "PASS", "sha256": "81247641f802aeef8c22d7a64bf5d89cb84b0109756864c0920b2b958bbdc4d6"},
+    {"name": "capture_provenance", "status": "PASS", "sha256": "943feea45f7dd579afc1ce9c88cf5c507f9f73149214ce65874bfa125aee582b"},
+    {"name": "two_index_capture_reproducibility", "status": "PASS", "sha256": "e746d818fab92f103e31cc311fec5e27f45665280aa853087e57808d8e4a7213"},
+    {"name": "candidate_token_ceiling", "status": "PASS", "observed_max": 1191, "limit": 1200},
+    {"name": "actor_visible_version", "status": "PASS", "matching": 64, "total": 64},
+    {"name": "primary_launch", "status": "REFUSED_BEFORE_RESPONSE", "completed": 0, "expected": 128},
+    {"name": "no_retry_no_overwrite", "status": "PASS"},
+    {"name": "contract_2_seal_checkout", "status": "NOT_REACHED", "seal_invocations": 0},
+    {"name": "decision", "status": "NOT_RUN", "decide_invocations": 0},
+    {"name": "cgo_free_tests", "status": "PASS"},
+    {"name": "cgo_free_build", "status": "PASS"}
+  ],
+  "refusal_commit": "181c0e0f294a32d0a6ca4d372924f49a860c85ac",
+  "refusal_sha256": "bbbbc56469dd977801fabb10d6a4be956c5c6eef5c3cf97c8a7f39162587d543",
+  "operator_attestation_sha256": "d7ff69926a2d8aeb82785df9a8109df66bc65394dedace8fe7cb9aecff6d4e5d",
+  "conclusion": "The procedural refusal is valid and mandatory. This run yields no RELEASE YES/NO and no pass count; treating the capture-only evidence as a release decision would be invalid."
+}

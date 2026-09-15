@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What changes when DisableFlagParsing is enabled on a command?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 6b70be34a8c5; read in order (299/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":56,"end_line":59,"text":"\n// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.\n// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting"},{"path":"command.go","start_line":1793,"end_line":1816,"text":"\n// Flag climbs up the command tree looking for matching flag.\nfunc (c *Command) Flag(name string) (flag *flag.Flag) {\n\tflag = c.Flags().Lookup(name)\n\n\tif flag == nil {\n\t\tflag = c.persistentFlag(name)\n\t}\n\n\treturn\n}\n\n// Recursively find matching persistent flag.\nfunc (c *Command) persistentFlag(name string) (flag *flag.Flag) {\n\tif c.HasPersistentFlags() {\n\t\tflag = c.PersistentFlags().Lookup(name)\n\t}\n\n\tif flag == nil {\n\t\tc.updateParentsPflags()\n\t\tflag = c.parentsPflags.Lookup(name)\n\t}\n\treturn\n}"},{"path":"command.go","start_line":1640,"end_line":1653,"text":"\n// Flags returns the complete FlagSet that applies\n// to this command (local and persistent declared here and by all parents).\nfunc (c *Command) Flags() *flag.FlagSet {\n\tif c.flags == nil {\n\t\tc.flags = flag.NewFlagSet(c.Name(), flag.ContinueOnError)\n\t\tif c.flagErrorBuf == nil {\n\t\t\tc.flagErrorBuf = new(bytes.Buffer)\n\t\t}\n\t\tc.flags.SetOutput(c.flagErrorBuf)\n\t}\n\n\treturn c.flags\n}"},{"path":"command.go","start_line":1494,"end_line":1503,"text":"\n// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i >= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}"},{"path":"command.go","start_line":932,"end_line":940,"text":"\tif c.DisableFlagParsing {\n\t\targWoFlags = a\n\t}\n\n\tif err := c.ValidateArgs(argWoFlags); err != nil {\n\t\treturn err\n\t}\n\n\tparents := make([]*Command, 0, 5)"},{"path":"command.go","start_line":236,"end_line":237,"text":"\t// DisableFlagParsing disables the flag parsing.\n\t// If this is true all flags will be passed to the command as arguments."},{"path":"completions.go","start_line":840,"end_line":858,"text":"\nfunc findFlag(cmd *Command, name string) *pflag.Flag {\n\tflagSet := cmd.Flags()\n\tif len(name) == 1 {\n\t\t// First convert the short flag into a long flag\n\t\t// as the cmd.Flag() search only accepts long flags\n\t\tif short := flagSet.ShorthandLookup(name); short != nil {\n\t\t\tname = short.Name\n\t\t} else {\n\t\t\tset := cmd.InheritedFlags()\n\t\t\tif short = set.ShorthandLookup(name); short != nil {\n\t\t\t\tname = short.Name\n\t\t\t} else {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t}\n\t}\n\treturn cmd.Flag(name)\n}"}],"provenance":{"input_sha256":"fd146ff940377b3772cee744f4c19b29f31a243e6929f51044d0caa304bd8004","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

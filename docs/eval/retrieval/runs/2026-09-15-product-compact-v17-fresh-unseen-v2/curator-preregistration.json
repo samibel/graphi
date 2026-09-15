@@ -1,0 +1,53 @@
+{
+  "schema": "graphi-fresh-holdout-curator-preregistration/1",
+  "status": "sealed_pre_capture",
+  "run_id": "2026-09-15-product-compact-v17-fresh-unseen-v2",
+  "curator_task_path": "/root/fresh_holdout_curator",
+  "candidate": {
+    "source_commit": "26a36f0958cb16d925c4dd871cda76d0e117b15a",
+    "source_tree": "6ab1d7075c787b7a8884114d5d732be812cb325f",
+    "method": "task_context/2-compact/17",
+    "token_budget": 1200
+  },
+  "corpus": {
+    "repo": "spf13/cobra",
+    "commit": "a0a6ae020bb3899ff0276067863e50523f897370"
+  },
+  "contracts": {
+    "blind_evaluation": "sw280-qrel-blind-smoke-evaluation/2",
+    "measurement": "sw266-measurement-contract/2",
+    "followup_max_lines": 120,
+    "n": 64,
+    "k": 56
+  },
+  "dataset": {
+    "path": "docs/eval/retrieval/runs/2026-09-15-product-compact-v17-fresh-unseen-v2/sealed-dataset.json",
+    "sha256": "fb7737442cd251c30f6800d557e3b89c600dd0a66374daf53837aa0144d8936c",
+    "queries": 64,
+    "families": 64,
+    "grade3_spans": 64,
+    "strata": {
+      "exact_identifier": 11,
+      "exact_path": 11,
+      "nl_behaviour": 11,
+      "architecture_flow": 11,
+      "config_docs": 10,
+      "ambiguous": 10
+    }
+  },
+  "frozen_public_inputs": {
+    "methodology_v1_sha256": "f0ee8fc33c135e4bbe277f071d5c089d6aa5d1112dec0919a73245021077ac7d",
+    "methodology_v2_sha256": "47fae9f7c4df86d41eae6ae2f12aeb8be5019fe30ac0398fd80d05100fa7212e",
+    "budgets_sha256": "2a6996d5232005431a5cb4d3a7d2c216b1ff8990f12c9a788dc14e0f385930bb",
+    "targets_sha256": "07e26ef60407bc8437e33333712c888ea09c13ec8d3c27389c24818f7832694d",
+    "grading_rubric_sha256": "f0420f756d3a5742ca684916965921bbb6794010af781aaf129e61ba7f07457c"
+  },
+  "ordering": {
+    "curation_commit_required_before_freeze": true,
+    "capture_commit_required_before_any_rater_execution": true,
+    "capture_retries_permitted": false,
+    "question_substitution_permitted": false,
+    "threshold_changes_permitted": false
+  },
+  "sealed_at_utc": "2026-09-15T18:57:46Z"
+}

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+What is MatchAll's validation order and what happens after the first constituent PositionalArgs validator returns an error?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query 0070b7527a73; read in order (283/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"args.go","start_line":112,"end_line":131,"text":"\n// MatchAll allows combining several PositionalArgs to work in concert.\nfunc MatchAll(pargs ...PositionalArgs) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tfor _, parg := range pargs {\n\t\t\tif err := parg(cmd, args); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}\n\n// ExactValidArgs returns an error if there are not exactly N positional args OR\n// there are any positional args that are not in the `ValidArgs` field of `Command`\n//\n// Deprecated: use MatchAll(ExactArgs(n), OnlyValidArgs) instead\nfunc ExactValidArgs(n int) PositionalArgs {\n\treturn MatchAll(ExactArgs(n), OnlyValidArgs)\n}"},{"path":"args.go","start_line":92,"end_line":101,"text":"\n// ExactArgs returns an error if there are not exactly n args.\nfunc ExactArgs(n int) PositionalArgs {\n\treturn func(cmd *Command, args []string) error {\n\t\tif len(args) != n {\n\t\t\treturn fmt.Errorf(\"accepts %d arg(s), received %d\", n, len(args))\n\t\t}\n\t\treturn nil\n\t}\n}"},{"path":"args.go","start_line":21,"end_line":22,"text":"\ntype PositionalArgs func(cmd *Command, args []string) error"},{"path":"site/content/user_guide.md","start_line":384,"end_line":397,"text":"Moreover, `MatchAll(pargs ...PositionalArgs)` enables combining existing checks with arbitrary other checks.\nFor instance, if you want to report an error if there are not exactly N positional args OR if there are any positional\nargs that are not in the `ValidArgs` field of `Command`, you can call `MatchAll` on `ExactArgs` and `OnlyValidArgs`, as\nshown below:\n\n```go\nvar cmd = &cobra.Command{\n  Short: \"hello\",\n  Args: cobra.MatchAll(cobra.ExactArgs(2), cobra.OnlyValidArgs),\n  Run: func(cmd *cobra.Command, args []string) {\n    fmt.Println(\"Hello, World!\")\n  },\n}\n```"},{"path":"args.go","start_line":48,"end_line":51,"text":"\n// OnlyValidArgs returns an error if there are any positional args that are not in\n// the `ValidArgs` field of `Command`\nfunc OnlyValidArgs(cmd *Command, args []string) error {"},{"path":"command.go","start_line":732,"end_line":738,"text":"\t\t\treturn c, innerArgs\n\t\t}\n\t\tnextSubCmd := argsWOflags[0]\n\n\t\tcmd := c.findNext(nextSubCmd)\n\t\tif cmd != nil {\n\t\t\treturn innerfind(cmd, c.argsMinusFirstX(innerArgs, nextSubCmd))"},{"path":"command.go","start_line":63,"end_line":64,"text":"\t// Aliases is an array of aliases that can be used instead of the first word in Use.\n\tAliases []string"}],"provenance":{"input_sha256":"3dc9dd0aa7419183b15c17ecab15921b1ceb39085a1a6ac3dabaf657a7849023","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

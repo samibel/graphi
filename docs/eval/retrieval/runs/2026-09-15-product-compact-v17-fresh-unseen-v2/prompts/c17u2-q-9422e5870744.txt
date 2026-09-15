@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Where does a command obtain its error writer if it has not configured one locally?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"7 ranked source span(s); query d28bff3258c5; read in order (235/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"command.go","start_line":393,"end_line":412,"text":"\nfunc (c *Command) getOut(def io.Writer) io.Writer {\n\tif c.outWriter != nil {\n\t\treturn c.outWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getOut(def)\n\t}\n\treturn def\n}\n\nfunc (c *Command) getErr(def io.Writer) io.Writer {\n\tif c.errWriter != nil {\n\t\treturn c.errWriter\n\t}\n\tif c.HasParent() {\n\t\treturn c.parent.getErr(def)\n\t}\n\treturn def\n}"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":378,"end_line":387,"text":"\n// OutOrStderr returns output to stderr\nfunc (c *Command) OutOrStderr() io.Writer {\n\treturn c.getOut(os.Stderr)\n}\n\n// ErrOrStderr returns output to stderr\nfunc (c *Command) ErrOrStderr() io.Writer {\n\treturn c.getErr(os.Stderr)\n}"},{"path":"command.go","start_line":1781,"end_line":1786,"text":"\n// HasAvailableLocalFlags checks if the command has flags specifically declared locally which are not hidden\n// or deprecated.\nfunc (c *Command) HasAvailableLocalFlags() bool {\n\treturn c.LocalFlags().HasAvailableFlags()\n}"},{"path":"command.go","start_line":1118,"end_line":1124,"text":"\t\t// effect\n\t\tif errors.Is(err, flag.ErrHelp) {\n\t\t\tcmd.HelpFunc()(cmd, args)\n\t\t\treturn cmd, nil\n\t\t}\n\n\t\t// If root command has SilenceErrors flagged,"},{"path":"command.go","start_line":496,"end_line":511,"text":"\n// FlagErrorFunc returns either the function set by SetFlagErrorFunc for this\n// command or a parent, or it returns a function which returns the original\n// error.\nfunc (c *Command) FlagErrorFunc() (f func(*Command, error) error) {\n\tif c.flagErrorFunc != nil {\n\t\treturn c.flagErrorFunc\n\t}\n\n\tif c.HasParent() {\n\t\treturn c.parent.FlagErrorFunc()\n\t}\n\treturn func(c *Command, err error) error {\n\t\treturn err\n\t}\n}"},{"path":"command.go","start_line":1788,"end_line":1792,"text":"// HasAvailableInheritedFlags checks if the command has flags inherited from its parent command which are\n// not hidden or deprecated.\nfunc (c *Command) HasAvailableInheritedFlags() bool {\n\treturn c.InheritedFlags().HasAvailableFlags()\n}"}],"provenance":{"input_sha256":"91fdc0c85fbdfa1495c036680dbee3eff1897a18d129b3ce10ff1ae16916fdd7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

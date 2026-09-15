@@ -1,0 +1,25 @@
+You are answering one question about a Go codebase you cannot see.
+
+Your ONLY sources of information are the two complete, unmodified responses
+printed between the BEGIN and END markers below. The first is one tool response.
+The second is one follow-up read of the file span designated by that tool
+response. You have no checkout, no search, no notes and no other material, and
+you must not use recollection of any public project to supply facts that are not
+in the two responses.
+
+Answer the question directly and concretely, citing the specific evidence in the
+responses you relied on (file paths, symbol names, snippet lines).
+
+If the responses do not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+Which global option makes persistent run hooks traverse all parents, and what hook behavior applies by default?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"9 ranked source span(s); query fa5456d7ca2b; read in order (323/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/17","sources":[{"path":"cobra.go","start_line":58,"end_line":72,"text":"// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting\n\n// EnableCaseInsensitive allows case-insensitive commands names. (case sensitive by default)\nvar EnableCaseInsensitive = defaultCaseInsensitive\n\n// EnableTraverseRunHooks executes persistent pre-run and post-run hooks from all parents.\n// By default this is disabled, which means only the first run hook to be found is executed.\nvar EnableTraverseRunHooks = defaultTraverseRunHooks\n\n// MousetrapHelpText enables an information splash screen on Windows\n// if the CLI is started from explorer.exe.\n// To disable the mousetrap, just set this variable to blank string (\"\").\n// Works only on Microsoft Windows.\nvar MousetrapHelpText = `This is a command line tool."},{"path":"site/content/user_guide.md","start_line":686,"end_line":692,"text":"Inside subCmd PostRun with args: [arg1 arg2]\nInside subCmd PersistentPostRun with args: [arg1 arg2]\n```\n\nBy default, only the first persistent hook found in the command chain is executed.\nThat is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command.\nSet `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks."},{"path":"site/content/user_guide.md","start_line":288,"end_line":300,"text":"### Local Flag on Parent Commands\n\nBy default, Cobra only parses local flags on the target command, and any local flags on\nparent commands are ignored. By enabling `Command.TraverseChildren`, Cobra will\nparse local flags on each command before executing the target command.\n\n```go\ncommand := cobra.Command{\n  Use: \"print [OPTIONS] [COMMANDS]\",\n  TraverseChildren: true,\n}\n```\n"},{"path":"command.go","start_line":1321,"end_line":1324,"text":"\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)"},{"path":"site/content/user_guide.md","start_line":270,"end_line":279,"text":"### Persistent Flags\n\nA flag can be 'persistent', meaning that this flag will be available to the\ncommand it's assigned to as well as every command under that command. For\nglobal flags, assign a flag as a persistent flag on the root.\n\n```go\nrootCmd.PersistentFlags().BoolVarP(&Verbose, \"verbose\", \"v\", false, \"verbose output\")\n```\n"},{"path":"command.go","start_line":1630,"end_line":1634,"text":"\n// HasParent determines if the command is a child command.\nfunc (c *Command) HasParent() bool {\n\treturn c.parent != nil\n}"},{"path":"command.go","start_line":1015,"end_line":1015,"text":"func (c *Command) preRun() {"},{"path":"command.go","start_line":942,"end_line":942,"text":"\t\tif EnableTraverseRunHooks {"},{"path":"command.go","start_line":1848,"end_line":1848,"text":"// and adds missing persistent flags of all parents."}],"provenance":{"input_sha256":"d5cf5cb0d1d1b1c024bc227e94490f6c815a044d8f40439abcc442a227275df7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true,"followup":"cobra.go:57-59"},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----
+----- BEGIN task_context/2 FOLLOW-UP READ BYTES -----
+{"path":"cobra.go","start_line":57,"end_line":59,"text":"// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.\n// To disable sorting, set it to false.\nvar EnableCommandSorting = defaultCommandSorting"}
+----- END task_context/2 FOLLOW-UP READ BYTES -----
