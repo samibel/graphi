@@ -1,0 +1,26 @@
+{
+  "query_id": "fhv6c-b7e4-q014",
+  "request_bytes": "eyJpZCI6MSwianNvbnJwYyI6IjIuMCIsIm1ldGhvZCI6InRvb2xzL2NhbGwiLCJwYXJhbXMiOnsiYXJndW1lbnRzIjp7InRhc2siOiJiYXNoX2NvbXBsZXRpb25zVjJfdGVzdC5nbyIsInRva2VuX2J1ZGdldCI6MTIwMCwidmVyc2lvbiI6Mn0sIm5hbWUiOiJ0YXNrX2NvbnRleHQifX0K",
+  "payload": {
+    "sequence": 1,
+    "boundary": "mcp_jsonrpc_response_bytes",
+    "operation": "task_context/2",
+    "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsInJlc3VsdCI6eyJjb250ZW50IjpbeyJ0eXBlIjoidGV4dCIsInRleHQiOiIyIHJhbmtlZCBzb3VyY2Ugc3BhbihzKTsgcXVlcnkgNmNlMDU1Y2Q0YjgyOyByZWFkIGluIG9yZGVyICgzOC8zMjUgc291cmNlIHRva2Vucyk7IHJlcXVlc3Q6IGRlc2NyaWJlIHRoaXMgZmlsZSdzIHN0cnVjdHVyZSBhbmQgZGVjbGFyYXRpb25zIn1dLCJzdHJ1Y3R1cmVkQ29udGVudCI6eyJ2ZXJzaW9uIjoidGFza19jb250ZXh0LzItY29tcGFjdC8xNCIsInNvdXJjZXMiOlt7InBhdGgiOiJiYXNoX2NvbXBsZXRpb25zVjJfdGVzdC5nbyIsInN0YXJ0X2xpbmUiOjE1LCJlbmRfbGluZSI6MTUsInRleHQiOiJwYWNrYWdlIGNvYnJhIn0seyJwYXRoIjoiYmFzaF9jb21wbGV0aW9uc1YyX3Rlc3QuZ28iLCJzdGFydF9saW5lIjoyMywiZW5kX2xpbmUiOjMzLCJ0ZXh0IjoiZnVuYyBUZXN0QmFzaENvbXBsZXRpb25WMldpdGhBY3RpdmVIZWxwKHQgKnRlc3RpbmcuVCkge1xuXHRjIDo9ICZDb21tYW5ke1VzZTogXCJjXCIsIFJ1bjogZW1wdHlSdW59XG5cblx0YnVmIDo9IG5ldyhieXRlcy5CdWZmZXIpXG5cdGFzc2VydE5vRXJyKHQsIGMuR2VuQmFzaENvbXBsZXRpb25WMihidWYsIHRydWUpKVxuXHRvdXRwdXQgOj0gYnVmLlN0cmluZygpXG5cblx0Ly8gY2hlY2sgdGhhdCBhY3RpdmUgaGVscCBpcyBub3QgYmVpbmcgZGlzYWJsZWRcblx0YWN0aXZlSGVscFZhciA6PSBhY3RpdmVIZWxwRW52VmFyKGMuTmFtZSgpKVxuXHRjaGVja09taXQodCwgb3V0cHV0LCBmbXQuU3ByaW50ZihcIiVzPTBcIiwgYWN0aXZlSGVscFZhcikpXG59In1dLCJwcm92ZW5hbmNlIjp7ImlucHV0X3NoYTI1NiI6ImM1MWI0MTcyOWFkZmQ4YzZmZDcwZDE3YjUxNGFjNzQ1OTMxZWJmMjYzMmFmYmZiNjQ2NzViNjllODNlNjA3ODIiLCJtZXRob2QiOiJ0YXNrX2NvbnRleHQvMiIsInJldHJpZXZhbCI6InJldHJpZXZhbC83IiwicmV0cmlldmFsX3N0YXRlIjoicmVhZHkiLCJ3ZWlnaHRzIjoiYjZjY2I2MzUiLCJtb2RlbCI6InNoYTI1Njo4NTk3ODAzNGFiZDJhYjg5Iiwic291cmNlX3NlbGVjdGlvbiI6ImNvbnRleHQtZGVmaW5pdGlvbnMvMyIsInNvdXJjZV9vcmRlciI6InJhbmtlZF9jb2hlcmVudF9yZWdpb25zIiwic291cmNlX2J1ZGdldCI6MzI1LCJzb3VyY2VfYnVkZ2V0X3VuaXQiOiJ3aGl0ZXNwYWNlLWZpZWxkcy12MSJ9LCJ0cnVuY2F0ZWQiOnRydWV9LCJpc0Vycm9yIjpmYWxzZX19Cg==",
+    "sha256": "dc10df1804f59a96119e955af0e8b709696d168c1c9d8e7c6a2df46ebeb57a1a",
+    "byte_count": 1237,
+    "token_counts": [
+      {
+        "tokenizer_id": "whitespace-fields-v1",
+        "tokens": 47
+      },
+      {
+        "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+        "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+        "tokens": 375
+      }
+    ]
+  },
+  "retrieval_strategy": "semantic_first",
+  "retrieval_state": "ready",
+  "bundle_summary": "2 ranked source span(s); query 6ce055cd4b82; read in order (38/325 source tokens); request: describe this file's structure and declarations"
+}

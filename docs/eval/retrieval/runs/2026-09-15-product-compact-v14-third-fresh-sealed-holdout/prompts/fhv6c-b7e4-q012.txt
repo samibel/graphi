@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+cobra_test.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"3 ranked source span(s); query 6737ad498a67; read in order (77/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"cobra_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"cobra_test.go","start_line":28,"end_line":42,"text":"func TestAddTemplateFunctions(t *testing.T) {\n\tAddTemplateFunc(\"t\", func() bool { return true })\n\tAddTemplateFuncs(template.FuncMap{\n\t\t\"f\": func() bool { return false },\n\t\t\"h\": func() string { return \"Hello,\" },\n\t\t\"w\": func() string { return \"world.\" }})\n\n\tc := &Command{}\n\tc.SetUsageTemplate(`{{if t}}{{h}}{{end}}{{if f}}{{h}}{{end}} {{w}}`)\n\n\tconst expected = \"Hello, world.\"\n\tif got := c.UsageString(); got != expected {\n\t\tt.Errorf(\"Expected UsageString: %v\\nGot: %v\", expected, got)\n\t}\n}"},{"path":"cobra_test.go","start_line":22,"end_line":26,"text":"func assertNoErr(t *testing.T, e error) {\n\tif e != nil {\n\t\tt.Error(e)\n\t}\n}"}],"provenance":{"input_sha256":"220caa21a7a328b9f4ce4f66fa755547a09749a9536a930de9fee8cf6d27c8a9","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

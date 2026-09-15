@@ -192,6 +192,10 @@ and become stale when `PinnedRevision` changes:
 - `docs/eval/retrieval/runs/2026-09-13-product-compact-v5-second-fresh-sealed-holdout/`
   — the completed second independent fresh-holdout run. Its captured bundles
   and blind decision are likewise bound to this production embedder.
+- `docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout/`
+  — the third independent fresh-holdout run under contract version 2. Its
+  captured bundles, designated follow-up reads and blind decision are bound
+  to this production embedder.
 
 The three SW-263-era JSON reports above predate selector stamping in that report
 shape. They are explicit legacy entries because their candidate provenance and

@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+How do I install the cobra-cli application generator?
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 544ab1d03740; read in order (255/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"site/content/user_guide.md","start_line":30,"end_line":36,"text":"## Using the Cobra Generator\n\nCobra-CLI is its own program that will create your application and add any commands you want.\nIt's the easiest way to incorporate Cobra into your application.\n\nFor complete details on using the Cobra generator, please refer to [The Cobra-CLI Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n"},{"path":"README.md","start_line":95,"end_line":109,"text":"# Usage\n`cobra-cli` is a command line program to generate cobra applications and command files.\nIt will bootstrap your application scaffolding to rapidly\ndevelop a Cobra-based application. It is the easiest way to incorporate Cobra into your application.\n\nIt can be installed by running:\n\n```\ngo install github.com/spf13/cobra-cli@latest\n```\n\nFor complete details on using the Cobra-CLI generator, please read [The Cobra Generator README](https://github.com/spf13/cobra-cli/blob/main/README.md)\n\nFor complete details on using the Cobra library, please read the [The Cobra User Guide](site/content/user_guide.md).\n"},{"path":"site/content/user_guide.md","start_line":507,"end_line":508,"text":"    Cobra is a CLI library for Go that empowers applications.\n    This application is a tool to generate the needed files"},{"path":"README.md","start_line":81,"end_line":94,"text":"# Installing\nUsing Cobra is easy. First, use `go get` to install the latest version\nof the library.\n\n```\ngo get -u github.com/spf13/cobra@latest\n```\n\nNext, include Cobra in your application:\n\n```go\nimport \"github.com/spf13/cobra\"\n```\n"},{"path":"site/content/user_guide.md","start_line":561,"end_line":568,"text":"embeds the usage as part of its output.\n\n    $ cobra-cli --invalid\n    Error: unknown flag: --invalid\n    Usage:\n      cobra-cli [command]\n\n    Available Commands:"},{"path":"cobra.go","start_line":41,"end_line":42,"text":"\nvar initializers []func()"},{"path":"README.md","start_line":2,"end_line":5,"text":"\nCobra is a library for creating powerful modern CLI applications.\n\nCobra is used in many Go projects such as [Kubernetes](https://kubernetes.io/),"},{"path":"cobra.go","start_line":52,"end_line":56,"text":"// EnablePrefixMatching allows setting automatic prefix matching. Automatic prefix matching can be a dangerous thing\n// to automatically enable in CLI tools.\n// Set this to true to enable it.\nvar EnablePrefixMatching = defaultPrefixMatching\n"}],"provenance":{"input_sha256":"e426a363f7ceb4718978bb44a17a70a8699d16c0c20454d77bca8f1ec0e45718","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

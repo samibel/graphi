@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+fish_completions_test.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query 1574ac3150d1; read in order (167/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"fish_completions_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"fish_completions_test.go","start_line":42,"end_line":55,"text":"func TestCompleteCmdInFishScript(t *testing.T) {\n\trootCmd := &Command{Use: \"root\", Args: NoArgs, Run: emptyRun}\n\tchild := &Command{\n\t\tUse:               \"child\",\n\t\tValidArgsFunction: validArgsFunc,\n\t\tRun:               emptyRun,\n\t}\n\trootCmd.AddCommand(child)\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, rootCmd.GenFishCompletion(buf, true))\n\toutput := buf.String()\n\n\tcheck(t, output, ShellCompRequestCmd)"},{"path":"fish_completions_test.go","start_line":101,"end_line":111,"text":"func TestGenFishCompletionFile(t *testing.T) {\n\ttmpFile, err := os.CreateTemp(\"\", \"cobra-test\")\n\tif err != nil {\n\t\tt.Fatal(err.Error())\n\t}\n\n\tdefer os.Remove(tmpFile.Name())\n\n\trootCmd := &Command{Use: \"root\", Args: NoArgs, Run: emptyRun}\n\tchild := &Command{\n\t\tUse:               \"child\","},{"path":"fish_completions_test.go","start_line":26,"end_line":38,"text":"func TestCompleteNoDesCmdInFishScript(t *testing.T) {\n\trootCmd := &Command{Use: \"root\", Args: NoArgs, Run: emptyRun}\n\tchild := &Command{\n\t\tUse:               \"child\",\n\t\tValidArgsFunction: validArgsFunc,\n\t\tRun:               emptyRun,\n\t}\n\trootCmd.AddCommand(child)\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, rootCmd.GenFishCompletion(buf, false))\n\toutput := buf.String()\n"},{"path":"fish_completions_test.go","start_line":89,"end_line":95,"text":"func TestFishCompletionNoActiveHelp(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, c.GenFishCompletion(buf, true))\n\toutput := buf.String()\n"},{"path":"fish_completions_test.go","start_line":120,"end_line":127,"text":"func TestFailGenFishCompletionFile(t *testing.T) {\n\ttmpDir, err := os.MkdirTemp(\"\", \"cobra-test\")\n\tif err != nil {\n\t\tt.Fatal(err.Error())\n\t}\n\n\tdefer os.RemoveAll(tmpDir)\n"},{"path":"fish_completions_test.go","start_line":74,"end_line":76,"text":"func TestProgWithColon(t *testing.T) {\n\trootCmd := &Command{Use: \"root:colon\", Args: NoArgs, Run: emptyRun}\n\tbuf := new(bytes.Buffer)"},{"path":"fish_completions_test.go","start_line":59,"end_line":61,"text":"func TestProgWithDash(t *testing.T) {\n\trootCmd := &Command{Use: \"root-dash\", Args: NoArgs, Run: emptyRun}\n\tbuf := new(bytes.Buffer)"}],"provenance":{"input_sha256":"ea12d51a8a2bbe8cafd719ad463b6137b358109a129f2e8188c74d9410ecdad7","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

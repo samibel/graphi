@@ -164,6 +164,7 @@ func TestStatic_PinRotationGovernance_EnumeratesRevisionQualifiedRuns(t *testing
 		"docs/eval/retrieval/runs/2026-09-14-compact13-followup-dev",
 		"docs/eval/retrieval/runs/2026-09-14-compact14-dev",
 		"docs/eval/retrieval/runs/2026-09-14-named-declaration-dev",
+		"docs/eval/retrieval/runs/2026-09-15-product-compact-v14-third-fresh-sealed-holdout",
 	}
 	if strings.Join(runs, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("revision-qualified production-static retrieval runs:\n got %q\nwant %q; review every discovered run and update the explicit governance inventory (legacy static runs without selector stamps remain listed separately)", runs, want)

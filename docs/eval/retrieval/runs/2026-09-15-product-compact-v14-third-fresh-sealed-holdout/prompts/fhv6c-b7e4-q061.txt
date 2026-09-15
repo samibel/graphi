@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+hidden command execution
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"8 ranked source span(s); query a9f4dbe67361; read in order (211/325 source tokens)"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"command.go","start_line":1560,"end_line":1576,"text":"// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() && c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}"},{"path":"completions.go","start_line":50,"end_line":52,"text":"func (e *flagCompError) Error() string {\n\treturn \"Subcommand '\" + e.subCommand + \"' does not support flag '\" + e.flagName + \"'\"\n}"},{"path":"command.go","start_line":1579,"end_line":1581,"text":"// help topic command; additional help topic command is determined by the\n// fact that it is NOT runnable/hidden/deprecated, and has no sub commands that\n// are runnable/hidden/deprecated."},{"path":"command.go","start_line":1550,"end_line":1553,"text":"// Runnable determines if the command is itself runnable.\nfunc (c *Command) Runnable() bool {\n\treturn c.Run != nil || c.RunE != nil\n}"},{"path":"command.go","start_line":1081,"end_line":1087,"text":"\t}\n\n\t// initialize the hidden command to be used for shell completion\n\tc.initCompleteCmd(args)\n\n\tvar flags []string\n\tif c.TraverseChildren {"},{"path":"command.go","start_line":874,"end_line":876,"text":"func (c *Command) execute(a []string) (err error) {\n\tif c == nil {\n\t\treturn fmt.Errorf(\"Called Execute() on a nil Command\")"},{"path":"command.go","start_line":227,"end_line":227,"text":"\t// Hidden defines, if this command is hidden and should NOT show up in the list of available commands."},{"path":"completions.go","start_line":266,"end_line":267,"text":"func (c *Command) getCompletions(args []string) (*Command, []string, ShellCompDirective, error) {\n\t// The last argument, which is not completely typed by the user,"}],"provenance":{"input_sha256":"c282706c0285c4ad1766012896cd11b00c1b9c8cecafa0143d38590843ac0643","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

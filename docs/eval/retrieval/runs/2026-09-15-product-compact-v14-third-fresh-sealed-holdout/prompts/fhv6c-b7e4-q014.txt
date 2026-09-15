@@ -1,0 +1,21 @@
+You are answering one question about a Go repository you cannot see.
+
+Your ONLY source of information is the single JSON-RPC response printed between
+the BEGIN and END markers below. It is the complete, unmodified response bytes
+of one tool call. You have no repository, no checkout, no search, no notes and
+no other material, and you must not use recollection of any public project to
+supply facts that are not in the response.
+
+Answer the question directly and concretely, citing the specific evidence in the
+response you relied on (file paths, symbol names, snippet lines).
+
+If the response does not contain enough information to answer, reply with the
+single word INSUFFICIENT followed by one sentence saying what was missing. That
+is a legitimate answer, not a refusal.
+
+QUESTION:
+bash_completionsV2_test.go
+
+----- BEGIN task_context/2 RESPONSE BYTES -----
+{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"2 ranked source span(s); query 6ce055cd4b82; read in order (38/325 source tokens); request: describe this file's structure and declarations"}],"structuredContent":{"version":"task_context/2-compact/14","sources":[{"path":"bash_completionsV2_test.go","start_line":15,"end_line":15,"text":"package cobra"},{"path":"bash_completionsV2_test.go","start_line":23,"end_line":33,"text":"func TestBashCompletionV2WithActiveHelp(t *testing.T) {\n\tc := &Command{Use: \"c\", Run: emptyRun}\n\n\tbuf := new(bytes.Buffer)\n\tassertNoErr(t, c.GenBashCompletionV2(buf, true))\n\toutput := buf.String()\n\n\t// check that active help is not being disabled\n\tactiveHelpVar := activeHelpEnvVar(c.Name())\n\tcheckOmit(t, output, fmt.Sprintf(\"%s=0\", activeHelpVar))\n}"}],"provenance":{"input_sha256":"c51b41729adfd8c6fd70d17b514ac745931ebf2632afbfb64675b69e83e60782","method":"task_context/2","retrieval":"retrieval/7","retrieval_state":"ready","weights":"b6ccb635","model":"sha256:85978034abd2ab89","source_selection":"context-definitions/3","source_order":"ranked_coherent_regions","source_budget":325,"source_budget_unit":"whitespace-fields-v1"},"truncated":true},"isError":false}}
+----- END task_context/2 RESPONSE BYTES -----

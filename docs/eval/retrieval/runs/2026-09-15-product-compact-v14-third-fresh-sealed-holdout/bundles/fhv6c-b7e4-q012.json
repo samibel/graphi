@@ -1,0 +1,26 @@
+{
+  "query_id": "fhv6c-b7e4-q012",
+  "request_bytes": "eyJpZCI6MSwianNvbnJwYyI6IjIuMCIsIm1ldGhvZCI6InRvb2xzL2NhbGwiLCJwYXJhbXMiOnsiYXJndW1lbnRzIjp7InRhc2siOiJjb2JyYV90ZXN0LmdvIiwidG9rZW5fYnVkZ2V0IjoxMjAwLCJ2ZXJzaW9uIjoyfSwibmFtZSI6InRhc2tfY29udGV4dCJ9fQo=",
+  "payload": {
+    "sequence": 1,
+    "boundary": "mcp_jsonrpc_response_bytes",
+    "operation": "task_context/2",
+    "bytes": "eyJqc29ucnBjIjoiMi4wIiwiaWQiOjEsInJlc3VsdCI6eyJjb250ZW50IjpbeyJ0eXBlIjoidGV4dCIsInRleHQiOiIzIHJhbmtlZCBzb3VyY2Ugc3BhbihzKTsgcXVlcnkgNjczN2FkNDk4YTY3OyByZWFkIGluIG9yZGVyICg3Ny8zMjUgc291cmNlIHRva2Vucyk7IHJlcXVlc3Q6IGRlc2NyaWJlIHRoaXMgZmlsZSdzIHN0cnVjdHVyZSBhbmQgZGVjbGFyYXRpb25zIn1dLCJzdHJ1Y3R1cmVkQ29udGVudCI6eyJ2ZXJzaW9uIjoidGFza19jb250ZXh0LzItY29tcGFjdC8xNCIsInNvdXJjZXMiOlt7InBhdGgiOiJjb2JyYV90ZXN0LmdvIiwic3RhcnRfbGluZSI6MTUsImVuZF9saW5lIjoxNSwidGV4dCI6InBhY2thZ2UgY29icmEifSx7InBhdGgiOiJjb2JyYV90ZXN0LmdvIiwic3RhcnRfbGluZSI6MjgsImVuZF9saW5lIjo0MiwidGV4dCI6ImZ1bmMgVGVzdEFkZFRlbXBsYXRlRnVuY3Rpb25zKHQgKnRlc3RpbmcuVCkge1xuXHRBZGRUZW1wbGF0ZUZ1bmMoXCJ0XCIsIGZ1bmMoKSBib29sIHsgcmV0dXJuIHRydWUgfSlcblx0QWRkVGVtcGxhdGVGdW5jcyh0ZW1wbGF0ZS5GdW5jTWFwe1xuXHRcdFwiZlwiOiBmdW5jKCkgYm9vbCB7IHJldHVybiBmYWxzZSB9LFxuXHRcdFwiaFwiOiBmdW5jKCkgc3RyaW5nIHsgcmV0dXJuIFwiSGVsbG8sXCIgfSxcblx0XHRcIndcIjogZnVuYygpIHN0cmluZyB7IHJldHVybiBcIndvcmxkLlwiIH19KVxuXG5cdGMgOj0gJkNvbW1hbmR7fVxuXHRjLlNldFVzYWdlVGVtcGxhdGUoYHt7aWYgdH19e3tofX17e2VuZH19e3tpZiBmfX17e2h9fXt7ZW5kfX0ge3t3fX1gKVxuXG5cdGNvbnN0IGV4cGVjdGVkID0gXCJIZWxsbywgd29ybGQuXCJcblx0aWYgZ290IDo9IGMuVXNhZ2VTdHJpbmcoKTsgZ290ICE9IGV4cGVjdGVkIHtcblx0XHR0LkVycm9yZihcIkV4cGVjdGVkIFVzYWdlU3RyaW5nOiAldlxcbkdvdDogJXZcIiwgZXhwZWN0ZWQsIGdvdClcblx0fVxufSJ9LHsicGF0aCI6ImNvYnJhX3Rlc3QuZ28iLCJzdGFydF9saW5lIjoyMiwiZW5kX2xpbmUiOjI2LCJ0ZXh0IjoiZnVuYyBhc3NlcnROb0Vycih0ICp0ZXN0aW5nLlQsIGUgZXJyb3IpIHtcblx0aWYgZSAhPSBuaWwge1xuXHRcdHQuRXJyb3IoZSlcblx0fVxufSJ9XSwicHJvdmVuYW5jZSI6eyJpbnB1dF9zaGEyNTYiOiIyMjBjYWEyMWE3YTMyOGI5ZjRjZTRmNjZmYTc1NTU0N2EwOTc0OWE5NTM2YTkzMGRlOWZlZThjZjZkMjdjOGE5IiwibWV0aG9kIjoidGFza19jb250ZXh0LzIiLCJyZXRyaWV2YWwiOiJyZXRyaWV2YWwvNyIsInJldHJpZXZhbF9zdGF0ZSI6InJlYWR5Iiwid2VpZ2h0cyI6ImI2Y2NiNjM1IiwibW9kZWwiOiJzaGEyNTY6ODU5NzgwMzRhYmQyYWI4OSIsInNvdXJjZV9zZWxlY3Rpb24iOiJjb250ZXh0LWRlZmluaXRpb25zLzMiLCJzb3VyY2Vfb3JkZXIiOiJyYW5rZWRfY29oZXJlbnRfcmVnaW9ucyIsInNvdXJjZV9idWRnZXQiOjMyNSwic291cmNlX2J1ZGdldF91bml0Ijoid2hpdGVzcGFjZS1maWVsZHMtdjEifSwidHJ1bmNhdGVkIjp0cnVlfSwiaXNFcnJvciI6ZmFsc2V9fQo=",
+    "sha256": "4b0e2ba9c23cba2c5a2a17fcd32084e6634c711ca9613e6346dedaf5f865d157",
+    "byte_count": 1523,
+    "token_counts": [
+      {
+        "tokenizer_id": "whitespace-fields-v1",
+        "tokens": 77
+      },
+      {
+        "tokenizer_id": "tiktoken:cl100k_base:ordinary",
+        "vocabulary_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7",
+        "tokens": 472
+      }
+    ]
+  },
+  "retrieval_strategy": "semantic_first",
+  "retrieval_state": "ready",
+  "bundle_summary": "3 ranked source span(s); query 6737ad498a67; read in order (77/325 source tokens); request: describe this file's structure and declarations"
+}
