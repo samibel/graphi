@@ -1,0 +1,10 @@
+{
+  "schema":"graphi-fresh-holdout-operator-attestation/3",
+  "status":"preregistered_pre_freeze",
+  "run_id":"2026-09-15-product-compact-v17-fresh-unseen-v4",
+  "operator":{"identity":"Codex independent holdout operator","task_path":"/root/holdout_operator","provider":"OpenAI","resolved_model_identity":"GPT-5 Codex agent (session-declared)","immutable_backend_snapshot_exposed":false},
+  "isolation":{"branch":"fresh-holdout-compact17-unseen-v4-operator","worktree":"/private/tmp/graphi-compact17-unseen-v4-operator","root_excluded_from_holdout_content":true,"manual_holdout_content_accessed":false,"consumed_holdout_accessed":false},
+  "bindings":{"curator_commit":"654f49ed9105c90f381516104a3080a97ebdc394","product_commit":"26a36f0958cb16d925c4dd871cda76d0e117b15a","product_tree":"6ab1d7075c787b7a8884114d5d732be812cb325f","outside_run_tree_sha256":"02709301667a8564147d88e363f301812c2c37e2d02f06dc2ccea3b96b682b86","dataset_sha256":"c4115b6331e46f1a8c0b0daad020e86e4826a51de8e06a68e3211dea0770a3a6","curator_preregistration_sha256":"777b9e38c1e12a8bcd36d44de15a7011c857ef142e082c18461446361a12bcbb","curator_attestation_sha256":"7ed00ccd7f507754d5b21eae26f7505bcad43c42d7cf546eed1367c344655e8c","handoff_sha256":"46591c6add26e20e3addec4dcc40a346c23abbe7d8c7c799204c14fe5d5dd1a6","corpus_commit":"a0a6ae020bb3899ff0276067863e50523f897370","contract":2,"n":64,"k":56,"budget":1200,"actor_version":"task_context/2-compact/17"},
+  "execution":{"candidate_preflight_sha256":"2f9207e7fcb380bced68791ee71333f488a17a2b6e948677483cddeaeb025c7d","primary_orchestrator_sha256":"dc46d54a0f2cb47dc4ba3b8bf734c8c2c82b08ee7c912cb177405f25a8015d03","orchestrator_uses_reserved_status_variable":false,"capture_invocations_allowed":1,"retries":0,"overwrites":false,"waivers":false,"every_seal_requires_checkout":"/private/tmp/graphi-cobra-compact17-unseen"},
+  "limitations":["Provider exposes no immutable backend snapshot or build digest; model-level byte reproducibility cannot be claimed."]
+}
