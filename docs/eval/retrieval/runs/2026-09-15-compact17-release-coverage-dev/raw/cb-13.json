@@ -1,0 +1,1832 @@
+{
+  "format_version": 2,
+  "harness_version": "task-context-v2-eval/2",
+  "scorer_version": "span-matches-grade3-any/2",
+  "query": {
+    "id": "cb-13",
+    "stratum": "nl_behaviour",
+    "language": "en",
+    "split": "dev",
+    "query": "how are unknown command suggestions computed",
+    "family_id": "cobra-family-a9fee9b132ef12a0",
+    "provenance": "dataset:cobra-v1:cb-13",
+    "judgements": [
+      {
+        "path": "command.go",
+        "start_line": 831,
+        "end_line": 850,
+        "anchor": "func (c *Command) SuggestionsFor(",
+        "grade": 3,
+        "reason": "SuggestionsFor ranks sibling commands by Levenshtein distance and explicit SuggestFor entries.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "cobra.go",
+        "start_line": 187,
+        "end_line": 221,
+        "anchor": "func ld(",
+        "grade": 2,
+        "reason": "ld is the Levenshtein distance the suggestion threshold is computed from.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command.go",
+        "start_line": 750,
+        "end_line": 765,
+        "anchor": "func (c *Command) findSuggestions(",
+        "grade": 2,
+        "reason": "findSuggestions renders the suggestions into the unknown-command error text.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "site/content/user_guide.md",
+        "start_line": 694,
+        "end_line": 734,
+        "anchor": "## Suggestions when",
+        "grade": 1,
+        "reason": "User-guide prose describing the feature from the outside.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      },
+      {
+        "path": "command_test.go",
+        "start_line": 1296,
+        "end_line": 1341,
+        "anchor": "func TestSuggestions(",
+        "grade": 1,
+        "reason": "The test for suggestions.",
+        "annotator": "claude-delegate (SW-258 build)",
+        "reviewer": "orchestrator"
+      }
+    ]
+  },
+  "grade3_judgements": [
+    {
+      "path": "command.go",
+      "start_line": 831,
+      "end_line": 850,
+      "anchor": "func (c *Command) SuggestionsFor(",
+      "grade": 3,
+      "reason": "SuggestionsFor ranks sibling commands by Levenshtein distance and explicit SuggestFor entries.",
+      "annotator": "claude-delegate (SW-258 build)",
+      "reviewer": "orchestrator"
+    }
+  ],
+  "retrieval": {
+    "Rows": [
+      {
+        "NodeID": "55c9ef71e98330be",
+        "DocumentID": "e8bb4ad436190c44",
+        "Path": "site/content/user_guide.md",
+        "Line": 694,
+        "Span": "694-694",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 6075,
+          "LexicalRank": 27,
+          "SemanticRank": 1,
+          "RRF": 0,
+          "Graph": 2250,
+          "Classification": 0,
+          "Final": 8325
+        },
+        "Final": 8325
+      },
+      {
+        "NodeID": "4ca50b1fea04ef7b",
+        "DocumentID": "b170537d572e7d4b",
+        "Path": "command.go",
+        "Line": 832,
+        "Span": "832-832",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5880,
+          "LexicalRank": 1,
+          "SemanticRank": 2,
+          "RRF": 0,
+          "Graph": 1500,
+          "Classification": 0,
+          "Final": 7380
+        },
+        "Final": 7380
+      },
+      {
+        "NodeID": "af558a27aa4d472f",
+        "DocumentID": "1a43e7600bd0e462",
+        "Path": "command.go",
+        "Line": 750,
+        "Span": "750-750",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5869,
+          "LexicalRank": 0,
+          "SemanticRank": 3,
+          "RRF": 0,
+          "Graph": 1500,
+          "Classification": 0,
+          "Final": 7369
+        },
+        "Final": 7369
+      },
+      {
+        "NodeID": "3d75b0d1626ca2e1",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 1496,
+        "Span": "1496-1496",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5880,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 6630
+        },
+        "Final": 6630
+      },
+      {
+        "NodeID": "b1e7f81c12c38f04",
+        "DocumentID": "",
+        "Path": "cobra.go",
+        "Line": 188,
+        "Span": "188-188",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 5880,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 5880
+        },
+        "Final": 5880
+      },
+      {
+        "NodeID": "d401ca7ecadfd4da",
+        "DocumentID": "e3ae0b0165f88f09",
+        "Path": "completions.go",
+        "Line": 683,
+        "Span": "683-683",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4770,
+          "LexicalRank": 0,
+          "SemanticRank": 4,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 5520
+        },
+        "Final": 5520
+      },
+      {
+        "NodeID": "21021a29c3b6d343",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 1556,
+        "Span": "1556-1556",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4770,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 749,
+          "Classification": 0,
+          "Final": 5519
+        },
+        "Final": 5519
+      },
+      {
+        "NodeID": "5a97a4445e1ec222",
+        "DocumentID": "676dd0464ac1f849",
+        "Path": "zsh_completions.go",
+        "Line": 31,
+        "Span": "31-31",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3397,
+          "LexicalRank": 25,
+          "SemanticRank": 36,
+          "RRF": 0,
+          "Graph": 2122,
+          "Classification": 0,
+          "Final": 5519
+        },
+        "Final": 5519
+      },
+      {
+        "NodeID": "5e37d17fbb911b46",
+        "DocumentID": "",
+        "Path": "powershell_completions.go",
+        "Line": 323,
+        "Span": "323-323",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4770,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 749,
+          "Classification": 0,
+          "Final": 5519
+        },
+        "Final": 5519
+      },
+      {
+        "NodeID": "ec40e8ae10c56a4b",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 1303,
+        "Span": "1303-1303",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 2688,
+          "LexicalRank": 3,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 2831,
+          "Classification": 0,
+          "Final": 5519
+        },
+        "Final": 5519
+      },
+      {
+        "NodeID": "8821bed31f420e96",
+        "DocumentID": "15baa52a39fb009c",
+        "Path": "command.go",
+        "Line": 1229,
+        "Span": "1229-1229",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4186,
+          "LexicalRank": 9,
+          "SemanticRank": 7,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4936
+        },
+        "Final": 4936
+      },
+      {
+        "NodeID": "085c68594070e1f5",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 1362,
+        "Span": "1362-1362",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4186,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 749,
+          "Classification": 0,
+          "Final": 4935
+        },
+        "Final": 4935
+      },
+      {
+        "NodeID": "2320e6ccb55ff14c",
+        "DocumentID": "f322f0b98b3071f6",
+        "Path": "command.go",
+        "Line": 1562,
+        "Span": "1562-1562",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3188,
+          "LexicalRank": 5,
+          "SemanticRank": 50,
+          "RRF": 0,
+          "Graph": 1747,
+          "Classification": 0,
+          "Final": 4935
+        },
+        "Final": 4935
+      },
+      {
+        "NodeID": "f9d7155c601ea8a7",
+        "DocumentID": "b3b308d3b80c3a58",
+        "Path": "completions.go",
+        "Line": 194,
+        "Span": "194-194",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4012,
+          "LexicalRank": 0,
+          "SemanticRank": 10,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4762
+        },
+        "Final": 4762
+      },
+      {
+        "NodeID": "09d2122b47b1204d",
+        "DocumentID": "",
+        "Path": "completions.go",
+        "Line": 266,
+        "Span": "266-266",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 2688,
+          "LexicalRank": 24,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 2073,
+          "Classification": 0,
+          "Final": 4761
+        },
+        "Final": 4761
+      },
+      {
+        "NodeID": "ee250d8942c5e1ed",
+        "DocumentID": "cf2cd30c4d91dd16",
+        "Path": "site/content/completions/_index.md",
+        "Line": 92,
+        "Span": "92-92",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3876,
+          "LexicalRank": 0,
+          "SemanticRank": 13,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4626
+        },
+        "Final": 4626
+      },
+      {
+        "NodeID": "192bc73065333477",
+        "DocumentID": "5e52b00bb4a1e0be",
+        "Path": "command.go",
+        "Line": 51,
+        "Span": "51-51",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3772,
+          "LexicalRank": 2,
+          "SemanticRank": 15,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4522
+        },
+        "Final": 4522
+      },
+      {
+        "NodeID": "53d7a740e756cde0",
+        "DocumentID": "9abdf70c5d4b6db1",
+        "Path": "command.go",
+        "Line": 473,
+        "Span": "473-473",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3752,
+          "LexicalRank": 0,
+          "SemanticRank": 16,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4502
+        },
+        "Final": 4502
+      },
+      {
+        "NodeID": "bf34224148ea1883",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 452,
+        "Span": "452-452",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3752,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 749,
+          "Classification": 0,
+          "Final": 4501
+        },
+        "Final": 4501
+      },
+      {
+        "NodeID": "dc2976def459ba3f",
+        "DocumentID": "aaa0be271944e4d7",
+        "Path": "command.go",
+        "Line": 1583,
+        "Span": "1583-1583",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3746,
+          "LexicalRank": 0,
+          "SemanticRank": 17,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4496
+        },
+        "Final": 4496
+      },
+      {
+        "NodeID": "b0d553ba7024e232",
+        "DocumentID": "",
+        "Path": "command.go",
+        "Line": 1551,
+        "Span": "1551-1551",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3746,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 749,
+          "Classification": 0,
+          "Final": 4495
+        },
+        "Final": 4495
+      },
+      {
+        "NodeID": "efc8e78c92ec0bf5",
+        "DocumentID": "5282bc96e29e054c",
+        "Path": "site/content/completions/_index.md",
+        "Line": 517,
+        "Span": "517-517",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4493,
+          "LexicalRank": 0,
+          "SemanticRank": 5,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4493
+        },
+        "Final": 4493
+      },
+      {
+        "NodeID": "e80604946e1c6ad0",
+        "DocumentID": "7e70566331d77acb",
+        "Path": "site/content/completions/_index.md",
+        "Line": 13,
+        "Span": "13-13",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3714,
+          "LexicalRank": 0,
+          "SemanticRank": 18,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4464
+        },
+        "Final": 4464
+      },
+      {
+        "NodeID": "81fa78007aae75ab",
+        "DocumentID": "8219be495a470cd4",
+        "Path": "site/content/completions/_index.md",
+        "Line": 452,
+        "Span": "452-452",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4444,
+          "LexicalRank": 0,
+          "SemanticRank": 6,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4444
+        },
+        "Final": 4444
+      },
+      {
+        "NodeID": "1bbb2147a6815f08",
+        "DocumentID": "9e349b6d0fc82f11",
+        "Path": "zsh_completions.go",
+        "Line": 36,
+        "Span": "36-36",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3560,
+          "LexicalRank": 0,
+          "SemanticRank": 25,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4310
+        },
+        "Final": 4310
+      },
+      {
+        "NodeID": "f99e84f7559cfc4e",
+        "DocumentID": "5e67752c864d8ea8",
+        "Path": "zsh_completions.go",
+        "Line": 42,
+        "Span": "42-42",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3491,
+          "LexicalRank": 0,
+          "SemanticRank": 28,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4241
+        },
+        "Final": 4241
+      },
+      {
+        "NodeID": "6811cef377cc1387",
+        "DocumentID": "bf50f3db8b03a175",
+        "Path": "command_test.go",
+        "Line": 1296,
+        "Span": "1296-1296",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3454,
+          "LexicalRank": 0,
+          "SemanticRank": 31,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4204
+        },
+        "Final": 4204
+      },
+      {
+        "NodeID": "7fafd5dcd622d129",
+        "DocumentID": "c514503c76b73100",
+        "Path": "zsh_completions.go",
+        "Line": 25,
+        "Span": "25-25",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3439,
+          "LexicalRank": 0,
+          "SemanticRank": 34,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4189
+        },
+        "Final": 4189
+      },
+      {
+        "NodeID": "7904904fe6dd4fcb",
+        "DocumentID": "68d967b9998f1602",
+        "Path": "command_test.go",
+        "Line": 1771,
+        "Span": "1771-1771",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3377,
+          "LexicalRank": 0,
+          "SemanticRank": 37,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4127
+        },
+        "Final": 4127
+      },
+      {
+        "NodeID": "b6177b2491c90bd2",
+        "DocumentID": "c7a38f3cc1b299eb",
+        "Path": "command.go",
+        "Line": 1617,
+        "Span": "1617-1617",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3362,
+          "LexicalRank": 0,
+          "SemanticRank": 38,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4112
+        },
+        "Final": 4112
+      },
+      {
+        "NodeID": "1ae506878d93ca1b",
+        "DocumentID": "ca8818581f927488",
+        "Path": "site/content/completions/_index.md",
+        "Line": 421,
+        "Span": "421-421",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4056,
+          "LexicalRank": 0,
+          "SemanticRank": 8,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4056
+        },
+        "Final": 4056
+      },
+      {
+        "NodeID": "780cf2ecce2927f1",
+        "DocumentID": "fc281f3d7fcadcd9",
+        "Path": "powershell_completions.go",
+        "Line": 306,
+        "Span": "306-306",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3290,
+          "LexicalRank": 0,
+          "SemanticRank": 45,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4040
+        },
+        "Final": 4040
+      },
+      {
+        "NodeID": "d369503eb647ea3b",
+        "DocumentID": "df95d10dc344e9bb",
+        "Path": "command.go",
+        "Line": 1278,
+        "Span": "1278-1278",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3287,
+          "LexicalRank": 0,
+          "SemanticRank": 46,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4037
+        },
+        "Final": 4037
+      },
+      {
+        "NodeID": "3b13fc0e17341673",
+        "DocumentID": "732d030b038a475a",
+        "Path": "command.go",
+        "Line": 1603,
+        "Span": "1603-1603",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3282,
+          "LexicalRank": 0,
+          "SemanticRank": 47,
+          "RRF": 0,
+          "Graph": 750,
+          "Classification": 0,
+          "Final": 4032
+        },
+        "Final": 4032
+      },
+      {
+        "NodeID": "c90baa4304ef0228",
+        "DocumentID": "0ca982da69882828",
+        "Path": "site/content/completions/_index.md",
+        "Line": 355,
+        "Span": "355-355",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4030,
+          "LexicalRank": 0,
+          "SemanticRank": 9,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4030
+        },
+        "Final": 4030
+      },
+      {
+        "NodeID": "e6bcc521ddf1147e",
+        "DocumentID": "",
+        "Path": "completions.go",
+        "Line": 899,
+        "Span": "899-899",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 4012,
+          "LexicalRank": 0,
+          "SemanticRank": 0,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 4012
+        },
+        "Final": 4012
+      },
+      {
+        "NodeID": "8bdbcaf376c86fa2",
+        "DocumentID": "45b0c3443909f817",
+        "Path": "completions.go",
+        "Line": 98,
+        "Span": "98-98",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3936,
+          "LexicalRank": 0,
+          "SemanticRank": 11,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3936
+        },
+        "Final": 3936
+      },
+      {
+        "NodeID": "0d2dd586d9b38302",
+        "DocumentID": "890df8f3e38fdcd6",
+        "Path": "completions.go",
+        "Line": 120,
+        "Span": "120-120",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3910,
+          "LexicalRank": 0,
+          "SemanticRank": 12,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3910
+        },
+        "Final": 3910
+      },
+      {
+        "NodeID": "091b471b1f1fa20a",
+        "DocumentID": "603986a84c4ab3b2",
+        "Path": "site/content/completions/_index.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3847,
+          "LexicalRank": 0,
+          "SemanticRank": 14,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3847
+        },
+        "Final": 3847
+      },
+      {
+        "NodeID": "e69e7c6ad51def83",
+        "DocumentID": "5a5758d4745e39f0",
+        "Path": "completions.go",
+        "Line": 105,
+        "Span": "105-105",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3707,
+          "LexicalRank": 0,
+          "SemanticRank": 19,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3707
+        },
+        "Final": 3707
+      },
+      {
+        "NodeID": "c8cef046e045fd43",
+        "DocumentID": "7758755d3852db47",
+        "Path": "site/content/completions/_index.md",
+        "Line": 402,
+        "Span": "402-402",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3675,
+          "LexicalRank": 0,
+          "SemanticRank": 20,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3675
+        },
+        "Final": 3675
+      },
+      {
+        "NodeID": "c629066100fd8965",
+        "DocumentID": "0901c270c0f0c7c9",
+        "Path": "site/content/completions/powershell.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3625,
+          "LexicalRank": 0,
+          "SemanticRank": 21,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3625
+        },
+        "Final": 3625
+      },
+      {
+        "NodeID": "755a04785098a1e2",
+        "DocumentID": "dcbcc1e5470b90a2",
+        "Path": "site/content/completions/zsh.md",
+        "Line": 1,
+        "Span": "1-1",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3624,
+          "LexicalRank": 0,
+          "SemanticRank": 22,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3624
+        },
+        "Final": 3624
+      },
+      {
+        "NodeID": "6a8d19fb32c56620",
+        "DocumentID": "1777aa0918bcb1e9",
+        "Path": "site/content/completions/_index.md",
+        "Line": 290,
+        "Span": "290-290",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3619,
+          "LexicalRank": 0,
+          "SemanticRank": 23,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3619
+        },
+        "Final": 3619
+      },
+      {
+        "NodeID": "15ec7803c5f94fae",
+        "DocumentID": "965964ea263d3643",
+        "Path": "site/content/completions/_index.md",
+        "Line": 487,
+        "Span": "487-487",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3593,
+          "LexicalRank": 0,
+          "SemanticRank": 24,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3593
+        },
+        "Final": 3593
+      },
+      {
+        "NodeID": "91668e1b845e3860",
+        "DocumentID": "d029de637d432424",
+        "Path": "site/content/active_help.md",
+        "Line": 132,
+        "Span": "132-132",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3536,
+          "LexicalRank": 0,
+          "SemanticRank": 26,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3536
+        },
+        "Final": 3536
+      },
+      {
+        "NodeID": "c49fa485a909fe36",
+        "DocumentID": "1793ba08c89f42ba",
+        "Path": "completions.go",
+        "Line": 126,
+        "Span": "126-126",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3494,
+          "LexicalRank": 0,
+          "SemanticRank": 27,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3494
+        },
+        "Final": 3494
+      },
+      {
+        "NodeID": "c65dd1881df23199",
+        "DocumentID": "d13995ff6b5e3513",
+        "Path": "site/content/user_guide.md",
+        "Line": 554,
+        "Span": "554-554",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3471,
+          "LexicalRank": 0,
+          "SemanticRank": 29,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3471
+        },
+        "Final": 3471
+      },
+      {
+        "NodeID": "b67fd942b8152c62",
+        "DocumentID": "2dcf16b0536420be",
+        "Path": "powershell_completions.go",
+        "Line": 28,
+        "Span": "28-28",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3461,
+          "LexicalRank": 0,
+          "SemanticRank": 30,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3461
+        },
+        "Final": 3461
+      },
+      {
+        "NodeID": "77f51209539ada60",
+        "DocumentID": "723c220e78da52bb",
+        "Path": "completions.go",
+        "Line": 29,
+        "Span": "29-29",
+        "Region": "evidence_ranked",
+        "Explain": {
+          "Base": 3454,
+          "LexicalRank": 0,
+          "SemanticRank": 32,
+          "RRF": 0,
+          "Graph": 0,
+          "Classification": 0,
+          "Final": 3454
+        },
+        "Final": 3454
+      }
+    ],
+    "Summary": {
+      "RetrievalVersion": "retrieval/7",
+      "Strategy": "semantic_first",
+      "WeightsHash": "b6ccb635",
+      "ModelFingerprint": "static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b",
+      "IndexFingerprint": "147:static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b\n40:e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b\n64:75cf7a6c2171b230ad19b1e7d8e0b1aee86da5a02af8e7cacedd9921d227623c\n64:107bbdcbad4bff1d299b7a4c3a2fb17c52890688b7dd0e4c9deab79d3c4f3d45\n3:256\n2:v3\n0:\n32:3e5e59dde9c77f4165c529134c988ad8",
+      "Query": "how are unknown command suggestions computed",
+      "Limit": 50,
+      "CandidateK": 50,
+      "RRFk": 60,
+      "RRFScale": 1000000,
+      "MaxPerFile": 3
+    },
+    "Degradation": "ready",
+    "Reason": ""
+  },
+  "bundle": {
+    "outcome": "partial",
+    "summary": "task_context/2: 5 seed(s) for \"how are unknown command suggestions computed\" — 8 related, 8 callers, 1 callees, 8 tests, 6 configs, 8 files, risk high (task_context/2; retrieval/7; weights b6ccb635; model static:potion-code-16M-v2@e9d2a44ca6a05ac6685f3b23709ea57eb7352d5b:75cf7a6c2171:mean:true:107bbdcbad4b:148e5691a6fc:embedeach-f16-tree:d686c1edad9b; 1200/1200 snippet tokens; context-definitions/3; 10 candidate(s) considered; strategy semantic_first; degradation: ready)",
+    "items": [
+      {
+        "ref_id": "55c9ef71e98330be",
+        "rank": 9437484,
+        "reason": "primary: type content.Suggestions when \"unknown command\" happens (site/content/user_guide.md:694) score 300 [seed 1, search]",
+        "evidence_ref_ids": [
+          "e1",
+          "e121"
+        ]
+      },
+      {
+        "ref_id": "4ca50b1fea04ef7b",
+        "rank": 9437444,
+        "reason": "primary: method cobra.Command.SuggestionsFor (command.go:832) score 260 [seed 2, search]",
+        "evidence_ref_ids": [
+          "e2",
+          "e122"
+        ]
+      },
+      {
+        "ref_id": "af558a27aa4d472f",
+        "rank": 9437404,
+        "reason": "primary: method cobra.Command.findSuggestions (command.go:750) score 220 [seed 3, search]",
+        "evidence_ref_ids": [
+          "e3",
+          "e123"
+        ]
+      },
+      {
+        "ref_id": "3d75b0d1626ca2e1",
+        "rank": 9437364,
+        "reason": "primary: method cobra.Command.Name (command.go:1496) score 180 [seed 4, search]",
+        "evidence_ref_ids": [
+          "e4",
+          "e124"
+        ]
+      },
+      {
+        "ref_id": "b1e7f81c12c38f04",
+        "rank": 9437324,
+        "reason": "primary: function cobra.ld (cobra.go:188) score 140 [seed 5, search]",
+        "evidence_ref_ids": [
+          "e5"
+        ]
+      },
+      {
+        "ref_id": "21021a29c3b6d343",
+        "rank": 9437244,
+        "reason": "candidate: method cobra.Command.HasSubCommands (command.go:1556) score 60 [seed 7, search]",
+        "evidence_ref_ids": [
+          "e7",
+          "e125"
+        ]
+      },
+      {
+        "ref_id": "5a97a4445e1ec222",
+        "rank": 9437204,
+        "reason": "candidate: method cobra.Command.GenZshCompletion (zsh_completions.go:31) score 20 [seed 8, search]",
+        "evidence_ref_ids": [
+          "e8",
+          "e126"
+        ]
+      },
+      {
+        "ref_id": "085c68594070e1f5",
+        "rank": 9437185,
+        "reason": "candidate: method cobra.Command.RemoveCommand (command.go:1362) score 1 [seed 12, search]",
+        "evidence_ref_ids": [
+          "e12",
+          "e130"
+        ]
+      },
+      {
+        "ref_id": "2320e6ccb55ff14c",
+        "rank": 9437185,
+        "reason": "candidate: method cobra.Command.IsAvailableCommand (command.go:1562) score 1 [seed 13, search]",
+        "evidence_ref_ids": [
+          "e13",
+          "e131"
+        ]
+      },
+      {
+        "ref_id": "5e37d17fbb911b46",
+        "rank": 9437185,
+        "reason": "candidate: method cobra.Command.GenPowerShellCompletionWithDesc (powershell_completions.go:323) score 1 [seed 9, search]",
+        "evidence_ref_ids": [
+          "e9",
+          "e127"
+        ]
+      },
+      {
+        "ref_id": "8821bed31f420e96",
+        "rank": 9437185,
+        "reason": "candidate: method cobra.Command.InitDefaultHelpCmd (command.go:1229) score 1 [seed 11, search]",
+        "evidence_ref_ids": [
+          "e11",
+          "e129"
+        ]
+      },
+      {
+        "ref_id": "ec40e8ae10c56a4b",
+        "rank": 9437185,
+        "reason": "candidate: method cobra.Command.AddCommand (command.go:1303) score 1 [seed 10, search]",
+        "evidence_ref_ids": [
+          "e10",
+          "e128"
+        ]
+      },
+      {
+        "ref_id": "192bc73065333477",
+        "rank": 8388863,
+        "reason": "related: type cobra.Command (command.go:51) score 255 [calls 0, hierarchy 0, refs 225, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e16",
+          "e17",
+          "e18",
+          "e132"
+        ]
+      },
+      {
+        "ref_id": "085c68594070e1f5",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.RemoveCommand (command.go:1362) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e19"
+        ]
+      },
+      {
+        "ref_id": "18cb88eba73cd7c5",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.ExecuteC (command.go:1052) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e20",
+          "e133"
+        ]
+      },
+      {
+        "ref_id": "19c7bd1575861312",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.hasNameOrAliasPrefix (command.go:1526) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e21",
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "1aebbc9ab4da54c0",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.LocalNonPersistentFlags (command.go:1656) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "1b7d7b255aa691cb",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.InitDefaultHelpFlag (command.go:1186) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e24",
+          "e25"
+        ]
+      },
+      {
+        "ref_id": "2320e6ccb55ff14c",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.IsAvailableCommand (command.go:1562) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "270294113953ddc9",
+        "rank": 8388788,
+        "reason": "related: method cobra.Command.Flags (command.go:1643) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e27"
+        ]
+      },
+      {
+        "ref_id": "085c68594070e1f5",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.RemoveCommand (command.go:1362) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e19"
+        ]
+      },
+      {
+        "ref_id": "18cb88eba73cd7c5",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.ExecuteC (command.go:1052) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e20"
+        ]
+      },
+      {
+        "ref_id": "19c7bd1575861312",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.hasNameOrAliasPrefix (command.go:1526) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e21",
+          "e22"
+        ]
+      },
+      {
+        "ref_id": "1aebbc9ab4da54c0",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.LocalNonPersistentFlags (command.go:1656) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e23"
+        ]
+      },
+      {
+        "ref_id": "1b7d7b255aa691cb",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.InitDefaultHelpFlag (command.go:1186) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e24",
+          "e25"
+        ]
+      },
+      {
+        "ref_id": "270294113953ddc9",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.Flags (command.go:1643) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e27"
+        ]
+      },
+      {
+        "ref_id": "3b78a2226440ec55",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.LocalFlags (command.go:1669) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e28"
+        ]
+      },
+      {
+        "ref_id": "4a62eb62edc50c38",
+        "rank": 7340212,
+        "reason": "caller: method cobra.Command.findNext (command.go:767) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e29"
+        ]
+      },
+      {
+        "ref_id": "2320e6ccb55ff14c",
+        "rank": 6291636,
+        "reason": "callee: method cobra.Command.IsAvailableCommand (command.go:1562) score 180 [calls 150, hierarchy 0, refs 0, other 0, same-file 30]",
+        "evidence_ref_ids": [
+          "e26"
+        ]
+      },
+      {
+        "ref_id": "0589a68066e0ac6f",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestDefaultCompletionCmd (completions_test.go:2427) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e78"
+        ]
+      },
+      {
+        "ref_id": "0ac26c964c5ace9a",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestEnableCommandSortingIsDisabled (command_test.go:1800) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e79"
+        ]
+      },
+      {
+        "ref_id": "0de4457bb6c110fe",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestSubcommandExecuteC (command_test.go:159) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e80"
+        ]
+      },
+      {
+        "ref_id": "2079415768bacab3",
+        "rank": 5242930,
+        "reason": "test: function cobra.removeCompCmd (completions_test.go:2417) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e81"
+        ]
+      },
+      {
+        "ref_id": "358b0239190ff493",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestTraverseWithBadChildFlag (command_test.go:2247) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e82"
+        ]
+      },
+      {
+        "ref_id": "42f86b9f39fe7ac3",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestTraverseNoParentFlags (command_test.go:2209) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e84"
+        ]
+      },
+      {
+        "ref_id": "4968d9d7da2a26b4",
+        "rank": 5242930,
+        "reason": "test: function cobra.TestCommandsAreSorted (command_test.go:1778) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e85"
+        ]
+      },
+      {
+        "ref_id": "4c31a1ae57595acc",
+        "rank": 5242930,
+        "reason": "test: function doc.BenchmarkGenManToFile (doc/man_docs_test.go:221) score 50 [calls 50, hierarchy 0, refs 0, other 0, same-file 0]",
+        "evidence_ref_ids": [
+          "e86"
+        ]
+      },
+      {
+        "ref_id": "config:.github/dependabot.yml",
+        "rank": 4194305,
+        "reason": "config: .github/dependabot.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e99"
+        ]
+      },
+      {
+        "ref_id": "config:.github/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e100"
+        ]
+      },
+      {
+        "ref_id": "config:.github/workflows/labeler.yml",
+        "rank": 4194305,
+        "reason": "config: .github/workflows/labeler.yml score 1 [shared-dir depth]",
+        "evidence_ref_ids": [
+          "e101"
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "ref_id": "e1",
+        "path": "site/content/user_guide.md",
+        "line": 694,
+        "span": "694-694",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e2",
+        "path": "command.go",
+        "line": 832,
+        "span": "832-832",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e3",
+        "path": "command.go",
+        "line": 750,
+        "span": "750-750",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e4",
+        "path": "command.go",
+        "line": 1496,
+        "span": "1496-1496",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e5",
+        "path": "cobra.go",
+        "line": 188,
+        "span": "188-188",
+        "role": "primary",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e7",
+        "path": "command.go",
+        "line": 1556,
+        "span": "1556-1556",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e8",
+        "path": "zsh_completions.go",
+        "line": 31,
+        "span": "31-31",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e9",
+        "path": "powershell_completions.go",
+        "line": 323,
+        "span": "323-323",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e10",
+        "path": "command.go",
+        "line": 1303,
+        "span": "1303-1303",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e11",
+        "path": "command.go",
+        "line": 1229,
+        "span": "1229-1229",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e12",
+        "path": "command.go",
+        "line": 1362,
+        "span": "1362-1362",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e13",
+        "path": "command.go",
+        "line": 1562,
+        "span": "1562-1562",
+        "role": "candidate",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e16",
+        "path": "command.go",
+        "line": 832,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e17",
+        "path": "command.go",
+        "line": 750,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e18",
+        "path": "command.go",
+        "line": 1496,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e19",
+        "path": "command.go",
+        "line": 1388,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e20",
+        "path": "command.go",
+        "line": 1106,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e21",
+        "path": "command.go",
+        "line": 1527,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e22",
+        "path": "command.go",
+        "line": 1528,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e23",
+        "path": "command.go",
+        "line": 1659,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e24",
+        "path": "command.go",
+        "line": 1190,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e25",
+        "path": "command.go",
+        "line": 1193,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e26",
+        "path": "command.go",
+        "line": 835,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e27",
+        "path": "command.go",
+        "line": 1645,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e28",
+        "path": "command.go",
+        "line": 1673,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e29",
+        "path": "command.go",
+        "line": 770,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "confirmed"
+      },
+      {
+        "ref_id": "e78",
+        "path": "completions_test.go",
+        "line": 2437,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e79",
+        "path": "command_test.go",
+        "line": 1812,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e80",
+        "path": "command_test.go",
+        "line": 172,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e81",
+        "path": "completions_test.go",
+        "line": 2420,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e82",
+        "path": "command_test.go",
+        "line": 2263,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e84",
+        "path": "command_test.go",
+        "line": 2224,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e85",
+        "path": "command_test.go",
+        "line": 1791,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e86",
+        "path": "doc/man_docs_test.go",
+        "line": 226,
+        "role": "relation",
+        "claim_type": "graph_relation",
+        "edge_tier": "heuristic"
+      },
+      {
+        "ref_id": "e99",
+        "path": ".github/dependabot.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e100",
+        "path": ".github/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e101",
+        "path": ".github/workflows/labeler.yml",
+        "line": 0,
+        "role": "config",
+        "claim_type": "source_match"
+      },
+      {
+        "ref_id": "e121",
+        "path": "site/content/user_guide.md",
+        "line": 688,
+        "span": "688-700",
+        "role": "snippet",
+        "snippet": "```\n\nBy default, only the first persistent hook found in the command chain is executed.\nThat is why in the above output, the `rootCmd PersistentPostRun` was not called for a child command.\nSet `EnableTraverseRunHooks` global variable to `true` if you want to execute all parents' persistent hooks.\n\n## Suggestions when \"unknown command\" happens\n\nCobra will print automatic suggestions when \"unknown command\" errors happen. This allows Cobra to behave similarly to the `git` command when a typo happens. For example:\n\n```\n$ hugo srever\nError: unknown command \"srever\" for \"hugo\"",
+        "text_hash": "f634057d6431caa3"
+      },
+      {
+        "ref_id": "e122",
+        "path": "command.go",
+        "line": 831,
+        "span": "831-850",
+        "role": "snippet",
+        "snippet": "// SuggestionsFor provides suggestions for the typedName.\nfunc (c *Command) SuggestionsFor(typedName string) []string {\n\tsuggestions := []string{}\n\tfor _, cmd := range c.commands {\n\t\tif cmd.IsAvailableCommand() {\n\t\t\tlevenshteinDistance := ld(typedName, cmd.Name(), true)\n\t\t\tsuggestByLevenshtein := levenshteinDistance \u003c= c.SuggestionsMinimumDistance\n\t\t\tsuggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))\n\t\t\tif suggestByLevenshtein || suggestByPrefix {\n\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t}\n\t\t\tfor _, explicitSuggestion := range cmd.SuggestFor {\n\t\t\t\tif strings.EqualFold(typedName, explicitSuggestion) {\n\t\t\t\t\tsuggestions = append(suggestions, cmd.Name())\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn suggestions\n}",
+        "text_hash": "dbc10606e3407304"
+      },
+      {
+        "ref_id": "e123",
+        "path": "command.go",
+        "line": 750,
+        "span": "750-765",
+        "role": "snippet",
+        "snippet": "func (c *Command) findSuggestions(arg string) string {\n\tif c.DisableSuggestions {\n\t\treturn \"\"\n\t}\n\tif c.SuggestionsMinimumDistance \u003c= 0 {\n\t\tc.SuggestionsMinimumDistance = 2\n\t}\n\tsuggestionsString := \"\"\n\tif suggestions := c.SuggestionsFor(arg); len(suggestions) \u003e 0 {\n\t\tsuggestionsString += \"\\n\\nDid you mean this?\\n\"\n\t\tfor _, s := range suggestions {\n\t\t\tsuggestionsString += fmt.Sprintf(\"\\t%v\\n\", s)\n\t\t}\n\t}\n\treturn suggestionsString\n}",
+        "text_hash": "c44003568a095b10"
+      },
+      {
+        "ref_id": "e124",
+        "path": "command.go",
+        "line": 1495,
+        "span": "1495-1503",
+        "role": "snippet",
+        "snippet": "// Name returns the command's name: the first word in the use line.\nfunc (c *Command) Name() string {\n\tname := c.Use\n\ti := strings.Index(name, \" \")\n\tif i \u003e= 0 {\n\t\tname = name[:i]\n\t}\n\treturn name\n}",
+        "text_hash": "8df7db7061258fef"
+      },
+      {
+        "ref_id": "e125",
+        "path": "command.go",
+        "line": 1555,
+        "span": "1555-1558",
+        "role": "snippet",
+        "snippet": "// HasSubCommands determines if the command has children commands.\nfunc (c *Command) HasSubCommands() bool {\n\treturn len(c.commands) \u003e 0\n}",
+        "text_hash": "13ed1ae4c79dacb8"
+      },
+      {
+        "ref_id": "e126",
+        "path": "zsh_completions.go",
+        "line": 29,
+        "span": "29-33",
+        "role": "snippet",
+        "snippet": "// GenZshCompletion generates zsh completion file including descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenZshCompletion(w io.Writer) error {\n\treturn c.genZshCompletion(w, true)\n}",
+        "text_hash": "6c89b1e3e3adbd29"
+      },
+      {
+        "ref_id": "e127",
+        "path": "powershell_completions.go",
+        "line": 321,
+        "span": "321-325",
+        "role": "snippet",
+        "snippet": "// GenPowerShellCompletionWithDesc generates powershell completion file with descriptions\n// and writes it to the passed writer.\nfunc (c *Command) GenPowerShellCompletionWithDesc(w io.Writer) error {\n\treturn c.genPowerShellCompletion(w, true)\n}",
+        "text_hash": "d6085303f29b8545"
+      },
+      {
+        "ref_id": "e128",
+        "path": "command.go",
+        "line": 1302,
+        "span": "1302-1329",
+        "role": "snippet",
+        "snippet": "// AddCommand adds one or more commands to this parent command.\nfunc (c *Command) AddCommand(cmds ...*Command) {\n\tfor i, x := range cmds {\n\t\tif cmds[i] == c {\n\t\t\tpanic(\"Command can't be a child of itself\")\n\t\t}\n\t\tcmds[i].parent = c\n\t\t// update max lengths\n\t\tusageLen := len(x.Use)\n\t\tif usageLen \u003e c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(x.CommandPath())\n\t\tif commandPathLen \u003e c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(x.Name())\n\t\tif nameLen \u003e c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t\t// If global normalization function exists, update all children\n\t\tif c.globNormFunc != nil {\n\t\t\tx.SetGlobalNormalizationFunc(c.globNormFunc)\n\t\t}\n\t\tc.commands = append(c.commands, x)\n\t\tc.commandsAreSorted = false\n\t}\n}",
+        "text_hash": "88757d6857fcd893"
+      },
+      {
+        "ref_id": "e129",
+        "path": "command.go",
+        "line": 1226,
+        "span": "1226-1275",
+        "role": "snippet",
+        "snippet": "// InitDefaultHelpCmd adds default help command to c.\n// It is called automatically by executing the c or by calling help and usage.\n// If c already has help command or c has no subcommands, it will do nothing.\nfunc (c *Command) InitDefaultHelpCmd() {\n\tif !c.HasSubCommands() {\n\t\treturn\n\t}\n\n\tif c.helpCommand == nil {\n\t\tc.helpCommand = \u0026Command{\n\t\t\tUse:   \"help [command]\",\n\t\t\tShort: \"Help about any command\",\n\t\t\tLong: `Help provides help for any command in the application.\nSimply type ` + c.Name() + ` help [path to command] for full details.`,\n\t\t\tValidArgsFunction: func(c *Command, args []string, toComplete string) ([]string, ShellCompDirective) {\n\t\t\t\tvar completions []string\n\t\t\t\tcmd, _, e := c.Root().Find(args)\n\t\t\t\tif e != nil {\n\t\t\t\t\treturn nil, ShellCompDirectiveNoFileComp\n\t\t\t\t}\n\t\t\t\tif cmd == nil {\n\t\t\t\t\t// Root help command.\n\t\t\t\t\tcmd = c.Root()\n\t\t\t\t}\n\t\t\t\tfor _, subCmd := range cmd.Commands() {\n\t\t\t\t\tif subCmd.IsAvailableCommand() || subCmd == cmd.helpCommand {\n\t\t\t\t\t\tif strings.HasPrefix(subCmd.Name(), toComplete) {\n\t\t\t\t\t\t\tcompletions = append(completions, fmt.Sprintf(\"%s\\t%s\", subCmd.Name(), subCmd.Short))\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\treturn completions, ShellCompDirectiveNoFileComp\n\t\t\t},\n\t\t\tRun: func(c *Command, args []string) {\n\t\t\t\tcmd, _, e := c.Root().Find(args)\n\t\t\t\tif cmd == nil || e != nil {\n\t\t\t\t\tc.Printf(\"Unknown help topic %#q\\n\", args)\n\t\t\t\t\tCheckErr(c.Root().Usage())\n\t\t\t\t} else {\n\t\t\t\t\tcmd.InitDefaultHelpFlag()    // make possible 'help' flag to be shown\n\t\t\t\t\tcmd.InitDefaultVersionFlag() // make possible 'version' flag to be shown\n\t\t\t\t\tCheckErr(cmd.Help())\n\t\t\t\t}\n\t\t\t},\n\t\t\tGroupID: c.helpCommandGroupID,\n\t\t}\n\t}\n\tc.RemoveCommand(c.helpCommand)\n\tc.AddCommand(c.helpCommand)\n}",
+        "text_hash": "49d6741a933794ad"
+      },
+      {
+        "ref_id": "e130",
+        "path": "command.go",
+        "line": 1361,
+        "span": "1361-1393",
+        "role": "snippet",
+        "snippet": "// RemoveCommand removes one or more commands from a parent command.\nfunc (c *Command) RemoveCommand(cmds ...*Command) {\n\tcommands := []*Command{}\nmain:\n\tfor _, command := range c.commands {\n\t\tfor _, cmd := range cmds {\n\t\t\tif command == cmd {\n\t\t\t\tcommand.parent = nil\n\t\t\t\tcontinue main\n\t\t\t}\n\t\t}\n\t\tcommands = append(commands, command)\n\t}\n\tc.commands = commands\n\t// recompute all lengths\n\tc.commandsMaxUseLen = 0\n\tc.commandsMaxCommandPathLen = 0\n\tc.commandsMaxNameLen = 0\n\tfor _, command := range c.commands {\n\t\tusageLen := len(command.Use)\n\t\tif usageLen \u003e c.commandsMaxUseLen {\n\t\t\tc.commandsMaxUseLen = usageLen\n\t\t}\n\t\tcommandPathLen := len(command.CommandPath())\n\t\tif commandPathLen \u003e c.commandsMaxCommandPathLen {\n\t\t\tc.commandsMaxCommandPathLen = commandPathLen\n\t\t}\n\t\tnameLen := len(command.Name())\n\t\tif nameLen \u003e c.commandsMaxNameLen {\n\t\t\tc.commandsMaxNameLen = nameLen\n\t\t}\n\t}\n}",
+        "text_hash": "0dc986b51c300dc8"
+      },
+      {
+        "ref_id": "e131",
+        "path": "command.go",
+        "line": 1560,
+        "span": "1560-1576",
+        "role": "snippet",
+        "snippet": "// IsAvailableCommand determines if a command is available as a non-help command\n// (this includes all non deprecated/hidden commands).\nfunc (c *Command) IsAvailableCommand() bool {\n\tif len(c.Deprecated) != 0 || c.Hidden {\n\t\treturn false\n\t}\n\n\tif c.HasParent() \u0026\u0026 c.Parent().helpCommand == c {\n\t\treturn false\n\t}\n\n\tif c.Runnable() || c.HasAvailableSubCommands() {\n\t\treturn true\n\t}\n\n\treturn false\n}",
+        "text_hash": "b468728a4d872675"
+      },
+      {
+        "ref_id": "e132",
+        "path": "command.go",
+        "line": 173,
+        "span": "173-249",
+        "role": "snippet",
+        "snippet": "\t// helpTemplate is help template defined by user.\n\thelpTemplate string\n\t// helpFunc is help func defined by user.\n\thelpFunc func(*Command, []string)\n\t// helpCommand is command with usage 'help'. If it's not defined by user,\n\t// cobra uses default help command.\n\thelpCommand *Command\n\t// helpCommandGroupID is the group id for the helpCommand\n\thelpCommandGroupID string\n\n\t// completionCommandGroupID is the group id for the completion command\n\tcompletionCommandGroupID string\n\n\t// versionTemplate is the version template defined by user.\n\tversionTemplate string\n\n\t// errPrefix is the error message prefix defined by user.\n\terrPrefix string\n\n\t// inReader is a reader defined by the user that replaces stdin\n\tinReader io.Reader\n\t// outWriter is a writer defined by the user that replaces stdout\n\toutWriter io.Writer\n\t// errWriter is a writer defined by the user that replaces stderr\n\terrWriter io.Writer\n\n\t// FParseErrWhitelist flag parse errors to be ignored\n\tFParseErrWhitelist FParseErrWhitelist\n\n\t// CompletionOptions is a set of options to control the handling of shell completion\n\tCompletionOptions CompletionOptions\n\n\t// commandsAreSorted defines, if command slice are sorted or not.\n\tcommandsAreSorted bool\n\t// commandCalledAs is the name or alias value used to call this command.\n\tcommandCalledAs struct {\n\t\tname   string\n\t\tcalled bool\n\t}\n\n\tctx context.Context\n\n\t// commands is the list of commands supported by this program.\n\tcommands []*Command\n\t// parent is a parent command for this command.\n\tparent *Command\n\t// Max lengths of commands' string lengths for use in padding.\n\tcommandsMaxUseLen         int\n\tcommandsMaxCommandPathLen int\n\tcommandsMaxNameLen        int\n\n\t// TraverseChildren parses flags on all parents before executing child command.\n\tTraverseChildren bool\n\n\t// Hidden defines, if this command is hidden and should NOT show up in the list of available commands.\n\tHidden bool\n\n\t// SilenceErrors is an option to quiet errors down stream.\n\tSilenceErrors bool\n\n\t// SilenceUsage is an option to silence usage when an error occurs.\n\tSilenceUsage bool\n\n\t// DisableFlagParsing disables the flag parsing.\n\t// If this is true all flags will be passed to the command as arguments.\n\tDisableFlagParsing bool\n\n\t// DisableAutoGenTag defines, if gen tag (\"Auto generated by spf13/cobra...\")\n\t// will be printed by generating docs for this command.\n\tDisableAutoGenTag bool\n\n\t// DisableFlagsInUseLine will disable the addition of [flags] to the usage\n\t// line of a command when printing help or generating docs\n\tDisableFlagsInUseLine bool\n\n\t// DisableSuggestions disables the suggestions based on Levenshtein distance\n\t// that go along with 'unknown command' messages.",
+        "text_hash": "c275c6d15f9f35c0"
+      },
+      {
+        "ref_id": "e133",
+        "path": "command.go",
+        "line": 1074,
+        "span": "1074-1075",
+        "role": "snippet",
+        "snippet": "\tc.checkCommandGroups()\n",
+        "text_hash": "e6e07aad09589a38"
+      }
+    ],
+    "confidence": {
+      "distribution": {
+        "confirmed": 0.6533333333333333,
+        "derived": 0.013333333333333334,
+        "heuristic": 0.3333333333333333
+      },
+      "top": "confirmed",
+      "method": "edge_tiers"
+    },
+    "limits": {
+      "cap_applied": 40,
+      "total_available": 60,
+      "dropped": 20,
+      "truncated": true,
+      "next": "some candidate sources were omitted; ask a narrower follow-up for missing details"
+    }
+  },
+  "score": {
+    "covered": true,
+    "item_count": 40,
+    "evidence_citation_count": 50,
+    "snippet_count": 13,
+    "emitted_snippet_whitespace_tokens": 1200,
+    "engine_reported_snippet_tokens": 1200,
+    "engine_reported_token_budget": 1200,
+    "engine_minus_emitted_snippet_tokens": 0,
+    "item_cap_applied": 40,
+    "items_available": 60,
+    "items_dropped": 20,
+    "truncated": true,
+    "grade3_judgements": 1,
+    "matches": [
+      {
+        "evidence_ref_id": "e2",
+        "evidence_path": "command.go",
+        "evidence_line": 832,
+        "evidence_span": "832-832",
+        "evidence_role": "primary",
+        "evidence_claim_type": "source_match",
+        "judgement_path": "command.go",
+        "judgement_start_line": 831,
+        "judgement_end_line": 850,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e16",
+        "evidence_path": "command.go",
+        "evidence_line": 832,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 831,
+        "judgement_end_line": 850,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e26",
+        "evidence_path": "command.go",
+        "evidence_line": 835,
+        "evidence_role": "relation",
+        "evidence_claim_type": "graph_relation",
+        "judgement_path": "command.go",
+        "judgement_start_line": 831,
+        "judgement_end_line": 850,
+        "judgement_grade": 3
+      },
+      {
+        "evidence_ref_id": "e122",
+        "evidence_path": "command.go",
+        "evidence_line": 831,
+        "evidence_span": "831-850",
+        "evidence_role": "snippet",
+        "judgement_path": "command.go",
+        "judgement_start_line": 831,
+        "judgement_end_line": 850,
+        "judgement_grade": 3
+      }
+    ]
+  }
+}
