@@ -199,16 +199,27 @@ type QualificationObservation struct {
 // persisted field is excluded. Oracle payload bytes/digests and their real
 // token counts have independent digests so either can invalidate publication.
 type QualificationBuildDigest struct {
-	Arm                     QualificationArm              `json:"arm"`
-	Build                   int                           `json:"build"`
-	CaptureProvenanceSHA256 string                        `json:"capture_provenance_sha256"`
-	VectorBytesSHA256       string                        `json:"vector_bytes_sha256"`
-	PersistedRowsSHA256     string                        `json:"persisted_rows_sha256"`
-	BundlesSHA256           string                        `json:"bundles_sha256"`
-	TokenCountsSHA256       string                        `json:"token_counts_sha256"`
-	OraclePayloadsSHA256    string                        `json:"oracle_payloads_sha256"`
-	OracleTokenCountsSHA256 string                        `json:"oracle_token_counts_sha256"`
-	Diagnostics             QualificationBuildDiagnostics `json:"diagnostics"`
+	Arm                     QualificationArm                     `json:"arm"`
+	Build                   int                                  `json:"build"`
+	CaptureProvenance       QualificationCaptureProvenanceRecord `json:"capture_provenance"`
+	VectorBytesSHA256       string                               `json:"vector_bytes_sha256"`
+	PersistedRowsSHA256     string                               `json:"persisted_rows_sha256"`
+	BundlesSHA256           string                               `json:"bundles_sha256"`
+	TokenCountsSHA256       string                               `json:"token_counts_sha256"`
+	OraclePayloadsSHA256    string                               `json:"oracle_payloads_sha256"`
+	OracleTokenCountsSHA256 string                               `json:"oracle_token_counts_sha256"`
+	Diagnostics             QualificationBuildDiagnostics        `json:"diagnostics"`
+}
+
+// QualificationCaptureProvenanceRecord closes the provenance behind one
+// independently captured build. The nested snapshot must not contain the
+// digest that owns this record; that deterministic exclusion prevents cycles.
+type QualificationCaptureProvenanceRecord struct {
+	Build      int                        `json:"build"`
+	Arm        QualificationArm           `json:"arm"`
+	WorkDir    string                     `json:"work_dir"`
+	Provenance CandidateCaptureProvenance `json:"provenance"`
+	SHA256     string                     `json:"sha256"`
 }
 
 type qualificationCaptureFacts struct {

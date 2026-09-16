@@ -3,6 +3,7 @@ package retrieval
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -26,9 +27,23 @@ type QualificationInput struct {
 	Preregistration QualificationPreregistration `json:"preregistration"`
 	Observations    []QualificationObservation   `json:"observations"`
 	BuildDigests    []QualificationBuildDigest   `json:"build_digests"`
+	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
 	Decisions       []BlindDecision              `json:"decisions"`
 	OracleControls  []OracleControls             `json:"oracle_controls"`
 	Operating       OperatingMeasurements        `json:"operating_budget"`
+}
+
+// BlindEvidenceSet is the closed, content-addressed source record from which
+// the 64 final decisions for exactly one arm or oracle control are derived.
+type BlindEvidenceSet struct {
+	Arm             QualificationArm   `json:"arm,omitempty"`
+	ControlKind     string             `json:"control_kind,omitempty"`
+	Precondition    PreconditionRecord `json:"precondition"`
+	PreRegistration PreRegistration    `json:"pre_registration"`
+	Responses       []RaterResponse    `json:"responses"`
+	Grades          []Grade            `json:"grades"`
+	Adjudications   []Adjudication     `json:"adjudications"`
+	SHA256          string             `json:"sha256"`
 }
 
 // BlindDecision binds one final two-rater/adjudication outcome to exactly one
@@ -46,13 +61,9 @@ type BlindDecision struct {
 	SHA256             string           `json:"sha256"`
 }
 
-// SealBlindDecision content-addresses both the final evidence and its complete
-// subject/payload/prompt binding.
-func SealBlindDecision(decision BlindDecision) (BlindDecision, error) {
-	evidenceSHA, err := ContentAddress(decision.Outcome, func(*QueryOutcome) {})
-	if err != nil {
-		return BlindDecision{}, err
-	}
+// sealBlindDecision is deliberately internal: a decision becomes trusted only
+// after validation against the source evidence whose address it names.
+func sealBlindDecision(decision BlindDecision, evidenceSHA string) (BlindDecision, error) {
 	decision.EvidenceSHA256 = evidenceSHA
 	decision.SHA256 = ""
 	decisionSHA, err := ContentAddress(decision, func(v *BlindDecision) { v.SHA256 = "" })
@@ -61,6 +72,15 @@ func SealBlindDecision(decision BlindDecision) (BlindDecision, error) {
 	}
 	decision.SHA256 = decisionSHA
 	return decision, nil
+}
+
+func sealBlindEvidenceSet(source BlindEvidenceSet) (BlindEvidenceSet, error) {
+	address, err := ContentAddress(source, func(v *BlindEvidenceSet) { v.SHA256 = "" })
+	if err != nil {
+		return BlindEvidenceSet{}, err
+	}
+	source.SHA256 = address
+	return source, nil
 }
 
 type GateResult struct {
@@ -356,7 +376,10 @@ func validateBuildEvidence(digests []QualificationBuildDigest, arms []Qualificat
 		if _, duplicate := byArm[digest.Arm][digest.Build]; duplicate {
 			return fmt.Errorf("embedded-model qualification decision: arm %s duplicates build ordinal %d", digest.Arm, digest.Build)
 		}
-		for _, value := range []string{digest.CaptureProvenanceSHA256, digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
+		if err := validateQualificationCaptureProvenance(digest); err != nil {
+			return err
+		}
+		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
 			if !isLowerHexDigest(value, 64) {
 				return fmt.Errorf("embedded-model qualification decision: arm %s has malformed build digest", digest.Arm)
 			}
@@ -371,10 +394,22 @@ func validateBuildEvidence(digests []QualificationBuildDigest, arms []Qualificat
 			return fmt.Errorf("embedded-model qualification decision: arm %s has %d builds, want 2", arm, len(byArm[arm]))
 		}
 		first, second := byArm[arm][1], byArm[arm][2]
-		if first.CaptureProvenanceSHA256 == second.CaptureProvenanceSHA256 {
+		if first.CaptureProvenance.SHA256 == second.CaptureProvenance.SHA256 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s builds do not have distinct capture provenance", arm)
 		}
 		evidence.reproducible[arm] = compareQualificationBuildDigests(first, second) == nil
+	}
+	return nil
+}
+
+func validateQualificationCaptureProvenance(digest QualificationBuildDigest) error {
+	record := digest.CaptureProvenance
+	if record.Arm != digest.Arm || record.Build != digest.Build || strings.TrimSpace(record.WorkDir) == "" || record.Provenance.QualificationBuildDigest != nil {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d has malformed closed capture provenance", digest.Arm, digest.Build)
+	}
+	sealed, err := sealQualificationCaptureProvenanceRecord(record)
+	if err != nil || !isLowerHexDigest(record.SHA256, 64) || sealed.SHA256 != record.SHA256 {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture provenance content address differs", digest.Arm, digest.Build)
 	}
 	return nil
 }
@@ -421,6 +456,10 @@ func validateOracleEvidence(controls []OracleControls, queryIDs []string, eviden
 func validateBlindDecisions(in QualificationInput, arms []QualificationArm, evidence *qualificationEvidence) error {
 	controlKinds := []string{OracleControlCurrentCandidatesOraclePacker, OracleControlOracleCandidateCurrentSelector, OracleControlOracleCandidateOraclePacker}
 	want := (len(arms) + len(controlKinds)) * 64
+	derived, sourceSHAs, err := validateBlindEvidenceSets(in, arms, controlKinds, evidence)
+	if err != nil {
+		return err
+	}
 	if len(in.Decisions) != want {
 		return fmt.Errorf("embedded-model qualification decision: got %d blind decisions, want %d", len(in.Decisions), want)
 	}
@@ -435,7 +474,12 @@ func validateBlindDecisions(in QualificationInput, arms []QualificationArm, evid
 		evidence.oraclePasses[kind] = make(map[string]bool, 64)
 	}
 	for _, decision := range in.Decisions {
-		if err := validateBlindDecision(decision); err != nil {
+		subject := blindSubjectKey(decision.Arm, decision.ControlKind)
+		derivedOutcome, ok := derived[subject+"\x00"+decision.QueryID]
+		if !ok {
+			return fmt.Errorf("embedded-model qualification decision: query %s has no validated source evidence", decision.QueryID)
+		}
+		if err := validateBlindDecision(decision, sourceSHAs[subject], derivedOutcome); err != nil {
 			return fmt.Errorf("embedded-model qualification decision: query %s: %w", decision.QueryID, err)
 		}
 		if _, ok := evidence.strata[decision.QueryID]; !ok || decision.Stratum != evidence.strata[decision.QueryID] || decision.Outcome.Stratum != decision.Stratum {
@@ -481,7 +525,91 @@ func validateBlindDecisions(in QualificationInput, arms []QualificationArm, evid
 	return nil
 }
 
-func validateBlindDecision(decision BlindDecision) error {
+func validateBlindEvidenceSets(in QualificationInput, arms []QualificationArm, controlKinds []string, evidence *qualificationEvidence) (map[string]QueryOutcome, map[string]string, error) {
+	wantSubjects := make(map[string]bool, len(arms)+len(controlKinds))
+	for _, arm := range arms {
+		wantSubjects[blindSubjectKey(arm, "")] = true
+	}
+	for _, kind := range controlKinds {
+		wantSubjects[blindSubjectKey("", kind)] = true
+	}
+	if len(in.BlindEvidence) != len(wantSubjects) {
+		return nil, nil, fmt.Errorf("embedded-model qualification decision: got %d blind evidence sets, want %d", len(in.BlindEvidence), len(wantSubjects))
+	}
+	derived := make(map[string]QueryOutcome, len(wantSubjects)*64)
+	sourceSHAs := make(map[string]string, len(wantSubjects))
+	for _, source := range in.BlindEvidence {
+		subject := blindSubjectKey(source.Arm, source.ControlKind)
+		if !wantSubjects[subject] || (source.Arm != "" && source.ControlKind != "") {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence does not name exactly one known subject")
+		}
+		if _, duplicate := sourceSHAs[subject]; duplicate {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: duplicate blind evidence for %s", subject)
+		}
+		if err := ValidatePreconditionRecord(source.Precondition); err != nil {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s precondition: %w", subject, err)
+		}
+		if err := ValidatePreRegistration(source.PreRegistration, source.Precondition); err != nil {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s preregistration: %w", subject, err)
+		}
+		sealed, err := sealBlindEvidenceSet(source)
+		if err != nil || sealed.SHA256 != source.SHA256 {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s content address differs", subject)
+		}
+		artifacts := EvaluationArtifacts{Precondition: source.Precondition, PreRegistration: source.PreRegistration, Responses: source.Responses, Grades: source.Grades, Adjudications: source.Adjudications}
+		if err := CheckPrecedence(artifacts); err != nil {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s precedence: %w", subject, err)
+		}
+		if err := CheckGradeBinding(artifacts); err != nil {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s grade binding: %w", subject, err)
+		}
+		if err := CheckAdjudicationOrder(artifacts); err != nil {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s adjudication: %w", subject, err)
+		}
+		if len(source.PreRegistration.Queries) != 64 {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s has %d queries, want 64", subject, len(source.PreRegistration.Queries))
+		}
+		rubricOK := false
+		for _, input := range source.Precondition.Inputs {
+			if input.Role == "grading_rubric" && input.SHA256 == in.Preregistration.GraderPromptSHA256 {
+				rubricOK = true
+			}
+		}
+		if !rubricOK {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s does not freeze the preregistered grader prompt", subject)
+		}
+		for _, query := range source.PreRegistration.Queries {
+			if query.Stratum != evidence.strata[query.QueryID] || query.PromptSHA256 != in.Preregistration.ReaderPromptSHA256 {
+				return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s query %s has wrong stratum or reader prompt", subject, query.QueryID)
+			}
+			wantPayload := ""
+			if source.Arm != "" {
+				wantPayload = evidence.observations[source.Arm][query.QueryID].PayloadSHA256
+			} else {
+				wantPayload = evidence.oraclePayloads[source.ControlKind][query.QueryID]
+			}
+			if query.BundleSHA256 != wantPayload {
+				return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s query %s payload differs", subject, query.QueryID)
+			}
+			outcome, err := DecideQuery(artifacts, query)
+			if err != nil {
+				return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s query %s decision: %w", subject, query.QueryID, err)
+			}
+			derived[subject+"\x00"+query.QueryID] = outcome
+		}
+		sourceSHAs[subject] = source.SHA256
+	}
+	return derived, sourceSHAs, nil
+}
+
+func blindSubjectKey(arm QualificationArm, controlKind string) string {
+	if arm != "" {
+		return "arm:" + string(arm)
+	}
+	return "control:" + controlKind
+}
+
+func validateBlindDecision(decision BlindDecision, sourceSHA string, derived QueryOutcome) error {
 	if strings.TrimSpace(decision.QueryID) == "" || decision.Outcome.QueryID != decision.QueryID || !isLowerHexDigest(decision.PayloadSHA256, 64) ||
 		!isLowerHexDigest(decision.ReaderPromptSHA256, 64) || !isLowerHexDigest(decision.GraderPromptSHA256, 64) || strings.TrimSpace(decision.Outcome.Reason) == "" {
 		return fmt.Errorf("blind decision has malformed identity or outcome")
@@ -489,9 +617,8 @@ func validateBlindDecision(decision BlindDecision) error {
 	if err := validateFinalQueryOutcome(decision.Outcome); err != nil {
 		return err
 	}
-	evidenceSHA, err := ContentAddress(decision.Outcome, func(*QueryOutcome) {})
-	if err != nil || decision.EvidenceSHA256 != evidenceSHA {
-		return fmt.Errorf("blind decision evidence content address differs")
+	if decision.EvidenceSHA256 != sourceSHA || !reflect.DeepEqual(decision.Outcome, derived) {
+		return fmt.Errorf("blind decision differs from validated source evidence")
 	}
 	decisionSHA, err := ContentAddress(decision, func(v *BlindDecision) { v.SHA256 = "" })
 	if err != nil || decision.SHA256 != decisionSHA {

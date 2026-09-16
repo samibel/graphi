@@ -584,27 +584,31 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 		digest := buildQualificationDigest(o.QualificationArm, inputs)
 		digest.Build = o.QualificationBuild
-		provenanceSHA, err := qualificationCaptureProvenanceSHA(o.QualificationArm, o.WorkDir, provenance)
+		provenanceSnapshot := provenance
+		provenanceSnapshot.QualificationBuildDigest = nil
+		captureRecord, err := sealQualificationCaptureProvenanceRecord(QualificationCaptureProvenanceRecord{
+			Arm: o.QualificationArm, Build: o.QualificationBuild, WorkDir: o.WorkDir, Provenance: provenanceSnapshot,
+		})
 		if err != nil {
 			return nil, provenance, fmt.Errorf("embedded-model qualification capture: encode build provenance: %w", err)
 		}
-		digest.CaptureProvenanceSHA256 = provenanceSHA
+		digest.CaptureProvenance = captureRecord
 		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil
 }
 
-func qualificationCaptureProvenanceSHA(arm QualificationArm, workDir string, provenance CandidateCaptureProvenance) (string, error) {
-	raw, err := json.Marshal(struct {
-		Arm        QualificationArm           `json:"arm"`
-		WorkDir    string                     `json:"work_dir"`
-		Provenance CandidateCaptureProvenance `json:"provenance"`
-	}{arm, workDir, provenance})
+func sealQualificationCaptureProvenanceRecord(record QualificationCaptureProvenanceRecord) (QualificationCaptureProvenanceRecord, error) {
+	address, err := ContentAddress(record, func(v *QualificationCaptureProvenanceRecord) {
+		v.SHA256 = ""
+		v.Provenance.QualificationBuildDigest = nil
+	})
 	if err != nil {
-		return "", err
+		return QualificationCaptureProvenanceRecord{}, err
 	}
-	return SHA256Hex(raw), nil
+	record.SHA256 = address
+	return record, nil
 }
 
 func buildCandidateCaptureIndex(ctx context.Context, o CandidateCaptureOptions, root, workDir string, log io.Writer) (*taskContextIndex, error) {

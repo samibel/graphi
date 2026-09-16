@@ -302,20 +302,20 @@ func TestQualificationBuildDiagnosticsAreNotRepeatedPerQuery(t *testing.T) {
 
 func TestQualificationCaptureProvenanceBindsIndependentRunDirectory(t *testing.T) {
 	provenance := CandidateCaptureProvenance{CaptureVersion: "capture/1", GenerationID: "generation-1"}
-	first, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-1", provenance)
+	first, err := sealQualificationCaptureProvenanceRecord(QualificationCaptureProvenanceRecord{Arm: ArmCodeRank, Build: 1, WorkDir: "/runs/build-1", Provenance: provenance})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-2", provenance)
+	second, err := sealQualificationCaptureProvenanceRecord(QualificationCaptureProvenanceRecord{Arm: ArmCodeRank, Build: 2, WorkDir: "/runs/build-2", Provenance: provenance})
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-1", provenance)
+	again, err := sealQualificationCaptureProvenanceRecord(QualificationCaptureProvenanceRecord{Arm: ArmCodeRank, Build: 1, WorkDir: "/runs/build-1", Provenance: provenance})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first == second || first != again || !isLowerHexDigest(first, 64) {
-		t.Fatalf("first=%q second=%q again=%q", first, second, again)
+	if first.SHA256 == second.SHA256 || first.SHA256 != again.SHA256 || !isLowerHexDigest(first.SHA256, 64) {
+		t.Fatalf("first=%q second=%q again=%q", first.SHA256, second.SHA256, again.SHA256)
 	}
 }
 

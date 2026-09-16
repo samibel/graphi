@@ -132,7 +132,9 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 		{"build cardinality", func(in *QualificationInput) { in.BuildDigests = in.BuildDigests[:7] }},
 		{"duplicate build ordinal", func(in *QualificationInput) { in.BuildDigests[1].Build = 1 }},
 		{"duplicate build provenance", func(in *QualificationInput) {
-			in.BuildDigests[1].CaptureProvenanceSHA256 = in.BuildDigests[0].CaptureProvenanceSHA256
+			in.BuildDigests[1].CaptureProvenance = in.BuildDigests[0].CaptureProvenance
+			in.BuildDigests[1].CaptureProvenance.Arm = in.BuildDigests[1].Arm
+			in.BuildDigests[1].CaptureProvenance.Build = in.BuildDigests[1].Build
 		}},
 		{"negative build diagnostic", func(in *QualificationInput) {
 			in.BuildDigests[0].Diagnostics.AdmissionTruncations = -1
@@ -144,6 +146,66 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 			tc.apply(&in)
 			if _, err := EvaluateQualification(in); err == nil {
 				t.Fatal("accepted incomplete evidence")
+			}
+		})
+	}
+}
+
+func TestEvaluateQualificationRequiresValidatedBlindSourceEvidence(t *testing.T) {
+	valid := passingQualificationInput(t)
+	for _, tc := range []struct {
+		name  string
+		apply func(*QualificationInput)
+	}{
+		{"missing subject evidence", func(in *QualificationInput) { in.BlindEvidence = in.BlindEvidence[:6] }},
+		{"tampered source address", func(in *QualificationInput) { in.BlindEvidence[0].SHA256 = strings.Repeat("9", 64) }},
+		{"tampered response", func(in *QualificationInput) { in.BlindEvidence[0].Responses[0].Text = "tampered" }},
+		{"tampered grade", func(in *QualificationInput) { in.BlindEvidence[0].Grades[0].Outcome = GradeOutcomePass }},
+		{"wrong frozen rubric", func(in *QualificationInput) {
+			for i := range in.BlindEvidence[0].Precondition.Inputs {
+				if in.BlindEvidence[0].Precondition.Inputs[i].Role == "grading_rubric" {
+					in.BlindEvidence[0].Precondition.Inputs[i].SHA256 = strings.Repeat("9", 64)
+				}
+			}
+		}},
+		{"decision differs from derived outcome", func(in *QualificationInput) {
+			in.Decisions[0].Outcome.Outcome = GradeOutcomePass
+			in.Decisions[0].Outcome.Reason = "both primary grades passed"
+			for i := range in.Decisions[0].Outcome.Primary {
+				in.Decisions[0].Outcome.Primary[i].Outcome = GradeOutcomePass
+			}
+			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0], in.Decisions[0].EvidenceSHA256)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := cloneQualificationInput(t, valid)
+			tc.apply(&in)
+			if _, err := EvaluateQualification(in); err == nil {
+				t.Fatal("accepted untrusted blind source evidence")
+			}
+		})
+	}
+}
+
+func TestEvaluateQualificationRecomputesClosedBuildProvenance(t *testing.T) {
+	valid := passingQualificationInput(t)
+	for _, tc := range []struct {
+		name  string
+		apply func(*QualificationBuildDigest)
+	}{
+		{"omission", func(d *QualificationBuildDigest) { d.CaptureProvenance = QualificationCaptureProvenanceRecord{} }},
+		{"tamper", func(d *QualificationBuildDigest) { d.CaptureProvenance.WorkDir = "/tampered" }},
+		{"cycle", func(d *QualificationBuildDigest) {
+			copy := *d
+			d.CaptureProvenance.Provenance.QualificationBuildDigest = &copy
+			d.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, d.CaptureProvenance)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := cloneQualificationInput(t, valid)
+			tc.apply(&in.BuildDigests[0])
+			if _, err := EvaluateQualification(in); err == nil {
+				t.Fatal("accepted non-recomputable build provenance")
 			}
 		})
 	}
@@ -197,7 +259,7 @@ func TestEvaluateQualificationInvalidM2CannotSelectActionBranch(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := passingQualificationInput(t)
-			copyDecisions(in.Decisions, ArmPotion8192, ArmCodeRank)
+			copyDecisions(&in, ArmPotion8192, ArmCodeRank)
 			copySpanPattern(&in, ArmPotion8192, ArmCodeRank)
 			tc.apply(semanticObservation(&in, ArmPotion8192, 0))
 			got, err := EvaluateQualification(in)
@@ -213,7 +275,7 @@ func TestEvaluateQualificationInvalidM2CannotSelectActionBranch(t *testing.T) {
 
 func TestRepresentationCeilingUsesBlindOracleDecisionsNotSpanMetadata(t *testing.T) {
 	in := passingQualificationInput(t)
-	copyDecisions(in.Decisions, ArmCodeRank, ArmPotion512)
+	copyDecisions(&in, ArmCodeRank, ArmPotion512)
 	clearSemanticGain(&in, ArmCodeRank)
 	for i := range in.OracleControls {
 		in.OracleControls[i].OracleCandidateOraclePacker.CompleteGrade3Span = true
@@ -351,10 +413,12 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 		Operating: OperatingMeasurements{CPUOnly: true, ArtifactBytes: 512 << 20,
 			PeakAdditionalSidecarRSSBytes: 1 << 30, QueryEmbedLatencies: make([]time.Duration, 100), FullReindex: 5 * time.Minute},
 	}
+	desired := make(map[string]map[string]bool, 7)
 	for i := range input.Operating.QueryEmbedLatencies {
 		input.Operating.QueryEmbedLatencies[i] = 500 * time.Millisecond
 	}
 	for _, arm := range []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank} {
+		desired[blindSubjectKey(arm, "")] = make(map[string]bool, 64)
 		for q, id := range queryIDs {
 			stage := StageHit{}
 			if arm == ArmCodeRank {
@@ -382,15 +446,19 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			case ArmCodeRank:
 				pass = q < 12 || (q >= 14 && q < 26) || q >= 32 // 56, +12/-2 vs M1
 			}
-			input.Decisions = append(input.Decisions, qualificationBlindDecision(t, pre, arm, "", id, queryStratum[id], observation.PayloadSHA256, pass))
+			desired[blindSubjectKey(arm, "")][id] = pass
 		}
 		for build := 0; build < 2; build++ {
-			input.BuildDigests = append(input.BuildDigests, QualificationBuildDigest{Arm: arm, Build: build + 1,
-				CaptureProvenanceSHA256: strings.Repeat(string('1'+rune(build)), 64),
-				VectorBytesSHA256:       strings.Repeat(string('a'+rune(arm[1]-'0')), 64),
-				PersistedRowsSHA256:     strings.Repeat("b", 64), BundlesSHA256: strings.Repeat("c", 64),
+			digest := QualificationBuildDigest{Arm: arm, Build: build + 1,
+				VectorBytesSHA256:   strings.Repeat(string('a'+rune(arm[1]-'0')), 64),
+				PersistedRowsSHA256: strings.Repeat("b", 64), BundlesSHA256: strings.Repeat("c", 64),
 				TokenCountsSHA256: strings.Repeat("d", 64), OraclePayloadsSHA256: strings.Repeat("e", 64),
-				OracleTokenCountsSHA256: strings.Repeat("f", 64)})
+				OracleTokenCountsSHA256: strings.Repeat("f", 64)}
+			digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, QualificationCaptureProvenanceRecord{
+				Arm: arm, Build: build + 1, WorkDir: "/runs/" + string(arm) + "/build-" + string(rune('1'+build)),
+				Provenance: qualificationCaptureProvenanceFixture(arm, build+1),
+			})
+			input.BuildDigests = append(input.BuildDigests, digest)
 		}
 	}
 	for _, id := range queryIDs {
@@ -410,32 +478,149 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 		input.OracleControls = append(input.OracleControls, OracleControls{CurrentCandidatesOraclePacker: current,
 			OracleCandidateCurrentSelector: selected, OracleCandidateOraclePacker: packed})
 		for _, bundle := range []OracleBundle{current, selected, packed} {
-			input.Decisions = append(input.Decisions, qualificationBlindDecision(t, pre, "", bundle.ControlKind, id, queryStratum[id], bundle.Payload.SHA256, true))
+			key := blindSubjectKey("", bundle.ControlKind)
+			if desired[key] == nil {
+				desired[key] = make(map[string]bool, 64)
+			}
+			desired[key][id] = true
 		}
+	}
+	for _, subject := range []struct {
+		arm  QualificationArm
+		kind string
+	}{
+		{arm: ArmLexical}, {arm: ArmPotion512}, {arm: ArmPotion8192}, {arm: ArmCodeRank},
+		{kind: OracleControlCurrentCandidatesOraclePacker}, {kind: OracleControlOracleCandidateCurrentSelector}, {kind: OracleControlOracleCandidateOraclePacker},
+	} {
+		source, decisions := qualificationBlindEvidenceFixture(t, input, subject.arm, subject.kind, desired[blindSubjectKey(subject.arm, subject.kind)])
+		input.BlindEvidence = append(input.BlindEvidence, source)
+		input.Decisions = append(input.Decisions, decisions...)
 	}
 	return input
 }
 
-func qualificationBlindDecision(t *testing.T, pre QualificationPreregistration, arm QualificationArm, controlKind, queryID, stratum, payloadSHA string, pass bool) BlindDecision {
+func qualificationBlindEvidenceFixture(t *testing.T, in QualificationInput, arm QualificationArm, controlKind string, passes map[string]bool) (BlindEvidenceSet, []BlindDecision) {
 	t.Helper()
-	outcome := GradeOutcomeFail
-	if pass {
-		outcome = GradeOutcomePass
+	precondition := fixturePrecondition(t)
+	for i := range precondition.Inputs {
+		if precondition.Inputs[i].Role == "grading_rubric" {
+			precondition.Inputs[i].SHA256 = in.Preregistration.GraderPromptSHA256
+		}
 	}
-	primary := []RaterOutcome{
-		{RaterID: "reader-1", Role: RaterRolePrimary, ResponseSHA256: strings.Repeat("1", 64), Status: ResponseStatusAnswered, GradeSHA256: strings.Repeat("2", 64), Outcome: outcome},
-		{RaterID: "reader-2", Role: RaterRolePrimary, ResponseSHA256: strings.Repeat("3", 64), Status: ResponseStatusAnswered, GradeSHA256: strings.Repeat("4", 64), Outcome: outcome},
+	var err error
+	precondition, err = SealPreconditionRecord(precondition)
+	if err != nil {
+		t.Fatal(err)
 	}
-	decision := BlindDecision{Arm: arm, ControlKind: controlKind, QueryID: queryID, Stratum: stratum,
-		PayloadSHA256: payloadSHA, ReaderPromptSHA256: pre.ReaderPromptSHA256, GraderPromptSHA256: pre.GraderPromptSHA256,
-		Outcome: QueryOutcome{QueryID: queryID, Stratum: stratum, Primary: primary, Outcome: outcome, Reason: "two primary outcomes agree"}}
-	return mustSealBlindDecision(t, decision)
+	primaries, grader, adjudicator := fixtureParticipants()
+	derivation, err := DerivePassCountForContract(QrelBlindSmokeContractVersion, 64, precondition.DatasetSHA256, "qualification fixture population")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pre := PreRegistration{ContractVersion: QrelBlindSmokeContractVersion, Evaluation: QrelBlindSmokeEvaluationName,
+		PreconditionSHA256: precondition.SHA256, PreconditionCommit: "fedcbafedcbafedcbafedcbafedcbafedcbafedc",
+		RecordedAt: fixturePreRegAt.Format(time.RFC3339), Derivation: derivation, PrimaryRaters: primaries, Grader: grader, Adjudicator: adjudicator}
+	for _, observation := range in.Observations {
+		if observation.Arm != ArmLexical {
+			continue
+		}
+		payloadSHA := ""
+		if arm != "" {
+			for _, candidate := range in.Observations {
+				if candidate.Arm == arm && candidate.QueryID == observation.QueryID {
+					payloadSHA = candidate.PayloadSHA256
+					break
+				}
+			}
+		} else {
+			for _, controls := range in.OracleControls {
+				for _, bundle := range []OracleBundle{controls.CurrentCandidatesOraclePacker, controls.OracleCandidateCurrentSelector, controls.OracleCandidateOraclePacker} {
+					if bundle.QueryID == observation.QueryID && bundle.ControlKind == controlKind {
+						payloadSHA = bundle.Payload.SHA256
+					}
+				}
+			}
+		}
+		pre.Queries = append(pre.Queries, PreRegisteredQuery{QueryID: observation.QueryID, FamilyID: "family-" + observation.QueryID,
+			Stratum: observation.Stratum, QueryTextSHA256: SHA256Hex([]byte(fixtureQueryText(observation.QueryID))),
+			PromptSHA256: in.Preregistration.ReaderPromptSHA256, BundleSHA256: payloadSHA, BundleByteCount: 2,
+			BundleBoundary: PayloadBoundaryCandidate, BundleTokenCounts: []PayloadTokenCount{
+				{TokenizerID: TokenizerID, Tokens: 1}, {TokenizerID: "tiktoken:cl100k_base:ordinary", VocabularySHA256: fixtureVocabSHA, Tokens: 1},
+			}})
+	}
+	pre, err = SealPreRegistration(pre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := BlindEvidenceSet{Arm: arm, ControlKind: controlKind, Precondition: precondition, PreRegistration: pre}
+	for _, query := range pre.Queries {
+		outcome := GradeOutcomeFail
+		if passes[query.QueryID] {
+			outcome = GradeOutcomePass
+		}
+		for _, rater := range primaries {
+			response, sealErr := SealRaterResponse(RaterResponse{ContractVersion: pre.ContractVersion, Evaluation: pre.Evaluation,
+				Role: RaterRolePrimary, QueryID: query.QueryID, RaterID: rater.ID, Provider: rater.Provider, Model: rater.Model,
+				PreRegistrationSHA256: pre.SHA256, QueryTextSHA256: query.QueryTextSHA256, BundleSHA256: query.BundleSHA256,
+				PromptSHA256: query.PromptSHA256, Inputs: []string{"query_text", "preserved_bundle", "answer_instructions"},
+				Status: ResponseStatusAnswered, Text: "blind answer for " + query.QueryID, RespondedAt: fixtureRespondAt.Format(time.RFC3339)})
+			if sealErr != nil {
+				t.Fatal(sealErr)
+			}
+			grade, sealErr := SealGrade(Grade{ContractVersion: pre.ContractVersion, Evaluation: pre.Evaluation, QueryID: query.QueryID,
+				ResponseSHA256: response.SHA256, GraderID: grader.ID, Provider: grader.Provider, Model: grader.Model,
+				RubricSHA256: in.Preregistration.GraderPromptSHA256, Outcome: outcome, Rationale: "qualification fixture grade", GradedAt: fixtureGradeAt.Format(time.RFC3339)})
+			if sealErr != nil {
+				t.Fatal(sealErr)
+			}
+			source.Responses = append(source.Responses, response)
+			source.Grades = append(source.Grades, grade)
+		}
+	}
+	source, err = sealBlindEvidenceSet(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts := EvaluationArtifacts{Precondition: source.Precondition, PreRegistration: source.PreRegistration, Responses: source.Responses, Grades: source.Grades}
+	decisions := make([]BlindDecision, 0, 64)
+	for _, query := range source.PreRegistration.Queries {
+		outcome, decideErr := DecideQuery(artifacts, query)
+		if decideErr != nil {
+			t.Fatal(decideErr)
+		}
+		decision := BlindDecision{Arm: arm, ControlKind: controlKind, QueryID: query.QueryID, Stratum: query.Stratum,
+			PayloadSHA256: query.BundleSHA256, ReaderPromptSHA256: in.Preregistration.ReaderPromptSHA256,
+			GraderPromptSHA256: in.Preregistration.GraderPromptSHA256, Outcome: outcome}
+		decisions = append(decisions, mustSealBlindDecision(t, decision, source.SHA256))
+	}
+	return source, decisions
 }
 
-func mustSealBlindDecision(t *testing.T, decision BlindDecision) BlindDecision {
+func mustSealBlindDecision(t *testing.T, decision BlindDecision, evidenceSHA ...string) BlindDecision {
 	t.Helper()
-	decision.EvidenceSHA256, decision.SHA256 = "", ""
-	sealed, err := SealBlindDecision(decision)
+	address := decision.EvidenceSHA256
+	if len(evidenceSHA) != 0 {
+		address = evidenceSHA[0]
+	}
+	decision.SHA256 = ""
+	sealed, err := sealBlindDecision(decision, address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
+}
+
+func qualificationCaptureProvenanceFixture(arm QualificationArm, build int) CandidateCaptureProvenance {
+	return CandidateCaptureProvenance{CaptureVersion: CandidateCaptureVersion, Transport: "MCP stdio JSON-RPC 2.0", Surface: "tools/call task_context",
+		Boundary: string(PayloadBoundaryCandidate), RepoName: "fixture", RepoSHA: fixtureCandidate, DatasetSHA256: fixtureDatasetSHA,
+		EmbedderSelector: string(arm), ModelFingerprint: "fixture-model", IndexFingerprint: "fixture-index",
+		GenerationID: "generation-" + string(rune('0'+build)), PersistedVectors: 64, SemanticState: "ready", TokenBudget: SavingsCandidateBudget,
+		MethodVersion: "fixture", TokenizerID: "tiktoken:cl100k_base:ordinary", TokenizerVocabSHA: fixtureVocabSHA, QueryCount: 64}
+}
+
+func mustSealQualificationCaptureProvenanceRecord(t *testing.T, record QualificationCaptureProvenanceRecord) QualificationCaptureProvenanceRecord {
+	t.Helper()
+	sealed, err := sealQualificationCaptureProvenanceRecord(record)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -456,71 +641,92 @@ func cloneQualificationInput(t *testing.T, in QualificationInput) QualificationI
 }
 
 func setPass(in *QualificationInput, arm QualificationArm, queryID string, pass bool) {
-	for i := range in.Decisions {
-		if in.Decisions[i].Arm == arm && in.Decisions[i].QueryID == queryID {
-			in.Decisions[i].Outcome.Outcome = GradeOutcomeFail
-			if pass {
-				in.Decisions[i].Outcome.Outcome = GradeOutcomePass
-			}
-			for j := range in.Decisions[i].Outcome.Primary {
-				in.Decisions[i].Outcome.Primary[j].Outcome = in.Decisions[i].Outcome.Outcome
-			}
-			in.Decisions[i] = mustResealBlindDecision(in.Decisions[i])
-			return
-		}
-	}
+	setBlindEvidencePass(in, arm, "", queryID, pass)
+	rebuildBlindSubject(in, arm, "")
 }
 
 func setControlPass(in *QualificationInput, controlKind, queryID string, pass bool) {
-	for i := range in.Decisions {
-		if in.Decisions[i].ControlKind == controlKind && in.Decisions[i].QueryID == queryID {
-			outcome := GradeOutcomeFail
-			if pass {
-				outcome = GradeOutcomePass
-			}
-			in.Decisions[i].Outcome.Outcome = outcome
-			for j := range in.Decisions[i].Outcome.Primary {
-				in.Decisions[i].Outcome.Primary[j].Outcome = outcome
-			}
-			in.Decisions[i] = mustResealBlindDecision(in.Decisions[i])
-			return
-		}
-	}
+	setBlindEvidencePass(in, "", controlKind, queryID, pass)
+	rebuildBlindSubject(in, "", controlKind)
 }
 
-func mustResealBlindDecision(decision BlindDecision) BlindDecision {
-	decision.EvidenceSHA256, decision.SHA256 = "", ""
-	sealed, err := SealBlindDecision(decision)
+func setBlindEvidencePass(in *QualificationInput, arm QualificationArm, controlKind, queryID string, pass bool) {
+	outcome := GradeOutcomeFail
+	if pass {
+		outcome = GradeOutcomePass
+	}
+	for i := range in.BlindEvidence {
+		if in.BlindEvidence[i].Arm != arm || in.BlindEvidence[i].ControlKind != controlKind {
+			continue
+		}
+		for j := range in.BlindEvidence[i].Grades {
+			if in.BlindEvidence[i].Grades[j].QueryID == queryID {
+				in.BlindEvidence[i].Grades[j].Outcome = outcome
+				sealed, err := SealGrade(in.BlindEvidence[i].Grades[j])
+				if err != nil {
+					panic(err)
+				}
+				in.BlindEvidence[i].Grades[j] = sealed
+			}
+		}
+		return
+	}
+	panic("blind evidence subject not found")
+}
+
+func rebuildBlindSubject(in *QualificationInput, arm QualificationArm, controlKind string) {
+	var source *BlindEvidenceSet
+	for i := range in.BlindEvidence {
+		if in.BlindEvidence[i].Arm == arm && in.BlindEvidence[i].ControlKind == controlKind {
+			source = &in.BlindEvidence[i]
+			break
+		}
+	}
+	if source == nil {
+		panic("blind evidence subject not found")
+	}
+	sealedSource, err := sealBlindEvidenceSet(*source)
 	if err != nil {
 		panic(err)
 	}
-	return sealed
+	*source = sealedSource
+	artifacts := EvaluationArtifacts{Precondition: source.Precondition, PreRegistration: source.PreRegistration, Responses: source.Responses, Grades: source.Grades, Adjudications: source.Adjudications}
+	queries := make(map[string]PreRegisteredQuery, 64)
+	for _, query := range source.PreRegistration.Queries {
+		queries[query.QueryID] = query
+	}
+	for i := range in.Decisions {
+		if in.Decisions[i].Arm != arm || in.Decisions[i].ControlKind != controlKind {
+			continue
+		}
+		outcome, decideErr := DecideQuery(artifacts, queries[in.Decisions[i].QueryID])
+		if decideErr != nil {
+			panic(decideErr)
+		}
+		in.Decisions[i].Outcome = outcome
+		sealed, sealErr := sealBlindDecision(in.Decisions[i], source.SHA256)
+		if sealErr != nil {
+			panic(sealErr)
+		}
+		in.Decisions[i] = sealed
+	}
 }
 
-func copyDecisions(decisions []BlindDecision, dst, src QualificationArm) {
+func copyDecisions(in *QualificationInput, dst, src QualificationArm) {
 	passes := map[string]bool{}
-	for _, decision := range decisions {
+	for _, decision := range in.Decisions {
 		if decision.Arm == src {
 			passes[decision.QueryID] = decision.Outcome.Outcome == GradeOutcomePass
 		}
 	}
-	for i := range decisions {
-		if decisions[i].Arm == dst {
-			outcome := GradeOutcomeFail
-			if passes[decisions[i].QueryID] {
-				outcome = GradeOutcomePass
-			}
-			decisions[i].Outcome.Outcome = outcome
-			for j := range decisions[i].Outcome.Primary {
-				decisions[i].Outcome.Primary[j].Outcome = outcome
-			}
-			decisions[i] = mustResealBlindDecision(decisions[i])
-		}
+	for queryID, pass := range passes {
+		setBlindEvidencePass(in, dst, "", queryID, pass)
 	}
+	rebuildBlindSubject(in, dst, "")
 }
 
 func copyGrades(in *QualificationInput, dst, src QualificationArm) {
-	copyDecisions(in.Decisions, dst, src)
+	copyDecisions(in, dst, src)
 }
 
 func copySpanPattern(in *QualificationInput, dst, src QualificationArm) {
