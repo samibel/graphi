@@ -159,6 +159,20 @@ func TestQualificationMeasurementBindingsRejectCandidateDirtyOrDriftWithoutEvide
 	}
 }
 
+func TestQualificationOperatingReindexDoesNotEmbedReadinessQuery(t *testing.T) {
+	emb := &recordingQualificationReindexEmbedder{id: "operating-reindex", dim: 3}
+	result, err := qualificationOperatingReindex(t.Context(), fixtureRoot(t), t.TempDir(), emb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.admittedDocuments) == 0 {
+		t.Fatal("operating reindex admitted no documents")
+	}
+	if emb.queryCalls != 0 {
+		t.Fatalf("operating reindex performed %d query embeddings before the explicit qualification schedule", emb.queryCalls)
+	}
+}
+
 func qualificationGitFixture(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -190,6 +204,30 @@ type fakeQualificationOperatingEmbedder struct {
 	queries            []string
 	runtimeCalls       int
 	driftAtRuntimeCall int
+}
+
+type recordingQualificationReindexEmbedder struct {
+	id         string
+	dim        int
+	queryCalls int
+}
+
+func (e *recordingQualificationReindexEmbedder) ID() string { return e.id }
+func (e *recordingQualificationReindexEmbedder) Dim() int   { return e.dim }
+func (e *recordingQualificationReindexEmbedder) Embed(_ context.Context, texts []string) ([][]float32, error) {
+	vectors := make([][]float32, len(texts))
+	for i := range vectors {
+		vectors[i] = make([]float32, e.dim)
+		vectors[i][0] = 1
+	}
+	return vectors, nil
+}
+func (e *recordingQualificationReindexEmbedder) EmbedQueryWithDiagnostics(_ context.Context, _ string) (embed.QueryEmbedding, error) {
+	e.queryCalls++
+	unknown := 0
+	vector := make([]float32, e.dim)
+	vector[0] = 1
+	return embed.QueryEmbedding{Vectors: [][]float32{vector}, UnknownTokens: &unknown}, nil
 }
 
 func (f *fakeQualificationOperatingEmbedder) ID() string { return f.id }

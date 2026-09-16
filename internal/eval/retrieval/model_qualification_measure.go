@@ -372,7 +372,9 @@ func withQualificationMeasurementBindings(ctx context.Context, candidateRoot, so
 }
 
 func qualificationOperatingReindex(ctx context.Context, repoRoot, workDir string, emb embed.Embedder) (operatingReindexResult, error) {
-	idx, err := buildTaskContextIndexWithEmbedder(ctx, repoRoot, workDir, emb, emb.ID(), io.Discard)
+	// The frozen query schedule starts after reindex. Validate readiness from
+	// persisted state below instead of issuing the default builder's query probe.
+	idx, err := buildTaskContextIndexWithEmbedderOptions(ctx, repoRoot, workDir, emb, io.Discard, taskContextIndexBuildOptions{semanticReadinessProbe: false})
 	if err != nil {
 		return operatingReindexResult{}, err
 	}

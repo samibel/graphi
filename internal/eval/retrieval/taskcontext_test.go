@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -26,6 +27,7 @@ type countingEmbedder struct {
 	id    string
 	dim   int
 	calls int
+	texts []string
 }
 
 func (e *countingEmbedder) ID() string { return e.id }
@@ -34,6 +36,7 @@ func (e *countingEmbedder) Dim() int { return e.dim }
 
 func (e *countingEmbedder) Embed(_ context.Context, texts []string) ([][]float32, error) {
 	e.calls++
+	e.texts = append(e.texts, texts...)
 	vectors := make([][]float32, len(texts))
 	for i := range vectors {
 		vectors[i] = make([]float32, e.dim)
@@ -54,6 +57,9 @@ func TestBuildTaskContextIndexWithEmbedderUsesProvidedInstance(t *testing.T) {
 	}
 	if idx.fingerprint.ModelID != emb.ID() {
 		t.Fatalf("fingerprint model id = %q, want injected instance id %q", idx.fingerprint.ModelID, emb.ID())
+	}
+	if !slices.Contains(emb.texts, "task context readiness probe") {
+		t.Fatal("default task-context builder skipped its semantic readiness probe")
 	}
 }
 

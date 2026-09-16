@@ -962,6 +962,14 @@ func buildTaskContextLexicalIndex(ctx context.Context, root, workDir string, log
 }
 
 func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string, emb embed.Embedder, _ string, log io.Writer) (*taskContextIndex, error) {
+	return buildTaskContextIndexWithEmbedderOptions(ctx, root, workDir, emb, log, taskContextIndexBuildOptions{semanticReadinessProbe: true})
+}
+
+type taskContextIndexBuildOptions struct {
+	semanticReadinessProbe bool
+}
+
+func buildTaskContextIndexWithEmbedderOptions(ctx context.Context, root, workDir string, emb embed.Embedder, log io.Writer, options taskContextIndexBuildOptions) (*taskContextIndex, error) {
 	dbPath := filepath.Join(workDir, "task-context-eval.db")
 	metaDir := filepath.Join(workDir, "task-context-eval-meta")
 	store, err := graphstore.OpenSQLite(dbPath)
@@ -1060,12 +1068,14 @@ func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string
 	svc := search.New(store).WithSemantic(reg, index, store).WithSemanticState(search.SemanticState{
 		State: embed.StateReady, Requested: fp, Reason: search.ReasonForState(embed.StateReady),
 	})
-	probe, err := svc.SemanticSearch(ctx, "task context readiness probe", 1)
-	if err != nil {
-		return nil, fmt.Errorf("task-context eval: semantic readiness probe: %w", err)
-	}
-	if !probe.Available {
-		return nil, fmt.Errorf("task-context eval: semantic readiness probe unavailable: %s", probe.Reason)
+	if options.semanticReadinessProbe {
+		probe, err := svc.SemanticSearch(ctx, "task context readiness probe", 1)
+		if err != nil {
+			return nil, fmt.Errorf("task-context eval: semantic readiness probe: %w", err)
+		}
+		if !probe.Available {
+			return nil, fmt.Errorf("task-context eval: semantic readiness probe unavailable: %s", probe.Reason)
+		}
 	}
 	fmt.Fprintf(log, "task-context eval: semantic ready (model=%s, dim=%d, persisted_vectors=%d, generation=%s)\n", emb.ID(), fp.Dim, len(rows), gen.ID)
 	closeOnError = false
