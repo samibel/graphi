@@ -445,6 +445,16 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 	return m.Embed(ctx, texts)
 }
 
+// EmbedQueryWithDiagnostics loads the pinned model once and obtains the query
+// vector plus UNK count from its single preparation pass.
+func (e *Embedder) EmbedQueryWithDiagnostics(ctx context.Context, text string) (embed.QueryEmbedding, error) {
+	m, err := e.load(ctx)
+	if err != nil {
+		return embed.QueryEmbedding{}, err
+	}
+	return m.EmbedQueryWithDiagnostics(ctx, text)
+}
+
 // loadAbsentError is the typed error load surfaces when the artifact is
 // absent. It is the single source of truth for "no artifact → run
 // setup-embedder" — engine/search.SemanticResponse renders it as the typed
@@ -690,12 +700,13 @@ func LoadModel(dir string) (*Model, error) {
 
 // Compile-time interface assertions.
 var (
-	_ embed.Embedder            = (*Embedder)(nil)
-	_ embed.DimDiscoverer       = (*Embedder)(nil)
-	_ embed.AvailabilityChecker = (*Embedder)(nil)
-	_ embed.TokenizingEmbedder  = (*Embedder)(nil)
-	_ embed.Admission           = (*Embedder)(nil)
-	_ embed.AdmissionProfile    = (*Embedder)(nil)
+	_ embed.Embedder                = (*Embedder)(nil)
+	_ embed.DiagnosticQueryEmbedder = (*Embedder)(nil)
+	_ embed.DimDiscoverer           = (*Embedder)(nil)
+	_ embed.AvailabilityChecker     = (*Embedder)(nil)
+	_ embed.TokenizingEmbedder      = (*Embedder)(nil)
+	_ embed.Admission               = (*Embedder)(nil)
+	_ embed.AdmissionProfile        = (*Embedder)(nil)
 )
 
 // Tokenizer returns the active tokenizer so the production embedder

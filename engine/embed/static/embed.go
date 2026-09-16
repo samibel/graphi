@@ -276,7 +276,24 @@ func (m *Model) TokenIDs(text string) []int { return m.tok.Encode(text) }
 // longest, so BatchLongest padding is a no-op here (the production path
 // applies no padding — see embed.go's `Embed`).
 func (m *Model) InferenceIDs(text string) []int {
-	return m.dropUnkAndCap(m.tok.Encode(m.cutChars(text)))
+	ids, _ := m.inferenceIDsAndUnknown(text)
+	return ids
+}
+
+// inferenceIDsAndUnknown prepares one text exactly once. The unknown count is
+// observed after the model's character cut, but before Model2Vec drops UNK ids
+// and caps the remaining inference stream. The returned ids are the exact ids
+// embedOne pools, so vector and diagnostic cannot drift through a second
+// tokenization.
+func (m *Model) inferenceIDsAndUnknown(text string) ([]int, int) {
+	raw := m.tok.Encode(m.cutChars(text))
+	unknown := 0
+	for _, id := range raw {
+		if id == m.tok.unkID {
+			unknown++
+		}
+	}
+	return m.dropUnkAndCap(raw), unknown
 }
 
 // cutChars is model2vec's `sentence[:max_length * median_token_length]`.
@@ -341,9 +358,20 @@ func (m *Model) Embed(ctx context.Context, texts []string) ([][]float32, error) 
 	}
 	out := make([][]float32, len(texts))
 	for i, t := range texts {
-		out[i] = m.embedOne(m.InferenceIDs(t))
+		ids, _ := m.inferenceIDsAndUnknown(t)
+		out[i] = m.embedOne(ids)
 	}
 	return out, nil
+}
+
+// EmbedQueryWithDiagnostics embeds one symmetric Potion query and reports the
+// UNK count derived from the same prepared ids that produced its vector.
+func (m *Model) EmbedQueryWithDiagnostics(ctx context.Context, text string) (embed.QueryEmbedding, error) {
+	if err := ctx.Err(); err != nil {
+		return embed.QueryEmbedding{}, err
+	}
+	ids, unknown := m.inferenceIDsAndUnknown(text)
+	return embed.QueryEmbedding{Vectors: [][]float32{m.embedOne(ids)}, UnknownTokens: &unknown}, nil
 }
 
 // embedOne is the per-text arithmetic (the SW-259 reference pipeline on a

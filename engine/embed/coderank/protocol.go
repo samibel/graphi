@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-const ProtocolVersion = "graphi-coderank/1"
+const ProtocolVersion = "graphi-coderank/2"
 
 type responseBinding struct {
 	Protocol       string `json:"protocol"`
@@ -38,7 +38,8 @@ type embedRequest struct {
 
 type embedResponse struct {
 	responseBinding
-	Vectors [][]*float32 `json:"vectors"`
+	Vectors            [][]*float32 `json:"vectors"`
+	UnknownTokenCounts []*int       `json:"unknown_token_counts"`
 }
 
 // decodeResponse enforces the wire schema. The adapter must additionally verify

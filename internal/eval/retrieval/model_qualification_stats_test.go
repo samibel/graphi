@@ -565,7 +565,7 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 				VectorBytesSHA256:   strings.Repeat(string('a'+rune(arm[1]-'0')), 64),
 				PersistedRowsSHA256: strings.Repeat("b", 64), BundlesSHA256: strings.Repeat("c", 64),
 				TokenCountsSHA256: strings.Repeat("d", 64), OraclePayloadsSHA256: strings.Repeat("e", 64),
-				OracleTokenCountsSHA256: strings.Repeat("f", 64)}
+				OracleTokenCountsSHA256: strings.Repeat("f", 64), QueryDiagnosticsSHA256: strings.Repeat("1", 64)}
 			digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, QualificationCaptureProvenanceRecord{
 				Arm: arm, Build: build + 1, WorkDir: "/runs/" + string(arm) + "/build-" + string(rune('1'+build)),
 				Provenance: qualificationCaptureProvenanceFixture(pre, dataset, arm, build+1),

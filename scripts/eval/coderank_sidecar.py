@@ -20,7 +20,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
-PROTOCOL = "graphi-coderank/1"
+PROTOCOL = "graphi-coderank/2"
 QUERY_INSTRUCTION = "Represent this query for searching relevant code: "
 MAX_BODY = 1024 * 1024
 MAX_BATCH = 32
@@ -78,7 +78,8 @@ def validate_manifest(m):
                     "dimension", "precision", "normalization", "compute", "admission", "query"))
     if type(m["schema_version"]) is not int or m["schema_version"] != 1 or m["protocol"] != PROTOCOL:
         raise ValueError("unsupported manifest protocol")
-    if (m["dimension"], m["precision"], m["normalization"], m["compute"]) != (768, "float32", "l2", "cpu"):
+    if (type(m["dimension"]) is not int or
+            (m["dimension"], m["precision"], m["normalization"], m["compute"]) != (768, "float32", "l2", "cpu")):
         raise ValueError("unsupported embedding profile")
     for field in ("model", "tokenizer", "runtime", "admission", "query"):
         expected = {
@@ -286,12 +287,37 @@ class LocalEncoder:
     def token_count(self, text):
         return len(self.model.tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"])
 
-    def encode(self, texts):
+    def encode_with_diagnostics(self, texts, max_tokens):
         import torch
         features = self.model.tokenizer(
             texts, add_special_tokens=True, padding=True, truncation=False, return_tensors="pt")
+        if "input_ids" not in features or "attention_mask" not in features:
+            raise ValueError("tokenizer omitted required embedding features")
+        input_ids = features["input_ids"].tolist()
+        attention = features["attention_mask"].tolist()
+        if len(input_ids) != len(texts) or len(attention) != len(texts):
+            raise ValueError("invalid tokenizer feature cardinality")
+        unknown_id = self.model.tokenizer.unk_token_id
+        if unknown_id is not None and type(unknown_id) is not int:
+            raise ValueError("invalid tokenizer unknown id")
+        token_counts = []
+        unknown_counts = []
+        for ids, mask in zip(input_ids, attention):
+            if not isinstance(ids, list) or not isinstance(mask, list) or len(ids) != len(mask):
+                raise ValueError("invalid tokenizer feature shape")
+            active = []
+            for token, included in zip(ids, mask):
+                if type(token) is not int or type(included) is not int or included not in (0, 1):
+                    raise ValueError("invalid tokenizer feature value")
+                if included == 1:
+                    active.append(token)
+            if len(active) > max_tokens:
+                raise ValueError("embedding input exceeds token limit")
+            token_counts.append(len(active))
+            unknown_counts.append(0 if unknown_id is None else sum(token == unknown_id for token in active))
         with torch.inference_mode():
-            return self.model(features)["sentence_embedding"].float().tolist()
+            vectors = self.model(features)["sentence_embedding"].float().tolist()
+        return vectors, token_counts, unknown_counts
 
 
 def load_encoder(manifest, model_dir):
@@ -363,13 +389,17 @@ class SidecarApp:
             if request["kind"] == "query" and not text.startswith(QUERY_INSTRUCTION):
                 raise ValueError("query is missing its pinned instruction")
         if not texts:
-            return dict(self.binding(), vectors=[])
+            return dict(self.binding(), vectors=[], unknown_token_counts=[])
         with self._lock:
-            if any(self._count(text) > self._manifest["admission"]["max_tokens"] for text in texts):
-                raise ValueError("embedding input exceeds token limit")
-            vectors = self.encoder.encode(texts)
-        if len(vectors) != len(texts):
+            vectors, token_counts, unknown_counts = self.encoder.encode_with_diagnostics(
+                texts, self._manifest["admission"]["max_tokens"])
+        if len(vectors) != len(texts) or len(token_counts) != len(texts) or len(unknown_counts) != len(texts):
             raise ValueError("invalid embedding cardinality")
+        for count, unknown in zip(token_counts, unknown_counts):
+            if type(count) is not int or not 0 <= count <= self._manifest["admission"]["max_tokens"]:
+                raise ValueError("invalid tokenizer count")
+            if type(unknown) is not int or not 0 <= unknown <= count:
+                raise ValueError("invalid unknown-token count")
         normalized = []
         for vector in vectors:
             if len(vector) != self._manifest["dimension"]:
@@ -380,7 +410,7 @@ class SidecarApp:
             if not math.isfinite(norm) or norm == 0:
                 raise ValueError("invalid embedding norm")
             normalized.append([value / norm for value in vector])
-        return dict(self.binding(), vectors=normalized)
+        return dict(self.binding(), vectors=normalized, unknown_token_counts=unknown_counts)
 
 
 def make_server(app, bind, port):

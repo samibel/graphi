@@ -67,11 +67,14 @@ func newFakeSidecar(t *testing.T) *fakeSidecar {
 				t.Errorf("unknown kind %q", req.Kind)
 			}
 			vectors := make([][]float32, len(req.Texts))
+			unknownTokenCounts := make([]int, len(req.Texts))
 			for i := range vectors {
 				vectors[i] = make([]float32, 768)
 				vectors[i][0] = 1
+				unknownTokenCounts[i] = i + 2
 			}
 			out["vectors"] = vectors
+			out["unknown_token_counts"] = unknownTokenCounts
 		default:
 			t.Errorf("unexpected path %q", r.URL.Path)
 		}
@@ -131,6 +134,48 @@ func TestEmbedderBindsEveryResponseAndSeparatesQueryPreparation(t *testing.T) {
 	}
 	if err := e.ProbeDim(t.Context()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestEmbedderReturnsUnknownCountFromTheSameQueryResponse(t *testing.T) {
+	s := newFakeSidecar(t)
+	e := constructFake(t, s)
+
+	got, err := embed.EmbedQueryWithDiagnostics(t.Context(), e, "find parser")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.UnknownTokens == nil || *got.UnknownTokens != 2 || len(got.Vectors) != 1 || len(got.Vectors[0]) != 768 {
+		t.Fatalf("got=%+v", got)
+	}
+	if !reflect.DeepEqual(s.queries, []string{"Represent this query for searching relevant code: find parser"}) {
+		t.Fatalf("queries=%q", s.queries)
+	}
+}
+
+func TestEmbedderRejectsInvalidUnknownTokenCounts(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(map[string]any)
+	}{
+		{"missing", func(out map[string]any) { delete(out, "unknown_token_counts") }},
+		{"null", func(out map[string]any) { out["unknown_token_counts"] = nil }},
+		{"wrong cardinality", func(out map[string]any) { out["unknown_token_counts"] = []int{} }},
+		{"null member", func(out map[string]any) { out["unknown_token_counts"] = []any{nil} }},
+		{"negative", func(out map[string]any) { out["unknown_token_counts"] = []int{-1} }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newFakeSidecar(t)
+			e := constructFake(t, s)
+			s.mutate = func(path string, out map[string]any) {
+				if path == "/v1/embed" {
+					tc.mutate(out)
+				}
+			}
+			if got, err := embed.EmbedQueryWithDiagnostics(t.Context(), e, "query"); err == nil || got.Vectors != nil || got.UnknownTokens != nil {
+				t.Fatalf("accepted invalid counts: got=%+v err=%v", got, err)
+			}
+		})
 	}
 }
 

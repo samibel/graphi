@@ -26,13 +26,14 @@ type Embedder struct {
 }
 
 var (
-	_ embed.Embedder            = (*Embedder)(nil)
-	_ embed.QueryEmbedder       = (*Embedder)(nil)
-	_ embed.Admission           = (*Embedder)(nil)
-	_ embed.AdmissionProfile    = (*Embedder)(nil)
-	_ embed.DimDiscoverer       = (*Embedder)(nil)
-	_ embed.AvailabilityChecker = (*Embedder)(nil)
-	_ embed.RuntimeAttestor     = (*Embedder)(nil)
+	_ embed.Embedder                = (*Embedder)(nil)
+	_ embed.QueryEmbedder           = (*Embedder)(nil)
+	_ embed.DiagnosticQueryEmbedder = (*Embedder)(nil)
+	_ embed.Admission               = (*Embedder)(nil)
+	_ embed.AdmissionProfile        = (*Embedder)(nil)
+	_ embed.DimDiscoverer           = (*Embedder)(nil)
+	_ embed.AvailabilityChecker     = (*Embedder)(nil)
+	_ embed.RuntimeAttestor         = (*Embedder)(nil)
 )
 
 // NewFromManifest validates every pin before dialing, then pins the initial
@@ -197,47 +198,73 @@ func (e *Embedder) Embed(ctx context.Context, texts []string) ([][]float32, erro
 	if len(texts) == 0 {
 		return [][]float32{}, nil
 	}
-	return e.embed(ctx, "document", texts)
+	result, err := e.embed(ctx, "document", texts)
+	if err != nil {
+		return nil, err
+	}
+	return result.Vectors, nil
 }
 
 // EmbedQuery applies the pinned query instruction exactly once per call.
 func (e *Embedder) EmbedQuery(ctx context.Context, text string) ([][]float32, error) {
+	result, err := e.EmbedQueryWithDiagnostics(ctx, text)
+	if err != nil {
+		return nil, err
+	}
+	return result.Vectors, nil
+}
+
+// EmbedQueryWithDiagnostics obtains the vector and authoritative unknown-token
+// count from one bound sidecar response. Query preparation remains adapter-
+// owned and is applied exactly once.
+func (e *Embedder) EmbedQueryWithDiagnostics(ctx context.Context, text string) (embed.QueryEmbedding, error) {
 	return e.embed(ctx, "query", []string{e.manifest.Query.Instruction + text})
 }
 
-func (e *Embedder) embed(ctx context.Context, kind string, texts []string) ([][]float32, error) {
+func (e *Embedder) embed(ctx context.Context, kind string, texts []string) (embed.QueryEmbedding, error) {
 	for _, text := range texts {
 		if !utf8.ValidString(text) {
-			return nil, errors.New("coderank: input is not valid UTF-8")
+			return embed.QueryEmbedding{}, errors.New("coderank: input is not valid UTF-8")
 		}
 	}
 	var out embedResponse
 	if err := e.request(ctx, "/v1/embed", embedRequest{Protocol: ProtocolVersion, Kind: kind, Texts: texts}, &out); err != nil {
-		return nil, err
+		return embed.QueryEmbedding{}, err
 	}
 	if err := e.verifyBinding("embedding", out.responseBinding); err != nil {
-		return nil, err
+		return embed.QueryEmbedding{}, err
 	}
 	if len(out.Vectors) != len(texts) {
-		return nil, errors.New("coderank: response vector cardinality mismatch")
+		return embed.QueryEmbedding{}, errors.New("coderank: response vector cardinality mismatch")
+	}
+	if len(out.UnknownTokenCounts) != len(texts) {
+		return embed.QueryEmbedding{}, errors.New("coderank: response unknown-token cardinality mismatch")
 	}
 	vectors := make([][]float32, len(out.Vectors))
 	for i, vector := range out.Vectors {
+		if out.UnknownTokenCounts[i] == nil || *out.UnknownTokenCounts[i] < 0 {
+			return embed.QueryEmbedding{}, errors.New("coderank: response requires non-negative integer unknown-token counts")
+		}
 		if len(vector) != e.Dim() {
-			return nil, errors.New("coderank: response vector dimension mismatch")
+			return embed.QueryEmbedding{}, errors.New("coderank: response vector dimension mismatch")
 		}
 		vectors[i] = make([]float32, len(vector))
 		for j, value := range vector {
 			if value == nil {
-				return nil, errors.New("coderank: null vector component")
+				return embed.QueryEmbedding{}, errors.New("coderank: null vector component")
 			}
 			if math.IsNaN(float64(*value)) || math.IsInf(float64(*value), 0) {
-				return nil, errors.New("coderank: non-finite vector value")
+				return embed.QueryEmbedding{}, errors.New("coderank: non-finite vector value")
 			}
 			vectors[i][j] = *value
 		}
 	}
-	return vectors, nil
+	result := embed.QueryEmbedding{Vectors: vectors}
+	if len(out.UnknownTokenCounts) == 1 {
+		count := *out.UnknownTokenCounts[0]
+		result.UnknownTokens = &count
+	}
+	return result, nil
 }
 
 func (e *Embedder) ExpectedRuntimeAttestation() embed.RuntimeAttestation { return e.expected }

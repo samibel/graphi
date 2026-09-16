@@ -210,6 +210,7 @@ type QualificationBuildDigest struct {
 	TokenCountsSHA256       string                               `json:"token_counts_sha256"`
 	OraclePayloadsSHA256    string                               `json:"oracle_payloads_sha256"`
 	OracleTokenCountsSHA256 string                               `json:"oracle_token_counts_sha256"`
+	QueryDiagnosticsSHA256  string                               `json:"query_diagnostics_sha256"`
 	Diagnostics             QualificationBuildDiagnostics        `json:"diagnostics"`
 }
 
@@ -432,6 +433,7 @@ type qualificationBuildInputs struct {
 	Rows              []embed.Row
 	AdmittedDocuments []embed.SemanticDocument
 	QueryVectors      map[string][]float32
+	QueryDiagnostics  map[string]QualificationIntMetric
 	Payloads          []PreservedPayload
 	OracleControls    map[string]OracleControls
 }
@@ -444,7 +446,7 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		}
 		return rows[i].DocumentID < rows[j].DocumentID
 	})
-	var vectors, persisted, bundles, tokens, oraclePayloads, oracleTokens bytes.Buffer
+	var vectors, persisted, bundles, tokens, oraclePayloads, oracleTokens, queryDiagnostics bytes.Buffer
 	documents := append([]embed.SemanticDocument(nil), in.AdmittedDocuments...)
 	sort.Slice(documents, func(i, j int) bool {
 		if documents[i].NodeID != documents[j].NodeID {
@@ -484,6 +486,20 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		qualificationWriteString(&vectors, "query")
 		qualificationWriteString(&vectors, id)
 		qualificationWriteVector(&vectors, in.QueryVectors[id])
+		metric := in.QueryDiagnostics[id]
+		qualificationWriteString(&queryDiagnostics, id)
+		if metric.Available {
+			_ = queryDiagnostics.WriteByte(1)
+		} else {
+			_ = queryDiagnostics.WriteByte(0)
+		}
+		if metric.Value != nil {
+			_ = queryDiagnostics.WriteByte(1)
+			_ = binary.Write(&queryDiagnostics, binary.BigEndian, int64(*metric.Value))
+		} else {
+			_ = queryDiagnostics.WriteByte(0)
+		}
+		qualificationWriteString(&queryDiagnostics, metric.Reason)
 	}
 	for _, payload := range in.Payloads {
 		qualificationWriteBytes(&bundles, payload.Bytes)
@@ -526,6 +542,7 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
 		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
 		OraclePayloadsSHA256: SHA256Hex(oraclePayloads.Bytes()), OracleTokenCountsSHA256: SHA256Hex(oracleTokens.Bytes()),
+		QueryDiagnosticsSHA256: SHA256Hex(queryDiagnostics.Bytes()),
 	}
 }
 
@@ -540,6 +557,7 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 		{"token counts", first.TokenCountsSHA256, second.TokenCountsSHA256},
 		{"oracle payloads", first.OraclePayloadsSHA256, second.OraclePayloadsSHA256},
 		{"oracle token counts", first.OracleTokenCountsSHA256, second.OracleTokenCountsSHA256},
+		{"query diagnostics", first.QueryDiagnosticsSHA256, second.QueryDiagnosticsSHA256},
 	} {
 		if digest.first != digest.second {
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)

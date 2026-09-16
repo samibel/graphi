@@ -364,7 +364,7 @@ func deriveQualificationReport(in QualificationInput, evidence qualificationEvid
 		derived.Reproducibility = append(derived.Reproducibility, QualificationReproducibility{
 			Arm: arm, Build1SHA256: first.CaptureProvenance.SHA256, Build2SHA256: second.CaptureProvenance.SHA256,
 			ByteIdentical:  compareQualificationBuildDigests(first, second) == nil,
-			ComparedFields: "vector_bytes,persisted_rows,bundles,token_counts,oracle_payloads,oracle_token_counts,diagnostics",
+			ComparedFields: "vector_bytes,persisted_rows,bundles,token_counts,oracle_payloads,oracle_token_counts,query_diagnostics,diagnostics",
 		})
 	}
 	decisionCounts := make(map[string]int, 7)

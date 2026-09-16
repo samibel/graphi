@@ -55,6 +55,15 @@ that exact leading instruction and encodes the supplied bytes unchanged. Direct
 clients must prepare queries identically. A second textual occurrence is preserved
 because it may be part of the user's original query.
 
+Protocol `graphi-coderank/2` requires every `/v1/embed` response to include
+`unknown_token_counts` with exactly one nonnegative integer per returned vector.
+Missing, null, negative, or cardinality-mismatched counts are rejected. The
+reference sidecar derives each count from the same `input_ids` and
+`attention_mask` passed to the model forward call; inactive padding positions
+are excluded. A tokenizer without an unknown-token ID reports an observed zero.
+For `kind=query`, the count covers the exact prepared model input, including the
+pinned query instruction and tokenizer-added special tokens.
+
 Construction pins the serving epoch. Later attestation, admission, and embedding
 responses must retain that epoch, protocol, and full identity digest. Empty
 document batches return an empty result without a request. `CheckAvailable`
@@ -128,10 +137,11 @@ preserves UTF-8 bytes and handles token counts that can decrease when text
 completes a merged token. The already-usable limit is not reduced by `reserve`
 again. If even the empty preparation cannot fit, admission fails. This reference
 algorithm can be slow for long over-limit inputs; it is intended for bounded
-evaluation workloads. Embedding rechecks the full prepared text's count, rejects
-over-limit inputs, calls the tokenizer with truncation disabled, and passes its
-features directly through the model's forward path. It validates cardinality,
-768-dimensional finite vectors, and nonzero norms before L2 normalization.
+evaluation workloads. Embedding tokenizes once with truncation disabled, checks
+the full prepared count, derives unknown-token counts from those same active
+features, and passes the features directly through the model's forward path. It
+validates cardinality, 768-dimensional finite vectors, and nonzero norms before
+L2 normalization.
 
 ## Reproducing local digest pins
 

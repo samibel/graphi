@@ -96,3 +96,62 @@ func TestEmbedQueryCallsLegacyEmbedderOnce(t *testing.T) {
 		t.Fatalf("vectors=%v", vectors)
 	}
 }
+
+type diagnosticQueryFake struct {
+	attestedQueryFake
+	unknown int
+}
+
+func (e *diagnosticQueryFake) EmbedQueryWithDiagnostics(context.Context, string) (QueryEmbedding, error) {
+	e.embedCalls++
+	return QueryEmbedding{Vectors: [][]float32{{2}}, UnknownTokens: &e.unknown}, nil
+}
+
+func TestEmbedQueryWithDiagnosticsReturnsOneAtomicObservation(t *testing.T) {
+	e := &diagnosticQueryFake{
+		attestedQueryFake: attestedQueryFake{
+			expected: RuntimeAttestation{IdentityDigest: strings.Repeat("a", 64), Epoch: "epoch-1"},
+			observed: RuntimeAttestation{IdentityDigest: strings.Repeat("a", 64), Epoch: "epoch-1"},
+		},
+		unknown: 0,
+	}
+
+	got, err := EmbedQueryWithDiagnostics(t.Context(), e, "where is config loaded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.embedCalls != 1 || len(got.Vectors) != 1 || got.Vectors[0][0] != 2 || got.UnknownTokens == nil || *got.UnknownTokens != 0 {
+		t.Fatalf("got=%+v calls=%d", got, e.embedCalls)
+	}
+
+	vectors, err := EmbedQuery(t.Context(), e, "where is config loaded")
+	if err != nil || e.embedCalls != 2 || len(vectors) != 1 || vectors[0][0] != 2 {
+		t.Fatalf("vectors=%v err=%v calls=%d", vectors, err, e.embedCalls)
+	}
+}
+
+func TestEmbedQueryWithDiagnosticsPreservesLegacyUnavailableMetric(t *testing.T) {
+	e := &legacyQueryFake{}
+	got, err := EmbedQueryWithDiagnostics(t.Context(), e, "where is config loaded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.embedCalls != 1 || got.UnknownTokens != nil || len(got.Vectors) != 1 {
+		t.Fatalf("got=%+v calls=%d", got, e.embedCalls)
+	}
+}
+
+type negativeDiagnosticQueryFake struct{ legacyQueryFake }
+
+func (e *negativeDiagnosticQueryFake) EmbedQueryWithDiagnostics(context.Context, string) (QueryEmbedding, error) {
+	e.embedCalls++
+	negative := -1
+	return QueryEmbedding{Vectors: [][]float32{{1}}, UnknownTokens: &negative}, nil
+}
+
+func TestEmbedQueryWithDiagnosticsRejectsNegativeUnknownCount(t *testing.T) {
+	e := &negativeDiagnosticQueryFake{}
+	if got, err := EmbedQueryWithDiagnostics(t.Context(), e, "query"); err == nil || got.Vectors != nil || got.UnknownTokens != nil || e.embedCalls != 1 {
+		t.Fatalf("got=%+v err=%v calls=%d", got, err, e.embedCalls)
+	}
+}

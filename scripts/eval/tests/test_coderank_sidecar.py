@@ -19,7 +19,7 @@ from scripts.eval import coderank_sidecar as sidecar
 
 def valid_manifest(max_tokens=8192):
     return {
-        "schema_version": 1, "protocol": "graphi-coderank/1",
+        "schema_version": 1, "protocol": sidecar.PROTOCOL,
         "endpoint": "http://127.0.0.1:8765",
         "model": {"id": "nomic-ai/CodeRankEmbed", "revision": "model-revision", "sha256": "a" * 64},
         "tokenizer": {"id": "nomic-ai/CodeRankEmbed", "revision": "tokenizer-revision", "sha256": "b" * 64},
@@ -35,14 +35,28 @@ def valid_manifest(max_tokens=8192):
 class FakeEncoder:
     def __init__(self):
         self.inputs = []
+        self.token_count_calls = 0
+
+    @staticmethod
+    def _token_count(text):
+        return len(re.findall(r"\s*\S+|\s+$", text))
 
     def token_count(self, text):
         # Spaces belong to the following token, so "alpha beta " is 3 tokens.
-        return len(re.findall(r"\s*\S+|\s+$", text))
+        self.token_count_calls += 1
+        return self._token_count(text)
 
     def encode(self, texts):
         self.inputs.extend(texts)
         return [[3.0, 4.0] + [0.0] * 766 for _ in texts]
+
+    def encode_with_diagnostics(self, texts, max_tokens):
+        counts = [self._token_count(text) for text in texts]
+        if any(count > max_tokens for count in counts):
+            raise ValueError("embedding input exceeds token limit")
+        self.inputs.extend(texts)
+        vectors = [[3.0, 4.0] + [0.0] * 766 for _ in texts]
+        return vectors, counts, [min(2, count) for count in counts]
 
 
 class SidecarContractTest(unittest.TestCase):
@@ -56,6 +70,9 @@ class SidecarContractTest(unittest.TestCase):
         self.assertEqual(self.app.encoder.inputs, [" x ", query])
         self.assertEqual(doc["epoch"], qry["epoch"])
         self.assertEqual(doc["vectors"][0][:2], [0.6, 0.8])
+        self.assertEqual(doc["unknown_token_counts"], [2])
+        self.assertEqual(qry["unknown_token_counts"], [2])
+        self.assertEqual(self.app.encoder.token_count_calls, 0)
         self.assertAlmostEqual(sum(x*x for x in qry["vectors"][0]), 1.0)
         with self.assertRaises(ValueError):
             self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "query", "texts": ["find x"]})
@@ -114,10 +131,64 @@ class SidecarContractTest(unittest.TestCase):
         for vectors in [[], [[1.0]], [[None] * 768], [[math.nan] * 768], [[0.0] * 768]]:
             with self.subTest(vectors=repr(vectors)[:30]):
                 encoder = FakeEncoder()
-                encoder.encode = lambda texts: vectors
+                encoder.encode_with_diagnostics = lambda texts, max_tokens: (vectors, [1] * len(texts), [0] * len(texts))
                 app = sidecar.SidecarApp(valid_manifest(), encoder)
                 with self.assertRaises(ValueError):
                     app.embed({"protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["x"]})
+
+    def test_local_encoder_counts_active_unknowns_from_forward_features_once(self):
+        class Tensor:
+            def __init__(self, value):
+                self.value = value
+
+            def tolist(self):
+                return self.value
+
+        class Embeddings(Tensor):
+            def float(self):
+                return self
+
+        class Tokenizer:
+            unk_token_id = 99
+
+            def __init__(self):
+                self.calls = 0
+                self.features = None
+
+            def __call__(self, texts, **kwargs):
+                self.calls += 1
+                self.features = {
+                    "input_ids": Tensor([[1, 99, 0], [99, 2, 3]]),
+                    "attention_mask": Tensor([[1, 1, 0], [1, 1, 1]]),
+                }
+                return self.features
+
+        class Model:
+            def __init__(self):
+                self.tokenizer = Tokenizer()
+                self.forward_features = None
+
+            def float(self):
+                return self
+
+            def eval(self):
+                return self
+
+            def __call__(self, features):
+                self.forward_features = features
+                return {"sentence_embedding": Embeddings([[1.0] * 768, [2.0] * 768])}
+
+        model = Model()
+        encoder = sidecar.LocalEncoder(model)
+        inference = mock.MagicMock()
+        inference.__enter__.return_value = None
+        inference.__exit__.return_value = False
+        with mock.patch.dict("sys.modules", {"torch": types.SimpleNamespace(inference_mode=lambda: inference)}):
+            vectors, counts, unknowns = encoder.encode_with_diagnostics(["a", "b"], 3)
+        self.assertEqual((counts, unknowns), ([2, 3], [1, 1]))
+        self.assertEqual(len(vectors), 2)
+        self.assertEqual(model.tokenizer.calls, 1)
+        self.assertIs(model.forward_features, model.tokenizer.features)
 
     def test_binding_cannot_drift_through_manifest_or_epoch_assignment(self):
         manifest = valid_manifest()
@@ -283,11 +354,14 @@ class VerificationTest(unittest.TestCase):
             sidecar.verify_runtime_versions(manifest["runtime"])
 
     def test_manifest_rejects_profile_changes_and_unknown_keys(self):
-        for key, value in [("dimension", 3), ("precision", "float16"), ("unknown", 1), ("schema_version", True)]:
+        for key, value in [("dimension", 3), ("dimension", 768.0), ("precision", "float16"), ("unknown", 1), ("schema_version", True)]:
             manifest = valid_manifest()
             manifest[key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
                 sidecar.SidecarApp(manifest, FakeEncoder())
+
+    def test_protocol_version_is_v2(self):
+        self.assertEqual(sidecar.PROTOCOL, "graphi-coderank/2")
 
     def test_no_runtime_import_on_module_import(self):
         import subprocess
@@ -323,10 +397,10 @@ class HTTPContractTest(unittest.TestCase):
         status, binding = self.request("GET", "/v1/attestation")
         self.assertEqual(status, 200)
         cases = [
-            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/1","text":"x"}', 200),
-            ("POST", "/v1/embed", '{"protocol":"graphi-coderank/1","kind":"document","texts":["x"]}', 200),
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/2","text":"x"}', 200),
+            ("POST", "/v1/embed", '{"protocol":"graphi-coderank/2","kind":"document","texts":["x"]}', 200),
             ("POST", "/v1/admit", "{", 400),
-            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/1","text":"x","text":"y"}', 400),
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/2","text":"x","text":"y"}', 400),
             ("POST", "/v1/admit", "{} {}", 400),
             ("POST", "/v1/admit", '{"protocol":"wrong","text":"x"}', 400),
             ("GET", "/other", None, 404),
@@ -346,9 +420,9 @@ class HTTPContractTest(unittest.TestCase):
         self.assertIn("epoch", got)
 
     def test_encoder_exceptions_do_not_leak(self):
-        def fail(texts):
+        def fail(texts, max_tokens):
             raise RuntimeError("secret model path")
-        self.app.encoder.encode = fail
+        self.app.encoder.encode_with_diagnostics = fail
         status, got = self.request("POST", "/v1/embed", json.dumps({
             "protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["x"]}))
         self.assertEqual(status, 500)

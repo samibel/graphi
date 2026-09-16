@@ -403,7 +403,7 @@ func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evide
 		if err := validateQualificationCaptureProvenance(digest, in); err != nil {
 			return err
 		}
-		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
+		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256, digest.QueryDiagnosticsSHA256} {
 			if !isLowerHexDigest(value, 64) {
 				return fmt.Errorf("embedded-model qualification decision: arm %s has malformed build digest", digest.Arm)
 			}

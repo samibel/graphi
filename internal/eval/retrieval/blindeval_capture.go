@@ -577,10 +577,14 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		inputs := qualificationBuildInputs{
 			Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments,
 			QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured)),
-			OracleControls: make(map[string]OracleControls, len(captured)),
+			QueryDiagnostics: make(map[string]QualificationIntMetric, len(captured)), OracleControls: make(map[string]OracleControls, len(captured)),
 		}
 		for _, bundle := range captured {
 			inputs.QueryVectors[bundle.QueryID] = bundle.QualificationQueryVector
+			if bundle.Qualification == nil {
+				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no qualification observation", bundle.QueryID)
+			}
+			inputs.QueryDiagnostics[bundle.QueryID] = bundle.Qualification.UnknownTokens
 			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
 			if bundle.OracleControls == nil {
 				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no one-shot oracle controls", bundle.QueryID)
@@ -712,18 +716,16 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	var qualificationResult engineretrieval.Result
 	var semanticHits []search.SemanticHit
 	var queryVector []float32
+	unknownTokens := QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"}
 	strictQualification := o.QualificationPreregistration != nil
 	if strictQualification {
 		mode := engineretrieval.ModeLexicalOnly
 		if o.QualificationArm != ArmLexical {
-			vectors, err := embed.EmbedQuery(ctx, o.Embedder, q.Text)
+			var err error
+			queryVector, unknownTokens, err = captureQualificationQueryEmbedding(ctx, o.Embedder, q.Text, o.ExpectedFingerprint.Dim)
 			if err != nil {
 				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s vector capture: %w", q.ID, err)
 			}
-			if len(vectors) != 1 || len(vectors[0]) != o.ExpectedFingerprint.Dim {
-				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s vector shape is invalid", q.ID)
-			}
-			queryVector = append([]float32(nil), vectors[0]...)
 			semantic, err := idx.search.SemanticSearch(ctx, q.Text, 50)
 			if err != nil || !semantic.Available || semantic.State != embed.StateReady {
 				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s semantic top-50 unavailable: %v", q.ID, err)
@@ -859,7 +861,7 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 			ExpectedFingerprint: expected, IndexFingerprint: idx.fingerprint,
 			SearchFingerprint: idx.search.SemanticState().Requested, ModelFingerprint: modelFingerprint,
 			Retrieval: qualificationResult, SemanticHits: semanticHits, Payload: payload, Structured: structured,
-			QueryVector: queryVector, UnknownTokens: QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"},
+			QueryVector: queryVector, UnknownTokens: unknownTokens,
 		})
 		if err != nil {
 			return CapturedCandidateBundle{}, err
@@ -867,6 +869,22 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		capturedOut.Qualification = &observation
 	}
 	return capturedOut, nil
+}
+
+func captureQualificationQueryEmbedding(ctx context.Context, emb embed.Embedder, query string, dim int) ([]float32, QualificationIntMetric, error) {
+	result, err := embed.EmbedQueryWithDiagnostics(ctx, emb, query)
+	if err != nil {
+		return nil, QualificationIntMetric{}, err
+	}
+	if len(result.Vectors) != 1 || len(result.Vectors[0]) != dim {
+		return nil, QualificationIntMetric{}, fmt.Errorf("vector shape is invalid")
+	}
+	metric := QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"}
+	if result.UnknownTokens != nil {
+		value := *result.UnknownTokens
+		metric = QualificationIntMetric{Available: true, Value: &value}
+	}
+	return append([]float32(nil), result.Vectors[0]...), metric, nil
 }
 
 // qualificationOracleCaptureClient observes the exact canonical

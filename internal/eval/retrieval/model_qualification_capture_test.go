@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -28,6 +29,30 @@ type qualificationCaptureFixture struct {
 	semantic            []search.SemanticHit
 	payload             PreservedPayload
 	structured          taskcompact.Structured
+}
+
+type atomicQueryDiagnosticEmbedder struct{ calls int }
+
+func (e *atomicQueryDiagnosticEmbedder) ID() string { return "atomic-query-diagnostic" }
+func (e *atomicQueryDiagnosticEmbedder) Dim() int   { return 2 }
+func (e *atomicQueryDiagnosticEmbedder) Embed(context.Context, []string) ([][]float32, error) {
+	panic("qualification diagnostics must use the atomic query path")
+}
+func (e *atomicQueryDiagnosticEmbedder) EmbedQueryWithDiagnostics(context.Context, string) (embed.QueryEmbedding, error) {
+	e.calls++
+	unknown := 3
+	return embed.QueryEmbedding{Vectors: [][]float32{{0.25, 0.75}}, UnknownTokens: &unknown}, nil
+}
+
+func TestQualificationQueryEmbeddingCapturesVectorAndUnknownCountAtomically(t *testing.T) {
+	e := &atomicQueryDiagnosticEmbedder{}
+	vector, unknown, err := captureQualificationQueryEmbedding(t.Context(), e, "find parser", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e.calls != 1 || !reflect.DeepEqual(vector, []float32{0.25, 0.75}) || !unknown.Available || unknown.Value == nil || *unknown.Value != 3 {
+		t.Fatalf("vector=%v unknown=%+v calls=%d", vector, unknown, e.calls)
+	}
 }
 
 func validQualificationCaptureFixture(t *testing.T) qualificationCaptureFixture {
@@ -504,12 +529,24 @@ func TestQualificationBuildComparisonRejectsOraclePayloadOrCountMismatch(t *test
 	}
 }
 
+func TestQualificationBuildComparisonRejectsQueryDiagnosticMismatch(t *testing.T) {
+	base := qualificationBuildDigestFixture()
+	first := buildQualificationDigest(ArmCodeRank, base)
+	four := 4
+	base.QueryDiagnostics["q-1"] = QualificationIntMetric{Available: true, Value: &four}
+	second := buildQualificationDigest(ArmCodeRank, base)
+	if first.QueryDiagnosticsSHA256 == second.QueryDiagnosticsSHA256 || compareQualificationBuildDigests(first, second) == nil {
+		t.Fatal("two-build comparison accepted changed query diagnostics")
+	}
+}
+
 func qualificationBuildDigestFixture() qualificationBuildInputs {
 	payload := PreservedPayload{Bytes: []byte("payload\n"), SHA256: SHA256Hex([]byte("payload\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 2}}}
 	oraclePayload := PreservedPayload{Bytes: []byte("oracle\n"), SHA256: SHA256Hex([]byte("oracle\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: "cl100k_base", VocabularySHA256: strings.Repeat("a", 64), Tokens: 3}}}
 	return qualificationBuildInputs{
 		Rows:              []embed.Row{{GenerationID: "independent-build-1", NodeID: "n1", DocumentID: "d1", TextHash: "text", Path: "a.go", StartLine: 1, EndLine: 2, SpanMethod: "whole", Vector: []float32{1, -0.5}}},
 		QueryVectors:      map[string][]float32{"q-1": {0.25, 0.75}},
+		QueryDiagnostics:  map[string]QualificationIntMetric{"q-1": {Available: true, Value: intPointer(3)}},
 		Payloads:          []PreservedPayload{payload},
 		AdmittedDocuments: []embed.SemanticDocument{{DocumentID: "d1", NodeID: "n1", Path: "a.go", StartLine: 1, EndLine: 2, TextHash: "text", Text: "admitted bytes", Truncated: true, Bound: "tokens", AdmissionTokenCount: 17, AdmissionLimit: 512, AdmissionAlgorithmID: "first-n-tokens@1"}},
 		OracleControls:    map[string]OracleControls{"q-1": {CurrentCandidatesOraclePacker: OracleBundle{ControlKind: OracleControlCurrentCandidatesOraclePacker, QueryID: "q-1", CandidateSHA256: strings.Repeat("b", 64), TokenCount: 3, Payload: oraclePayload}}},
