@@ -45,7 +45,11 @@ import (
 // CandidateCaptureVersion identifies the capture instrument. It travels into
 // the run directory so a later change to how bytes are captured cannot be
 // mistaken for the same measurement.
-const CandidateCaptureVersion = "sw280-candidate-mcp-capture/4"
+const (
+	CandidateCaptureVersion   = "sw280-candidate-mcp-capture/4"
+	CandidateCaptureTransport = "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)"
+	CandidateCaptureSurface   = "surfaces/mcp tools/call " + mcp.ToolTaskContext
+)
 
 // candidateJSONRPCPrefix is the exact opening the stdio encoder produces for a
 // response: encoding/json writes struct fields in declaration order, and
@@ -321,6 +325,9 @@ type CandidateCaptureProvenance struct {
 	TokenizerID       string `json:"tokenizer_id"`
 	TokenizerVocabSHA string `json:"tokenizer_vocabulary_sha256"`
 	QueryCount        int    `json:"query_count"`
+	// QualificationCaptureRunSHA256 binds a qualification snapshot to the
+	// resolved arm work directory. It is absent from legacy blind captures.
+	QualificationCaptureRunSHA256 string `json:"qualification_capture_run_sha256,omitempty"`
 	// Binding is nil only for a capture taken before the binding existed. A
 	// nil binding is a release refusal, not a missing report row.
 	Binding                  *CandidateBinding         `json:"candidate_binding,omitempty"`
@@ -540,8 +547,8 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	}
 	provenance = CandidateCaptureProvenance{
 		CaptureVersion:    CandidateCaptureVersion,
-		Transport:         "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)",
-		Surface:           "surfaces/mcp tools/call " + mcp.ToolTaskContext,
+		Transport:         CandidateCaptureTransport,
+		Surface:           CandidateCaptureSurface,
 		Boundary:          string(PayloadBoundaryCandidate),
 		RepoName:          o.RepoName,
 		RepoSHA:           head,
@@ -586,17 +593,51 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		digest.Build = o.QualificationBuild
 		provenanceSnapshot := provenance
 		provenanceSnapshot.QualificationBuildDigest = nil
-		captureRecord, err := sealQualificationCaptureProvenanceRecord(QualificationCaptureProvenanceRecord{
-			Arm: o.QualificationArm, Build: o.QualificationBuild, WorkDir: o.WorkDir, Provenance: provenanceSnapshot,
-		})
+		captureRecord, err := newQualificationCaptureProvenanceRecord(o.QualificationArm, o.QualificationBuild, workDir, provenanceSnapshot)
 		if err != nil {
 			return nil, provenance, fmt.Errorf("embedded-model qualification capture: encode build provenance: %w", err)
 		}
+		provenance.QualificationCaptureRunSHA256 = captureRecord.Provenance.QualificationCaptureRunSHA256
 		digest.CaptureProvenance = captureRecord
 		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil
+}
+
+func newQualificationCaptureProvenanceRecord(arm QualificationArm, build int, resolvedWorkDir string, provenance CandidateCaptureProvenance) (QualificationCaptureProvenanceRecord, error) {
+	provenance.QualificationBuildDigest = nil
+	provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(arm, resolvedWorkDir)
+	record := QualificationCaptureProvenanceRecord{
+		Arm: arm, Build: build, WorkDir: resolvedWorkDir, Provenance: provenance,
+	}
+	identity, err := qualificationCaptureRecordIdentitySHA(record)
+	if err != nil {
+		return QualificationCaptureProvenanceRecord{}, err
+	}
+	record.CaptureIdentitySHA256 = identity
+	return sealQualificationCaptureProvenanceRecord(record)
+}
+
+func qualificationCaptureRunSHA(arm QualificationArm, resolvedWorkDir string) string {
+	raw, _ := json.Marshal(struct {
+		Arm     QualificationArm `json:"arm"`
+		WorkDir string           `json:"work_dir"`
+	}{Arm: arm, WorkDir: resolvedWorkDir})
+	return SHA256Hex(raw)
+}
+
+func qualificationCaptureRecordIdentitySHA(record QualificationCaptureProvenanceRecord) (string, error) {
+	record.Build = 0
+	record.SHA256 = ""
+	record.CaptureIdentitySHA256 = ""
+	record.Provenance.QualificationBuildDigest = nil
+	return ContentAddress(record, func(v *QualificationCaptureProvenanceRecord) {
+		v.Build = 0
+		v.SHA256 = ""
+		v.CaptureIdentitySHA256 = ""
+		v.Provenance.QualificationBuildDigest = nil
+	})
 }
 
 func sealQualificationCaptureProvenanceRecord(record QualificationCaptureProvenanceRecord) (QualificationCaptureProvenanceRecord, error) {

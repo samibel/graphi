@@ -319,6 +319,17 @@ func TestQualificationCaptureProvenanceBindsIndependentRunDirectory(t *testing.T
 	}
 }
 
+func TestQualificationCaptureProvenancePersistsResolvedWorkDir(t *testing.T) {
+	provenance := CandidateCaptureProvenance{CaptureVersion: CandidateCaptureVersion}
+	record, err := newQualificationCaptureProvenanceRecord(ArmCodeRank, 1, "/resolved/generated-workdir", provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if record.WorkDir != "/resolved/generated-workdir" {
+		t.Fatalf("workdir=%q", record.WorkDir)
+	}
+}
+
 func TestQualificationAtomicPublishLeavesNoPartialEvidenceAndCanRetry(t *testing.T) {
 	parent := t.TempDir()
 	out := filepath.Join(parent, "qualification")

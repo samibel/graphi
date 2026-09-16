@@ -1,8 +1,10 @@
 package retrieval
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -25,6 +27,7 @@ type Interval struct {
 
 type QualificationInput struct {
 	Preregistration QualificationPreregistration `json:"preregistration"`
+	Dataset         *Loaded                      `json:"dataset"`
 	Observations    []QualificationObservation   `json:"observations"`
 	BuildDigests    []QualificationBuildDigest   `json:"build_digests"`
 	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
@@ -235,6 +238,9 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 		armValid:   map[QualificationArm]bool{ArmPotion512: true, ArmPotion8192: true, ArmCodeRank: true},
 		stateReady: true, fingerprintsOK: true, noDegradation: true, diagnosticsAvailable: true,
 	}
+	if err := validateQualificationInputDataset(in); err != nil {
+		return evidence, err
+	}
 	if len(in.Observations) != len(arms)*64 {
 		return evidence, fmt.Errorf("embedded-model qualification decision: got %d observations, want %d", len(in.Observations), len(arms)*64)
 	}
@@ -316,7 +322,7 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 			}
 		}
 	}
-	if err := validateBuildEvidence(in.BuildDigests, arms, &evidence); err != nil {
+	if err := validateBuildEvidence(in, arms, &evidence); err != nil {
 		return evidence, err
 	}
 	if err := validateOracleEvidence(in.OracleControls, evidence.queryIDs, &evidence); err != nil {
@@ -334,6 +340,23 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 		return evidence, fmt.Errorf("embedded-model qualification decision: operating measurements must not be negative")
 	}
 	return evidence, nil
+}
+
+func validateQualificationInputDataset(in QualificationInput) error {
+	if err := ValidateQualificationDataset(in.Dataset); err != nil {
+		return fmt.Errorf("embedded-model qualification decision: dataset: %w", err)
+	}
+	if in.Dataset.SHA256 != in.Preregistration.DatasetSHA256 {
+		return fmt.Errorf("embedded-model qualification decision: dataset digest differs from preregistration")
+	}
+	if in.Dataset.Dataset.RepoSHA != in.Preregistration.SourceRepoSHA {
+		return fmt.Errorf("embedded-model qualification decision: dataset source checkout differs from preregistration")
+	}
+	var decoded Dataset
+	if err := json.Unmarshal(in.Dataset.Raw, &decoded); err != nil || !reflect.DeepEqual(&decoded, in.Dataset.Dataset) {
+		return fmt.Errorf("embedded-model qualification decision: dataset object differs from its exact raw bytes")
+	}
+	return nil
 }
 
 func validateStageHit(hit StageHit) error {
@@ -356,7 +379,8 @@ func validateSemanticStageHit(hit StageHit) error {
 	return nil
 }
 
-func validateBuildEvidence(digests []QualificationBuildDigest, arms []QualificationArm, evidence *qualificationEvidence) error {
+func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evidence *qualificationEvidence) error {
+	digests := in.BuildDigests
 	if len(digests) != len(arms)*2 {
 		return fmt.Errorf("embedded-model qualification decision: got %d build digests, want %d", len(digests), len(arms)*2)
 	}
@@ -376,7 +400,7 @@ func validateBuildEvidence(digests []QualificationBuildDigest, arms []Qualificat
 		if _, duplicate := byArm[digest.Arm][digest.Build]; duplicate {
 			return fmt.Errorf("embedded-model qualification decision: arm %s duplicates build ordinal %d", digest.Arm, digest.Build)
 		}
-		if err := validateQualificationCaptureProvenance(digest); err != nil {
+		if err := validateQualificationCaptureProvenance(digest, in); err != nil {
 			return err
 		}
 		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
@@ -397,19 +421,56 @@ func validateBuildEvidence(digests []QualificationBuildDigest, arms []Qualificat
 		if first.CaptureProvenance.SHA256 == second.CaptureProvenance.SHA256 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s builds do not have distinct capture provenance", arm)
 		}
+		if first.CaptureProvenance.WorkDir == second.CaptureProvenance.WorkDir {
+			return fmt.Errorf("embedded-model qualification decision: arm %s builds reuse the same capture workdir", arm)
+		}
+		if first.CaptureProvenance.CaptureIdentitySHA256 == second.CaptureProvenance.CaptureIdentitySHA256 {
+			return fmt.Errorf("embedded-model qualification decision: arm %s builds reuse the same capture identity", arm)
+		}
 		evidence.reproducible[arm] = compareQualificationBuildDigests(first, second) == nil
 	}
 	return nil
 }
 
-func validateQualificationCaptureProvenance(digest QualificationBuildDigest) error {
+func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in QualificationInput) error {
 	record := digest.CaptureProvenance
-	if record.Arm != digest.Arm || record.Build != digest.Build || strings.TrimSpace(record.WorkDir) == "" || record.Provenance.QualificationBuildDigest != nil {
+	if record.Arm != digest.Arm || record.Build != digest.Build || !filepath.IsAbs(record.WorkDir) || filepath.Clean(record.WorkDir) != record.WorkDir || record.Provenance.QualificationBuildDigest != nil {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d has malformed closed capture provenance", digest.Arm, digest.Build)
 	}
 	sealed, err := sealQualificationCaptureProvenanceRecord(record)
 	if err != nil || !isLowerHexDigest(record.SHA256, 64) || sealed.SHA256 != record.SHA256 {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture provenance content address differs", digest.Arm, digest.Build)
+	}
+	identity, err := qualificationCaptureRecordIdentitySHA(record)
+	if err != nil || !isLowerHexDigest(record.CaptureIdentitySHA256, 64) || identity != record.CaptureIdentitySHA256 {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture identity differs", digest.Arm, digest.Build)
+	}
+	p := record.Provenance
+	binding := p.Binding
+	if p.QualificationCaptureRunSHA256 != qualificationCaptureRunSHA(digest.Arm, record.WorkDir) {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture run identity differs from workdir", digest.Arm, digest.Build)
+	}
+	if p.CaptureVersion != CandidateCaptureVersion || p.Transport != CandidateCaptureTransport || p.Surface != CandidateCaptureSurface ||
+		p.Boundary != string(PayloadBoundaryCandidate) || p.DatasetSHA256 != in.Preregistration.DatasetSHA256 ||
+		p.RepoName != in.Dataset.Dataset.Repo || p.RepoSHA != in.Preregistration.SourceRepoSHA ||
+		p.TokenBudget != QualificationTokenBudget || p.MethodVersion != QualificationCompactVersion || p.QueryCount != 64 || binding == nil {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture provenance differs from qualification pins", digest.Arm, digest.Build)
+	}
+	if binding.CandidateSHA != in.Preregistration.CandidateSHA || binding.FrozenCandidateSHA != in.Preregistration.CandidateSHA ||
+		binding.CheckoutSHA != in.Preregistration.SourceRepoSHA || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean ||
+		!binding.CandidateMatchesFrozen || len(binding.DifferingPaths) != 0 {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d candidate binding differs from qualification pins", digest.Arm, digest.Build)
+	}
+	pin := in.Preregistration.Arms[digest.Arm]
+	if p.EmbedderSelector != pin.Label {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d embedder selector differs from arm pin", digest.Arm, digest.Build)
+	}
+	if digest.Arm == ArmLexical {
+		if p.ModelFingerprint != "" || p.IndexFingerprint != "" || p.GenerationID != "" || p.PersistedVectors != 0 || p.SemanticState != "unset" {
+			return fmt.Errorf("embedded-model qualification decision: lexical arm carries semantic identity")
+		}
+	} else if p.ModelFingerprint != pin.FingerprintCanonical || p.IndexFingerprint != pin.FingerprintCanonical || strings.TrimSpace(p.GenerationID) == "" || p.SemanticState != "ready" || p.PersistedVectors <= 0 {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d semantic identity differs from arm pin", digest.Arm, digest.Build)
 	}
 	return nil
 }
@@ -538,6 +599,10 @@ func validateBlindEvidenceSets(in QualificationInput, arms []QualificationArm, c
 	}
 	derived := make(map[string]QueryOutcome, len(wantSubjects)*64)
 	sourceSHAs := make(map[string]string, len(wantSubjects))
+	datasetQueries := make(map[string]Query, len(in.Dataset.Dataset.Queries))
+	for _, query := range in.Dataset.Dataset.Queries {
+		datasetQueries[query.ID] = query
+	}
 	for _, source := range in.BlindEvidence {
 		subject := blindSubjectKey(source.Arm, source.ControlKind)
 		if !wantSubjects[subject] || (source.Arm != "" && source.ControlKind != "") {
@@ -548,6 +613,12 @@ func validateBlindEvidenceSets(in QualificationInput, arms []QualificationArm, c
 		}
 		if err := ValidatePreconditionRecord(source.Precondition); err != nil {
 			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s precondition: %w", subject, err)
+		}
+		if source.Precondition.DatasetSHA256 != in.Preregistration.DatasetSHA256 ||
+			source.Precondition.CandidateSHA != in.Preregistration.CandidateSHA || source.Precondition.FreezeCommit != in.Preregistration.CandidateSHA ||
+			source.Precondition.CandidateTokenBudget != QualificationTokenBudget || source.Precondition.CandidateMethod != SavingsCandidateMethod ||
+			source.Precondition.ComparatorVersion != BlindEvalComparatorVersion {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s precondition differs from qualification pins", subject)
 		}
 		if err := ValidatePreRegistration(source.PreRegistration, source.Precondition); err != nil {
 			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s preregistration: %w", subject, err)
@@ -579,7 +650,9 @@ func validateBlindEvidenceSets(in QualificationInput, arms []QualificationArm, c
 			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s does not freeze the preregistered grader prompt", subject)
 		}
 		for _, query := range source.PreRegistration.Queries {
-			if query.Stratum != evidence.strata[query.QueryID] || query.PromptSHA256 != in.Preregistration.ReaderPromptSHA256 {
+			datasetQuery, known := datasetQueries[query.QueryID]
+			if !known || query.Stratum != datasetQuery.Stratum || query.Stratum != evidence.strata[query.QueryID] ||
+				query.QueryTextSHA256 != SHA256Hex([]byte(datasetQuery.Text)) || query.PromptSHA256 != in.Preregistration.ReaderPromptSHA256 {
 				return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s query %s has wrong stratum or reader prompt", subject, query.QueryID)
 			}
 			wantPayload := ""

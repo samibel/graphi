@@ -187,6 +187,41 @@ func TestEvaluateQualificationRequiresValidatedBlindSourceEvidence(t *testing.T)
 	}
 }
 
+func TestEvaluateQualificationRejectsBlindEvidenceReplay(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		apply func(*QualificationInput)
+	}{
+		{"raw dataset tamper", func(in *QualificationInput) { in.Dataset.Raw = append(in.Dataset.Raw, '\n') }},
+		{"cross dataset", func(in *QualificationInput) {
+			in.BlindEvidence[0].Precondition.DatasetSHA256 = strings.Repeat("9", 64)
+			resealBlindEvidenceChain(in, 0)
+		}},
+		{"cross candidate", func(in *QualificationInput) {
+			in.BlindEvidence[0].Precondition.CandidateSHA = strings.Repeat("9", 40)
+			in.BlindEvidence[0].Precondition.FreezeCommit = strings.Repeat("9", 40)
+			resealBlindEvidenceChain(in, 0)
+		}},
+		{"cross query text", func(in *QualificationInput) {
+			in.BlindEvidence[0].PreRegistration.Queries[0].QueryTextSHA256 = SHA256Hex([]byte("a different query"))
+			resealBlindEvidenceChain(in, 0)
+		}},
+		{"cross subject", func(in *QualificationInput) {
+			in.BlindEvidence[0].Arm, in.BlindEvidence[3].Arm = in.BlindEvidence[3].Arm, in.BlindEvidence[0].Arm
+			resealBlindEvidenceChain(in, 0)
+			resealBlindEvidenceChain(in, 3)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := cloneQualificationInput(t, passingQualificationInput(t))
+			tc.apply(&in)
+			if _, err := EvaluateQualification(in); err == nil {
+				t.Fatal("accepted replayed blind evidence")
+			}
+		})
+	}
+}
+
 func TestEvaluateQualificationRecomputesClosedBuildProvenance(t *testing.T) {
 	valid := passingQualificationInput(t)
 	for _, tc := range []struct {
@@ -206,6 +241,59 @@ func TestEvaluateQualificationRecomputesClosedBuildProvenance(t *testing.T) {
 			tc.apply(&in.BuildDigests[0])
 			if _, err := EvaluateQualification(in); err == nil {
 				t.Fatal("accepted non-recomputable build provenance")
+			}
+		})
+	}
+}
+
+func TestEvaluateQualificationSemanticallyValidatesBuildProvenance(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		apply func(*QualificationInput, *QualificationBuildDigest)
+	}{
+		{"dataset", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.DatasetSHA256 = strings.Repeat("9", 64)
+		}},
+		{"source checkout", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.RepoSHA = strings.Repeat("9", 40)
+		}},
+		{"candidate binding", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.Binding.CandidateSHA = strings.Repeat("9", 40)
+		}},
+		{"token budget", func(_ *QualificationInput, d *QualificationBuildDigest) { d.CaptureProvenance.Provenance.TokenBudget++ }},
+		{"method", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.MethodVersion = "compact/other"
+		}},
+		{"capture", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.CaptureVersion = "capture/other"
+		}},
+		{"surface", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.Surface = "other"
+		}},
+		{"boundary", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.Boundary = "other"
+		}},
+		{"query count", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.QueryCount = 63
+		}},
+		{"arm fingerprint", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.ModelFingerprint = "other"
+		}},
+		{"same workdir", func(in *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.WorkDir = in.BuildDigests[0].CaptureProvenance.WorkDir
+			d.CaptureProvenance.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(d.Arm, d.CaptureProvenance.WorkDir)
+		}},
+		{"reordinal copy", func(in *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance = in.BuildDigests[0].CaptureProvenance.Provenance
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := cloneQualificationInput(t, passingQualificationInput(t))
+			digest := &in.BuildDigests[1]
+			tc.apply(&in, digest)
+			digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, digest.CaptureProvenance)
+			if _, err := EvaluateQualification(in); err == nil {
+				t.Fatal("accepted semantically invalid build provenance")
 			}
 		})
 	}
@@ -408,8 +496,18 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			queryStratum[id] = group.name
 		}
 	}
+	dataset := &Loaded{Dataset: &Dataset{SchemaVersion: SchemaVersion, ID: "coderank-qualification-fixture-v1", Repo: "cobra",
+		RepoSHA: pre.SourceRepoSHA, Language: "en", EvidenceClass: "independent-curator-annotated-and-reviewed", RelevantMinGrade: GradeMax},
+		Path: "/qualification/fixture.json"}
+	for _, id := range queryIDs {
+		dataset.Dataset.Queries = append(dataset.Dataset.Queries, Query{ID: id, Stratum: queryStratum[id], Language: "en", Split: SplitDev,
+			Text: fixtureQueryText(id), FamilyID: "family-" + id, Provenance: "independent qualification fixture",
+			Judgements: []Judgement{{Path: "answer.go", StartLine: 1, EndLine: 1, Anchor: "answer", Grade: GradeMax, Reason: "exact answer", Annotator: "curator", Reviewer: "reviewer"}}})
+	}
+	sealQualificationDatasetFixture(dataset)
+	pre.DatasetSHA256 = dataset.SHA256
 	input := QualificationInput{
-		Preregistration: pre,
+		Preregistration: pre, Dataset: dataset,
 		Operating: OperatingMeasurements{CPUOnly: true, ArtifactBytes: 512 << 20,
 			PeakAdditionalSidecarRSSBytes: 1 << 30, QueryEmbedLatencies: make([]time.Duration, 100), FullReindex: 5 * time.Minute},
 	}
@@ -426,7 +524,8 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			}
 			observation := QualificationObservation{Arm: arm, QueryID: id, Stratum: queryStratum[id],
 				SemanticTop50: stage, PostFusion: stage,
-				CompleteGrade3Span: arm == ArmCodeRank, BundleSHA256: strings.Repeat("a", 64), PayloadSHA256: strings.Repeat("b", 64), BundleTokens: 100}
+				CompleteGrade3Span: arm == ArmCodeRank, BundleSHA256: SHA256Hex([]byte("bundle:" + string(arm) + ":" + id)),
+				PayloadSHA256: SHA256Hex([]byte("payload:" + string(arm) + ":" + id)), BundleTokens: 100}
 			if arm == ArmLexical {
 				observation.RetrievalState = "lexical_only"
 			} else {
@@ -456,14 +555,14 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 				OracleTokenCountsSHA256: strings.Repeat("f", 64)}
 			digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, QualificationCaptureProvenanceRecord{
 				Arm: arm, Build: build + 1, WorkDir: "/runs/" + string(arm) + "/build-" + string(rune('1'+build)),
-				Provenance: qualificationCaptureProvenanceFixture(arm, build+1),
+				Provenance: qualificationCaptureProvenanceFixture(pre, dataset, arm, build+1),
 			})
 			input.BuildDigests = append(input.BuildDigests, digest)
 		}
 	}
 	for _, id := range queryIDs {
 		mk := func(kind string) OracleBundle {
-			payloadBytes := []byte("{}")
+			payloadBytes := []byte(kind + ":" + id)
 			return OracleBundle{ControlKind: kind, QueryID: id, OutputName: kind + ".json",
 				CandidateProvenance: kind, CandidateSHA256: strings.Repeat("7", 64),
 				CompleteGrade3Span: true, TokenCount: 1,
@@ -502,6 +601,10 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 func qualificationBlindEvidenceFixture(t *testing.T, in QualificationInput, arm QualificationArm, controlKind string, passes map[string]bool) (BlindEvidenceSet, []BlindDecision) {
 	t.Helper()
 	precondition := fixturePrecondition(t)
+	precondition.DatasetSHA256 = in.Preregistration.DatasetSHA256
+	precondition.CandidateSHA = in.Preregistration.CandidateSHA
+	precondition.FreezeCommit = in.Preregistration.CandidateSHA
+	precondition.CandidateTokenBudget = QualificationTokenBudget
 	for i := range precondition.Inputs {
 		if precondition.Inputs[i].Role == "grading_rubric" {
 			precondition.Inputs[i].SHA256 = in.Preregistration.GraderPromptSHA256
@@ -518,7 +621,7 @@ func qualificationBlindEvidenceFixture(t *testing.T, in QualificationInput, arm 
 		t.Fatal(err)
 	}
 	pre := PreRegistration{ContractVersion: QrelBlindSmokeContractVersion, Evaluation: QrelBlindSmokeEvaluationName,
-		PreconditionSHA256: precondition.SHA256, PreconditionCommit: "fedcbafedcbafedcbafedcbafedcbafedcbafedc",
+		PreconditionSHA256: precondition.SHA256, PreconditionCommit: in.Preregistration.CandidateSHA,
 		RecordedAt: fixturePreRegAt.Format(time.RFC3339), Derivation: derivation, PrimaryRaters: primaries, Grader: grader, Adjudicator: adjudicator}
 	for _, observation := range in.Observations {
 		if observation.Arm != ArmLexical {
@@ -610,16 +713,31 @@ func mustSealBlindDecision(t *testing.T, decision BlindDecision, evidenceSHA ...
 	return sealed
 }
 
-func qualificationCaptureProvenanceFixture(arm QualificationArm, build int) CandidateCaptureProvenance {
-	return CandidateCaptureProvenance{CaptureVersion: CandidateCaptureVersion, Transport: "MCP stdio JSON-RPC 2.0", Surface: "tools/call task_context",
-		Boundary: string(PayloadBoundaryCandidate), RepoName: "fixture", RepoSHA: fixtureCandidate, DatasetSHA256: fixtureDatasetSHA,
-		EmbedderSelector: string(arm), ModelFingerprint: "fixture-model", IndexFingerprint: "fixture-index",
-		GenerationID: "generation-" + string(rune('0'+build)), PersistedVectors: 64, SemanticState: "ready", TokenBudget: SavingsCandidateBudget,
-		MethodVersion: "fixture", TokenizerID: "tiktoken:cl100k_base:ordinary", TokenizerVocabSHA: fixtureVocabSHA, QueryCount: 64}
+func qualificationCaptureProvenanceFixture(pre QualificationPreregistration, dataset *Loaded, arm QualificationArm, build int) CandidateCaptureProvenance {
+	pin := pre.Arms[arm]
+	p := CandidateCaptureProvenance{CaptureVersion: CandidateCaptureVersion, Transport: CandidateCaptureTransport, Surface: CandidateCaptureSurface,
+		Boundary: string(PayloadBoundaryCandidate), RepoName: dataset.Dataset.Repo, RepoSHA: pre.SourceRepoSHA, DatasetSHA256: pre.DatasetSHA256,
+		EmbedderSelector: pin.Label, ModelFingerprint: pin.FingerprintCanonical, IndexFingerprint: pin.FingerprintCanonical,
+		GenerationID: "generation-" + string(rune('0'+build)), PersistedVectors: 64, SemanticState: "ready", TokenBudget: QualificationTokenBudget,
+		MethodVersion: QualificationCompactVersion, TokenizerID: "tiktoken:cl100k_base:ordinary", TokenizerVocabSHA: fixtureVocabSHA, QueryCount: 64,
+		Binding: &CandidateBinding{CandidateSHA: pre.CandidateSHA, FrozenCandidateSHA: pre.CandidateSHA, CandidateWorktreeClean: true,
+			CandidateMatchesFrozen: true, CandidateExcludedPath: "qualification", CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}}
+	if arm == ArmLexical {
+		p.ModelFingerprint, p.IndexFingerprint, p.GenerationID, p.SemanticState, p.PersistedVectors = "", "", "", "unset", 0
+	}
+	return p
 }
 
 func mustSealQualificationCaptureProvenanceRecord(t *testing.T, record QualificationCaptureProvenanceRecord) QualificationCaptureProvenanceRecord {
 	t.Helper()
+	if record.Provenance.QualificationCaptureRunSHA256 == "" {
+		record.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(record.Arm, record.WorkDir)
+	}
+	identity, err := qualificationCaptureRecordIdentitySHA(record)
+	if err != nil {
+		t.Fatal(err)
+	}
+	record.CaptureIdentitySHA256 = identity
 	sealed, err := sealQualificationCaptureProvenanceRecord(record)
 	if err != nil {
 		t.Fatal(err)
@@ -709,6 +827,64 @@ func rebuildBlindSubject(in *QualificationInput, arm QualificationArm, controlKi
 			panic(sealErr)
 		}
 		in.Decisions[i] = sealed
+	}
+}
+
+func resealBlindEvidenceChain(in *QualificationInput, sourceIndex int) {
+	source := &in.BlindEvidence[sourceIndex]
+	var err error
+	source.Precondition, err = SealPreconditionRecord(source.Precondition)
+	if err != nil {
+		panic(err)
+	}
+	source.PreRegistration.PreconditionSHA256 = source.Precondition.SHA256
+	source.PreRegistration, err = SealPreRegistration(source.PreRegistration)
+	if err != nil {
+		panic(err)
+	}
+	queries := make(map[string]PreRegisteredQuery, 64)
+	for _, query := range source.PreRegistration.Queries {
+		queries[query.QueryID] = query
+	}
+	responseAddresses := make(map[string]string, len(source.Responses))
+	for i := range source.Responses {
+		old := source.Responses[i].SHA256
+		query := queries[source.Responses[i].QueryID]
+		source.Responses[i].PreRegistrationSHA256 = source.PreRegistration.SHA256
+		source.Responses[i].QueryTextSHA256 = query.QueryTextSHA256
+		source.Responses[i].BundleSHA256 = query.BundleSHA256
+		source.Responses[i].PromptSHA256 = query.PromptSHA256
+		source.Responses[i], err = SealRaterResponse(source.Responses[i])
+		if err != nil {
+			panic(err)
+		}
+		responseAddresses[old] = source.Responses[i].SHA256
+	}
+	for i := range source.Grades {
+		source.Grades[i].ResponseSHA256 = responseAddresses[source.Grades[i].ResponseSHA256]
+		source.Grades[i], err = SealGrade(source.Grades[i])
+		if err != nil {
+			panic(err)
+		}
+	}
+	*source, err = sealBlindEvidenceSet(*source)
+	if err != nil {
+		panic(err)
+	}
+	artifacts := EvaluationArtifacts{Precondition: source.Precondition, PreRegistration: source.PreRegistration, Responses: source.Responses, Grades: source.Grades, Adjudications: source.Adjudications}
+	for i := range in.Decisions {
+		if in.Decisions[i].Arm != source.Arm || in.Decisions[i].ControlKind != source.ControlKind {
+			continue
+		}
+		outcome, decideErr := DecideQuery(artifacts, queries[in.Decisions[i].QueryID])
+		if decideErr != nil {
+			panic(decideErr)
+		}
+		in.Decisions[i].Outcome = outcome
+		in.Decisions[i], err = sealBlindDecision(in.Decisions[i], source.SHA256)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

@@ -215,11 +215,12 @@ type QualificationBuildDigest struct {
 // independently captured build. The nested snapshot must not contain the
 // digest that owns this record; that deterministic exclusion prevents cycles.
 type QualificationCaptureProvenanceRecord struct {
-	Build      int                        `json:"build"`
-	Arm        QualificationArm           `json:"arm"`
-	WorkDir    string                     `json:"work_dir"`
-	Provenance CandidateCaptureProvenance `json:"provenance"`
-	SHA256     string                     `json:"sha256"`
+	Build                 int                        `json:"build"`
+	Arm                   QualificationArm           `json:"arm"`
+	WorkDir               string                     `json:"work_dir"`
+	Provenance            CandidateCaptureProvenance `json:"provenance"`
+	CaptureIdentitySHA256 string                     `json:"capture_identity_sha256"`
+	SHA256                string                     `json:"sha256"`
 }
 
 type qualificationCaptureFacts struct {
