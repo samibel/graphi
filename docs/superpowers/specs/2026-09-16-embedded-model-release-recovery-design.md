@@ -1,7 +1,7 @@
 # Embedded-model release recovery design
 
 Date: 2026-09-16
-Status: design approved in chat; written-spec review pending; implementation not started
+Status: design and written spec confirmed in chat; implementation not started
 
 ## Decision
 
