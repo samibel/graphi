@@ -40,3 +40,20 @@ The lowercase hexadecimal digest excludes the endpoint and process epoch.
 Every attestation, admission, and embedding response carries `protocol`,
 `identity_digest`, and `epoch`; the adapter verifies the binding before accepting
 data. JSON decoding rejects unknown response fields and trailing JSON values.
+
+## HTTP operations
+
+The adapter uses `GET /v1/attestation`, `POST /v1/admit`, and `POST /v1/embed`.
+All operations require HTTP 200; redirects are rejected without following them.
+Admission responses must include an integer `token_count`; missing and `null`
+counts are rejected. The sidecar owns the authoritative tokenizer. The adapter
+checks the returned count is nonnegative and within the manifest's usable limit,
+and checks that admitted text is an unchanged UTF-8 prefix; it does not recompute
+the token count locally. Documents are sent unchanged. Query embedding prepends
+the pinned instruction once and sends `kind=query`.
+
+Construction pins the serving epoch. Later attestation, admission, and embedding
+responses must retain that epoch, protocol, and full identity digest. Empty
+document batches return an empty result without a request. `CheckAvailable`
+validates the pinned local state without dialing; query and generation operations
+perform their runtime freshness checks through `VerifyRuntime`.
