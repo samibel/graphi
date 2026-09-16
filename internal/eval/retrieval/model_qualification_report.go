@@ -2,7 +2,10 @@ package retrieval
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -146,7 +149,13 @@ type QualificationReportCommit struct {
 	SHA256                      string `json:"sha256"`
 }
 
-type qualificationPublishHook func(stage string) error
+type qualificationPublishEvent struct {
+	Stage       string
+	Root        *os.Root
+	Transaction qualificationReportTransaction
+}
+
+type qualificationPublishHook func(event qualificationPublishEvent) error
 
 // WriteQualificationReport validates all source evidence, reruns the frozen
 // decision, and publishes the canonical JSON/Markdown pair without replacing
@@ -521,51 +530,84 @@ func durationBounds(values []time.Duration) (time.Duration, time.Duration) {
 	return minimum, maximum
 }
 
-type qualificationOutputDirectory struct {
-	path string
-	info os.FileInfo
-	file *os.File
+const (
+	qualificationTransactionSchemaVersion    = 1
+	qualificationPublishBeforeRecoveryDelete = "before_recovery_delete"
+	qualificationPublishBeforeRollback       = "before_rollback"
+)
+
+type qualificationOwnedMember struct {
+	FinalName  string `json:"final_name"`
+	StagedName string `json:"staged_name"`
+	SHA256     string `json:"sha256"`
+	Identity   string `json:"identity"`
 }
 
+type qualificationReportTransaction struct {
+	SchemaVersion         int                      `json:"schema_version"`
+	ID                    string                   `json:"id"`
+	TransactionStagedName string                   `json:"transaction_staged_name"`
+	JSON                  qualificationOwnedMember `json:"json"`
+	Markdown              qualificationOwnedMember `json:"markdown"`
+	Commit                qualificationOwnedMember `json:"commit"`
+	SHA256                string                   `json:"sha256"`
+}
+
+type qualificationOutputDirectory struct {
+	root *os.Root
+}
+
+type qualificationStagedFile struct {
+	info     os.FileInfo
+	identity string
+}
+
+// The publication policy rejects every symlink alias in the supplied path,
+// including parent components. Callers must pass the resolved physical path.
+// After OpenRoot succeeds, all access is relative to that stable opened root.
 func openQualificationOutputDirectory(path string) (*qualificationOutputDirectory, error) {
-	info, err := os.Lstat(path)
+	abs, err := filepath.Abs(path)
 	if err != nil {
-		return nil, fmt.Errorf("embedded-model qualification report: inspect output directory: %w", err)
+		return nil, fmt.Errorf("embedded-model qualification report: resolve output directory: %w", err)
 	}
-	if info.Mode()&os.ModeSymlink != 0 {
-		return nil, fmt.Errorf("embedded-model qualification report: output directory must not be a symlink")
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("embedded-model qualification report: output path is not a directory")
-	}
-	file, err := os.Open(path)
+	abs = filepath.Clean(abs)
+	resolved, err := filepath.EvalSymlinks(abs)
 	if err != nil {
-		return nil, fmt.Errorf("embedded-model qualification report: open output directory: %w", err)
+		return nil, fmt.Errorf("embedded-model qualification report: resolve output directory symlinks: %w", err)
 	}
-	opened, err := file.Stat()
+	if filepath.Clean(resolved) != abs {
+		return nil, fmt.Errorf("embedded-model qualification report: output directory or parent is a symlink alias; pass resolved path %s", resolved)
+	}
+	info, err := os.Lstat(abs)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("embedded-model qualification report: output path is not a real directory")
+	}
+	root, err := os.OpenRoot(abs)
+	if err != nil {
+		return nil, fmt.Errorf("embedded-model qualification report: open output root: %w", err)
+	}
+	opened, err := root.Stat(".")
 	if err != nil || !os.SameFile(info, opened) {
-		_ = file.Close()
+		_ = root.Close()
 		return nil, fmt.Errorf("embedded-model qualification report: output directory changed while opening")
 	}
-	return &qualificationOutputDirectory{path: path, info: info, file: file}, nil
+	return &qualificationOutputDirectory{root: root}, nil
 }
 
-func (dir *qualificationOutputDirectory) close() { _ = dir.file.Close() }
-
-func (dir *qualificationOutputDirectory) checkStable() error {
-	current, err := os.Lstat(dir.path)
-	if err != nil || current.Mode()&os.ModeSymlink != 0 || !current.IsDir() || !os.SameFile(dir.info, current) {
-		return fmt.Errorf("embedded-model qualification report: output directory changed during publication")
-	}
-	return nil
-}
+func (dir *qualificationOutputDirectory) close() { _ = dir.root.Close() }
 
 func (dir *qualificationOutputDirectory) sync() error {
-	if err := dir.checkStable(); err != nil {
-		return err
+	file, err := dir.root.Open(".")
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: open output root for sync: %w", err)
 	}
-	if err := dir.file.Sync(); err != nil {
-		return fmt.Errorf("embedded-model qualification report: sync output directory: %w", err)
+	err = file.Sync()
+	closeErr := file.Close()
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: sync output root: %w", err)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("embedded-model qualification report: close output root sync handle: %w", closeErr)
 	}
 	return nil
 }
@@ -595,47 +637,52 @@ func qualificationReportCommitBytes(jsonBytes, markdown []byte) ([]byte, Qualifi
 	return append(raw, '\n'), marker, nil
 }
 
-func readQualificationReportCommit(path string) (QualificationReportCommit, error) {
-	raw, err := readQualificationRegularNoFollow(path)
+func readQualificationReportCommit(root *os.Root, name string) (QualificationReportCommit, os.FileInfo, error) {
+	raw, info, _, err := readQualificationRegularNoFollow(root, name)
 	if err != nil {
-		return QualificationReportCommit{}, err
+		return QualificationReportCommit{}, nil, err
 	}
 	var marker QualificationReportCommit
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&marker); err != nil {
-		return QualificationReportCommit{}, err
+		return QualificationReportCommit{}, nil, err
 	}
 	if err := decoder.Decode(new(any)); err != io.EOF {
-		return QualificationReportCommit{}, fmt.Errorf("commit marker has trailing data")
+		return QualificationReportCommit{}, nil, fmt.Errorf("commit marker has trailing data")
 	}
 	sealed, err := sealQualificationReportCommit(marker)
 	if err != nil || marker.SchemaVersion != QualificationReportCommitSchemaVersion || marker.ReportSchemaVersion != QualificationReportSchemaVersion ||
 		!isLowerHexDigest(marker.QualificationJSONSHA256, 64) || !isLowerHexDigest(marker.QualificationMarkdownSHA256, 64) ||
 		!isLowerHexDigest(marker.SHA256, 64) || sealed.SHA256 != marker.SHA256 {
-		return QualificationReportCommit{}, fmt.Errorf("commit marker content address or schema differs")
+		return QualificationReportCommit{}, nil, fmt.Errorf("commit marker content address or schema differs")
 	}
-	return marker, nil
+	return marker, info, nil
 }
 
-func readQualificationRegularNoFollow(path string) ([]byte, error) {
-	info, err := os.Lstat(path)
+func readQualificationRegularNoFollow(root *os.Root, name string) ([]byte, os.FileInfo, string, error) {
+	info, err := root.Lstat(name)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
 	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-		return nil, fmt.Errorf("%s is not a regular no-follow file", filepath.Base(path))
+		return nil, nil, "", fmt.Errorf("%s is not a regular no-follow file", name)
 	}
-	file, err := os.Open(path)
+	file, err := root.Open(name)
 	if err != nil {
-		return nil, err
+		return nil, nil, "", err
 	}
 	defer file.Close()
 	opened, err := file.Stat()
 	if err != nil || !os.SameFile(info, opened) {
-		return nil, fmt.Errorf("%s changed while opening", filepath.Base(path))
+		return nil, nil, "", fmt.Errorf("%s changed while opening", name)
 	}
-	return io.ReadAll(file)
+	identity, err := qualificationFileIdentity(file)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("read immutable identity for %s: %w", name, err)
+	}
+	raw, err := io.ReadAll(file)
+	return raw, opened, identity, err
 }
 
 // ValidateQualificationReportPublication accepts only a committed three-file
@@ -647,14 +694,11 @@ func ValidateQualificationReportPublication(path string) error {
 		return err
 	}
 	defer dir.close()
-	return validateQualificationReportPublication(dir)
+	return validateQualificationReportPublication(dir.root)
 }
 
-func validateQualificationReportPublication(dir *qualificationOutputDirectory) error {
-	if err := dir.checkStable(); err != nil {
-		return err
-	}
-	marker, err := readQualificationReportCommit(filepath.Join(dir.path, qualificationReportCommitName))
+func validateQualificationReportPublication(root *os.Root) error {
+	marker, _, err := readQualificationReportCommit(root, qualificationReportCommitName)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification report: no valid authoritative commit marker: %w", err)
 	}
@@ -662,7 +706,7 @@ func validateQualificationReportPublication(dir *qualificationOutputDirectory) e
 		{qualificationReportJSONName, marker.QualificationJSONSHA256},
 		{qualificationReportMarkdownName, marker.QualificationMarkdownSHA256},
 	} {
-		raw, readErr := readQualificationRegularNoFollow(filepath.Join(dir.path, artifact.name))
+		raw, _, _, readErr := readQualificationRegularNoFollow(root, artifact.name)
 		if readErr != nil {
 			return fmt.Errorf("embedded-model qualification report: committed %s is missing or unsafe: %w", artifact.name, readErr)
 		}
@@ -670,7 +714,7 @@ func validateQualificationReportPublication(dir *qualificationOutputDirectory) e
 			return fmt.Errorf("embedded-model qualification report: committed %s digest %s differs from marker %s", artifact.name, got, artifact.digest)
 		}
 	}
-	return dir.checkStable()
+	return nil
 }
 
 func publishQualificationReportPair(path string, jsonBytes, markdown []byte, hook qualificationPublishHook) (err error) {
@@ -679,143 +723,129 @@ func publishQualificationReportPair(path string, jsonBytes, markdown []byte, hoo
 		return err
 	}
 	defer dir.close()
-	if err := prepareQualificationReportPublication(dir); err != nil {
+	if err := prepareQualificationReportPublication(dir, hook); err != nil {
 		return err
 	}
 	markerBytes, _, err := qualificationReportCommitBytes(jsonBytes, markdown)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification report: encode commit marker: %w", err)
 	}
-
-	jsonTemp, err := writeQualificationReportTemp(path, ".qualification-json-", jsonBytes)
+	nonce, err := qualificationTransactionNonce()
 	if err != nil {
 		return err
 	}
-	defer removeQualificationReportTemp(dir, jsonTemp)
-	markdownTemp, err := writeQualificationReportTemp(path, ".qualification-markdown-", markdown)
-	if err != nil {
-		return err
+	prefix := ".qualification." + nonce + "."
+	tx := qualificationReportTransaction{SchemaVersion: qualificationTransactionSchemaVersion, ID: nonce, TransactionStagedName: prefix + "transaction.stage"}
+	staged := make(map[string]qualificationStagedFile, 4)
+	for _, item := range []struct {
+		member *qualificationOwnedMember
+		name   string
+		final  string
+		raw    []byte
+	}{
+		{&tx.JSON, prefix + "json.stage", qualificationReportJSONName, jsonBytes},
+		{&tx.Markdown, prefix + "markdown.stage", qualificationReportMarkdownName, markdown},
+		{&tx.Commit, prefix + "commit.stage", qualificationReportCommitName, markerBytes},
+	} {
+		stage, stageErr := writeQualificationReportStage(dir.root, item.name, item.raw)
+		if stageErr != nil {
+			cleanupErr := cleanupUnpublishedStages(dir, tx, staged)
+			return errors.Join(stageErr, cleanupErr)
+		}
+		staged[item.name] = stage
+		*item.member = qualificationOwnedMember{FinalName: item.final, StagedName: item.name, SHA256: SHA256Hex(item.raw), Identity: stage.identity}
 	}
-	defer removeQualificationReportTemp(dir, markdownTemp)
-	markerTemp, err := writeQualificationReportTemp(path, ".qualification-marker-", markerBytes)
+	tx, err = sealQualificationReportTransaction(tx)
 	if err != nil {
-		return err
+		return errors.Join(err, cleanupUnpublishedStages(dir, tx, staged))
 	}
-	defer removeQualificationReportTemp(dir, markerTemp)
-
-	created := make([]string, 0, 4)
-	committed := false
+	txBytes, err := json.MarshalIndent(tx, "", "  ")
+	if err != nil {
+		return errors.Join(err, cleanupUnpublishedStages(dir, tx, staged))
+	}
+	txBytes = append(txBytes, '\n')
+	txStage, err := writeQualificationReportStage(dir.root, tx.TransactionStagedName, txBytes)
+	if err != nil {
+		return errors.Join(err, cleanupUnpublishedStages(dir, tx, staged))
+	}
+	staged[tx.TransactionStagedName] = txStage
+	if err = dir.root.Link(tx.TransactionStagedName, qualificationReportTransactionName); err != nil {
+		cleanupErr := cleanupUnpublishedStages(dir, tx, staged)
+		return errors.Join(fmt.Errorf("embedded-model qualification report: publish transaction ownership: %w", err), cleanupErr)
+	}
+	published := false
 	defer func() {
-		if committed {
+		if published || err == nil {
 			return
 		}
-		if dir.checkStable() == nil {
-			for i := len(created) - 1; i >= 0; i-- {
-				_ = os.Remove(created[i])
-			}
-			_ = dir.sync()
+		if hook != nil {
+			err = errors.Join(err, hook(qualificationPublishEvent{Stage: qualificationPublishBeforeRollback, Root: dir.root, Transaction: tx}))
+		}
+		if rollbackErr := cleanupQualificationTransaction(dir, tx, staged, true); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("embedded-model qualification report: rollback incomplete cleanup: %w", rollbackErr))
 		}
 	}()
-	publish := func(temp, name string) error {
-		if err := dir.checkStable(); err != nil {
-			return err
-		}
-		target := filepath.Join(path, name)
-		if err := os.Link(temp, target); err != nil {
-			return fmt.Errorf("embedded-model qualification report: publish %s: %w", name, err)
-		}
-		created = append(created, target)
-		return nil
-	}
-	if err := publish(markerTemp, qualificationReportTransactionName); err != nil {
-		return err
-	}
 	if err := dir.sync(); err != nil {
 		return err
 	}
-	if err := publish(jsonTemp, qualificationReportJSONName); err != nil {
+	if err = dir.root.Link(tx.JSON.StagedName, tx.JSON.FinalName); err != nil {
 		return err
 	}
 	if hook != nil {
-		if err := hook(qualificationPublishAfterJSON); err != nil {
+		if err = hook(qualificationPublishEvent{Stage: qualificationPublishAfterJSON, Root: dir.root, Transaction: tx}); err != nil {
 			return fmt.Errorf("embedded-model qualification report: publication hook: %w", err)
 		}
 	}
-	if err := publish(markdownTemp, qualificationReportMarkdownName); err != nil {
+	if err = dir.root.Link(tx.Markdown.StagedName, tx.Markdown.FinalName); err != nil {
 		return err
 	}
 	if err := dir.sync(); err != nil {
 		return err
 	}
-	if err := publish(markerTemp, qualificationReportCommitName); err != nil {
+	if err = dir.root.Link(tx.Commit.StagedName, tx.Commit.FinalName); err != nil {
 		return err
 	}
 	if err := dir.sync(); err != nil {
 		return err
 	}
-	if err := validateQualificationReportPublication(dir); err != nil {
+	if err = validateQualificationReportPublication(dir.root); err != nil {
 		return err
 	}
-	if err := dir.checkStable(); err != nil {
-		return err
+	if err = cleanupQualificationTransaction(dir, tx, staged, false); err != nil {
+		return fmt.Errorf("embedded-model qualification report: committed but cleanup incomplete: %w", err)
 	}
-	if err := os.Remove(filepath.Join(path, qualificationReportTransactionName)); err != nil {
-		return fmt.Errorf("embedded-model qualification report: remove completed transaction marker: %w", err)
-	}
-	if err := dir.sync(); err != nil {
-		return err
-	}
-	committed = true
+	published = true
 	return nil
 }
 
-func prepareQualificationReportPublication(dir *qualificationOutputDirectory) error {
-	commitPath := filepath.Join(dir.path, qualificationReportCommitName)
-	if _, err := os.Lstat(commitPath); err == nil {
-		if validationErr := validateQualificationReportPublication(dir); validationErr != nil {
+func prepareQualificationReportPublication(dir *qualificationOutputDirectory, hook qualificationPublishHook) error {
+	if _, err := dir.root.Lstat(qualificationReportCommitName); err == nil {
+		if validationErr := validateQualificationReportPublication(dir.root); validationErr != nil {
 			return fmt.Errorf("embedded-model qualification report: existing committed report is invalid and will not be overwritten: %w", validationErr)
 		}
 		return fmt.Errorf("embedded-model qualification report: %s already exists", qualificationReportCommitName)
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("embedded-model qualification report: inspect commit marker: %w", err)
 	}
-	transactionPath := filepath.Join(dir.path, qualificationReportTransactionName)
-	if _, err := os.Lstat(transactionPath); err == nil {
-		marker, readErr := readQualificationReportCommit(transactionPath)
+	if _, err := dir.root.Lstat(qualificationReportTransactionName); err == nil {
+		tx, staged, readErr := readQualificationReportTransaction(dir.root)
 		if readErr != nil {
-			return fmt.Errorf("embedded-model qualification report: markerless transaction is not owned: %w", readErr)
+			return fmt.Errorf("embedded-model qualification report: transaction replay or foreign marker: %w", readErr)
 		}
-		for _, artifact := range []struct{ name, digest string }{
-			{qualificationReportJSONName, marker.QualificationJSONSHA256},
-			{qualificationReportMarkdownName, marker.QualificationMarkdownSHA256},
-		} {
-			artifactPath := filepath.Join(dir.path, artifact.name)
-			_, statErr := os.Lstat(artifactPath)
-			if os.IsNotExist(statErr) {
-				continue
-			}
-			if statErr != nil {
-				return fmt.Errorf("embedded-model qualification report: inspect markerless %s: %w", artifact.name, statErr)
-			}
-			raw, readErr := readQualificationRegularNoFollow(artifactPath)
-			if readErr != nil || SHA256Hex(raw) != artifact.digest {
-				return fmt.Errorf("embedded-model qualification report: markerless transaction does not own %s", artifact.name)
+		if hook != nil {
+			if hookErr := hook(qualificationPublishEvent{Stage: qualificationPublishBeforeRecoveryDelete, Root: dir.root, Transaction: tx}); hookErr != nil {
+				return hookErr
 			}
 		}
-		for _, name := range []string{qualificationReportJSONName, qualificationReportMarkdownName, qualificationReportTransactionName} {
-			if stableErr := dir.checkStable(); stableErr != nil {
-				return stableErr
-			}
-			if removeErr := os.Remove(filepath.Join(dir.path, name)); removeErr != nil && !os.IsNotExist(removeErr) {
-				return fmt.Errorf("embedded-model qualification report: clean markerless transaction: %w", removeErr)
-			}
+		if recoveryErr := cleanupQualificationTransaction(dir, tx, staged, true); recoveryErr != nil {
+			return fmt.Errorf("embedded-model qualification report: recovery refused foreign or replaced member: %w", recoveryErr)
 		}
-		return dir.sync()
+		return nil
 	} else if !os.IsNotExist(err) {
 		return fmt.Errorf("embedded-model qualification report: inspect transaction marker: %w", err)
 	}
 	for _, name := range []string{qualificationReportJSONName, qualificationReportMarkdownName} {
-		if _, err := os.Lstat(filepath.Join(dir.path, name)); err == nil {
+		if _, err := dir.root.Lstat(name); err == nil {
 			return fmt.Errorf("embedded-model qualification report: unowned markerless %s already exists", name)
 		} else if !os.IsNotExist(err) {
 			return fmt.Errorf("embedded-model qualification report: inspect %s: %w", name, err)
@@ -824,26 +854,50 @@ func prepareQualificationReportPublication(dir *qualificationOutputDirectory) er
 	return nil
 }
 
-func removeQualificationReportTemp(dir *qualificationOutputDirectory, path string) {
-	if dir.checkStable() == nil {
-		_ = os.Remove(path)
+func qualificationTransactionNonce() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", fmt.Errorf("embedded-model qualification report: random transaction id: %w", err)
 	}
+	return hex.EncodeToString(raw), nil
 }
 
-func writeQualificationReportTemp(dir, pattern string, content []byte) (path string, err error) {
-	file, err := os.CreateTemp(dir, pattern)
+func sealQualificationReportTransaction(tx qualificationReportTransaction) (qualificationReportTransaction, error) {
+	tx.SHA256 = ""
+	address, err := ContentAddress(tx, func(v *qualificationReportTransaction) { v.SHA256 = "" })
 	if err != nil {
-		return "", fmt.Errorf("embedded-model qualification report: create staging file: %w", err)
+		return qualificationReportTransaction{}, err
 	}
-	path = file.Name()
-	defer func() {
-		if err != nil {
-			_ = os.Remove(path)
-		}
-	}()
-	if err = file.Chmod(0o644); err == nil {
-		_, err = file.Write(content)
+	tx.SHA256 = address
+	return tx, nil
+}
+
+func writeQualificationReportStage(root *os.Root, name string, content []byte) (qualificationStagedFile, error) {
+	file, err := root.OpenFile(name, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		return qualificationStagedFile{}, fmt.Errorf("embedded-model qualification report: create stage %s: %w", name, err)
 	}
+	identity, identityErr := file.Stat()
+	if identityErr != nil {
+		closeErr := file.Close()
+		return qualificationStagedFile{}, errors.Join(
+			fmt.Errorf("embedded-model qualification report: stat new stage %s: %w", name, identityErr),
+			closeErr,
+			fmt.Errorf("embedded-model qualification report: cleanup incomplete for unverifiable stage %s", name),
+		)
+	}
+	identityAddress, identityErr := qualificationFileIdentity(file)
+	if identityErr != nil {
+		closeErr := file.Close()
+		cleanupErr := removeQualificationOwnedInfo(root, name, identity)
+		return qualificationStagedFile{}, errors.Join(
+			fmt.Errorf("embedded-model qualification report: identify new stage %s: %w", name, identityErr),
+			closeErr,
+			cleanupErr,
+		)
+	}
+	stage := qualificationStagedFile{info: identity, identity: identityAddress}
+	_, err = file.Write(content)
 	if err == nil {
 		err = file.Sync()
 	}
@@ -852,7 +906,185 @@ func writeQualificationReportTemp(dir, pattern string, content []byte) (path str
 		err = closeErr
 	}
 	if err != nil {
-		return "", fmt.Errorf("embedded-model qualification report: stage file: %w", err)
+		cleanupErr := removeQualificationOwnedName(root, name, stage)
+		return qualificationStagedFile{}, errors.Join(fmt.Errorf("embedded-model qualification report: write stage %s: %w", name, err), cleanupErr)
 	}
-	return path, nil
+	if err := verifyQualificationOwnedFile(root, name, SHA256Hex(content), identityAddress, identity); err != nil {
+		cleanupErr := removeQualificationOwnedName(root, name, stage)
+		return qualificationStagedFile{}, errors.Join(fmt.Errorf("embedded-model qualification report: inspect stage %s: %w", name, err), cleanupErr)
+	}
+	return stage, nil
+}
+
+func readQualificationReportTransaction(root *os.Root) (qualificationReportTransaction, map[string]qualificationStagedFile, error) {
+	raw, commonInfo, commonIdentity, err := readQualificationRegularNoFollow(root, qualificationReportTransactionName)
+	if err != nil {
+		return qualificationReportTransaction{}, nil, err
+	}
+	var tx qualificationReportTransaction
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&tx); err != nil {
+		return qualificationReportTransaction{}, nil, err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return qualificationReportTransaction{}, nil, fmt.Errorf("transaction marker has trailing data")
+	}
+	sealed, err := sealQualificationReportTransaction(tx)
+	prefix := ".qualification." + tx.ID + "."
+	if err != nil || tx.SchemaVersion != qualificationTransactionSchemaVersion || !isLowerHexDigest(tx.ID, 64) ||
+		tx.TransactionStagedName != prefix+"transaction.stage" || tx.JSON.FinalName != qualificationReportJSONName || tx.JSON.StagedName != prefix+"json.stage" ||
+		tx.Markdown.FinalName != qualificationReportMarkdownName || tx.Markdown.StagedName != prefix+"markdown.stage" ||
+		tx.Commit.FinalName != qualificationReportCommitName || tx.Commit.StagedName != prefix+"commit.stage" ||
+		!isLowerHexDigest(tx.JSON.Identity, 64) || !isLowerHexDigest(tx.Markdown.Identity, 64) || !isLowerHexDigest(tx.Commit.Identity, 64) ||
+		sealed.SHA256 != tx.SHA256 {
+		return qualificationReportTransaction{}, nil, fmt.Errorf("transaction replay has invalid identity, names, or content address")
+	}
+	staged := make(map[string]qualificationStagedFile, 4)
+	for _, member := range []qualificationOwnedMember{tx.JSON, tx.Markdown, tx.Commit} {
+		memberRaw, info, identity, readErr := readQualificationRegularNoFollow(root, member.StagedName)
+		if readErr != nil || SHA256Hex(memberRaw) != member.SHA256 {
+			return qualificationReportTransaction{}, nil, fmt.Errorf("transaction replay missing owned stage %s", member.StagedName)
+		}
+		if identity != member.Identity {
+			return qualificationReportTransaction{}, nil, fmt.Errorf("transaction replay immutable identity differs for %s", member.StagedName)
+		}
+		staged[member.StagedName] = qualificationStagedFile{info: info, identity: identity}
+	}
+	txRaw, txInfo, txIdentity, err := readQualificationRegularNoFollow(root, tx.TransactionStagedName)
+	if err != nil || SHA256Hex(txRaw) != SHA256Hex(raw) || txIdentity != commonIdentity || !os.SameFile(txInfo, commonInfo) {
+		return qualificationReportTransaction{}, nil, fmt.Errorf("transaction replay ownership anchor differs")
+	}
+	staged[tx.TransactionStagedName] = qualificationStagedFile{info: txInfo, identity: txIdentity}
+	return tx, staged, nil
+}
+
+func cleanupQualificationTransaction(dir *qualificationOutputDirectory, tx qualificationReportTransaction, staged map[string]qualificationStagedFile, removeFinals bool) error {
+	// Preflight every deletion. If any final or ownership anchor was replaced,
+	// no name is removed merely because its bytes happen to match.
+	for _, member := range []qualificationOwnedMember{tx.JSON, tx.Markdown, tx.Commit} {
+		stage, ok := staged[member.StagedName]
+		if !ok {
+			return fmt.Errorf("missing immutable stage identity for %s", member.StagedName)
+		}
+		if err := verifyQualificationOwnedFile(dir.root, member.StagedName, member.SHA256, member.Identity, stage.info); err != nil {
+			return err
+		}
+		finalInfo, err := dir.root.Lstat(member.FinalName)
+		if os.IsNotExist(err) {
+			if removeFinals {
+				continue
+			}
+			return fmt.Errorf("committed final member %s is missing", member.FinalName)
+		}
+		if err != nil || !os.SameFile(stage.info, finalInfo) {
+			return fmt.Errorf("foreign or replaced final member %s", member.FinalName)
+		}
+	}
+	txStage := staged[tx.TransactionStagedName]
+	if err := verifyQualificationOwnedFile(dir.root, tx.TransactionStagedName, "", txStage.identity, txStage.info); err != nil {
+		return err
+	}
+	commonInfo, err := dir.root.Lstat(qualificationReportTransactionName)
+	if err != nil || !os.SameFile(txStage.info, commonInfo) {
+		return fmt.Errorf("foreign or replayed transaction marker")
+	}
+
+	var cleanupErr error
+	if removeFinals {
+		for _, member := range []qualificationOwnedMember{tx.Commit, tx.Markdown, tx.JSON} {
+			if _, err := dir.root.Lstat(member.FinalName); os.IsNotExist(err) {
+				continue
+			}
+			if err := verifyQualificationLinkedIdentity(dir.root, member.FinalName, staged[member.StagedName]); err != nil {
+				cleanupErr = errors.Join(cleanupErr, err)
+				continue
+			}
+			cleanupErr = errors.Join(cleanupErr, dir.root.Remove(member.FinalName))
+		}
+	}
+	for _, name := range []string{tx.JSON.StagedName, tx.Markdown.StagedName, tx.Commit.StagedName} {
+		if !removeFinals {
+			member := tx.JSON
+			switch name {
+			case tx.Markdown.StagedName:
+				member = tx.Markdown
+			case tx.Commit.StagedName:
+				member = tx.Commit
+			}
+			if err := verifyQualificationLinkedIdentity(dir.root, member.FinalName, staged[name]); err != nil {
+				cleanupErr = errors.Join(cleanupErr, err)
+				continue
+			}
+		}
+		if err := verifyQualificationOwnedFile(dir.root, name, "", staged[name].identity, staged[name].info); err != nil {
+			cleanupErr = errors.Join(cleanupErr, err)
+			continue
+		}
+		cleanupErr = errors.Join(cleanupErr, dir.root.Remove(name))
+	}
+	if err := verifyQualificationLinkedIdentity(dir.root, qualificationReportTransactionName, txStage); err != nil {
+		cleanupErr = errors.Join(cleanupErr, err)
+	} else {
+		cleanupErr = errors.Join(cleanupErr, dir.root.Remove(qualificationReportTransactionName))
+	}
+	if err := verifyQualificationOwnedFile(dir.root, tx.TransactionStagedName, "", txStage.identity, txStage.info); err != nil {
+		cleanupErr = errors.Join(cleanupErr, err)
+	} else {
+		cleanupErr = errors.Join(cleanupErr, dir.root.Remove(tx.TransactionStagedName))
+	}
+	cleanupErr = errors.Join(cleanupErr, dir.sync())
+	return cleanupErr
+}
+
+func cleanupUnpublishedStages(dir *qualificationOutputDirectory, tx qualificationReportTransaction, staged map[string]qualificationStagedFile) error {
+	var err error
+	for name, stage := range staged {
+		if verifyErr := verifyQualificationOwnedFile(dir.root, name, "", stage.identity, stage.info); verifyErr != nil {
+			err = errors.Join(err, verifyErr)
+			continue
+		}
+		err = errors.Join(err, dir.root.Remove(name))
+	}
+	return errors.Join(err, dir.sync())
+}
+
+func verifyQualificationOwnedFile(root *os.Root, name, digest, identity string, want os.FileInfo) error {
+	raw, got, gotIdentity, err := readQualificationRegularNoFollow(root, name)
+	if err != nil || want == nil || !os.SameFile(want, got) || identity == "" || gotIdentity != identity {
+		return fmt.Errorf("ownership identity for %s differs", name)
+	}
+	if digest != "" && SHA256Hex(raw) != digest {
+		return fmt.Errorf("ownership content for %s differs", name)
+	}
+	return nil
+}
+
+func verifyQualificationLinkedIdentity(root *os.Root, name string, want qualificationStagedFile) error {
+	_, got, identity, err := readQualificationRegularNoFollow(root, name)
+	if err != nil || want.info == nil || !os.SameFile(want.info, got) || identity != want.identity {
+		return fmt.Errorf("foreign or replaced member %s", name)
+	}
+	return nil
+}
+
+func removeQualificationOwnedName(root *os.Root, name string, stage qualificationStagedFile) error {
+	if err := verifyQualificationLinkedIdentity(root, name, stage); err != nil {
+		return fmt.Errorf("embedded-model qualification report: cleanup refused %s: %w", name, err)
+	}
+	if err := root.Remove(name); err != nil {
+		return fmt.Errorf("embedded-model qualification report: cleanup %s: %w", name, err)
+	}
+	return nil
+}
+
+func removeQualificationOwnedInfo(root *os.Root, name string, identity os.FileInfo) error {
+	current, err := root.Lstat(name)
+	if err != nil || current.Mode()&os.ModeSymlink != 0 || !current.Mode().IsRegular() || !os.SameFile(identity, current) {
+		return fmt.Errorf("embedded-model qualification report: cleanup incomplete for unverifiable stage %s", name)
+	}
+	if err := root.Remove(name); err != nil {
+		return fmt.Errorf("embedded-model qualification report: cleanup %s: %w", name, err)
+	}
+	return nil
 }

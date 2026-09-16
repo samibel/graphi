@@ -13,7 +13,7 @@ import (
 
 func TestWriteQualificationReportContainsCompleteReconstructableEvidence(t *testing.T) {
 	report := completeQualificationReportFixture(t)
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 	if err := WriteQualificationReport(dir, report); err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestWriteQualificationReportContainsCompleteReconstructableEvidence(t *test
 func TestWriteQualificationReportReevaluatesSuppliedDecision(t *testing.T) {
 	report := completeQualificationReportFixture(t)
 	report.Decision.Promote = false
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 
 	err := WriteQualificationReport(dir, report)
 	if err == nil || !strings.Contains(err.Error(), "supplied decision differs") {
@@ -123,7 +123,7 @@ func TestWriteQualificationReportRejectsIncompleteOrDuplicateEvidenceBeforeWriti
 		t.Run(tc.name, func(t *testing.T) {
 			report := completeQualificationReportFixture(t)
 			tc.mutate(&report)
-			dir := t.TempDir()
+			dir := qualificationReportTestDir(t)
 			if err := WriteQualificationReport(dir, report); err == nil {
 				t.Fatal("WriteQualificationReport unexpectedly succeeded")
 			}
@@ -134,7 +134,7 @@ func TestWriteQualificationReportRejectsIncompleteOrDuplicateEvidenceBeforeWriti
 
 func TestWriteQualificationReportIsDeterministicAndRefusesOverwrite(t *testing.T) {
 	report := completeQualificationReportFixture(t)
-	first, second := t.TempDir(), t.TempDir()
+	first, second := qualificationReportTestDir(t), qualificationReportTestDir(t)
 	if err := WriteQualificationReport(first, report); err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestWriteQualificationReportIsDeterministicAndRefusesOverwrite(t *testing.T
 }
 
 func TestQualificationReportCommitMarkerAuthenticatesCompletePair(t *testing.T) {
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 	if err := WriteQualificationReport(dir, completeQualificationReportFixture(t)); err != nil {
 		t.Fatal(err)
 	}
@@ -188,10 +188,10 @@ func TestQualificationReportCommitMarkerAuthenticatesCompletePair(t *testing.T) 
 
 func TestQualificationReportPublishFailureRollsBackAndCrashStateRecovers(t *testing.T) {
 	report := completeQualificationReportFixture(t)
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 	injected := errors.New("injected after first report member")
-	err := writeQualificationReportWithHook(dir, report, func(stage string) error {
-		if stage == qualificationPublishAfterJSON {
+	err := writeQualificationReportWithHook(dir, report, func(event qualificationPublishEvent) error {
+		if event.Stage == qualificationPublishAfterJSON {
 			return injected
 		}
 		return nil
@@ -201,7 +201,7 @@ func TestQualificationReportPublishFailureRollsBackAndCrashStateRecovers(t *test
 	}
 	assertNoQualificationPublication(t, dir)
 
-	crashDir := t.TempDir()
+	crashDir := qualificationReportTestDir(t)
 	cmd := exec.Command(os.Args[0], "-test.run=^TestQualificationReportCrashHelper$", "-test.v")
 	cmd.Env = append(os.Environ(), "GRAPHI_QUALIFICATION_REPORT_CRASH_DIR="+crashDir)
 	if output, err := cmd.CombinedOutput(); err == nil {
@@ -231,8 +231,8 @@ func TestQualificationReportCrashHelper(t *testing.T) {
 	if dir == "" {
 		t.Skip("subprocess helper")
 	}
-	err := publishQualificationReportPair(dir, []byte("partial-json\n"), []byte("partial-markdown\n"), func(stage string) error {
-		if stage == qualificationPublishAfterJSON {
+	err := publishQualificationReportPair(dir, []byte("partial-json\n"), []byte("partial-markdown\n"), func(event qualificationPublishEvent) error {
+		if event.Stage == qualificationPublishAfterJSON {
 			os.Exit(23)
 		}
 		return nil
@@ -241,7 +241,7 @@ func TestQualificationReportCrashHelper(t *testing.T) {
 }
 
 func TestWriteQualificationReportRejectsSymlinkOutputDirectory(t *testing.T) {
-	realDir := t.TempDir()
+	realDir := qualificationReportTestDir(t)
 	link := filepath.Join(t.TempDir(), "report-link")
 	if err := os.Symlink(realDir, link); err != nil {
 		t.Fatal(err)
@@ -251,6 +251,158 @@ func TestWriteQualificationReportRejectsSymlinkOutputDirectory(t *testing.T) {
 		t.Fatalf("symlink output error = %v, want symlink refusal", err)
 	}
 	assertNoQualificationPublication(t, realDir)
+}
+
+func TestWriteQualificationReportRejectsParentSymlinkAlias(t *testing.T) {
+	base := qualificationReportTestDir(t)
+	realParent := filepath.Join(base, "real-parent")
+	if err := os.Mkdir(realParent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	realOutput := filepath.Join(realParent, "report")
+	if err := os.Mkdir(realOutput, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(base, "alias-parent")
+	if err := os.Symlink(realParent, alias); err != nil {
+		t.Fatal(err)
+	}
+	err := WriteQualificationReport(filepath.Join(alias, "report"), completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "symlink alias") {
+		t.Fatalf("parent symlink error = %v, want alias refusal", err)
+	}
+	assertNoQualificationPublication(t, realOutput)
+}
+
+func TestQualificationPublisherStaysOnOpenedRootAfterPathSwap(t *testing.T) {
+	base := qualificationReportTestDir(t)
+	output := filepath.Join(base, "report")
+	moved := filepath.Join(base, "opened-root")
+	if err := os.Mkdir(output, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	report := completeQualificationReportFixture(t)
+	err := writeQualificationReportWithHook(output, report, func(event qualificationPublishEvent) error {
+		if event.Stage != qualificationPublishAfterJSON {
+			return nil
+		}
+		if err := os.Rename(output, moved); err != nil {
+			return err
+		}
+		return os.Mkdir(output, 0o755)
+	})
+	if err != nil {
+		t.Fatalf("publish through stable opened root: %v", err)
+	}
+	if err := ValidateQualificationReportPublication(moved); err != nil {
+		t.Fatalf("moved opened root lacks committed report: %v", err)
+	}
+	assertNoQualificationPublication(t, output)
+}
+
+func TestQualificationRollbackPreservesReplacedForeignMemberAndReportsCleanup(t *testing.T) {
+	dir := qualificationReportTestDir(t)
+	foreign := []byte("foreign replacement\n")
+	injected := errors.New("stop after replacement")
+	err := writeQualificationReportWithHook(dir, completeQualificationReportFixture(t), func(event qualificationPublishEvent) error {
+		if event.Stage != qualificationPublishAfterJSON {
+			return nil
+		}
+		if err := event.Root.Remove(qualificationReportJSONName); err != nil {
+			return err
+		}
+		if err := event.Root.WriteFile(qualificationReportJSONName, foreign, 0o644); err != nil {
+			return err
+		}
+		return injected
+	})
+	if !errors.Is(err, injected) || !strings.Contains(err.Error(), "rollback") {
+		t.Fatalf("replacement rollback error = %v, want injected + rollback failure", err)
+	}
+	got, readErr := os.ReadFile(filepath.Join(dir, qualificationReportJSONName))
+	if readErr != nil || !bytes.Equal(got, foreign) {
+		t.Fatalf("foreign replacement was deleted/changed: got=%q err=%v", got, readErr)
+	}
+}
+
+func TestQualificationRollbackPropagatesLostOwnershipAnchor(t *testing.T) {
+	dir := qualificationReportTestDir(t)
+	injected := errors.New("stop after anchor removal")
+	err := writeQualificationReportWithHook(dir, completeQualificationReportFixture(t), func(event qualificationPublishEvent) error {
+		if event.Stage != qualificationPublishAfterJSON {
+			return nil
+		}
+		if err := event.Root.Remove(event.Transaction.JSON.StagedName); err != nil {
+			return err
+		}
+		return injected
+	})
+	if !errors.Is(err, injected) || !strings.Contains(err.Error(), "incomplete cleanup") {
+		t.Fatalf("lost-anchor rollback error = %v, want joined cleanup failure", err)
+	}
+	if _, statErr := os.Lstat(filepath.Join(dir, qualificationReportJSONName)); statErr != nil {
+		t.Fatalf("unverifiable final member was incorrectly deleted: %v", statErr)
+	}
+}
+
+func TestQualificationRecoveryPreservesForeignReplacementAndRejectsTransactionReplay(t *testing.T) {
+	crashDir := qualificationReportTestDir(t)
+	runQualificationCrashHelper(t, crashDir)
+	foreign := []byte("foreign recovery replacement\n")
+	err := writeQualificationReportWithHook(crashDir, completeQualificationReportFixture(t), func(event qualificationPublishEvent) error {
+		if event.Stage != qualificationPublishBeforeRecoveryDelete {
+			return nil
+		}
+		if err := event.Root.Remove(qualificationReportJSONName); err != nil {
+			return err
+		}
+		return event.Root.WriteFile(qualificationReportJSONName, foreign, 0o644)
+	})
+	if err == nil || !strings.Contains(err.Error(), "foreign") {
+		t.Fatalf("foreign recovery error = %v", err)
+	}
+	got, readErr := os.ReadFile(filepath.Join(crashDir, qualificationReportJSONName))
+	if readErr != nil || !bytes.Equal(got, foreign) {
+		t.Fatalf("recovery deleted foreign member: got=%q err=%v", got, readErr)
+	}
+
+	replayDir := qualificationReportTestDir(t)
+	transaction := mustReadQualificationReportFile(t, filepath.Join(crashDir, qualificationReportTransactionName))
+	if err := os.WriteFile(filepath.Join(replayDir, qualificationReportTransactionName), transaction, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = WriteQualificationReport(replayDir, completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "replay") {
+		t.Fatalf("transaction replay error = %v", err)
+	}
+	if got := mustReadQualificationReportFile(t, filepath.Join(replayDir, qualificationReportTransactionName)); !bytes.Equal(got, transaction) {
+		t.Fatal("replayed foreign transaction marker was changed or deleted")
+	}
+
+	completeReplayDir := qualificationReportTestDir(t)
+	var replayed qualificationReportTransaction
+	if err := json.Unmarshal(transaction, &replayed); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{replayed.JSON.StagedName, replayed.Markdown.StagedName, replayed.Commit.StagedName, replayed.TransactionStagedName} {
+		raw := mustReadQualificationReportFile(t, filepath.Join(crashDir, name))
+		if err := os.WriteFile(filepath.Join(completeReplayDir, name), raw, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Link(filepath.Join(completeReplayDir, replayed.TransactionStagedName), filepath.Join(completeReplayDir, qualificationReportTransactionName)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Link(filepath.Join(completeReplayDir, replayed.JSON.StagedName), filepath.Join(completeReplayDir, replayed.JSON.FinalName)); err != nil {
+		t.Fatal(err)
+	}
+	err = WriteQualificationReport(completeReplayDir, completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "identity") {
+		t.Fatalf("complete transaction replay error = %v, want immutable identity refusal", err)
+	}
+	if got := mustReadQualificationReportFile(t, filepath.Join(completeReplayDir, qualificationReportTransactionName)); !bytes.Equal(got, transaction) {
+		t.Fatal("complete replay marker was changed or deleted")
+	}
 }
 
 func TestWriteQualificationReportCanonicalizesEquivalentPermutations(t *testing.T) {
@@ -267,7 +419,7 @@ func TestWriteQualificationReportCanonicalizesEquivalentPermutations(t *testing.
 		t.Fatal(err)
 	}
 
-	first, second := t.TempDir(), t.TempDir()
+	first, second := qualificationReportTestDir(t), qualificationReportTestDir(t)
 	if err := WriteQualificationReport(first, firstReport); err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +450,7 @@ func TestQualificationMarkdownDoesNotRenderUntrustedPathsOrReleaseClaims(t *test
 		record.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(record.Arm, record.WorkDir)
 		report.BuildDigests[i].CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, record)
 	}
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 	if err := WriteQualificationReport(dir, report); err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +469,7 @@ func TestQualificationMarkdownDoesNotRenderUntrustedPathsOrReleaseClaims(t *test
 
 func TestWriteQualificationReportLeavesNoPartialPairWhenTargetIsOccupied(t *testing.T) {
 	report := completeQualificationReportFixture(t)
-	dir := t.TempDir()
+	dir := qualificationReportTestDir(t)
 	occupied := filepath.Join(dir, "qualification.md")
 	if err := os.Mkdir(occupied, 0o755); err != nil {
 		t.Fatal(err)
@@ -377,6 +529,35 @@ func assertNoQualificationPublication(t *testing.T, dir string) {
 		if _, err := os.Lstat(filepath.Join(dir, name)); !os.IsNotExist(err) {
 			t.Fatalf("%s exists after rejected/rolled-back publication: %v", name, err)
 		}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), ".qualification.") {
+			t.Fatalf("staged qualification artifact remains after rollback: %s", entry.Name())
+		}
+	}
+}
+
+func qualificationReportTestDir(t *testing.T) string {
+	t.Helper()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+func runQualificationCrashHelper(t *testing.T, dir string) {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestQualificationReportCrashHelper$", "-test.v")
+	cmd.Env = append(os.Environ(), "GRAPHI_QUALIFICATION_REPORT_CRASH_DIR="+dir)
+	if output, err := cmd.CombinedOutput(); err == nil {
+		t.Fatalf("crash helper unexpectedly succeeded: %s", output)
+	} else if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+		t.Fatalf("crash helper = %v, output=%s", err, output)
 	}
 }
 
