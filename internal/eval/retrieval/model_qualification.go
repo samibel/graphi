@@ -40,6 +40,8 @@ const (
 	QualificationMaxQueryP95Millis             = int64(1000)
 	QualificationMinQuerySamples               = 100
 	QualificationMaxReindexSeconds             = int64(600)
+
+	QualificationCandidateExcludedPath = "docs/eval/retrieval/runs/embedded-model-qualification"
 )
 
 var spentQualificationDatasetIDs = map[string]bool{
@@ -638,7 +640,7 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	}
 	bindingOptions := CandidateBindingOptions{
 		CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
-		ExcludePath:  "docs/eval/retrieval/runs/embedded-model-qualification",
+		ExcludePath:  QualificationCandidateExcludedPath,
 		CheckoutRoot: env.Repo, CheckoutSHA: checkoutSHA,
 	}
 	binding, err := ObserveCandidateBinding(ctx, GitRepoProbe(), bindingOptions)

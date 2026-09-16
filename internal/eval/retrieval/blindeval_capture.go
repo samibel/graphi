@@ -26,6 +26,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -506,14 +507,11 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 	}
 
-	workDir := o.WorkDir
-	if workDir == "" {
-		workDir, err = os.MkdirTemp("", "graphi-qrel-blind-capture")
-		if err != nil {
-			return nil, provenance, fmt.Errorf("retrieval %s capture: workdir: %w", QrelBlindSmokeEvaluationName, err)
-		}
-		defer os.RemoveAll(workDir)
+	workDir, cleanupWorkDir, err := resolveQualificationCaptureWorkDir(o.WorkDir)
+	if err != nil {
+		return nil, provenance, err
 	}
+	defer cleanupWorkDir()
 	idx, err := buildCandidateCaptureIndex(ctx, o, o.RepoRoot, workDir, o.Log)
 	if err != nil {
 		return nil, provenance, err
@@ -603,6 +601,39 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil
+}
+
+func resolveQualificationCaptureWorkDir(configured string) (string, func(), error) {
+	cleanup := func() {}
+	workDir := configured
+	if workDir == "" {
+		created, err := os.MkdirTemp("", "graphi-qrel-blind-capture")
+		if err != nil {
+			return "", cleanup, fmt.Errorf("retrieval %s capture: workdir: %w", QrelBlindSmokeEvaluationName, err)
+		}
+		workDir = created
+		cleanup = func() { _ = os.RemoveAll(created) }
+	}
+	abs, err := filepath.Abs(workDir)
+	if err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolve workdir absolute path: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	resolved, err := filepath.EvalSymlinks(filepath.Clean(abs))
+	if err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolve workdir symlinks: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	resolved = filepath.Clean(resolved)
+	info, err := os.Stat(resolved)
+	if err != nil || !info.IsDir() {
+		cleanup()
+		if err == nil {
+			err = fmt.Errorf("not a directory")
+		}
+		return "", func() {}, fmt.Errorf("retrieval %s capture: resolved workdir: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	return resolved, cleanup, nil
 }
 
 func newQualificationCaptureProvenanceRecord(arm QualificationArm, build int, resolvedWorkDir string, provenance CandidateCaptureProvenance) (QualificationCaptureProvenanceRecord, error) {

@@ -206,6 +206,10 @@ func TestEvaluateQualificationRejectsBlindEvidenceReplay(t *testing.T) {
 			in.BlindEvidence[0].PreRegistration.Queries[0].QueryTextSHA256 = SHA256Hex([]byte("a different query"))
 			resealBlindEvidenceChain(in, 0)
 		}},
+		{"precondition commit", func(in *QualificationInput) {
+			in.BlindEvidence[0].PreRegistration.PreconditionCommit = strings.Repeat("9", 40)
+			resealBlindEvidenceChain(in, 0)
+		}},
 		{"cross subject", func(in *QualificationInput) {
 			in.BlindEvidence[0].Arm, in.BlindEvidence[3].Arm = in.BlindEvidence[3].Arm, in.BlindEvidence[0].Arm
 			resealBlindEvidenceChain(in, 0)
@@ -275,6 +279,15 @@ func TestEvaluateQualificationSemanticallyValidatesBuildProvenance(t *testing.T)
 		}},
 		{"query count", func(_ *QualificationInput, d *QualificationBuildDigest) {
 			d.CaptureProvenance.Provenance.QueryCount = 63
+		}},
+		{"tokenizer id", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.TokenizerID = "other"
+		}},
+		{"tokenizer vocabulary", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.TokenizerVocabSHA = strings.Repeat("9", 64)
+		}},
+		{"candidate excluded path", func(_ *QualificationInput, d *QualificationBuildDigest) {
+			d.CaptureProvenance.Provenance.Binding.CandidateExcludedPath = "docs/eval/retrieval/runs/other"
 		}},
 		{"arm fingerprint", func(_ *QualificationInput, d *QualificationBuildDigest) {
 			d.CaptureProvenance.Provenance.ModelFingerprint = "other"
@@ -719,9 +732,9 @@ func qualificationCaptureProvenanceFixture(pre QualificationPreregistration, dat
 		Boundary: string(PayloadBoundaryCandidate), RepoName: dataset.Dataset.Repo, RepoSHA: pre.SourceRepoSHA, DatasetSHA256: pre.DatasetSHA256,
 		EmbedderSelector: pin.Label, ModelFingerprint: pin.FingerprintCanonical, IndexFingerprint: pin.FingerprintCanonical,
 		GenerationID: "generation-" + string(rune('0'+build)), PersistedVectors: 64, SemanticState: "ready", TokenBudget: QualificationTokenBudget,
-		MethodVersion: QualificationCompactVersion, TokenizerID: "tiktoken:cl100k_base:ordinary", TokenizerVocabSHA: fixtureVocabSHA, QueryCount: 64,
+		MethodVersion: QualificationCompactVersion, TokenizerID: PinnedRealPayloadTokenizerID, TokenizerVocabSHA: PinnedRealPayloadTokenizerVocabularySHA256, QueryCount: 64,
 		Binding: &CandidateBinding{CandidateSHA: pre.CandidateSHA, FrozenCandidateSHA: pre.CandidateSHA, CandidateWorktreeClean: true,
-			CandidateMatchesFrozen: true, CandidateExcludedPath: "qualification", CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}}
+			CandidateMatchesFrozen: true, CandidateExcludedPath: QualificationCandidateExcludedPath, CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}}
 	if arm == ArmLexical {
 		p.ModelFingerprint, p.IndexFingerprint, p.GenerationID, p.SemanticState, p.PersistedVectors = "", "", "", "unset", 0
 	}

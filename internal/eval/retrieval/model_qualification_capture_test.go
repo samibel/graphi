@@ -330,6 +330,58 @@ func TestQualificationCaptureProvenancePersistsResolvedWorkDir(t *testing.T) {
 	}
 }
 
+func TestQualificationCaptureWorkDirCanonicalizesRelativeAndSymlinkPaths(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	realRelative := filepath.Join(root, "relative-target")
+	realSymlink := filepath.Join(root, "symlink-target")
+	for _, dir := range []string{realRelative, realSymlink} {
+		if err := os.Mkdir(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	relative, err := filepath.Rel(cwd, realRelative)
+	if err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(root, "work-link")
+	if err := os.Symlink(realSymlink, link); err != nil {
+		t.Fatal(err)
+	}
+	resolvedRelative, cleanupRelative, err := resolveQualificationCaptureWorkDir(relative)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanupRelative()
+	resolvedSymlink, cleanupSymlink, err := resolveQualificationCaptureWorkDir(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanupSymlink()
+	wantRelative, _ := filepath.EvalSymlinks(realRelative)
+	wantSymlink, _ := filepath.EvalSymlinks(realSymlink)
+	if resolvedRelative != wantRelative || resolvedSymlink != wantSymlink || !filepath.IsAbs(resolvedRelative) || !filepath.IsAbs(resolvedSymlink) {
+		t.Fatalf("relative=%q want=%q symlink=%q want=%q", resolvedRelative, wantRelative, resolvedSymlink, wantSymlink)
+	}
+	if _, _, err := resolveQualificationCaptureWorkDir(filepath.Join(root, "missing")); err == nil {
+		t.Fatal("accepted unresolvable workdir")
+	}
+
+	in := passingQualificationInput(t)
+	for i, resolved := range []string{resolvedRelative, resolvedSymlink} {
+		digest := &in.BuildDigests[i]
+		digest.CaptureProvenance.WorkDir = resolved
+		digest.CaptureProvenance.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(digest.Arm, resolved)
+		digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, digest.CaptureProvenance)
+	}
+	if _, err := EvaluateQualification(in); err != nil {
+		t.Fatalf("evaluator rejected canonicalized workdirs: %v", err)
+	}
+}
+
 func TestQualificationAtomicPublishLeavesNoPartialEvidenceAndCanRetry(t *testing.T) {
 	parent := t.TempDir()
 	out := filepath.Join(parent, "qualification")

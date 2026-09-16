@@ -453,12 +453,16 @@ func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in 
 	if p.CaptureVersion != CandidateCaptureVersion || p.Transport != CandidateCaptureTransport || p.Surface != CandidateCaptureSurface ||
 		p.Boundary != string(PayloadBoundaryCandidate) || p.DatasetSHA256 != in.Preregistration.DatasetSHA256 ||
 		p.RepoName != in.Dataset.Dataset.Repo || p.RepoSHA != in.Preregistration.SourceRepoSHA ||
-		p.TokenBudget != QualificationTokenBudget || p.MethodVersion != QualificationCompactVersion || p.QueryCount != 64 || binding == nil {
+		p.TokenBudget != QualificationTokenBudget || p.MethodVersion != QualificationCompactVersion || p.QueryCount != 64 ||
+		p.TokenizerID != PinnedRealPayloadTokenizerID || p.TokenizerVocabSHA != PinnedRealPayloadTokenizerVocabularySHA256 || binding == nil {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture provenance differs from qualification pins", digest.Arm, digest.Build)
+	}
+	if err := CheckRunDirectoryRelativePath(QualificationCandidateExcludedPath); err != nil {
+		return fmt.Errorf("embedded-model qualification decision: candidate excluded path contract: %w", err)
 	}
 	if binding.CandidateSHA != in.Preregistration.CandidateSHA || binding.FrozenCandidateSHA != in.Preregistration.CandidateSHA ||
 		binding.CheckoutSHA != in.Preregistration.SourceRepoSHA || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean ||
-		!binding.CandidateMatchesFrozen || len(binding.DifferingPaths) != 0 {
+		!binding.CandidateMatchesFrozen || len(binding.DifferingPaths) != 0 || binding.CandidateExcludedPath != QualificationCandidateExcludedPath {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d candidate binding differs from qualification pins", digest.Arm, digest.Build)
 	}
 	pin := in.Preregistration.Arms[digest.Arm]
@@ -622,6 +626,9 @@ func validateBlindEvidenceSets(in QualificationInput, arms []QualificationArm, c
 		}
 		if err := ValidatePreRegistration(source.PreRegistration, source.Precondition); err != nil {
 			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s preregistration: %w", subject, err)
+		}
+		if source.PreRegistration.PreconditionCommit != in.Preregistration.CandidateSHA {
+			return nil, nil, fmt.Errorf("embedded-model qualification decision: blind evidence %s precondition commit differs from qualification candidate", subject)
 		}
 		sealed, err := sealBlindEvidenceSet(source)
 		if err != nil || sealed.SHA256 != source.SHA256 {
