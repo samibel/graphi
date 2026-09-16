@@ -132,6 +132,55 @@ class SidecarContractTest(unittest.TestCase):
 
 
 class VerificationTest(unittest.TestCase):
+    def test_external_module_type_and_escaping_path_rejected_before_import(self):
+        original_import = builtins.__import__
+
+        def guarded_import(name, *args, **kwargs):
+            if name == "sentence_transformers":
+                raise AssertionError("imported runtime before rejecting modules.json")
+            return original_import(name, *args, **kwargs)
+
+        entries = [
+            {"type": "untrusted/repo--model.Model", "path": ""},
+            {"type": "https://example.com/model.Model", "path": ""},
+            {"type": "/absolute/model.Model", "path": ""},
+            {"type": "../model.Model", "path": ""},
+            {"type": "missing.Model", "path": ""},
+            {"type": "sentence_transformers.models.Transformer", "path": "../outside"},
+            {"type": "sentence_transformers.models.Transformer", "path": "/tmp"},
+            {"type": "sentence_transformers.models.Transformer", "path": "https://example.com/module"},
+            {"type": "sentence_transformers.models.Transformer", "path": "sub/../../outside"},
+            {"type": "sentence_transformers.models.Transformer", "path": "..\\outside"},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "tokenizer.json").write_text("{}")
+            for entry in entries:
+                (root / "modules.json").write_text(json.dumps([dict(idx=0, name="0", **entry)]))
+                manifest = valid_manifest()
+                manifest["model"]["sha256"] = sidecar.tree_digest(root)
+                manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(root)
+                with self.subTest(entry=entry), mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch(
+                    "builtins.__import__", side_effect=guarded_import
+                ), self.assertRaisesRegex(ValueError, "module"):
+                    sidecar.load_encoder(manifest, root)
+
+    def test_runtime_and_local_module_classes_with_confined_paths_are_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "tokenizer.json").write_text("{}")
+            (root / "model.py").write_text("class Model: pass\n")
+            (root / "pooling").mkdir()
+            (root / "modules.json").write_text(json.dumps([
+                {"idx": 0, "name": "0", "type": "sentence_transformers.models.Transformer", "path": ""},
+                {"idx": 1, "name": "1", "type": "model.Model", "path": "pooling"},
+            ]))
+            manifest = valid_manifest()
+            manifest["model"]["sha256"] = sidecar.tree_digest(root)
+            manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(root)
+            with mock.patch.object(sidecar, "verify_runtime_versions"):
+                self.assertEqual(sidecar.verify_artifacts(manifest, root), root.resolve())
+
     def test_external_custom_code_is_rejected_before_runtime_import(self):
         original_import = builtins.__import__
 

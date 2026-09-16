@@ -207,6 +207,15 @@ def verify_local_custom_code(root):
     """Reject custom-code redirects before the runtime can consult a hub cache."""
     reference = re.compile(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
 
+    def check_reference(value, directory, allow_runtime=False):
+        if not isinstance(value, str) or reference.fullmatch(value) is None:
+            raise ValueError("custom-code target must be a local module/class reference")
+        if allow_runtime and value.startswith("sentence_transformers."):
+            return
+        module = directory.joinpath(*value.split(".")[:-1]).with_suffix(".py")
+        if not module.is_file() or not module.resolve().is_relative_to(root):
+            raise ValueError("custom-code module is absent from the verified local tree")
+
     def check_map(mapping, directory):
         if not isinstance(mapping, dict):
             raise ValueError("invalid custom-code map")
@@ -218,11 +227,23 @@ def verify_local_custom_code(root):
             for value in targets:
                 if value is None and isinstance(target, list):
                     continue
-                if not isinstance(value, str) or reference.fullmatch(value) is None:
-                    raise ValueError("custom-code target must be a local module/class reference")
-                module = directory.joinpath(*value.split(".")[:-1]).with_suffix(".py")
-                if not module.is_file() or not module.resolve().is_relative_to(root):
-                    raise ValueError("custom-code module is absent from the verified local tree")
+                check_reference(value, directory)
+
+    def check_modules(entries, directory):
+        if not isinstance(entries, list):
+            raise ValueError("invalid modules manifest")
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValueError("invalid module entry")
+            check_reference(entry.get("type"), directory, allow_runtime=True)
+            relative = entry.get("path")
+            if (not isinstance(relative, str) or ":" in relative or "\\" in relative
+                    or "--" in relative or Path(relative).is_absolute()
+                    or ".." in Path(relative).parts):
+                raise ValueError("module path must stay within the verified local tree")
+            module_dir = (directory / relative).resolve()
+            if not module_dir.is_relative_to(root) or not module_dir.is_dir():
+                raise ValueError("module path is absent from the verified local tree")
 
     def visit(value, directory):
         if isinstance(value, dict):
@@ -236,6 +257,8 @@ def verify_local_custom_code(root):
                 visit(child, directory)
 
     for path in artifact_files(root):
+        if path.name == "modules.json":
+            check_modules(strict_json(path.read_bytes()), path.parent)
         # Tokenizer vocabulary JSON can contain a literal "auto_map" token;
         # only configuration files give that key executable meaning.
         if path.suffix == ".json" and "config" in path.stem:

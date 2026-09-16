@@ -99,6 +99,13 @@ import. Tokenizer target lists may contain a null fast/slow alternative when
 another target is present. Tokenizer vocabulary files are not configuration:
 a vocabulary token named `auto_map` does not name executable code.
 
+Every `modules.json` is also checked before inference imports. Each module `type`
+must either name a class under the pinned runtime's `sentence_transformers.*`
+namespace or name custom Python source inside the verified tree. Module `path`
+values must resolve to existing directories inside that tree; external repository
+syntax, URLs, absolute paths, and parent traversal are rejected. An empty module
+path refers to the directory containing its `modules.json`.
+
 `trust_remote_code=True` executes locally pinned model code. Offline flags and
 `local_files_only=True` disable supported library downloads; they are not an
 operating-system sandbox for Python code. Operators must review the model code,
