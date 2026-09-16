@@ -1,6 +1,7 @@
 """Offline contract tests: no inference packages or model downloads required."""
 
 import hashlib
+import builtins
 import http.client
 import json
 import math
@@ -131,6 +132,49 @@ class SidecarContractTest(unittest.TestCase):
 
 
 class VerificationTest(unittest.TestCase):
+    def test_external_custom_code_is_rejected_before_runtime_import(self):
+        original_import = builtins.__import__
+
+        def guarded_import(name, *args, **kwargs):
+            if name == "sentence_transformers":
+                raise AssertionError("imported inference runtime before rejecting custom code")
+            return original_import(name, *args, **kwargs)
+
+        targets = [
+            "untrusted/repo--model.Model", "https://example.com/model.Model",
+            "/absolute/model.Model", "../model.Model", "package..model.Model",
+            "package/other.Model", "package\\other.Model", "missing.Model",
+            ["model.Model", "repo--other.Model"],
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "tokenizer.json").write_text("{}")
+            (root / "model.py").write_text("class Model: pass\n")
+            config = root / "config.json"
+            for target in targets:
+                config.write_text(json.dumps({"nested": {"auto_map": {"AutoModel": target}}}))
+                manifest = valid_manifest()
+                manifest["model"]["sha256"] = sidecar.tree_digest(root)
+                manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(root)
+                with self.subTest(target=target), mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch(
+                    "builtins.__import__", side_effect=guarded_import
+                ), self.assertRaisesRegex(ValueError, "custom-code"):
+                    sidecar.load_encoder(manifest, root)
+
+    def test_local_custom_code_configuration_is_accepted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "tokenizer.json").write_text("{}")
+            (root / "model.py").write_text("class Model: pass\n")
+            (root / "config.json").write_text(json.dumps({
+                "auto_map": {"AutoModel": "model.Model", "AutoTokenizer": ["model.Model", None]}
+            }))
+            manifest = valid_manifest()
+            manifest["model"]["sha256"] = sidecar.tree_digest(root)
+            manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(root)
+            with mock.patch.object(sidecar, "verify_runtime_versions"):
+                self.assertEqual(sidecar.verify_artifacts(manifest, root), root.resolve())
+
     def test_model_load_is_offline_cpu_local_only_after_verification(self):
         class Model:
             def float(self):

@@ -53,10 +53,32 @@ bytes, including a repeated instruction if it was original query content.
   cross-language golden coverage remains an explicit follow-up concern.
 - Fake tests establish the service contract, not live CodeRank compatibility.
   The direct tokenizer/model-forward path still requires real-model qualification.
-- Trusted custom code is not sandboxed. Offline flags prevent supported downloads,
-  but operators must verify local configuration does not resolve custom code from
-  an unreviewed local cache. Current code does not reject external `auto_map`
-  references independently of the library's offline/local-only behavior.
+- Trusted custom code is not sandboxed. The follow-up below closes configuration
+  redirects through `auto_map`; reviewed local Python code and installed runtime
+  packages still retain their normal process privileges.
+
+## Required follow-up: local custom-code confinement
+
+The controller identified external `auto_map` references as a binding-contract
+gap and required closing it after the initial commit `fe5b51fb`.
+
+- Added pre-import scanning of local JSON configuration files (filenames
+  containing `config`), recursively inspecting `auto_map` values. Targets must
+  be dotted module/class references backed by a `.py` file inside the verified
+  artifact tree, relative to the containing configuration. External repository
+  references, URLs, absolute paths, traversal, path separators, and missing local
+  modules fail closed. Standard nullable tokenizer alternatives remain supported.
+- RED: the focused unittest command ran **20 tests in 2.177s**, with **9 failed
+  subtests**, each exposing an attempted SentenceTransformers import before
+  rejecting an invalid custom-code reference. The import guard prevented loading
+  any actual inference package.
+- GREEN: the same command ran **20 tests in 2.161s, OK** after implementation.
+- Self-review: validation runs after artifact digest verification and before
+  runtime verification/import, uses strict JSON decoding, inspects nested maps
+  and all list alternatives, and requires a real local module. Tokenizer vocabulary
+  JSON is excluded because its tokens can include the literal `auto_map`.
+- No live model or package was fetched, installed, or loaded. The identity golden
+  and real forward-path qualification remain the previously documented concerns.
 
 ## Files
 

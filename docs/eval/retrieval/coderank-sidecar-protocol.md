@@ -89,12 +89,21 @@ local_files_only=True)`. Relative paths, model hub IDs, URLs, symlink artifact
 roots, symlinks inside the tree, and special files are rejected. OS ancestor
 aliases such as macOS `/var` are resolved to a canonical local path.
 
+Before importing the runtime, verification scans local JSON configuration files
+(filenames containing `config`) recursively for `auto_map`. Every target must be
+a dotted local module/class reference, and the module's `.py` file must exist
+beside that configuration (or in its dotted subpackage) inside the verified tree.
+External-repository `repo--module.Class` references, URLs, absolute paths, path
+separators, traversal, and missing modules are rejected before any inference
+import. Tokenizer target lists may contain a null fast/slow alternative when
+another target is present. Tokenizer vocabulary files are not configuration:
+a vocabulary token named `auto_map` does not name executable code.
+
 `trust_remote_code=True` executes locally pinned model code. Offline flags and
 `local_files_only=True` disable supported library downloads; they are not an
 operating-system sandbox for Python code. Operators must review the model code,
-configuration, and installed runtime before execution, keep the tree immutable
-while the process runs, and ensure custom-code references resolve to reviewed
-local code. The contract protects against accidental drift rather than a lying
+configuration, and installed runtime before execution and keep the tree immutable
+while the process runs. The contract protects against accidental drift rather than a lying
 process. Hashes and self-attestation do not establish trust in an untrusted
 process or defend against concurrent local artifact replacement.
 

@@ -11,6 +11,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import re
 import secrets
 import socket
 import stat
@@ -202,6 +203,45 @@ def verify_runtime_versions(pin):
         raise ValueError("runtime digest mismatch")
 
 
+def verify_local_custom_code(root):
+    """Reject custom-code redirects before the runtime can consult a hub cache."""
+    reference = re.compile(r"[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+")
+
+    def check_map(mapping, directory):
+        if not isinstance(mapping, dict):
+            raise ValueError("invalid custom-code map")
+        for target in mapping.values():
+            targets = target if isinstance(target, list) else [target]
+            # Tokenizer maps may contain a null fast/slow alternative.
+            if not targets or all(value is None for value in targets):
+                raise ValueError("empty custom-code target")
+            for value in targets:
+                if value is None and isinstance(target, list):
+                    continue
+                if not isinstance(value, str) or reference.fullmatch(value) is None:
+                    raise ValueError("custom-code target must be a local module/class reference")
+                module = directory.joinpath(*value.split(".")[:-1]).with_suffix(".py")
+                if not module.is_file() or not module.resolve().is_relative_to(root):
+                    raise ValueError("custom-code module is absent from the verified local tree")
+
+    def visit(value, directory):
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key == "auto_map":
+                    check_map(child, directory)
+                else:
+                    visit(child, directory)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child, directory)
+
+    for path in artifact_files(root):
+        # Tokenizer vocabulary JSON can contain a literal "auto_map" token;
+        # only configuration files give that key executable meaning.
+        if path.suffix == ".json" and "config" in path.stem:
+            visit(strict_json(path.read_bytes()), path.parent)
+
+
 def verify_artifacts(manifest, model_dir):
     validate_manifest(manifest)
     root = local_directory(model_dir)
@@ -209,6 +249,7 @@ def verify_artifacts(manifest, model_dir):
         raise ValueError("model tree digest mismatch")
     if tokenizer_digest(root) != manifest["tokenizer"]["sha256"]:
         raise ValueError("tokenizer digest mismatch")
+    verify_local_custom_code(root)
     verify_runtime_versions(manifest["runtime"])
     return root
 
