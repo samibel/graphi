@@ -1585,8 +1585,17 @@ func TestQrelBlindSmoke_CandidateBindingRefusals(t *testing.T) {
 			WorktreeClean: func(_ context.Context, root string) (bool, error) {
 				return !dirty[root], nil
 			},
+			WorktreeCleanOutside: func(_ context.Context, root, _ string) (bool, error) {
+				return !dirty[root], nil
+			},
 			PathsDifferingOutside: func(_ context.Context, root, from, to, exclude string) ([]string, error) {
 				return differing, nil
+			},
+			DiffOutside: func(_ context.Context, root, from, to, exclude string) ([]byte, error) {
+				if len(differing) == 0 {
+					return nil, nil
+				}
+				return []byte("diff --git a/changed b/changed\n"), nil
 			},
 		}
 	}
@@ -1597,6 +1606,16 @@ func TestQrelBlindSmoke_CandidateBindingRefusals(t *testing.T) {
 		}
 		if !binding.CandidateMatchesFrozen || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean {
 			t.Fatalf("binding = %+v", binding)
+		}
+		if binding.CandidateDiffSHA256 != SHA256Hex(nil) {
+			t.Fatalf("outside diff sha256=%q, want exact empty diff", binding.CandidateDiffSHA256)
+		}
+	})
+	t.Run("a valid-looking but wrong expected diff digest is refused", func(t *testing.T) {
+		wrong := options
+		wrong.ExpectedCandidateDiffSHA256 = strings.Repeat("9", 64)
+		if _, err := ObserveCandidateBinding(context.Background(), cleanProbe(nil, nil), wrong); err == nil || !strings.Contains(err.Error(), "candidate diff digest") {
+			t.Fatalf("wrong expected diff digest error = %v", err)
 		}
 	})
 	for _, tc := range []struct {

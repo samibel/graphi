@@ -218,6 +218,7 @@ type CandidateBinding struct {
 	CandidateWorktreeClean bool   `json:"candidate_worktree_clean"`
 	CandidateMatchesFrozen bool   `json:"candidate_matches_frozen_candidate_sha"`
 	CandidateExcludedPath  string `json:"candidate_excluded_path"`
+	CandidateDiffSHA256    string `json:"candidate_diff_sha256"`
 	CheckoutSHA            string `json:"checkout_sha"`
 	CheckoutWorktreeClean  bool   `json:"checkout_worktree_clean"`
 	// DifferingPaths is empty when the candidate matches. It is recorded
@@ -233,9 +234,15 @@ type RepoProbe struct {
 	// WorktreeClean reports whether the worktree has no uncommitted change,
 	// tracked or untracked.
 	WorktreeClean func(ctx context.Context, root string) (bool, error)
+	// WorktreeCleanOutside is the candidate-side cleanliness check. The one
+	// preregistered evidence directory is excluded because capture writes it.
+	WorktreeCleanOutside func(ctx context.Context, root, exclude string) (bool, error)
 	// PathsDifferingOutside lists the paths that differ between two commits,
 	// excluding everything under exclude.
 	PathsDifferingOutside func(ctx context.Context, root, from, to, exclude string) ([]string, error)
+	// DiffOutside returns the exact canonical git diff bytes between the two
+	// commits outside exclude.
+	DiffOutside func(ctx context.Context, root, from, to, exclude string) ([]byte, error)
 }
 
 // CandidateBindingOptions is one binding observation.
@@ -248,13 +255,16 @@ type CandidateBindingOptions struct {
 	ExcludePath  string
 	CheckoutRoot string
 	CheckoutSHA  string
+	// ExpectedCandidateDiffSHA256, when present, must match the exact observed
+	// outside diff. Qualification always supplies its preregistered digest.
+	ExpectedCandidateDiffSHA256 string
 }
 
 // ObserveCandidateBinding records the binding and refuses the states that make
 // the recorded commits meaningless.
 func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBindingOptions) (CandidateBinding, error) {
 	var binding CandidateBinding
-	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.PathsDifferingOutside == nil {
+	if probe.HeadSHA == nil || probe.WorktreeClean == nil || probe.WorktreeCleanOutside == nil || probe.PathsDifferingOutside == nil || probe.DiffOutside == nil {
 		return binding, fmt.Errorf("retrieval %s capture: the candidate binding needs a complete repository probe", QrelBlindSmokeEvaluationName)
 	}
 	if !isLowerHexDigest(o.FrozenCandidateSHA, 40) {
@@ -271,7 +281,7 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate HEAD: %w", QrelBlindSmokeEvaluationName, err)
 	}
-	candidateClean, err := probe.WorktreeClean(ctx, o.CandidateRoot)
+	candidateClean, err := probe.WorktreeCleanOutside(ctx, o.CandidateRoot, o.ExcludePath)
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate worktree state: %w", QrelBlindSmokeEvaluationName, err)
 	}
@@ -289,12 +299,23 @@ func ObserveCandidateBinding(ctx context.Context, probe RepoProbe, o CandidateBi
 	if err != nil {
 		return binding, fmt.Errorf("retrieval %s capture: candidate tree comparison: %w", QrelBlindSmokeEvaluationName, err)
 	}
+	diff, err := probe.DiffOutside(ctx, o.CandidateRoot, o.FrozenCandidateSHA, head, o.ExcludePath)
+	if err != nil {
+		return binding, fmt.Errorf("retrieval %s capture: candidate exact diff: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	diffSHA := SHA256Hex(diff)
+	if o.ExpectedCandidateDiffSHA256 != "" {
+		if !isLowerHexDigest(o.ExpectedCandidateDiffSHA256, 64) || diffSHA != o.ExpectedCandidateDiffSHA256 {
+			return binding, fmt.Errorf("retrieval %s capture: candidate diff digest is %s, want preregistered %s", QrelBlindSmokeEvaluationName, diffSHA, o.ExpectedCandidateDiffSHA256)
+		}
+	}
 	binding = CandidateBinding{
 		CandidateSHA:           head,
 		FrozenCandidateSHA:     o.FrozenCandidateSHA,
 		CandidateWorktreeClean: candidateClean,
 		CandidateMatchesFrozen: len(differing) == 0,
 		CandidateExcludedPath:  o.ExcludePath,
+		CandidateDiffSHA256:    diffSHA,
 		CheckoutSHA:            o.CheckoutSHA,
 		CheckoutWorktreeClean:  checkoutClean,
 		DifferingPaths:         differing,
@@ -332,7 +353,26 @@ type CandidateCaptureProvenance struct {
 	// Binding is nil only for a capture taken before the binding existed. A
 	// nil binding is a release refusal, not a missing report row.
 	Binding                  *CandidateBinding         `json:"candidate_binding,omitempty"`
+	BindingEnd               *CandidateBinding         `json:"candidate_binding_end,omitempty"`
 	QualificationBuildDigest *QualificationBuildDigest `json:"qualification_build_digest,omitempty"`
+}
+
+func observeQualificationCaptureBindingPair(ctx context.Context, probe RepoProbe, options CandidateBindingOptions, capture func(CandidateBinding) error) (CandidateBinding, CandidateBinding, error) {
+	start, err := ObserveCandidateBinding(ctx, probe, options)
+	if err != nil {
+		return CandidateBinding{}, CandidateBinding{}, err
+	}
+	if err := capture(start); err != nil {
+		return start, CandidateBinding{}, err
+	}
+	end, err := ObserveCandidateBinding(ctx, probe, options)
+	if err != nil {
+		return start, CandidateBinding{}, err
+	}
+	if !reflect.DeepEqual(start, end) {
+		return start, end, fmt.Errorf("retrieval %s capture: candidate or checkout binding changed during capture", QrelBlindSmokeEvaluationName)
+	}
+	return start, end, nil
 }
 
 // GitRepoProbe is the production RepoProbe. Each observation is one git
@@ -345,6 +385,17 @@ func GitRepoProbe() RepoProbe {
 			out, err := exec.CommandContext(ctx, "git", "-C", root, "status", "--porcelain", "--untracked-files=normal").Output()
 			if err != nil {
 				return false, fmt.Errorf("git status --porcelain in %s: %w", root, err)
+			}
+			return strings.TrimSpace(string(out)) == "", nil
+		},
+		WorktreeCleanOutside: func(ctx context.Context, root, exclude string) (bool, error) {
+			args := []string{"-C", root, "status", "--porcelain", "--untracked-files=normal", "--", "."}
+			if strings.TrimSpace(exclude) != "" {
+				args = append(args, ":(exclude)"+exclude)
+			}
+			out, err := exec.CommandContext(ctx, "git", args...).Output()
+			if err != nil {
+				return false, fmt.Errorf("git status --porcelain outside %s in %s: %w", exclude, root, err)
 			}
 			return strings.TrimSpace(string(out)) == "", nil
 		},
@@ -364,6 +415,17 @@ func GitRepoProbe() RepoProbe {
 				}
 			}
 			return paths, nil
+		},
+		DiffOutside: func(ctx context.Context, root, from, to, exclude string) ([]byte, error) {
+			args := []string{"-C", root, "diff", "--binary", "--full-index", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", from, to, "--", "."}
+			if strings.TrimSpace(exclude) != "" {
+				args = append(args, ":(exclude)"+exclude)
+			}
+			out, err := exec.CommandContext(ctx, "git", args...).Output()
+			if err != nil {
+				return nil, fmt.Errorf("git canonical diff %s %s in %s: %w", from, to, root, err)
+			}
+			return out, nil
 		},
 	}
 }
@@ -490,6 +552,9 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	if !strings.EqualFold(head, o.RepoSHA) || !strings.EqualFold(head, o.Dataset.Dataset.RepoSHA) {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: checkout is at %s, option pins %s and dataset pins %s", QrelBlindSmokeEvaluationName, head, o.RepoSHA, o.Dataset.Dataset.RepoSHA)
 	}
+	bindingOptions := o.Binding
+	bindingOptions.CheckoutRoot = o.RepoRoot
+	bindingOptions.CheckoutSHA = head
 	var binding CandidateBinding
 	if o.ObservedBinding != nil {
 		binding = *o.ObservedBinding
@@ -498,9 +563,6 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 			return nil, provenance, fmt.Errorf("embedded-model qualification capture: pre-observed candidate binding does not match this capture")
 		}
 	} else {
-		bindingOptions := o.Binding
-		bindingOptions.CheckoutRoot = o.RepoRoot
-		bindingOptions.CheckoutSHA = head
 		binding, err = ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
 		if err != nil {
 			return nil, provenance, err
@@ -573,11 +635,20 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 		captured = append(captured, bundle)
 	}
+	endBinding, err := ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+	if err != nil {
+		return nil, provenance, fmt.Errorf("retrieval %s capture: post-capture binding: %w", QrelBlindSmokeEvaluationName, err)
+	}
+	if !reflect.DeepEqual(binding, endBinding) {
+		return nil, provenance, fmt.Errorf("retrieval %s capture: candidate or checkout binding changed during capture", QrelBlindSmokeEvaluationName)
+	}
+	provenance.BindingEnd = &endBinding
 	if strictQualification {
 		inputs := qualificationBuildInputs{
 			Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments,
 			QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured)),
 			QueryDiagnostics: make(map[string]QualificationIntMetric, len(captured)), OracleControls: make(map[string]OracleControls, len(captured)),
+			Observations: make([]QualificationObservation, 0, len(captured)),
 		}
 		for _, bundle := range captured {
 			inputs.QueryVectors[bundle.QueryID] = bundle.QualificationQueryVector
@@ -585,6 +656,7 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no qualification observation", bundle.QueryID)
 			}
 			inputs.QueryDiagnostics[bundle.QueryID] = bundle.Qualification.UnknownTokens
+			inputs.Observations = append(inputs.Observations, *bundle.Qualification)
 			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
 			if bundle.OracleControls == nil {
 				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no one-shot oracle controls", bundle.QueryID)
@@ -602,6 +674,10 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		provenance.QualificationCaptureRunSHA256 = captureRecord.Provenance.QualificationCaptureRunSHA256
 		digest.CaptureProvenance = captureRecord
 		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
+		digest, err = sealQualificationBuildDigest(digest)
+		if err != nil {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: seal build digest: %w", err)
+		}
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil

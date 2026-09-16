@@ -500,7 +500,8 @@ func TestWriteQualificationReportCanonicalizesEquivalentPermutations(t *testing.
 	reverseQualificationReportSlice(permuted.BuildDigests)
 	reverseQualificationReportSlice(permuted.BlindEvidence)
 	reverseQualificationReportSlice(permuted.BlindDecisions)
-	reverseQualificationReportSlice(permuted.OracleControls)
+	// OracleEvidence is one sealed collection; its internal order is evidence,
+	// not a report-level free permutation.
 	reverseQualificationReportSlice(permuted.Operating.QueryEmbedLatencies)
 	callerBefore, err := json.Marshal(permuted)
 	if err != nil {
@@ -537,7 +538,17 @@ func TestQualificationMarkdownDoesNotRenderUntrustedPathsOrReleaseClaims(t *test
 		record.WorkDir = filepath.Join(filepath.Dir(record.WorkDir), attack, filepath.Base(record.WorkDir))
 		record.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(record.Arm, record.WorkDir)
 		report.BuildDigests[i].CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, record)
+		sealed, err := sealQualificationBuildDigest(report.BuildDigests[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		report.BuildDigests[i] = sealed
+		if sealed.Arm == ArmCodeRank && sealed.Build == 1 {
+			report.OracleEvidence.BuildRef.BuildSHA256 = sealed.SHA256
+			report.OracleEvidence.BuildRef.CaptureProvenanceSHA256 = sealed.CaptureProvenance.SHA256
+		}
 	}
+	report.OracleEvidence = mustSealQualificationOracleEvidence(t, report.OracleEvidence)
 	dir := qualificationReportTestDir(t)
 	if err := WriteQualificationReport(dir, report); err != nil {
 		t.Fatal(err)
@@ -587,7 +598,7 @@ func completeQualificationReportFixture(t *testing.T) QualificationReport {
 		BuildDigests:   append([]QualificationBuildDigest(nil), in.BuildDigests...),
 		BlindEvidence:  append([]BlindEvidenceSet(nil), in.BlindEvidence...),
 		BlindDecisions: append([]BlindDecision(nil), in.Decisions...),
-		OracleControls: append([]OracleControls(nil), in.OracleControls...),
+		OracleEvidence: in.OracleEvidence,
 		Operating:      in.Operating,
 		Decision:       decision,
 	}

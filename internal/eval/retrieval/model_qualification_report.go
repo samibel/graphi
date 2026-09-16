@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const QualificationReportSchemaVersion = 1
+const QualificationReportSchemaVersion = 2
 
 const (
 	QualificationReportCommitSchemaVersion = 1
@@ -57,7 +57,7 @@ type QualificationReport struct {
 	BuildDigests    []QualificationBuildDigest   `json:"build_digests"`
 	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
 	BlindDecisions  []BlindDecision              `json:"blind_decisions"`
-	OracleControls  []OracleControls             `json:"oracle_controls"`
+	OracleEvidence  QualificationOracleEvidence  `json:"oracle_evidence"`
 	Operating       OperatingMeasurements        `json:"operating_budget"`
 	Derived         QualificationReportDerived   `json:"derived"`
 	Decision        QualificationDecision        `json:"decision"`
@@ -235,14 +235,8 @@ func canonicalQualificationReport(report QualificationReport) (QualificationRepo
 		}
 		return out.BuildDigests[i].Build < out.BuildDigests[j].Build
 	})
-	for i := range out.OracleControls {
-		canonicalizeOracleBundle(&out.OracleControls[i].CurrentCandidatesOraclePacker)
-		canonicalizeOracleBundle(&out.OracleControls[i].OracleCandidateCurrentSelector)
-		canonicalizeOracleBundle(&out.OracleControls[i].OracleCandidateOraclePacker)
-	}
-	sort.Slice(out.OracleControls, func(i, j int) bool {
-		return out.OracleControls[i].CurrentCandidatesOraclePacker.QueryID < out.OracleControls[j].CurrentCandidatesOraclePacker.QueryID
-	})
+	// OracleEvidence is one content-addressed collection. Preserve its exact
+	// order; semantic digest validation sorts a copy without resealing source.
 	sort.Slice(out.Operating.QueryEmbedLatencies, func(i, j int) bool {
 		return out.Operating.QueryEmbedLatencies[i] < out.Operating.QueryEmbedLatencies[j]
 	})
@@ -300,7 +294,7 @@ func qualificationInputFromReport(report QualificationReport) (QualificationInpu
 		BuildDigests:    report.BuildDigests,
 		BlindEvidence:   report.BlindEvidence,
 		Decisions:       report.BlindDecisions,
-		OracleControls:  report.OracleControls,
+		OracleEvidence:  report.OracleEvidence,
 		Operating:       report.Operating,
 	}, nil
 }

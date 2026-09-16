@@ -645,7 +645,7 @@ func qualificationPreregistrationFixture() QualificationPreregistration {
 		DatasetSHA256:       strings.Repeat("d", 64),
 		SourceRepoSHA:       strings.Repeat("1", 40),
 		CandidateSHA:        strings.Repeat("2", 40),
-		CandidateDiffSHA256: strings.Repeat("3", 64),
+		CandidateDiffSHA256: SHA256Hex(nil),
 		ReaderPromptSHA256:  strings.Repeat("4", 64),
 		GraderPromptSHA256:  strings.Repeat("5", 64),
 		Arms: map[QualificationArm]ArmPin{

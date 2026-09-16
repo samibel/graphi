@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -402,6 +403,7 @@ func TestQualificationCaptureWorkDirCanonicalizesRelativeAndSymlinkPaths(t *test
 		digest.CaptureProvenance.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(digest.Arm, resolved)
 		digest.CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, digest.CaptureProvenance)
 	}
+	resealQualificationBuildEvidence(t, &in)
 	if _, err := EvaluateQualification(in); err != nil {
 		t.Fatalf("evaluator rejected canonicalized workdirs: %v", err)
 	}
@@ -438,6 +440,136 @@ func TestQualificationAtomicPublishLeavesNoPartialEvidenceAndCanRetry(t *testing
 	if got, err := os.ReadFile(filepath.Join(out, "complete.json")); err != nil || string(got) != "complete" {
 		t.Fatalf("published retry = %q, %v", got, err)
 	}
+}
+
+func TestQualificationGlobalPostBindingFailureIsNotPublished(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "qualification")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	drift := errors.New("original candidate binding changed over the complete capture")
+	err := publishQualificationAtomically(out, func(stage string) error {
+		if err := os.WriteFile(filepath.Join(stage, "captures.json"), []byte("sealed but invalidated later"), 0o644); err != nil {
+			return err
+		}
+		return drift
+	})
+	if !errors.Is(err, drift) {
+		t.Fatalf("post-binding failure = %v", err)
+	}
+	entries, readErr := os.ReadDir(out)
+	if readErr != nil || len(entries) != 0 {
+		t.Fatalf("post-binding failure published evidence: entries=%v err=%v", entries, readErr)
+	}
+}
+
+func TestQualificationCaptureRootRoundTripsAllEightSealedCaptures(t *testing.T) {
+	in := passingQualificationInput(t)
+	captures := make([]QualificationCaptureArtifact, 0, len(in.BuildDigests))
+	for _, digest := range in.BuildDigests {
+		observations := make([]QualificationObservation, 0, 64)
+		bundles := make([]CapturedCandidateBundle, 0, 64)
+		for _, observation := range in.Observations {
+			if observation.Arm == digest.Arm {
+				copy := observation
+				observations = append(observations, copy)
+				bundles = append(bundles, CapturedCandidateBundle{QueryID: observation.QueryID, Qualification: &copy})
+			}
+		}
+		artifact := QualificationCaptureArtifact{SchemaVersion: QualificationCaptureSchemaVersion, Build: digest.Build, Arm: digest.Arm,
+			Provenance: digest.CaptureProvenance.Provenance, Digest: digest, Observations: observations, Bundles: bundles}
+		if digest.Arm == ArmCodeRank && digest.Build == 1 {
+			oracle := in.OracleEvidence
+			artifact.OracleEvidence = &oracle
+		}
+		captures = append(captures, mustSealQualificationCaptureArtifact(t, artifact))
+	}
+	root := mustSealQualificationCaptureRoot(t, QualificationCaptureRoot{SchemaVersion: QualificationCaptureSchemaVersion, Captures: captures})
+	path := filepath.Join(t.TempDir(), "captures.json")
+	if err := WriteQualificationCaptureRoot(path, root); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadQualificationCaptureRoot(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var loadedOracle *QualificationOracleEvidence
+	for i := range loaded.Captures {
+		if loaded.Captures[i].Arm == ArmCodeRank && loaded.Captures[i].Build == 1 {
+			loadedOracle = loaded.Captures[i].OracleEvidence
+		}
+	}
+	if !reflect.DeepEqual(loaded, root) || loadedOracle == nil || len(loadedOracle.Controls) != 64 {
+		t.Fatalf("capture root did not round-trip complete sealed evidence")
+	}
+	tampered := root
+	tampered.Captures = append([]QualificationCaptureArtifact(nil), root.Captures...)
+	tampered.Captures[0].Observations = append([]QualificationObservation(nil), root.Captures[0].Observations...)
+	tampered.Captures[0].Observations[0].BundleTokens++
+	raw, err := json.Marshal(tampered)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tamperedPath := filepath.Join(t.TempDir(), "tampered-captures.json")
+	if err := os.WriteFile(tamperedPath, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadQualificationCaptureRoot(tamperedPath); err == nil {
+		t.Fatal("strict capture root loader accepted mutated sealed evidence")
+	}
+}
+
+func TestQualificationCaptureRootRejectsTamperAndWrongOracleOwner(t *testing.T) {
+	in := passingQualificationInput(t)
+	digest := in.BuildDigests[6]
+	observations := make([]QualificationObservation, 0, 64)
+	bundles := make([]CapturedCandidateBundle, 0, 64)
+	for _, observation := range in.Observations {
+		if observation.Arm == digest.Arm {
+			copy := observation
+			observations = append(observations, copy)
+			bundles = append(bundles, CapturedCandidateBundle{QueryID: observation.QueryID, Qualification: &copy})
+		}
+	}
+	oracle := in.OracleEvidence
+	artifact := mustSealQualificationCaptureArtifact(t, QualificationCaptureArtifact{SchemaVersion: QualificationCaptureSchemaVersion, Build: 1, Arm: ArmCodeRank,
+		Provenance: digest.CaptureProvenance.Provenance, Digest: digest, Observations: observations, Bundles: bundles, OracleEvidence: &oracle})
+	t.Run("artifact mutation", func(t *testing.T) {
+		mutated := artifact
+		mutated.Observations = append([]QualificationObservation(nil), artifact.Observations...)
+		mutated.Observations[0].CompleteGrade3Span = !mutated.Observations[0].CompleteGrade3Span
+		if err := validateQualificationCaptureArtifact(mutated); err == nil {
+			t.Fatal("accepted a mutated sealed artifact")
+		}
+	})
+	t.Run("oracle relabel", func(t *testing.T) {
+		mutated := artifact
+		mutated.Arm = ArmPotion8192
+		mutated = mustSealQualificationCaptureArtifact(t, mutated)
+		if err := validateQualificationCaptureArtifact(mutated); err == nil {
+			t.Fatalf("oracle relabel error = %v", err)
+		}
+	})
+}
+
+func mustSealQualificationCaptureArtifact(t *testing.T, artifact QualificationCaptureArtifact) QualificationCaptureArtifact {
+	t.Helper()
+	artifact.SHA256 = ""
+	sealed, err := sealQualificationCaptureArtifact(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
+}
+
+func mustSealQualificationCaptureRoot(t *testing.T, root QualificationCaptureRoot) QualificationCaptureRoot {
+	t.Helper()
+	root.SHA256 = ""
+	sealed, err := sealQualificationCaptureRoot(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
 }
 
 func TestQualificationCapturePreregistrationRejectsTrailingJSON(t *testing.T) {
@@ -540,6 +672,120 @@ func TestQualificationBuildComparisonRejectsQueryDiagnosticMismatch(t *testing.T
 	}
 }
 
+func TestQualificationBuildDigestBindsCanonicalObservationsAndSealsItself(t *testing.T) {
+	base := qualificationBuildDigestFixture()
+	base.Observations = []QualificationObservation{
+		{Arm: ArmCodeRank, QueryID: "q-2", Stratum: StratumNLBehaviour, BundleTokens: 2},
+		{Arm: ArmCodeRank, QueryID: "q-1", Stratum: StratumExactPath, BundleTokens: 1},
+	}
+	first, err := sealQualificationBuildDigest(buildQualificationDigest(ArmCodeRank, base))
+	if err != nil {
+		t.Fatal(err)
+	}
+	base.Observations[0], base.Observations[1] = base.Observations[1], base.Observations[0]
+	permuted, err := sealQualificationBuildDigest(buildQualificationDigest(ArmCodeRank, base))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.ObservationsSHA256 != permuted.ObservationsSHA256 || first.SHA256 != permuted.SHA256 {
+		t.Fatalf("observation order changed canonical digest: first=%+v permuted=%+v", first, permuted)
+	}
+	base.Observations[0].CompleteGrade3Span = true
+	changed, err := sealQualificationBuildDigest(buildQualificationDigest(ArmCodeRank, base))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.ObservationsSHA256 == changed.ObservationsSHA256 || compareQualificationBuildDigests(first, changed) == nil {
+		t.Fatal("decision-relevant observation substitution did not invalidate the build digest")
+	}
+	tampered := first
+	tampered.BundlesSHA256 = strings.Repeat("9", 64)
+	if validateQualificationBuildDigestSeal(tampered) == nil {
+		t.Fatal("reseal-free build digest tamper was accepted")
+	}
+}
+
+func TestDetachedQualificationCheckoutIsPinnedAndDetectsSnapshotDrift(t *testing.T) {
+	repo := t.TempDir()
+	runGit := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.invalid", "GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.invalid")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	runGit("init")
+	if err := os.WriteFile(filepath.Join(repo, "source.txt"), []byte("frozen\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", "source.txt")
+	runGit("commit", "-m", "frozen")
+	frozen := runGit("rev-parse", "HEAD")
+	if err := withDetachedQualificationCheckout(t.Context(), repo, frozen, func(snapshot string) error {
+		if err := os.WriteFile(filepath.Join(repo, "source.txt"), []byte("origin changed\n"), 0o644); err != nil {
+			return err
+		}
+		got, err := os.ReadFile(filepath.Join(snapshot, "source.txt"))
+		if err != nil {
+			return err
+		}
+		if string(got) != "frozen\n" {
+			return errors.New("detached snapshot followed mutable origin")
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	err := withDetachedQualificationCheckout(t.Context(), repo, frozen, func(snapshot string) error {
+		_, observeErr := ObserveCandidateBinding(t.Context(), GitRepoProbe(), CandidateBindingOptions{
+			CandidateRoot: repo, FrozenCandidateSHA: frozen, ExcludePath: QualificationCandidateExcludedPath,
+			ExpectedCandidateDiffSHA256: SHA256Hex(nil), CheckoutRoot: snapshot, CheckoutSHA: frozen,
+		})
+		return observeErr
+	})
+	if err == nil || !strings.Contains(err.Error(), "candidate worktree") {
+		t.Fatalf("dirty original candidate hidden by clean detached source snapshot: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "source.txt"), []byte("frozen\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = withDetachedQualificationCheckout(t.Context(), repo, frozen, func(snapshot string) error {
+		return os.WriteFile(filepath.Join(snapshot, "source.txt"), []byte("snapshot drift\n"), 0o644)
+	})
+	if err == nil || !strings.Contains(err.Error(), "detached checkout changed during capture") {
+		t.Fatalf("snapshot drift error = %v", err)
+	}
+}
+
+func TestQualificationBindingPairRejectsCandidateDriftAfterCapture(t *testing.T) {
+	const frozen = "0123456789abcdef0123456789abcdef01234567"
+	const changed = "89abcdef0123456789abcdef0123456789abcdef"
+	headCalls := 0
+	probe := RepoProbe{
+		HeadSHA: func(context.Context, string) (string, error) {
+			headCalls++
+			if headCalls == 1 {
+				return frozen, nil
+			}
+			return changed, nil
+		},
+		WorktreeClean:         func(context.Context, string) (bool, error) { return true, nil },
+		WorktreeCleanOutside:  func(context.Context, string, string) (bool, error) { return true, nil },
+		PathsDifferingOutside: func(context.Context, string, string, string, string) ([]string, error) { return nil, nil },
+		DiffOutside:           func(context.Context, string, string, string, string) ([]byte, error) { return nil, nil },
+	}
+	options := CandidateBindingOptions{CandidateRoot: "/candidate", FrozenCandidateSHA: frozen,
+		ExcludePath: QualificationCandidateExcludedPath, ExpectedCandidateDiffSHA256: SHA256Hex(nil),
+		CheckoutRoot: "/snapshot", CheckoutSHA: strings.Repeat("a", 40)}
+	_, _, err := observeQualificationCaptureBindingPair(t.Context(), probe, options, func(CandidateBinding) error { return nil })
+	if err == nil || !strings.Contains(err.Error(), "binding changed during capture") {
+		t.Fatalf("candidate post-capture drift error = %v", err)
+	}
+}
+
 func qualificationBuildDigestFixture() qualificationBuildInputs {
 	payload := PreservedPayload{Bytes: []byte("payload\n"), SHA256: SHA256Hex([]byte("payload\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 2}}}
 	oraclePayload := PreservedPayload{Bytes: []byte("oracle\n"), SHA256: SHA256Hex([]byte("oracle\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: "cl100k_base", VocabularySHA256: strings.Repeat("a", 64), Tokens: 3}}}
@@ -550,6 +796,7 @@ func qualificationBuildDigestFixture() qualificationBuildInputs {
 		Payloads:          []PreservedPayload{payload},
 		AdmittedDocuments: []embed.SemanticDocument{{DocumentID: "d1", NodeID: "n1", Path: "a.go", StartLine: 1, EndLine: 2, TextHash: "text", Text: "admitted bytes", Truncated: true, Bound: "tokens", AdmissionTokenCount: 17, AdmissionLimit: 512, AdmissionAlgorithmID: "first-n-tokens@1"}},
 		OracleControls:    map[string]OracleControls{"q-1": {CurrentCandidatesOraclePacker: OracleBundle{ControlKind: OracleControlCurrentCandidatesOraclePacker, QueryID: "q-1", CandidateSHA256: strings.Repeat("b", 64), TokenCount: 3, Payload: oraclePayload}}},
+		Observations:      []QualificationObservation{{Arm: ArmCodeRank, QueryID: "q-1", Stratum: StratumExactPath, BundleTokens: 2}},
 	}
 }
 

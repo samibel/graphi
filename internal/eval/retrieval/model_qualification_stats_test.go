@@ -74,6 +74,7 @@ func TestEvaluateQualificationRequiresEveryGate(t *testing.T) {
 		t.Run(mutation.name, func(t *testing.T) {
 			in := cloneQualificationInput(t, valid)
 			mutation.apply(&in)
+			resealQualificationBuildEvidence(t, &in)
 			got, err := EvaluateQualification(in)
 			if err != nil {
 				t.Fatal(err)
@@ -125,9 +126,9 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 			in.Decisions[0].Outcome.Primary = in.Decisions[0].Outcome.Primary[:1]
 			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0])
 		}},
-		{"oracle cardinality", func(in *QualificationInput) { in.OracleControls = in.OracleControls[:63] }},
+		{"oracle cardinality", func(in *QualificationInput) { in.OracleEvidence.Controls = in.OracleEvidence.Controls[:63] }},
 		{"oracle provenance", func(in *QualificationInput) {
-			in.OracleControls[0].OracleCandidateOraclePacker.CandidateSHA256 = "bad"
+			in.OracleEvidence.Controls[0].OracleCandidateOraclePacker.CandidateSHA256 = "bad"
 		}},
 		{"build cardinality", func(in *QualificationInput) { in.BuildDigests = in.BuildDigests[:7] }},
 		{"duplicate build ordinal", func(in *QualificationInput) { in.BuildDigests[1].Build = 1 }},
@@ -135,6 +136,11 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 			in.BuildDigests[1].CaptureProvenance = in.BuildDigests[0].CaptureProvenance
 			in.BuildDigests[1].CaptureProvenance.Arm = in.BuildDigests[1].Arm
 			in.BuildDigests[1].CaptureProvenance.Build = in.BuildDigests[1].Build
+		}},
+		{"missing end binding", func(in *QualificationInput) {
+			in.BuildDigests[0].CaptureProvenance.Provenance.BindingEnd = nil
+			in.BuildDigests[0].CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, in.BuildDigests[0].CaptureProvenance)
+			in.BuildDigests[0], _ = sealQualificationBuildDigest(in.BuildDigests[0])
 		}},
 		{"negative build diagnostic", func(in *QualificationInput) {
 			in.BuildDigests[0].Diagnostics.AdmissionTruncations = -1
@@ -146,6 +152,43 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 			tc.apply(&in)
 			if _, err := EvaluateQualification(in); err == nil {
 				t.Fatal("accepted incomplete evidence")
+			}
+		})
+	}
+}
+
+func TestEvaluateQualificationRejectsDecisionMutatingObservationSubstitution(t *testing.T) {
+	in := passingQualificationInput(t)
+	for i := range in.Observations {
+		if in.Observations[i].Arm == ArmCodeRank {
+			in.Observations[i].CompleteGrade3Span = false
+			break
+		}
+	}
+	if _, err := EvaluateQualification(in); err == nil || !strings.Contains(err.Error(), "observation digest") {
+		t.Fatalf("observation substitution error = %v", err)
+	}
+}
+
+func TestEvaluateQualificationOracleEvidenceIsExactlyM3BuildOne(t *testing.T) {
+	valid := passingQualificationInput(t)
+	for _, tc := range []struct {
+		name string
+		edit func(*QualificationOracleEvidence)
+	}{
+		{"base arm", func(v *QualificationOracleEvidence) { v.BuildRef.BaseArm = ArmPotion8192 }},
+		{"build", func(v *QualificationOracleEvidence) { v.BuildRef.Build = 2 }},
+		{"build seal", func(v *QualificationOracleEvidence) { v.BuildRef.BuildSHA256 = strings.Repeat("9", 64) }},
+		{"capture provenance", func(v *QualificationOracleEvidence) { v.BuildRef.CaptureProvenanceSHA256 = strings.Repeat("9", 64) }},
+		{"payload digest", func(v *QualificationOracleEvidence) { v.OraclePayloadsSHA256 = strings.Repeat("9", 64) }},
+		{"token digest", func(v *QualificationOracleEvidence) { v.OracleTokenCountsSHA256 = strings.Repeat("9", 64) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := cloneQualificationInput(t, valid)
+			tc.edit(&in.OracleEvidence)
+			in.OracleEvidence = mustSealQualificationOracleEvidence(t, in.OracleEvidence)
+			if _, err := EvaluateQualification(in); err == nil {
+				t.Fatal("accepted oracle collection detached from M3 build 1")
 			}
 		})
 	}
@@ -363,6 +406,7 @@ func TestEvaluateQualificationInvalidM2CannotSelectActionBranch(t *testing.T) {
 			copyDecisions(&in, ArmPotion8192, ArmCodeRank)
 			copySpanPattern(&in, ArmPotion8192, ArmCodeRank)
 			tc.apply(semanticObservation(&in, ArmPotion8192, 0))
+			resealQualificationBuildEvidence(t, &in)
 			got, err := EvaluateQualification(in)
 			if err != nil {
 				t.Fatal(err)
@@ -378,12 +422,13 @@ func TestRepresentationCeilingUsesBlindOracleDecisionsNotSpanMetadata(t *testing
 	in := passingQualificationInput(t)
 	copyDecisions(&in, ArmCodeRank, ArmPotion512)
 	clearSemanticGain(&in, ArmCodeRank)
-	for i := range in.OracleControls {
-		in.OracleControls[i].OracleCandidateOraclePacker.CompleteGrade3Span = true
+	for i := range in.OracleEvidence.Controls {
+		in.OracleEvidence.Controls[i].OracleCandidateOraclePacker.CompleteGrade3Span = true
 	}
 	for i := 0; i < 9; i++ {
 		setControlPass(&in, OracleControlOracleCandidateOraclePacker, weakQueryID(i), false)
 	}
+	resealQualificationBuildEvidence(t, &in)
 	got, err := EvaluateQualification(in)
 	if err != nil {
 		t.Fatal(err)
@@ -460,6 +505,7 @@ func TestEvaluateQualificationDecisionBranchesFollowSpecOrder(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			in := cloneQualificationInput(t, passingQualificationInput(t))
 			tc.apply(&in)
+			resealQualificationBuildEvidence(t, &in)
 			got, err := EvaluateQualification(in)
 			if err != nil {
 				t.Fatal(err)
@@ -587,7 +633,7 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 		selected.Injected, selected.InjectedRows = true, 1
 		packed := mk(OracleControlOracleCandidateOraclePacker)
 		packed.Injected, packed.InjectedRows = true, 1
-		input.OracleControls = append(input.OracleControls, OracleControls{CurrentCandidatesOraclePacker: current,
+		input.OracleEvidence.Controls = append(input.OracleEvidence.Controls, OracleControls{CurrentCandidatesOraclePacker: current,
 			OracleCandidateCurrentSelector: selected, OracleCandidateOraclePacker: packed})
 		for _, bundle := range []OracleBundle{current, selected, packed} {
 			key := blindSubjectKey("", bundle.ControlKind)
@@ -597,6 +643,35 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			desired[key][id] = true
 		}
 	}
+	oraclePayloadSHA, oracleTokenSHA := qualificationOracleDigests(input.OracleEvidence.Controls)
+	for i := range input.BuildDigests {
+		armObservations := make([]QualificationObservation, 0, 64)
+		for _, observation := range input.Observations {
+			if observation.Arm == input.BuildDigests[i].Arm {
+				armObservations = append(armObservations, observation)
+			}
+		}
+		input.BuildDigests[i].ObservationsSHA256 = qualificationObservationsSHA256(armObservations)
+		if input.BuildDigests[i].Arm == ArmCodeRank {
+			input.BuildDigests[i].OraclePayloadsSHA256 = oraclePayloadSHA
+			input.BuildDigests[i].OracleTokenCountsSHA256 = oracleTokenSHA
+		}
+		var err error
+		input.BuildDigests[i], err = sealQualificationBuildDigest(input.BuildDigests[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := range input.BuildDigests {
+		if input.BuildDigests[i].Arm == ArmCodeRank && input.BuildDigests[i].Build == 1 {
+			input.OracleEvidence.BuildRef = QualificationOracleBuildRef{BaseArm: ArmCodeRank, Build: 1,
+				BuildSHA256: input.BuildDigests[i].SHA256, CaptureProvenanceSHA256: input.BuildDigests[i].CaptureProvenance.SHA256}
+			break
+		}
+	}
+	input.OracleEvidence.OraclePayloadsSHA256 = oraclePayloadSHA
+	input.OracleEvidence.OracleTokenCountsSHA256 = oracleTokenSHA
+	input.OracleEvidence = mustSealQualificationOracleEvidence(t, input.OracleEvidence)
 	for _, subject := range []struct {
 		arm  QualificationArm
 		kind string
@@ -649,7 +724,7 @@ func qualificationBlindEvidenceFixture(t *testing.T, in QualificationInput, arm 
 				}
 			}
 		} else {
-			for _, controls := range in.OracleControls {
+			for _, controls := range in.OracleEvidence.Controls {
 				for _, bundle := range []OracleBundle{controls.CurrentCandidatesOraclePacker, controls.OracleCandidateCurrentSelector, controls.OracleCandidateOraclePacker} {
 					if bundle.QueryID == observation.QueryID && bundle.ControlKind == controlKind {
 						payloadSHA = bundle.Payload.SHA256
@@ -712,6 +787,16 @@ func qualificationBlindEvidenceFixture(t *testing.T, in QualificationInput, arm 
 	return source, decisions
 }
 
+func mustSealQualificationOracleEvidence(t *testing.T, evidence QualificationOracleEvidence) QualificationOracleEvidence {
+	t.Helper()
+	evidence.SHA256 = ""
+	sealed, err := sealQualificationOracleEvidence(evidence)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return sealed
+}
+
 func mustSealBlindDecision(t *testing.T, decision BlindDecision, evidenceSHA ...string) BlindDecision {
 	t.Helper()
 	address := decision.EvidenceSHA256
@@ -734,7 +819,10 @@ func qualificationCaptureProvenanceFixture(pre QualificationPreregistration, dat
 		GenerationID: "generation-" + string(rune('0'+build)), PersistedVectors: 64, SemanticState: "ready", TokenBudget: QualificationTokenBudget,
 		MethodVersion: QualificationCompactVersion, TokenizerID: PinnedRealPayloadTokenizerID, TokenizerVocabSHA: PinnedRealPayloadTokenizerVocabularySHA256, QueryCount: 64,
 		Binding: &CandidateBinding{CandidateSHA: pre.CandidateSHA, FrozenCandidateSHA: pre.CandidateSHA, CandidateWorktreeClean: true,
-			CandidateMatchesFrozen: true, CandidateExcludedPath: QualificationCandidateExcludedPath, CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}}
+			CandidateMatchesFrozen: true, CandidateExcludedPath: QualificationCandidateExcludedPath, CandidateDiffSHA256: pre.CandidateDiffSHA256,
+			CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}}
+	end := *p.Binding
+	p.BindingEnd = &end
 	if arm == ArmLexical {
 		p.ModelFingerprint, p.IndexFingerprint, p.GenerationID, p.SemanticState, p.PersistedVectors = "", "", "", "unset", 0
 	}
@@ -950,6 +1038,35 @@ func semanticObservation(in *QualificationInput, arm QualificationArm, ordinal i
 		}
 	}
 	panic("semantic observation not found")
+}
+
+func resealQualificationBuildEvidence(t *testing.T, in *QualificationInput) {
+	t.Helper()
+	for i := range in.BuildDigests {
+		observations := make([]QualificationObservation, 0, 64)
+		for _, observation := range in.Observations {
+			if observation.Arm == in.BuildDigests[i].Arm {
+				observations = append(observations, observation)
+			}
+		}
+		in.BuildDigests[i].ObservationsSHA256 = qualificationObservationsSHA256(observations)
+		sealed, err := sealQualificationBuildDigest(in.BuildDigests[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+		in.BuildDigests[i] = sealed
+	}
+	for _, digest := range in.BuildDigests {
+		if digest.Arm == ArmCodeRank && digest.Build == 1 {
+			payloads, tokens := qualificationOracleDigests(in.OracleEvidence.Controls)
+			in.OracleEvidence.BuildRef = QualificationOracleBuildRef{BaseArm: ArmCodeRank, Build: 1, BuildSHA256: digest.SHA256,
+				CaptureProvenanceSHA256: digest.CaptureProvenance.SHA256}
+			in.OracleEvidence.OraclePayloadsSHA256 = payloads
+			in.OracleEvidence.OracleTokenCountsSHA256 = tokens
+			in.OracleEvidence = mustSealQualificationOracleEvidence(t, in.OracleEvidence)
+			break
+		}
+	}
 }
 
 func gatePassed(t *testing.T, got QualificationDecision, name string) bool {

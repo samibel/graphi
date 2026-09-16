@@ -32,7 +32,7 @@ type QualificationInput struct {
 	BuildDigests    []QualificationBuildDigest   `json:"build_digests"`
 	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
 	Decisions       []BlindDecision              `json:"decisions"`
-	OracleControls  []OracleControls             `json:"oracle_controls"`
+	OracleEvidence  QualificationOracleEvidence  `json:"oracle_evidence"`
 	Operating       OperatingMeasurements        `json:"operating_budget"`
 }
 
@@ -325,7 +325,7 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 	if err := validateBuildEvidence(in, arms, &evidence); err != nil {
 		return evidence, err
 	}
-	if err := validateOracleEvidence(in.OracleControls, evidence.queryIDs, &evidence); err != nil {
+	if err := validateOracleEvidence(in.OracleEvidence, in.BuildDigests, evidence.queryIDs, &evidence); err != nil {
 		return evidence, err
 	}
 	if err := validateBlindDecisions(in, arms, &evidence); err != nil {
@@ -403,7 +403,10 @@ func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evide
 		if err := validateQualificationCaptureProvenance(digest, in); err != nil {
 			return err
 		}
-		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256, digest.QueryDiagnosticsSHA256} {
+		if err := validateQualificationBuildDigestSeal(digest); err != nil {
+			return fmt.Errorf("embedded-model qualification decision: arm %s build %d: %w", digest.Arm, digest.Build, err)
+		}
+		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256, digest.QueryDiagnosticsSHA256, digest.ObservationsSHA256} {
 			if !isLowerHexDigest(value, 64) {
 				return fmt.Errorf("embedded-model qualification decision: arm %s has malformed build digest", digest.Arm)
 			}
@@ -418,6 +421,14 @@ func validateBuildEvidence(in QualificationInput, arms []QualificationArm, evide
 			return fmt.Errorf("embedded-model qualification decision: arm %s has %d builds, want 2", arm, len(byArm[arm]))
 		}
 		first, second := byArm[arm][1], byArm[arm][2]
+		observations := make([]QualificationObservation, 0, len(evidence.observations[arm]))
+		for _, observation := range evidence.observations[arm] {
+			observations = append(observations, observation)
+		}
+		observationsSHA := qualificationObservationsSHA256(observations)
+		if first.ObservationsSHA256 != observationsSHA || second.ObservationsSHA256 != observationsSHA {
+			return fmt.Errorf("embedded-model qualification decision: arm %s observation digest differs from both captured builds", arm)
+		}
 		if first.CaptureProvenance.SHA256 == second.CaptureProvenance.SHA256 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s builds do not have distinct capture provenance", arm)
 		}
@@ -447,6 +458,7 @@ func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in 
 	}
 	p := record.Provenance
 	binding := p.Binding
+	endBinding := p.BindingEnd
 	if p.QualificationCaptureRunSHA256 != qualificationCaptureRunSHA(digest.Arm, record.WorkDir) {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture run identity differs from workdir", digest.Arm, digest.Build)
 	}
@@ -454,7 +466,7 @@ func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in 
 		p.Boundary != string(PayloadBoundaryCandidate) || p.DatasetSHA256 != in.Preregistration.DatasetSHA256 ||
 		p.RepoName != in.Dataset.Dataset.Repo || p.RepoSHA != in.Preregistration.SourceRepoSHA ||
 		p.TokenBudget != QualificationTokenBudget || p.MethodVersion != QualificationCompactVersion || p.QueryCount != 64 ||
-		p.TokenizerID != PinnedRealPayloadTokenizerID || p.TokenizerVocabSHA != PinnedRealPayloadTokenizerVocabularySHA256 || binding == nil {
+		p.TokenizerID != PinnedRealPayloadTokenizerID || p.TokenizerVocabSHA != PinnedRealPayloadTokenizerVocabularySHA256 || binding == nil || endBinding == nil {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d capture provenance differs from qualification pins", digest.Arm, digest.Build)
 	}
 	if err := CheckRunDirectoryRelativePath(QualificationCandidateExcludedPath); err != nil {
@@ -462,8 +474,12 @@ func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in 
 	}
 	if binding.CandidateSHA != in.Preregistration.CandidateSHA || binding.FrozenCandidateSHA != in.Preregistration.CandidateSHA ||
 		binding.CheckoutSHA != in.Preregistration.SourceRepoSHA || !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean ||
-		!binding.CandidateMatchesFrozen || len(binding.DifferingPaths) != 0 || binding.CandidateExcludedPath != QualificationCandidateExcludedPath {
+		!binding.CandidateMatchesFrozen || len(binding.DifferingPaths) != 0 || binding.CandidateExcludedPath != QualificationCandidateExcludedPath ||
+		binding.CandidateDiffSHA256 != in.Preregistration.CandidateDiffSHA256 {
 		return fmt.Errorf("embedded-model qualification decision: arm %s build %d candidate binding differs from qualification pins", digest.Arm, digest.Build)
+	}
+	if !reflect.DeepEqual(binding, endBinding) {
+		return fmt.Errorf("embedded-model qualification decision: arm %s build %d start/end binding differs", digest.Arm, digest.Build)
 	}
 	pin := in.Preregistration.Arms[digest.Arm]
 	if p.EmbedderSelector != pin.Label {
@@ -479,7 +495,30 @@ func validateQualificationCaptureProvenance(digest QualificationBuildDigest, in 
 	return nil
 }
 
-func validateOracleEvidence(controls []OracleControls, queryIDs []string, evidence *qualificationEvidence) error {
+func validateOracleEvidence(source QualificationOracleEvidence, builds []QualificationBuildDigest, queryIDs []string, evidence *qualificationEvidence) error {
+	sealed, err := sealQualificationOracleEvidence(source)
+	if err != nil || !isLowerHexDigest(source.SHA256, 64) || sealed.SHA256 != source.SHA256 {
+		return fmt.Errorf("embedded-model qualification decision: oracle evidence content address differs")
+	}
+	if source.BuildRef.BaseArm != ArmCodeRank || source.BuildRef.Build != 1 {
+		return fmt.Errorf("embedded-model qualification decision: oracle evidence must use M3_coderank build 1")
+	}
+	var selected *QualificationBuildDigest
+	for i := range builds {
+		if builds[i].Arm == ArmCodeRank && builds[i].Build == 1 {
+			selected = &builds[i]
+			break
+		}
+	}
+	if selected == nil || source.BuildRef.BuildSHA256 != selected.SHA256 || source.BuildRef.CaptureProvenanceSHA256 != selected.CaptureProvenance.SHA256 {
+		return fmt.Errorf("embedded-model qualification decision: oracle evidence build reference differs from M3 build 1")
+	}
+	payloadSHA, tokenSHA := qualificationOracleDigests(source.Controls)
+	if payloadSHA != source.OraclePayloadsSHA256 || tokenSHA != source.OracleTokenCountsSHA256 ||
+		payloadSHA != selected.OraclePayloadsSHA256 || tokenSHA != selected.OracleTokenCountsSHA256 {
+		return fmt.Errorf("embedded-model qualification decision: oracle evidence digests differ from M3 build 1")
+	}
+	controls := source.Controls
 	if len(controls) != 64 {
 		return fmt.Errorf("embedded-model qualification decision: got %d oracle controls, want 64", len(controls))
 	}

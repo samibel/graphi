@@ -9,6 +9,7 @@ package retrieval
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -46,6 +47,75 @@ type OracleControls struct {
 	CurrentCandidatesOraclePacker  OracleBundle `json:"current_candidates_oracle_packer"`
 	OracleCandidateCurrentSelector OracleBundle `json:"oracle_candidate_current_selector"`
 	OracleCandidateOraclePacker    OracleBundle `json:"oracle_candidate_oracle_packer"`
+}
+
+// QualificationOracleBuildRef binds the one oracle collection to the exact
+// qrel-blind build whose frozen candidates were used. Oracle evidence is
+// defined only for M3 build 1.
+type QualificationOracleBuildRef struct {
+	BaseArm                 QualificationArm `json:"base_arm"`
+	Build                   int              `json:"build"`
+	BuildSHA256             string           `json:"build_sha256"`
+	CaptureProvenanceSHA256 string           `json:"capture_provenance_sha256"`
+}
+
+// QualificationOracleEvidence is one closed collection. Its collection-level
+// build reference prevents per-query mixtures or relabeling across arms/builds.
+type QualificationOracleEvidence struct {
+	BuildRef                QualificationOracleBuildRef `json:"build_ref"`
+	OraclePayloadsSHA256    string                      `json:"oracle_payloads_sha256"`
+	OracleTokenCountsSHA256 string                      `json:"oracle_token_counts_sha256"`
+	Controls                []OracleControls            `json:"controls"`
+	SHA256                  string                      `json:"sha256"`
+}
+
+func sealQualificationOracleEvidence(evidence QualificationOracleEvidence) (QualificationOracleEvidence, error) {
+	address, err := ContentAddress(evidence, func(v *QualificationOracleEvidence) { v.SHA256 = "" })
+	if err != nil {
+		return QualificationOracleEvidence{}, err
+	}
+	evidence.SHA256 = address
+	return evidence, nil
+}
+
+func qualificationOracleControlsFromMap(controls map[string]OracleControls) []OracleControls {
+	out := make([]OracleControls, 0, len(controls))
+	for _, control := range controls {
+		out = append(out, control)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].CurrentCandidatesOraclePacker.QueryID < out[j].CurrentCandidatesOraclePacker.QueryID
+	})
+	return out
+}
+
+func qualificationOracleDigests(controls []OracleControls) (string, string) {
+	canonical := append([]OracleControls(nil), controls...)
+	sort.Slice(canonical, func(i, j int) bool {
+		return canonical[i].CurrentCandidatesOraclePacker.QueryID < canonical[j].CurrentCandidatesOraclePacker.QueryID
+	})
+	var payloads, tokens bytes.Buffer
+	for _, controlSet := range canonical {
+		for _, control := range oracleControlBundles(controlSet) {
+			qualificationWriteString(&payloads, control.QueryID)
+			qualificationWriteString(&payloads, control.ControlKind)
+			qualificationWriteString(&payloads, control.CandidateProvenance)
+			qualificationWriteString(&payloads, control.CandidateSHA256)
+			qualificationWriteBytes(&payloads, control.Payload.Bytes)
+			qualificationWriteString(&payloads, control.Payload.SHA256)
+			qualificationWriteString(&tokens, control.QueryID)
+			qualificationWriteString(&tokens, control.ControlKind)
+			_ = binary.Write(&tokens, binary.BigEndian, int64(control.TokenCount))
+			counts := append([]PayloadTokenCount(nil), control.Payload.TokenCounts...)
+			sort.Slice(counts, func(i, j int) bool { return counts[i].TokenizerID < counts[j].TokenizerID })
+			for _, count := range counts {
+				qualificationWriteString(&tokens, count.TokenizerID)
+				qualificationWriteString(&tokens, count.VocabularySHA256)
+				_ = binary.Write(&tokens, binary.BigEndian, int64(count.Tokens))
+			}
+		}
+	}
+	return SHA256Hex(payloads.Bytes()), SHA256Hex(tokens.Bytes())
 }
 
 // OracleBundle is safe to hand to the existing blind-rater workflow. It

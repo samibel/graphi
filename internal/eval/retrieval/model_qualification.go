@@ -5,11 +5,14 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -211,7 +214,9 @@ type QualificationBuildDigest struct {
 	OraclePayloadsSHA256    string                               `json:"oracle_payloads_sha256"`
 	OracleTokenCountsSHA256 string                               `json:"oracle_token_counts_sha256"`
 	QueryDiagnosticsSHA256  string                               `json:"query_diagnostics_sha256"`
+	ObservationsSHA256      string                               `json:"observations_sha256"`
 	Diagnostics             QualificationBuildDiagnostics        `json:"diagnostics"`
+	SHA256                  string                               `json:"sha256"`
 }
 
 // QualificationCaptureProvenanceRecord closes the provenance behind one
@@ -436,6 +441,7 @@ type qualificationBuildInputs struct {
 	QueryDiagnostics  map[string]QualificationIntMetric
 	Payloads          []PreservedPayload
 	OracleControls    map[string]OracleControls
+	Observations      []QualificationObservation
 }
 
 func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs) QualificationBuildDigest {
@@ -446,7 +452,7 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		}
 		return rows[i].DocumentID < rows[j].DocumentID
 	})
-	var vectors, persisted, bundles, tokens, oraclePayloads, oracleTokens, queryDiagnostics bytes.Buffer
+	var vectors, persisted, bundles, tokens, queryDiagnostics bytes.Buffer
 	documents := append([]embed.SemanticDocument(nil), in.AdmittedDocuments...)
 	sort.Slice(documents, func(i, j int) bool {
 		if documents[i].NodeID != documents[j].NodeID {
@@ -513,37 +519,42 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 			_ = binary.Write(&tokens, binary.BigEndian, int64(count.Tokens))
 		}
 	}
-	oracleQueryIDs := make([]string, 0, len(in.OracleControls))
-	for queryID := range in.OracleControls {
-		oracleQueryIDs = append(oracleQueryIDs, queryID)
-	}
-	sort.Strings(oracleQueryIDs)
-	for _, queryID := range oracleQueryIDs {
-		for _, control := range oracleControlBundles(in.OracleControls[queryID]) {
-			qualificationWriteString(&oraclePayloads, queryID)
-			qualificationWriteString(&oraclePayloads, control.ControlKind)
-			qualificationWriteString(&oraclePayloads, control.CandidateProvenance)
-			qualificationWriteString(&oraclePayloads, control.CandidateSHA256)
-			qualificationWriteBytes(&oraclePayloads, control.Payload.Bytes)
-			qualificationWriteString(&oraclePayloads, control.Payload.SHA256)
-			qualificationWriteString(&oracleTokens, queryID)
-			qualificationWriteString(&oracleTokens, control.ControlKind)
-			_ = binary.Write(&oracleTokens, binary.BigEndian, int64(control.TokenCount))
-			counts := append([]PayloadTokenCount(nil), control.Payload.TokenCounts...)
-			sort.Slice(counts, func(i, j int) bool { return counts[i].TokenizerID < counts[j].TokenizerID })
-			for _, count := range counts {
-				qualificationWriteString(&oracleTokens, count.TokenizerID)
-				qualificationWriteString(&oracleTokens, count.VocabularySHA256)
-				_ = binary.Write(&oracleTokens, binary.BigEndian, int64(count.Tokens))
-			}
-		}
-	}
+	oraclePayloadsSHA, oracleTokensSHA := qualificationOracleDigests(qualificationOracleControlsFromMap(in.OracleControls))
 	return QualificationBuildDigest{
 		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
 		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
-		OraclePayloadsSHA256: SHA256Hex(oraclePayloads.Bytes()), OracleTokenCountsSHA256: SHA256Hex(oracleTokens.Bytes()),
-		QueryDiagnosticsSHA256: SHA256Hex(queryDiagnostics.Bytes()),
+		OraclePayloadsSHA256: oraclePayloadsSHA, OracleTokenCountsSHA256: oracleTokensSHA,
+		QueryDiagnosticsSHA256: SHA256Hex(queryDiagnostics.Bytes()), ObservationsSHA256: qualificationObservationsSHA256(in.Observations),
 	}
+}
+
+func qualificationObservationsSHA256(observations []QualificationObservation) string {
+	canonical := append([]QualificationObservation(nil), observations...)
+	sort.Slice(canonical, func(i, j int) bool {
+		if canonical[i].Arm != canonical[j].Arm {
+			return canonical[i].Arm < canonical[j].Arm
+		}
+		return canonical[i].QueryID < canonical[j].QueryID
+	})
+	raw, _ := json.Marshal(canonical)
+	return SHA256Hex(raw)
+}
+
+func sealQualificationBuildDigest(digest QualificationBuildDigest) (QualificationBuildDigest, error) {
+	address, err := ContentAddress(digest, func(v *QualificationBuildDigest) { v.SHA256 = "" })
+	if err != nil {
+		return QualificationBuildDigest{}, err
+	}
+	digest.SHA256 = address
+	return digest, nil
+}
+
+func validateQualificationBuildDigestSeal(digest QualificationBuildDigest) error {
+	sealed, err := sealQualificationBuildDigest(digest)
+	if err != nil || !isLowerHexDigest(digest.SHA256, 64) || sealed.SHA256 != digest.SHA256 {
+		return fmt.Errorf("embedded-model qualification: build digest content address differs")
+	}
+	return nil
 }
 
 func compareQualificationBuildDigests(first, second QualificationBuildDigest) error {
@@ -558,6 +569,7 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 		{"oracle payloads", first.OraclePayloadsSHA256, second.OraclePayloadsSHA256},
 		{"oracle token counts", first.OracleTokenCountsSHA256, second.OracleTokenCountsSHA256},
 		{"query diagnostics", first.QueryDiagnosticsSHA256, second.QueryDiagnosticsSHA256},
+		{"observations", first.ObservationsSHA256, second.ObservationsSHA256},
 	} {
 		if digest.first != digest.second {
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)
@@ -652,27 +664,41 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: load pinned payload tokenizer: %w", err)
 	}
-	checkoutSHA, err := CheckoutHEAD(ctx, env.Repo)
-	if err != nil {
-		return err
-	}
-	bindingOptions := CandidateBindingOptions{
-		CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
-		ExcludePath:  QualificationCandidateExcludedPath,
-		CheckoutRoot: env.Repo, CheckoutSHA: checkoutSHA,
-	}
-	binding, err := ObserveCandidateBinding(ctx, GitRepoProbe(), bindingOptions)
-	if err != nil {
-		return err
+	var bindingStart CandidateBinding
+	if err := withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+		var observeErr error
+		bindingStart, observeErr = ObserveCandidateBinding(ctx, GitRepoProbe(), CandidateBindingOptions{
+			CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
+			ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256, CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA,
+		})
+		return observeErr
+	}); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: pre-capture binding: %w", err)
 	}
 	return publishQualificationAtomically(env.Out, func(stage string) error {
-		return captureQualificationBuilds(ctx, stage, env, loaded, pre, counter, bindingOptions, binding)
+		if err := captureQualificationBuilds(ctx, stage, env, loaded, pre, counter, candidateRoot); err != nil {
+			return err
+		}
+		return withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+			bindingEnd, observeErr := ObserveCandidateBinding(ctx, GitRepoProbe(), CandidateBindingOptions{
+				CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA, ExcludePath: QualificationCandidateExcludedPath,
+				ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256, CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA,
+			})
+			if observeErr != nil {
+				return observeErr
+			}
+			if !reflect.DeepEqual(bindingStart, bindingEnd) {
+				return fmt.Errorf("embedded-model qualification capture: original candidate binding changed over the complete capture")
+			}
+			return nil
+		})
 	})
 }
 
-func captureQualificationBuilds(ctx context.Context, out string, env qualificationEnvironment, loaded *Loaded, pre QualificationPreregistration, counter PayloadCounter, bindingOptions CandidateBindingOptions, binding CandidateBinding) error {
+func captureQualificationBuilds(ctx context.Context, out string, env qualificationEnvironment, loaded *Loaded, pre QualificationPreregistration, counter PayloadCounter, candidateRoot string) error {
 	arms := []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank}
 	first := make(map[QualificationArm]QualificationBuildDigest, len(arms))
+	artifacts := make([]QualificationCaptureArtifact, 0, len(arms)*2)
 	for build := 1; build <= 2; build++ {
 		for _, arm := range arms {
 			emb, expected, armManifest, err := qualificationArmEmbedder(ctx, arm, pre, env.CodeRankManifest)
@@ -684,17 +710,25 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 			if err := os.MkdirAll(workDir, 0o755); err != nil {
 				return fmt.Errorf("embedded-model qualification capture: create arm directory: %w", err)
 			}
-			opts := CandidateCaptureOptions{
-				RepoRoot: env.Repo, RepoName: loaded.Dataset.Repo, RepoSHA: pre.SourceRepoSHA,
-				Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
-				RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
-				QualificationArm: arm, QualificationBuild: build, QualificationPreregistration: &pre,
-				Binding: bindingOptions, ObservedBinding: &binding,
-			}
-			if arm == ArmCodeRank {
-				opts.ManifestBytes = armManifest
-			}
-			captured, provenance, err := CaptureCandidateBundles(ctx, opts)
+			var captured []CapturedCandidateBundle
+			var provenance CandidateCaptureProvenance
+			err = withDetachedQualificationCheckout(ctx, env.Repo, pre.SourceRepoSHA, func(sourceSnapshot string) error {
+				opts := CandidateCaptureOptions{
+					RepoRoot: sourceSnapshot, RepoName: loaded.Dataset.Repo, RepoSHA: pre.SourceRepoSHA,
+					Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
+					RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
+					QualificationArm: arm, QualificationBuild: build, QualificationPreregistration: &pre,
+					Binding: CandidateBindingOptions{CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
+						ExcludePath: QualificationCandidateExcludedPath, ExpectedCandidateDiffSHA256: pre.CandidateDiffSHA256,
+						CheckoutRoot: sourceSnapshot, CheckoutSHA: pre.SourceRepoSHA}, Probe: GitRepoProbe(),
+				}
+				if arm == ArmCodeRank {
+					opts.ManifestBytes = armManifest
+				}
+				var captureErr error
+				captured, provenance, captureErr = CaptureCandidateBundles(ctx, opts)
+				return captureErr
+			})
 			if err != nil {
 				return fmt.Errorf("embedded-model qualification capture: build %d arm %s: %w", build, arm, err)
 			}
@@ -711,17 +745,38 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 			if err := validateQualificationRunDiagnostics(arm, observations); err != nil {
 				return err
 			}
-			if err := writeQualificationOracleControls(armDir, captured, loaded.Dataset.Queries); err != nil {
-				return fmt.Errorf("embedded-model qualification capture: build %d arm %s: %w", build, arm, err)
+			digest := *provenance.QualificationBuildDigest
+			artifact := QualificationCaptureArtifact{SchemaVersion: QualificationCaptureSchemaVersion, Build: build, Arm: arm,
+				Provenance: digest.CaptureProvenance.Provenance, Digest: digest, Observations: observations, Bundles: captured}
+			if arm == ArmCodeRank && build == 1 {
+				controls := make([]OracleControls, 0, len(captured))
+				for _, bundle := range captured {
+					if bundle.OracleControls == nil {
+						return fmt.Errorf("embedded-model qualification capture: M3 build 1 query %s has no oracle controls", bundle.QueryID)
+					}
+					controls = append(controls, *bundle.OracleControls)
+				}
+				payloads, tokens := qualificationOracleDigests(controls)
+				oracle, sealErr := sealQualificationOracleEvidence(QualificationOracleEvidence{
+					BuildRef: QualificationOracleBuildRef{BaseArm: ArmCodeRank, Build: 1, BuildSHA256: digest.SHA256,
+						CaptureProvenanceSHA256: digest.CaptureProvenance.SHA256},
+					OraclePayloadsSHA256: payloads, OracleTokenCountsSHA256: tokens, Controls: controls,
+				})
+				if sealErr != nil {
+					return fmt.Errorf("embedded-model qualification capture: seal oracle evidence: %w", sealErr)
+				}
+				artifact.OracleEvidence = &oracle
+				if err := writeQualificationOracleControls(armDir, captured, loaded.Dataset.Queries); err != nil {
+					return fmt.Errorf("embedded-model qualification capture: build %d arm %s: %w", build, arm, err)
+				}
 			}
-			artifact := struct {
-				Build        int                        `json:"build"`
-				Arm          QualificationArm           `json:"arm"`
-				Provenance   CandidateCaptureProvenance `json:"provenance"`
-				Digest       QualificationBuildDigest   `json:"digest"`
-				Observations []QualificationObservation `json:"observations"`
-				Bundles      []CapturedCandidateBundle  `json:"bundles"`
-			}{build, arm, provenance, *provenance.QualificationBuildDigest, observations, captured}
+			artifact, err = sealQualificationCaptureArtifact(artifact)
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification capture: seal build %d arm %s artifact: %w", build, arm, err)
+			}
+			if err := validateQualificationCaptureArtifact(artifact); err != nil {
+				return err
+			}
 			artifactBytes, err := json.MarshalIndent(artifact, "", "  ")
 			if err != nil {
 				return fmt.Errorf("embedded-model qualification capture: encode build %d arm %s: %w", build, arm, err)
@@ -730,12 +785,66 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 			if err := os.WriteFile(filepath.Join(armDir, "capture.json"), artifactBytes, 0o644); err != nil {
 				return fmt.Errorf("embedded-model qualification capture: write build %d arm %s: %w", build, arm, err)
 			}
+			artifacts = append(artifacts, artifact)
 			if build == 1 {
 				first[arm] = *provenance.QualificationBuildDigest
 			} else if err := compareQualificationBuildDigests(first[arm], *provenance.QualificationBuildDigest); err != nil {
 				return err
 			}
 		}
+	}
+	root, err := sealQualificationCaptureRoot(QualificationCaptureRoot{SchemaVersion: QualificationCaptureSchemaVersion, Captures: artifacts})
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: seal capture root: %w", err)
+	}
+	return WriteQualificationCaptureRoot(filepath.Join(out, "captures.json"), root)
+}
+
+// withDetachedQualificationCheckout creates a private, detached worktree at
+// the preregistered source commit. The mutable operator checkout is never the
+// corpus read by capture. Both HEAD and cleanliness are re-observed after use.
+func withDetachedQualificationCheckout(ctx context.Context, repository, sourceSHA string, capture func(snapshot string) error) (err error) {
+	if !isLowerHexDigest(sourceSHA, 40) {
+		return fmt.Errorf("embedded-model qualification capture: source sha must be a 40-character commit id")
+	}
+	parent, err := os.MkdirTemp("", "graphi-qualification-checkout-")
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: create detached checkout parent: %w", err)
+	}
+	snapshot := filepath.Join(parent, "worktree")
+	added := false
+	defer func() {
+		var cleanupErr error
+		if added {
+			cmd := exec.CommandContext(context.WithoutCancel(ctx), "git", "-C", repository, "worktree", "remove", "--force", "--", snapshot)
+			if out, removeErr := cmd.CombinedOutput(); removeErr != nil {
+				cleanupErr = fmt.Errorf("remove detached checkout: %w (%s)", removeErr, strings.TrimSpace(string(out)))
+			}
+		}
+		cleanupErr = errors.Join(cleanupErr, os.RemoveAll(parent))
+		err = errors.Join(err, cleanupErr)
+	}()
+	cmd := exec.CommandContext(ctx, "git", "-C", repository, "worktree", "add", "--detach", "--", snapshot, sourceSHA)
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	if out, addErr := cmd.CombinedOutput(); addErr != nil {
+		return fmt.Errorf("embedded-model qualification capture: create detached checkout: %w (%s)", addErr, strings.TrimSpace(string(out)))
+	}
+	added = true
+	head, err := CheckoutHEAD(ctx, snapshot)
+	if err != nil || head != sourceSHA {
+		return fmt.Errorf("embedded-model qualification capture: detached checkout head is %q, want %q: %w", head, sourceSHA, err)
+	}
+	clean, err := GitRepoProbe().WorktreeClean(ctx, snapshot)
+	if err != nil || !clean {
+		return fmt.Errorf("embedded-model qualification capture: detached checkout is not initially clean: %w", err)
+	}
+	if err := capture(snapshot); err != nil {
+		return err
+	}
+	head, headErr := CheckoutHEAD(ctx, snapshot)
+	clean, cleanErr := GitRepoProbe().WorktreeClean(ctx, snapshot)
+	if headErr != nil || cleanErr != nil || head != sourceSHA || !clean {
+		return fmt.Errorf("embedded-model qualification capture: detached checkout changed during capture: head=%q clean=%t: %w", head, clean, errors.Join(headErr, cleanErr))
 	}
 	return nil
 }
@@ -749,21 +858,38 @@ func publishQualificationAtomically(out string, capture func(stage string) error
 		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", out)
 	}
 	parent, base := filepath.Dir(out), filepath.Base(out)
-	stage, err := os.MkdirTemp(parent, "."+base+".staging-")
+	stage, err := os.MkdirTemp(out, ".capture-staging-")
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: create staging directory: %w", err)
 	}
-	defer func() { _ = os.RemoveAll(stage) }()
+	published := false
+	defer func() {
+		if !published {
+			_ = os.RemoveAll(stage)
+		}
+	}()
 	if err := capture(stage); err != nil {
 		return err
 	}
-	if err := os.Remove(out); err != nil {
-		return fmt.Errorf("embedded-model qualification capture: prepare atomic publish: %w", err)
+	container, err := os.MkdirTemp(parent, "."+base+".publishing-")
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: reserve atomic publish path: %w", err)
 	}
-	if err := os.Rename(stage, out); err != nil {
-		_ = os.Mkdir(out, 0o755)
+	if err := os.Remove(container); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: prepare atomic publish path: %w", err)
+	}
+	if err := os.Rename(out, container); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: move staging container: %w", err)
+	}
+	staged := filepath.Join(container, filepath.Base(stage))
+	if err := os.Rename(staged, out); err != nil {
+		_ = os.Rename(container, out)
 		return fmt.Errorf("embedded-model qualification capture: atomic publish: %w", err)
 	}
+	if err := os.RemoveAll(container); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: remove empty staging container: %w", err)
+	}
+	published = true
 	return nil
 }
 
