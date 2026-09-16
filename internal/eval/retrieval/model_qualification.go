@@ -849,8 +849,26 @@ func withDetachedQualificationCheckout(ctx context.Context, repository, sourceSH
 	return nil
 }
 
-func publishQualificationAtomically(out string, capture func(stage string) error) (err error) {
-	entries, err := os.ReadDir(out)
+type qualificationPublishFSOps struct {
+	ReadDir   func(string) ([]os.DirEntry, error)
+	MkdirTemp func(string, string) (string, error)
+	Mkdir     func(string, os.FileMode) error
+	Remove    func(string) error
+	RemoveAll func(string) error
+	Rename    func(string, string) error
+}
+
+func defaultQualificationPublishFSOps() qualificationPublishFSOps {
+	return qualificationPublishFSOps{ReadDir: os.ReadDir, MkdirTemp: os.MkdirTemp, Mkdir: os.Mkdir,
+		Remove: os.Remove, RemoveAll: os.RemoveAll, Rename: os.Rename}
+}
+
+func publishQualificationAtomically(out string, capture func(stage string) error) error {
+	return publishQualificationAtomicallyWithFS(out, capture, defaultQualificationPublishFSOps())
+}
+
+func publishQualificationAtomicallyWithFS(out string, capture func(stage string) error, fsops qualificationPublishFSOps) (err error) {
+	entries, err := fsops.ReadDir(out)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: read output directory: %w", err)
 	}
@@ -858,38 +876,61 @@ func publishQualificationAtomically(out string, capture func(stage string) error
 		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", out)
 	}
 	parent, base := filepath.Dir(out), filepath.Base(out)
-	stage, err := os.MkdirTemp(out, ".capture-staging-")
+	stage, err := fsops.MkdirTemp(out, ".capture-staging-")
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: create staging directory: %w", err)
 	}
+	cleanupPath := stage
 	published := false
 	defer func() {
-		if !published {
-			_ = os.RemoveAll(stage)
+		if !published && cleanupPath != "" {
+			_ = fsops.RemoveAll(cleanupPath)
 		}
 	}()
 	if err := capture(stage); err != nil {
 		return err
 	}
-	container, err := os.MkdirTemp(parent, "."+base+".publishing-")
+	container, err := fsops.MkdirTemp(parent, "."+base+".publishing-")
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: reserve atomic publish path: %w", err)
 	}
-	if err := os.Remove(container); err != nil {
+	if err := fsops.Remove(container); err != nil {
 		return fmt.Errorf("embedded-model qualification capture: prepare atomic publish path: %w", err)
 	}
-	if err := os.Rename(out, container); err != nil {
+	if err := fsops.Rename(out, container); err != nil {
 		return fmt.Errorf("embedded-model qualification capture: move staging container: %w", err)
 	}
 	staged := filepath.Join(container, filepath.Base(stage))
-	if err := os.Rename(staged, out); err != nil {
-		_ = os.Rename(container, out)
-		return fmt.Errorf("embedded-model qualification capture: atomic publish: %w", err)
-	}
-	if err := os.RemoveAll(container); err != nil {
-		return fmt.Errorf("embedded-model qualification capture: remove empty staging container: %w", err)
+	cleanupPath = staged
+	if publishErr := fsops.Rename(staged, out); publishErr != nil {
+		primary := fmt.Errorf("embedded-model qualification capture: atomic publish: %w", publishErr)
+		if rollbackErr := fsops.Rename(container, out); rollbackErr == nil {
+			cleanupPath = ""
+			cleanupErr := fsops.RemoveAll(filepath.Join(out, filepath.Base(stage)))
+			if cleanupErr != nil {
+				cleanupErr = fmt.Errorf("embedded-model qualification capture: clean rolled-back staging evidence: %w", cleanupErr)
+			}
+			return errors.Join(primary, cleanupErr)
+		} else {
+			cleanupPath = ""
+			cleanupErr := fsops.RemoveAll(container)
+			restoreErr := fsops.Mkdir(out, 0o755)
+			if cleanupErr != nil {
+				cleanupErr = fmt.Errorf("embedded-model qualification capture: remove failed publish container %s: %w", container, cleanupErr)
+			}
+			if restoreErr != nil {
+				restoreErr = fmt.Errorf("embedded-model qualification capture: restore empty output directory %s: %w", out, restoreErr)
+			}
+			return errors.Join(primary,
+				fmt.Errorf("embedded-model qualification capture: rollback failed: %w", rollbackErr), cleanupErr, restoreErr)
+		}
 	}
 	published = true
+	cleanupPath = ""
+	// The final rename is the commit point. The old output wrapper is empty;
+	// inability to remove it must not turn an already-published capture into a
+	// reported failure.
+	_ = fsops.Remove(container)
 	return nil
 }
 

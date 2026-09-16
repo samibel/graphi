@@ -463,6 +463,68 @@ func TestQualificationGlobalPostBindingFailureIsNotPublished(t *testing.T) {
 	}
 }
 
+func TestQualificationPublishCleanupFailureAfterCommitStillSucceeds(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "qualification")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ops := defaultQualificationPublishFSOps()
+	realRemove := ops.Remove
+	removeCalls := 0
+	ops.Remove = func(path string) error {
+		removeCalls++
+		if removeCalls == 2 {
+			return errors.New("injected empty wrapper cleanup failure")
+		}
+		return realRemove(path)
+	}
+	err := publishQualificationAtomicallyWithFS(out, func(stage string) error {
+		return os.WriteFile(filepath.Join(stage, "captures.json"), []byte("sealed"), 0o644)
+	}, ops)
+	if err != nil {
+		t.Fatalf("cleanup after committed rename changed success into failure: %v", err)
+	}
+	if got, err := os.ReadFile(filepath.Join(out, "captures.json")); err != nil || string(got) != "sealed" {
+		t.Fatalf("committed evidence = %q, %v", got, err)
+	}
+}
+
+func TestQualificationPublishFinalRenameAndRollbackFailureRestoresRetryableOutput(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "qualification")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ops := defaultQualificationPublishFSOps()
+	realRename := ops.Rename
+	renameCalls := 0
+	ops.Rename = func(oldPath, newPath string) error {
+		renameCalls++
+		switch renameCalls {
+		case 2:
+			return errors.New("injected final rename failure")
+		case 3:
+			return errors.New("injected rollback failure")
+		default:
+			return realRename(oldPath, newPath)
+		}
+	}
+	err := publishQualificationAtomicallyWithFS(out, func(stage string) error {
+		return os.WriteFile(filepath.Join(stage, "captures.json"), []byte("must not publish"), 0o644)
+	}, ops)
+	if err == nil || !strings.Contains(err.Error(), "rollback") {
+		t.Fatalf("rename/rollback failure = %v", err)
+	}
+	entries, readErr := os.ReadDir(out)
+	if readErr != nil || len(entries) != 0 {
+		t.Fatalf("failed rollback left published evidence or non-retryable output: entries=%v err=%v", entries, readErr)
+	}
+	if err := publishQualificationAtomically(out, func(stage string) error {
+		return os.WriteFile(filepath.Join(stage, "captures.json"), []byte("retry"), 0o644)
+	}); err != nil {
+		t.Fatalf("retry after failed rollback: %v", err)
+	}
+}
+
 func TestQualificationCaptureRootRoundTripsAllEightSealedCaptures(t *testing.T) {
 	in := passingQualificationInput(t)
 	captures := make([]QualificationCaptureArtifact, 0, len(in.BuildDigests))
