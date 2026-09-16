@@ -878,6 +878,14 @@ func RunTaskContextV2(ctx context.Context, o TaskContextOptions) (*TaskContextRu
 }
 
 func buildTaskContextIndex(ctx context.Context, root, workDir, selector string, log io.Writer) (*taskContextIndex, error) {
+	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
+	if err != nil || emb == nil {
+		return nil, fmt.Errorf("task-context eval: embedder %q unavailable: %v", selector, err)
+	}
+	return buildTaskContextIndexWithEmbedder(ctx, root, workDir, emb, selector, log)
+}
+
+func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string, emb embed.Embedder, _ string, log io.Writer) (*taskContextIndex, error) {
 	dbPath := filepath.Join(workDir, "task-context-eval.db")
 	metaDir := filepath.Join(workDir, "task-context-eval-meta")
 	store, err := graphstore.OpenSQLite(dbPath)
@@ -910,10 +918,6 @@ func buildTaskContextIndex(ctx context.Context, root, workDir, selector string, 
 		return nil, fmt.Errorf("task-context eval: index produced no nodes")
 	}
 
-	emb, err := embed.Constructor(selector, embed.DefaultConstructors())
-	if err != nil || emb == nil {
-		return nil, fmt.Errorf("task-context eval: embedder %q unavailable: %v", selector, err)
-	}
 	reg := embed.NewRegistry()
 	if err := reg.Register(emb); err != nil {
 		return nil, fmt.Errorf("task-context eval: embedder register: %w", err)

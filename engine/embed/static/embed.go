@@ -222,7 +222,7 @@ func (m *Model) admissionSpec() embed.AdmissionSpec {
 		TokenizerID:      "model2vec-wordpiece",
 		TokenizerSHA256:  m.tokenHash(),
 		TokenizerVersion: tokenizerVersion,
-		MaxTokens:        MaxAdmissionTokens,
+		MaxTokens:        m.maxLength,
 		Reserve:          SpecialTokenReserve,
 		Algorithm:        "first-n-tokens",
 		AlgorithmVersion: "1",

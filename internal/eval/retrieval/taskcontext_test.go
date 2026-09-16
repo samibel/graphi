@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -17,8 +18,56 @@ import (
 	"testing"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
+	"github.com/samibel/graphi/engine/embed"
 	staticembed "github.com/samibel/graphi/engine/embed/static"
 )
+
+type countingEmbedder struct {
+	id    string
+	dim   int
+	calls int
+}
+
+func (e *countingEmbedder) ID() string { return e.id }
+
+func (e *countingEmbedder) Dim() int { return e.dim }
+
+func (e *countingEmbedder) Embed(_ context.Context, texts []string) ([][]float32, error) {
+	e.calls++
+	vectors := make([][]float32, len(texts))
+	for i := range vectors {
+		vectors[i] = make([]float32, e.dim)
+		vectors[i][0] = 1
+	}
+	return vectors, nil
+}
+
+func TestBuildTaskContextIndexWithEmbedderUsesProvidedInstance(t *testing.T) {
+	emb := &countingEmbedder{id: "injected", dim: 3}
+	idx, err := buildTaskContextIndexWithEmbedder(t.Context(), fixtureRoot(t), t.TempDir(), emb, "eval:injected", io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idx.store.Close()
+	if emb.calls == 0 || idx.embedderID != emb.ID() {
+		t.Fatalf("calls=%d id=%q, want injected instance id %q", emb.calls, idx.embedderID, emb.ID())
+	}
+	if idx.fingerprint.ModelID != emb.ID() {
+		t.Fatalf("fingerprint model id = %q, want injected instance id %q", idx.fingerprint.ModelID, emb.ID())
+	}
+}
+
+func fixtureRoot(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	source := []byte("package fixture\n\nfunc Answer() string { return \"task context\" }\n")
+	if err := os.WriteFile(filepath.Join(root, "answer.go"), source, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+var _ embed.Embedder = (*countingEmbedder)(nil)
 
 func TestSelectTaskContextDevNLBehaviour_FailClosedPopulation(t *testing.T) {
 	grade3 := []Judgement{{Path: "a.go", StartLine: 10, EndLine: 20, Anchor: "answer", Grade: 3, Reason: "answer", Annotator: "a", Reviewer: "r"}}
