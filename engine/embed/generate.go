@@ -338,6 +338,9 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 	if docs == nil {
 		return GenerateResult{}, fmt.Errorf("embed: generate: no document source for %d nodes", len(nodes))
 	}
+	if err := VerifyRuntime(ctx, emb, "before generation build"); err != nil {
+		return GenerateResult{}, err
+	}
 	// SW-261 review round 2 (MAJOR 5): Ollama reports dim 0 until its
 	// first call. If we fingerprint with dim=0, a real dim change is
 	// neither fingerprinted nor validated (the SQLite check is gated
@@ -413,7 +416,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 			if onProgress != nil {
 				onProgress(GenerationProgress{GenerationID: b.ID(), Total: 0})
 			}
-			if cerr := b.Commit(ctx); cerr != nil {
+			if cerr := commitAttested(ctx, emb, b); cerr != nil {
 				return GenerateResult{}, cerr
 			}
 		}
@@ -617,7 +620,7 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		}
 	}
 	if build != nil {
-		if err := build.Commit(ctx); err != nil {
+		if err := commitAttested(ctx, emb, build); err != nil {
 			return GenerateResult{}, err
 		}
 	}
@@ -647,4 +650,17 @@ func GenerateAndPersistWithProgress(ctx context.Context, reg *Registry, nodes []
 		res.Purged = purged
 	}
 	return res, nil
+}
+
+func commitAttested(ctx context.Context, emb Embedder, build Build) error {
+	if err := VerifyRuntime(ctx, emb, "before generation commit"); err != nil {
+		if build != nil {
+			_ = build.Abort(ctx)
+		}
+		return err
+	}
+	if build == nil {
+		return nil
+	}
+	return build.Commit(ctx)
 }
