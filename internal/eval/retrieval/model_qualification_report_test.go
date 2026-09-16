@@ -24,7 +24,7 @@ func TestWriteQualificationReportContainsCompleteReconstructableEvidence(t *test
 		`"candidate_sha"`, `"dataset_sha256"`, `"raw_bytes"`, `"M3_coderank"`,
 		`"blind_evidence"`, `"blind_decisions"`, `"paired_bootstrap_95"`,
 		`"stratum_deltas"`, `"stage_retention"`, `"reproducibility"`,
-		`"operating_budget"`, `"run_validity"`, `"oracle_blind_ceilings"`,
+		`"operating_evidence"`, `"run_validity"`, `"oracle_blind_ceilings"`,
 		`"capture_provenance"`, `"promote"`,
 	} {
 		if !bytes.Contains(raw, []byte(required)) {
@@ -500,9 +500,8 @@ func TestWriteQualificationReportCanonicalizesEquivalentPermutations(t *testing.
 	reverseQualificationReportSlice(permuted.BuildDigests)
 	reverseQualificationReportSlice(permuted.BlindEvidence)
 	reverseQualificationReportSlice(permuted.BlindDecisions)
-	// OracleEvidence is one sealed collection; its internal order is evidence,
-	// not a report-level free permutation.
-	reverseQualificationReportSlice(permuted.Operating.QueryEmbedLatencies)
+	// OracleEvidence and OperatingEvidence are sealed collections; their
+	// internal order is evidence, not a report-level free permutation.
 	callerBefore, err := json.Marshal(permuted)
 	if err != nil {
 		t.Fatal(err)

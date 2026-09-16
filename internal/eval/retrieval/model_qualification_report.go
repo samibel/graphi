@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const QualificationReportSchemaVersion = 2
+const QualificationReportSchemaVersion = 3
 
 const (
 	QualificationReportCommitSchemaVersion = 1
@@ -58,7 +58,7 @@ type QualificationReport struct {
 	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
 	BlindDecisions  []BlindDecision              `json:"blind_decisions"`
 	OracleEvidence  QualificationOracleEvidence  `json:"oracle_evidence"`
-	Operating       OperatingMeasurements        `json:"operating_budget"`
+	Operating       OperatingEvidence            `json:"operating_evidence"`
 	Derived         QualificationReportDerived   `json:"derived"`
 	Decision        QualificationDecision        `json:"decision"`
 }
@@ -237,10 +237,6 @@ func canonicalQualificationReport(report QualificationReport) (QualificationRepo
 	})
 	// OracleEvidence is one content-addressed collection. Preserve its exact
 	// order; semantic digest validation sorts a copy without resealing source.
-	sort.Slice(out.Operating.QueryEmbedLatencies, func(i, j int) bool {
-		return out.Operating.QueryEmbedLatencies[i] < out.Operating.QueryEmbedLatencies[j]
-	})
-
 	// Each BlindEvidenceSet is already content-addressed. Its nested slice
 	// order is part of the imported source identity and must remain exact;
 	// only the outer collection of independently sealed subjects is set-like.
@@ -462,11 +458,17 @@ func renderQualificationMarkdown(report QualificationReport) string {
 		fmt.Fprintf(&out, "| %s | `%s` | %d | %d | %d | %d | %d |\n", qualificationMarkdownCell(blindSubjectKey(manifest.Arm, manifest.ControlKind)), manifest.SHA256, manifest.Queries, manifest.Responses, manifest.Grades, manifest.Adjudications, manifest.FinalDecisions)
 	}
 
-	p95, _ := operatingP95(report.Operating.QueryEmbedLatencies, report.Preregistration.Thresholds.MinQuerySamples)
-	minimum, maximum := durationBounds(report.Operating.QueryEmbedLatencies)
+	latencies := make([]time.Duration, len(report.Operating.Samples))
+	for i, sample := range report.Operating.Samples {
+		latencies[i] = time.Duration(sample.LatencyNS)
+	}
+	p95, _ := operatingP95(latencies, report.Preregistration.Thresholds.MinQuerySamples)
+	// Report validation has already established the sealed raw evidence; these
+	// are display-only values derived directly from it.
+	minimum, maximum := operatingLatencyBounds(report.Operating.Samples)
 	out.WriteString("\n## Operating measurements\n\n")
-	fmt.Fprintf(&out, "- CPU-only: `%t`\n- Installed artifacts: `%d` bytes\n- Peak additional sidecar RSS: `%d` bytes\n", report.Operating.CPUOnly, report.Operating.ArtifactBytes, report.Operating.PeakAdditionalSidecarRSSBytes)
-	fmt.Fprintf(&out, "- Query embeddings: `%d` samples, min `%s`, p95 `%s`, max `%s`\n- Full reindex: `%s`\n", len(report.Operating.QueryEmbedLatencies), minimum, p95, maximum, report.Operating.FullReindex)
+	fmt.Fprintf(&out, "- CPU-only: `true`\n- Installed artifacts: `%d` bytes\n- Peak sidecar RSS: `%d` bytes\n", report.Operating.EndAttestation.ArtifactBytes, report.Operating.EndAttestation.PeakRSSBytes)
+	fmt.Fprintf(&out, "- Query embeddings: `%d` samples, min `%s`, p95 `%s`, max `%s`\n- Full reindex: `%s`\n", len(report.Operating.Samples), minimum, p95, maximum, time.Duration(report.Operating.Reindex.ElapsedNS))
 
 	out.WriteString("\n## Run validity\n\n| Check | Passed | Observed | Required |\n|---|---|---|---|\n")
 	for _, check := range report.Derived.RunValidity {

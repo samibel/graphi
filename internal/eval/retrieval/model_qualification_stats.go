@@ -33,7 +33,7 @@ type QualificationInput struct {
 	BlindEvidence   []BlindEvidenceSet           `json:"blind_evidence"`
 	Decisions       []BlindDecision              `json:"decisions"`
 	OracleEvidence  QualificationOracleEvidence  `json:"oracle_evidence"`
-	Operating       OperatingMeasurements        `json:"operating_budget"`
+	Operating       OperatingEvidence            `json:"operating_evidence"`
 }
 
 // BlindEvidenceSet is the closed, content-addressed source record from which
@@ -104,14 +104,6 @@ type EvidenceRecord struct {
 	Name      string `json:"name"`
 	Algorithm string `json:"algorithm"`
 	Observed  string `json:"observed"`
-}
-
-type OperatingMeasurements struct {
-	CPUOnly                       bool            `json:"cpu_only"`
-	ArtifactBytes                 int64           `json:"artifact_bytes"`
-	PeakAdditionalSidecarRSSBytes int64           `json:"peak_additional_sidecar_rss_bytes"`
-	QueryEmbedLatencies           []time.Duration `json:"query_embed_latencies"`
-	FullReindex                   time.Duration   `json:"full_reindex"`
 }
 
 type splitMix64 struct{ state uint64 }
@@ -189,6 +181,10 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 	if err != nil {
 		return QualificationDecision{}, err
 	}
+	operating, err := operatingMeasurementsFromEvidence(in.Operating, in.Preregistration, in.Dataset)
+	if err != nil {
+		return QualificationDecision{}, fmt.Errorf("embedded-model qualification decision: operating evidence: %w", err)
+	}
 
 	outcomes := pairedOutcomes(evidence, ArmCodeRank)
 	interval := PairedBootstrap95(outcomes, in.Preregistration.BootstrapSeed, in.Preregistration.BootstrapSamples)
@@ -198,7 +194,7 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 	strongLosses := negativeStrata(evidence, ArmCodeRank, []string{StratumConfigDocs, StratumExactIdentifier, StratumExactPath})
 	spanGain := completeSpanGain(evidence, ArmCodeRank)
 	semanticRankNet := semanticRankGain(evidence, ArmCodeRank)
-	p95, latencyPresent := operatingP95(in.Operating.QueryEmbedLatencies, in.Preregistration.Thresholds.MinQuerySamples)
+	p95 := operating.QueryEmbedP95
 
 	gates := []GateResult{
 		gate("m3_blind_passes", m3Passes >= in.Preregistration.Thresholds.MinPasses, fmt.Sprintf("%d", m3Passes), fmt.Sprintf(">=%d", in.Preregistration.Thresholds.MinPasses)),
@@ -208,11 +204,11 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 		gate("strong_strata_no_loss", strongLosses == 0, fmt.Sprintf("%d negative strata", strongLosses), "0 negative strata"),
 		gate("serialized_span_transfer", spanGain >= 1, fmt.Sprintf("%+d complete-span queries", spanGain), ">=+1 complete-span query"),
 		gate("two_build_byte_equality", allReproducible(evidence.reproducible), reproducibilityObserved(evidence.reproducible), "two byte-identical builds for every arm, including oracle payload/token digests"),
-		gate("artifact_budget", in.Operating.ArtifactBytes > 0 && in.Operating.ArtifactBytes <= in.Preregistration.Thresholds.MaxArtifactBytes, fmt.Sprintf("%d bytes", in.Operating.ArtifactBytes), fmt.Sprintf("1..%d bytes", in.Preregistration.Thresholds.MaxArtifactBytes)),
-		gate("sidecar_rss_budget", in.Operating.PeakAdditionalSidecarRSSBytes > 0 && in.Operating.PeakAdditionalSidecarRSSBytes <= in.Preregistration.Thresholds.MaxSidecarRSSBytes, fmt.Sprintf("%d bytes", in.Operating.PeakAdditionalSidecarRSSBytes), fmt.Sprintf("1..%d bytes", in.Preregistration.Thresholds.MaxSidecarRSSBytes)),
-		gate("query_embed_p95_budget", latencyPresent && p95 <= time.Duration(in.Preregistration.Thresholds.MaxQueryP95Millis)*time.Millisecond, fmt.Sprintf("samples=%d p95=%s", len(in.Operating.QueryEmbedLatencies), p95), fmt.Sprintf(">=%d positive samples and p95<=%dms", in.Preregistration.Thresholds.MinQuerySamples, in.Preregistration.Thresholds.MaxQueryP95Millis)),
-		gate("reindex_budget", in.Operating.FullReindex > 0 && in.Operating.FullReindex <= time.Duration(in.Preregistration.Thresholds.MaxReindexSeconds)*time.Second, in.Operating.FullReindex.String(), fmt.Sprintf("1s..%ds", in.Preregistration.Thresholds.MaxReindexSeconds)),
-		gate("cpu_only", in.Operating.CPUOnly, fmt.Sprintf("%t", in.Operating.CPUOnly), "true"),
+		gate("artifact_budget", operating.ArtifactBytes <= in.Preregistration.Thresholds.MaxArtifactBytes, fmt.Sprintf("%d bytes", operating.ArtifactBytes), fmt.Sprintf("1..%d bytes", in.Preregistration.Thresholds.MaxArtifactBytes)),
+		gate("sidecar_rss_budget", operating.PeakSidecarRSSBytes <= in.Preregistration.Thresholds.MaxSidecarRSSBytes, fmt.Sprintf("%d bytes", operating.PeakSidecarRSSBytes), fmt.Sprintf("1..%d bytes", in.Preregistration.Thresholds.MaxSidecarRSSBytes)),
+		gate("query_embed_p95_budget", p95 <= time.Duration(in.Preregistration.Thresholds.MaxQueryP95Millis)*time.Millisecond, fmt.Sprintf("samples=%d p95=%s", len(operating.QueryEmbedLatencies), p95), fmt.Sprintf(">=%d positive samples and p95<=%dms", in.Preregistration.Thresholds.MinQuerySamples, in.Preregistration.Thresholds.MaxQueryP95Millis)),
+		gate("reindex_budget", operating.FullReindex <= time.Duration(in.Preregistration.Thresholds.MaxReindexSeconds)*time.Second, operating.FullReindex.String(), fmt.Sprintf("1s..%ds", in.Preregistration.Thresholds.MaxReindexSeconds)),
+		gate("cpu_only", true, "true (pinned M3 manifest)", "true"),
 		gate("state_ready", evidence.stateReady, fmt.Sprintf("%t", evidence.stateReady), "every M1-M3 observation ready"),
 		gate("fingerprint_equality", evidence.fingerprintsOK, fmt.Sprintf("%t", evidence.fingerprintsOK), "every M1-M3 model/index fingerprint equals its full preregistered fingerprint"),
 		gate("no_degradation", evidence.noDegradation, fmt.Sprintf("%t", evidence.noDegradation), "every M1-M3 observation has no sidecar degradation"),
@@ -330,14 +326,6 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 	}
 	if err := validateBlindDecisions(in, arms, &evidence); err != nil {
 		return evidence, err
-	}
-	for _, latency := range in.Operating.QueryEmbedLatencies {
-		if latency < 0 {
-			return evidence, fmt.Errorf("embedded-model qualification decision: query embedding latency must not be negative")
-		}
-	}
-	if in.Operating.ArtifactBytes < 0 || in.Operating.PeakAdditionalSidecarRSSBytes < 0 || in.Operating.FullReindex < 0 {
-		return evidence, fmt.Errorf("embedded-model qualification decision: operating measurements must not be negative")
 	}
 	return evidence, nil
 }

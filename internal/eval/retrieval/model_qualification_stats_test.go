@@ -54,15 +54,17 @@ func TestEvaluateQualificationRequiresEveryGate(t *testing.T) {
 				}
 			}
 		}},
-		{"artifact budget", "artifact_budget", func(in *QualificationInput) { in.Operating.ArtifactBytes = 1<<30 + 1 }},
-		{"rss budget", "sidecar_rss_budget", func(in *QualificationInput) { in.Operating.PeakAdditionalSidecarRSSBytes = 2<<30 + 1 }},
+		{"artifact budget", "artifact_budget", func(in *QualificationInput) {
+			in.Operating.StartAttestation.ArtifactBytes = 1<<30 + 1
+			in.Operating.EndAttestation.ArtifactBytes = 1<<30 + 1
+		}},
+		{"rss budget", "sidecar_rss_budget", func(in *QualificationInput) { in.Operating.EndAttestation.PeakRSSBytes = 2<<30 + 1 }},
 		{"latency budget", "query_embed_p95_budget", func(in *QualificationInput) {
-			for i := 94; i < len(in.Operating.QueryEmbedLatencies); i++ {
-				in.Operating.QueryEmbedLatencies[i] = time.Second + 1
+			for i := 0; i < len(in.Operating.Samples); i++ {
+				in.Operating.Samples[i].LatencyNS = int64(time.Second + 1)
 			}
 		}},
-		{"reindex budget", "reindex_budget", func(in *QualificationInput) { in.Operating.FullReindex = 10*time.Minute + 1 }},
-		{"cpu only", "cpu_only", func(in *QualificationInput) { in.Operating.CPUOnly = false }},
+		{"reindex budget", "reindex_budget", func(in *QualificationInput) { in.Operating.Reindex.ElapsedNS = int64(10*time.Minute + 1) }},
 		{"state ready", "state_ready", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).RetrievalState = "stale" }},
 		{"fingerprint equality", "fingerprint_equality", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).IndexFingerprint = "other" }},
 		{"no degradation", "no_degradation", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).Degraded = true }},
@@ -74,6 +76,7 @@ func TestEvaluateQualificationRequiresEveryGate(t *testing.T) {
 		t.Run(mutation.name, func(t *testing.T) {
 			in := cloneQualificationInput(t, valid)
 			mutation.apply(&in)
+			in.Operating = mustSealOperatingEvidence(t, in.Operating)
 			resealQualificationBuildEvidence(t, &in)
 			got, err := EvaluateQualification(in)
 			if err != nil {
@@ -438,28 +441,24 @@ func TestRepresentationCeilingUsesBlindOracleDecisionsNotSpanMetadata(t *testing
 	}
 }
 
-func TestEvaluateQualificationOperatingMeasurementsMustBePresent(t *testing.T) {
+func TestEvaluateQualificationOperatingEvidenceMustBeComplete(t *testing.T) {
 	valid := passingQualificationInput(t)
 	for _, tc := range []struct {
 		name  string
-		gate  string
-		apply func(*OperatingMeasurements)
+		apply func(*OperatingEvidence)
 	}{
-		{"no artifacts", "artifact_budget", func(v *OperatingMeasurements) { v.ArtifactBytes = 0 }},
-		{"no rss", "sidecar_rss_budget", func(v *OperatingMeasurements) { v.PeakAdditionalSidecarRSSBytes = 0 }},
-		{"too few latencies", "query_embed_p95_budget", func(v *OperatingMeasurements) { v.QueryEmbedLatencies = v.QueryEmbedLatencies[:99] }},
-		{"zero latency", "query_embed_p95_budget", func(v *OperatingMeasurements) { v.QueryEmbedLatencies[0] = 0 }},
-		{"no reindex", "reindex_budget", func(v *OperatingMeasurements) { v.FullReindex = 0 }},
+		{"no artifacts", func(v *OperatingEvidence) { v.StartAttestation.ArtifactBytes, v.EndAttestation.ArtifactBytes = 0, 0 }},
+		{"no rss", func(v *OperatingEvidence) { v.StartAttestation.PeakRSSBytes, v.EndAttestation.PeakRSSBytes = 0, 0 }},
+		{"too few latencies", func(v *OperatingEvidence) { v.Samples = v.Samples[:127] }},
+		{"zero latency", func(v *OperatingEvidence) { v.Samples[0].LatencyNS = 0 }},
+		{"no reindex", func(v *OperatingEvidence) { v.Reindex.ElapsedNS = 0 }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := cloneQualificationInput(t, valid)
 			tc.apply(&in.Operating)
-			got, err := EvaluateQualification(in)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if gatePassed(t, got, tc.gate) || got.Promote {
-				t.Fatalf("missing measurement passed: %+v", got)
+			in.Operating = mustSealOperatingEvidence(t, in.Operating)
+			if got, err := EvaluateQualification(in); err == nil || got.Promote {
+				t.Fatalf("incomplete operating evidence accepted: decision=%+v err=%v", got, err)
 			}
 		})
 	}
@@ -565,15 +564,9 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 	}
 	sealQualificationDatasetFixture(dataset)
 	pre.DatasetSHA256 = dataset.SHA256
-	input := QualificationInput{
-		Preregistration: pre, Dataset: dataset,
-		Operating: OperatingMeasurements{CPUOnly: true, ArtifactBytes: 512 << 20,
-			PeakAdditionalSidecarRSSBytes: 1 << 30, QueryEmbedLatencies: make([]time.Duration, 100), FullReindex: 5 * time.Minute},
-	}
+	input := QualificationInput{Preregistration: pre, Dataset: dataset}
+	input.Operating = validOperatingEvidenceFixture(t, input)
 	desired := make(map[string]map[string]bool, 7)
-	for i := range input.Operating.QueryEmbedLatencies {
-		input.Operating.QueryEmbedLatencies[i] = 500 * time.Millisecond
-	}
 	for _, arm := range []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank} {
 		desired[blindSubjectKey(arm, "")] = make(map[string]bool, 64)
 		for q, id := range queryIDs {
