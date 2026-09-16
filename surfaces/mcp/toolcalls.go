@@ -880,9 +880,16 @@ func (s *Server) taskContextCall(ctx context.Context, p callParams) (any, *rpcEr
 		compact, err := taskcompact.Build(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
 		if err != nil {
 			if errors.Is(err, taskcompact.ErrRetrievalNotReady) {
-				return textResult(b), nil
+				if !s.evaluationLexicalCompactControl {
+					return textResult(b), nil
+				}
+				compact, err = taskcompact.BuildEvaluationControl(ctx, p.Arguments.Task, b, secureRoot.FS(), sourceBudget)
+				if err != nil {
+					return nil, &rpcError{Code: -32603, Message: err.Error()}
+				}
+			} else {
+				return nil, &rpcError{Code: -32603, Message: err.Error()}
 			}
-			return nil, &rpcError{Code: -32603, Message: err.Error()}
 		}
 		return compactTaskContextToolResult{
 			Content: []struct {

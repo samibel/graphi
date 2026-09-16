@@ -407,6 +407,10 @@ type CandidateCaptureOptions struct {
 	// an unbound capture produces bytes nobody can attribute to a commit.
 	Binding CandidateBindingOptions
 	Probe   RepoProbe
+	// ObservedBinding is supplied by the qualification driver after it binds
+	// both repositories exactly once, before any staging write. Nil preserves
+	// the existing per-capture observation behavior.
+	ObservedBinding *CandidateBinding
 }
 
 // CaptureCandidateBundles builds the production index over the pinned checkout
@@ -470,12 +474,21 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	if !strings.EqualFold(head, o.RepoSHA) || !strings.EqualFold(head, o.Dataset.Dataset.RepoSHA) {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: checkout is at %s, option pins %s and dataset pins %s", QrelBlindSmokeEvaluationName, head, o.RepoSHA, o.Dataset.Dataset.RepoSHA)
 	}
-	bindingOptions := o.Binding
-	bindingOptions.CheckoutRoot = o.RepoRoot
-	bindingOptions.CheckoutSHA = head
-	binding, err := ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
-	if err != nil {
-		return nil, provenance, err
+	var binding CandidateBinding
+	if o.ObservedBinding != nil {
+		binding = *o.ObservedBinding
+		if !binding.CandidateWorktreeClean || !binding.CheckoutWorktreeClean || !binding.CandidateMatchesFrozen ||
+			!strings.EqualFold(binding.CheckoutSHA, head) || !strings.EqualFold(binding.FrozenCandidateSHA, o.Binding.FrozenCandidateSHA) {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: pre-observed candidate binding does not match this capture")
+		}
+	} else {
+		bindingOptions := o.Binding
+		bindingOptions.CheckoutRoot = o.RepoRoot
+		bindingOptions.CheckoutSHA = head
+		binding, err = ObserveCandidateBinding(ctx, o.Probe, bindingOptions)
+		if err != nil {
+			return nil, provenance, err
+		}
 	}
 
 	workDir := o.WorkDir
@@ -554,6 +567,7 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
 		}
 		digest := buildQualificationDigest(o.QualificationArm, inputs)
+		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil
@@ -619,7 +633,11 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	direct := client.NewDirect(querySvc, idx.search).
 		WithRetrieval(adapter).
 		WithRepoRoot(o.RepoRoot)
-	server := mcp.NewServerWithClient(direct, mcp.WithLabs(), mcp.WithRepository(client.Repository{Root: o.RepoRoot}))
+	serverOptions := []mcp.ServerOption{mcp.WithLabs(), mcp.WithRepository(client.Repository{Root: o.RepoRoot})}
+	if o.QualificationArm == ArmLexical {
+		serverOptions = append(serverOptions, mcp.WithEvaluationLexicalCompactControl())
+	}
+	server := mcp.NewServerWithClient(direct, serverOptions...)
 	defer server.Close()
 
 	request, err := candidateToolCallRequest(q.Text)
@@ -663,13 +681,11 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 			return CapturedCandidateBundle{}, err
 		}
 	}
-
-	var summary string
+	validateState := embed.StateReady.String()
 	if o.QualificationArm == ArmLexical {
-		summary, err = validateQualificationLexicalBundleBytes(q.ID, responseBytes)
-	} else {
-		summary, err = ValidateCompactCandidateBundleBytes(q.ID, responseBytes)
+		validateState = string(engineretrieval.StateLexicalOnly)
 	}
+	summary, err := validateCompactCandidateBundleBytesState(q.ID, responseBytes, validateState)
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
@@ -689,18 +705,9 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	}
 	if strictQualification {
 		var structured taskcompact.Structured
-		var bundleBytes []byte
-		if o.QualificationArm == ArmLexical {
-			bundleBytes = []byte(summary)
-			structured.Sources, err = qualificationLexicalSources(summary)
-			if err != nil {
-				return CapturedCandidateBundle{}, err
-			}
-		} else {
-			structured, err = qualificationStructuredFromPayload(responseBytes)
-			if err != nil {
-				return CapturedCandidateBundle{}, err
-			}
+		structured, err = qualificationStructuredFromPayload(responseBytes)
+		if err != nil {
+			return CapturedCandidateBundle{}, err
 		}
 		expected := embed.Fingerprint{}
 		if o.ExpectedFingerprint != nil {
@@ -714,8 +721,8 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 			Arm: o.QualificationArm, Query: q, SemanticState: idx.search.SemanticState().State,
 			ExpectedFingerprint: expected, IndexFingerprint: idx.fingerprint,
 			SearchFingerprint: idx.search.SemanticState().Requested, ModelFingerprint: modelFingerprint,
-			Retrieval: qualificationResult, SemanticHits: semanticHits, Payload: payload, Structured: structured, BundleBytes: bundleBytes,
-			AdmissionTruncations: idx.admissionTruncations, ZeroVectors: qualificationZeroVectors(idx.rows),
+			Retrieval: qualificationResult, SemanticHits: semanticHits, Payload: payload, Structured: structured,
+			QueryVector: queryVector, UnknownTokens: QualificationIntMetric{Reason: "embedder protocol does not expose unknown-token count"},
 		})
 		if err != nil {
 			return CapturedCandidateBundle{}, err
@@ -863,6 +870,10 @@ type candidateResponseEnvelope struct {
 // to recount preserved historical inputs whose task_context contract was JSON
 // nested in content[0].text; a new capture must use structuredContent.
 func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, error) {
+	return validateCompactCandidateBundleBytesState(queryID, raw, embed.StateReady.String())
+}
+
+func validateCompactCandidateBundleBytesState(queryID string, raw []byte, retrievalState string) (string, error) {
 	if len(raw) == 0 || !bytes.HasPrefix(raw, []byte(candidateJSONRPCPrefix)) || raw[len(raw)-1] != '\n' || bytes.Count(raw, []byte{'\n'}) != 1 {
 		return "", fmt.Errorf("retrieval %s capture: query %s is not one exact line-delimited MCP response", QrelBlindSmokeEvaluationName, queryID)
 	}
@@ -890,7 +901,10 @@ func ValidateCompactCandidateBundleBytes(queryID string, raw []byte) (string, er
 	}
 	p := structured.Provenance
 	modelDigest := strings.TrimPrefix(p.Model, "sha256:")
-	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != "ready" || p.Weights == "" || !strings.HasPrefix(p.Model, "sha256:") || !isLowerHexDigest(modelDigest, 16) || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
+	validModel := p.Model == "" && retrievalState == string(engineretrieval.StateLexicalOnly)
+	validModel = validModel || (strings.HasPrefix(p.Model, "sha256:") && isLowerHexDigest(modelDigest, 16))
+	validWeights := p.Weights != "" || retrievalState == string(engineretrieval.StateLexicalOnly)
+	if !isLowerHexDigest(p.InputSHA256, 64) || p.Method != taskctx.MethodVersionV2 || !strings.HasPrefix(p.Retrieval, "retrieval/") || p.RetrievalState != retrievalState || !validWeights || !validModel || !strings.HasPrefix(p.SourceSelection, "context-definitions/") || p.SourceOrder != "ranked_coherent_regions" || p.SourceBudget != taskcompact.DefaultSourceBudget || p.BudgetUnit != TokenizerID {
 		return "", fmt.Errorf("retrieval %s capture: query %s compact provenance is incomplete or not ready", QrelBlindSmokeEvaluationName, queryID)
 	}
 	seen := make(map[string]bool)

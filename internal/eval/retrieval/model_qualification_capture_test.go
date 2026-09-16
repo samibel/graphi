@@ -3,6 +3,7 @@ package retrieval
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -198,6 +199,140 @@ func TestStableQualificationManifestRejectsChangeDuringConstruction(t *testing.T
 	}
 }
 
+func TestQualificationPotionArmsConstructFromRawPinnedModelRevision(t *testing.T) {
+	t.Setenv("GRAPHI_STATIC_MODEL_DIR", filepath.Join(t.TempDir(), "not-installed"))
+	pre := qualificationPreregistrationFixture()
+	for arm, wantMaxTokens := range map[QualificationArm]int{ArmPotion512: 512, ArmPotion8192: 8192} {
+		t.Run(string(arm), func(t *testing.T) {
+			emb, _, _, err := qualificationArmEmbedder(t.Context(), arm, pre, "")
+			if err != nil {
+				t.Fatalf("construct %s: %v", arm, err)
+			}
+			if emb == nil {
+				t.Fatal("constructor returned nil embedder")
+			}
+			profile, ok := emb.(embed.AdmissionProfile)
+			if !ok || profile.Profile().MaxTokens != wantMaxTokens {
+				t.Fatalf("admission profile = %+v, want max_tokens=%d", profile, wantMaxTokens)
+			}
+		})
+	}
+}
+
+func TestQualificationDiagnosticsDistinguishUnavailableFromObservedZero(t *testing.T) {
+	f := validQualificationCaptureFixture(t)
+	facts := qualificationCaptureFacts{
+		Arm: f.arm, Query: f.query, SemanticState: f.semanticState,
+		ExpectedFingerprint: f.expectedFingerprint, IndexFingerprint: f.indexFingerprint,
+		SearchFingerprint: f.searchFingerprint, ModelFingerprint: f.modelFingerprint,
+		Retrieval: f.retrieval, SemanticHits: f.semantic, Payload: f.payload, Structured: f.structured,
+		QueryVector: []float32{0, 0, 0}, UnknownTokens: QualificationIntMetric{Available: false},
+	}
+	got, err := captureQualificationObservation(facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.QueryVectorAllZero.Available || got.QueryVectorAllZero.Value == nil || !*got.QueryVectorAllZero.Value {
+		t.Fatalf("all-zero query vector was not measured: %+v", got.QueryVectorAllZero)
+	}
+	if got.UnknownTokens.Available {
+		t.Fatalf("unknown-token count was fabricated as observed: %+v", got.UnknownTokens)
+	}
+	if err := validateQualificationRunDiagnostics(ArmCodeRank, []QualificationObservation{got}); err == nil {
+		t.Fatal("run accepted an unavailable required query diagnostic")
+	}
+	zero := 0
+	got.UnknownTokens = QualificationIntMetric{Available: true, Value: &zero}
+	if err := validateQualificationRunDiagnostics(ArmCodeRank, []QualificationObservation{got}); err != nil {
+		t.Fatalf("observed zero must be valid: %v", err)
+	}
+}
+
+func TestQualificationDiagnosticsSerializeMeasuredZeroAndFalse(t *testing.T) {
+	zero := 0
+	no := false
+	observation := QualificationObservation{
+		UnknownTokens:      QualificationIntMetric{Available: true, Value: &zero},
+		QueryVectorAllZero: QualificationBoolMetric{Available: true, Value: &no},
+	}
+	raw, err := json.Marshal(observation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{
+		`"unknown_tokens":{"available":true,"value":0}`,
+		`"query_vector_all_zero":{"available":true,"value":false}`,
+	} {
+		if !strings.Contains(string(raw), required) {
+			t.Fatalf("measured zero/false omitted from qualification JSON: %s", raw)
+		}
+	}
+	unavailable, err := json.Marshal(struct {
+		Unknown QualificationIntMetric  `json:"unknown"`
+		AllZero QualificationBoolMetric `json:"all_zero"`
+	}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(unavailable), `"value"`) {
+		t.Fatalf("unavailable diagnostic encoded a zero/false value: %s", unavailable)
+	}
+}
+
+func TestQualificationBuildDiagnosticsAreNotRepeatedPerQuery(t *testing.T) {
+	d := qualificationBuildDiagnostics([]embed.Row{{Vector: []float32{0, 0}}, {Vector: []float32{1, 0}}}, 3)
+	if d.AdmissionTruncations != 3 || d.DocumentZeroVectors != 1 {
+		t.Fatalf("build diagnostics = %+v", d)
+	}
+	f := validQualificationCaptureFixture(t)
+	got, err := f.capture()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"admission_truncations", "zero_vectors"} {
+		if strings.Contains(string(raw), forbidden) {
+			t.Fatalf("per-query observation repeats build diagnostic %q: %s", forbidden, raw)
+		}
+	}
+}
+
+func TestQualificationAtomicPublishLeavesNoPartialEvidenceAndCanRetry(t *testing.T) {
+	parent := t.TempDir()
+	out := filepath.Join(parent, "qualification")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	wantErr := errors.New("late reproducibility failure")
+	err := publishQualificationAtomically(out, func(stage string) error {
+		if err := os.MkdirAll(filepath.Join(stage, "build-2", "M3_coderank"), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(stage, "build-2", "M3_coderank", "capture.json"), []byte("partial"), 0o644); err != nil {
+			return err
+		}
+		return wantErr
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("late failure = %v", err)
+	}
+	entries, err := os.ReadDir(out)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("failed capture published evidence: entries=%v err=%v", entries, err)
+	}
+	if err := publishQualificationAtomically(out, func(stage string) error {
+		return os.WriteFile(filepath.Join(stage, "complete.json"), []byte("complete"), 0o644)
+	}); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if got, err := os.ReadFile(filepath.Join(out, "complete.json")); err != nil || string(got) != "complete" {
+		t.Fatalf("published retry = %q, %v", got, err)
+	}
+}
+
 func TestQualificationCapturePreregistrationRejectsTrailingJSON(t *testing.T) {
 	raw, err := json.Marshal(qualificationPreregistrationFixture())
 	if err != nil {
@@ -253,6 +388,7 @@ func TestQualificationBuildComparisonFailsAnyArtifactDifference(t *testing.T) {
 		func(v *QualificationBuildDigest) { v.PersistedRowsSHA256 = strings.Repeat("1", 64) },
 		func(v *QualificationBuildDigest) { v.BundlesSHA256 = strings.Repeat("2", 64) },
 		func(v *QualificationBuildDigest) { v.TokenCountsSHA256 = strings.Repeat("3", 64) },
+		func(v *QualificationBuildDigest) { v.Diagnostics.AdmissionTruncations++ },
 	} {
 		second := first
 		mutate(&second)

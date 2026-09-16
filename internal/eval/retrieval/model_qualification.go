@@ -150,55 +150,77 @@ type StageHit struct {
 	BestRank int  `json:"best_rank"`
 }
 
+// QualificationIntMetric distinguishes a measured zero from a metric the
+// active embedder protocol cannot expose. Qualification gates must inspect
+// Available rather than interpreting the Go zero value as evidence.
+type QualificationIntMetric struct {
+	Available bool   `json:"available"`
+	Value     *int   `json:"value,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+}
+
+// QualificationBoolMetric is the equivalent representation for a measured
+// predicate such as an all-zero query vector.
+type QualificationBoolMetric struct {
+	Available bool  `json:"available"`
+	Value     *bool `json:"value,omitempty"`
+}
+
+// QualificationBuildDiagnostics contains index-build aggregates. These are
+// deliberately not copied onto each query observation.
+type QualificationBuildDiagnostics struct {
+	AdmissionTruncations int `json:"admission_truncations"`
+	DocumentZeroVectors  int `json:"document_zero_vectors"`
+}
+
 // QualificationObservation is one immutable arm/query observation. Candidate
 // and bundle production complete before the grade-3 spans are consulted to
 // populate the three evaluation-only stage fields.
 type QualificationObservation struct {
-	Arm                  QualificationArm `json:"arm"`
-	QueryID              string           `json:"query_id"`
-	Stratum              string           `json:"stratum"`
-	SemanticTop50        StageHit         `json:"semantic_top_50"`
-	PostFusion           StageHit         `json:"post_fusion"`
-	CompleteGrade3Span   bool             `json:"complete_grade_3_span"`
-	BundleSHA256         string           `json:"bundle_sha256"`
-	PayloadSHA256        string           `json:"payload_sha256"`
-	BundleTokens         int              `json:"bundle_tokens"`
-	AdmissionTruncations int              `json:"admission_truncations"`
-	UnknownTokens        int              `json:"unknown_tokens"`
-	ZeroVectors          int              `json:"zero_vectors"`
-	RetrievalState       string           `json:"retrieval_state"`
-	ModelFingerprint     string           `json:"model_fingerprint"`
-	IndexFingerprint     string           `json:"index_fingerprint"`
-	Degraded             bool             `json:"degraded"`
+	Arm                QualificationArm        `json:"arm"`
+	QueryID            string                  `json:"query_id"`
+	Stratum            string                  `json:"stratum"`
+	SemanticTop50      StageHit                `json:"semantic_top_50"`
+	PostFusion         StageHit                `json:"post_fusion"`
+	CompleteGrade3Span bool                    `json:"complete_grade_3_span"`
+	BundleSHA256       string                  `json:"bundle_sha256"`
+	PayloadSHA256      string                  `json:"payload_sha256"`
+	BundleTokens       int                     `json:"bundle_tokens"`
+	UnknownTokens      QualificationIntMetric  `json:"unknown_tokens"`
+	QueryVectorAllZero QualificationBoolMetric `json:"query_vector_all_zero"`
+	RetrievalState     string                  `json:"retrieval_state"`
+	ModelFingerprint   string                  `json:"model_fingerprint"`
+	IndexFingerprint   string                  `json:"index_fingerprint"`
+	Degraded           bool                    `json:"degraded"`
 }
 
 // QualificationBuildDigest separates the independently reproducible byte
 // classes. Staging generation IDs are intentionally absent from all four
 // inputs; no other persisted field is excluded.
 type QualificationBuildDigest struct {
-	Arm                 QualificationArm `json:"arm"`
-	VectorBytesSHA256   string           `json:"vector_bytes_sha256"`
-	PersistedRowsSHA256 string           `json:"persisted_rows_sha256"`
-	BundlesSHA256       string           `json:"bundles_sha256"`
-	TokenCountsSHA256   string           `json:"token_counts_sha256"`
+	Arm                 QualificationArm              `json:"arm"`
+	VectorBytesSHA256   string                        `json:"vector_bytes_sha256"`
+	PersistedRowsSHA256 string                        `json:"persisted_rows_sha256"`
+	BundlesSHA256       string                        `json:"bundles_sha256"`
+	TokenCountsSHA256   string                        `json:"token_counts_sha256"`
+	Diagnostics         QualificationBuildDiagnostics `json:"diagnostics"`
 }
 
 type qualificationCaptureFacts struct {
-	Arm                  QualificationArm
-	Query                Query
-	SemanticState        embed.State
-	ExpectedFingerprint  embed.Fingerprint
-	IndexFingerprint     embed.Fingerprint
-	SearchFingerprint    embed.Fingerprint
-	ModelFingerprint     string
-	Retrieval            engineretrieval.Result
-	SemanticHits         []search.SemanticHit
-	Payload              PreservedPayload
-	Structured           taskcompact.Structured
-	BundleBytes          []byte
-	AdmissionTruncations int
-	UnknownTokens        int
-	ZeroVectors          int
+	Arm                 QualificationArm
+	Query               Query
+	SemanticState       embed.State
+	ExpectedFingerprint embed.Fingerprint
+	IndexFingerprint    embed.Fingerprint
+	SearchFingerprint   embed.Fingerprint
+	ModelFingerprint    string
+	Retrieval           engineretrieval.Result
+	SemanticHits        []search.SemanticHit
+	Payload             PreservedPayload
+	Structured          taskcompact.Structured
+	BundleBytes         []byte
+	QueryVector         []float32
+	UnknownTokens       QualificationIntMetric
 }
 
 // captureQualificationObservation validates every semantic-space identity
@@ -271,10 +293,46 @@ func captureQualificationObservation(f qualificationCaptureFacts) (Qualification
 		PostFusion:         qualificationRetrievalStage(f.Query, f.Retrieval.Rows),
 		CompleteGrade3Span: qualificationCompleteGrade3Span(f.Query, f.Structured.Sources),
 		BundleSHA256:       SHA256Hex(bundleRaw), PayloadSHA256: f.Payload.SHA256, BundleTokens: bundleTokens,
-		AdmissionTruncations: f.AdmissionTruncations, UnknownTokens: f.UnknownTokens, ZeroVectors: f.ZeroVectors,
+		UnknownTokens: f.UnknownTokens, QueryVectorAllZero: qualificationAllZeroMetric(f.QueryVector),
 		RetrievalState: string(f.Retrieval.Degradation), ModelFingerprint: f.Retrieval.Summary.ModelFingerprint,
 		IndexFingerprint: f.Retrieval.Summary.IndexFingerprint, Degraded: false,
 	}, nil
+}
+
+func qualificationAllZeroMetric(vector []float32) QualificationBoolMetric {
+	if len(vector) == 0 {
+		return QualificationBoolMetric{}
+	}
+	for _, value := range vector {
+		if value != 0 {
+			measured := false
+			return QualificationBoolMetric{Available: true, Value: &measured}
+		}
+	}
+	measured := true
+	return QualificationBoolMetric{Available: true, Value: &measured}
+}
+
+func qualificationBuildDiagnostics(rows []embed.Row, admissionTruncations int) QualificationBuildDiagnostics {
+	return QualificationBuildDiagnostics{
+		AdmissionTruncations: admissionTruncations,
+		DocumentZeroVectors:  qualificationZeroVectors(rows),
+	}
+}
+
+func validateQualificationRunDiagnostics(arm QualificationArm, observations []QualificationObservation) error {
+	if arm == ArmLexical {
+		return nil
+	}
+	for _, observation := range observations {
+		if !observation.QueryVectorAllZero.Available || observation.QueryVectorAllZero.Value == nil {
+			return fmt.Errorf("embedded-model qualification capture: query %s all-zero vector diagnostic is unavailable", observation.QueryID)
+		}
+		if !observation.UnknownTokens.Available || observation.UnknownTokens.Value == nil {
+			return fmt.Errorf("embedded-model qualification capture: query %s unknown-token diagnostic is unavailable", observation.QueryID)
+		}
+	}
+	return nil
 }
 
 func qualificationSemanticStage(q Query, hits []search.SemanticHit) StageHit {
@@ -439,6 +497,9 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)
 		}
 	}
+	if first.Diagnostics != second.Diagnostics {
+		return fmt.Errorf("embedded-model qualification reproducibility: arm %s build diagnostics differ across independent builds", first.Arm)
+	}
 	return nil
 }
 
@@ -525,7 +586,25 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification capture: load pinned payload tokenizer: %w", err)
 	}
+	checkoutSHA, err := CheckoutHEAD(ctx, env.Repo)
+	if err != nil {
+		return err
+	}
+	bindingOptions := CandidateBindingOptions{
+		CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
+		ExcludePath:  "docs/eval/retrieval/runs/embedded-model-qualification",
+		CheckoutRoot: env.Repo, CheckoutSHA: checkoutSHA,
+	}
+	binding, err := ObserveCandidateBinding(ctx, GitRepoProbe(), bindingOptions)
+	if err != nil {
+		return err
+	}
+	return publishQualificationAtomically(env.Out, func(stage string) error {
+		return captureQualificationBuilds(ctx, stage, env, loaded, pre, counter, bindingOptions, binding)
+	})
+}
 
+func captureQualificationBuilds(ctx context.Context, out string, env qualificationEnvironment, loaded *Loaded, pre QualificationPreregistration, counter PayloadCounter, bindingOptions CandidateBindingOptions, binding CandidateBinding) error {
 	arms := []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank}
 	first := make(map[QualificationArm]QualificationBuildDigest, len(arms))
 	for build := 1; build <= 2; build++ {
@@ -534,7 +613,7 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 			if err != nil {
 				return err
 			}
-			armDir := filepath.Join(env.Out, fmt.Sprintf("build-%d", build), string(arm))
+			armDir := filepath.Join(out, fmt.Sprintf("build-%d", build), string(arm))
 			workDir := filepath.Join(armDir, "work")
 			if err := os.MkdirAll(workDir, 0o755); err != nil {
 				return fmt.Errorf("embedded-model qualification capture: create arm directory: %w", err)
@@ -544,11 +623,7 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 				Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
 				RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
 				QualificationArm: arm, QualificationPreregistration: &pre,
-				Binding: CandidateBindingOptions{
-					CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
-					ExcludePath: "docs/eval/retrieval/runs/embedded-model-qualification",
-				},
-				Probe: GitRepoProbe(),
+				Binding: bindingOptions, ObservedBinding: &binding,
 			}
 			if arm == ArmCodeRank {
 				opts.ManifestBytes = armManifest
@@ -566,6 +641,9 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 					return fmt.Errorf("embedded-model qualification capture: build %d arm %s query %s has no observation", build, arm, bundle.QueryID)
 				}
 				observations = append(observations, *bundle.Qualification)
+			}
+			if err := validateQualificationRunDiagnostics(arm, observations); err != nil {
+				return err
 			}
 			artifact := struct {
 				Build        int                        `json:"build"`
@@ -589,6 +667,33 @@ func runEmbeddedModelQualificationCapture(ctx context.Context, env qualification
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+func publishQualificationAtomically(out string, capture func(stage string) error) (err error) {
+	entries, err := os.ReadDir(out)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: read output directory: %w", err)
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", out)
+	}
+	parent, base := filepath.Dir(out), filepath.Base(out)
+	stage, err := os.MkdirTemp(parent, "."+base+".staging-")
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: create staging directory: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(stage) }()
+	if err := capture(stage); err != nil {
+		return err
+	}
+	if err := os.Remove(out); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: prepare atomic publish: %w", err)
+	}
+	if err := os.Rename(stage, out); err != nil {
+		_ = os.Mkdir(out, 0o755)
+		return fmt.Errorf("embedded-model qualification capture: atomic publish: %w", err)
 	}
 	return nil
 }
@@ -628,9 +733,9 @@ func qualificationArmEmbedder(ctx context.Context, arm QualificationArm, pre Qua
 	var loadedManifest []byte
 	switch arm {
 	case ArmPotion512:
-		emb, err = static.New(static.PinnedSelector)
+		emb, err = static.New(static.PinnedModel + "@" + static.PinnedRevision)
 	case ArmPotion8192:
-		emb, err = static.NewForEvaluation(static.PinnedSelector, 8192)
+		emb, err = static.NewForEvaluation(static.PinnedModel+"@"+static.PinnedRevision, 8192)
 	case ArmCodeRank:
 		loadedManifest, err = readStableQualificationManifest(manifestPath, pin.ManifestSHA256, func() error {
 			var constructErr error
