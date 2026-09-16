@@ -100,10 +100,14 @@ restart creates a new random process epoch and requires a new adapter instance,
 even when the artifact identity is unchanged. `verify` checks the manifest,
 artifact hashes, and installed runtime versions without importing
 SentenceTransformers or loading weights. It emits the durable identity on success
-and exits nonzero on failure. `serve` repeats verification before importing the
+and exits nonzero on failure. `serve` verifies immediately before importing the
 runtime, sets Hugging Face/Transformers offline flags, and uses
 `SentenceTransformer(local_absolute_path, device="cpu", trust_remote_code=True,
-local_files_only=True)`. Relative paths, model hub IDs, URLs, symlink artifact
+local_files_only=True)`. After model construction it repeats the complete model
+tree, tokenizer, local-code, and runtime verification before measuring artifact
+bytes or creating the encoder and sidecar. Startup fails closed when either
+verification differs from the manifest pins. Relative paths, model hub IDs,
+URLs, symlink artifact
 roots, symlinks inside the tree, and special files are rejected. OS ancestor
 aliases such as macOS `/var` are resolved to a canonical local path.
 
@@ -128,9 +132,10 @@ path refers to the directory containing its `modules.json`.
 `local_files_only=True` disable supported library downloads; they are not an
 operating-system sandbox for Python code. Operators must review the model code,
 configuration, and installed runtime before execution and keep the tree immutable
-while the process runs. The contract protects against accidental drift rather than a lying
-process. Hashes and self-attestation do not establish trust in an untrusted
-process or defend against concurrent local artifact replacement.
+while the process runs. The pre/post-load checks detect pinned artifact or runtime
+drift that persists across model construction. Hashes and self-attestation do not
+establish trust in a lying process or protect changes made after the post-load
+check; the operator-managed tree must remain immutable for the process lifetime.
 
 The server binds only literal `127.0.0.1` or `::1` (stricter than the adapter's
 allowed endpoint origins), caps bodies at 1 MiB and embedding batches at 32 texts,

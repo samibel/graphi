@@ -337,7 +337,7 @@ class VerificationTest(unittest.TestCase):
             manifest = valid_manifest()
             manifest["model"]["sha256"] = sidecar.tree_digest(path)
             manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(path)
-            with mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch.dict(
+            with mock.patch.object(sidecar, "verify_runtime_versions") as verify_runtime, mock.patch.dict(
                 "sys.modules", {
                     "sentence_transformers": types.SimpleNamespace(SentenceTransformer=constructor),
                     "torch": types.SimpleNamespace(get_num_threads=lambda: 3),
@@ -345,7 +345,36 @@ class VerificationTest(unittest.TestCase):
             ), mock.patch.dict(os.environ, {}, clear=False):
                 encoder = sidecar.load_encoder(manifest, path)
             self.assertEqual(loaded, [(str(path.resolve()), {"device": "cpu", "trust_remote_code": True, "local_files_only": True})])
+            self.assertEqual(verify_runtime.call_count, 2)
             self.assertEqual((encoder.artifact_bytes, encoder.runtime_threads), (2, 3))
+
+    def test_model_load_rejects_artifact_drift_during_constructor(self):
+        class Model:
+            def float(self):
+                return self
+
+            def eval(self):
+                return self
+
+        with tempfile.TemporaryDirectory() as root:
+            path = pathlib.Path(root)
+            tokenizer = path / "tokenizer.json"
+            tokenizer.write_text("{}")
+            manifest = valid_manifest()
+            manifest["model"]["sha256"] = sidecar.tree_digest(path)
+            manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(path)
+
+            def constructor(*_args, **_kwargs):
+                tokenizer.write_text('{"drift":true}')
+                return Model()
+
+            with mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch.dict(
+                "sys.modules", {
+                    "sentence_transformers": types.SimpleNamespace(SentenceTransformer=constructor),
+                    "torch": types.SimpleNamespace(get_num_threads=lambda: 3),
+                }
+            ), self.assertRaisesRegex(ValueError, "model tree digest mismatch"):
+                sidecar.load_encoder(manifest, path)
 
     def test_nonlocal_artifacts_are_rejected(self):
         for path in ["nomic-ai/CodeRankEmbed", "https://example.com/model", "/does-not-exist"]:

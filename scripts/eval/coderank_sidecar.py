@@ -339,7 +339,6 @@ class LocalEncoder:
 
 def load_encoder(manifest, model_dir):
     root = verify_artifacts(manifest, model_dir)
-    artifact_bytes = sum(path.stat().st_size for path in artifact_files(root))
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_DATASETS_OFFLINE"] = "1"
@@ -349,6 +348,9 @@ def load_encoder(manifest, model_dir):
     from sentence_transformers import SentenceTransformer
     import torch
     model = SentenceTransformer(str(root), device="cpu", trust_remote_code=True, local_files_only=True)
+    if verify_artifacts(manifest, root) != root:
+        raise ValueError("model artifact root changed during load")
+    artifact_bytes = sum(path.stat().st_size for path in artifact_files(root))
     return LocalEncoder(model, artifact_bytes, torch.get_num_threads())
 
 
