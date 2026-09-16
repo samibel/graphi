@@ -13,6 +13,10 @@ func qualificationFileIdentity(file *os.File) (string, error) {
 	if err := syscall.GetFileInformationByHandle(syscall.Handle(file.Fd()), &info); err != nil {
 		return "", err
 	}
-	identity := fmt.Sprintf("volume=%d;index-high=%d;index-low=%d", info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow)
-	return SHA256Hex([]byte(identity)), nil
+	return qualificationWindowsIdentity(info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow), nil
+}
+
+func qualificationWindowsIdentity(volume, indexHigh, indexLow uint32) string {
+	identity := fmt.Sprintf("volume=%d;index-high=%d;index-low=%d", volume, indexHigh, indexLow)
+	return SHA256Hex([]byte(identity))
 }

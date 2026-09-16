@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -300,6 +301,23 @@ func TestQualificationPublisherStaysOnOpenedRootAfterPathSwap(t *testing.T) {
 	assertNoQualificationPublication(t, output)
 }
 
+func TestQualificationDirectoryDurabilityHandleSyncs(t *testing.T) {
+	dir := qualificationReportTestDir(t)
+	handle, err := openQualificationDirectoryDurability(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isLowerHexDigest(handle.identity(), 64) {
+		t.Fatalf("durability identity = %q, want 64 lowercase hex characters", handle.identity())
+	}
+	if err := handle.sync(); err != nil {
+		t.Fatalf("sync retained directory handle: %v", err)
+	}
+	if err := handle.close(); err != nil {
+		t.Fatalf("close retained directory handle: %v", err)
+	}
+}
+
 func TestQualificationRollbackPreservesReplacedForeignMemberAndReportsCleanup(t *testing.T) {
 	dir := qualificationReportTestDir(t)
 	foreign := []byte("foreign replacement\n")
@@ -402,6 +420,76 @@ func TestQualificationRecoveryPreservesForeignReplacementAndRejectsTransactionRe
 	}
 	if got := mustReadQualificationReportFile(t, filepath.Join(completeReplayDir, qualificationReportTransactionName)); !bytes.Equal(got, transaction) {
 		t.Fatal("complete replay marker was changed or deleted")
+	}
+}
+
+func TestQualificationRecoveryRejectsCrossDirectoryHardlinkReplayAndRootIdentityTamper(t *testing.T) {
+	base := qualificationReportTestDir(t)
+	sourceDir := filepath.Join(base, "source")
+	replayDir := filepath.Join(base, "replay")
+	if err := os.Mkdir(sourceDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(replayDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runQualificationCrashHelper(t, sourceDir)
+
+	transaction := mustReadQualificationReportFile(t, filepath.Join(sourceDir, qualificationReportTransactionName))
+	var replayed qualificationReportTransaction
+	if err := json.Unmarshal(transaction, &replayed); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{replayed.JSON.StagedName, replayed.Markdown.StagedName, replayed.Commit.StagedName, replayed.TransactionStagedName} {
+		if err := os.Link(filepath.Join(sourceDir, name), filepath.Join(replayDir, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Link(filepath.Join(sourceDir, replayed.TransactionStagedName), filepath.Join(replayDir, qualificationReportTransactionName)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Link(filepath.Join(sourceDir, replayed.JSON.StagedName), filepath.Join(replayDir, replayed.JSON.FinalName)); err != nil {
+		t.Fatal(err)
+	}
+	before := qualificationDirectorySnapshot(t, replayDir)
+	err := WriteQualificationReport(replayDir, completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "root identity") {
+		t.Fatalf("cross-directory hardlink replay error = %v, want root identity refusal", err)
+	}
+	if after := qualificationDirectorySnapshot(t, replayDir); !reflect.DeepEqual(after, before) {
+		t.Fatalf("cross-directory replay was mutated:\nbefore=%v\nafter=%v", before, after)
+	}
+
+	tamperDir := filepath.Join(base, "tamper")
+	if err := os.Mkdir(tamperDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runQualificationCrashHelper(t, tamperDir)
+	tamperedRaw := mustReadQualificationReportFile(t, filepath.Join(tamperDir, qualificationReportTransactionName))
+	var tampered qualificationReportTransaction
+	if err := json.Unmarshal(tamperedRaw, &tampered); err != nil {
+		t.Fatal(err)
+	}
+	tampered.RootIdentity = strings.Repeat("a", 64)
+	tampered, err = sealQualificationReportTransaction(tampered)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tamperedRaw, err = json.MarshalIndent(tampered, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tamperedRaw = append(tamperedRaw, '\n')
+	if err := os.WriteFile(filepath.Join(tamperDir, tampered.TransactionStagedName), tamperedRaw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before = qualificationDirectorySnapshot(t, tamperDir)
+	err = WriteQualificationReport(tamperDir, completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "root identity") {
+		t.Fatalf("resealed root identity tamper error = %v, want refusal", err)
+	}
+	if after := qualificationDirectorySnapshot(t, tamperDir); !reflect.DeepEqual(after, before) {
+		t.Fatalf("root identity tamper was mutated:\nbefore=%v\nafter=%v", before, after)
 	}
 }
 
@@ -559,6 +647,30 @@ func runQualificationCrashHelper(t *testing.T, dir string) {
 	} else if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
 		t.Fatalf("crash helper = %v, output=%s", err, output)
 	}
+}
+
+func qualificationDirectorySnapshot(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := make(map[string]string, len(entries))
+	for _, entry := range entries {
+		path := filepath.Join(dir, entry.Name())
+		raw := mustReadQualificationReportFile(t, path)
+		file, err := os.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		identity, identityErr := qualificationFileIdentity(file)
+		closeErr := file.Close()
+		if identityErr != nil || closeErr != nil {
+			t.Fatalf("snapshot %s: identity=%v close=%v", entry.Name(), identityErr, closeErr)
+		}
+		snapshot[entry.Name()] = identity + ":" + SHA256Hex(raw)
+	}
+	return snapshot
 }
 
 func cloneQualificationReportFixture(t *testing.T, report QualificationReport) QualificationReport {

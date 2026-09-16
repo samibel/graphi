@@ -531,7 +531,7 @@ func durationBounds(values []time.Duration) (time.Duration, time.Duration) {
 }
 
 const (
-	qualificationTransactionSchemaVersion    = 1
+	qualificationTransactionSchemaVersion    = 2
 	qualificationPublishBeforeRecoveryDelete = "before_recovery_delete"
 	qualificationPublishBeforeRollback       = "before_rollback"
 )
@@ -546,6 +546,7 @@ type qualificationOwnedMember struct {
 type qualificationReportTransaction struct {
 	SchemaVersion         int                      `json:"schema_version"`
 	ID                    string                   `json:"id"`
+	RootIdentity          string                   `json:"root_identity"`
 	TransactionStagedName string                   `json:"transaction_staged_name"`
 	JSON                  qualificationOwnedMember `json:"json"`
 	Markdown              qualificationOwnedMember `json:"markdown"`
@@ -554,7 +555,15 @@ type qualificationReportTransaction struct {
 }
 
 type qualificationOutputDirectory struct {
-	root *os.Root
+	root         *os.Root
+	durability   qualificationDirectoryDurability
+	rootIdentity string
+}
+
+type qualificationDirectoryDurability interface {
+	identity() string
+	sync() error
+	close() error
 }
 
 type qualificationStagedFile struct {
@@ -582,32 +591,48 @@ func openQualificationOutputDirectory(path string) (*qualificationOutputDirector
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, fmt.Errorf("embedded-model qualification report: output path is not a real directory")
 	}
+	durability, err := openQualificationDirectoryDurability(abs)
+	if err != nil {
+		return nil, fmt.Errorf("embedded-model qualification report: open durable output directory before mutation: %w", err)
+	}
 	root, err := os.OpenRoot(abs)
 	if err != nil {
-		return nil, fmt.Errorf("embedded-model qualification report: open output root: %w", err)
+		return nil, errors.Join(fmt.Errorf("embedded-model qualification report: open output root: %w", err), durability.close())
 	}
 	opened, err := root.Stat(".")
 	if err != nil || !os.SameFile(info, opened) {
-		_ = root.Close()
-		return nil, fmt.Errorf("embedded-model qualification report: output directory changed while opening")
+		return nil, errors.Join(fmt.Errorf("embedded-model qualification report: output directory changed while opening"), root.Close(), durability.close())
 	}
-	return &qualificationOutputDirectory{root: root}, nil
+	// This one pre-mutation handle only proves that os.Root and the retained
+	// durability handle name the same directory. It is never used for syncing.
+	rootFile, err := root.Open(".")
+	if err != nil {
+		return nil, errors.Join(fmt.Errorf("embedded-model qualification report: open root identity handle: %w", err), root.Close(), durability.close())
+	}
+	rootFileInfo, statErr := rootFile.Stat()
+	rootIdentity, identityErr := qualificationFileIdentity(rootFile)
+	rootFileCloseErr := rootFile.Close()
+	if statErr != nil || identityErr != nil || rootFileCloseErr != nil || !os.SameFile(opened, rootFileInfo) || rootIdentity != durability.identity() {
+		return nil, errors.Join(
+			fmt.Errorf("embedded-model qualification report: durable directory handle and output root identities differ"),
+			statErr, identityErr, rootFileCloseErr, root.Close(), durability.close(),
+		)
+	}
+	// Capability probe before any mutation. Platforms that cannot durably flush
+	// directory entries must fail here rather than pretending publication is durable.
+	if err := durability.sync(); err != nil {
+		return nil, errors.Join(fmt.Errorf("embedded-model qualification report: durable directory sync unsupported: %w", err), root.Close(), durability.close())
+	}
+	return &qualificationOutputDirectory{root: root, durability: durability, rootIdentity: rootIdentity}, nil
 }
 
-func (dir *qualificationOutputDirectory) close() { _ = dir.root.Close() }
+func (dir *qualificationOutputDirectory) close() error {
+	return errors.Join(dir.root.Close(), dir.durability.close())
+}
 
 func (dir *qualificationOutputDirectory) sync() error {
-	file, err := dir.root.Open(".")
-	if err != nil {
-		return fmt.Errorf("embedded-model qualification report: open output root for sync: %w", err)
-	}
-	err = file.Sync()
-	closeErr := file.Close()
-	if err != nil {
+	if err := dir.durability.sync(); err != nil {
 		return fmt.Errorf("embedded-model qualification report: sync output root: %w", err)
-	}
-	if closeErr != nil {
-		return fmt.Errorf("embedded-model qualification report: close output root sync handle: %w", closeErr)
 	}
 	return nil
 }
@@ -688,12 +713,12 @@ func readQualificationRegularNoFollow(root *os.Root, name string) ([]byte, os.Fi
 // ValidateQualificationReportPublication accepts only a committed three-file
 // publication. The physical JSON/Markdown writes are not a transaction on
 // POSIX filesystems; the content-addressed marker is the atomic logical commit.
-func ValidateQualificationReportPublication(path string) error {
+func ValidateQualificationReportPublication(path string) (err error) {
 	dir, err := openQualificationOutputDirectory(path)
 	if err != nil {
 		return err
 	}
-	defer dir.close()
+	defer func() { err = errors.Join(err, dir.close()) }()
 	return validateQualificationReportPublication(dir.root)
 }
 
@@ -722,7 +747,7 @@ func publishQualificationReportPair(path string, jsonBytes, markdown []byte, hoo
 	if err != nil {
 		return err
 	}
-	defer dir.close()
+	defer func() { err = errors.Join(err, dir.close()) }()
 	if err := prepareQualificationReportPublication(dir, hook); err != nil {
 		return err
 	}
@@ -735,7 +760,12 @@ func publishQualificationReportPair(path string, jsonBytes, markdown []byte, hoo
 		return err
 	}
 	prefix := ".qualification." + nonce + "."
-	tx := qualificationReportTransaction{SchemaVersion: qualificationTransactionSchemaVersion, ID: nonce, TransactionStagedName: prefix + "transaction.stage"}
+	tx := qualificationReportTransaction{
+		SchemaVersion:         qualificationTransactionSchemaVersion,
+		ID:                    nonce,
+		RootIdentity:          dir.rootIdentity,
+		TransactionStagedName: prefix + "transaction.stage",
+	}
 	staged := make(map[string]qualificationStagedFile, 4)
 	for _, item := range []struct {
 		member *qualificationOwnedMember
@@ -828,7 +858,7 @@ func prepareQualificationReportPublication(dir *qualificationOutputDirectory, ho
 		return fmt.Errorf("embedded-model qualification report: inspect commit marker: %w", err)
 	}
 	if _, err := dir.root.Lstat(qualificationReportTransactionName); err == nil {
-		tx, staged, readErr := readQualificationReportTransaction(dir.root)
+		tx, staged, readErr := readQualificationReportTransaction(dir)
 		if readErr != nil {
 			return fmt.Errorf("embedded-model qualification report: transaction replay or foreign marker: %w", readErr)
 		}
@@ -916,7 +946,8 @@ func writeQualificationReportStage(root *os.Root, name string, content []byte) (
 	return stage, nil
 }
 
-func readQualificationReportTransaction(root *os.Root) (qualificationReportTransaction, map[string]qualificationStagedFile, error) {
+func readQualificationReportTransaction(dir *qualificationOutputDirectory) (qualificationReportTransaction, map[string]qualificationStagedFile, error) {
+	root := dir.root
 	raw, commonInfo, commonIdentity, err := readQualificationRegularNoFollow(root, qualificationReportTransactionName)
 	if err != nil {
 		return qualificationReportTransaction{}, nil, err
@@ -932,13 +963,16 @@ func readQualificationReportTransaction(root *os.Root) (qualificationReportTrans
 	}
 	sealed, err := sealQualificationReportTransaction(tx)
 	prefix := ".qualification." + tx.ID + "."
-	if err != nil || tx.SchemaVersion != qualificationTransactionSchemaVersion || !isLowerHexDigest(tx.ID, 64) ||
+	if err != nil || tx.SchemaVersion != qualificationTransactionSchemaVersion || !isLowerHexDigest(tx.ID, 64) || !isLowerHexDigest(tx.RootIdentity, 64) ||
 		tx.TransactionStagedName != prefix+"transaction.stage" || tx.JSON.FinalName != qualificationReportJSONName || tx.JSON.StagedName != prefix+"json.stage" ||
 		tx.Markdown.FinalName != qualificationReportMarkdownName || tx.Markdown.StagedName != prefix+"markdown.stage" ||
 		tx.Commit.FinalName != qualificationReportCommitName || tx.Commit.StagedName != prefix+"commit.stage" ||
 		!isLowerHexDigest(tx.JSON.Identity, 64) || !isLowerHexDigest(tx.Markdown.Identity, 64) || !isLowerHexDigest(tx.Commit.Identity, 64) ||
 		sealed.SHA256 != tx.SHA256 {
 		return qualificationReportTransaction{}, nil, fmt.Errorf("transaction replay has invalid identity, names, or content address")
+	}
+	if tx.RootIdentity != dir.rootIdentity {
+		return qualificationReportTransaction{}, nil, fmt.Errorf("transaction root identity differs from opened output root")
 	}
 	staged := make(map[string]qualificationStagedFile, 4)
 	for _, member := range []qualificationOwnedMember{tx.JSON, tx.Markdown, tx.Commit} {
@@ -960,6 +994,9 @@ func readQualificationReportTransaction(root *os.Root) (qualificationReportTrans
 }
 
 func cleanupQualificationTransaction(dir *qualificationOutputDirectory, tx qualificationReportTransaction, staged map[string]qualificationStagedFile, removeFinals bool) error {
+	if tx.RootIdentity != dir.rootIdentity {
+		return fmt.Errorf("transaction root identity differs from opened output root")
+	}
 	// Preflight every deletion. If any final or ownership anchor was replaced,
 	// no name is removed merely because its bytes happen to match.
 	for _, member := range []qualificationOwnedMember{tx.JSON, tx.Markdown, tx.Commit} {
@@ -1038,6 +1075,9 @@ func cleanupQualificationTransaction(dir *qualificationOutputDirectory, tx quali
 }
 
 func cleanupUnpublishedStages(dir *qualificationOutputDirectory, tx qualificationReportTransaction, staged map[string]qualificationStagedFile) error {
+	if tx.RootIdentity != dir.rootIdentity {
+		return fmt.Errorf("transaction root identity differs from opened output root")
+	}
 	var err error
 	for name, stage := range staged {
 		if verifyErr := verifyQualificationOwnedFile(dir.root, name, "", stage.identity, stage.info); verifyErr != nil {
