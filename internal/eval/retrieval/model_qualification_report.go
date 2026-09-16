@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,15 @@ import (
 )
 
 const QualificationReportSchemaVersion = 1
+
+const (
+	QualificationReportCommitSchemaVersion = 1
+	qualificationReportJSONName            = "qualification.json"
+	qualificationReportMarkdownName        = "qualification.md"
+	qualificationReportCommitName          = "qualification.commit.json"
+	qualificationReportTransactionName     = ".qualification.transaction.json"
+	qualificationPublishAfterJSON          = "after_json"
+)
 
 var qualificationReportArms = []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank}
 
@@ -125,12 +135,44 @@ type QualificationOracleBlindCeiling struct {
 	Total       int    `json:"total"`
 }
 
+// QualificationReportCommit is the authoritative publication boundary. The
+// two human/machine artifacts are not a committed report until this
+// content-addressed marker exists and both named digests match.
+type QualificationReportCommit struct {
+	SchemaVersion               int    `json:"schema_version"`
+	ReportSchemaVersion         int    `json:"report_schema_version"`
+	QualificationJSONSHA256     string `json:"qualification_json_sha256"`
+	QualificationMarkdownSHA256 string `json:"qualification_markdown_sha256"`
+	SHA256                      string `json:"sha256"`
+}
+
+type qualificationPublishHook func(stage string) error
+
 // WriteQualificationReport validates all source evidence, reruns the frozen
 // decision, and publishes the canonical JSON/Markdown pair without replacing
 // any existing live evidence.
 func WriteQualificationReport(dir string, report QualificationReport) error {
+	return writeQualificationReportWithHook(dir, report, nil)
+}
+
+func writeQualificationReportWithHook(dir string, report QualificationReport, hook qualificationPublishHook) error {
 	if report.SchemaVersion != QualificationReportSchemaVersion {
 		return fmt.Errorf("embedded-model qualification report: schema version %d, want %d", report.SchemaVersion, QualificationReportSchemaVersion)
+	}
+	originalInput, err := qualificationInputFromReport(report)
+	if err != nil {
+		return err
+	}
+	originalDecision, err := EvaluateQualification(originalInput)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: validate evidence: %w", err)
+	}
+	if !reflect.DeepEqual(report.Decision, originalDecision) {
+		return fmt.Errorf("embedded-model qualification report: supplied decision differs from independently evaluated decision")
+	}
+	report, err = canonicalQualificationReport(report)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: canonicalize: %w", err)
 	}
 	input, err := qualificationInputFromReport(report)
 	if err != nil {
@@ -138,11 +180,12 @@ func WriteQualificationReport(dir string, report QualificationReport) error {
 	}
 	decision, err := EvaluateQualification(input)
 	if err != nil {
-		return fmt.Errorf("embedded-model qualification report: validate evidence: %w", err)
+		return fmt.Errorf("embedded-model qualification report: validate canonical evidence: %w", err)
 	}
-	if !reflect.DeepEqual(report.Decision, decision) {
-		return fmt.Errorf("embedded-model qualification report: supplied decision differs from independently evaluated decision")
+	if !reflect.DeepEqual(originalDecision, decision) {
+		return fmt.Errorf("embedded-model qualification report: canonical evidence changes the evaluated decision")
 	}
+	report.Decision = decision
 	evidence, err := validateQualificationEvidence(input)
 	if err != nil {
 		return fmt.Errorf("embedded-model qualification report: derive evidence: %w", err)
@@ -155,10 +198,70 @@ func WriteQualificationReport(dir string, report QualificationReport) error {
 	}
 	jsonBytes = append(jsonBytes, '\n')
 	markdown := []byte(renderQualificationMarkdown(report))
-	if err := publishQualificationReportPair(dir, jsonBytes, markdown); err != nil {
+	if err := publishQualificationReportPair(dir, jsonBytes, markdown, hook); err != nil {
 		return err
 	}
 	return nil
+}
+
+func canonicalQualificationReport(report QualificationReport) (QualificationReport, error) {
+	raw, err := json.Marshal(report)
+	if err != nil {
+		return QualificationReport{}, err
+	}
+	var out QualificationReport
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return QualificationReport{}, err
+	}
+	out.Derived = QualificationReportDerived{}
+	sort.Slice(out.Observations, func(i, j int) bool {
+		if out.Observations[i].Arm != out.Observations[j].Arm {
+			return out.Observations[i].Arm < out.Observations[j].Arm
+		}
+		return out.Observations[i].QueryID < out.Observations[j].QueryID
+	})
+	sort.Slice(out.BuildDigests, func(i, j int) bool {
+		if out.BuildDigests[i].Arm != out.BuildDigests[j].Arm {
+			return out.BuildDigests[i].Arm < out.BuildDigests[j].Arm
+		}
+		return out.BuildDigests[i].Build < out.BuildDigests[j].Build
+	})
+	for i := range out.OracleControls {
+		canonicalizeOracleBundle(&out.OracleControls[i].CurrentCandidatesOraclePacker)
+		canonicalizeOracleBundle(&out.OracleControls[i].OracleCandidateCurrentSelector)
+		canonicalizeOracleBundle(&out.OracleControls[i].OracleCandidateOraclePacker)
+	}
+	sort.Slice(out.OracleControls, func(i, j int) bool {
+		return out.OracleControls[i].CurrentCandidatesOraclePacker.QueryID < out.OracleControls[j].CurrentCandidatesOraclePacker.QueryID
+	})
+	sort.Slice(out.Operating.QueryEmbedLatencies, func(i, j int) bool {
+		return out.Operating.QueryEmbedLatencies[i] < out.Operating.QueryEmbedLatencies[j]
+	})
+
+	// Each BlindEvidenceSet is already content-addressed. Its nested slice
+	// order is part of the imported source identity and must remain exact;
+	// only the outer collection of independently sealed subjects is set-like.
+	sort.Slice(out.BlindEvidence, func(i, j int) bool {
+		return blindSubjectKey(out.BlindEvidence[i].Arm, out.BlindEvidence[i].ControlKind) < blindSubjectKey(out.BlindEvidence[j].Arm, out.BlindEvidence[j].ControlKind)
+	})
+	sort.Slice(out.BlindDecisions, func(i, j int) bool {
+		left := blindSubjectKey(out.BlindDecisions[i].Arm, out.BlindDecisions[i].ControlKind)
+		right := blindSubjectKey(out.BlindDecisions[j].Arm, out.BlindDecisions[j].ControlKind)
+		if left != right {
+			return left < right
+		}
+		return out.BlindDecisions[i].QueryID < out.BlindDecisions[j].QueryID
+	})
+	return out, nil
+}
+
+func canonicalizeOracleBundle(bundle *OracleBundle) {
+	sort.Slice(bundle.Payload.TokenCounts, func(i, j int) bool {
+		if bundle.Payload.TokenCounts[i].TokenizerID != bundle.Payload.TokenCounts[j].TokenizerID {
+			return bundle.Payload.TokenCounts[i].TokenizerID < bundle.Payload.TokenCounts[j].TokenizerID
+		}
+		return bundle.Payload.TokenCounts[i].VocabularySHA256 < bundle.Payload.TokenCounts[j].VocabularySHA256
+	})
 }
 
 func qualificationInputFromReport(report QualificationReport) (QualificationInput, error) {
@@ -308,11 +411,11 @@ func qualificationBuildsByArm(digests []QualificationBuildDigest) map[Qualificat
 func renderQualificationMarkdown(report QualificationReport) string {
 	var out strings.Builder
 	fmt.Fprintf(&out, "# Embedded-model development qualification\n\n")
-	fmt.Fprintf(&out, "Dataset: `%s` (`%s`)  \nCandidate: `%s`  \nSource checkout: `%s`\n\n", report.Dataset.SHA256, report.Dataset.Path, report.Preregistration.CandidateSHA, report.Preregistration.SourceRepoSHA)
+	fmt.Fprintf(&out, "Dataset content: `%s`  \nCandidate: `%s`  \nSource checkout: `%s`\n\n", report.Dataset.SHA256, report.Preregistration.CandidateSHA, report.Preregistration.SourceRepoSHA)
 
 	out.WriteString("## Arm totals\n\n| Arm | Blind passes |\n|---|---:|\n")
 	for _, row := range report.Derived.ArmTotals {
-		fmt.Fprintf(&out, "| %s | %d/%d |\n", row.Arm, row.Passes, row.Total)
+		fmt.Fprintf(&out, "| %s | %d/%d |\n", qualificationMarkdownCell(string(row.Arm)), row.Passes, row.Total)
 	}
 	pair := report.Derived.M3VersusM1
 	fmt.Fprintf(&out, "\nM3 wins over M1: **%d**; M3 losses to M1: **%d**; ties: **%d**; net: **%+d**.  \n", pair.Wins, pair.Losses, pair.Ties, pair.Net)
@@ -321,15 +424,15 @@ func renderQualificationMarkdown(report QualificationReport) string {
 
 	out.WriteString("## Stratum deltas\n\n| Stratum | M1 | M3 | M3-M1 |\n|---|---:|---:|---:|\n")
 	for _, row := range report.Derived.StratumDeltas {
-		fmt.Fprintf(&out, "| %s | %d | %d | %+d |\n", row.Stratum, row.M1Passes, row.M3Passes, row.Delta)
+		fmt.Fprintf(&out, "| %s | %d | %d | %+d |\n", qualificationMarkdownCell(row.Stratum), row.M1Passes, row.M3Passes, row.Delta)
 	}
 
 	out.WriteString("\n## Stage rank and retention\n\n| Arm | Semantic top-50 | Post-fusion | Complete span | Semantic→fusion retained | Fusion→bundle retained | Semantic best-rank sum |\n|---|---:|---:|---:|---:|---:|---:|\n")
 	for _, row := range report.Derived.StageRetention {
-		fmt.Fprintf(&out, "| %s | %d | %d | %d | %d | %d | %d |\n", row.Arm, row.SemanticTop50Present, row.PostFusionPresent, row.CompleteGrade3Span, row.SemanticToFusionRetained, row.FusionToBundleRetained, row.SemanticBestRankSum)
+		fmt.Fprintf(&out, "| %s | %d | %d | %d | %d | %d | %d |\n", qualificationMarkdownCell(string(row.Arm)), row.SemanticTop50Present, row.PostFusionPresent, row.CompleteGrade3Span, row.SemanticToFusionRetained, row.FusionToBundleRetained, row.SemanticBestRankSum)
 	}
 	for _, evidence := range report.Decision.Evidence {
-		fmt.Fprintf(&out, "\nRank evidence `%s`: `%s` via `%s`.\n", evidence.Name, evidence.Observed, evidence.Algorithm)
+		fmt.Fprintf(&out, "\nRank evidence `%s`: `%s` via `%s`.\n", qualificationMarkdownInline(evidence.Name), qualificationMarkdownInline(evidence.Observed), qualificationMarkdownInline(evidence.Algorithm))
 	}
 
 	out.WriteString("\n## Independent builds and provenance\n\n")
@@ -341,19 +444,19 @@ func renderQualificationMarkdown(report QualificationReport) string {
 		return builds[i].Build < builds[j].Build
 	})
 	for _, build := range builds {
-		fmt.Fprintf(&out, "### %s build %d\n\n", build.Arm, build.Build)
-		fmt.Fprintf(&out, "- Workdir: `%s`\n- Capture provenance: `%s`\n- Capture identity: `%s`\n", build.CaptureProvenance.WorkDir, build.CaptureProvenance.SHA256, build.CaptureProvenance.CaptureIdentitySHA256)
+		fmt.Fprintf(&out, "### %s build %d\n\n", qualificationMarkdownInline(string(build.Arm)), build.Build)
+		fmt.Fprintf(&out, "- Capture provenance: `%s`\n- Capture identity: `%s`\n", build.CaptureProvenance.SHA256, build.CaptureProvenance.CaptureIdentitySHA256)
 		fmt.Fprintf(&out, "- Digests: vectors `%s`; persisted rows `%s`; bundles `%s`; token counts `%s`; oracle payloads `%s`; oracle token counts `%s`\n", build.VectorBytesSHA256, build.PersistedRowsSHA256, build.BundlesSHA256, build.TokenCountsSHA256, build.OraclePayloadsSHA256, build.OracleTokenCountsSHA256)
 		fmt.Fprintf(&out, "- Diagnostics: admission truncations `%d`; document zero vectors `%d`\n\n", build.Diagnostics.AdmissionTruncations, build.Diagnostics.DocumentZeroVectors)
 	}
 	out.WriteString("| Reproducibility | Build 1 provenance | Build 2 provenance | Byte-identical |\n|---|---|---|---|\n")
 	for _, row := range report.Derived.Reproducibility {
-		fmt.Fprintf(&out, "| %s | `%s` | `%s` | %t |\n", row.Arm, row.Build1SHA256, row.Build2SHA256, row.ByteIdentical)
+		fmt.Fprintf(&out, "| %s | `%s` | `%s` | %t |\n", qualificationMarkdownCell(string(row.Arm)), row.Build1SHA256, row.Build2SHA256, row.ByteIdentical)
 	}
 
 	out.WriteString("\n## Blind evidence manifests\n\n| Subject | Evidence SHA-256 | Queries | Responses | Grades | Adjudications | Decisions |\n|---|---|---:|---:|---:|---:|---:|\n")
 	for _, manifest := range report.Derived.BlindEvidenceManifests {
-		fmt.Fprintf(&out, "| %s | `%s` | %d | %d | %d | %d | %d |\n", blindSubjectKey(manifest.Arm, manifest.ControlKind), manifest.SHA256, manifest.Queries, manifest.Responses, manifest.Grades, manifest.Adjudications, manifest.FinalDecisions)
+		fmt.Fprintf(&out, "| %s | `%s` | %d | %d | %d | %d | %d |\n", qualificationMarkdownCell(blindSubjectKey(manifest.Arm, manifest.ControlKind)), manifest.SHA256, manifest.Queries, manifest.Responses, manifest.Grades, manifest.Adjudications, manifest.FinalDecisions)
 	}
 
 	p95, _ := operatingP95(report.Operating.QueryEmbedLatencies, report.Preregistration.Thresholds.MinQuerySamples)
@@ -364,25 +467,42 @@ func renderQualificationMarkdown(report QualificationReport) string {
 
 	out.WriteString("\n## Run validity\n\n| Check | Passed | Observed | Required |\n|---|---|---|---|\n")
 	for _, check := range report.Derived.RunValidity {
-		fmt.Fprintf(&out, "| %s | %t | %s | %s |\n", check.Name, check.Passed, check.Observed, check.Required)
+		fmt.Fprintf(&out, "| %s | %t | %s | %s |\n", qualificationMarkdownCell(check.Name), check.Passed, qualificationMarkdownCell(check.Observed), qualificationMarkdownCell(check.Required))
 	}
 
 	out.WriteString("\n## Oracle blind ceilings\n\n| Control | Blind passes |\n|---|---:|\n")
 	for _, row := range report.Derived.OracleBlindCeilings {
-		fmt.Fprintf(&out, "| %s | %d/%d |\n", row.ControlKind, row.Passes, row.Total)
+		fmt.Fprintf(&out, "| %s | %d/%d |\n", qualificationMarkdownCell(row.ControlKind), row.Passes, row.Total)
 	}
 
 	out.WriteString("\n## Promotion gates\n\n| Gate | Passed | Observed | Required |\n|---|---|---|---|\n")
 	for _, result := range report.Decision.Gates {
-		fmt.Fprintf(&out, "| %s | %t | %s | %s |\n", result.Name, result.Passed, result.Observed, result.Required)
+		fmt.Fprintf(&out, "| %s | %t | %s | %s |\n", qualificationMarkdownCell(result.Name), result.Passed, qualificationMarkdownCell(result.Observed), qualificationMarkdownCell(result.Required))
 	}
-	fmt.Fprintf(&out, "\nBranch: `%s`\n\n", report.Decision.Branch)
+	fmt.Fprintf(&out, "\nBranch: `%s`\n\n", qualificationMarkdownInline(report.Decision.Branch))
 	if report.Decision.Promote {
 		out.WriteString("DEVELOPMENT PROMOTION: YES\n")
 	} else {
 		out.WriteString("DEVELOPMENT PROMOTION: NO\n")
 	}
 	return out.String()
+}
+
+func qualificationMarkdownCell(value string) string {
+	value = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return ' '
+		}
+		return r
+	}, value)
+	value = html.EscapeString(value)
+	value = strings.ReplaceAll(value, "`", "&#96;")
+	return strings.ReplaceAll(value, "|", "\\|")
+}
+
+func qualificationMarkdownInline(value string) string {
+	value = qualificationMarkdownCell(value)
+	return strings.ReplaceAll(value, "\\|", "|")
 }
 
 func durationBounds(values []time.Duration) (time.Duration, time.Duration) {
@@ -401,43 +521,313 @@ func durationBounds(values []time.Duration) (time.Duration, time.Duration) {
 	return minimum, maximum
 }
 
-func publishQualificationReportPair(dir string, jsonBytes, markdown []byte) error {
-	info, err := os.Stat(dir)
+type qualificationOutputDirectory struct {
+	path string
+	info os.FileInfo
+	file *os.File
+}
+
+func openQualificationOutputDirectory(path string) (*qualificationOutputDirectory, error) {
+	info, err := os.Lstat(path)
 	if err != nil {
-		return fmt.Errorf("embedded-model qualification report: inspect output directory: %w", err)
+		return nil, fmt.Errorf("embedded-model qualification report: inspect output directory: %w", err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return nil, fmt.Errorf("embedded-model qualification report: output directory must not be a symlink")
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("embedded-model qualification report: output path is not a directory")
+		return nil, fmt.Errorf("embedded-model qualification report: output path is not a directory")
 	}
-	jsonPath := filepath.Join(dir, "qualification.json")
-	markdownPath := filepath.Join(dir, "qualification.md")
-	for _, path := range []string{jsonPath, markdownPath} {
-		if _, err := os.Lstat(path); err == nil {
-			return fmt.Errorf("embedded-model qualification report: %s already exists", filepath.Base(path))
-		} else if !os.IsNotExist(err) {
-			return fmt.Errorf("embedded-model qualification report: inspect %s: %w", filepath.Base(path), err)
-		}
-	}
-	jsonTemp, err := writeQualificationReportTemp(dir, ".qualification-json-", jsonBytes)
+	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("embedded-model qualification report: open output directory: %w", err)
 	}
-	defer os.Remove(jsonTemp)
-	markdownTemp, err := writeQualificationReportTemp(dir, ".qualification-markdown-", markdown)
-	if err != nil {
-		return err
+	opened, err := file.Stat()
+	if err != nil || !os.SameFile(info, opened) {
+		_ = file.Close()
+		return nil, fmt.Errorf("embedded-model qualification report: output directory changed while opening")
 	}
-	defer os.Remove(markdownTemp)
-	if err := os.Link(jsonTemp, jsonPath); err != nil {
-		return fmt.Errorf("embedded-model qualification report: publish qualification.json: %w", err)
-	}
-	if err := os.Link(markdownTemp, markdownPath); err != nil {
-		if rollbackErr := os.Remove(jsonPath); rollbackErr != nil {
-			return fmt.Errorf("embedded-model qualification report: publish qualification.md: %v (rollback qualification.json: %v)", err, rollbackErr)
-		}
-		return fmt.Errorf("embedded-model qualification report: publish qualification.md: %w", err)
+	return &qualificationOutputDirectory{path: path, info: info, file: file}, nil
+}
+
+func (dir *qualificationOutputDirectory) close() { _ = dir.file.Close() }
+
+func (dir *qualificationOutputDirectory) checkStable() error {
+	current, err := os.Lstat(dir.path)
+	if err != nil || current.Mode()&os.ModeSymlink != 0 || !current.IsDir() || !os.SameFile(dir.info, current) {
+		return fmt.Errorf("embedded-model qualification report: output directory changed during publication")
 	}
 	return nil
+}
+
+func (dir *qualificationOutputDirectory) sync() error {
+	if err := dir.checkStable(); err != nil {
+		return err
+	}
+	if err := dir.file.Sync(); err != nil {
+		return fmt.Errorf("embedded-model qualification report: sync output directory: %w", err)
+	}
+	return nil
+}
+
+func sealQualificationReportCommit(marker QualificationReportCommit) (QualificationReportCommit, error) {
+	marker.SHA256 = ""
+	address, err := ContentAddress(marker, func(v *QualificationReportCommit) { v.SHA256 = "" })
+	if err != nil {
+		return QualificationReportCommit{}, err
+	}
+	marker.SHA256 = address
+	return marker, nil
+}
+
+func qualificationReportCommitBytes(jsonBytes, markdown []byte) ([]byte, QualificationReportCommit, error) {
+	marker, err := sealQualificationReportCommit(QualificationReportCommit{
+		SchemaVersion: QualificationReportCommitSchemaVersion, ReportSchemaVersion: QualificationReportSchemaVersion,
+		QualificationJSONSHA256: SHA256Hex(jsonBytes), QualificationMarkdownSHA256: SHA256Hex(markdown),
+	})
+	if err != nil {
+		return nil, QualificationReportCommit{}, err
+	}
+	raw, err := json.MarshalIndent(marker, "", "  ")
+	if err != nil {
+		return nil, QualificationReportCommit{}, err
+	}
+	return append(raw, '\n'), marker, nil
+}
+
+func readQualificationReportCommit(path string) (QualificationReportCommit, error) {
+	raw, err := readQualificationRegularNoFollow(path)
+	if err != nil {
+		return QualificationReportCommit{}, err
+	}
+	var marker QualificationReportCommit
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&marker); err != nil {
+		return QualificationReportCommit{}, err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return QualificationReportCommit{}, fmt.Errorf("commit marker has trailing data")
+	}
+	sealed, err := sealQualificationReportCommit(marker)
+	if err != nil || marker.SchemaVersion != QualificationReportCommitSchemaVersion || marker.ReportSchemaVersion != QualificationReportSchemaVersion ||
+		!isLowerHexDigest(marker.QualificationJSONSHA256, 64) || !isLowerHexDigest(marker.QualificationMarkdownSHA256, 64) ||
+		!isLowerHexDigest(marker.SHA256, 64) || sealed.SHA256 != marker.SHA256 {
+		return QualificationReportCommit{}, fmt.Errorf("commit marker content address or schema differs")
+	}
+	return marker, nil
+}
+
+func readQualificationRegularNoFollow(path string) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("%s is not a regular no-follow file", filepath.Base(path))
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	opened, err := file.Stat()
+	if err != nil || !os.SameFile(info, opened) {
+		return nil, fmt.Errorf("%s changed while opening", filepath.Base(path))
+	}
+	return io.ReadAll(file)
+}
+
+// ValidateQualificationReportPublication accepts only a committed three-file
+// publication. The physical JSON/Markdown writes are not a transaction on
+// POSIX filesystems; the content-addressed marker is the atomic logical commit.
+func ValidateQualificationReportPublication(path string) error {
+	dir, err := openQualificationOutputDirectory(path)
+	if err != nil {
+		return err
+	}
+	defer dir.close()
+	return validateQualificationReportPublication(dir)
+}
+
+func validateQualificationReportPublication(dir *qualificationOutputDirectory) error {
+	if err := dir.checkStable(); err != nil {
+		return err
+	}
+	marker, err := readQualificationReportCommit(filepath.Join(dir.path, qualificationReportCommitName))
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: no valid authoritative commit marker: %w", err)
+	}
+	for _, artifact := range []struct{ name, digest string }{
+		{qualificationReportJSONName, marker.QualificationJSONSHA256},
+		{qualificationReportMarkdownName, marker.QualificationMarkdownSHA256},
+	} {
+		raw, readErr := readQualificationRegularNoFollow(filepath.Join(dir.path, artifact.name))
+		if readErr != nil {
+			return fmt.Errorf("embedded-model qualification report: committed %s is missing or unsafe: %w", artifact.name, readErr)
+		}
+		if got := SHA256Hex(raw); got != artifact.digest {
+			return fmt.Errorf("embedded-model qualification report: committed %s digest %s differs from marker %s", artifact.name, got, artifact.digest)
+		}
+	}
+	return dir.checkStable()
+}
+
+func publishQualificationReportPair(path string, jsonBytes, markdown []byte, hook qualificationPublishHook) (err error) {
+	dir, err := openQualificationOutputDirectory(path)
+	if err != nil {
+		return err
+	}
+	defer dir.close()
+	if err := prepareQualificationReportPublication(dir); err != nil {
+		return err
+	}
+	markerBytes, _, err := qualificationReportCommitBytes(jsonBytes, markdown)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification report: encode commit marker: %w", err)
+	}
+
+	jsonTemp, err := writeQualificationReportTemp(path, ".qualification-json-", jsonBytes)
+	if err != nil {
+		return err
+	}
+	defer removeQualificationReportTemp(dir, jsonTemp)
+	markdownTemp, err := writeQualificationReportTemp(path, ".qualification-markdown-", markdown)
+	if err != nil {
+		return err
+	}
+	defer removeQualificationReportTemp(dir, markdownTemp)
+	markerTemp, err := writeQualificationReportTemp(path, ".qualification-marker-", markerBytes)
+	if err != nil {
+		return err
+	}
+	defer removeQualificationReportTemp(dir, markerTemp)
+
+	created := make([]string, 0, 4)
+	committed := false
+	defer func() {
+		if committed {
+			return
+		}
+		if dir.checkStable() == nil {
+			for i := len(created) - 1; i >= 0; i-- {
+				_ = os.Remove(created[i])
+			}
+			_ = dir.sync()
+		}
+	}()
+	publish := func(temp, name string) error {
+		if err := dir.checkStable(); err != nil {
+			return err
+		}
+		target := filepath.Join(path, name)
+		if err := os.Link(temp, target); err != nil {
+			return fmt.Errorf("embedded-model qualification report: publish %s: %w", name, err)
+		}
+		created = append(created, target)
+		return nil
+	}
+	if err := publish(markerTemp, qualificationReportTransactionName); err != nil {
+		return err
+	}
+	if err := dir.sync(); err != nil {
+		return err
+	}
+	if err := publish(jsonTemp, qualificationReportJSONName); err != nil {
+		return err
+	}
+	if hook != nil {
+		if err := hook(qualificationPublishAfterJSON); err != nil {
+			return fmt.Errorf("embedded-model qualification report: publication hook: %w", err)
+		}
+	}
+	if err := publish(markdownTemp, qualificationReportMarkdownName); err != nil {
+		return err
+	}
+	if err := dir.sync(); err != nil {
+		return err
+	}
+	if err := publish(markerTemp, qualificationReportCommitName); err != nil {
+		return err
+	}
+	if err := dir.sync(); err != nil {
+		return err
+	}
+	if err := validateQualificationReportPublication(dir); err != nil {
+		return err
+	}
+	if err := dir.checkStable(); err != nil {
+		return err
+	}
+	if err := os.Remove(filepath.Join(path, qualificationReportTransactionName)); err != nil {
+		return fmt.Errorf("embedded-model qualification report: remove completed transaction marker: %w", err)
+	}
+	if err := dir.sync(); err != nil {
+		return err
+	}
+	committed = true
+	return nil
+}
+
+func prepareQualificationReportPublication(dir *qualificationOutputDirectory) error {
+	commitPath := filepath.Join(dir.path, qualificationReportCommitName)
+	if _, err := os.Lstat(commitPath); err == nil {
+		if validationErr := validateQualificationReportPublication(dir); validationErr != nil {
+			return fmt.Errorf("embedded-model qualification report: existing committed report is invalid and will not be overwritten: %w", validationErr)
+		}
+		return fmt.Errorf("embedded-model qualification report: %s already exists", qualificationReportCommitName)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("embedded-model qualification report: inspect commit marker: %w", err)
+	}
+	transactionPath := filepath.Join(dir.path, qualificationReportTransactionName)
+	if _, err := os.Lstat(transactionPath); err == nil {
+		marker, readErr := readQualificationReportCommit(transactionPath)
+		if readErr != nil {
+			return fmt.Errorf("embedded-model qualification report: markerless transaction is not owned: %w", readErr)
+		}
+		for _, artifact := range []struct{ name, digest string }{
+			{qualificationReportJSONName, marker.QualificationJSONSHA256},
+			{qualificationReportMarkdownName, marker.QualificationMarkdownSHA256},
+		} {
+			artifactPath := filepath.Join(dir.path, artifact.name)
+			_, statErr := os.Lstat(artifactPath)
+			if os.IsNotExist(statErr) {
+				continue
+			}
+			if statErr != nil {
+				return fmt.Errorf("embedded-model qualification report: inspect markerless %s: %w", artifact.name, statErr)
+			}
+			raw, readErr := readQualificationRegularNoFollow(artifactPath)
+			if readErr != nil || SHA256Hex(raw) != artifact.digest {
+				return fmt.Errorf("embedded-model qualification report: markerless transaction does not own %s", artifact.name)
+			}
+		}
+		for _, name := range []string{qualificationReportJSONName, qualificationReportMarkdownName, qualificationReportTransactionName} {
+			if stableErr := dir.checkStable(); stableErr != nil {
+				return stableErr
+			}
+			if removeErr := os.Remove(filepath.Join(dir.path, name)); removeErr != nil && !os.IsNotExist(removeErr) {
+				return fmt.Errorf("embedded-model qualification report: clean markerless transaction: %w", removeErr)
+			}
+		}
+		return dir.sync()
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("embedded-model qualification report: inspect transaction marker: %w", err)
+	}
+	for _, name := range []string{qualificationReportJSONName, qualificationReportMarkdownName} {
+		if _, err := os.Lstat(filepath.Join(dir.path, name)); err == nil {
+			return fmt.Errorf("embedded-model qualification report: unowned markerless %s already exists", name)
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("embedded-model qualification report: inspect %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func removeQualificationReportTemp(dir *qualificationOutputDirectory, path string) {
+	if dir.checkStable() == nil {
+		_ = os.Remove(path)
+	}
 }
 
 func writeQualificationReportTemp(dir, pattern string, content []byte) (path string, err error) {

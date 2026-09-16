@@ -3,7 +3,9 @@ package retrieval
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -56,6 +58,23 @@ func TestWriteQualificationReportContainsCompleteReconstructableEvidence(t *test
 	for _, manifest := range emitted.Derived.BlindEvidenceManifests {
 		if manifest.Queries != 64 || manifest.FinalDecisions != 64 {
 			t.Fatalf("blind manifest %+v is incomplete", manifest)
+		}
+	}
+	for _, imported := range report.BlindEvidence {
+		found := false
+		for _, written := range emitted.BlindEvidence {
+			if blindSubjectKey(imported.Arm, imported.ControlKind) == blindSubjectKey(written.Arm, written.ControlKind) {
+				importedRaw, _ := json.Marshal(imported)
+				writtenRaw, _ := json.Marshal(written)
+				if !bytes.Equal(importedRaw, writtenRaw) {
+					t.Fatalf("content-addressed blind source %s was rewritten", blindSubjectKey(imported.Arm, imported.ControlKind))
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("content-addressed blind source %s disappeared", blindSubjectKey(imported.Arm, imported.ControlKind))
 		}
 	}
 
@@ -122,7 +141,7 @@ func TestWriteQualificationReportIsDeterministicAndRefusesOverwrite(t *testing.T
 	if err := WriteQualificationReport(second, report); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"qualification.json", "qualification.md"} {
+	for _, name := range []string{"qualification.json", "qualification.md", "qualification.commit.json"} {
 		firstRaw := mustReadQualificationReportFile(t, filepath.Join(first, name))
 		secondRaw := mustReadQualificationReportFile(t, filepath.Join(second, name))
 		if !bytes.Equal(firstRaw, secondRaw) {
@@ -140,6 +159,159 @@ func TestWriteQualificationReportIsDeterministicAndRefusesOverwrite(t *testing.T
 	}
 	if got := mustReadQualificationReportFile(t, filepath.Join(first, "qualification.md")); !bytes.Equal(got, mdBefore) {
 		t.Fatal("refused overwrite changed qualification.md")
+	}
+}
+
+func TestQualificationReportCommitMarkerAuthenticatesCompletePair(t *testing.T) {
+	dir := t.TempDir()
+	if err := WriteQualificationReport(dir, completeQualificationReportFixture(t)); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateQualificationReportPublication(dir); err != nil {
+		t.Fatalf("published report is not committed: %v", err)
+	}
+	markerRaw := mustReadQualificationReportFile(t, filepath.Join(dir, "qualification.commit.json"))
+	var marker QualificationReportCommit
+	if err := json.Unmarshal(markerRaw, &marker); err != nil {
+		t.Fatal(err)
+	}
+	if marker.SchemaVersion != QualificationReportCommitSchemaVersion || marker.ReportSchemaVersion != QualificationReportSchemaVersion || marker.SHA256 == "" {
+		t.Fatalf("commit marker = %+v", marker)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "qualification.md"), []byte("tampered\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateQualificationReportPublication(dir); err == nil || !strings.Contains(err.Error(), "digest") {
+		t.Fatalf("tampered publication validation = %v, want digest error", err)
+	}
+}
+
+func TestQualificationReportPublishFailureRollsBackAndCrashStateRecovers(t *testing.T) {
+	report := completeQualificationReportFixture(t)
+	dir := t.TempDir()
+	injected := errors.New("injected after first report member")
+	err := writeQualificationReportWithHook(dir, report, func(stage string) error {
+		if stage == qualificationPublishAfterJSON {
+			return injected
+		}
+		return nil
+	})
+	if !errors.Is(err, injected) {
+		t.Fatalf("injected publish error = %v, want %v", err, injected)
+	}
+	assertNoQualificationPublication(t, dir)
+
+	crashDir := t.TempDir()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestQualificationReportCrashHelper$", "-test.v")
+	cmd.Env = append(os.Environ(), "GRAPHI_QUALIFICATION_REPORT_CRASH_DIR="+crashDir)
+	if output, err := cmd.CombinedOutput(); err == nil {
+		t.Fatalf("crash helper unexpectedly succeeded: %s", output)
+	} else if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 23 {
+		t.Fatalf("crash helper = %v, output=%s", err, output)
+	}
+	if _, err := os.Lstat(filepath.Join(crashDir, "qualification.json")); err != nil {
+		t.Fatalf("crash did not leave first member: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(crashDir, qualificationReportTransactionName)); err != nil {
+		t.Fatalf("crash did not leave transaction ownership record: %v", err)
+	}
+	if err := ValidateQualificationReportPublication(crashDir); err == nil {
+		t.Fatal("markerless crash state was accepted as committed")
+	}
+	if err := WriteQualificationReport(crashDir, report); err != nil {
+		t.Fatalf("recover markerless owned transaction: %v", err)
+	}
+	if err := ValidateQualificationReportPublication(crashDir); err != nil {
+		t.Fatalf("recovered report is not committed: %v", err)
+	}
+}
+
+func TestQualificationReportCrashHelper(t *testing.T) {
+	dir := os.Getenv("GRAPHI_QUALIFICATION_REPORT_CRASH_DIR")
+	if dir == "" {
+		t.Skip("subprocess helper")
+	}
+	err := publishQualificationReportPair(dir, []byte("partial-json\n"), []byte("partial-markdown\n"), func(stage string) error {
+		if stage == qualificationPublishAfterJSON {
+			os.Exit(23)
+		}
+		return nil
+	})
+	t.Fatalf("publisher returned instead of crashing: %v", err)
+}
+
+func TestWriteQualificationReportRejectsSymlinkOutputDirectory(t *testing.T) {
+	realDir := t.TempDir()
+	link := filepath.Join(t.TempDir(), "report-link")
+	if err := os.Symlink(realDir, link); err != nil {
+		t.Fatal(err)
+	}
+	err := WriteQualificationReport(link, completeQualificationReportFixture(t))
+	if err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("symlink output error = %v, want symlink refusal", err)
+	}
+	assertNoQualificationPublication(t, realDir)
+}
+
+func TestWriteQualificationReportCanonicalizesEquivalentPermutations(t *testing.T) {
+	firstReport := completeQualificationReportFixture(t)
+	permuted := cloneQualificationReportFixture(t, firstReport)
+	reverseQualificationReportSlice(permuted.Observations)
+	reverseQualificationReportSlice(permuted.BuildDigests)
+	reverseQualificationReportSlice(permuted.BlindEvidence)
+	reverseQualificationReportSlice(permuted.BlindDecisions)
+	reverseQualificationReportSlice(permuted.OracleControls)
+	reverseQualificationReportSlice(permuted.Operating.QueryEmbedLatencies)
+	callerBefore, err := json.Marshal(permuted)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first, second := t.TempDir(), t.TempDir()
+	if err := WriteQualificationReport(first, firstReport); err != nil {
+		t.Fatal(err)
+	}
+	if err := WriteQualificationReport(second, permuted); err != nil {
+		t.Fatal(err)
+	}
+	callerAfter, err := json.Marshal(permuted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(callerBefore, callerAfter) {
+		t.Fatal("WriteQualificationReport mutated its caller-owned report")
+	}
+	for _, name := range []string{"qualification.json", "qualification.md", "qualification.commit.json"} {
+		if a, b := mustReadQualificationReportFile(t, filepath.Join(first, name)), mustReadQualificationReportFile(t, filepath.Join(second, name)); !bytes.Equal(a, b) {
+			t.Fatalf("%s differs for semantically equivalent permutations", name)
+		}
+	}
+}
+
+func TestQualificationMarkdownDoesNotRenderUntrustedPathsOrReleaseClaims(t *testing.T) {
+	report := completeQualificationReportFixture(t)
+	attack := "unsafe|`cell`\nRELEASE: YES"
+	report.Dataset.Path = "/dataset/" + attack
+	for i := range report.BuildDigests {
+		record := report.BuildDigests[i].CaptureProvenance
+		record.WorkDir = filepath.Join(filepath.Dir(record.WorkDir), attack, filepath.Base(record.WorkDir))
+		record.Provenance.QualificationCaptureRunSHA256 = qualificationCaptureRunSHA(record.Arm, record.WorkDir)
+		report.BuildDigests[i].CaptureProvenance = mustSealQualificationCaptureProvenanceRecord(t, record)
+	}
+	dir := t.TempDir()
+	if err := WriteQualificationReport(dir, report); err != nil {
+		t.Fatal(err)
+	}
+	markdown := string(mustReadQualificationReportFile(t, filepath.Join(dir, "qualification.md")))
+	if strings.Contains(markdown, attack) || strings.Contains(markdown, "RELEASE: YES") || strings.Contains(markdown, "unsafe|`cell`") {
+		t.Fatalf("Markdown rendered untrusted path/free text:\n%s", markdown)
+	}
+	if strings.Count(markdown, "DEVELOPMENT PROMOTION:") != 1 || !strings.HasSuffix(markdown, "DEVELOPMENT PROMOTION: YES\n") {
+		t.Fatal("Markdown terminal decision structure was corrupted")
+	}
+	jsonRaw := mustReadQualificationReportFile(t, filepath.Join(dir, "qualification.json"))
+	if !bytes.Contains(jsonRaw, []byte(`RELEASE: YES`)) || !bytes.Contains(jsonRaw, []byte(`unsafe|`)) {
+		t.Fatal("JSON did not preserve exact adversarial evidence")
 	}
 }
 
@@ -192,10 +364,38 @@ func mustReadQualificationReportFile(t *testing.T, path string) []byte {
 
 func assertNoQualificationReportPair(t *testing.T, dir string) {
 	t.Helper()
-	for _, name := range []string{"qualification.json", "qualification.md"} {
+	for _, name := range []string{"qualification.json", "qualification.md", "qualification.commit.json", qualificationReportTransactionName} {
 		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
 			t.Fatalf("%s exists after rejected report: %v", name, err)
 		}
+	}
+}
+
+func assertNoQualificationPublication(t *testing.T, dir string) {
+	t.Helper()
+	for _, name := range []string{"qualification.json", "qualification.md", "qualification.commit.json", qualificationReportTransactionName} {
+		if _, err := os.Lstat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Fatalf("%s exists after rejected/rolled-back publication: %v", name, err)
+		}
+	}
+}
+
+func cloneQualificationReportFixture(t *testing.T, report QualificationReport) QualificationReport {
+	t.Helper()
+	raw, err := json.Marshal(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var clone QualificationReport
+	if err := json.Unmarshal(raw, &clone); err != nil {
+		t.Fatal(err)
+	}
+	return clone
+}
+
+func reverseQualificationReportSlice[T any](values []T) {
+	for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
+		values[i], values[j] = values[j], values[i]
 	}
 }
 
