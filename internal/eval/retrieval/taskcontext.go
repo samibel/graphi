@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/samibel/graphi/core/graphstore"
+	"github.com/samibel/graphi/core/model"
 	"github.com/samibel/graphi/core/parse"
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/resolve"
@@ -423,15 +424,49 @@ go test ./internal/eval/retrieval -run '^TestSW264_AC9Measurement$' -count=1 -v`
 }
 
 type taskContextIndex struct {
-	store            *graphstore.SQLiteStore
-	search           *search.Service
-	nodes            int
-	edges            int
-	files            int
-	embedderID       string
-	fingerprint      embed.Fingerprint
-	generationID     embed.GenerationID
-	persistedVectors int
+	store                *graphstore.SQLiteStore
+	search               *search.Service
+	nodes                int
+	edges                int
+	files                int
+	embedderID           string
+	fingerprint          embed.Fingerprint
+	generationID         embed.GenerationID
+	persistedVectors     int
+	rows                 []embed.Row
+	admissionTruncations int
+	admittedDocuments    []embed.SemanticDocument
+}
+
+type recordingTaskContextDocuments struct {
+	source    *embedsource.FileDocumentSource
+	documents map[model.NodeId]embed.SemanticDocument
+}
+
+func (r *recordingTaskContextDocuments) Document(node model.Node) (embed.SemanticDocument, bool) {
+	document, ok := r.source.Document(node)
+	if ok {
+		r.documents[node.ID()] = document
+	}
+	return document, ok
+}
+
+func (r *recordingTaskContextDocuments) Result(node model.Node) embed.DocumentResult {
+	return r.source.Result(node)
+}
+
+func (r *recordingTaskContextDocuments) ordered() []embed.SemanticDocument {
+	documents := make([]embed.SemanticDocument, 0, len(r.documents))
+	for _, document := range r.documents {
+		documents = append(documents, document)
+	}
+	sort.Slice(documents, func(i, j int) bool {
+		if documents[i].NodeID != documents[j].NodeID {
+			return documents[i].NodeID < documents[j].NodeID
+		}
+		return documents[i].DocumentID < documents[j].DocumentID
+	})
+	return documents
 }
 
 // TaskContextEngine is the production retrieval instance the adapter
@@ -885,6 +920,45 @@ func buildTaskContextIndex(ctx context.Context, root, workDir, selector string, 
 	return buildTaskContextIndexWithEmbedder(ctx, root, workDir, emb, selector, log)
 }
 
+func buildTaskContextLexicalIndex(ctx context.Context, root, workDir string, log io.Writer) (*taskContextIndex, error) {
+	dbPath := filepath.Join(workDir, "task-context-eval.db")
+	metaDir := filepath.Join(workDir, "task-context-eval-meta")
+	store, err := graphstore.OpenSQLite(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("task-context eval: open store: %w", err)
+	}
+	closeOnError := true
+	defer func() {
+		if closeOnError {
+			_ = store.Close()
+		}
+	}()
+	ing, err := ingest.New(store, ingest.NewNotebookParser(parse.NewDefaultRegistry()), metaDir)
+	if err != nil {
+		return nil, fmt.Errorf("task-context eval: ingest.New: %w", err)
+	}
+	fmt.Fprintf(log, "task-context eval: indexing lexical control %s\n", root)
+	if err := ing.IngestAll(ctx, root); err != nil {
+		_ = ing.Close()
+		return nil, fmt.Errorf("task-context eval: index %s: %w", root, err)
+	}
+	if err := ing.Close(); err != nil {
+		return nil, fmt.Errorf("task-context eval: close ingester: %w", err)
+	}
+	stats, err := store.BriefStats(ctx, 0)
+	if err != nil {
+		return nil, fmt.Errorf("task-context eval: inventory: %w", err)
+	}
+	if stats.TotalNodes == 0 {
+		return nil, fmt.Errorf("task-context eval: index produced no nodes")
+	}
+	closeOnError = false
+	return &taskContextIndex{
+		store: store, search: search.New(store), nodes: stats.TotalNodes,
+		edges: stats.TotalEdges, files: len(stats.Files),
+	}, nil
+}
+
 func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string, emb embed.Embedder, _ string, log io.Writer) (*taskContextIndex, error) {
 	dbPath := filepath.Join(workDir, "task-context-eval.db")
 	metaDir := filepath.Join(workDir, "task-context-eval-meta")
@@ -928,7 +1002,8 @@ func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string
 		return nil, fmt.Errorf("task-context eval: enumerate nodes: %w", err)
 	}
 	embedsource.SortNodesByPath(nodes)
-	docs := embedsource.NewFileDocumentSource(ctx, root, emb)
+	fileDocs := embedsource.NewFileDocumentSource(ctx, root, emb)
+	docs := &recordingTaskContextDocuments{source: fileDocs, documents: make(map[model.NodeId]embed.SemanticDocument)}
 	graphGen, err := graphGenerationFromStore(ctx, store)
 	if err != nil {
 		return nil, fmt.Errorf("task-context eval: graph identity: %w", err)
@@ -994,7 +1069,8 @@ func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string
 	closeOnError = false
 	return &taskContextIndex{
 		store: store, search: svc, nodes: stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
-		embedderID: emb.ID(), fingerprint: fp, generationID: gen.ID, persistedVectors: len(rows),
+		embedderID: emb.ID(), fingerprint: fp, generationID: gen.ID, persistedVectors: len(rows), rows: rows,
+		admissionTruncations: fileDocs.Stats().Truncated, admittedDocuments: docs.ordered(),
 	}, nil
 }
 

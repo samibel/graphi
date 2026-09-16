@@ -36,6 +36,7 @@ import (
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/query"
 	engineretrieval "github.com/samibel/graphi/engine/retrieval"
+	"github.com/samibel/graphi/engine/search"
 	cltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 	"github.com/samibel/graphi/surfaces/client"
 	"github.com/samibel/graphi/surfaces/mcp"
@@ -69,9 +70,11 @@ type CapturedCandidateBundle struct {
 	FollowupRead *PreservedPayload `json:"followup_read,omitempty"`
 	// RetrievalStrategy and RetrievalState are the observed engine facts that
 	// prove this was the ready task_context/2 path and not the /1 fallback.
-	RetrievalStrategy string `json:"retrieval_strategy"`
-	RetrievalState    string `json:"retrieval_state"`
-	BundleSummary     string `json:"bundle_summary"`
+	RetrievalStrategy        string                    `json:"retrieval_strategy"`
+	RetrievalState           string                    `json:"retrieval_state"`
+	BundleSummary            string                    `json:"bundle_summary"`
+	Qualification            *QualificationObservation `json:"qualification,omitempty"`
+	QualificationQueryVector []float32                 `json:"qualification_query_vector,omitempty"`
 }
 
 // ValidateCapturedTranscript preserves contract-1 captures unchanged and,
@@ -316,7 +319,8 @@ type CandidateCaptureProvenance struct {
 	QueryCount        int    `json:"query_count"`
 	// Binding is nil only for a capture taken before the binding existed. A
 	// nil binding is a release refusal, not a missing report row.
-	Binding *CandidateBinding `json:"candidate_binding,omitempty"`
+	Binding                  *CandidateBinding         `json:"candidate_binding,omitempty"`
+	QualificationBuildDigest *QualificationBuildDigest `json:"qualification_build_digest,omitempty"`
 }
 
 // GitRepoProbe is the production RepoProbe. Each observation is one git
@@ -391,6 +395,13 @@ type CandidateCaptureOptions struct {
 	WorkDir          string
 	RealCounter      PayloadCounter
 	Log              io.Writer
+	// Embedder is an evaluation-only injection seam. Nil preserves the existing
+	// selector-based construction path byte-for-byte.
+	Embedder                     embed.Embedder
+	ExpectedFingerprint          *embed.Fingerprint
+	QualificationArm             QualificationArm
+	QualificationPreregistration *QualificationPreregistration
+	ManifestBytes                []byte
 	// Binding is the candidate/checkout binding this capture must observe
 	// before it runs, and Probe is how it observes them. Both are required:
 	// an unbound capture produces bytes nobody can attribute to a commit.
@@ -417,8 +428,33 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	if strings.TrimSpace(o.RepoRoot) == "" || strings.TrimSpace(o.RepoSHA) == "" {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: repository root and sha are required", QrelBlindSmokeEvaluationName)
 	}
-	if strings.TrimSpace(o.EmbedderSelector) == "" {
+	if o.QualificationArm != ArmLexical && o.Embedder == nil && strings.TrimSpace(o.EmbedderSelector) == "" {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: a production embedder selector is required", QrelBlindSmokeEvaluationName)
+	}
+	strictQualification := o.ExpectedFingerprint != nil || o.QualificationPreregistration != nil || o.QualificationArm != "" || len(o.ManifestBytes) != 0
+	if strictQualification {
+		if o.QualificationPreregistration == nil || o.QualificationArm == "" {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: arm and preregistration are required")
+		}
+		if o.QualificationArm != ArmLexical && (o.Embedder == nil || o.ExpectedFingerprint == nil) {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: semantic arms require an injected embedder and expected fingerprint")
+		}
+		if err := ValidateQualificationDataset(o.Dataset); err != nil {
+			return nil, provenance, err
+		}
+		if o.Dataset.SHA256 != o.QualificationPreregistration.DatasetSHA256 {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: dataset differs from preregistration")
+		}
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		if err := validateQualificationCaptureBinding(o.QualificationArm, *o.QualificationPreregistration, expected, o.ManifestBytes); err != nil {
+			return nil, provenance, err
+		}
+		if o.QualificationArm != ArmLexical && o.Embedder.ID() != o.ExpectedFingerprint.ModelID {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: injected embedder identity differs from expected fingerprint")
+		}
 	}
 	if o.RealCounter.Count == nil || o.RealCounter.TokenizerID == "" || o.RealCounter.TokenizerID == TokenizerID {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: the pinned real tokenizer counter is required", QrelBlindSmokeEvaluationName)
@@ -450,18 +486,21 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 		defer os.RemoveAll(workDir)
 	}
-	idx, err := buildTaskContextIndex(ctx, o.RepoRoot, workDir, o.EmbedderSelector, o.Log)
+	idx, err := buildCandidateCaptureIndex(ctx, o, o.RepoRoot, workDir, o.Log)
 	if err != nil {
 		return nil, provenance, err
 	}
 	defer idx.store.Close()
 
 	semanticState := idx.search.SemanticState()
-	if semanticState.State != embed.StateReady {
+	if o.QualificationArm != ArmLexical && semanticState.State != embed.StateReady {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: semantic state is %s, want ready; refusing a lexical-fallback bundle", QrelBlindSmokeEvaluationName, semanticState.State)
 	}
-	if semanticState.Requested.Canonical() != idx.fingerprint.Canonical() {
+	if o.QualificationArm != ArmLexical && semanticState.Requested.Canonical() != idx.fingerprint.Canonical() {
 		return nil, provenance, fmt.Errorf("retrieval %s capture: the search service's requested fingerprint does not equal the independently verified generation fingerprint", QrelBlindSmokeEvaluationName)
+	}
+	if err := validateCandidateCaptureFingerprint(o, idx); err != nil {
+		return nil, provenance, err
 	}
 
 	querySvc := query.New(idx.store)
@@ -470,6 +509,14 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		return nil, provenance, fmt.Errorf("retrieval %s capture: retrieval.New returned nil", QrelBlindSmokeEvaluationName)
 	}
 
+	modelFingerprint := idx.embedderID
+	indexFingerprint := idx.fingerprint.Canonical()
+	if o.QualificationArm == ArmLexical {
+		modelFingerprint = ""
+		indexFingerprint = ""
+	} else if strictQualification {
+		modelFingerprint = idx.fingerprint.Canonical()
+	}
 	provenance = CandidateCaptureProvenance{
 		CaptureVersion:    CandidateCaptureVersion,
 		Transport:         "MCP stdio JSON-RPC 2.0 (surfaces/mcp.Server.Serve, line-delimited)",
@@ -479,8 +526,8 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		RepoSHA:           head,
 		DatasetSHA256:     o.Dataset.SHA256,
 		EmbedderSelector:  o.EmbedderSelector,
-		ModelFingerprint:  idx.embedderID,
-		IndexFingerprint:  idx.fingerprint.Canonical(),
+		ModelFingerprint:  modelFingerprint,
+		IndexFingerprint:  indexFingerprint,
 		GenerationID:      string(idx.generationID),
 		PersistedVectors:  idx.persistedVectors,
 		SemanticState:     semanticState.State.String(),
@@ -500,10 +547,72 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		}
 		captured = append(captured, bundle)
 	}
+	if strictQualification {
+		inputs := qualificationBuildInputs{Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments, QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured))}
+		for _, bundle := range captured {
+			inputs.QueryVectors[bundle.QueryID] = bundle.QualificationQueryVector
+			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
+		}
+		digest := buildQualificationDigest(o.QualificationArm, inputs)
+		provenance.QualificationBuildDigest = &digest
+	}
 	return captured, provenance, nil
 }
 
+func buildCandidateCaptureIndex(ctx context.Context, o CandidateCaptureOptions, root, workDir string, log io.Writer) (*taskContextIndex, error) {
+	if o.QualificationArm == ArmLexical {
+		return buildTaskContextLexicalIndex(ctx, root, workDir, log)
+	}
+	if o.Embedder != nil {
+		return buildTaskContextIndexWithEmbedder(ctx, root, workDir, o.Embedder, o.EmbedderSelector, log)
+	}
+	return buildTaskContextIndex(ctx, root, workDir, o.EmbedderSelector, log)
+}
+
+func validateCandidateCaptureFingerprint(o CandidateCaptureOptions, idx *taskContextIndex) error {
+	if o.ExpectedFingerprint == nil {
+		return nil
+	}
+	if idx == nil {
+		return fmt.Errorf("embedded-model qualification capture: no loaded index")
+	}
+	want := o.ExpectedFingerprint.Canonical()
+	state := idx.search.SemanticState()
+	if idx.fingerprint.Canonical() != want || state.Requested.Canonical() != want {
+		return fmt.Errorf("embedded-model qualification capture: loaded generation and search request must equal the expected canonical fingerprint")
+	}
+	return nil
+}
+
 func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q Query, querySvc *query.Service, idx *taskContextIndex, realEngine TaskContextEngine) (CapturedCandidateBundle, error) {
+	var qualificationResult engineretrieval.Result
+	var semanticHits []search.SemanticHit
+	var queryVector []float32
+	strictQualification := o.QualificationPreregistration != nil
+	if strictQualification {
+		mode := engineretrieval.ModeLexicalOnly
+		if o.QualificationArm != ArmLexical {
+			vectors, err := embed.EmbedQuery(ctx, o.Embedder, q.Text)
+			if err != nil {
+				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s vector capture: %w", q.ID, err)
+			}
+			if len(vectors) != 1 || len(vectors[0]) != o.ExpectedFingerprint.Dim {
+				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s vector shape is invalid", q.ID)
+			}
+			queryVector = append([]float32(nil), vectors[0]...)
+			semantic, err := idx.search.SemanticSearch(ctx, q.Text, 50)
+			if err != nil || !semantic.Available || semantic.State != embed.StateReady {
+				return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s semantic top-50 unavailable: %v", q.ID, err)
+			}
+			semanticHits = semantic.Hits
+			mode = engineretrieval.ModeAuto
+		}
+		var err error
+		qualificationResult, err = realEngine.Retrieve(ctx, engineretrieval.Request{Query: q.Text, Limit: 50, Mode: mode})
+		if err != nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s post-fusion retrieval: %w", q.ID, err)
+		}
+	}
 	// One adapter per query, so "exactly one task_context/2 call" is observed
 	// per query rather than inferred from a running total.
 	adapter := NewTaskContextRetriever(realEngine)
@@ -533,14 +642,34 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s retrieval errored (%v); the bundle would be a fallback", QrelBlindSmokeEvaluationName, q.ID, adapter.LastErr())
 	}
 	last := adapter.LastResult()
-	if last.Degradation != string(engineretrieval.StateReady) {
+	if o.QualificationArm != ArmLexical && last.Degradation != string(engineretrieval.StateReady) {
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s retrieval state is %q, want ready", QrelBlindSmokeEvaluationName, q.ID, last.Degradation)
 	}
-	if last.Summary.RetrievalVersion != engineretrieval.Version || last.Summary.Strategy != "semantic_first" {
-		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s method is %s/%s, want %s/semantic_first", QrelBlindSmokeEvaluationName, q.ID, last.Summary.RetrievalVersion, last.Summary.Strategy, engineretrieval.Version)
+	wantStrategy := "semantic_first"
+	wantState := string(engineretrieval.StateReady)
+	if o.QualificationArm == ArmLexical {
+		wantStrategy = "lexical_only"
+		wantState = string(engineretrieval.StateLexicalOnly)
+	}
+	if last.Summary.RetrievalVersion != engineretrieval.Version || last.Summary.Strategy != wantStrategy || last.Degradation != wantState {
+		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s method is %s/%s state %s, want %s/%s state %s", QrelBlindSmokeEvaluationName, q.ID, last.Summary.RetrievalVersion, last.Summary.Strategy, last.Degradation, engineretrieval.Version, wantStrategy, wantState)
+	}
+	if strictQualification {
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		if err := validateQualificationRetrieverSummary(o.QualificationArm, expected, last); err != nil {
+			return CapturedCandidateBundle{}, err
+		}
 	}
 
-	summary, err := ValidateCompactCandidateBundleBytes(q.ID, responseBytes)
+	var summary string
+	if o.QualificationArm == ArmLexical {
+		summary, err = validateQualificationLexicalBundleBytes(q.ID, responseBytes)
+	} else {
+		summary, err = ValidateCompactCandidateBundleBytes(q.ID, responseBytes)
+	}
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
@@ -549,14 +678,141 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	if err != nil {
 		return CapturedCandidateBundle{}, err
 	}
-	return CapturedCandidateBundle{
-		QueryID:           q.ID,
-		RequestBytes:      request,
-		Payload:           payload,
-		RetrievalStrategy: last.Summary.Strategy,
-		RetrievalState:    last.Degradation,
-		BundleSummary:     summary,
-	}, nil
+	capturedOut := CapturedCandidateBundle{
+		QueryID:                  q.ID,
+		RequestBytes:             request,
+		Payload:                  payload,
+		RetrievalStrategy:        last.Summary.Strategy,
+		RetrievalState:           last.Degradation,
+		BundleSummary:            summary,
+		QualificationQueryVector: queryVector,
+	}
+	if strictQualification {
+		var structured taskcompact.Structured
+		var bundleBytes []byte
+		if o.QualificationArm == ArmLexical {
+			bundleBytes = []byte(summary)
+			structured.Sources, err = qualificationLexicalSources(summary)
+			if err != nil {
+				return CapturedCandidateBundle{}, err
+			}
+		} else {
+			structured, err = qualificationStructuredFromPayload(responseBytes)
+			if err != nil {
+				return CapturedCandidateBundle{}, err
+			}
+		}
+		expected := embed.Fingerprint{}
+		if o.ExpectedFingerprint != nil {
+			expected = *o.ExpectedFingerprint
+		}
+		modelFingerprint := idx.fingerprint.Canonical()
+		if o.QualificationArm == ArmLexical {
+			modelFingerprint = ""
+		}
+		observation, err := captureQualificationObservation(qualificationCaptureFacts{
+			Arm: o.QualificationArm, Query: q, SemanticState: idx.search.SemanticState().State,
+			ExpectedFingerprint: expected, IndexFingerprint: idx.fingerprint,
+			SearchFingerprint: idx.search.SemanticState().Requested, ModelFingerprint: modelFingerprint,
+			Retrieval: qualificationResult, SemanticHits: semanticHits, Payload: payload, Structured: structured, BundleBytes: bundleBytes,
+			AdmissionTruncations: idx.admissionTruncations, ZeroVectors: qualificationZeroVectors(idx.rows),
+		})
+		if err != nil {
+			return CapturedCandidateBundle{}, err
+		}
+		capturedOut.Qualification = &observation
+	}
+	return capturedOut, nil
+}
+
+func validateQualificationRetrieverSummary(arm QualificationArm, expected embed.Fingerprint, got resolve.RetrieverResult) error {
+	if arm == ArmLexical {
+		if got.Degradation != string(engineretrieval.StateLexicalOnly) || got.Summary.ModelFingerprint != "" || got.Summary.IndexFingerprint != "" {
+			return fmt.Errorf("embedded-model qualification capture: lexical payload retrieval carries semantic state or identity")
+		}
+		return nil
+	}
+	want := expected.Canonical()
+	if got.Degradation != string(engineretrieval.StateReady) || got.Summary.ModelFingerprint != want || got.Summary.IndexFingerprint != want {
+		return fmt.Errorf("embedded-model qualification capture: payload retrieval state and fingerprints do not equal the preregistered canonical identity")
+	}
+	return nil
+}
+
+func validateQualificationLexicalBundleBytes(queryID string, raw []byte) (string, error) {
+	if len(raw) == 0 || !bytes.HasPrefix(raw, []byte(candidateJSONRPCPrefix)) || raw[len(raw)-1] != '\n' || bytes.Count(raw, []byte{'\n'}) != 1 {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s is not one exact MCP response", queryID)
+	}
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil || envelope.Result == nil || envelope.Result.IsError || len(envelope.Result.Content) != 1 || envelope.Result.Content[0].Type != "text" {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s is not one successful MCP result", queryID)
+	}
+	if strings.TrimSpace(envelope.Result.Content[0].Text) == "" {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s returned an empty bundle", queryID)
+	}
+	var bundle contract.Result
+	decoder := json.NewDecoder(strings.NewReader(envelope.Result.Content[0].Text))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&bundle); err != nil || contract.ValidateResult(&bundle) != nil {
+		return "", fmt.Errorf("embedded-model qualification capture: lexical query %s did not serialize one valid task-context bundle", queryID)
+	}
+	return envelope.Result.Content[0].Text, nil
+}
+
+func qualificationLexicalSources(raw string) ([]taskcompact.Source, error) {
+	var bundle contract.Result
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&bundle); err != nil {
+		return nil, fmt.Errorf("embedded-model qualification capture: decode lexical bundle sources: %w", err)
+	}
+	sources := make([]taskcompact.Source, 0)
+	for _, evidence := range bundle.Evidence {
+		if evidence.Snippet == "" {
+			continue
+		}
+		start, end := 0, 0
+		if _, err := fmt.Sscanf(evidence.Span, "%d-%d", &start, &end); err != nil {
+			start = evidence.Line
+			end = start + len(strings.Split(evidence.Snippet, "\n")) - 1
+		}
+		if start < 1 || end < start || end-start+1 != len(strings.Split(evidence.Snippet, "\n")) {
+			return nil, fmt.Errorf("embedded-model qualification capture: lexical evidence %s has inconsistent serialized span", evidence.RefID)
+		}
+		sources = append(sources, taskcompact.Source{Path: evidence.Path, StartLine: start, EndLine: end, Text: evidence.Snippet})
+	}
+	return sources, nil
+}
+
+func qualificationStructuredFromPayload(raw []byte) (taskcompact.Structured, error) {
+	var envelope candidateResponseEnvelope
+	if err := json.Unmarshal(raw, &envelope); err != nil || envelope.Result == nil {
+		return taskcompact.Structured{}, fmt.Errorf("embedded-model qualification capture: decode preserved compact payload: %v", err)
+	}
+	var structured taskcompact.Structured
+	decoder := json.NewDecoder(bytes.NewReader(envelope.Result.StructuredContent))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&structured); err != nil {
+		return taskcompact.Structured{}, fmt.Errorf("embedded-model qualification capture: decode compact structured content: %w", err)
+	}
+	return structured, nil
+}
+
+func qualificationZeroVectors(rows []embed.Row) int {
+	zero := 0
+	for _, row := range rows {
+		allZero := len(row.Vector) > 0
+		for _, value := range row.Vector {
+			if value != 0 {
+				allZero = false
+				break
+			}
+		}
+		if allZero {
+			zero++
+		}
+	}
+	return zero
 }
 
 // candidateToolCallRequest builds the one request line. token_budget and

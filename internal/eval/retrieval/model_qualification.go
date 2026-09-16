@@ -1,14 +1,25 @@
 package retrieval
 
 import (
+	"bytes"
+	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
+	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
 	"github.com/samibel/graphi/engine/embed"
 	"github.com/samibel/graphi/engine/embed/coderank"
 	"github.com/samibel/graphi/engine/embed/static"
+	engineretrieval "github.com/samibel/graphi/engine/retrieval"
+	"github.com/samibel/graphi/engine/search"
 )
 
 const (
@@ -130,6 +141,562 @@ type ReferenceMachine struct {
 	PhysicalCores  int    `json:"physical_cores"`
 	RuntimeThreads int    `json:"runtime_threads"`
 	BackgroundLoad string `json:"background_load"`
+}
+
+// StageHit records whether a grade-3 answer span appeared at a fixed ranking
+// boundary and, when it did, its one-based best rank.
+type StageHit struct {
+	Present  bool `json:"present"`
+	BestRank int  `json:"best_rank"`
+}
+
+// QualificationObservation is one immutable arm/query observation. Candidate
+// and bundle production complete before the grade-3 spans are consulted to
+// populate the three evaluation-only stage fields.
+type QualificationObservation struct {
+	Arm                  QualificationArm `json:"arm"`
+	QueryID              string           `json:"query_id"`
+	Stratum              string           `json:"stratum"`
+	SemanticTop50        StageHit         `json:"semantic_top_50"`
+	PostFusion           StageHit         `json:"post_fusion"`
+	CompleteGrade3Span   bool             `json:"complete_grade_3_span"`
+	BundleSHA256         string           `json:"bundle_sha256"`
+	PayloadSHA256        string           `json:"payload_sha256"`
+	BundleTokens         int              `json:"bundle_tokens"`
+	AdmissionTruncations int              `json:"admission_truncations"`
+	UnknownTokens        int              `json:"unknown_tokens"`
+	ZeroVectors          int              `json:"zero_vectors"`
+	RetrievalState       string           `json:"retrieval_state"`
+	ModelFingerprint     string           `json:"model_fingerprint"`
+	IndexFingerprint     string           `json:"index_fingerprint"`
+	Degraded             bool             `json:"degraded"`
+}
+
+// QualificationBuildDigest separates the independently reproducible byte
+// classes. Staging generation IDs are intentionally absent from all four
+// inputs; no other persisted field is excluded.
+type QualificationBuildDigest struct {
+	Arm                 QualificationArm `json:"arm"`
+	VectorBytesSHA256   string           `json:"vector_bytes_sha256"`
+	PersistedRowsSHA256 string           `json:"persisted_rows_sha256"`
+	BundlesSHA256       string           `json:"bundles_sha256"`
+	TokenCountsSHA256   string           `json:"token_counts_sha256"`
+}
+
+type qualificationCaptureFacts struct {
+	Arm                  QualificationArm
+	Query                Query
+	SemanticState        embed.State
+	ExpectedFingerprint  embed.Fingerprint
+	IndexFingerprint     embed.Fingerprint
+	SearchFingerprint    embed.Fingerprint
+	ModelFingerprint     string
+	Retrieval            engineretrieval.Result
+	SemanticHits         []search.SemanticHit
+	Payload              PreservedPayload
+	Structured           taskcompact.Structured
+	BundleBytes          []byte
+	AdmissionTruncations int
+	UnknownTokens        int
+	ZeroVectors          int
+}
+
+// captureQualificationObservation validates every semantic-space identity
+// before it accepts payload bytes into a qualification observation. Qrels are
+// read only after the two unmodified candidate lists and payload already exist.
+func captureQualificationObservation(f qualificationCaptureFacts) (QualificationObservation, error) {
+	if strings.TrimSpace(f.Query.ID) == "" {
+		return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query id is required")
+	}
+	if f.Retrieval.Summary.RetrievalVersion != engineretrieval.Version || f.Retrieval.Summary.Limit != 50 {
+		return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval method is %s limit %d, want %s limit 50", f.Query.ID, f.Retrieval.Summary.RetrievalVersion, f.Retrieval.Summary.Limit, engineretrieval.Version)
+	}
+
+	expected := f.ExpectedFingerprint.Canonical()
+	if f.Arm == ArmLexical {
+		if f.ExpectedFingerprint != (embed.Fingerprint{}) || f.IndexFingerprint != (embed.Fingerprint{}) ||
+			f.SearchFingerprint != (embed.Fingerprint{}) || f.ModelFingerprint != "" {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: lexical control query %s carries loaded semantic identity", f.Query.ID)
+		}
+		if f.Retrieval.Degradation != engineretrieval.StateLexicalOnly || f.Retrieval.Summary.Strategy != "lexical_only" {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: lexical control query %s is %s/%s, want recorded lexical_only control", f.Query.ID, f.Retrieval.Degradation, f.Retrieval.Summary.Strategy)
+		}
+		if f.Retrieval.Summary.ModelFingerprint != "" || f.Retrieval.Summary.IndexFingerprint != "" {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: lexical control query %s carries a semantic fingerprint", f.Query.ID)
+		}
+	} else {
+		if f.SemanticState != embed.StateReady {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s semantic state is %s, want ready", f.Query.ID, f.SemanticState)
+		}
+		for _, identity := range []struct{ name, value string }{
+			{name: "loaded generation", value: f.IndexFingerprint.Canonical()},
+			{name: "search request", value: f.SearchFingerprint.Canonical()},
+			{name: "capture model", value: f.ModelFingerprint},
+			{name: "retrieval model", value: f.Retrieval.Summary.ModelFingerprint},
+			{name: "retrieval index", value: f.Retrieval.Summary.IndexFingerprint},
+		} {
+			if identity.value != expected {
+				return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s %s fingerprint does not equal preregistered canonical fingerprint", f.Query.ID, identity.name)
+			}
+		}
+		if f.Retrieval.Degradation != engineretrieval.StateReady || f.Retrieval.Summary.Strategy != "semantic_first" {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s retrieval is %s/%s, want ready semantic_first", f.Query.ID, f.Retrieval.Degradation, f.Retrieval.Summary.Strategy)
+		}
+	}
+	if len(f.Payload.Bytes) == 0 || f.Payload.SHA256 != SHA256Hex(f.Payload.Bytes) || f.Payload.ByteCount != len(f.Payload.Bytes) {
+		return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s payload bytes are not content-addressed", f.Query.ID)
+	}
+	bundleRaw := f.BundleBytes
+	if bundleRaw == nil {
+		var err error
+		bundleRaw, err = json.Marshal(f.Structured)
+		if err != nil {
+			return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s bundle: %w", f.Query.ID, err)
+		}
+	}
+	bundleTokens := -1
+	for _, count := range f.Payload.TokenCounts {
+		if count.TokenizerID == TokenizerID {
+			bundleTokens = count.Tokens
+			break
+		}
+	}
+	if bundleTokens < 0 || bundleTokens > QualificationTokenBudget {
+		return QualificationObservation{}, fmt.Errorf("embedded-model qualification capture: query %s governed token count is %d, want 0..%d", f.Query.ID, bundleTokens, QualificationTokenBudget)
+	}
+
+	return QualificationObservation{
+		Arm: f.Arm, QueryID: f.Query.ID, Stratum: f.Query.Stratum,
+		SemanticTop50:      qualificationSemanticStage(f.Query, f.SemanticHits),
+		PostFusion:         qualificationRetrievalStage(f.Query, f.Retrieval.Rows),
+		CompleteGrade3Span: qualificationCompleteGrade3Span(f.Query, f.Structured.Sources),
+		BundleSHA256:       SHA256Hex(bundleRaw), PayloadSHA256: f.Payload.SHA256, BundleTokens: bundleTokens,
+		AdmissionTruncations: f.AdmissionTruncations, UnknownTokens: f.UnknownTokens, ZeroVectors: f.ZeroVectors,
+		RetrievalState: string(f.Retrieval.Degradation), ModelFingerprint: f.Retrieval.Summary.ModelFingerprint,
+		IndexFingerprint: f.Retrieval.Summary.IndexFingerprint, Degraded: false,
+	}, nil
+}
+
+func qualificationSemanticStage(q Query, hits []search.SemanticHit) StageHit {
+	for i, hit := range hits {
+		for _, judgement := range q.Judgements {
+			if judgement.Grade == GradeMax && SpanMatches(hit.SourcePath, hit.Line, judgement) {
+				return StageHit{Present: true, BestRank: i + 1}
+			}
+		}
+	}
+	return StageHit{}
+}
+
+func qualificationRetrievalStage(q Query, rows []engineretrieval.Row) StageHit {
+	for i, row := range rows {
+		line := taskContextLineFromSpan(row.Span)
+		for _, judgement := range q.Judgements {
+			if judgement.Grade == GradeMax && SpanMatches(row.Path, line, judgement) {
+				return StageHit{Present: true, BestRank: i + 1}
+			}
+		}
+	}
+	return StageHit{}
+}
+
+func qualificationCompleteGrade3Span(q Query, sources []taskcompact.Source) bool {
+	for _, judgement := range q.Judgements {
+		if judgement.Grade != GradeMax {
+			continue
+		}
+		complete := true
+		for line := judgement.StartLine; line <= judgement.EndLine; line++ {
+			covered := false
+			for _, source := range sources {
+				if SpanMatches(source.Path, line, judgement) && line >= source.StartLine && line <= source.EndLine {
+					covered = true
+					break
+				}
+			}
+			if !covered {
+				complete = false
+				break
+			}
+		}
+		if complete {
+			return true
+		}
+	}
+	return false
+}
+
+func validateQualificationCaptureBinding(arm QualificationArm, pre QualificationPreregistration, expected embed.Fingerprint, manifestBytes []byte) error {
+	if err := ValidateQualificationPreregistration(pre); err != nil {
+		return err
+	}
+	pin, ok := pre.Arms[arm]
+	if !ok {
+		return fmt.Errorf("embedded-model qualification capture: arm %s is not preregistered", arm)
+	}
+	if arm == ArmLexical {
+		if expected != (embed.Fingerprint{}) {
+			return fmt.Errorf("embedded-model qualification capture: lexical arm has an expected semantic fingerprint")
+		}
+		return nil
+	}
+	if pin.FingerprintCanonical != expected.Canonical() {
+		return fmt.Errorf("embedded-model qualification capture: arm %s expected fingerprint does not equal preregistration", arm)
+	}
+	if arm == ArmCodeRank {
+		if len(manifestBytes) == 0 || SHA256Hex(manifestBytes) != pin.ManifestSHA256 {
+			return fmt.Errorf("embedded-model qualification capture: CodeRank manifest bytes do not equal preregistered manifest_sha256")
+		}
+	}
+	return nil
+}
+
+type qualificationBuildInputs struct {
+	Rows              []embed.Row
+	AdmittedDocuments []embed.SemanticDocument
+	QueryVectors      map[string][]float32
+	Payloads          []PreservedPayload
+}
+
+func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs) QualificationBuildDigest {
+	rows := append([]embed.Row(nil), in.Rows...)
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].NodeID != rows[j].NodeID {
+			return rows[i].NodeID < rows[j].NodeID
+		}
+		return rows[i].DocumentID < rows[j].DocumentID
+	})
+	var vectors, persisted, bundles, tokens bytes.Buffer
+	documents := append([]embed.SemanticDocument(nil), in.AdmittedDocuments...)
+	sort.Slice(documents, func(i, j int) bool {
+		if documents[i].NodeID != documents[j].NodeID {
+			return documents[i].NodeID < documents[j].NodeID
+		}
+		return documents[i].DocumentID < documents[j].DocumentID
+	})
+	for _, document := range documents {
+		raw, _ := json.Marshal(document)
+		qualificationWriteString(&persisted, "admitted_document")
+		qualificationWriteBytes(&persisted, raw)
+		qualificationWriteString(&tokens, "admitted_document")
+		qualificationWriteString(&tokens, string(document.NodeID))
+		_ = binary.Write(&tokens, binary.BigEndian, int64(document.AdmissionTokenCount))
+		_ = binary.Write(&tokens, binary.BigEndian, int64(document.AdmissionLimit))
+	}
+	for _, row := range rows {
+		qualificationWriteString(&persisted, "persisted_row")
+		qualificationWriteString(&persisted, string(row.NodeID))
+		qualificationWriteString(&persisted, row.DocumentID)
+		qualificationWriteString(&persisted, row.TextHash)
+		qualificationWriteString(&persisted, row.Path)
+		_ = binary.Write(&persisted, binary.BigEndian, int64(row.StartLine))
+		_ = binary.Write(&persisted, binary.BigEndian, int64(row.EndLine))
+		qualificationWriteString(&persisted, row.SpanMethod)
+		qualificationWriteVector(&persisted, row.Vector)
+		qualificationWriteString(&vectors, "document")
+		qualificationWriteString(&vectors, string(row.NodeID))
+		qualificationWriteVector(&vectors, row.Vector)
+	}
+	queryIDs := make([]string, 0, len(in.QueryVectors))
+	for id := range in.QueryVectors {
+		queryIDs = append(queryIDs, id)
+	}
+	sort.Strings(queryIDs)
+	for _, id := range queryIDs {
+		qualificationWriteString(&vectors, "query")
+		qualificationWriteString(&vectors, id)
+		qualificationWriteVector(&vectors, in.QueryVectors[id])
+	}
+	for _, payload := range in.Payloads {
+		qualificationWriteBytes(&bundles, payload.Bytes)
+		qualificationWriteString(&bundles, payload.SHA256)
+		counts := append([]PayloadTokenCount(nil), payload.TokenCounts...)
+		sort.Slice(counts, func(i, j int) bool { return counts[i].TokenizerID < counts[j].TokenizerID })
+		for _, count := range counts {
+			qualificationWriteString(&tokens, "payload")
+			qualificationWriteString(&tokens, count.TokenizerID)
+			qualificationWriteString(&tokens, count.VocabularySHA256)
+			_ = binary.Write(&tokens, binary.BigEndian, int64(count.Tokens))
+		}
+	}
+	return QualificationBuildDigest{
+		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
+		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
+	}
+}
+
+func compareQualificationBuildDigests(first, second QualificationBuildDigest) error {
+	if first.Arm != second.Arm {
+		return fmt.Errorf("embedded-model qualification reproducibility: arm changed from %s to %s", first.Arm, second.Arm)
+	}
+	for _, digest := range []struct{ name, first, second string }{
+		{"vector bytes", first.VectorBytesSHA256, second.VectorBytesSHA256},
+		{"persisted rows", first.PersistedRowsSHA256, second.PersistedRowsSHA256},
+		{"bundles", first.BundlesSHA256, second.BundlesSHA256},
+		{"token counts", first.TokenCountsSHA256, second.TokenCountsSHA256},
+	} {
+		if digest.first != digest.second {
+			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)
+		}
+	}
+	return nil
+}
+
+func qualificationWriteString(buf *bytes.Buffer, value string) {
+	qualificationWriteBytes(buf, []byte(value))
+}
+
+func qualificationWriteBytes(buf *bytes.Buffer, value []byte) {
+	_ = binary.Write(buf, binary.BigEndian, uint64(len(value)))
+	_, _ = buf.Write(value)
+}
+
+func qualificationWriteVector(buf *bytes.Buffer, vector []float32) {
+	_ = binary.Write(buf, binary.BigEndian, uint64(len(vector)))
+	for _, value := range vector {
+		_ = binary.Write(buf, binary.BigEndian, math.Float32bits(value))
+	}
+}
+
+type qualificationEnvironment struct {
+	Repo, Dataset, Preregistration, CodeRankManifest, Out, StaticModelDir string
+}
+
+func qualificationEnvironmentFromOS() qualificationEnvironment {
+	return qualificationEnvironment{
+		Repo: os.Getenv("GRAPHI_QUALIFICATION_REPO"), Dataset: os.Getenv("GRAPHI_QUALIFICATION_DATASET"),
+		Preregistration: os.Getenv("GRAPHI_QUALIFICATION_PREREGISTRATION"), CodeRankManifest: os.Getenv("GRAPHI_CODERANK_MANIFEST"),
+		Out: os.Getenv("GRAPHI_QUALIFICATION_OUT"), StaticModelDir: os.Getenv("GRAPHI_STATIC_MODEL_DIR"),
+	}
+}
+
+func runEmbeddedModelQualificationCapture(ctx context.Context, env qualificationEnvironment) error {
+	for _, field := range []struct{ name, value string }{
+		{"repository", env.Repo}, {"dataset", env.Dataset}, {"preregistration", env.Preregistration},
+		{"CodeRank manifest", env.CodeRankManifest}, {"output", env.Out}, {"static model directory", env.StaticModelDir},
+	} {
+		if strings.TrimSpace(field.value) == "" {
+			return fmt.Errorf("embedded-model qualification capture: %s is required", field.name)
+		}
+	}
+	entries, err := os.ReadDir(env.Out)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: read output directory: %w", err)
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("embedded-model qualification capture: output directory %s is not empty", env.Out)
+	}
+	loaded, err := LoadDataset(env.Dataset)
+	if err != nil {
+		return err
+	}
+	if err := ValidateQualificationDataset(loaded); err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(env.Preregistration)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: read preregistration: %w", err)
+	}
+	pre, err := decodeQualificationCapturePreregistration(raw)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: parse preregistration: %w", err)
+	}
+	if pre.DatasetSHA256 != loaded.SHA256 {
+		return fmt.Errorf("embedded-model qualification capture: dataset differs from preregistration")
+	}
+	manifestBytes, err := os.ReadFile(env.CodeRankManifest)
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: read CodeRank manifest: %w", err)
+	}
+	if SHA256Hex(manifestBytes) != pre.Arms[ArmCodeRank].ManifestSHA256 {
+		return fmt.Errorf("embedded-model qualification capture: loaded CodeRank manifest bytes differ from preregistration")
+	}
+	// The live driver refuses to manufacture partial evidence. Arm construction,
+	// capture, and two-build comparison are implemented by the test harness in a
+	// single invocation; absence of the pinned model artifacts is an error.
+	if _, err := os.Stat(filepath.Join(env.StaticModelDir, static.FileSafetensors)); err != nil {
+		return fmt.Errorf("embedded-model qualification capture: pinned Potion artifact: %w", err)
+	}
+	candidateRoot, err := qualificationModuleRoot()
+	if err != nil {
+		return err
+	}
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		return fmt.Errorf("embedded-model qualification capture: load pinned payload tokenizer: %w", err)
+	}
+
+	arms := []QualificationArm{ArmLexical, ArmPotion512, ArmPotion8192, ArmCodeRank}
+	first := make(map[QualificationArm]QualificationBuildDigest, len(arms))
+	for build := 1; build <= 2; build++ {
+		for _, arm := range arms {
+			emb, expected, armManifest, err := qualificationArmEmbedder(ctx, arm, pre, env.CodeRankManifest)
+			if err != nil {
+				return err
+			}
+			armDir := filepath.Join(env.Out, fmt.Sprintf("build-%d", build), string(arm))
+			workDir := filepath.Join(armDir, "work")
+			if err := os.MkdirAll(workDir, 0o755); err != nil {
+				return fmt.Errorf("embedded-model qualification capture: create arm directory: %w", err)
+			}
+			opts := CandidateCaptureOptions{
+				RepoRoot: env.Repo, RepoName: loaded.Dataset.Repo, RepoSHA: pre.SourceRepoSHA,
+				Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
+				RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
+				QualificationArm: arm, QualificationPreregistration: &pre,
+				Binding: CandidateBindingOptions{
+					CandidateRoot: candidateRoot, FrozenCandidateSHA: pre.CandidateSHA,
+					ExcludePath: "docs/eval/retrieval/runs/embedded-model-qualification",
+				},
+				Probe: GitRepoProbe(),
+			}
+			if arm == ArmCodeRank {
+				opts.ManifestBytes = armManifest
+			}
+			captured, provenance, err := CaptureCandidateBundles(ctx, opts)
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification capture: build %d arm %s: %w", build, arm, err)
+			}
+			if provenance.QualificationBuildDigest == nil || len(captured) != len(loaded.Dataset.Queries) {
+				return fmt.Errorf("embedded-model qualification capture: build %d arm %s produced incomplete evidence", build, arm)
+			}
+			observations := make([]QualificationObservation, 0, len(captured))
+			for _, bundle := range captured {
+				if bundle.Qualification == nil {
+					return fmt.Errorf("embedded-model qualification capture: build %d arm %s query %s has no observation", build, arm, bundle.QueryID)
+				}
+				observations = append(observations, *bundle.Qualification)
+			}
+			artifact := struct {
+				Build        int                        `json:"build"`
+				Arm          QualificationArm           `json:"arm"`
+				Provenance   CandidateCaptureProvenance `json:"provenance"`
+				Digest       QualificationBuildDigest   `json:"digest"`
+				Observations []QualificationObservation `json:"observations"`
+				Bundles      []CapturedCandidateBundle  `json:"bundles"`
+			}{build, arm, provenance, *provenance.QualificationBuildDigest, observations, captured}
+			artifactBytes, err := json.MarshalIndent(artifact, "", "  ")
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification capture: encode build %d arm %s: %w", build, arm, err)
+			}
+			artifactBytes = append(artifactBytes, '\n')
+			if err := os.WriteFile(filepath.Join(armDir, "capture.json"), artifactBytes, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification capture: write build %d arm %s: %w", build, arm, err)
+			}
+			if build == 1 {
+				first[arm] = *provenance.QualificationBuildDigest
+			} else if err := compareQualificationBuildDigests(first[arm], *provenance.QualificationBuildDigest); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func decodeQualificationCapturePreregistration(raw []byte) (QualificationPreregistration, error) {
+	var pre QualificationPreregistration
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&pre); err != nil {
+		return QualificationPreregistration{}, err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		if err == nil {
+			return QualificationPreregistration{}, fmt.Errorf("trailing JSON value")
+		}
+		return QualificationPreregistration{}, fmt.Errorf("trailing bytes: %w", err)
+	}
+	if err := ValidateQualificationPreregistration(pre); err != nil {
+		return QualificationPreregistration{}, err
+	}
+	return pre, nil
+}
+
+func qualificationArmEmbedder(ctx context.Context, arm QualificationArm, pre QualificationPreregistration, manifestPath string) (embed.Embedder, *embed.Fingerprint, []byte, error) {
+	if arm == ArmLexical {
+		return nil, nil, nil, nil
+	}
+	pin, ok := pre.Arms[arm]
+	if !ok {
+		return nil, nil, nil, fmt.Errorf("embedded-model qualification capture: arm %s is not preregistered", arm)
+	}
+	fingerprint, err := qualificationFingerprintFromCanonical(pin.FingerprintCanonical)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("embedded-model qualification capture: arm %s fingerprint: %w", arm, err)
+	}
+	var emb embed.Embedder
+	var loadedManifest []byte
+	switch arm {
+	case ArmPotion512:
+		emb, err = static.New(static.PinnedSelector)
+	case ArmPotion8192:
+		emb, err = static.NewForEvaluation(static.PinnedSelector, 8192)
+	case ArmCodeRank:
+		loadedManifest, err = readStableQualificationManifest(manifestPath, pin.ManifestSHA256, func() error {
+			var constructErr error
+			emb, constructErr = coderank.NewFromManifest(ctx, manifestPath)
+			return constructErr
+		})
+	default:
+		return nil, nil, nil, fmt.Errorf("embedded-model qualification capture: unknown arm %s", arm)
+	}
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("embedded-model qualification capture: construct arm %s: %w", arm, err)
+	}
+	return emb, &fingerprint, loadedManifest, nil
+}
+
+func readStableQualificationManifest(path, expectedSHA256 string, duringRead func() error) ([]byte, error) {
+	before, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read manifest before constructor: %w", err)
+	}
+	if SHA256Hex(before) != expectedSHA256 {
+		return nil, fmt.Errorf("manifest before constructor differs from preregistered sha256")
+	}
+	if err := duringRead(); err != nil {
+		return nil, err
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read manifest after constructor: %w", err)
+	}
+	if !bytes.Equal(before, after) || SHA256Hex(after) != expectedSHA256 {
+		return nil, fmt.Errorf("manifest changed while the CodeRank adapter was constructed")
+	}
+	return after, nil
+}
+
+func qualificationFingerprintFromCanonical(canonical string) (embed.Fingerprint, error) {
+	fields, ok := decodeQualificationFingerprint(canonical)
+	if !ok || len(fields) != 8 {
+		return embed.Fingerprint{}, fmt.Errorf("invalid canonical fingerprint")
+	}
+	dim, err := strconv.Atoi(fields[4])
+	if err != nil {
+		return embed.Fingerprint{}, fmt.Errorf("invalid dimension: %w", err)
+	}
+	return embed.Fingerprint{
+		ModelID: fields[0], Revision: fields[1], ModelSHA256: fields[2], TokenizerSHA256: fields[3],
+		Dim: dim, DocumentSchema: fields[5], ChunkerConfig: fields[6], GraphGeneration: fields[7],
+	}, nil
+}
+
+func qualificationModuleRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("embedded-model qualification capture: working directory: %w", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("embedded-model qualification capture: could not find module root")
+		}
+		dir = parent
+	}
 }
 
 // ValidateQualificationDataset accepts exactly one fresh, holdout-shaped
