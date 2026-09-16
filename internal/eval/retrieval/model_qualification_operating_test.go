@@ -41,6 +41,8 @@ func TestOperatingEvidenceRejectsMutatedBindingsEvenWhenResealed(t *testing.T) {
 		{"source", func(v *OperatingEvidence) { v.SourceRepoSHA = strings.Repeat("f", 40) }},
 		{"candidate", func(v *OperatingEvidence) { v.CandidateSHA = strings.Repeat("f", 40) }},
 		{"candidate diff", func(v *OperatingEvidence) { v.CandidateDiffSHA256 = strings.Repeat("f", 64) }},
+		{"observed candidate", func(v *OperatingEvidence) { v.CandidateBindingStart.CandidateSHA = strings.Repeat("f", 40) }},
+		{"candidate end drift", func(v *OperatingEvidence) { v.CandidateBindingEnd.CandidateWorktreeClean = false }},
 		{"manifest", func(v *OperatingEvidence) { v.ManifestSHA256 = strings.Repeat("f", 64) }},
 		{"fingerprint", func(v *OperatingEvidence) { v.FingerprintCanonical += "x" }},
 		{"machine", func(v *OperatingEvidence) { v.Machine.CPU += " changed" }},
@@ -143,6 +145,8 @@ func validOperatingEvidenceFixture(t *testing.T, in QualificationInput) Operatin
 		SourceRepoSHA:         in.Preregistration.SourceRepoSHA,
 		CandidateSHA:          in.Preregistration.CandidateSHA,
 		CandidateDiffSHA256:   in.Preregistration.CandidateDiffSHA256,
+		CandidateBindingStart: qualificationOperatingBindingFixture(in.Preregistration),
+		CandidateBindingEnd:   qualificationOperatingBindingFixture(in.Preregistration),
 		ManifestSHA256:        in.Preregistration.Arms[ArmCodeRank].ManifestSHA256,
 		FingerprintCanonical:  in.Preregistration.Arms[ArmCodeRank].FingerprintCanonical,
 		StartAttestation:      coderank.OperatingAttestation{Runtime: embed.RuntimeAttestation{IdentityDigest: identity, Epoch: "epoch-1"}, PeakRSSBytes: 900 << 20, ArtifactBytes: 512 << 20, RuntimeThreads: in.Preregistration.ReferenceMachine.RuntimeThreads},
@@ -181,10 +185,17 @@ func cloneOperatingEvidence(t *testing.T, evidence OperatingEvidence) OperatingE
 	return OperatingEvidence{
 		SchemaVersion: evidence.SchemaVersion, PreregistrationSHA256: evidence.PreregistrationSHA256,
 		DatasetSHA256: evidence.DatasetSHA256, SourceRepoSHA: evidence.SourceRepoSHA, CandidateSHA: evidence.CandidateSHA,
-		CandidateDiffSHA256: evidence.CandidateDiffSHA256, ManifestSHA256: evidence.ManifestSHA256,
+		CandidateDiffSHA256: evidence.CandidateDiffSHA256, CandidateBindingStart: evidence.CandidateBindingStart,
+		CandidateBindingEnd: evidence.CandidateBindingEnd, ManifestSHA256: evidence.ManifestSHA256,
 		FingerprintCanonical: evidence.FingerprintCanonical, StartAttestation: evidence.StartAttestation, EndAttestation: evidence.EndAttestation,
 		Machine: evidence.Machine, BackgroundLoad: evidence.BackgroundLoad, SourceTreeSHA256: evidence.SourceTreeSHA256,
 		CorpusSHA256: evidence.CorpusSHA256, Reindex: evidence.Reindex,
 		Warmups: append([]OperatingWarmup(nil), evidence.Warmups...), Samples: append([]OperatingQuerySample(nil), evidence.Samples...), SHA256: evidence.SHA256,
 	}
+}
+
+func qualificationOperatingBindingFixture(pre QualificationPreregistration) CandidateBinding {
+	return CandidateBinding{CandidateSHA: pre.CandidateSHA, FrozenCandidateSHA: pre.CandidateSHA, CandidateWorktreeClean: true,
+		CandidateMatchesFrozen: true, CandidateExcludedPath: QualificationCandidateExcludedPath,
+		CandidateDiffSHA256: pre.CandidateDiffSHA256, CheckoutSHA: pre.SourceRepoSHA, CheckoutWorktreeClean: true}
 }

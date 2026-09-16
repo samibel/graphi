@@ -436,6 +436,8 @@ type taskContextIndex struct {
 	rows                 []embed.Row
 	admissionTruncations int
 	admittedDocuments    []embed.SemanticDocument
+	generatedEmbedded    int
+	generatedReused      int
 }
 
 type recordingTaskContextDocuments struct {
@@ -1071,6 +1073,7 @@ func buildTaskContextIndexWithEmbedder(ctx context.Context, root, workDir string
 		store: store, search: svc, nodes: stats.TotalNodes, edges: stats.TotalEdges, files: len(stats.Files),
 		embedderID: emb.ID(), fingerprint: fp, generationID: gen.ID, persistedVectors: len(rows), rows: rows,
 		admissionTruncations: fileDocs.Stats().Truncated, admittedDocuments: docs.ordered(),
+		generatedEmbedded: generated.Embedded, generatedReused: generated.Reused,
 	}, nil
 }
 

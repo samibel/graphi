@@ -16,7 +16,7 @@ import (
 	"github.com/samibel/graphi/engine/embed/coderank"
 )
 
-const QualificationOperatingEvidenceSchemaVersion = 1
+const QualificationOperatingEvidenceSchemaVersion = 2
 
 // OperatingEvidence is the sealed raw authority for the qualification's
 // operating gates. Summaries are always derived from these samples.
@@ -27,6 +27,8 @@ type OperatingEvidence struct {
 	SourceRepoSHA         string                        `json:"source_repo_sha"`
 	CandidateSHA          string                        `json:"candidate_sha"`
 	CandidateDiffSHA256   string                        `json:"candidate_diff_sha256"`
+	CandidateBindingStart CandidateBinding              `json:"candidate_binding_start"`
+	CandidateBindingEnd   CandidateBinding              `json:"candidate_binding_end"`
 	ManifestSHA256        string                        `json:"manifest_sha256"`
 	FingerprintCanonical  string                        `json:"fingerprint_canonical"`
 	StartAttestation      coderank.OperatingAttestation `json:"start_attestation"`
@@ -121,6 +123,15 @@ func ValidateOperatingEvidence(evidence OperatingEvidence, pre QualificationPrer
 		evidence.CandidateSHA != pre.CandidateSHA || evidence.CandidateDiffSHA256 != pre.CandidateDiffSHA256 ||
 		evidence.ManifestSHA256 != m3.ManifestSHA256 || evidence.FingerprintCanonical != m3.FingerprintCanonical {
 		return fmt.Errorf("embedded-model operating evidence: frozen input binding differs")
+	}
+	if !reflect.DeepEqual(evidence.CandidateBindingStart, evidence.CandidateBindingEnd) {
+		return fmt.Errorf("embedded-model operating evidence: candidate binding changed during measurement")
+	}
+	binding := evidence.CandidateBindingStart
+	if binding.CandidateSHA != pre.CandidateSHA || binding.FrozenCandidateSHA != pre.CandidateSHA ||
+		!binding.CandidateWorktreeClean || !binding.CandidateMatchesFrozen || binding.CandidateExcludedPath != QualificationCandidateExcludedPath ||
+		binding.CandidateDiffSHA256 != pre.CandidateDiffSHA256 || binding.CheckoutSHA != pre.SourceRepoSHA || !binding.CheckoutWorktreeClean || len(binding.DifferingPaths) != 0 {
+		return fmt.Errorf("embedded-model operating evidence: observed candidate binding differs from frozen inputs")
 	}
 	if !reflect.DeepEqual(evidence.Machine, pre.ReferenceMachine) {
 		return fmt.Errorf("embedded-model operating evidence: observed reference machine differs from preregistration")
