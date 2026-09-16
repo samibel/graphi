@@ -1,0 +1,271 @@
+"""Offline contract tests: no inference packages or model downloads required."""
+
+import hashlib
+import http.client
+import json
+import math
+import os
+import pathlib
+import re
+import tempfile
+import threading
+import types
+import unittest
+from unittest import mock
+
+from scripts.eval import coderank_sidecar as sidecar
+
+
+def valid_manifest(max_tokens=8192):
+    return {
+        "schema_version": 1, "protocol": "graphi-coderank/1",
+        "endpoint": "http://127.0.0.1:8765",
+        "model": {"id": "nomic-ai/CodeRankEmbed", "revision": "model-revision", "sha256": "a" * 64},
+        "tokenizer": {"id": "nomic-ai/CodeRankEmbed", "revision": "tokenizer-revision", "sha256": "b" * 64},
+        "runtime": {"name": "sentence-transformers", "version": "test-version", "sha256": "c" * 64},
+        "dimension": 768, "precision": "float32", "normalization": "l2", "compute": "cpu",
+        "admission": {"max_tokens": max_tokens, "reserve": 0, "algorithm": "first-n-tokens", "algorithm_version": "1"},
+        "query": {"id": "coderank-code-search", "version": "1",
+                  "instruction": "Represent this query for searching relevant code: ",
+                  "instruction_sha256": hashlib.sha256(b"Represent this query for searching relevant code: ").hexdigest()},
+    }
+
+
+class FakeEncoder:
+    def __init__(self):
+        self.inputs = []
+
+    def token_count(self, text):
+        # Spaces belong to the following token, so "alpha beta " is 3 tokens.
+        return len(re.findall(r"\s*\S+|\s+$", text))
+
+    def encode(self, texts):
+        self.inputs.extend(texts)
+        return [[3.0, 4.0] + [0.0] * 766 for _ in texts]
+
+
+class SidecarContractTest(unittest.TestCase):
+    def setUp(self):
+        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder())
+
+    def test_query_and_document_paths_preserve_wire_bytes(self):
+        doc = self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "document", "texts": [" x "]})
+        query = sidecar.QUERY_INSTRUCTION + "find x"
+        qry = self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "query", "texts": [query]})
+        self.assertEqual(self.app.encoder.inputs, [" x ", query])
+        self.assertEqual(doc["epoch"], qry["epoch"])
+        self.assertEqual(doc["vectors"][0][:2], [0.6, 0.8])
+        self.assertAlmostEqual(sum(x*x for x in qry["vectors"][0]), 1.0)
+        with self.assertRaises(ValueError):
+            self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "query", "texts": ["find x"]})
+        repeated = sidecar.QUERY_INSTRUCTION * 2 + "x"
+        self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "query", "texts": [repeated]})
+        self.assertEqual(self.app.encoder.inputs[-1], repeated)
+
+    def test_admission_returns_longest_unchanged_utf8_prefix(self):
+        app = sidecar.SidecarApp(valid_manifest(2), FakeEncoder())
+        got = app.admit({"protocol": sidecar.PROTOCOL, "text": "alpha beta gamma"})
+        self.assertEqual((got["text"], got["token_count"]), ("alpha beta", 2))
+        got = app.admit({"protocol": sidecar.PROTOCOL, "text": "α 😀 z"})
+        self.assertEqual((got["text"], got["token_count"]), ("α 😀", 2))
+
+    def test_admission_does_not_assume_monotonic_token_counts(self):
+        class MergingEncoder(FakeEncoder):
+            def token_count(self, text):
+                return {"": 0, "a": 1, "ab": 3, "abc": 2, "abcd": 4}[text]
+        app = sidecar.SidecarApp(valid_manifest(2), MergingEncoder())
+        self.assertEqual(app.admit({"protocol": sidecar.PROTOCOL, "text": "abcd"})["text"], "abc")
+
+    def test_preparation_count_is_authoritative_and_reserve_not_subtracted_twice(self):
+        class SpecialEncoder(FakeEncoder):
+            def token_count(self, text):
+                return super().token_count(text) + 2
+        manifest = valid_manifest(3)
+        manifest["admission"]["reserve"] = 2
+        app = sidecar.SidecarApp(manifest, SpecialEncoder())
+        result = app.admit({"protocol": sidecar.PROTOCOL, "text": "a b"})
+        self.assertEqual((result["text"], result["token_count"]), ("a", 3))
+
+    def test_overlimit_embedding_is_rejected_before_encoding(self):
+        app = sidecar.SidecarApp(valid_manifest(1), FakeEncoder())
+        with self.assertRaises(ValueError):
+            app.embed({"protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["a b"]})
+        self.assertEqual(app.encoder.inputs, [])
+
+    def test_strict_payloads_and_batch_limit(self):
+        cases = [
+            {"protocol": "wrong", "kind": "document", "texts": ["x"]},
+            {"protocol": sidecar.PROTOCOL, "kind": "other", "texts": ["x"]},
+            {"protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["x"] * 33},
+            {"protocol": sidecar.PROTOCOL, "kind": "document", "texts": [None]},
+            {"protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["\ud800"]},
+            {"protocol": sidecar.PROTOCOL, "kind": "document", "texts": "x"},
+            {"protocol": sidecar.PROTOCOL, "kind": "document", "texts": [], "extra": 1},
+        ]
+        for payload in cases:
+            with self.subTest(payload=repr(payload)), self.assertRaises(ValueError):
+                self.app.embed(payload)
+        for payload in [{"protocol": sidecar.PROTOCOL}, {"protocol": sidecar.PROTOCOL, "text": None}]:
+            with self.assertRaises(ValueError):
+                self.app.admit(payload)
+
+    def test_invalid_vectors_fail_closed(self):
+        for vectors in [[], [[1.0]], [[None] * 768], [[math.nan] * 768], [[0.0] * 768]]:
+            with self.subTest(vectors=repr(vectors)[:30]):
+                encoder = FakeEncoder()
+                encoder.encode = lambda texts: vectors
+                app = sidecar.SidecarApp(valid_manifest(), encoder)
+                with self.assertRaises(ValueError):
+                    app.embed({"protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["x"]})
+
+    def test_binding_cannot_drift_through_manifest_or_epoch_assignment(self):
+        manifest = valid_manifest()
+        app = sidecar.SidecarApp(manifest, FakeEncoder())
+        before = app.attestation()
+        manifest["model"]["revision"] = "changed"
+        with self.assertRaises(AttributeError):
+            app.epoch = "changed"
+        self.assertEqual(app.attestation(), before)
+        self.assertRegex(before["epoch"], r"^[a-f0-9]{64}$")
+        self.assertNotEqual(before["epoch"], self.app.attestation()["epoch"])
+
+
+class VerificationTest(unittest.TestCase):
+    def test_model_load_is_offline_cpu_local_only_after_verification(self):
+        class Model:
+            def float(self):
+                return self
+
+            def eval(self):
+                return self
+
+        loaded = []
+        def constructor(path, **kwargs):
+            self.assertEqual(os.environ["HF_HUB_OFFLINE"], "1")
+            self.assertEqual(os.environ["TRANSFORMERS_OFFLINE"], "1")
+            loaded.append((path, kwargs))
+            return Model()
+
+        with tempfile.TemporaryDirectory() as root:
+            path = pathlib.Path(root)
+            (path / "tokenizer.json").write_text("{}")
+            manifest = valid_manifest()
+            manifest["model"]["sha256"] = sidecar.tree_digest(path)
+            manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(path)
+            with mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch.dict(
+                "sys.modules", {"sentence_transformers": types.SimpleNamespace(SentenceTransformer=constructor)}
+            ), mock.patch.dict(os.environ, {}, clear=False):
+                sidecar.load_encoder(manifest, path)
+            self.assertEqual(loaded, [(str(path.resolve()), {"device": "cpu", "trust_remote_code": True, "local_files_only": True})])
+
+    def test_nonlocal_artifacts_are_rejected(self):
+        for path in ["nomic-ai/CodeRankEmbed", "https://example.com/model", "/does-not-exist"]:
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                sidecar.load_encoder(valid_manifest(), pathlib.Path(path))
+
+    def test_artifact_and_tokenizer_drift_rejected_before_import(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = pathlib.Path(root)
+            (path / "tokenizer.json").write_text("{}")
+            manifest = valid_manifest()
+            with self.assertRaisesRegex(ValueError, "model.*digest"):
+                sidecar.load_encoder(manifest, path)
+            manifest["model"]["sha256"] = sidecar.tree_digest(path)
+            with self.assertRaisesRegex(ValueError, "tokenizer.*digest"):
+                sidecar.load_encoder(manifest, path)
+            (path / "link").symlink_to(path / "tokenizer.json")
+            with self.assertRaises(ValueError):
+                sidecar.tree_digest(path)
+
+    def test_runtime_version_and_fingerprint_must_match(self):
+        manifest = valid_manifest()
+        versions = {"python": "3.12.0", "sentence-transformers": "9.9.9"}
+        with mock.patch.object(sidecar, "runtime_versions", return_value=versions):
+            with self.assertRaisesRegex(ValueError, "version"):
+                sidecar.verify_runtime_versions(manifest["runtime"])
+            manifest["runtime"]["version"] = "9.9.9"
+            with self.assertRaisesRegex(ValueError, "digest"):
+                sidecar.verify_runtime_versions(manifest["runtime"])
+            manifest["runtime"]["sha256"] = sidecar.runtime_digest(versions)
+            sidecar.verify_runtime_versions(manifest["runtime"])
+
+    def test_manifest_rejects_profile_changes_and_unknown_keys(self):
+        for key, value in [("dimension", 3), ("precision", "float16"), ("unknown", 1), ("schema_version", True)]:
+            manifest = valid_manifest()
+            manifest[key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                sidecar.SidecarApp(manifest, FakeEncoder())
+
+    def test_no_runtime_import_on_module_import(self):
+        import subprocess
+        result = subprocess.run([
+            "python3", "-c", "import sys; from scripts.eval import coderank_sidecar; "
+            "assert 'sentence_transformers' not in sys.modules; assert 'torch' not in sys.modules"
+        ], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
+class HTTPContractTest(unittest.TestCase):
+    def setUp(self):
+        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder())
+        self.server = sidecar.make_server(self.app, "127.0.0.1", 0)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join()
+
+    def request(self, method, path, body=None, headers=None):
+        conn = http.client.HTTPConnection(*self.server.server_address, timeout=5)
+        try:
+            conn.request(method, path, body=body, headers=headers or {})
+            response = conn.getresponse()
+            return response.status, json.loads(response.read())
+        finally:
+            conn.close()
+
+    def test_http_operations_and_errors_keep_binding(self):
+        status, binding = self.request("GET", "/v1/attestation")
+        self.assertEqual(status, 200)
+        cases = [
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/1","text":"x"}', 200),
+            ("POST", "/v1/embed", '{"protocol":"graphi-coderank/1","kind":"document","texts":["x"]}', 200),
+            ("POST", "/v1/admit", "{", 400),
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/1","text":"x","text":"y"}', 400),
+            ("POST", "/v1/admit", "{} {}", 400),
+            ("POST", "/v1/admit", '{"protocol":"wrong","text":"x"}', 400),
+            ("GET", "/other", None, 404),
+            ("PUT", "/v1/admit", "{}", 405),
+        ]
+        for method, path, body, expected in cases:
+            with self.subTest(method=method, path=path, body=body):
+                status, got = self.request(method, path, body)
+                self.assertEqual(status, expected)
+                for key in ("protocol", "identity_digest", "epoch"):
+                    self.assertEqual(got[key], binding[key])
+                self.assertNotIn("Traceback", json.dumps(got))
+
+    def test_body_is_bounded_before_reading(self):
+        status, got = self.request("POST", "/v1/admit", b"", {"Content-Length": str(1024*1024+1)})
+        self.assertEqual(status, 413)
+        self.assertIn("epoch", got)
+
+    def test_encoder_exceptions_do_not_leak(self):
+        def fail(texts):
+            raise RuntimeError("secret model path")
+        self.app.encoder.encode = fail
+        status, got = self.request("POST", "/v1/embed", json.dumps({
+            "protocol": sidecar.PROTOCOL, "kind": "document", "texts": ["x"]}))
+        self.assertEqual(status, 500)
+        self.assertNotIn("secret", json.dumps(got))
+
+    def test_nonliteral_and_nonloopback_bind_rejected(self):
+        for bind in ["localhost", "0.0.0.0", "127.0.0.2", "example.com", "::"]:
+            with self.subTest(bind=bind), self.assertRaises(ValueError):
+                sidecar.make_server(self.app, bind, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
