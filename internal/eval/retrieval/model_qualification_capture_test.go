@@ -300,6 +300,25 @@ func TestQualificationBuildDiagnosticsAreNotRepeatedPerQuery(t *testing.T) {
 	}
 }
 
+func TestQualificationCaptureProvenanceBindsIndependentRunDirectory(t *testing.T) {
+	provenance := CandidateCaptureProvenance{CaptureVersion: "capture/1", GenerationID: "generation-1"}
+	first, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-1", provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-2", provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := qualificationCaptureProvenanceSHA(ArmCodeRank, "/runs/build-1", provenance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first == second || first != again || !isLowerHexDigest(first, 64) {
+		t.Fatalf("first=%q second=%q again=%q", first, second, again)
+	}
+}
+
 func TestQualificationAtomicPublishLeavesNoPartialEvidenceAndCanRetry(t *testing.T) {
 	parent := t.TempDir()
 	out := filepath.Join(parent, "qualification")

@@ -26,9 +26,41 @@ type QualificationInput struct {
 	Preregistration QualificationPreregistration `json:"preregistration"`
 	Observations    []QualificationObservation   `json:"observations"`
 	BuildDigests    []QualificationBuildDigest   `json:"build_digests"`
-	Grades          map[QualificationArm][]Grade `json:"grades"`
+	Decisions       []BlindDecision              `json:"decisions"`
 	OracleControls  []OracleControls             `json:"oracle_controls"`
 	Operating       OperatingMeasurements        `json:"operating_budget"`
+}
+
+// BlindDecision binds one final two-rater/adjudication outcome to exactly one
+// arm or oracle control and to the exact payload and prompt identities.
+type BlindDecision struct {
+	Arm                QualificationArm `json:"arm,omitempty"`
+	ControlKind        string           `json:"control_kind,omitempty"`
+	QueryID            string           `json:"query_id"`
+	Stratum            string           `json:"stratum"`
+	PayloadSHA256      string           `json:"payload_sha256"`
+	ReaderPromptSHA256 string           `json:"reader_prompt_sha256"`
+	GraderPromptSHA256 string           `json:"grader_prompt_sha256"`
+	Outcome            QueryOutcome     `json:"outcome"`
+	EvidenceSHA256     string           `json:"evidence_sha256"`
+	SHA256             string           `json:"sha256"`
+}
+
+// SealBlindDecision content-addresses both the final evidence and its complete
+// subject/payload/prompt binding.
+func SealBlindDecision(decision BlindDecision) (BlindDecision, error) {
+	evidenceSHA, err := ContentAddress(decision.Outcome, func(*QueryOutcome) {})
+	if err != nil {
+		return BlindDecision{}, err
+	}
+	decision.EvidenceSHA256 = evidenceSHA
+	decision.SHA256 = ""
+	decisionSHA, err := ContentAddress(decision, func(v *BlindDecision) { v.SHA256 = "" })
+	if err != nil {
+		return BlindDecision{}, err
+	}
+	decision.SHA256 = decisionSHA
+	return decision, nil
 }
 
 type GateResult struct {
@@ -39,9 +71,16 @@ type GateResult struct {
 }
 
 type QualificationDecision struct {
-	Promote bool         `json:"promote"`
-	Gates   []GateResult `json:"gates"`
-	Branch  string       `json:"branch"`
+	Promote  bool             `json:"promote"`
+	Gates    []GateResult     `json:"gates"`
+	Branch   string           `json:"branch"`
+	Evidence []EvidenceRecord `json:"evidence"`
+}
+
+type EvidenceRecord struct {
+	Name      string `json:"name"`
+	Algorithm string `json:"algorithm"`
+	Observed  string `json:"observed"`
 }
 
 type OperatingMeasurements struct {
@@ -102,15 +141,18 @@ func PairedBootstrap95(outcomes []PairedOutcome, seed uint64, samples int) Inter
 }
 
 type qualificationEvidence struct {
-	queryIDs       []string
-	strata         map[string]string
-	observations   map[QualificationArm]map[string]QualificationObservation
-	passes         map[QualificationArm]map[string]bool
-	reproducible   map[QualificationArm]bool
-	oracleCeiling  int
-	stateReady     bool
-	fingerprintsOK bool
-	noDegradation  bool
+	queryIDs             []string
+	strata               map[string]string
+	observations         map[QualificationArm]map[string]QualificationObservation
+	passes               map[QualificationArm]map[string]bool
+	reproducible         map[QualificationArm]bool
+	oraclePasses         map[string]map[string]bool
+	oraclePayloads       map[string]map[string]string
+	armValid             map[QualificationArm]bool
+	diagnosticsAvailable bool
+	stateReady           bool
+	fingerprintsOK       bool
+	noDegradation        bool
 }
 
 // EvaluateQualification fails closed on structurally incomplete evidence and
@@ -132,6 +174,7 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 	weakPositive := positiveStrata(evidence, ArmCodeRank, []string{StratumAmbiguous, StratumArchitectureFlow, StratumNLBehaviour})
 	strongLosses := negativeStrata(evidence, ArmCodeRank, []string{StratumConfigDocs, StratumExactIdentifier, StratumExactPath})
 	spanGain := completeSpanGain(evidence, ArmCodeRank)
+	semanticRankNet := semanticRankGain(evidence, ArmCodeRank)
 	p95, latencyPresent := operatingP95(in.Operating.QueryEmbedLatencies, in.Preregistration.Thresholds.MinQuerySamples)
 
 	gates := []GateResult{
@@ -150,12 +193,15 @@ func EvaluateQualification(in QualificationInput) (QualificationDecision, error)
 		gate("state_ready", evidence.stateReady, fmt.Sprintf("%t", evidence.stateReady), "every M1-M3 observation ready"),
 		gate("fingerprint_equality", evidence.fingerprintsOK, fmt.Sprintf("%t", evidence.fingerprintsOK), "every M1-M3 model/index fingerprint equals its full preregistered fingerprint"),
 		gate("no_degradation", evidence.noDegradation, fmt.Sprintf("%t", evidence.noDegradation), "every M1-M3 observation has no sidecar degradation"),
+		gate("required_diagnostics_available", evidence.diagnosticsAvailable, fmt.Sprintf("%t", evidence.diagnosticsAvailable), "every M1-M3 observation has required diagnostics"),
 	}
 	promote := true
 	for _, result := range gates {
 		promote = promote && result.Passed
 	}
-	decision := QualificationDecision{Promote: promote, Gates: gates}
+	decision := QualificationDecision{Promote: promote, Gates: gates, Evidence: []EvidenceRecord{{
+		Name: "semantic_rank_pairwise_net", Algorithm: "paired-rank-absent-51-v1", Observed: fmt.Sprintf("%+d", semanticRankNet),
+	}}}
 	decision.Branch = qualificationBranch(in, evidence, promote, pairedGain, spanGain)
 	return decision, nil
 }
@@ -165,7 +211,9 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 	evidence := qualificationEvidence{
 		strata: make(map[string]string, 64), observations: make(map[QualificationArm]map[string]QualificationObservation, 4),
 		passes: make(map[QualificationArm]map[string]bool, 4), reproducible: make(map[QualificationArm]bool, 4),
-		stateReady: true, fingerprintsOK: true, noDegradation: true,
+		oraclePasses: make(map[string]map[string]bool, 3), oraclePayloads: make(map[string]map[string]string, 3),
+		armValid:   map[QualificationArm]bool{ArmPotion512: true, ArmPotion8192: true, ArmCodeRank: true},
+		stateReady: true, fingerprintsOK: true, noDegradation: true, diagnosticsAvailable: true,
 	}
 	if len(in.Observations) != len(arms)*64 {
 		return evidence, fmt.Errorf("embedded-model qualification decision: got %d observations, want %d", len(in.Observations), len(arms)*64)
@@ -192,7 +240,7 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 		if !isLowerHexDigest(observation.BundleSHA256, 64) || !isLowerHexDigest(observation.PayloadSHA256, 64) || observation.BundleTokens < 0 || observation.BundleTokens > in.Preregistration.TokenBudget {
 			return evidence, fmt.Errorf("embedded-model qualification decision: arm %s query %s has malformed bundle evidence", observation.Arm, queryID)
 		}
-		if err := validateStageHit(observation.SemanticTop50); err != nil {
+		if err := validateSemanticStageHit(observation.SemanticTop50); err != nil {
 			return evidence, fmt.Errorf("embedded-model qualification decision: arm %s query %s semantic stage: %w", observation.Arm, queryID, err)
 		}
 		if err := validateStageHit(observation.PostFusion); err != nil {
@@ -209,13 +257,19 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 			stratumCounts[observation.Stratum]++
 			evidence.queryIDs = append(evidence.queryIDs, queryID)
 		} else {
-			if !observation.UnknownTokens.Available || observation.UnknownTokens.Value == nil || *observation.UnknownTokens.Value < 0 || !observation.QueryVectorAllZero.Available || observation.QueryVectorAllZero.Value == nil {
-				return evidence, fmt.Errorf("embedded-model qualification decision: arm %s query %s lacks required diagnostics", observation.Arm, queryID)
+			diagnosticsReady := observation.UnknownTokens.Available && observation.UnknownTokens.Value != nil && observation.QueryVectorAllZero.Available && observation.QueryVectorAllZero.Value != nil
+			if observation.UnknownTokens.Value != nil && *observation.UnknownTokens.Value < 0 {
+				return evidence, fmt.Errorf("embedded-model qualification decision: arm %s query %s has negative unknown-token diagnostic", observation.Arm, queryID)
 			}
-			evidence.stateReady = evidence.stateReady && observation.RetrievalState == "ready"
+			ready := observation.RetrievalState == "ready"
 			expected := in.Preregistration.Arms[observation.Arm].FingerprintCanonical
-			evidence.fingerprintsOK = evidence.fingerprintsOK && observation.ModelFingerprint == expected && observation.IndexFingerprint == expected
-			evidence.noDegradation = evidence.noDegradation && !observation.Degraded
+			fingerprintsOK := observation.ModelFingerprint == expected && observation.IndexFingerprint == expected
+			noDegradation := !observation.Degraded
+			evidence.armValid[observation.Arm] = evidence.armValid[observation.Arm] && diagnosticsReady && ready && fingerprintsOK && noDegradation
+			evidence.diagnosticsAvailable = evidence.diagnosticsAvailable && diagnosticsReady
+			evidence.stateReady = evidence.stateReady && ready
+			evidence.fingerprintsOK = evidence.fingerprintsOK && fingerprintsOK
+			evidence.noDegradation = evidence.noDegradation && noDegradation
 		}
 		perArm[queryID] = observation
 	}
@@ -242,32 +296,13 @@ func validateQualificationEvidence(in QualificationInput) (qualificationEvidence
 			}
 		}
 	}
-	if len(in.Grades) != len(arms) {
-		return evidence, fmt.Errorf("embedded-model qualification decision: got %d graded arms, want 4", len(in.Grades))
-	}
-	for _, arm := range arms {
-		grades, ok := in.Grades[arm]
-		if !ok || len(grades) != 64 {
-			return evidence, fmt.Errorf("embedded-model qualification decision: arm %s has %d grades, want 64", arm, len(grades))
-		}
-		evidence.passes[arm] = make(map[string]bool, 64)
-		for _, grade := range grades {
-			if err := ValidateGrade(grade); err != nil {
-				return evidence, fmt.Errorf("embedded-model qualification decision: arm %s grade: %w", arm, err)
-			}
-			if _, expected := evidence.strata[grade.QueryID]; !expected {
-				return evidence, fmt.Errorf("embedded-model qualification decision: arm %s grade names unknown query %s", arm, grade.QueryID)
-			}
-			if _, duplicate := evidence.passes[arm][grade.QueryID]; duplicate {
-				return evidence, fmt.Errorf("embedded-model qualification decision: arm %s duplicates grade for query %s", arm, grade.QueryID)
-			}
-			evidence.passes[arm][grade.QueryID] = grade.Outcome == GradeOutcomePass
-		}
-	}
 	if err := validateBuildEvidence(in.BuildDigests, arms, &evidence); err != nil {
 		return evidence, err
 	}
 	if err := validateOracleEvidence(in.OracleControls, evidence.queryIDs, &evidence); err != nil {
+		return evidence, err
+	}
+	if err := validateBlindDecisions(in, arms, &evidence); err != nil {
 		return evidence, err
 	}
 	for _, latency := range in.Operating.QueryEmbedLatencies {
@@ -291,20 +326,37 @@ func validateStageHit(hit StageHit) error {
 	return nil
 }
 
+func validateSemanticStageHit(hit StageHit) error {
+	if err := validateStageHit(hit); err != nil {
+		return err
+	}
+	if hit.Present && hit.BestRank > 50 {
+		return fmt.Errorf("present semantic hit rank exceeds top 50")
+	}
+	return nil
+}
+
 func validateBuildEvidence(digests []QualificationBuildDigest, arms []QualificationArm, evidence *qualificationEvidence) error {
 	if len(digests) != len(arms)*2 {
 		return fmt.Errorf("embedded-model qualification decision: got %d build digests, want %d", len(digests), len(arms)*2)
 	}
-	byArm := make(map[QualificationArm][]QualificationBuildDigest, len(arms))
+	byArm := make(map[QualificationArm]map[int]QualificationBuildDigest, len(arms))
 	known := make(map[QualificationArm]bool, len(arms))
 	for _, arm := range arms {
 		known[arm] = true
+		byArm[arm] = make(map[int]QualificationBuildDigest, 2)
 	}
 	for _, digest := range digests {
 		if !known[digest.Arm] {
 			return fmt.Errorf("embedded-model qualification decision: build digest has unknown arm %q", digest.Arm)
 		}
-		for _, value := range []string{digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
+		if digest.Build != 1 && digest.Build != 2 {
+			return fmt.Errorf("embedded-model qualification decision: arm %s has invalid build ordinal %d", digest.Arm, digest.Build)
+		}
+		if _, duplicate := byArm[digest.Arm][digest.Build]; duplicate {
+			return fmt.Errorf("embedded-model qualification decision: arm %s duplicates build ordinal %d", digest.Arm, digest.Build)
+		}
+		for _, value := range []string{digest.CaptureProvenanceSHA256, digest.VectorBytesSHA256, digest.PersistedRowsSHA256, digest.BundlesSHA256, digest.TokenCountsSHA256, digest.OraclePayloadsSHA256, digest.OracleTokenCountsSHA256} {
 			if !isLowerHexDigest(value, 64) {
 				return fmt.Errorf("embedded-model qualification decision: arm %s has malformed build digest", digest.Arm)
 			}
@@ -312,13 +364,17 @@ func validateBuildEvidence(digests []QualificationBuildDigest, arms []Qualificat
 		if digest.Diagnostics.AdmissionTruncations < 0 || digest.Diagnostics.DocumentZeroVectors < 0 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s has negative build diagnostics", digest.Arm)
 		}
-		byArm[digest.Arm] = append(byArm[digest.Arm], digest)
+		byArm[digest.Arm][digest.Build] = digest
 	}
 	for _, arm := range arms {
 		if len(byArm[arm]) != 2 {
 			return fmt.Errorf("embedded-model qualification decision: arm %s has %d builds, want 2", arm, len(byArm[arm]))
 		}
-		evidence.reproducible[arm] = compareQualificationBuildDigests(byArm[arm][0], byArm[arm][1]) == nil
+		first, second := byArm[arm][1], byArm[arm][2]
+		if first.CaptureProvenanceSHA256 == second.CaptureProvenanceSHA256 {
+			return fmt.Errorf("embedded-model qualification decision: arm %s builds do not have distinct capture provenance", arm)
+		}
+		evidence.reproducible[arm] = compareQualificationBuildDigests(first, second) == nil
 	}
 	return nil
 }
@@ -332,6 +388,9 @@ func validateOracleEvidence(controls []OracleControls, queryIDs []string, eviden
 		expected[id] = true
 	}
 	seen := make(map[string]bool, 64)
+	for _, kind := range []string{OracleControlCurrentCandidatesOraclePacker, OracleControlOracleCandidateCurrentSelector, OracleControlOracleCandidateOraclePacker} {
+		evidence.oraclePayloads[kind] = make(map[string]string, 64)
+	}
 	for _, control := range controls {
 		bundles := []struct {
 			kind   string
@@ -353,10 +412,153 @@ func validateOracleEvidence(controls []OracleControls, queryIDs []string, eviden
 			if err := validateOracleBundleEvidence(item.bundle); err != nil {
 				return fmt.Errorf("embedded-model qualification decision: query %s oracle control %s: %w", queryID, item.kind, err)
 			}
+			evidence.oraclePayloads[item.kind][queryID] = item.bundle.Payload.SHA256
 		}
-		if control.OracleCandidateOraclePacker.CompleteGrade3Span {
-			evidence.oracleCeiling++
+	}
+	return nil
+}
+
+func validateBlindDecisions(in QualificationInput, arms []QualificationArm, evidence *qualificationEvidence) error {
+	controlKinds := []string{OracleControlCurrentCandidatesOraclePacker, OracleControlOracleCandidateCurrentSelector, OracleControlOracleCandidateOraclePacker}
+	want := (len(arms) + len(controlKinds)) * 64
+	if len(in.Decisions) != want {
+		return fmt.Errorf("embedded-model qualification decision: got %d blind decisions, want %d", len(in.Decisions), want)
+	}
+	armKnown := make(map[QualificationArm]bool, len(arms))
+	for _, arm := range arms {
+		armKnown[arm] = true
+		evidence.passes[arm] = make(map[string]bool, 64)
+	}
+	controlKnown := make(map[string]bool, len(controlKinds))
+	for _, kind := range controlKinds {
+		controlKnown[kind] = true
+		evidence.oraclePasses[kind] = make(map[string]bool, 64)
+	}
+	for _, decision := range in.Decisions {
+		if err := validateBlindDecision(decision); err != nil {
+			return fmt.Errorf("embedded-model qualification decision: query %s: %w", decision.QueryID, err)
 		}
+		if _, ok := evidence.strata[decision.QueryID]; !ok || decision.Stratum != evidence.strata[decision.QueryID] || decision.Outcome.Stratum != decision.Stratum {
+			return fmt.Errorf("embedded-model qualification decision: decision query %q has wrong or unknown stratum", decision.QueryID)
+		}
+		if decision.ReaderPromptSHA256 != in.Preregistration.ReaderPromptSHA256 || decision.GraderPromptSHA256 != in.Preregistration.GraderPromptSHA256 {
+			return fmt.Errorf("embedded-model qualification decision: query %s prompt pins differ from preregistration", decision.QueryID)
+		}
+		if decision.Arm != "" {
+			if decision.ControlKind != "" || !armKnown[decision.Arm] {
+				return fmt.Errorf("embedded-model qualification decision: query %s does not name exactly one known subject", decision.QueryID)
+			}
+			if decision.PayloadSHA256 != evidence.observations[decision.Arm][decision.QueryID].PayloadSHA256 {
+				return fmt.Errorf("embedded-model qualification decision: arm %s query %s payload does not match observation", decision.Arm, decision.QueryID)
+			}
+			if _, duplicate := evidence.passes[decision.Arm][decision.QueryID]; duplicate {
+				return fmt.Errorf("embedded-model qualification decision: arm %s duplicates query %s", decision.Arm, decision.QueryID)
+			}
+			evidence.passes[decision.Arm][decision.QueryID] = decision.Outcome.Outcome == GradeOutcomePass
+			continue
+		}
+		if !controlKnown[decision.ControlKind] {
+			return fmt.Errorf("embedded-model qualification decision: query %s does not name exactly one known subject", decision.QueryID)
+		}
+		if decision.PayloadSHA256 != evidence.oraclePayloads[decision.ControlKind][decision.QueryID] {
+			return fmt.Errorf("embedded-model qualification decision: oracle %s query %s payload does not match bundle", decision.ControlKind, decision.QueryID)
+		}
+		if _, duplicate := evidence.oraclePasses[decision.ControlKind][decision.QueryID]; duplicate {
+			return fmt.Errorf("embedded-model qualification decision: oracle %s duplicates query %s", decision.ControlKind, decision.QueryID)
+		}
+		evidence.oraclePasses[decision.ControlKind][decision.QueryID] = decision.Outcome.Outcome == GradeOutcomePass
+	}
+	for _, arm := range arms {
+		if len(evidence.passes[arm]) != 64 {
+			return fmt.Errorf("embedded-model qualification decision: arm %s has %d unique decisions, want 64", arm, len(evidence.passes[arm]))
+		}
+	}
+	for _, kind := range controlKinds {
+		if len(evidence.oraclePasses[kind]) != 64 {
+			return fmt.Errorf("embedded-model qualification decision: oracle %s has %d unique decisions, want 64", kind, len(evidence.oraclePasses[kind]))
+		}
+	}
+	return nil
+}
+
+func validateBlindDecision(decision BlindDecision) error {
+	if strings.TrimSpace(decision.QueryID) == "" || decision.Outcome.QueryID != decision.QueryID || !isLowerHexDigest(decision.PayloadSHA256, 64) ||
+		!isLowerHexDigest(decision.ReaderPromptSHA256, 64) || !isLowerHexDigest(decision.GraderPromptSHA256, 64) || strings.TrimSpace(decision.Outcome.Reason) == "" {
+		return fmt.Errorf("blind decision has malformed identity or outcome")
+	}
+	if err := validateFinalQueryOutcome(decision.Outcome); err != nil {
+		return err
+	}
+	evidenceSHA, err := ContentAddress(decision.Outcome, func(*QueryOutcome) {})
+	if err != nil || decision.EvidenceSHA256 != evidenceSHA {
+		return fmt.Errorf("blind decision evidence content address differs")
+	}
+	decisionSHA, err := ContentAddress(decision, func(v *BlindDecision) { v.SHA256 = "" })
+	if err != nil || decision.SHA256 != decisionSHA {
+		return fmt.Errorf("blind decision content address differs")
+	}
+	return nil
+}
+
+func validateFinalQueryOutcome(outcome QueryOutcome) error {
+	if outcome.Outcome != GradeOutcomePass && outcome.Outcome != GradeOutcomeFail {
+		return fmt.Errorf("final query outcome is neither pass nor fail")
+	}
+	if len(outcome.Primary) != 2 {
+		return fmt.Errorf("final query outcome has %d primary raters, want 2", len(outcome.Primary))
+	}
+	seen := map[string]bool{}
+	passes, fails, nonAnswered := 0, 0, 0
+	for _, rater := range outcome.Primary {
+		if strings.TrimSpace(rater.RaterID) == "" || seen[rater.RaterID] || rater.Role != RaterRolePrimary || !isLowerHexDigest(rater.ResponseSHA256, 64) {
+			return fmt.Errorf("final query outcome has malformed primary evidence")
+		}
+		seen[rater.RaterID] = true
+		if rater.Status == ResponseStatusAnswered {
+			if rater.Mechanical || !isLowerHexDigest(rater.GradeSHA256, 64) || (rater.Outcome != GradeOutcomePass && rater.Outcome != GradeOutcomeFail) {
+				return fmt.Errorf("answered primary evidence is malformed")
+			}
+		} else {
+			if (rater.Status != ResponseStatusMissing && rater.Status != ResponseStatusEmpty && rater.Status != ResponseStatusRefused) || !rater.Mechanical || rater.GradeSHA256 != "" || rater.Outcome != GradeOutcomeFail {
+				return fmt.Errorf("non-answered primary evidence is malformed")
+			}
+			nonAnswered++
+		}
+		if rater.Outcome == GradeOutcomePass {
+			passes++
+		} else {
+			fails++
+		}
+	}
+	disagreement := passes == 1 && fails == 1 && nonAnswered == 0
+	if outcome.Disagreement != disagreement {
+		return fmt.Errorf("final query disagreement flag is inconsistent")
+	}
+	want := GradeOutcomeFail
+	if nonAnswered == 0 && passes == 2 {
+		want = GradeOutcomePass
+	}
+	if disagreement {
+		if !outcome.Adjudicated || outcome.Adjudicator == nil {
+			return fmt.Errorf("primary disagreement lacks adjudication")
+		}
+		adj := outcome.Adjudicator
+		if strings.TrimSpace(adj.RaterID) == "" || seen[adj.RaterID] || adj.Role != RaterRoleAdjudicator || !isLowerHexDigest(adj.ResponseSHA256, 64) {
+			return fmt.Errorf("adjudicator evidence is malformed")
+		}
+		if adj.Status == ResponseStatusAnswered {
+			if adj.Mechanical || !isLowerHexDigest(adj.GradeSHA256, 64) || (adj.Outcome != GradeOutcomePass && adj.Outcome != GradeOutcomeFail) {
+				return fmt.Errorf("answered adjudicator evidence is malformed")
+			}
+		} else if (adj.Status != ResponseStatusMissing && adj.Status != ResponseStatusEmpty && adj.Status != ResponseStatusRefused) || !adj.Mechanical || adj.GradeSHA256 != "" || adj.Outcome != GradeOutcomeFail {
+			return fmt.Errorf("non-answered adjudicator evidence is malformed")
+		}
+		want = adj.Outcome
+	} else if outcome.Adjudicated || outcome.Adjudicator != nil {
+		return fmt.Errorf("unnecessary adjudication is present")
+	}
+	if outcome.Outcome != want {
+		return fmt.Errorf("final query outcome %s does not follow evidence result %s", outcome.Outcome, want)
 	}
 	return nil
 }
@@ -460,12 +662,29 @@ func completeSpanGain(e qualificationEvidence, arm QualificationArm) int {
 	return delta
 }
 
-func semanticStageGain(e qualificationEvidence, arm QualificationArm) int {
+func semanticRankGain(e qualificationEvidence, arm QualificationArm) int {
 	delta := 0
 	for _, id := range e.queryIDs {
-		delta += boolInt(e.observations[arm][id].SemanticTop50.Present) - boolInt(e.observations[ArmPotion512][id].SemanticTop50.Present)
+		delta += pairedSemanticRankDelta(e.observations[ArmPotion512][id].SemanticTop50, e.observations[arm][id].SemanticTop50)
 	}
 	return delta
+}
+
+func pairedSemanticRankDelta(m1, m3 StageHit) int {
+	rank := func(hit StageHit) int {
+		if hit.Present {
+			return hit.BestRank
+		}
+		return 51
+	}
+	m1Rank, m3Rank := rank(m1), rank(m3)
+	if m3Rank < m1Rank {
+		return 1
+	}
+	if m3Rank > m1Rank {
+		return -1
+	}
+	return 0
 }
 
 func boolInt(value bool) int {
@@ -508,7 +727,7 @@ func operatingP95(values []time.Duration, minimum int) (time.Duration, bool) {
 }
 
 func armMeetsQualityCriteria(in QualificationInput, evidence qualificationEvidence, arm QualificationArm) bool {
-	if passCount(evidence.passes[arm]) < in.Preregistration.Thresholds.MinPasses || pairedGain(evidence, arm) < in.Preregistration.Thresholds.MinPairedGain ||
+	if !evidence.armValid[ArmPotion512] || !evidence.armValid[arm] || passCount(evidence.passes[arm]) < in.Preregistration.Thresholds.MinPasses || pairedGain(evidence, arm) < in.Preregistration.Thresholds.MinPairedGain ||
 		positiveStrata(evidence, arm, []string{StratumAmbiguous, StratumArchitectureFlow, StratumNLBehaviour}) < in.Preregistration.Thresholds.MinWeakStrataWithPositiveGain ||
 		negativeStrata(evidence, arm, []string{StratumConfigDocs, StratumExactIdentifier, StratumExactPath}) != 0 || completeSpanGain(evidence, arm) < 1 || !evidence.reproducible[arm] {
 		return false
@@ -517,6 +736,9 @@ func armMeetsQualityCriteria(in QualificationInput, evidence qualificationEviden
 }
 
 func qualificationBranch(in QualificationInput, evidence qualificationEvidence, promote bool, m3Gain, m3SpanGain int) string {
+	if !evidence.armValid[ArmPotion512] || !evidence.armValid[ArmPotion8192] || !evidence.armValid[ArmCodeRank] {
+		return "stop_no_new_holdout"
+	}
 	m2Quality := armMeetsQualityCriteria(in, evidence, ArmPotion8192)
 	m3Quality := armMeetsQualityCriteria(in, evidence, ArmCodeRank)
 	if m2Quality && m3Quality {
@@ -528,13 +750,13 @@ func qualificationBranch(in QualificationInput, evidence qualificationEvidence, 
 	if promote {
 		return "promote_coderank_to_product_integration"
 	}
-	if semanticStageGain(evidence, ArmCodeRank) > 0 && (m3SpanGain <= 0 || m3Gain <= 0) {
+	if semanticRankGain(evidence, ArmCodeRank) > 0 && (m3SpanGain <= 0 || m3Gain <= 0) {
 		return "investigate_projection_or_fusion"
 	}
 	if m2Quality && !m3Quality {
 		return "design_potion_admission_candidate"
 	}
-	if evidence.oracleCeiling < in.Preregistration.Thresholds.MinPasses {
+	if passCount(evidence.oraclePasses[OracleControlOracleCandidateOraclePacker]) < in.Preregistration.Thresholds.MinPasses {
 		return "representation_or_budget_ceiling"
 	}
 	return "stop_no_new_holdout"

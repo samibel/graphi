@@ -66,6 +66,9 @@ func TestEvaluateQualificationRequiresEveryGate(t *testing.T) {
 		{"state ready", "state_ready", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).RetrievalState = "stale" }},
 		{"fingerprint equality", "fingerprint_equality", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).IndexFingerprint = "other" }},
 		{"no degradation", "no_degradation", func(in *QualificationInput) { semanticObservation(in, ArmCodeRank, 0).Degraded = true }},
+		{"required diagnostics", "required_diagnostics_available", func(in *QualificationInput) {
+			semanticObservation(in, ArmPotion8192, 0).UnknownTokens = QualificationIntMetric{}
+		}},
 	}
 	for _, mutation := range mutations {
 		t.Run(mutation.name, func(t *testing.T) {
@@ -93,17 +96,44 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 	}{
 		{"observation cardinality", func(in *QualificationInput) { in.Observations = in.Observations[:len(in.Observations)-1] }},
 		{"duplicate observation query", func(in *QualificationInput) { in.Observations[1].QueryID = in.Observations[0].QueryID }},
-		{"grade cardinality", func(in *QualificationInput) { in.Grades[ArmCodeRank] = in.Grades[ArmCodeRank][:63] }},
-		{"grade arm missing", func(in *QualificationInput) { delete(in.Grades, ArmPotion8192) }},
-		{"grade malformed", func(in *QualificationInput) { in.Grades[ArmCodeRank][0].Outcome = "maybe" }},
-		{"diagnostic unavailable", func(in *QualificationInput) {
-			semanticObservation(in, ArmCodeRank, 0).UnknownTokens = QualificationIntMetric{}
+		{"decision cardinality", func(in *QualificationInput) { in.Decisions = in.Decisions[:len(in.Decisions)-1] }},
+		{"duplicate decision query", func(in *QualificationInput) { in.Decisions[1] = in.Decisions[0] }},
+		{"decision content address", func(in *QualificationInput) { in.Decisions[0].SHA256 = strings.Repeat("9", 64) }},
+		{"decision evidence address", func(in *QualificationInput) { in.Decisions[0].Outcome.Reason = "tampered" }},
+		{"decision payload binding", func(in *QualificationInput) {
+			in.Decisions[0].PayloadSHA256 = strings.Repeat("9", 64)
+			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0])
+		}},
+		{"decision prompt binding", func(in *QualificationInput) {
+			in.Decisions[0].ReaderPromptSHA256 = strings.Repeat("9", 64)
+			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0])
+		}},
+		{"decision subject", func(in *QualificationInput) {
+			in.Decisions[0].ControlKind = OracleControlOracleCandidateOraclePacker
+			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0])
+		}},
+		{"oracle decision payload binding", func(in *QualificationInput) {
+			for i := range in.Decisions {
+				if in.Decisions[i].ControlKind == OracleControlOracleCandidateOraclePacker {
+					in.Decisions[i].PayloadSHA256 = strings.Repeat("9", 64)
+					in.Decisions[i] = mustSealBlindDecision(t, in.Decisions[i])
+					break
+				}
+			}
+		}},
+		{"non-final query outcome", func(in *QualificationInput) {
+			in.Decisions[0].Outcome.Primary = in.Decisions[0].Outcome.Primary[:1]
+			in.Decisions[0] = mustSealBlindDecision(t, in.Decisions[0])
 		}},
 		{"oracle cardinality", func(in *QualificationInput) { in.OracleControls = in.OracleControls[:63] }},
 		{"oracle provenance", func(in *QualificationInput) {
 			in.OracleControls[0].OracleCandidateOraclePacker.CandidateSHA256 = "bad"
 		}},
 		{"build cardinality", func(in *QualificationInput) { in.BuildDigests = in.BuildDigests[:7] }},
+		{"duplicate build ordinal", func(in *QualificationInput) { in.BuildDigests[1].Build = 1 }},
+		{"duplicate build provenance", func(in *QualificationInput) {
+			in.BuildDigests[1].CaptureProvenanceSHA256 = in.BuildDigests[0].CaptureProvenanceSHA256
+		}},
 		{"negative build diagnostic", func(in *QualificationInput) {
 			in.BuildDigests[0].Diagnostics.AdmissionTruncations = -1
 			in.BuildDigests[1].Diagnostics.AdmissionTruncations = -1
@@ -116,6 +146,87 @@ func TestEvaluateQualificationRejectsStructurallyIncompleteEvidence(t *testing.T
 				t.Fatal("accepted incomplete evidence")
 			}
 		})
+	}
+}
+
+func TestSemanticRankDeltaUsesAbsentRank51AndExactPairedRanks(t *testing.T) {
+	tests := []struct {
+		name   string
+		m1, m3 StageHit
+		want   int
+	}{
+		{"absent to present", StageHit{}, StageHit{Present: true, BestRank: 50}, 1},
+		{"present to absent", StageHit{Present: true, BestRank: 50}, StageHit{}, -1},
+		{"better", StageHit{Present: true, BestRank: 20}, StageHit{Present: true, BestRank: 3}, 1},
+		{"equal", StageHit{Present: true, BestRank: 7}, StageHit{Present: true, BestRank: 7}, 0},
+		{"worse", StageHit{Present: true, BestRank: 2}, StageHit{Present: true, BestRank: 8}, -1},
+		{"both absent", StageHit{}, StageHit{}, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := pairedSemanticRankDelta(tc.m1, tc.m3); got != tc.want {
+				t.Fatalf("delta=%d want %d", got, tc.want)
+			}
+		})
+	}
+	in := passingQualificationInput(t)
+	got, err := EvaluateQualification(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, evidence := range got.Evidence {
+		if evidence.Name == "semantic_rank_pairwise_net" {
+			found = strings.Contains(evidence.Algorithm, "absent-51")
+		}
+	}
+	if !found {
+		t.Fatalf("semantic rank evidence missing algorithm: %+v", got.Evidence)
+	}
+}
+
+func TestEvaluateQualificationInvalidM2CannotSelectActionBranch(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		apply func(*QualificationObservation)
+	}{
+		{"state", func(o *QualificationObservation) { o.RetrievalState = "stale" }},
+		{"fingerprint", func(o *QualificationObservation) { o.IndexFingerprint = "other" }},
+		{"degraded", func(o *QualificationObservation) { o.Degraded = true }},
+		{"diagnostics", func(o *QualificationObservation) { o.UnknownTokens = QualificationIntMetric{} }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			in := passingQualificationInput(t)
+			copyDecisions(in.Decisions, ArmPotion8192, ArmCodeRank)
+			copySpanPattern(&in, ArmPotion8192, ArmCodeRank)
+			tc.apply(semanticObservation(&in, ArmPotion8192, 0))
+			got, err := EvaluateQualification(in)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Branch != "stop_no_new_holdout" || got.Promote {
+				t.Fatalf("decision=%+v", got)
+			}
+		})
+	}
+}
+
+func TestRepresentationCeilingUsesBlindOracleDecisionsNotSpanMetadata(t *testing.T) {
+	in := passingQualificationInput(t)
+	copyDecisions(in.Decisions, ArmCodeRank, ArmPotion512)
+	clearSemanticGain(&in, ArmCodeRank)
+	for i := range in.OracleControls {
+		in.OracleControls[i].OracleCandidateOraclePacker.CompleteGrade3Span = true
+	}
+	for i := 0; i < 9; i++ {
+		setControlPass(&in, OracleControlOracleCandidateOraclePacker, weakQueryID(i), false)
+	}
+	got, err := EvaluateQualification(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Branch != "representation_or_budget_ceiling" {
+		t.Fatalf("branch=%q", got.Branch)
 	}
 }
 
@@ -173,8 +284,8 @@ func TestEvaluateQualificationDecisionBranchesFollowSpecOrder(t *testing.T) {
 		{"representation ceiling", "representation_or_budget_ceiling", func(in *QualificationInput) {
 			copyGrades(in, ArmCodeRank, ArmPotion512)
 			clearSemanticGain(in, ArmCodeRank)
-			for i := range in.OracleControls {
-				in.OracleControls[i].OracleCandidateOraclePacker.CompleteGrade3Span = i < 55
+			for i := 0; i < 9; i++ {
+				setControlPass(in, OracleControlOracleCandidateOraclePacker, weakQueryID(i), false)
 			}
 		}},
 		{"stop", "stop_no_new_holdout", func(in *QualificationInput) {
@@ -237,7 +348,6 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 	}
 	input := QualificationInput{
 		Preregistration: pre,
-		Grades:          map[QualificationArm][]Grade{},
 		Operating: OperatingMeasurements{CPUOnly: true, ArtifactBytes: 512 << 20,
 			PeakAdditionalSidecarRSSBytes: 1 << 30, QueryEmbedLatencies: make([]time.Duration, 100), FullReindex: 5 * time.Minute},
 	}
@@ -272,12 +382,13 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 			case ArmCodeRank:
 				pass = q < 12 || (q >= 14 && q < 26) || q >= 32 // 56, +12/-2 vs M1
 			}
-			input.Grades[arm] = append(input.Grades[arm], qualificationGrade(t, id, pass))
+			input.Decisions = append(input.Decisions, qualificationBlindDecision(t, pre, arm, "", id, queryStratum[id], observation.PayloadSHA256, pass))
 		}
 		for build := 0; build < 2; build++ {
-			input.BuildDigests = append(input.BuildDigests, QualificationBuildDigest{Arm: arm,
-				VectorBytesSHA256:   strings.Repeat(string('a'+rune(arm[1]-'0')), 64),
-				PersistedRowsSHA256: strings.Repeat("b", 64), BundlesSHA256: strings.Repeat("c", 64),
+			input.BuildDigests = append(input.BuildDigests, QualificationBuildDigest{Arm: arm, Build: build + 1,
+				CaptureProvenanceSHA256: strings.Repeat(string('1'+rune(build)), 64),
+				VectorBytesSHA256:       strings.Repeat(string('a'+rune(arm[1]-'0')), 64),
+				PersistedRowsSHA256:     strings.Repeat("b", 64), BundlesSHA256: strings.Repeat("c", 64),
 				TokenCountsSHA256: strings.Repeat("d", 64), OraclePayloadsSHA256: strings.Repeat("e", 64),
 				OracleTokenCountsSHA256: strings.Repeat("f", 64)})
 		}
@@ -298,24 +409,37 @@ func passingQualificationInput(t *testing.T) QualificationInput {
 		packed.Injected, packed.InjectedRows = true, 1
 		input.OracleControls = append(input.OracleControls, OracleControls{CurrentCandidatesOraclePacker: current,
 			OracleCandidateCurrentSelector: selected, OracleCandidateOraclePacker: packed})
+		for _, bundle := range []OracleBundle{current, selected, packed} {
+			input.Decisions = append(input.Decisions, qualificationBlindDecision(t, pre, "", bundle.ControlKind, id, queryStratum[id], bundle.Payload.SHA256, true))
+		}
 	}
 	return input
 }
 
-func qualificationGrade(t *testing.T, queryID string, pass bool) Grade {
+func qualificationBlindDecision(t *testing.T, pre QualificationPreregistration, arm QualificationArm, controlKind, queryID, stratum, payloadSHA string, pass bool) BlindDecision {
 	t.Helper()
 	outcome := GradeOutcomeFail
 	if pass {
 		outcome = GradeOutcomePass
 	}
-	g, err := SealGrade(Grade{ContractVersion: QrelBlindSmokeContractVersion, Evaluation: QrelBlindSmokeEvaluationName,
-		QueryID: queryID, ResponseSHA256: strings.Repeat("1", 64), GraderID: "grader", Provider: "provider",
-		Model: "model", RubricSHA256: strings.Repeat("2", 64), Outcome: outcome, Rationale: "blind grade",
-		GradedAt: "2026-09-16T12:00:00Z"})
+	primary := []RaterOutcome{
+		{RaterID: "reader-1", Role: RaterRolePrimary, ResponseSHA256: strings.Repeat("1", 64), Status: ResponseStatusAnswered, GradeSHA256: strings.Repeat("2", 64), Outcome: outcome},
+		{RaterID: "reader-2", Role: RaterRolePrimary, ResponseSHA256: strings.Repeat("3", 64), Status: ResponseStatusAnswered, GradeSHA256: strings.Repeat("4", 64), Outcome: outcome},
+	}
+	decision := BlindDecision{Arm: arm, ControlKind: controlKind, QueryID: queryID, Stratum: stratum,
+		PayloadSHA256: payloadSHA, ReaderPromptSHA256: pre.ReaderPromptSHA256, GraderPromptSHA256: pre.GraderPromptSHA256,
+		Outcome: QueryOutcome{QueryID: queryID, Stratum: stratum, Primary: primary, Outcome: outcome, Reason: "two primary outcomes agree"}}
+	return mustSealBlindDecision(t, decision)
+}
+
+func mustSealBlindDecision(t *testing.T, decision BlindDecision) BlindDecision {
+	t.Helper()
+	decision.EvidenceSHA256, decision.SHA256 = "", ""
+	sealed, err := SealBlindDecision(decision)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return g
+	return sealed
 }
 
 func cloneQualificationInput(t *testing.T, in QualificationInput) QualificationInput {
@@ -332,23 +456,71 @@ func cloneQualificationInput(t *testing.T, in QualificationInput) QualificationI
 }
 
 func setPass(in *QualificationInput, arm QualificationArm, queryID string, pass bool) {
-	for i := range in.Grades[arm] {
-		if in.Grades[arm][i].QueryID == queryID {
-			in.Grades[arm][i].Outcome = GradeOutcomeFail
+	for i := range in.Decisions {
+		if in.Decisions[i].Arm == arm && in.Decisions[i].QueryID == queryID {
+			in.Decisions[i].Outcome.Outcome = GradeOutcomeFail
 			if pass {
-				in.Grades[arm][i].Outcome = GradeOutcomePass
+				in.Decisions[i].Outcome.Outcome = GradeOutcomePass
 			}
-			in.Grades[arm][i].SHA256 = ""
-			in.Grades[arm][i], _ = SealGrade(in.Grades[arm][i])
+			for j := range in.Decisions[i].Outcome.Primary {
+				in.Decisions[i].Outcome.Primary[j].Outcome = in.Decisions[i].Outcome.Outcome
+			}
+			in.Decisions[i] = mustResealBlindDecision(in.Decisions[i])
 			return
 		}
 	}
 }
 
-func copyGrades(in *QualificationInput, dst, src QualificationArm) {
-	for _, grade := range in.Grades[src] {
-		setPass(in, dst, grade.QueryID, grade.Outcome == GradeOutcomePass)
+func setControlPass(in *QualificationInput, controlKind, queryID string, pass bool) {
+	for i := range in.Decisions {
+		if in.Decisions[i].ControlKind == controlKind && in.Decisions[i].QueryID == queryID {
+			outcome := GradeOutcomeFail
+			if pass {
+				outcome = GradeOutcomePass
+			}
+			in.Decisions[i].Outcome.Outcome = outcome
+			for j := range in.Decisions[i].Outcome.Primary {
+				in.Decisions[i].Outcome.Primary[j].Outcome = outcome
+			}
+			in.Decisions[i] = mustResealBlindDecision(in.Decisions[i])
+			return
+		}
 	}
+}
+
+func mustResealBlindDecision(decision BlindDecision) BlindDecision {
+	decision.EvidenceSHA256, decision.SHA256 = "", ""
+	sealed, err := SealBlindDecision(decision)
+	if err != nil {
+		panic(err)
+	}
+	return sealed
+}
+
+func copyDecisions(decisions []BlindDecision, dst, src QualificationArm) {
+	passes := map[string]bool{}
+	for _, decision := range decisions {
+		if decision.Arm == src {
+			passes[decision.QueryID] = decision.Outcome.Outcome == GradeOutcomePass
+		}
+	}
+	for i := range decisions {
+		if decisions[i].Arm == dst {
+			outcome := GradeOutcomeFail
+			if passes[decisions[i].QueryID] {
+				outcome = GradeOutcomePass
+			}
+			decisions[i].Outcome.Outcome = outcome
+			for j := range decisions[i].Outcome.Primary {
+				decisions[i].Outcome.Primary[j].Outcome = outcome
+			}
+			decisions[i] = mustResealBlindDecision(decisions[i])
+		}
+	}
+}
+
+func copyGrades(in *QualificationInput, dst, src QualificationArm) {
+	copyDecisions(in.Decisions, dst, src)
 }
 
 func copySpanPattern(in *QualificationInput, dst, src QualificationArm) {
@@ -399,9 +571,15 @@ func gatePassed(t *testing.T, got QualificationDecision, name string) bool {
 func makeUncertainNetNine(in *QualificationInput) {
 	// 39 shared passes, 17 M3-only, 8 M1-only: pass counts 47/56,
 	// paired net +9 but the percentile interval includes zero.
-	for i, grade := range in.Grades[ArmPotion512] {
-		setPass(in, ArmPotion512, grade.QueryID, i < 47)
-		setPass(in, ArmCodeRank, grade.QueryID, i < 39 || (i >= 47 && i < 64))
+	var ids []string
+	for _, decision := range in.Decisions {
+		if decision.Arm == ArmPotion512 {
+			ids = append(ids, decision.QueryID)
+		}
+	}
+	for i, id := range ids {
+		setPass(in, ArmPotion512, id, i < 47)
+		setPass(in, ArmCodeRank, id, i < 39 || (i >= 47 && i < 64))
 	}
 }
 

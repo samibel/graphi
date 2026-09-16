@@ -200,6 +200,8 @@ type QualificationObservation struct {
 // token counts have independent digests so either can invalidate publication.
 type QualificationBuildDigest struct {
 	Arm                     QualificationArm              `json:"arm"`
+	Build                   int                           `json:"build"`
+	CaptureProvenanceSHA256 string                        `json:"capture_provenance_sha256"`
 	VectorBytesSHA256       string                        `json:"vector_bytes_sha256"`
 	PersistedRowsSHA256     string                        `json:"persisted_rows_sha256"`
 	BundlesSHA256           string                        `json:"bundles_sha256"`
@@ -654,7 +656,7 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 				RepoRoot: env.Repo, RepoName: loaded.Dataset.Repo, RepoSHA: pre.SourceRepoSHA,
 				Dataset: loaded, Queries: append([]Query(nil), loaded.Dataset.Queries...), EmbedderSelector: pre.Arms[arm].Label, WorkDir: workDir,
 				RealCounter: counter, Log: io.Discard, Embedder: emb, ExpectedFingerprint: expected,
-				QualificationArm: arm, QualificationPreregistration: &pre,
+				QualificationArm: arm, QualificationBuild: build, QualificationPreregistration: &pre,
 				Binding: bindingOptions, ObservedBinding: &binding,
 			}
 			if arm == ArmCodeRank {

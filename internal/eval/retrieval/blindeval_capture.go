@@ -404,6 +404,7 @@ type CandidateCaptureOptions struct {
 	Embedder                     embed.Embedder
 	ExpectedFingerprint          *embed.Fingerprint
 	QualificationArm             QualificationArm
+	QualificationBuild           int
 	QualificationPreregistration *QualificationPreregistration
 	ManifestBytes                []byte
 	// Binding is the candidate/checkout binding this capture must observe
@@ -443,6 +444,9 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 	if strictQualification {
 		if o.QualificationPreregistration == nil || o.QualificationArm == "" {
 			return nil, provenance, fmt.Errorf("embedded-model qualification capture: arm and preregistration are required")
+		}
+		if o.QualificationBuild != 1 && o.QualificationBuild != 2 {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: build ordinal must be 1 or 2")
 		}
 		if o.QualificationArm != ArmLexical && (o.Embedder == nil || o.ExpectedFingerprint == nil) {
 			return nil, provenance, fmt.Errorf("embedded-model qualification capture: semantic arms require an injected embedder and expected fingerprint")
@@ -579,10 +583,28 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 			inputs.OracleControls[bundle.QueryID] = *bundle.OracleControls
 		}
 		digest := buildQualificationDigest(o.QualificationArm, inputs)
+		digest.Build = o.QualificationBuild
+		provenanceSHA, err := qualificationCaptureProvenanceSHA(o.QualificationArm, o.WorkDir, provenance)
+		if err != nil {
+			return nil, provenance, fmt.Errorf("embedded-model qualification capture: encode build provenance: %w", err)
+		}
+		digest.CaptureProvenanceSHA256 = provenanceSHA
 		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
 		provenance.QualificationBuildDigest = &digest
 	}
 	return captured, provenance, nil
+}
+
+func qualificationCaptureProvenanceSHA(arm QualificationArm, workDir string, provenance CandidateCaptureProvenance) (string, error) {
+	raw, err := json.Marshal(struct {
+		Arm        QualificationArm           `json:"arm"`
+		WorkDir    string                     `json:"work_dir"`
+		Provenance CandidateCaptureProvenance `json:"provenance"`
+	}{arm, workDir, provenance})
+	if err != nil {
+		return "", err
+	}
+	return SHA256Hex(raw), nil
 }
 
 func buildCandidateCaptureIndex(ctx context.Context, o CandidateCaptureOptions, root, workDir string, log io.Writer) (*taskContextIndex, error) {
