@@ -55,7 +55,16 @@ that exact leading instruction and encodes the supplied bytes unchanged. Direct
 clients must prepare queries identically. A second textual occurrence is preserved
 because it may be part of the user's original query.
 
-Protocol `graphi-coderank/2` requires every `/v1/embed` response to include
+Protocol `graphi-coderank/3` requires every `/v1/attestation` response to include
+positive exact-integer `peak_rss_bytes`, `artifact_bytes`, and `runtime_threads`.
+The reference process reports its own peak RSS using `ru_maxrss`: Linux values
+are converted from KiB to bytes and Darwin values already are bytes. Other
+platforms fail closed. Artifact bytes are the sum of verified regular files;
+runtime threads are the effective Torch CPU thread count after model load. These
+measurements travel with the same identity digest and process epoch as all other
+responses, so a restart or model-space change invalidates them.
+
+Protocol `graphi-coderank/3` also requires every `/v1/embed` response to include
 `unknown_token_counts` with exactly one nonnegative integer per returned vector.
 Missing, null, negative, or cardinality-mismatched counts are rejected. The
 reference sidecar derives each count from the same `input_ids` and

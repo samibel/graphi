@@ -41,6 +41,9 @@ func newFakeSidecar(t *testing.T) *fakeSidecar {
 				t.Error("attestation must use GET")
 			}
 			out["dimension"] = 768
+			out["peak_rss_bytes"] = 512 << 20
+			out["artifact_bytes"] = 256 << 20
+			out["runtime_threads"] = 4
 		case "/v1/admit":
 			var req admitRequest
 			if err := decodeJSON(r.Body, &req); err != nil {
@@ -194,6 +197,65 @@ func TestEmbedderRejectsConstructionAttestation(t *testing.T) {
 				t.Fatal("accepted invalid initial attestation")
 			}
 		})
+	}
+}
+
+func TestEmbedderRequiresPositiveExactOperatingAttestationMetrics(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		field  string
+		value  any
+		delete bool
+	}{
+		{"peak missing", "peak_rss_bytes", nil, true},
+		{"peak null", "peak_rss_bytes", nil, false},
+		{"peak zero", "peak_rss_bytes", 0, false},
+		{"peak negative", "peak_rss_bytes", -1, false},
+		{"peak fractional", "peak_rss_bytes", 1.5, false},
+		{"artifact missing", "artifact_bytes", nil, true},
+		{"artifact null", "artifact_bytes", nil, false},
+		{"artifact zero", "artifact_bytes", 0, false},
+		{"threads missing", "runtime_threads", nil, true},
+		{"threads null", "runtime_threads", nil, false},
+		{"threads zero", "runtime_threads", 0, false},
+		{"threads bool", "runtime_threads", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newFakeSidecar(t)
+			s.mutate = func(path string, out map[string]any) {
+				if path != "/v1/attestation" {
+					return
+				}
+				if tc.delete {
+					delete(out, tc.field)
+				} else {
+					out[tc.field] = tc.value
+				}
+			}
+			if e, err := newFromManifest(t.Context(), s.manifest, nil); err == nil || e != nil {
+				t.Fatal("accepted invalid operating attestation")
+			}
+		})
+	}
+}
+
+func TestOperatingAttestationIsBoundToPinnedIdentityAndEpoch(t *testing.T) {
+	s := newFakeSidecar(t)
+	e := constructFake(t, s)
+	got, err := e.OperatingAttestation(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Runtime != e.ExpectedRuntimeAttestation() || got.PeakRSSBytes != 512<<20 || got.ArtifactBytes != 256<<20 || got.RuntimeThreads != 4 {
+		t.Fatalf("got=%+v", got)
+	}
+	s.mutate = func(path string, out map[string]any) {
+		if path == "/v1/attestation" {
+			out["epoch"] = "process-2"
+		}
+	}
+	if _, err := e.OperatingAttestation(t.Context()); err == nil {
+		t.Fatal("accepted operating metrics from a changed epoch")
 	}
 }
 

@@ -129,10 +129,10 @@ func (e *Embedder) request(ctx context.Context, path string, input, output any) 
 	return nil
 }
 
-func (e *Embedder) fetchAttestation(ctx context.Context) (embed.RuntimeAttestation, error) {
+func (e *Embedder) fetchOperatingAttestation(ctx context.Context) (OperatingAttestation, error) {
 	var out attestationResponse
 	if err := e.request(ctx, "/v1/attestation", nil, &out); err != nil {
-		return embed.RuntimeAttestation{}, err
+		return OperatingAttestation{}, err
 	}
 	got := embed.RuntimeAttestation{IdentityDigest: out.IdentityDigest, Epoch: out.Epoch}
 	want := e.expected
@@ -140,12 +140,23 @@ func (e *Embedder) fetchAttestation(ctx context.Context) (embed.RuntimeAttestati
 		want.IdentityDigest = e.manifest.IdentityDigest()
 	}
 	if err := embed.ValidateRuntimeAttestation(got); err != nil {
-		return embed.RuntimeAttestation{}, &embed.RuntimeAttestationError{Phase: "attestation", Expected: want, Observed: got, Reason: err.Error()}
+		return OperatingAttestation{}, &embed.RuntimeAttestationError{Phase: "attestation", Expected: want, Observed: got, Reason: err.Error()}
 	}
 	if out.Protocol != ProtocolVersion || got.IdentityDigest != want.IdentityDigest || (want.Epoch != "" && got.Epoch != want.Epoch) || out.Dimension != e.manifest.Dimension {
-		return embed.RuntimeAttestation{}, &embed.RuntimeAttestationError{Phase: "attestation", Expected: want, Observed: got, Reason: "manifest or runtime binding mismatch"}
+		return OperatingAttestation{}, &embed.RuntimeAttestationError{Phase: "attestation", Expected: want, Observed: got, Reason: "manifest or runtime binding mismatch"}
 	}
-	return got, nil
+	if out.PeakRSSBytes == nil || *out.PeakRSSBytes <= 0 || out.ArtifactBytes == nil || *out.ArtifactBytes <= 0 || out.RuntimeThreads == nil || *out.RuntimeThreads <= 0 {
+		return OperatingAttestation{}, errors.New("coderank: attestation requires positive integer operating metrics")
+	}
+	return OperatingAttestation{Runtime: got, PeakRSSBytes: *out.PeakRSSBytes, ArtifactBytes: *out.ArtifactBytes, RuntimeThreads: *out.RuntimeThreads}, nil
+}
+
+func (e *Embedder) fetchAttestation(ctx context.Context) (embed.RuntimeAttestation, error) {
+	got, err := e.fetchOperatingAttestation(ctx)
+	if err != nil {
+		return embed.RuntimeAttestation{}, err
+	}
+	return got.Runtime, nil
 }
 
 func (e *Embedder) verifyBinding(phase string, b responseBinding) error {
@@ -270,6 +281,9 @@ func (e *Embedder) embed(ctx context.Context, kind string, texts []string) (embe
 func (e *Embedder) ExpectedRuntimeAttestation() embed.RuntimeAttestation { return e.expected }
 func (e *Embedder) RuntimeAttestation(ctx context.Context) (embed.RuntimeAttestation, error) {
 	return e.fetchAttestation(ctx)
+}
+func (e *Embedder) OperatingAttestation(ctx context.Context) (OperatingAttestation, error) {
+	return e.fetchOperatingAttestation(ctx)
 }
 func (e *Embedder) ProbeDim(ctx context.Context) error { _, err := e.fetchAttestation(ctx); return err }
 

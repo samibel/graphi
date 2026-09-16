@@ -36,6 +36,8 @@ class FakeEncoder:
     def __init__(self):
         self.inputs = []
         self.token_count_calls = 0
+        self.artifact_bytes = 256 * 1024 * 1024
+        self.runtime_threads = 4
 
     @staticmethod
     def _token_count(text):
@@ -61,7 +63,26 @@ class FakeEncoder:
 
 class SidecarContractTest(unittest.TestCase):
     def setUp(self):
-        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder())
+        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder(), peak_rss_probe=lambda: 512 * 1024 * 1024)
+
+    def test_attestation_includes_positive_bound_operating_metrics(self):
+        got = self.app.attestation()
+        self.assertEqual(got["peak_rss_bytes"], 512 * 1024 * 1024)
+        self.assertEqual(got["artifact_bytes"], 256 * 1024 * 1024)
+        self.assertEqual(got["runtime_threads"], 4)
+
+    def test_operating_metrics_are_exact_positive_integers(self):
+        for field, value in (("artifact_bytes", 0), ("artifact_bytes", -1),
+                             ("artifact_bytes", 1.5), ("artifact_bytes", True),
+                             ("runtime_threads", 0), ("runtime_threads", -1),
+                             ("runtime_threads", 1.5), ("runtime_threads", True)):
+            encoder = FakeEncoder()
+            setattr(encoder, field, value)
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                sidecar.SidecarApp(valid_manifest(), encoder, peak_rss_probe=lambda: 1)
+        for value in (0, -1, 1.5, True):
+            with self.subTest(peak=value), self.assertRaises(ValueError):
+                sidecar.SidecarApp(valid_manifest(), FakeEncoder(), peak_rss_probe=lambda: value).attestation()
 
     def test_query_and_document_paths_preserve_wire_bytes(self):
         doc = self.app.embed({"protocol": sidecar.PROTOCOL, "kind": "document", "texts": [" x "]})
@@ -179,7 +200,7 @@ class SidecarContractTest(unittest.TestCase):
                 return {"sentence_embedding": Embeddings([[1.0] * 768, [2.0] * 768])}
 
         model = Model()
-        encoder = sidecar.LocalEncoder(model)
+        encoder = sidecar.LocalEncoder(model, artifact_bytes=123, runtime_threads=2)
         inference = mock.MagicMock()
         inference.__enter__.return_value = None
         inference.__exit__.return_value = False
@@ -317,10 +338,14 @@ class VerificationTest(unittest.TestCase):
             manifest["model"]["sha256"] = sidecar.tree_digest(path)
             manifest["tokenizer"]["sha256"] = sidecar.tokenizer_digest(path)
             with mock.patch.object(sidecar, "verify_runtime_versions"), mock.patch.dict(
-                "sys.modules", {"sentence_transformers": types.SimpleNamespace(SentenceTransformer=constructor)}
+                "sys.modules", {
+                    "sentence_transformers": types.SimpleNamespace(SentenceTransformer=constructor),
+                    "torch": types.SimpleNamespace(get_num_threads=lambda: 3),
+                }
             ), mock.patch.dict(os.environ, {}, clear=False):
-                sidecar.load_encoder(manifest, path)
+                encoder = sidecar.load_encoder(manifest, path)
             self.assertEqual(loaded, [(str(path.resolve()), {"device": "cpu", "trust_remote_code": True, "local_files_only": True})])
+            self.assertEqual((encoder.artifact_bytes, encoder.runtime_threads), (2, 3))
 
     def test_nonlocal_artifacts_are_rejected(self):
         for path in ["nomic-ai/CodeRankEmbed", "https://example.com/model", "/does-not-exist"]:
@@ -360,8 +385,18 @@ class VerificationTest(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 sidecar.SidecarApp(manifest, FakeEncoder())
 
-    def test_protocol_version_is_v2(self):
-        self.assertEqual(sidecar.PROTOCOL, "graphi-coderank/2")
+    def test_protocol_version_is_v3(self):
+        self.assertEqual(sidecar.PROTOCOL, "graphi-coderank/3")
+
+    def test_peak_rss_platform_units_and_unsupported_os(self):
+        usage = types.SimpleNamespace(ru_maxrss=123)
+        resource = types.SimpleNamespace(RUSAGE_SELF=1, getrusage=lambda _: usage)
+        with mock.patch.object(sidecar.sys, "platform", "linux"), mock.patch.dict("sys.modules", {"resource": resource}):
+            self.assertEqual(sidecar.peak_rss_bytes(), 123 * 1024)
+        with mock.patch.object(sidecar.sys, "platform", "darwin"), mock.patch.dict("sys.modules", {"resource": resource}):
+            self.assertEqual(sidecar.peak_rss_bytes(), 123)
+        with mock.patch.object(sidecar.sys, "platform", "win32"), self.assertRaises(ValueError):
+            sidecar.peak_rss_bytes()
 
     def test_no_runtime_import_on_module_import(self):
         import subprocess
@@ -374,7 +409,7 @@ class VerificationTest(unittest.TestCase):
 
 class HTTPContractTest(unittest.TestCase):
     def setUp(self):
-        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder())
+        self.app = sidecar.SidecarApp(valid_manifest(), FakeEncoder(), peak_rss_probe=lambda: 512 * 1024 * 1024)
         self.server = sidecar.make_server(self.app, "127.0.0.1", 0)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -397,10 +432,10 @@ class HTTPContractTest(unittest.TestCase):
         status, binding = self.request("GET", "/v1/attestation")
         self.assertEqual(status, 200)
         cases = [
-            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/2","text":"x"}', 200),
-            ("POST", "/v1/embed", '{"protocol":"graphi-coderank/2","kind":"document","texts":["x"]}', 200),
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/3","text":"x"}', 200),
+            ("POST", "/v1/embed", '{"protocol":"graphi-coderank/3","kind":"document","texts":["x"]}', 200),
             ("POST", "/v1/admit", "{", 400),
-            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/2","text":"x","text":"y"}', 400),
+            ("POST", "/v1/admit", '{"protocol":"graphi-coderank/3","text":"x","text":"y"}', 400),
             ("POST", "/v1/admit", "{} {}", 400),
             ("POST", "/v1/admit", '{"protocol":"wrong","text":"x"}', 400),
             ("GET", "/other", None, 404),

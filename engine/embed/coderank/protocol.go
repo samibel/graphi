@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+
+	"github.com/samibel/graphi/engine/embed"
 )
 
-const ProtocolVersion = "graphi-coderank/2"
+const ProtocolVersion = "graphi-coderank/3"
 
 type responseBinding struct {
 	Protocol       string `json:"protocol"`
@@ -16,7 +18,19 @@ type responseBinding struct {
 
 type attestationResponse struct {
 	responseBinding
-	Dimension int `json:"dimension"`
+	Dimension      int    `json:"dimension"`
+	PeakRSSBytes   *int64 `json:"peak_rss_bytes"`
+	ArtifactBytes  *int64 `json:"artifact_bytes"`
+	RuntimeThreads *int   `json:"runtime_threads"`
+}
+
+// OperatingAttestation binds process resource observations to the same
+// immutable identity and serving epoch as every embedding response.
+type OperatingAttestation struct {
+	Runtime        embed.RuntimeAttestation `json:"runtime"`
+	PeakRSSBytes   int64                    `json:"peak_rss_bytes"`
+	ArtifactBytes  int64                    `json:"artifact_bytes"`
+	RuntimeThreads int                      `json:"runtime_threads"`
 }
 
 type admitRequest struct {

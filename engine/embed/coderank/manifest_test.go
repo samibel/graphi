@@ -17,7 +17,7 @@ func validManifest() Manifest {
 	instruction := "Represent this query for searching relevant code: "
 	digest := sha256.Sum256([]byte(instruction))
 	return Manifest{
-		SchemaVersion: 1, Protocol: "graphi-coderank/2", Endpoint: "http://127.0.0.1:8765",
+		SchemaVersion: 1, Protocol: "graphi-coderank/3", Endpoint: "http://127.0.0.1:8765",
 		Model:     ArtifactPin{ID: "nomic-ai/CodeRankEmbed", Revision: "model-revision", SHA256: strings.Repeat("a", 64)},
 		Tokenizer: ArtifactPin{ID: "nomic-ai/CodeRankEmbed", Revision: "tokenizer-revision", SHA256: strings.Repeat("b", 64)},
 		Runtime:   RuntimePin{Name: "sentence-transformers", Version: "runtime-version", SHA256: strings.Repeat("c", 64)},
@@ -223,9 +223,9 @@ func TestDecodeResponseRejectsUnknownAndTrailingFields(t *testing.T) {
 		name, body string
 		out        func() any
 	}{
-		{"attestation", `{"protocol":"graphi-coderank/2","identity_digest":"digest","epoch":"epoch","dimension":768}`, func() any { return &attestationResponse{} }},
-		{"admit", `{"protocol":"graphi-coderank/2","identity_digest":"digest","epoch":"epoch","text":"code","token_count":1}`, func() any { return &admitResponse{} }},
-		{"embed", `{"protocol":"graphi-coderank/2","identity_digest":"digest","epoch":"epoch","vectors":[[1,0]],"unknown_token_counts":[0]}`, func() any { return &embedResponse{} }},
+		{"attestation", `{"protocol":"graphi-coderank/3","identity_digest":"digest","epoch":"epoch","dimension":768,"peak_rss_bytes":1,"artifact_bytes":1,"runtime_threads":1}`, func() any { return &attestationResponse{} }},
+		{"admit", `{"protocol":"graphi-coderank/3","identity_digest":"digest","epoch":"epoch","text":"code","token_count":1}`, func() any { return &admitResponse{} }},
+		{"embed", `{"protocol":"graphi-coderank/3","identity_digest":"digest","epoch":"epoch","vectors":[[1,0]],"unknown_token_counts":[0]}`, func() any { return &embedResponse{} }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if err := decodeResponse(strings.NewReader(tc.body), tc.out()); err != nil {

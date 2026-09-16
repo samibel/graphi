@@ -20,7 +20,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
 
-PROTOCOL = "graphi-coderank/2"
+PROTOCOL = "graphi-coderank/3"
 QUERY_INSTRUCTION = "Represent this query for searching relevant code: "
 MAX_BODY = 1024 * 1024
 MAX_BATCH = 32
@@ -278,11 +278,28 @@ def verify_artifacts(manifest, model_dir):
     return root
 
 
+def exact_positive_integer(value, name):
+    if type(value) is not int or value <= 0:
+        raise ValueError(f"invalid {name}")
+    return value
+
+
+def peak_rss_bytes():
+    if sys.platform not in ("linux", "darwin"):
+        raise ValueError("unsupported platform for peak RSS")
+    import resource
+    value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    exact_positive_integer(value, "peak RSS")
+    return value * 1024 if sys.platform == "linux" else value
+
+
 class LocalEncoder:
     """Use the local tokenizer and model forward path without encode's truncation."""
 
-    def __init__(self, model):
+    def __init__(self, model, artifact_bytes, runtime_threads):
         self.model = model.float().eval()
+        self.artifact_bytes = exact_positive_integer(artifact_bytes, "artifact bytes")
+        self.runtime_threads = exact_positive_integer(runtime_threads, "runtime threads")
 
     def token_count(self, text):
         return len(self.model.tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"])
@@ -322,6 +339,7 @@ class LocalEncoder:
 
 def load_encoder(manifest, model_dir):
     root = verify_artifacts(manifest, model_dir)
+    artifact_bytes = sum(path.stat().st_size for path in artifact_files(root))
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_DATASETS_OFFLINE"] = "1"
@@ -329,17 +347,21 @@ def load_encoder(manifest, model_dir):
     # Avoid altering the pinned tree through Python's bytecode cache.
     sys.dont_write_bytecode = True
     from sentence_transformers import SentenceTransformer
+    import torch
     model = SentenceTransformer(str(root), device="cpu", trust_remote_code=True, local_files_only=True)
-    return LocalEncoder(model)
+    return LocalEncoder(model, artifact_bytes, torch.get_num_threads())
 
 
 class SidecarApp:
-    def __init__(self, manifest, encoder):
+    def __init__(self, manifest, encoder, peak_rss_probe=peak_rss_bytes):
         validate_manifest(manifest)
         self._manifest = copy.deepcopy(manifest)
         self._identity = identity_digest(self._manifest)
         self._epoch = secrets.token_hex(32)
         self.encoder = encoder
+        self._artifact_bytes = exact_positive_integer(encoder.artifact_bytes, "artifact bytes")
+        self._runtime_threads = exact_positive_integer(encoder.runtime_threads, "runtime threads")
+        self._peak_rss_probe = peak_rss_probe
         self._lock = threading.Lock()
 
     @property
@@ -350,7 +372,10 @@ class SidecarApp:
         return {"protocol": PROTOCOL, "identity_digest": self._identity, "epoch": self.epoch}
 
     def attestation(self):
-        return dict(self.binding(), dimension=self._manifest["dimension"])
+        peak = exact_positive_integer(self._peak_rss_probe(), "peak RSS")
+        return dict(self.binding(), dimension=self._manifest["dimension"],
+                    peak_rss_bytes=peak, artifact_bytes=self._artifact_bytes,
+                    runtime_threads=self._runtime_threads)
 
     def _request(self, request, keys):
         strict_keys(request, keys)
