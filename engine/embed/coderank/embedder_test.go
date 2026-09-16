@@ -251,6 +251,7 @@ func TestEmbedderRejectsInvalidVectors(t *testing.T) {
 	}{
 		{"missing", [][]float32{}}, {"extra", [][]float32{make([]float32, 768), make([]float32, 768)}}, {"dimension", [][]float32{{1, 0}}},
 		{"nan", json.RawMessage(`[[NaN]]`)}, {"inf", json.RawMessage(`[[1e999]]`)},
+		{"null component", json.RawMessage(`[[null,` + strings.Repeat("0,", 766) + `0]]`)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newFakeSidecar(t)

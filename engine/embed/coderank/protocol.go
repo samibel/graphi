@@ -38,7 +38,7 @@ type embedRequest struct {
 
 type embedResponse struct {
 	responseBinding
-	Vectors [][]float32 `json:"vectors"`
+	Vectors [][]*float32 `json:"vectors"`
 }
 
 // decodeResponse enforces the wire schema. The adapter must additionally verify

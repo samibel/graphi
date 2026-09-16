@@ -218,17 +218,23 @@ func (e *Embedder) embed(ctx context.Context, kind string, texts []string) ([][]
 	if len(out.Vectors) != len(texts) {
 		return nil, errors.New("coderank: response vector cardinality mismatch")
 	}
-	for _, vector := range out.Vectors {
+	vectors := make([][]float32, len(out.Vectors))
+	for i, vector := range out.Vectors {
 		if len(vector) != e.Dim() {
 			return nil, errors.New("coderank: response vector dimension mismatch")
 		}
-		for _, value := range vector {
-			if math.IsNaN(float64(value)) || math.IsInf(float64(value), 0) {
+		vectors[i] = make([]float32, len(vector))
+		for j, value := range vector {
+			if value == nil {
+				return nil, errors.New("coderank: null vector component")
+			}
+			if math.IsNaN(float64(*value)) || math.IsInf(float64(*value), 0) {
 				return nil, errors.New("coderank: non-finite vector value")
 			}
+			vectors[i][j] = *value
 		}
 	}
-	return out.Vectors, nil
+	return vectors, nil
 }
 
 func (e *Embedder) ExpectedRuntimeAttestation() embed.RuntimeAttestation { return e.expected }
