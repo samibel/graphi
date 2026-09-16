@@ -216,6 +216,35 @@ func TestEmbedderRejectsInvalidAdmission(t *testing.T) {
 	}
 }
 
+func TestEmbedderAdmissionRequiresText(t *testing.T) {
+	for _, name := range []string{"omitted", "null"} {
+		t.Run(name, func(t *testing.T) {
+			s := newFakeSidecar(t)
+			e := constructFake(t, s)
+			s.mutate = func(_ string, out map[string]any) {
+				if name == "omitted" {
+					delete(out, "text")
+				} else {
+					out["text"] = nil
+				}
+			}
+			a, err := e.Admit(t.Context(), "alpha beta")
+			if !embed.IsAdmissionError(err) || a != (embed.Admitted{}) {
+				t.Fatalf("accepted absent admission text: admitted=%+v err=%v", a, err)
+			}
+		})
+	}
+	t.Run("explicit empty prefix", func(t *testing.T) {
+		s := newFakeSidecar(t)
+		e := constructFake(t, s)
+		s.mutate = func(_ string, out map[string]any) { out["text"], out["token_count"] = "", 0 }
+		a, err := e.Admit(t.Context(), "alpha beta")
+		if err != nil || a != (embed.Admitted{Text: "", TokenCount: 0, Bound: "tokens"}) {
+			t.Fatalf("explicit empty prefix: admitted=%+v err=%v", a, err)
+		}
+	})
+}
+
 func TestEmbedderAdmissionRequiresTokenCount(t *testing.T) {
 	for _, missing := range []bool{true, false} {
 		t.Run(fmt.Sprintf("missing=%t", missing), func(t *testing.T) {

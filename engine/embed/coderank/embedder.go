@@ -174,14 +174,17 @@ func (e *Embedder) Admit(ctx context.Context, text string) (embed.Admitted, erro
 	if out.TokenCount == nil {
 		return embed.Admitted{}, e.admissionError(0, "response requires an integer token_count")
 	}
-	if !unchangedUTF8Prefix(text, out.Text) || *out.TokenCount < 0 || *out.TokenCount > e.manifest.Admission.MaxTokens {
+	if out.Text == nil {
+		return embed.Admitted{}, e.admissionError(*out.TokenCount, "response requires a string text")
+	}
+	if !unchangedUTF8Prefix(text, *out.Text) || *out.TokenCount < 0 || *out.TokenCount > e.manifest.Admission.MaxTokens {
 		return embed.Admitted{}, e.admissionError(*out.TokenCount, "response is not an unchanged prefix within the token limit")
 	}
 	bound := "none"
-	if out.Text != text {
+	if *out.Text != text {
 		bound = "tokens"
 	}
-	return embed.Admitted{Text: out.Text, TokenCount: *out.TokenCount, Bound: bound}, nil
+	return embed.Admitted{Text: *out.Text, TokenCount: *out.TokenCount, Bound: bound}, nil
 }
 
 func (e *Embedder) admissionError(count int, reason string) error {

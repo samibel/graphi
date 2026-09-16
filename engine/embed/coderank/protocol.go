@@ -26,8 +26,8 @@ type admitRequest struct {
 
 type admitResponse struct {
 	responseBinding
-	Text       string `json:"text"`
-	TokenCount *int   `json:"token_count"`
+	Text       *string `json:"text"`
+	TokenCount *int    `json:"token_count"`
 }
 
 type embedRequest struct {
