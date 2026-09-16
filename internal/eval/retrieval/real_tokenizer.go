@@ -2,6 +2,7 @@ package retrieval
 
 import (
 	"errors"
+	"os"
 
 	evaltokenizer "github.com/samibel/graphi/internal/eval/tokenizer"
 )
@@ -21,11 +22,21 @@ func NewPinnedRealPayloadCounter(tok *evaltokenizer.Tokenizer) (PayloadCounter, 
 	}, nil
 }
 
-// LoadPinnedRealPayloadCounter is the measurement entry point. Missing or
-// corrupt artifact bytes are returned as fatal errors; there is deliberately
-// no whitespace fallback.
+// LoadPinnedRealPayloadCounter is the measurement entry point. By default it
+// verifies and loads the governed vocabulary embedded in the binary, keeping
+// clean and offline evaluators hermetic. An explicit artifact-directory
+// override remains fail-closed so conformance checks can detect absent or
+// corrupt external bytes. There is deliberately no whitespace fallback.
 func LoadPinnedRealPayloadCounter() (PayloadCounter, error) {
-	tok, err := evaltokenizer.LoadPinned()
+	var (
+		tok *evaltokenizer.Tokenizer
+		err error
+	)
+	if os.Getenv("GRAPHI_EVAL_TOKENIZER_DIR") != "" {
+		tok, err = evaltokenizer.LoadPinned()
+	} else {
+		tok, err = evaltokenizer.LoadEmbedded()
+	}
 	if err != nil {
 		return PayloadCounter{}, err
 	}

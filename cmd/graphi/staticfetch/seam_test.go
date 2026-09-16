@@ -23,7 +23,7 @@ func DownloadForTest(client *http.Client, baseURL, dest string) error {
 // path. It validates src against the (currently-set) PinnedSHA256
 // table and copies the files to dest.
 func InstallLocalForTest(src, dest string) error {
-	return InstallLocal(context.Background(), src, dest)
+	return installLocalModel(context.Background(), src, dest)
 }
 
 // DownloadTokenizerForTest exercises the tokenizer acquisition path with a

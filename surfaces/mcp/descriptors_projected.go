@@ -9,8 +9,9 @@ package mcp
 // SW-223 populated as the single canonical statement of what each operation IS.
 // Nothing else moved: dispatch is still legacy (AC-4 — surfaces/mcp/toolcalls.go
 // does not import the catalog and must not), the per-binding narrowing is still
-// filterSupportedToolDescriptors over the projected list, and the legacy
-// literals are still compiled in and switchable back (AC-5, descriptorSource).
+// filterSupportedToolDescriptors over the projected list. The legacy literals
+// remain as an independent test oracle, but are no longer reachable from the
+// shipped binary after sustained byte-parity coverage.
 //
 // # The advertisement ORDER is not in the catalog, on purpose
 //
@@ -95,43 +96,13 @@ import (
 	"github.com/samibel/graphi/engine/query"
 )
 
-// descriptorSourceKind names which of the two descriptor sources serves
-// tools/list.
-type descriptorSourceKind string
-
-const (
-	// descriptorSourceProjected derives descriptors from engine/opcatalog.
-	descriptorSourceProjected descriptorSourceKind = "projected"
-	// descriptorSourceLegacy serves the hand-written Go literals in
-	// descriptors.go.
-	descriptorSourceLegacy descriptorSourceKind = "legacy"
-)
-
-// descriptorSource is the AC-5 rollback switch. It is deliberately NOT an
-// environment variable: tools/list bytes are wire contract, and a knob an
-// operator can turn would mean two graphi processes on the same version could
-// advertise differently. Rolling back is a one-line source change plus a
-// release — visible in a diff, like every other wire change.
-//
-// Tests flip it through withDescriptorSource (descriptors_projected_test.go),
-// which proves both sources produce identical bytes at switch time.
-var descriptorSource = descriptorSourceProjected
-
-// stableToolDescriptors returns the profile-static Stable catalog from whichever
-// source descriptorSource selects.
+// stableToolDescriptors returns the projected profile-static Stable catalog.
 func stableToolDescriptors() []map[string]any {
-	if descriptorSource == descriptorSourceLegacy {
-		return legacyStableToolDescriptors()
-	}
 	return cloneDescriptors(projectedProfiles.stable)
 }
 
-// maximalToolDescriptors returns the profile-static Stable+Labs catalog from
-// whichever source descriptorSource selects.
+// maximalToolDescriptors returns the projected profile-static Stable+Labs catalog.
 func maximalToolDescriptors() []map[string]any {
-	if descriptorSource == descriptorSourceLegacy {
-		return legacyMaximalToolDescriptors()
-	}
 	return cloneDescriptors(projectedProfiles.maximal)
 }
 

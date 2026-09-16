@@ -31,6 +31,7 @@ import (
 	"strconv"
 	"strings"
 
+	evaltokenizer "github.com/samibel/graphi/core/tokenizer"
 	"github.com/samibel/graphi/engine/embed/static"
 )
 
@@ -53,6 +54,9 @@ const MaxFileBytes = 64 << 20 // 64 MiB; ceiling is also a hard read cap
 // (network, hash mismatch, truncation, oversize) the destination is
 // untouched — a partial or mixed cache is impossible.
 func Download(ctx context.Context, dest string) error {
+	if err := DownloadTokenizer(ctx, evaltokenizer.ArtifactDir()); err != nil {
+		return err
+	}
 	client := newHTTPSOnlyClient()
 	return downloadImpl(ctx, client, static.PinnedHuggingFaceURL, dest, static.PinnedSHA256)
 }
@@ -62,11 +66,24 @@ func Download(ctx context.Context, dest string) error {
 // The air-gapped path (AC-6): when the user passes --local <dir>, this
 // is the only install code path that touches the cache.
 func InstallLocal(ctx context.Context, src, dest string) error {
+	return installLocal(ctx, src, dest, true)
+}
+
+func installLocalModel(ctx context.Context, src, dest string) error {
+	return installLocal(ctx, src, dest, false)
+}
+
+func installLocal(ctx context.Context, src, dest string, withTokenizer bool) error {
 	if src == "" {
 		return fmt.Errorf("staticfetch: setup-embedder: --local: source directory is empty")
 	}
 	if err := static.VerifyPins(src); err != nil {
 		return err
+	}
+	if withTokenizer {
+		if err := InstallLocalTokenizer(ctx, src, evaltokenizer.ArtifactDir()); err != nil {
+			return err
+		}
 	}
 	return atomicCopyDir(src, dest, static.PinnedFileNames)
 }

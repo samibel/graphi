@@ -188,6 +188,13 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 	if sourceBudget <= 0 {
 		sourceBudget = 250
 	}
+	var legacyBundle contract.Result
+	if err := json.Unmarshal(legacy, &legacyBundle); err != nil {
+		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: decode input: %w", err)
+	}
+	if !strings.Contains(legacyBundle.Summary, "degradation: ready") {
+		return "", CompactTaskContextStructured{}, ErrRetrievalNotReady
+	}
 	var content bytes.Buffer
 	encoder := json.NewEncoder(&content)
 	encoder.SetEscapeHTML(false)
@@ -206,9 +213,9 @@ func Build(ctx context.Context, query string, legacy []byte, repository fs.FS, s
 		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: encode input: %w", err)
 	}
 	raw := bytes.TrimSuffix(content.Bytes(), []byte{'\n'})
-	tokenizer, err := evaltokenizer.LoadEmbedded()
+	tokenizer, err := evaltokenizer.LoadPinned()
 	if err != nil {
-		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: load embedded tokenizer: %w", err)
+		return "", CompactTaskContextStructured{}, fmt.Errorf("compact task context: load pinned tokenizer (rerun `graphi setup-embedder` for the configured model; %s): %w", evaltokenizer.DescribePin(), err)
 	}
 	counter := PayloadCounter{TokenizerID: evaltokenizer.TokenizerID, VocabularySHA256: evaltokenizer.PinnedVocabularySHA256, Count: tokenizer.Count}
 	input := PreservedPayload{

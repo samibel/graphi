@@ -46,10 +46,11 @@ entry only after the release gate authorizes it.
   candidate verdict.** The candidate-bound run reproduces 64/64 MCP payloads,
   digests and real-token counts, stays at or below 1,184/1,200 tokens, and
   publishes its immutable decision without weakening the release gate.
-- **The embedded `cl100k_base` vocabulary is stored as a deterministic gzip
-  artifact and verified before and after decompression.** This keeps the
-  standard-library-only, CGo-free tokenizer exact while reducing the canonical
-  v0.13.0 binary to 36,574,290 bytes, below the unchanged 37 MB release budget.
+- **The exact `cl100k_base` counter is hermetic in evaluation and fail-closed in
+  production.** Evaluators verify a deterministic embedded artifact; the static
+  model setup installs the same SHA-pinned vocabulary for the runtime. Retiring
+  the obsolete descriptor rollback copy and compressing its reviewable catalog
+  keeps the CGo-free Linux release below the unchanged 37,000,000-byte gate.
 - **`compound` is the second operation with a real engine-side handler.** The
   new `engine.compound` built-in module contributes the existing catalog spec
   together with `engine/query/compound.Handler`, bound only to its declared

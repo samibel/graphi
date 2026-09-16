@@ -18,6 +18,11 @@ import (
 
 type compactTaskContextClient struct{ allToolsClient }
 
+func useCheckedInTaskContextTokenizer(t *testing.T) {
+	t.Helper()
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", filepath.Join("..", "..", "core", "tokenizer", "testdata", "artifact"))
+}
+
 func (compactTaskContextClient) TaskContext(context.Context, client.TaskContextParams) ([]byte, error) {
 	return contract.Serialize(&contract.Result{
 		Outcome: contract.OutcomeFound,
@@ -97,6 +102,7 @@ func TestTaskContextV2_PublicMCPNegativeBudgetDoesNotReactivateSourceReads(t *te
 }
 
 func TestTaskContextV2_PublicMCPDoesNotFollowSourceSymlinkOutsideRepository(t *testing.T) {
+	useCheckedInTaskContextTokenizer(t)
 	root := t.TempDir()
 	outside := filepath.Join(t.TempDir(), "outside.go")
 	const secret = "OUTSIDE_REPOSITORY_SECRET"
@@ -125,6 +131,7 @@ func TestTaskContextV2_PublicMCPDoesNotFollowSourceSymlinkOutsideRepository(t *t
 }
 
 func TestTaskContextV2_PublicMCPEnforcesFrozenRealTokenizerCeiling(t *testing.T) {
+	useCheckedInTaskContextTokenizer(t)
 	root := t.TempDir()
 	largeBody := "package fixture\n\n// required input validated before command runs\nfunc validateRequired() {\n" + strings.Repeat("\tvalue_0123456789 += another_0123456789 // required validated command input\n", 800) + "}\n"
 	if err := os.WriteFile(filepath.Join(root, "command.go"), []byte(largeBody), 0o600); err != nil {
@@ -154,6 +161,7 @@ func TestTaskContextV2_PublicMCPEnforcesFrozenRealTokenizerCeiling(t *testing.T)
 }
 
 func TestTaskContextV2_PublicMCPRecoversMissingAnswerIntoCompactStructuredContent(t *testing.T) {
+	useCheckedInTaskContextTokenizer(t)
 	root := t.TempDir()
 	for name, body := range map[string]string{
 		"decoy.go":   "package fixture\n\nfunc decoy() {}\n",

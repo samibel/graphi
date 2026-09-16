@@ -72,6 +72,13 @@ func TestGoldenTokenVectors_DifferFromWhitespace(t *testing.T) {
 					tt.name, len(ids), ids, whitespace, tt.real, tt.ids, tt.whitespace)
 			}
 			t.Logf("golden %s: real=%d whitespace=%d ids=%v", tt.name, len(ids), whitespace, ids)
+			count, err := tok.Count([]byte(tt.text))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if count != len(ids) {
+				t.Fatalf("Count(%q) = %d, Encode returned %d ids", tt.text, count, len(ids))
+			}
 		})
 	}
 }

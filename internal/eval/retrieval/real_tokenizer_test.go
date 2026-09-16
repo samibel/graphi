@@ -62,6 +62,26 @@ func TestLoadPinnedRealPayloadCounter_MissingArtifactFailsWithoutFallback(t *tes
 	t.Logf("observed measurement failure: %s", err)
 }
 
+func TestLoadPinnedRealPayloadCounter_CleanCacheUsesVerifiedEmbeddedArtifact(t *testing.T) {
+	t.Setenv("GRAPHI_EVAL_TOKENIZER_DIR", "")
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		t.Fatalf("load measurement counter without external cache: %v", err)
+	}
+	if counter.TokenizerID != evaltokenizer.TokenizerID || counter.VocabularySHA256 != evaltokenizer.PinnedVocabularySHA256 {
+		t.Fatalf("PayloadCounter identity = %+v", counter)
+	}
+	got, err := counter.Count([]byte("hello, hermetic evaluator"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == 0 {
+		t.Fatal("embedded tokenizer returned zero tokens for non-empty input")
+	}
+}
+
 func TestNewPinnedRealPayloadCounter_RejectsNil(t *testing.T) {
 	if _, err := NewPinnedRealPayloadCounter(nil); err == nil {
 		t.Fatal("nil tokenizer accepted")

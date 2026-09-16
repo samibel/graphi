@@ -277,8 +277,43 @@ func (t *Tokenizer) Encode(payload []byte) ([]int, error) {
 
 // Count recomputes the count from the supplied bytes on every call.
 func (t *Tokenizer) Count(payload []byte) (int, error) {
-	ids, err := t.Encode(payload)
-	return len(ids), err
+	if t == nil || len(t.ranks) == 0 {
+		return 0, errors.New("eval tokenizer: tokenizer is not loaded")
+	}
+	if !utf8.Valid(payload) {
+		return 0, errors.New("eval tokenizer: payload is not valid UTF-8")
+	}
+	count := 0
+	for _, piece := range preTokenize(string(payload)) {
+		count += t.countBPE([]byte(piece))
+	}
+	return count, nil
+}
+
+func (t *Tokenizer) countBPE(piece []byte) int {
+	if len(piece) == 0 {
+		return 0
+	}
+	if _, ok := t.ranks[string(piece)]; ok {
+		return 1
+	}
+	boundaries := make([]int, len(piece)+1)
+	for i := range boundaries {
+		boundaries[i] = i
+	}
+	for len(boundaries) > 2 {
+		bestRank, bestAt := int(^uint(0)>>1), -1
+		for i := 0; i+2 < len(boundaries); i++ {
+			if rank, ok := t.ranks[string(piece[boundaries[i]:boundaries[i+2]])]; ok && rank < bestRank {
+				bestRank, bestAt = rank, i
+			}
+		}
+		if bestAt < 0 {
+			break
+		}
+		boundaries = append(boundaries[:bestAt+1], boundaries[bestAt+2:]...)
+	}
+	return len(boundaries) - 1
 }
 
 func (t *Tokenizer) appendBPE(ids []int, piece []byte) []int {

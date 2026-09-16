@@ -1,8 +1,24 @@
 package opcatalog
 
 import (
+	"bytes"
+	"os"
 	"testing"
 )
+
+func TestShadow_CompressedArtifactMatchesReviewableJSON(t *testing.T) {
+	want, err := os.ReadFile("shadow.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := decompressShadowJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatal("embedded compressed catalog differs from reviewable shadow.json")
+	}
+}
 
 // The embedded shadow document must decode, validate and freeze. Everything
 // this asserts is a property of the DATA — the comparison against the live
