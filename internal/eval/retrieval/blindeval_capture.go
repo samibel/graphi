@@ -75,6 +75,10 @@ type CapturedCandidateBundle struct {
 	BundleSummary            string                    `json:"bundle_summary"`
 	Qualification            *QualificationObservation `json:"qualification,omitempty"`
 	QualificationQueryVector []float32                 `json:"qualification_query_vector,omitempty"`
+	// OracleControls are constructed from the one-shot, pre-compact normal
+	// contract.Result and carried only to the qualification staging writer.
+	// They are never serialized under the normal capture artifact.
+	OracleControls *OracleControls `json:"-"`
 }
 
 // ValidateCapturedTranscript preserves contract-1 captures unchanged and,
@@ -561,10 +565,18 @@ func CaptureCandidateBundles(ctx context.Context, o CandidateCaptureOptions) ([]
 		captured = append(captured, bundle)
 	}
 	if strictQualification {
-		inputs := qualificationBuildInputs{Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments, QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured))}
+		inputs := qualificationBuildInputs{
+			Rows: idx.rows, AdmittedDocuments: idx.admittedDocuments,
+			QueryVectors: make(map[string][]float32, len(captured)), Payloads: make([]PreservedPayload, 0, len(captured)),
+			OracleControls: make(map[string]OracleControls, len(captured)),
+		}
 		for _, bundle := range captured {
 			inputs.QueryVectors[bundle.QueryID] = bundle.QualificationQueryVector
 			inputs.Payloads = append(inputs.Payloads, bundle.Payload)
+			if bundle.OracleControls == nil {
+				return nil, provenance, fmt.Errorf("embedded-model qualification capture: query %s has no one-shot oracle controls", bundle.QueryID)
+			}
+			inputs.OracleControls[bundle.QueryID] = *bundle.OracleControls
 		}
 		digest := buildQualificationDigest(o.QualificationArm, inputs)
 		digest.Diagnostics = qualificationBuildDiagnostics(idx.rows, idx.admissionTruncations)
@@ -633,11 +645,27 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 	direct := client.NewDirect(querySvc, idx.search).
 		WithRetrieval(adapter).
 		WithRepoRoot(o.RepoRoot)
+	var surfaceClient client.Client = direct
+	var oracleClient *qualificationOracleCaptureClient
+	if strictQualification {
+		retrievalState := embed.StateReady.String()
+		if o.QualificationArm == ArmLexical {
+			retrievalState = string(engineretrieval.StateLexicalOnly)
+		}
+		oracleClient = &qualificationOracleCaptureClient{
+			Client: direct,
+			Input: OracleInput{
+				Query: q, Repository: os.DirFS(o.RepoRoot), RealCounter: o.RealCounter,
+				RetrievalState: retrievalState,
+			},
+		}
+		surfaceClient = oracleClient
+	}
 	serverOptions := []mcp.ServerOption{mcp.WithLabs(), mcp.WithRepository(client.Repository{Root: o.RepoRoot})}
 	if o.QualificationArm == ArmLexical {
 		serverOptions = append(serverOptions, mcp.WithEvaluationLexicalCompactControl())
 	}
-	server := mcp.NewServerWithClient(direct, serverOptions...)
+	server := mcp.NewServerWithClient(surfaceClient, serverOptions...)
 	defer server.Close()
 
 	request, err := candidateToolCallRequest(q.Text)
@@ -652,6 +680,14 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s MCP serve: %w", QrelBlindSmokeEvaluationName, q.ID, err)
 	}
 	responseBytes := out.Bytes()
+	if oracleClient != nil {
+		if oracleClient.err != nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s oracle controls: %w", q.ID, oracleClient.err)
+		}
+		if oracleClient.called != 1 || oracleClient.controls == nil {
+			return CapturedCandidateBundle{}, fmt.Errorf("embedded-model qualification capture: query %s captured %d frozen candidate results for oracle controls, want exactly 1", q.ID, oracleClient.called)
+		}
+	}
 
 	if adapter.Called() != 1 {
 		return CapturedCandidateBundle{}, fmt.Errorf("retrieval %s capture: query %s called the real retrieval instance %d times, want exactly 1", QrelBlindSmokeEvaluationName, q.ID, adapter.Called())
@@ -703,6 +739,9 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		BundleSummary:            summary,
 		QualificationQueryVector: queryVector,
 	}
+	if oracleClient != nil {
+		capturedOut.OracleControls = oracleClient.controls
+	}
 	if strictQualification {
 		var structured taskcompact.Structured
 		structured, err = qualificationStructuredFromPayload(responseBytes)
@@ -730,6 +769,63 @@ func captureOneCandidateBundle(ctx context.Context, o CandidateCaptureOptions, q
 		capturedOut.Qualification = &observation
 	}
 	return capturedOut, nil
+}
+
+// qualificationOracleCaptureClient observes the exact canonical
+// task_context/2 contract.Result returned during the one MCP call. Embedding
+// client.Client promotes every other method unchanged; only TaskContext is
+// intercepted, so no product surface or second retrieval call is introduced.
+type qualificationOracleCaptureClient struct {
+	client.Client
+	Input    OracleInput
+	called   int
+	controls *OracleControls
+	err      error
+}
+
+func (c *qualificationOracleCaptureClient) TaskContext(ctx context.Context, p client.TaskContextParams) ([]byte, error) {
+	raw, err := c.Client.TaskContext(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	c.called++
+	if c.called != 1 {
+		c.err = fmt.Errorf("normal candidates were produced more than once")
+		return nil, c.err
+	}
+	if p.Task != c.Input.Query.Text {
+		c.err = fmt.Errorf("captured task %q differs from frozen query", p.Task)
+		return nil, c.err
+	}
+	var candidates contract.Result
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&candidates); err != nil {
+		c.err = fmt.Errorf("decode frozen normal candidates: %w", err)
+		return nil, c.err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		if err == nil {
+			c.err = fmt.Errorf("frozen normal candidates contain a trailing JSON value")
+		} else {
+			c.err = fmt.Errorf("frozen normal candidates contain trailing bytes: %w", err)
+		}
+		return nil, c.err
+	}
+	before := SHA256Hex(raw)
+	in := c.Input
+	in.CurrentCandidates = candidates
+	controls, err := BuildOracleControls(in)
+	if err != nil {
+		c.err = err
+		return nil, err
+	}
+	if SHA256Hex(raw) != before {
+		c.err = fmt.Errorf("oracle construction mutated frozen normal candidate bytes")
+		return nil, c.err
+	}
+	c.controls = &controls
+	return raw, nil
 }
 
 func validateQualificationRetrieverSummary(arm QualificationArm, expected embed.Fingerprint, got resolve.RetrieverResult) error {

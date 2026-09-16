@@ -1,9 +1,12 @@
 package retrieval
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -32,6 +35,10 @@ func TestBuildOracleControlsKeepsNormalCaptureImmutable(t *testing.T) {
 	}
 	if !got.OracleCandidateOraclePacker.CompleteGrade3Span {
 		t.Fatal("oracle candidate/oracle packer missed its injected span")
+	}
+	wantCurrentSHA := SHA256Hex(canonicalOracleCandidateBytes(t, in.CurrentCandidates))
+	if got.CurrentCandidatesOraclePacker.CandidateSHA256 != wantCurrentSHA {
+		t.Fatalf("current candidate provenance = %q, want frozen bytes %q", got.CurrentCandidatesOraclePacker.CandidateSHA256, wantCurrentSHA)
 	}
 
 	seenKinds := map[string]bool{}
@@ -67,6 +74,71 @@ func TestBuildOracleControlsKeepsNormalCaptureImmutable(t *testing.T) {
 		if strings.Contains(string(raw), forbidden) {
 			t.Fatalf("oracle grader artifact leaks %s: %s", forbidden, raw)
 		}
+	}
+}
+
+func TestQualificationOracleArtifactsUseSeparatedBlindPaths(t *testing.T) {
+	in := oracleFixture(t)
+	controls, err := BuildOracleControls(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	captured := []CapturedCandidateBundle{{QueryID: in.Query.ID, OracleControls: &controls}}
+	dir := t.TempDir()
+	if err := writeQualificationOracleControls(dir, captured, []Query{in.Query}); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{
+		OracleControlCurrentCandidatesOraclePacker,
+		OracleControlOracleCandidateCurrentSelector,
+		OracleControlOracleCandidateOraclePacker,
+	} {
+		controlDir := filepath.Join(dir, "oracle", in.Query.ID, kind)
+		artifact, err := os.ReadFile(filepath.Join(controlDir, "artifact.json"))
+		if err != nil {
+			t.Fatalf("read %s artifact: %v", kind, err)
+		}
+		for _, forbidden := range [][]byte{[]byte(`"judgements"`), []byte(`"qrels"`), []byte(`"answer_label"`), []byte(`"complete_grade_3_span"`)} {
+			if bytes.Contains(artifact, forbidden) {
+				t.Fatalf("%s artifact leaks %s: %s", kind, forbidden, artifact)
+			}
+		}
+		for _, required := range [][]byte{[]byte(`"control_kind": "` + kind + `"`), []byte(`"candidate_provenance"`), []byte(`"candidate_sha256"`), []byte(`"payload_sha256"`), []byte(`"real_token_count"`)} {
+			if !bytes.Contains(artifact, required) {
+				t.Fatalf("%s artifact missing %s: %s", kind, required, artifact)
+			}
+		}
+		prompt, err := os.ReadFile(filepath.Join(controlDir, "grader-prompt.txt"))
+		if err != nil {
+			t.Fatalf("read %s grader prompt: %v", kind, err)
+		}
+		if !bytes.Contains(prompt, []byte("QUESTION:\n"+in.Query.Text)) || bytes.Contains(prompt, []byte("complete_grade_3_span")) {
+			t.Fatalf("%s grader prompt is not blind-compatible", kind)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "capture.json")); !os.IsNotExist(err) {
+		t.Fatalf("oracle writer used normal capture filename: %v", err)
+	}
+}
+
+func TestQualificationLateOracleErrorPublishesNothing(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "qualification")
+	if err := os.Mkdir(out, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	q := oracleFixture(t).Query
+	err := publishQualificationAtomically(out, func(stage string) error {
+		if err := os.WriteFile(filepath.Join(stage, "normal-capture-complete"), []byte("normal"), 0o644); err != nil {
+			return err
+		}
+		return writeQualificationOracleControls(stage, []CapturedCandidateBundle{{QueryID: q.ID}}, []Query{q})
+	})
+	if err == nil || !strings.Contains(err.Error(), "oracle") {
+		t.Fatalf("late missing oracle controls = %v", err)
+	}
+	entries, readErr := os.ReadDir(out)
+	if readErr != nil || len(entries) != 0 {
+		t.Fatalf("late oracle error published partial evidence: entries=%v err=%v", entries, readErr)
 	}
 }
 

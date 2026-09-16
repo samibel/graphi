@@ -388,6 +388,8 @@ func TestQualificationBuildComparisonFailsAnyArtifactDifference(t *testing.T) {
 		func(v *QualificationBuildDigest) { v.PersistedRowsSHA256 = strings.Repeat("1", 64) },
 		func(v *QualificationBuildDigest) { v.BundlesSHA256 = strings.Repeat("2", 64) },
 		func(v *QualificationBuildDigest) { v.TokenCountsSHA256 = strings.Repeat("3", 64) },
+		func(v *QualificationBuildDigest) { v.OraclePayloadsSHA256 = strings.Repeat("4", 64) },
+		func(v *QualificationBuildDigest) { v.OracleTokenCountsSHA256 = strings.Repeat("5", 64) },
 		func(v *QualificationBuildDigest) { v.Diagnostics.AdmissionTruncations++ },
 	} {
 		second := first
@@ -398,13 +400,37 @@ func TestQualificationBuildComparisonFailsAnyArtifactDifference(t *testing.T) {
 	}
 }
 
+func TestQualificationBuildComparisonRejectsOraclePayloadOrCountMismatch(t *testing.T) {
+	base := qualificationBuildDigestFixture()
+	first := buildQualificationDigest(ArmCodeRank, base)
+	changed := base.OracleControls["q-1"]
+	changed.CurrentCandidatesOraclePacker.Payload.Bytes = append([]byte(nil), changed.CurrentCandidatesOraclePacker.Payload.Bytes...)
+	changed.CurrentCandidatesOraclePacker.Payload.Bytes[0] ^= 1
+	base.OracleControls["q-1"] = changed
+	second := buildQualificationDigest(ArmCodeRank, base)
+	if first.OraclePayloadsSHA256 == second.OraclePayloadsSHA256 || compareQualificationBuildDigests(first, second) == nil {
+		t.Fatal("two-build comparison accepted changed oracle payload bytes")
+	}
+
+	base = qualificationBuildDigestFixture()
+	changed = base.OracleControls["q-1"]
+	changed.CurrentCandidatesOraclePacker.TokenCount++
+	base.OracleControls["q-1"] = changed
+	third := buildQualificationDigest(ArmCodeRank, base)
+	if first.OracleTokenCountsSHA256 == third.OracleTokenCountsSHA256 || compareQualificationBuildDigests(first, third) == nil {
+		t.Fatal("two-build comparison accepted changed oracle real token count")
+	}
+}
+
 func qualificationBuildDigestFixture() qualificationBuildInputs {
 	payload := PreservedPayload{Bytes: []byte("payload\n"), SHA256: SHA256Hex([]byte("payload\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: TokenizerID, Tokens: 2}}}
+	oraclePayload := PreservedPayload{Bytes: []byte("oracle\n"), SHA256: SHA256Hex([]byte("oracle\n")), TokenCounts: []PayloadTokenCount{{TokenizerID: "cl100k_base", VocabularySHA256: strings.Repeat("a", 64), Tokens: 3}}}
 	return qualificationBuildInputs{
 		Rows:              []embed.Row{{GenerationID: "independent-build-1", NodeID: "n1", DocumentID: "d1", TextHash: "text", Path: "a.go", StartLine: 1, EndLine: 2, SpanMethod: "whole", Vector: []float32{1, -0.5}}},
 		QueryVectors:      map[string][]float32{"q-1": {0.25, 0.75}},
 		Payloads:          []PreservedPayload{payload},
 		AdmittedDocuments: []embed.SemanticDocument{{DocumentID: "d1", NodeID: "n1", Path: "a.go", StartLine: 1, EndLine: 2, TextHash: "text", Text: "admitted bytes", Truncated: true, Bound: "tokens", AdmissionTokenCount: 17, AdmissionLimit: 512, AdmissionAlgorithmID: "first-n-tokens@1"}},
+		OracleControls:    map[string]OracleControls{"q-1": {CurrentCandidatesOraclePacker: OracleBundle{ControlKind: OracleControlCurrentCandidatesOraclePacker, QueryID: "q-1", CandidateSHA256: strings.Repeat("b", 64), TokenCount: 3, Payload: oraclePayload}}},
 	}
 }
 

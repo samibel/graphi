@@ -195,15 +195,18 @@ type QualificationObservation struct {
 }
 
 // QualificationBuildDigest separates the independently reproducible byte
-// classes. Staging generation IDs are intentionally absent from all four
-// inputs; no other persisted field is excluded.
+// classes. Staging generation IDs are intentionally absent; no other
+// persisted field is excluded. Oracle payload bytes/digests and their real
+// token counts have independent digests so either can invalidate publication.
 type QualificationBuildDigest struct {
-	Arm                 QualificationArm              `json:"arm"`
-	VectorBytesSHA256   string                        `json:"vector_bytes_sha256"`
-	PersistedRowsSHA256 string                        `json:"persisted_rows_sha256"`
-	BundlesSHA256       string                        `json:"bundles_sha256"`
-	TokenCountsSHA256   string                        `json:"token_counts_sha256"`
-	Diagnostics         QualificationBuildDiagnostics `json:"diagnostics"`
+	Arm                     QualificationArm              `json:"arm"`
+	VectorBytesSHA256       string                        `json:"vector_bytes_sha256"`
+	PersistedRowsSHA256     string                        `json:"persisted_rows_sha256"`
+	BundlesSHA256           string                        `json:"bundles_sha256"`
+	TokenCountsSHA256       string                        `json:"token_counts_sha256"`
+	OraclePayloadsSHA256    string                        `json:"oracle_payloads_sha256"`
+	OracleTokenCountsSHA256 string                        `json:"oracle_token_counts_sha256"`
+	Diagnostics             QualificationBuildDiagnostics `json:"diagnostics"`
 }
 
 type qualificationCaptureFacts struct {
@@ -414,6 +417,7 @@ type qualificationBuildInputs struct {
 	AdmittedDocuments []embed.SemanticDocument
 	QueryVectors      map[string][]float32
 	Payloads          []PreservedPayload
+	OracleControls    map[string]OracleControls
 }
 
 func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs) QualificationBuildDigest {
@@ -424,7 +428,7 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 		}
 		return rows[i].DocumentID < rows[j].DocumentID
 	})
-	var vectors, persisted, bundles, tokens bytes.Buffer
+	var vectors, persisted, bundles, tokens, oraclePayloads, oracleTokens bytes.Buffer
 	documents := append([]embed.SemanticDocument(nil), in.AdmittedDocuments...)
 	sort.Slice(documents, func(i, j int) bool {
 		if documents[i].NodeID != documents[j].NodeID {
@@ -477,9 +481,35 @@ func buildQualificationDigest(arm QualificationArm, in qualificationBuildInputs)
 			_ = binary.Write(&tokens, binary.BigEndian, int64(count.Tokens))
 		}
 	}
+	oracleQueryIDs := make([]string, 0, len(in.OracleControls))
+	for queryID := range in.OracleControls {
+		oracleQueryIDs = append(oracleQueryIDs, queryID)
+	}
+	sort.Strings(oracleQueryIDs)
+	for _, queryID := range oracleQueryIDs {
+		for _, control := range oracleControlBundles(in.OracleControls[queryID]) {
+			qualificationWriteString(&oraclePayloads, queryID)
+			qualificationWriteString(&oraclePayloads, control.ControlKind)
+			qualificationWriteString(&oraclePayloads, control.CandidateProvenance)
+			qualificationWriteString(&oraclePayloads, control.CandidateSHA256)
+			qualificationWriteBytes(&oraclePayloads, control.Payload.Bytes)
+			qualificationWriteString(&oraclePayloads, control.Payload.SHA256)
+			qualificationWriteString(&oracleTokens, queryID)
+			qualificationWriteString(&oracleTokens, control.ControlKind)
+			_ = binary.Write(&oracleTokens, binary.BigEndian, int64(control.TokenCount))
+			counts := append([]PayloadTokenCount(nil), control.Payload.TokenCounts...)
+			sort.Slice(counts, func(i, j int) bool { return counts[i].TokenizerID < counts[j].TokenizerID })
+			for _, count := range counts {
+				qualificationWriteString(&oracleTokens, count.TokenizerID)
+				qualificationWriteString(&oracleTokens, count.VocabularySHA256)
+				_ = binary.Write(&oracleTokens, binary.BigEndian, int64(count.Tokens))
+			}
+		}
+	}
 	return QualificationBuildDigest{
 		Arm: arm, VectorBytesSHA256: SHA256Hex(vectors.Bytes()), PersistedRowsSHA256: SHA256Hex(persisted.Bytes()),
 		BundlesSHA256: SHA256Hex(bundles.Bytes()), TokenCountsSHA256: SHA256Hex(tokens.Bytes()),
+		OraclePayloadsSHA256: SHA256Hex(oraclePayloads.Bytes()), OracleTokenCountsSHA256: SHA256Hex(oracleTokens.Bytes()),
 	}
 }
 
@@ -492,6 +522,8 @@ func compareQualificationBuildDigests(first, second QualificationBuildDigest) er
 		{"persisted rows", first.PersistedRowsSHA256, second.PersistedRowsSHA256},
 		{"bundles", first.BundlesSHA256, second.BundlesSHA256},
 		{"token counts", first.TokenCountsSHA256, second.TokenCountsSHA256},
+		{"oracle payloads", first.OraclePayloadsSHA256, second.OraclePayloadsSHA256},
+		{"oracle token counts", first.OracleTokenCountsSHA256, second.OracleTokenCountsSHA256},
 	} {
 		if digest.first != digest.second {
 			return fmt.Errorf("embedded-model qualification reproducibility: arm %s %s digest differs across independent builds", first.Arm, digest.name)
@@ -644,6 +676,9 @@ func captureQualificationBuilds(ctx context.Context, out string, env qualificati
 			}
 			if err := validateQualificationRunDiagnostics(arm, observations); err != nil {
 				return err
+			}
+			if err := writeQualificationOracleControls(armDir, captured, loaded.Dataset.Queries); err != nil {
+				return fmt.Errorf("embedded-model qualification capture: build %d arm %s: %w", build, arm, err)
 			}
 			artifact := struct {
 				Build        int                        `json:"build"`

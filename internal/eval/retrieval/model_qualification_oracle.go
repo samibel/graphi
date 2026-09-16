@@ -12,12 +12,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/samibel/graphi/engine/agenttools/contract"
 	"github.com/samibel/graphi/engine/agenttools/shape"
 	taskcompact "github.com/samibel/graphi/engine/agenttools/taskctx/compact"
+	"github.com/samibel/graphi/engine/embed"
 )
 
 const (
@@ -34,6 +37,7 @@ type OracleInput struct {
 	CurrentCandidates contract.Result
 	Repository        fs.FS
 	RealCounter       PayloadCounter
+	RetrievalState    string
 }
 
 // OracleControls separates retrieval recall, current-selector retention, and
@@ -52,6 +56,7 @@ type OracleBundle struct {
 	QueryID             string           `json:"query_id"`
 	OutputName          string           `json:"output_name"`
 	CandidateProvenance string           `json:"candidate_provenance"`
+	CandidateSHA256     string           `json:"candidate_sha256"`
 	Injected            bool             `json:"injected"`
 	InjectedRows        int              `json:"injected_rows"`
 	CompleteGrade3Span  bool             `json:"complete_grade_3_span"`
@@ -88,7 +93,19 @@ func BuildOracleControls(in OracleInput) (OracleControls, error) {
 		return OracleControls{}, err
 	}
 
-	currentSelection, err := runOracleCurrentSelector(in.Query.Text, current, in.Repository)
+	retrievalState := in.RetrievalState
+	if retrievalState == "" {
+		retrievalState = embed.StateReady.String()
+	}
+	if retrievalState != embed.StateReady.String() && retrievalState != "lexical_only" {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: unsupported retrieval state %q", retrievalState)
+	}
+	currentRaw, err := contract.SerializeStable(&current)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: serialize frozen candidates: %w", err)
+	}
+	currentSHA := SHA256Hex(currentRaw)
+	currentSelection, err := runOracleCurrentSelector(in.Query.Text, current, in.Repository, retrievalState)
 	if err != nil {
 		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: current candidates/current selector: %w", err)
 	}
@@ -96,7 +113,7 @@ func BuildOracleControls(in OracleInput) (OracleControls, error) {
 	currentPacked, err := buildOraclePackedBundle(
 		in, OracleControlCurrentCandidatesOraclePacker,
 		"oracle-current-candidates-oracle-packer.json", "frozen_normal_candidates/oracle_packer",
-		false, 0, currentSelection, currentEligible,
+		currentSHA, retrievalState, false, 0, currentSelection, currentEligible,
 	)
 	if err != nil {
 		return OracleControls{}, err
@@ -106,14 +123,19 @@ func BuildOracleControls(in OracleInput) (OracleControls, error) {
 	if err != nil {
 		return OracleControls{}, err
 	}
-	injectedSelection, err := runOracleCurrentSelector(in.Query.Text, injectedCandidates, in.Repository)
+	injectedRaw, err := contract.SerializeStable(&injectedCandidates)
+	if err != nil {
+		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: serialize injected candidates: %w", err)
+	}
+	injectedSHA := SHA256Hex(injectedRaw)
+	injectedSelection, err := runOracleCurrentSelector(in.Query.Text, injectedCandidates, in.Repository, retrievalState)
 	if err != nil {
 		return OracleControls{}, fmt.Errorf("embedded-model qualification oracle: oracle candidates/current selector: %w", err)
 	}
 	injectedSelected, err := buildOracleSelectorBundle(
 		in, OracleControlOracleCandidateCurrentSelector,
 		"oracle-candidate-current-selector.json", "oracle_candidate_copy/current_selector",
-		injectedRows, injectedSelection,
+		injectedSHA, retrievalState, injectedRows, injectedSelection,
 	)
 	if err != nil {
 		return OracleControls{}, err
@@ -121,7 +143,7 @@ func BuildOracleControls(in OracleInput) (OracleControls, error) {
 	injectedPacked, err := buildOraclePackedBundle(
 		in, OracleControlOracleCandidateOraclePacker,
 		"oracle-candidate-oracle-packer.json", "oracle_candidate_copy/oracle_packer",
-		true, injectedRows, injectedSelection, grade3,
+		injectedSHA, retrievalState, true, injectedRows, injectedSelection, grade3,
 	)
 	if err != nil {
 		return OracleControls{}, err
@@ -265,28 +287,31 @@ func uniqueOracleRef(base string, used map[string]bool) string {
 	}
 }
 
-func runOracleCurrentSelector(query string, candidates contract.Result, repository fs.FS) (taskcompact.Result, error) {
+func runOracleCurrentSelector(query string, candidates contract.Result, repository fs.FS, retrievalState string) (taskcompact.Result, error) {
 	raw, err := contract.SerializeStable(&candidates)
 	if err != nil {
 		return taskcompact.Result{}, err
 	}
+	if retrievalState == "lexical_only" {
+		return taskcompact.BuildEvaluationControl(context.Background(), query, raw, repository, taskcompact.DefaultSourceBudget)
+	}
 	return taskcompact.Build(context.Background(), query, raw, repository, taskcompact.DefaultSourceBudget)
 }
 
-func buildOracleSelectorBundle(in OracleInput, kind, outputName, provenance string, injectedRows int, selected taskcompact.Result) (OracleBundle, error) {
-	payload, tokens, err := preserveOraclePayload(in.Query.ID, selected, in.RealCounter)
+func buildOracleSelectorBundle(in OracleInput, kind, outputName, provenance, candidateSHA, retrievalState string, injectedRows int, selected taskcompact.Result) (OracleBundle, error) {
+	payload, tokens, err := preserveOraclePayload(in.Query.ID, selected, in.RealCounter, retrievalState)
 	if err != nil {
 		return OracleBundle{}, err
 	}
 	return OracleBundle{
 		ControlKind: kind, QueryID: in.Query.ID, OutputName: outputName,
-		CandidateProvenance: provenance, Injected: true, InjectedRows: injectedRows,
+		CandidateProvenance: provenance, CandidateSHA256: candidateSHA, Injected: true, InjectedRows: injectedRows,
 		CompleteGrade3Span: qualificationCompleteGrade3Span(in.Query, selected.Structured.Sources),
 		TokenCount:         tokens, Payload: payload,
 	}, nil
 }
 
-func buildOraclePackedBundle(in OracleInput, kind, outputName, provenance string, injected bool, injectedRows int, template taskcompact.Result, eligible []oracleSource) (OracleBundle, error) {
+func buildOraclePackedBundle(in OracleInput, kind, outputName, provenance, candidateSHA, retrievalState string, injected bool, injectedRows int, template taskcompact.Result, eligible []oracleSource) (OracleBundle, error) {
 	packed := template
 	packed.Summary = "task_context/2 evaluation control " + kind
 	packed.Structured.Sources = nil
@@ -314,13 +339,13 @@ func buildOraclePackedBundle(in OracleInput, kind, outputName, provenance string
 		packed = trial
 	}
 	packed.Structured.Truncated = len(packed.Structured.Sources) < len(eligible)
-	payload, tokens, err := preserveOraclePayload(in.Query.ID, packed, in.RealCounter)
+	payload, tokens, err := preserveOraclePayload(in.Query.ID, packed, in.RealCounter, retrievalState)
 	if err != nil {
 		return OracleBundle{}, err
 	}
 	return OracleBundle{
 		ControlKind: kind, QueryID: in.Query.ID, OutputName: outputName,
-		CandidateProvenance: provenance, Injected: injected, InjectedRows: injectedRows,
+		CandidateProvenance: provenance, CandidateSHA256: candidateSHA, Injected: injected, InjectedRows: injectedRows,
 		CompleteGrade3Span: qualificationCompleteGrade3Span(in.Query, packed.Structured.Sources),
 		TokenCount:         tokens, Payload: payload,
 	}, nil
@@ -334,7 +359,7 @@ func oracleWhitespaceTokens(sources []taskcompact.Source) int {
 	return total
 }
 
-func preserveOraclePayload(queryID string, result taskcompact.Result, real PayloadCounter) (PreservedPayload, int, error) {
+func preserveOraclePayload(queryID string, result taskcompact.Result, real PayloadCounter, retrievalState string) (PreservedPayload, int, error) {
 	raw, err := marshalOracleCompactResult(result)
 	if err != nil {
 		return PreservedPayload{}, 0, err
@@ -346,7 +371,7 @@ func preserveOraclePayload(queryID string, result taskcompact.Result, real Paylo
 	if tokens > SavingsCandidateBudget {
 		return PreservedPayload{}, 0, fmt.Errorf("embedded-model qualification oracle: query %s payload is %d tokens, exceeds %d", queryID, tokens, SavingsCandidateBudget)
 	}
-	if _, err := ValidateCompactCandidateBundleBytes(queryID, raw); err != nil {
+	if _, err := validateCompactCandidateBundleBytesState(queryID, raw, retrievalState); err != nil {
 		return PreservedPayload{}, 0, fmt.Errorf("embedded-model qualification oracle: query %s compact payload: %w", queryID, err)
 	}
 	payload, err := preserveCandidatePayload(queryID, raw, real)
@@ -354,6 +379,103 @@ func preserveOraclePayload(queryID string, result taskcompact.Result, real Paylo
 		return PreservedPayload{}, 0, err
 	}
 	return payload, tokens, nil
+}
+
+func oracleControlBundles(controls OracleControls) []OracleBundle {
+	return []OracleBundle{
+		controls.CurrentCandidatesOraclePacker,
+		controls.OracleCandidateCurrentSelector,
+		controls.OracleCandidateOraclePacker,
+	}
+}
+
+type qualificationOracleArtifact struct {
+	ControlKind         string           `json:"control_kind"`
+	QueryID             string           `json:"query_id"`
+	CandidateProvenance string           `json:"candidate_provenance"`
+	CandidateSHA256     string           `json:"candidate_sha256"`
+	Injected            bool             `json:"injected"`
+	InjectedRows        int              `json:"injected_rows"`
+	PayloadSHA256       string           `json:"payload_sha256"`
+	RealTokenCount      int              `json:"real_token_count"`
+	Payload             PreservedPayload `json:"payload"`
+}
+
+// writeQualificationOracleControls materializes already-built controls. It
+// deliberately has no repository or qrel input: reconstruction after the
+// one-shot capture is impossible by API shape.
+func writeQualificationOracleControls(armDir string, captured []CapturedCandidateBundle, queries []Query) error {
+	queryByID := make(map[string]Query, len(queries))
+	for _, query := range queries {
+		if _, duplicate := queryByID[query.ID]; duplicate {
+			return fmt.Errorf("embedded-model qualification oracle: duplicate query id %q", query.ID)
+		}
+		queryByID[query.ID] = query
+	}
+	for _, candidate := range captured {
+		query, ok := queryByID[candidate.QueryID]
+		if !ok {
+			return fmt.Errorf("embedded-model qualification oracle: captured query %q is not in the frozen dataset", candidate.QueryID)
+		}
+		if candidate.OracleControls == nil {
+			return fmt.Errorf("embedded-model qualification oracle: query %s has no one-shot controls", candidate.QueryID)
+		}
+		if err := validateOraclePathComponent(candidate.QueryID); err != nil {
+			return err
+		}
+		seen := make(map[string]bool, 3)
+		for _, bundle := range oracleControlBundles(*candidate.OracleControls) {
+			if bundle.QueryID != candidate.QueryID || seen[bundle.ControlKind] {
+				return fmt.Errorf("embedded-model qualification oracle: query %s has invalid or duplicate control %q", candidate.QueryID, bundle.ControlKind)
+			}
+			seen[bundle.ControlKind] = true
+			if err := validateOraclePathComponent(bundle.ControlKind); err != nil {
+				return err
+			}
+			if !isLowerHexDigest(bundle.CandidateSHA256, 64) || bundle.Payload.SHA256 != SHA256Hex(bundle.Payload.Bytes) {
+				return fmt.Errorf("embedded-model qualification oracle: query %s control %s has invalid content provenance", candidate.QueryID, bundle.ControlKind)
+			}
+			prompt, err := BuildRaterPrompt(candidate.QueryID, query.Text, bundle.Payload)
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: query %s control %s grader packet: %w", candidate.QueryID, bundle.ControlKind, err)
+			}
+			controlDir := filepath.Join(armDir, "oracle", candidate.QueryID, bundle.ControlKind)
+			if err := os.MkdirAll(controlDir, 0o755); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: create control directory: %w", err)
+			}
+			artifact := qualificationOracleArtifact{
+				ControlKind: bundle.ControlKind, QueryID: bundle.QueryID,
+				CandidateProvenance: bundle.CandidateProvenance, CandidateSHA256: bundle.CandidateSHA256,
+				Injected: bundle.Injected, InjectedRows: bundle.InjectedRows,
+				PayloadSHA256: bundle.Payload.SHA256, RealTokenCount: bundle.TokenCount, Payload: bundle.Payload,
+			}
+			raw, err := json.MarshalIndent(artifact, "", "  ")
+			if err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: encode artifact: %w", err)
+			}
+			raw = append(raw, '\n')
+			if err := os.WriteFile(filepath.Join(controlDir, "artifact.json"), raw, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write artifact: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(controlDir, "payload.jsonrpc"), bundle.Payload.Bytes, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write payload: %w", err)
+			}
+			if err := os.WriteFile(filepath.Join(controlDir, "grader-prompt.txt"), prompt.Bytes, 0o644); err != nil {
+				return fmt.Errorf("embedded-model qualification oracle: write grader prompt: %w", err)
+			}
+		}
+		if len(seen) != 3 {
+			return fmt.Errorf("embedded-model qualification oracle: query %s emitted %d controls, want 3", candidate.QueryID, len(seen))
+		}
+	}
+	return nil
+}
+
+func validateOraclePathComponent(value string) error {
+	if strings.TrimSpace(value) == "" || value == "." || value == ".." || filepath.Base(value) != value || strings.ContainsAny(value, `/\\`) {
+		return fmt.Errorf("embedded-model qualification oracle: unsafe output path component %q", value)
+	}
+	return nil
 }
 
 func marshalOracleCompactResult(result taskcompact.Result) ([]byte, error) {

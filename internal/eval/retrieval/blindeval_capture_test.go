@@ -53,9 +53,9 @@ func TestQualificationLexicalControlUsesRealCaptureWithoutSemanticGeneration(t *
 	queryService := query.New(idx.store)
 	engine := engineretrieval.New(resolve.Deps{Query: queryService, Search: idx.search}, idx.search, idx.store)
 	pre := QualificationPreregistration{}
-	counter := PayloadCounter{
-		TokenizerID: "fixture-real-tokenizer", VocabularySHA256: strings.Repeat("a", 64),
-		Count: func(raw []byte) (int, error) { return len(strings.Fields(string(raw))), nil },
+	counter, err := LoadPinnedRealPayloadCounter()
+	if err != nil {
+		t.Fatal(err)
 	}
 	q := Query{ID: "lexical-control", Text: "Answer", Stratum: StratumExactIdentifier, Split: SplitDev,
 		Judgements: []Judgement{{Path: "answer.go", StartLine: 3, EndLine: 3, Grade: GradeMax}}}
@@ -70,6 +70,14 @@ func TestQualificationLexicalControlUsesRealCaptureWithoutSemanticGeneration(t *
 	}
 	if !got.Qualification.CompleteGrade3Span {
 		t.Fatalf("lexical control lost the complete serialized grade-3 source span: %s", got.BundleSummary)
+	}
+	if got.OracleControls == nil {
+		t.Fatal("one-shot qualification capture did not retain oracle controls from the frozen normal contract.Result")
+	}
+	for _, control := range oracleControlBundles(*got.OracleControls) {
+		if control.QueryID != q.ID || control.CandidateSHA256 == "" || control.Payload.SHA256 == "" || control.TokenCount <= 0 {
+			t.Fatalf("captured oracle control lacks frozen provenance: %+v", control)
+		}
 	}
 }
 
