@@ -12,8 +12,21 @@ type QueryEmbedder interface {
 
 // EmbedQuery is the shared query seam for production and evaluation search.
 func EmbedQuery(ctx context.Context, e Embedder, query string) ([][]float32, error) {
-	if q, ok := e.(QueryEmbedder); ok {
-		return q.EmbedQuery(ctx, query)
+	if err := VerifyRuntime(ctx, e, "before query embed"); err != nil {
+		return nil, err
 	}
-	return e.Embed(ctx, []string{query})
+	var vectors [][]float32
+	var err error
+	if q, ok := e.(QueryEmbedder); ok {
+		vectors, err = q.EmbedQuery(ctx, query)
+	} else {
+		vectors, err = e.Embed(ctx, []string{query})
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := VerifyRuntime(ctx, e, "after query embed"); err != nil {
+		return nil, err
+	}
+	return vectors, nil
 }
